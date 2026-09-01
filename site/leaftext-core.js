@@ -42,12 +42,12 @@ async function load(url) {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  const write = (text) => {
-    const bytes = encoder.encode(text);
+  const put = (bytes) => {
     const at = api.leaf_alloc(bytes.length);
     new Uint8Array(api.memory.buffer).set(bytes, at);
     return [at, bytes.length];
   };
+  const write = (text) => put(encoder.encode(text));
   const read = (answer) => {
     if (!answer) return null;
     const length = new DataView(api.memory.buffer).getUint32(answer, true);
@@ -57,11 +57,12 @@ async function load(url) {
   };
 
   return {
+    // One door for every document either site draws. A page hands over the file's own bytes where it has them, and a string where the source was composed here — the glossary sheet, the auto-linker — which is encoded on the way in. A packaged format is a zip and has no string form at all, so the byte entry is the only one that draws all six, and putting a string through it too is what stops a site drawing a document one way while the window draws it another.
     render(source, path) {
-      const [text, textLen] = write(source);
+      const [body, bodyLen] = typeof source === 'string' ? write(source) : put(source);
       const [name, nameLen] = write(path);
-      const answer = read(api.leaf_render(text, textLen, name, nameLen));
-      api.leaf_free(text, textLen);
+      const answer = read(api.leaf_render_bytes(body, bodyLen, name, nameLen));
+      api.leaf_free(body, bodyLen);
       api.leaf_free(name, nameLen);
       return answer ? JSON.parse(answer) : null;
     },
@@ -73,7 +74,7 @@ async function load(url) {
  * Load the renderer this page names and answer with what a reading view needs.
  *
  *   formats            every extension the app can read, off its own one table — never a second list in site code
- *   render(text, path) the document, as the app draws it: `{ title, html, format, … }`. The path decides the format, so a `.xml` gets the TEI reader and a `.json` the data one, with nothing here choosing.
+ *   render(body, path) the document, as the app draws it: `{ title, html, format, … }`. The path decides the format, so a `.xml` gets the TEI reader and a `.json` the data one, with nothing here choosing. The body is the file’s own bytes, or a string where the page composed the source itself; a Word, Excel, PowerPoint or OpenDocument file is a zip and has no string form to hand over.
  *   opens(path)        whether this renderer would read that file at all
  *
  * Throws when the module cannot be reached, which is a page telling its reader the renderer is down rather than sitting on a document that never arrives.

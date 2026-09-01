@@ -14,7 +14,7 @@ pub(crate) struct Tab {
     pub(crate) edit: Option<EditableDocument>,
     /// Whether this tab is currently showing the raw-source code view rather than the rendered reading view.
     pub(crate) code_view: bool,
-    /// The last render of this tab's document from disk, reused on a switch while the contents still hash the same. The hash check is what admits it, so a stale entry is re-rendered over, never shown.
+    /// The last render of this tab's document from disk, reused on a switch while the file still answers the same hash. The hash check is what admits it, so a stale entry is re-rendered over, never shown.
     pub(crate) rendered: Option<RenderedCache>,
 }
 
@@ -22,7 +22,7 @@ pub(crate) struct Tab {
 #[derive(Debug)]
 pub(crate) struct RenderedCache {
     pub(crate) path: PathBuf,
-    /// [`content_hash`] of the source the document was rendered from.
+    /// What `render_hash` answered for the document: a package's own identity, read off the directory at the end of the file, and every other format's source text hashed. Not the source either way for a package — its members are what moved, and its text is one of them.
     pub(crate) hash: u64,
     pub(crate) document: OpenedDocument,
 }

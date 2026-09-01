@@ -126,7 +126,9 @@ export function fetchWatchedStream(url, use, options = {}) {
 }
 
 /**
- * Fetch and read the whole answer under the deadline: `{ ok, status, headers, text(), json() }`, which is what every page fetch here wanted from a `Response` anyway.
+ * Fetch and read the whole answer under the deadline: `{ ok, status, headers, bytes(), text(), json() }`, which is what every page fetch here wanted from a `Response` anyway.
+ *
+ * `bytes()` hands out the array already read rather than fetching again — a Word, Excel, PowerPoint or OpenDocument file is a zip, and decoding one to text loses it. The decode stays for the callers that want words.
  *
  * Whole rather than streamed because the retry has to cover the body: a document read halfway and then stalled is the same blank page as one that never started.
  */
@@ -137,7 +139,7 @@ export function fetchWatched(url, options = {}) {
       const buffer = response.body ? await response.arrayBuffer() : await raceSilence(response.arrayBuffer(), url);
       const bytes = new Uint8Array(buffer);
       const text = () => decoder.decode(bytes);
-      return { ok: response.ok, status: response.status, headers: response.headers, text: async () => text(), json: async () => JSON.parse(text()) };
+      return { ok: response.ok, status: response.status, headers: response.headers, bytes: async () => bytes, text: async () => text(), json: async () => JSON.parse(text()) };
     },
     options,
   );

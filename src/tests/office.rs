@@ -409,6 +409,206 @@ fn an_unsaved_edit_to_a_package_is_on_the_page_before_it_is_saved() {
     );
 }
 
+/// A package opened, its buffer seeded with the member the page is given: what the app holds the moment a reader clicks into a Word file, before they have typed anything.
+fn buffer_over(name: &str, bytes: Vec<u8>) -> (PathBuf, EditableDocument) {
+    let path = PathBuf::from(name);
+    let format = DocumentFormat::from_path(&path);
+    let (source, member) =
+        crate::office::anchored_member_source(&bytes, &path, format).expect("the sample opens");
+    let buffer =
+        EditableDocument::over_package(path.clone(), source, PackageBuffer { bytes, member });
+    (path, buffer)
+}
+
+/// A render from a buffer draws exactly what building the whole archive again and reading it back drew. The member override is only ever an answer the archive could have given itself, so the two paths agreeing is what says the shortcut took nothing out — asked of all six formats, because each reads a different set of members.
+#[test]
+fn a_package_drawn_from_its_buffer_draws_what_a_rebuilt_archive_drew() {
+    let host = DesktopHost::default();
+    for (name, bytes, _) in every_sample() {
+        let (path, buffer) = buffer_over(&name, bytes.clone());
+        let package = buffer.package().expect("a package carries its archive");
+        let rebuilt = crate::office::archive_with_member(&bytes, &package.member, buffer.text())
+            .expect("the archive is written again");
+
+        assert_eq!(
+            opened_document_from_buffer_with_host(&buffer, &path, &host)
+                .expect("a package draws from its buffer"),
+            opened_document_from_bytes_with_host(&rebuilt, &path, &host)
+                .expect("the rebuilt archive draws"),
+            "{name} drew differently from its buffer than from an archive rebuilt around it"
+        );
+    }
+}
+
+/// A reader opens more members than the one the buffer holds — Word reads `word/numbering.xml` to know whether a list draws numbers, and Excel reads `xl/sharedStrings.xml` for the words almost every cell only points at. Those still come out of the archive the buffer arrived with, so an edit shows up without costing the document its lists or its cell text.
+#[test]
+fn a_buffer_render_still_reads_the_members_beside_the_one_it_holds() {
+    let host = DesktopHost::default();
+
+    let (path, mut buffer) = buffer_over("report.docx", sample_docx());
+    let at = buffer
+        .text()
+        .find("Sales")
+        .expect("the paragraph is in the buffer");
+    buffer.replace_range(at, at + "Sales".len(), "Takings");
+    let drawn = opened_document_from_buffer_with_host(&buffer, &path, &host)
+        .expect("a Word file draws from its buffer");
+    assert!(
+        drawn.html.contains("Takings rose in every region"),
+        "the edit should be on the page: {}",
+        drawn.html
+    );
+    assert!(
+        drawn.html.contains("<ol>"),
+        "the numbered point is numbered by word/numbering.xml, which the buffer does not hold: {}",
+        drawn.html
+    );
+
+    let (path, mut buffer) = buffer_over("budget.xlsx", sample_xlsx());
+    // A workbook keeps almost every cell's words in the shared table, so a cell is typed on by rewriting the cell element itself.
+    let cell = "<c r=\"C2\" t=\"s\"><v>5</v></c>";
+    let at = buffer.text().find(cell).expect("the cell is in the sheet");
+    assert!(buffer.replace_sheet_cell(at, at + cell.len(), "Closed"));
+    let drawn = opened_document_from_buffer_with_host(&buffer, &path, &host)
+        .expect("a workbook draws from its buffer");
+    assert!(
+        drawn.html.contains("Closed"),
+        "the edited cell should be on the page: {}",
+        drawn.html
+    );
+    assert!(
+        drawn.html.contains("Region") && drawn.html.contains("North"),
+        "the cells pointing at xl/sharedStrings.xml should still say their words: {}",
+        drawn.html
+    );
+}
+
+/// A save writes the same archive however many times the page was drawn on the way. The render stopped building one, and what it must not have done is quietly change what the save builds — so this is the byte-for-byte demand made again, after the buffer has been rendered.
+#[test]
+fn a_save_after_a_render_still_writes_every_part_byte_for_byte() {
+    let before = sample_docx();
+    let host = DesktopHost::default();
+    let after = saved_after("report.docx", &before, |buffer| {
+        let at = buffer
+            .text()
+            .find("Sales rose in every region")
+            .expect("the paragraph is in the buffer");
+        buffer.replace_range(at, at + "Sales".len(), "Takings");
+        for _ in 0..3 {
+            opened_document_from_buffer_with_host(buffer, Path::new("report.docx"), &host)
+                .expect("a package draws from its buffer");
+        }
+    });
+
+    assert!(read_archive_member(&after, "word/document.xml")
+        .expect("the body")
+        .contains("Takings rose in every region"));
+    for part in [
+        "word/styles.xml",
+        "word/numbering.xml",
+        "word/theme/theme1.xml",
+        "word/comments.xml",
+        "word/charts/chart1.xml",
+        "word/_rels/document.xml.rels",
+        CONTENT_TYPES,
+    ] {
+        assert_eq!(
+            member_bytes(&after, part),
+            member_bytes(&before, part),
+            "{part} did not survive a save taken after a render"
+        );
+    }
+}
+
+/// The read a caller already took is the only read there is. Handed a package's bytes, the entry draws them for a path with no file behind it at all — which a second read of that path could not survive, so this is what proves the second read is gone rather than restating that it was removed.
+#[test]
+fn a_package_draws_for_a_path_with_no_file_behind_it() {
+    let bytes = sample_docx();
+    let path = scratch_dir("office-unread").join("never-written.docx");
+    assert!(
+        !path.exists(),
+        "the point of the path is that nothing is there"
+    );
+    let (text, member) = crate::office::anchored_member_source(&bytes, &path, DocumentFormat::Docx)
+        .expect("the sample opens");
+    let source = DocumentSource {
+        text,
+        package: Some(PackageBuffer { bytes, member }),
+    };
+
+    let drawn = opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
+        .expect("a package draws from the bytes already in hand");
+    assert!(
+        drawn.html.contains("Sales rose in every region"),
+        "the document should be on the page: {}",
+        drawn.html
+    );
+}
+
+/// A package's identity, read over the whole of it — the shape the app's own gate reads off the tail alone.
+fn identity(bytes: &[u8]) -> Option<u64> {
+    crate::office::package_identity(bytes, 0)
+}
+
+/// What a package's directory says about every member is the answer to whether the file moved: it holds across a second reading and moves whenever any member's bytes do — including a member nothing in the app parses, which a hash of the anchored member's text alone could never see. Asked of the six samples, of the same bytes read off a tail rather than the whole file, and of an archive that defers its sizes to trailing descriptors, since the directory is the one place they are always true.
+#[test]
+fn a_packages_identity_moves_when_a_member_does_and_holds_when_none_do() {
+    for (name, bytes, _) in every_sample() {
+        let before = identity(&bytes).unwrap_or_else(|| panic!("{name} states its own identity"));
+        assert_eq!(
+            Some(before),
+            identity(&bytes),
+            "{name} read its identity two different ways"
+        );
+
+        let path = PathBuf::from(&name);
+        let (source, member) =
+            crate::office::anchored_member_source(&bytes, &path, DocumentFormat::from_path(&path))
+                .expect("the sample opens");
+        let edited =
+            crate::office::archive_with_member(&bytes, &member, &format!("{} ", source.text))
+                .expect("the member is written back");
+        assert_ne!(
+            Some(before),
+            identity(&edited),
+            "{name}'s identity should move when a member's bytes do"
+        );
+
+        // The directory is at the end and its offsets are written from the front, so a reading that starts partway in has to be told where it started.
+        let tail_at = 64.min(bytes.len());
+        assert_eq!(
+            Some(before),
+            crate::office::package_identity(&bytes[tail_at..], tail_at),
+            "{name} should read the same off a tail as off the whole file"
+        );
+        let too_short = bytes.len() - 8;
+        assert_eq!(
+            None,
+            crate::office::package_identity(&bytes[too_short..], too_short),
+            "{name}: a tail with no room for the record answers nothing, so the caller reads more"
+        );
+    }
+
+    let bytes = sample_docx();
+    let styles = read_archive_member(&bytes, "word/styles.xml").expect("the styles");
+    let restyled =
+        crate::office::archive_with_member(&bytes, "word/styles.xml", &format!("{styles} "))
+            .expect("the styles are written back");
+    assert_ne!(
+        identity(&bytes),
+        identity(&restyled),
+        "a member the reader never opens still moves the file"
+    );
+
+    let deferred = archive_with_data_descriptor("word/document.xml", "<w:document/>");
+    let other = archive_with_data_descriptor("word/document.xml", "<w:document />");
+    assert!(
+        identity(&deferred).is_some(),
+        "a package deferring its sizes still states an identity, because the directory carries them"
+    );
+    assert_ne!(identity(&deferred), identity(&other));
+}
+
 /// Everything the app never parsed comes back byte for byte: the styles, the theme, the comments, the tracked change and the chart. That is the whole bargain of only ever rewriting a range you can prove — a member nothing understood is a member nothing rewrote.
 #[test]
 fn every_part_the_app_never_read_survives_a_save_byte_for_byte() {
@@ -695,7 +895,7 @@ fn make_test_docs() {
 const CONTENT_TYPES: &str = "[Content_Types].xml";
 
 /// A Word document: a title, a heading, a paragraph written as three runs the way Word splits one, a bulleted item, a numbered item and a table.
-fn sample_docx() -> Vec<u8> {
+pub(super) fn sample_docx() -> Vec<u8> {
     let body = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:body>

@@ -127,7 +127,33 @@ pub(crate) fn opened_document_from_office(
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
     let archive = Archive::read(bytes).map_err(|refusal| unreadable(refusal, path))?;
-    let document = read_document(&archive, format).map_err(|refusal| unreadable(refusal, path))?;
+    read_archive(&archive, path, format, host)
+}
+
+/// The document an edit buffer now holds, drawn out of the archive it came from with the buffer's own member answered in place of the packed one.
+///
+/// The buffer is already holding that member's text, so nothing here writes an archive. Packing that text into a whole new file to read it straight back copies every other member's bytes and rewrites every header for a file nothing keeps, and on a large package that copy is the whole of what a reader feels between typing a word and seeing it.
+pub(crate) fn opened_document_from_package_buffer(
+    package: &PackageBuffer,
+    text: &str,
+    path: &Path,
+    host: &dyn LeafHost,
+) -> io::Result<OpenedDocument> {
+    let format = DocumentFormat::from_path(path);
+    let archive = Archive::read(&package.bytes)
+        .map_err(|refusal| unreadable(refusal, path))?
+        .overriding(&package.member, text.as_bytes());
+    read_archive(&archive, path, format, host)
+}
+
+/// Read an archive somebody has already opened as the document its format says it is, and hand it to the one routing table every tree format goes through. Both entries above share this so a render from a file and a render from a buffer cannot draw the same package two ways.
+fn read_archive(
+    archive: &Archive<'_>,
+    path: &Path,
+    format: DocumentFormat,
+    host: &dyn LeafHost,
+) -> io::Result<OpenedDocument> {
+    let document = read_document(archive, format).map_err(|refusal| unreadable(refusal, path))?;
     let title = document.title.clone();
     let anchor_text = document.anchor_text.clone();
     Ok(crate::opened_document_from_tree(
@@ -161,6 +187,13 @@ pub(crate) fn archive_with_member(bytes: &[u8], member: &str, text: &str) -> io:
     archive
         .with_member_replaced(member, text.as_bytes())
         .map_err(|refusal| unreadable(refusal, Path::new(member)))
+}
+
+/// What a package's own directory says about every member, hashed: the whole of the answer to whether the file moved, taken off the end of it rather than by unpacking it.
+///
+/// `tail` is the last bytes of the file and `tail_at` where in the file they begin. `None` where those bytes do not hold the whole directory, which is the caller's cue to read more of the tail — the reading is the caller's because the library reaches for no disk.
+pub(crate) fn package_identity(tail: &[u8], tail_at: usize) -> Option<u64> {
+    zip::package_identity(tail, tail_at)
 }
 
 /// A sheet cell's own element, rewritten to say `text` where it stands.

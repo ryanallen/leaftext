@@ -26,7 +26,8 @@ try {
   const leaf = await startLeaftext({
     documents,
     name: listing.name || '',
-    read: async (path) => (await fetched(`source/${path}`)).text(),
+    // The file's own bytes, not a decode of them: a Word, Excel, PowerPoint or OpenDocument file is a zip, and a page reading one as text draws it as a parse error rather than as the document it is. The glossary read below stays text, because that is a file the host reads for its words rather than one it draws.
+    read: async (path) => new Uint8Array(await (await fetched(`source/${path}`)).arrayBuffer()),
   });
 
   // Where the documents are served from, which is where their pictures are too. This page sits at the top of the site and every document sits under `source/`, so a picture beside a document is only reachable through that folder joined with the document's own — without this the page asks the top of the site for it and gets the broken-picture mark.

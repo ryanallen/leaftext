@@ -24,9 +24,9 @@ const statusEl = document.getElementById('status');
 
 // The renderer. On a page the publish baked the document into it arrives after the words are already readable, so a glossary link pressed in that moment says so rather than throwing.
 let leaf = null;
-const renderDocument = (text, path) => {
+const renderDocument = (body, path) => {
   if (!leaf) throw new Error('the reader has not arrived yet');
-  const drawn = leaf.render(text, path);
+  const drawn = leaf.render(body, path);
   if (!drawn) throw new Error('the renderer refused ' + path);
   return drawn;
 };
@@ -144,13 +144,17 @@ function scrollToHash() {
  * Fetch the document to display: the README beside this page, in whichever
  * format the renderer reads. The list is the app's own one table, so a folder
  * whose landing page is TEI, JSON or YAML serves it here with nothing to add.
- * Returns { text, path }.
+ * Returns { body, path }.
+ *
+ * The file's own bytes, not a decode of them: a README that is a Word file is a
+ * zip, and one written in UTF-16 loses its words the same way. The renderer
+ * decodes it exactly as the window decodes a file off the disk.
  */
 async function fetchDocument() {
   for (const ext of leaf.formats) {
     const path = './README.' + ext;
     const res = await fetchWatched(path, { cache: 'no-cache' });
-    if (res.ok) return { text: await res.text(), path };
+    if (res.ok) return { body: await res.bytes(), path };
   }
   throw new Error('no README this reader can open beside this page');
 }
@@ -217,9 +221,9 @@ async function main() {
     return;
   }
   try {
-    const { text, path } = await fetchDocument();
+    const { body, path } = await fetchDocument();
 
-    const drawn = renderDocument(text, path);
+    const drawn = renderDocument(body, path);
     content.innerHTML = drawn.html;
     decorate();
     // Auto-link glossary terms after the page is displayed.

@@ -49,9 +49,9 @@ let leaf = null;
 // The fallback that puts a picture back on the PNG beside it when the browser cannot decode the WebP. Asked for at boot rather than imported, because the other site running this reader carries no `site/pictures.js`: a static import of a file the origin lacks takes the whole reader down before it draws a word, where an ask that comes back with nothing costs only a decoration. Null until boot() has asked, and null for ever on a site with no copy.
 let installPictureFallback = null;
 
-// The document, drawn by the app's own renderer. One place, so the sheet, the auto-linker and the page itself cannot end up drawing three different documents.
-function renderDocument(text, path) {
-  const drawn = leaf.render(text, path);
+// The document, drawn by the app's own renderer. One place, so the sheet, the auto-linker and the page itself cannot end up drawing three different documents. The body is the file's own bytes where the page has them and a string where it composed the source itself.
+function renderDocument(body, path) {
+  const drawn = leaf.render(body, path);
   if (!drawn) throw new Error('the renderer refused ' + path);
   return drawn;
 }
@@ -496,9 +496,10 @@ async function render(route, anchor) {
     statusEl.hidden = true;
     const res = await fetchWatched(file, { cache: 'no-cache' });
     if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + file);
-    const source = await res.text();
+    // The file's own bytes, not a decode of them. A Word, Excel, PowerPoint or OpenDocument file is a zip, and reading one as text turns it into replacement characters the XML reader then draws as a parse error — a link to a document this viewer says it opens, landing on a page that blames the file.
+    const source = await res.bytes();
 
-    // The path, not just the text: the renderer's one format table is what decides whether this is Markdown, TEI, data or a message, and nothing here chooses.
+    // The path, not just the body: the renderer's one format table is what decides whether this is Markdown, TEI, data or a message, and nothing here chooses.
     const drawn = renderDocument(source, file);
     contentEl.innerHTML = drawn.html;
     // A quoted passage broken by <br> is verse, and the hanging indent that makes a long wrapped prose quote hang would step every line after the first to the right. Each hard-break line gets a span of its own so only a true wrap hangs.

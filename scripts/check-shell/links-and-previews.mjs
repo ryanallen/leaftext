@@ -573,6 +573,68 @@ export function run() {
     }
   });
 
+  // One block cannot be rebuilt to the room there is, and it is the one whose words are a program. A Mermaid fence reaches the card as a `pre.mermaid` holding the diagram's source, and half that source is not half a drawing: mermaid refuses it and the card falls back to the strip it keeps for a drawing it could not make. So it is taken whole or not at all — at the top level, and inside a list item or a quote, where a fence renders as a `pre.mermaid` under the block the cut had to descend into.
+  const previewDiagramSource = ['flowchart TD', ...Array.from({ length: 8 }, (unused, at) => `  N${at}[node ${at} of a diagram written long enough to matter]`), '  Z[the last node of the diagram]'].join('\n');
+  const previewDiagramBlock = `<pre class="mermaid">${previewDiagramSource}</pre>`;
+  const previewDiagramNestedBlock = `<ul id="nested"><li>Item one.${previewDiagramBlock}</li></ul>`;
+  // Whole blocks of prose up to the point where the block that follows no longer fits in what is left, so the cut meets the diagram with room it cannot fill rather than with none at all.
+  const previewDiagramFiller = (ceiling, need) => {
+    const blocks = [];
+    let taken = 0;
+    for (let at = 0; ceiling - taken >= need; at += 1) {
+      const block = `<p id="fill-${at}">${'word '.repeat(12)}${at}</p>`;
+      blocks.push(block);
+      taken += block.length;
+    }
+    return blocks.join('');
+  };
+  const previewDiagramWitnesses = [
+    { name: 'a diagram', block: previewDiagramBlock },
+    { name: 'a diagram inside a list item', block: previewDiagramNestedBlock },
+  ];
+  // Each witness answered into the card, and what the card was handed back.
+  const previewDiagramCut = (ceiling, witness, token) => {
+    const key = `notes/diagram-${token}.md`;
+    const answer = PREVIEW_SECTION_OPENING + previewDiagramFiller(ceiling, witness.block.length) + witness.block + '<p id="after">After.</p></article>';
+    seedPreviewParse(answer);
+    vm.runInContext(`linkHoverTip.hidden = true; pendingPreviewTokens.set(${token}, ${JSON.stringify(key)});`, booted);
+    booted.window.leafLinkPreview(token, answer);
+    const cut = vm.runInContext(`linkPreviewCache.get(${JSON.stringify(key)})`, booted);
+    return { answer, cut };
+  };
+  check('a diagram the opening ran out of room for reaches the card with the source the document wrote', () => {
+    try {
+      const ceiling = vm.runInContext('LINK_PREVIEW_OPENING_BYTES', booted);
+      let token = 60;
+      for (const witness of previewDiagramWitnesses) {
+        const { answer, cut } = previewDiagramCut(ceiling, witness, token);
+        token += 1;
+        if (cut.length >= answer.length) throw new Error(`${witness.name} was never cut at all, so the witness proves nothing`);
+        if (!cut.includes(previewDiagramBlock)) throw new Error(`${witness.name} reached the card as source mermaid refuses: ${cut.slice(-200)}`);
+        if (!cut.endsWith('</article>')) throw new Error(`${witness.name} left the card's own element open`);
+        forgetPreviewParse();
+      }
+    } finally {
+      forgetPreviewParse();
+    }
+  });
+
+  // Taking one block whole does not open the cut: the room it spent is spent, so the loop stops on it exactly as it stops on a block that was shortened.
+  check('the block after a diagram that overran the opening is not in what the card was handed', () => {
+    try {
+      const ceiling = vm.runInContext('LINK_PREVIEW_OPENING_BYTES', booted);
+      let token = 70;
+      for (const witness of previewDiagramWitnesses) {
+        const { cut } = previewDiagramCut(ceiling, witness, token);
+        token += 1;
+        if (cut.includes('id="after"')) throw new Error(`the cut ran on past ${witness.name} that filled the opening`);
+        forgetPreviewParse();
+      }
+    } finally {
+      forgetPreviewParse();
+    }
+  });
+
   // The picture box shrinks a page's note into a thumbnail, because what a reader wants off a link to another page is what that page looks like. A glossary entry is the answer itself, so it is laid out at the card's own width at reading size and the shrink stays 1 — then held to the room the window has, with the cut saying where the rest of it is.
   check('a glossary entry is drawn unshrunk and capped to the window, while a page preview still measures its shrink', () => {
     const preview = vm.runInContext('linkHoverTipPreview', booted);

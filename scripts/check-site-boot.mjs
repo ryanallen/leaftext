@@ -808,7 +808,9 @@ function standInPage(markup, address) {
 
 // ---- the stand-in module ----------------------------------------------------
 //
-// A real `WebAssembly.Memory` with a bump allocator behind it, so the length-prefixed byte protocol in `site/leaftext-core.js` is exercised rather than mocked away. The four arms are the loader's own — `leaf_alloc`, `leaf_free`, `leaf_render`, `leaf_formats` — which is why `check-shell.mjs`'s stand-in module cannot stand in here: it exports the browser host's.
+// A real `WebAssembly.Memory` with a bump allocator behind it, so the length-prefixed byte protocol in `site/leaftext-core.js` is exercised rather than mocked away. The four arms are the loader's own — `leaf_alloc`, `leaf_free`, `leaf_render_bytes`, `leaf_formats` — which is why `check-shell.mjs`'s stand-in module cannot stand in here: it exports the browser host's.
+//
+// **There is no `leaf_render` arm on purpose.** A document arrives as the file's own bytes and the byte arm reads them; a page that still decodes one to text and calls the text arm throws here rather than passing, which is the whole of what a check over which arm the page calls is worth.
 
 /** The waiting strip the renderer draws at the foot of every document, taken off `src/pager.rs` so the stand-in draws what the app draws. */
 function waitingPager() {
@@ -824,6 +826,50 @@ const slug = (text) =>
     .replace(/[^\w\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-');
+
+/** The six formats that are zips rather than text, so their words are inside the file rather than being it. */
+const PACKAGED_FORMATS = new Set(['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp']);
+
+/** What a zip begins with, which is how the app tells a package from a file that merely ends `.docx`. */
+const ARCHIVE_MARK = [0x50, 0x4b, 0x03, 0x04];
+
+/** The byte a zip ends on. A real archive is read from its end first — the record saying what is inside sits there — and that end is a byte no UTF-8 decoder can carry, which is why a decoded package is refused here as it is by the app. */
+const ARCHIVE_END = 0xff;
+
+/**
+ * A package as its bytes, for a check that serves one: the archive mark, the words, and a byte no UTF-8 decoder can read.
+ *
+ * That last byte is the point of it. A page reading this file as text gets a replacement character where the archive ends, so the file stops being an archive at all — which is exactly what the site did to every Word file before the pages handed bytes over, and what makes a check here fail rather than quietly pass.
+ */
+function packagedBytes(source) {
+  const words = new TextEncoder().encode(source);
+  const bytes = new Uint8Array(ARCHIVE_MARK.length + words.length + 1);
+  bytes.set(ARCHIVE_MARK, 0);
+  bytes.set(words, ARCHIVE_MARK.length);
+  bytes[bytes.length - 1] = ARCHIVE_END;
+  return bytes;
+}
+
+/** The words a document's bytes hold, or null where those bytes are not a document that format can read. Packaged formats are unpacked; everything else is decoded the way the window decodes a file it read off the disk, byte order mark and all. */
+function sourceFromBytes(bytes, path) {
+  const extension = (path.split('.').pop() || '').toLowerCase();
+  if (PACKAGED_FORMATS.has(extension)) {
+    if (!ARCHIVE_MARK.every((byte, at) => bytes[at] === byte)) return null;
+    if (bytes[bytes.length - 1] !== ARCHIVE_END) return null;
+    return new TextDecoder().decode(bytes.slice(ARCHIVE_MARK.length, bytes.length - 1));
+  }
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder('utf-16le').decode(bytes.slice(2));
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder('utf-16be').decode(bytes.slice(2));
+  if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) return new TextDecoder().decode(bytes.slice(3));
+  return new TextDecoder().decode(bytes);
+}
+
+/** What the XML reader draws over bytes that are not the document their name says: a page titled after the file, holding one line. This is the fault the ticket is about, kept here so a page that goes back to text is read drawing it. */
+function parseErrorDocument(path) {
+  const name = path.split('/').pop() || path;
+  const extension = (path.split('.').pop() || 'md').toLowerCase();
+  return { title: name, html: `<p>XML parse error. unknown token at 1:1</p>\n${waitingPager()}`, format: extension };
+}
 
 /** A document as the module answers it: a title, HTML and the format. Headings and paragraphs, a line beginning with `<` kept as it stands, and the renderer's own waiting strip at the foot. */
 function drawnDocument(source, path) {
@@ -880,9 +926,14 @@ function standInModule() {
     leaf_alloc: (length) => alloc(length),
     // A bump allocator hands nothing back, which is the whole of what a stand-in owes here: the page's job is to call this, and it does.
     leaf_free: () => {},
-    leaf_render: (sourceAt, sourceLength, pathAt, pathLength) => {
+    // The one door every document on both sites comes through. Bytes, never text: the page hands over what the file holds and this is where a package stops being noise.
+    leaf_render_bytes: (bodyAt, bodyLength, pathAt, pathLength) => {
       renders += 1;
-      return answer(JSON.stringify(drawnDocument(borrow(sourceAt, sourceLength), borrow(pathAt, pathLength))));
+      const path = borrow(pathAt, pathLength);
+      const body = new Uint8Array(memory.buffer, bodyAt, bodyLength).slice();
+      const source = sourceFromBytes(body, path);
+      const document = source === null ? parseErrorDocument(path) : drawnDocument(source, path);
+      return answer(JSON.stringify(document));
     },
     leaf_formats: () => answer(appExtensions(root).join(' ')),
   };
@@ -1325,6 +1376,26 @@ const SITE_FILES = {
   '/docs/guide/themes.md': '# Themes\n\nEleven families.',
 };
 
+/** A Word file sitting beside the guide's pages: a package, so its words are inside the file rather than being it. */
+const REPORT = ['# Quarterly report', 'What the quarter did.'].join('\n\n');
+
+/** The same guide, plus a package and a page written in UTF-16 — the two shapes a document arrives in that a decode to text loses. */
+const PACKAGED_FILES = {
+  ...SITE_FILES,
+  '/docs/report.docx': packagedBytes(REPORT),
+  '/docs/marked.md': utf16Bytes('# Marked\n\nWritten with a byte order mark on the front.'),
+};
+
+/** A document written the way an editor on Windows still writes one: UTF-16, little-endian, with the mark that says so. Read as UTF-8 it is a heading nobody can see. */
+function utf16Bytes(source) {
+  const bytes = new Uint8Array(2 + source.length * 2);
+  bytes[0] = 0xff;
+  bytes[1] = 0xfe;
+  const view = new DataView(bytes.buffer);
+  for (let at = 0; at < source.length; at += 1) view.setUint16(2 + at * 2, source.charCodeAt(at), true);
+  return bytes;
+}
+
 /** Wait for the page to settle, or give up — a reader boots through several awaited fetches, and there is nothing to read until they land. */
 async function settled(done, said) {
   for (let tries = 0; tries < 600; tries += 1) {
@@ -1546,6 +1617,53 @@ const docsPage = await check('the docs reader boots', async () => {
   want(fetch.asked().includes('/docs/'), 'the nav never asked for a directory listing, so it went straight to the API');
   want(fetch.asked().includes('/README.md'), "the site's own README was never read, so the repo behind the fallback is unknown");
   return page;
+});
+
+/** One address served the way `res.text()` used to leave it: the bytes decoded to a string and encoded again. A package loses its words here and a byte order mark takes the heading with it, which is exactly what both sites did to every document before the pages handed bytes over. */
+function decodedOn(path) {
+  return (base, address) => {
+    const fetch = async (url, options) => {
+      const response = await base(url, options);
+      if (new URL(String(url), address).pathname !== path) return response;
+      return {
+        ...response,
+        arrayBuffer: async () => {
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          return new TextEncoder().encode(new TextDecoder().decode(bytes)).buffer;
+        },
+      };
+    };
+    fetch.asked = base.asked;
+    return fetch;
+  };
+}
+
+await check('the docs reader draws a Word file, and draws the parse error where the page decoded it first', async () => {
+  const drawn = await bootReader('docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/#/report.docx', PACKAGED_FILES);
+  const words = drawn.document.getElementById('content');
+  await settled(() => words.childNodes.length > 0, 'the docs reader never drew the Word file it routed to');
+  want(words.textContent.includes('What the quarter did'), `the Word file drew as ${JSON.stringify(words.textContent.slice(0, 120))}, not its own words`);
+  want(!words.textContent.includes('parse error'), 'the Word file drew as a parse error, so the page handed the module a decode of it rather than its bytes');
+  want(drawn.document.title.startsWith('Quarterly report'), `the browser tab reads ${JSON.stringify(drawn.document.title)}, not the document's own title`);
+
+  // The same file, one decode earlier: this is what the reader met before the pages handed bytes over, and it is a page blaming the file rather than saying the site cannot read it.
+  const lost = await bootReader('docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/#/report.docx', PACKAGED_FILES, { wrap: decodedOn('/docs/report.docx') });
+  const ruined = lost.document.getElementById('content');
+  await settled(() => ruined.childNodes.length > 0, 'the decoded Word file drew nothing at all, where the fault is that it draws something wrong');
+  want(ruined.textContent.includes('parse error'), 'a Word file decoded to text drew as a document rather than as the parse error the XML reader gives it, so this check would pass over the fault it exists to hold');
+});
+
+await check('a plain document and one written with a byte order mark both draw through that same call', async () => {
+  const plain = await bootReader('docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/#/01-introduction', PACKAGED_FILES);
+  const words = plain.document.getElementById('content');
+  await settled(() => words.childNodes.length > 0, 'the docs reader never drew a plain Markdown page');
+  want(words.textContent.includes('What the app is for'), `the Markdown page drew as ${JSON.stringify(words.textContent.slice(0, 120))}`);
+
+  const marked = await bootReader('docs/docs.js', 'docs/index.html', 'https://leaf.test/docs/#/marked.md', PACKAGED_FILES);
+  const heading = marked.document.getElementById('content');
+  await settled(() => heading.childNodes.length > 0, 'the docs reader never drew the byte-order-marked page');
+  want(marked.document.title.startsWith('Marked'), `a document written in UTF-16 drew under the tab title ${JSON.stringify(marked.document.title)}, so its mark reached the renderer as words`);
+  want(heading.textContent.includes('byte order mark on the front'), 'the byte-order-marked page lost its words, which is a document nobody thought was broken breaking here');
 });
 
 await check('both published readers give a flowchart group title its natural width and spacing', async () => {

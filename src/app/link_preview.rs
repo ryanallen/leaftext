@@ -26,12 +26,12 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     });
     cached.or_else(|| {
         let source = read_for_preview(&path, meta.len())?;
-        // A package is drawn from the file rather than from that source: what the read answers for one is a single member, and the document is the whole archive. The card walks no folder, so it is drawn by a host that promises no Previous/Next strip.
+        // The card walks no folder, so it is drawn by a host that promises no Previous/Next strip.
         let host = DesktopHost {
             no_pager_placeholder: true,
             ..DesktopHost::default()
         };
-        let html = opened_document_for_path_with_host(&path, &source.text, &host)
+        let html = opened_document_for_path_with_host(&path, &source, &host)
             .ok()?
             .html;
         LINK_PREVIEW_CACHE.with(|cache| {
@@ -47,11 +47,13 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
     })
 }
 
-/// How much of a file its own renderer needs. Exhaustive on `DocumentFormat` on purpose: a new format answers for itself here rather than silently inheriting Markdown's opening.
-fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
+/// How much of a file its own renderer needs, and — for a package — the archive that read produced, so the card is drawn without opening the file twice. Exhaustive on `DocumentFormat` on purpose: a new format answers for itself here rather than silently inheriting Markdown's opening.
+fn read_for_preview(path: &Path, size: u64) -> Option<DocumentSource> {
     match DocumentFormat::from_path(path) {
         // Prose reads back as prose wherever it is cut, so the opening is a smaller document.
-        DocumentFormat::Markdown => read_source_head(path, LINK_PREVIEW_HEAD_BYTES).ok(),
+        DocumentFormat::Markdown => read_source_head(path, LINK_PREVIEW_HEAD_BYTES)
+            .ok()
+            .map(DocumentSource::from),
         DocumentFormat::Xml
         | DocumentFormat::Json
         | DocumentFormat::Yaml
@@ -67,7 +69,7 @@ fn read_for_preview(path: &Path, size: u64) -> Option<SourceText> {
         | DocumentFormat::Ods
         | DocumentFormat::Odp
         | DocumentFormat::Code => (size <= LINK_PREVIEW_WHOLE_FILE_BYTES)
-            .then(|| read_document_source(path).ok())
+            .then(|| read_document_for_editing(path).ok())
             .flatten(),
     }
 }

@@ -154,10 +154,17 @@ impl Reader {
         }
     }
 
-    /// The document for `path`: the tab's cached render when the file still hashes the same, a fresh render (cached on the tab) when not. The read is cheap; the render is what the cache saves.
+    /// The document for `path`: the tab's cached render where the file still answers the same, a fresh render (cached on the tab) where it does not. The render is what the cache saves, and the one read here is what the render is drawn from — a package's archive travels with its text, so nothing reads the file again to unpack it.
+    ///
+    /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all.
     fn document_for(&mut self, index: usize, path: &Path) -> io::Result<OpenedDocument> {
-        let source = read_document_source(path)?;
-        let hash = content_hash(&source.text);
+        let (hash, read_already) = match render_hash(path, None) {
+            Some(hash) => (hash, None),
+            None => {
+                let source = read_document_for_editing(path)?;
+                (content_hash(&source.text.text), Some(source))
+            }
+        };
         if let Some(cache) = self
             .workspace
             .tabs
@@ -167,8 +174,11 @@ impl Reader {
         {
             return Ok(cache.document.clone());
         }
-        let document =
-            opened_document_for_path_with_host(path, &source.text, &DesktopHost::default())?;
+        let source = match read_already {
+            Some(source) => source,
+            None => read_document_for_editing(path)?,
+        };
+        let document = opened_document_for_path_with_host(path, &source, &DesktopHost::default())?;
         if let Some(tab) = self.workspace.tabs.get_mut(index) {
             tab.rendered = Some(RenderedCache {
                 path: path.to_path_buf(),

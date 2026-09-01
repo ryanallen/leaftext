@@ -317,7 +317,81 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
     );
 }
 
-/// A tab with a clean buffer for `path` holding `text`.
+/// The smallest legal package: a zip of one stored member, written here by hand.
+///
+/// Hand-written because the library's own archive builders sit inside the library's suite and a test of the binary cannot reach them, and because what this stands up is a file the gate reads the end of rather than a document anything draws — a member's name, its checksum and its sizes in the directory is the whole of what the gate looks at.
+fn one_member_package(name: &str, contents: &[u8]) -> Vec<u8> {
+    let mut crc = flate2::Crc::new();
+    crc.update(contents);
+    let crc = crc.sum();
+    let sizes = |out: &mut Vec<u8>| {
+        out.extend_from_slice(&crc.to_le_bytes());
+        out.extend_from_slice(&(contents.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(contents.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(name.len() as u16).to_le_bytes());
+    };
+
+    let mut out: Vec<u8> = Vec::new();
+    out.extend_from_slice(&0x0403_4b50u32.to_le_bytes());
+    out.extend_from_slice(&[20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    sizes(&mut out);
+    out.extend_from_slice(&0u16.to_le_bytes());
+    out.extend_from_slice(name.as_bytes());
+    out.extend_from_slice(contents);
+
+    let directory_at = out.len();
+    out.extend_from_slice(&0x0201_4b50u32.to_le_bytes());
+    out.extend_from_slice(&[20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    sizes(&mut out);
+    out.extend_from_slice(&[0; 10]);
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(name.as_bytes());
+
+    let directory_size = out.len() - directory_at;
+    out.extend_from_slice(&0x0605_4b50u32.to_le_bytes());
+    out.extend_from_slice(&[0, 0, 0, 0, 1, 0, 1, 0]);
+    out.extend_from_slice(&(directory_size as u32).to_le_bytes());
+    out.extend_from_slice(&(directory_at as u32).to_le_bytes());
+    out.extend_from_slice(&0u16.to_le_bytes());
+    out
+}
+
+/// A package is gated on what its own directory says about every member, so a tab switched back to a file nobody has touched answers out of its cache without the package being unpacked — and the same tab re-renders the moment any member's bytes move underneath it. Both sides of the gate ask one function, which is what stops a cache written on one key being read on another.
+#[test]
+fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
+    let path = scratch_dir("tabs-package").join("report.docx");
+    std::fs::write(
+        &path,
+        one_member_package("word/document.xml", b"<w:document/>"),
+    )
+    .expect("the package is written");
+    let hash = render_hash(&path, None).expect("a package states its own identity");
+    let tab = Tab {
+        rendered: Some(RenderedCache {
+            path: path.clone(),
+            hash,
+            document: opened_document_from_source_with_host("", &path, &DesktopHost::default()),
+        }),
+        ..Tab::default()
+    };
+
+    assert!(
+        page_shows_file(&tab, &path, ""),
+        "nothing moved, so the tab's own render still answers for the file"
+    );
+
+    std::fs::write(
+        &path,
+        one_member_package("word/document.xml", b"<w:document />"),
+    )
+    .expect("the package is written again");
+    assert!(
+        !page_shows_file(&tab, &path, ""),
+        "a member's bytes moved, so the render on the tab is out"
+    );
+}
+
+/// A tab with a clean buffer for `path` holding `text`./// A tab with a clean buffer for `path` holding `text`.
 fn tab_with_buffer(path: &Path, text: &str) -> Tab {
     Tab {
         edit: Some(EditableDocument::new(

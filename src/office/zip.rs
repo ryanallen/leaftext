@@ -11,7 +11,9 @@
 use flate2::read::DeflateDecoder;
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
+use std::collections::hash_map::DefaultHasher;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 
 const END_OF_CENTRAL_DIRECTORY: u32 = 0x0605_4b50;
@@ -68,6 +70,8 @@ struct Member {
 pub(crate) struct Archive<'a> {
     bytes: &'a [u8],
     members: Vec<Member>,
+    /// One member's contents as a caller already holds them, answered in place of inflating that member out of `bytes`.
+    overridden: Option<(&'a str, &'a [u8])>,
 }
 
 impl<'a> Archive<'a> {
@@ -104,7 +108,19 @@ impl<'a> Archive<'a> {
             }
             at += 46 + name_length + extra_length + comment_length;
         }
-        Ok(Self { bytes, members })
+        Ok(Self {
+            bytes,
+            members,
+            overridden: None,
+        })
+    }
+
+    /// The same archive, answering `name` with `contents` rather than with what is packed in it.
+    ///
+    /// A render from an edit buffer already holds the member's text, so the archive it needs is the one on disk with that one member swapped — and building that archive to read it straight back is a copy of every other member for nothing. The override is what makes the six readers, which all reach the anchor through `member_text`, draw the buffer without knowing there was one.
+    pub(crate) fn overriding(mut self, name: &'a str, contents: &'a [u8]) -> Self {
+        self.overridden = Some((name, contents));
+        self
     }
 
     /// Every member's name, in directory order.
@@ -116,7 +132,11 @@ impl<'a> Archive<'a> {
     /// One member's bytes, inflated where it was deflated. `None` where the archive holds no such member, which is how a reader says a document is missing the part it is named for.
     pub(crate) fn member(&self, name: &str) -> Option<Result<Vec<u8>, ArchiveError>> {
         let member = self.members.iter().find(|member| member.name == name)?;
-        Some(self.read_member(member))
+        // The archive is still asked whether it holds the member, so a reader looking for a part that is not there is refused the same way with an override as without one.
+        match self.overridden {
+            Some((overridden, contents)) if overridden == name => Some(Ok(contents.to_vec())),
+            _ => Some(self.read_member(member)),
+        }
     }
 
     /// One member as text. Every part of an Office or OpenDocument package this app reads is UTF-8 XML, so anything else is refused rather than guessed at.
@@ -289,6 +309,32 @@ pub(crate) fn write_archive(members: &[WritingMember]) -> Vec<u8> {
     out.extend_from_slice(&(directory_at as u32).to_le_bytes());
     out.extend_from_slice(&0u16.to_le_bytes());
     out
+}
+
+/// A package's identity, read out of the end of it: every member's name, checksum and both sizes, hashed together. No member data is touched and nothing is inflated, so this answers whether a file moved for the cost of the directory alone.
+///
+/// `tail` is the last bytes of the file and `tail_at` is where in the file those bytes begin, because a zip's directory offsets are written from the front. `None` where the tail does not hold the whole record and directory — which tells a caller reading the end of a file to read more of it — and where what is there is not a zip at all.
+pub(crate) fn package_identity(tail: &[u8], tail_at: usize) -> Option<u64> {
+    let end = end_record_at(tail)?;
+    let count = u16_at(tail, end + 10).ok()? as usize;
+    let mut at = (u32_at(tail, end + 16).ok()? as usize).checked_sub(tail_at)?;
+    let mut hasher = DefaultHasher::new();
+    count.hash(&mut hasher);
+    for _ in 0..count {
+        if u32_at(tail, at).ok()? != CENTRAL_FILE_HEADER {
+            return None;
+        }
+        let name_length = u16_at(tail, at + 28).ok()? as usize;
+        let extra_length = u16_at(tail, at + 30).ok()? as usize;
+        let comment_length = u16_at(tail, at + 32).ok()? as usize;
+        // The name, the checksum and both sizes: what the directory says about a member, which no edit to that member can leave standing.
+        slice(tail, at + 46, name_length).ok()?.hash(&mut hasher);
+        for field in [16, 20, 24] {
+            u32_at(tail, at + field).ok()?.hash(&mut hasher);
+        }
+        at += 46 + name_length + extra_length + comment_length;
+    }
+    Some(hasher.finish())
 }
 
 /// Where the end-of-directory record starts, found by walking back from the end. A zip is read backwards because its directory is written last, and the record may sit up to a comment's length above the final byte.

@@ -521,7 +521,7 @@ function requestLinkPreview(key, token) {
 // The last answer the host sent, parsed once — one file's render is parsed once however many of its sections are rested on, and it is only read from, so holding it between rests is safe.
 let linkPreviewParsedHtml = null;
 let linkPreviewParsedRoot = null;
-// How much of the answer the card is given. The box shows 176 pixels and throws the rest away, so a whole file put into it is laid out entire to draw a strip: on a 400-row table document the answer was 148 KB and 35ms of layout, and cutting it here takes that to 68 KB. The cut is on whole top-level blocks so the card can never draw half a table or an unclosed element, and a block with no room left for it is rebuilt below rather than taken whole — one four-hundred-row table is bigger than the whole opening it was cut to.
+// How much of the answer the card is given. The box shows 176 pixels and throws the rest away, so a whole file put into it is laid out entire to draw a strip: on a 400-row table document the answer was 148 KB and 35ms of layout, and cutting it here takes that to 68 KB. The cut is on whole top-level blocks so the card can never draw half a table or an unclosed element, and a block with no room left for it is rebuilt below rather than taken whole — one four-hundred-row table is bigger than the whole opening it was cut to. The one exception is a block whose words are a program, which is taken whole or not at all.
 const LINK_PREVIEW_OPENING_BYTES = 4096;
 function linkPreviewOpeningHtml(blocks) {
   let taken = '';
@@ -529,7 +529,7 @@ function linkPreviewOpeningHtml(blocks) {
     const room = LINK_PREVIEW_OPENING_BYTES - taken.length;
     if (room <= 0) break;
     const whole = block.outerHTML;
-    if (whole.length <= room) {
+    if (whole.length <= room || isLinkPreviewProgramBlock(block)) {
       taken += whole;
       continue;
     }
@@ -537,6 +537,10 @@ function linkPreviewOpeningHtml(blocks) {
     break;
   }
   return taken;
+}
+// A block whose one run of words is a program rather than prose. Half a diagram's source is not half a diagram: it is source mermaid refuses, and the card falls back to the strip it keeps for a drawing it could not make. So it is taken whole and the room goes negative, which stops the loop where a shortened block already stops it.
+function isLinkPreviewProgramBlock(node) {
+  return !!node && node.nodeType === 1 && node.tagName === 'PRE' && !!node.classList && node.classList.contains('mermaid');
 }
 // The block that does not fit, rebuilt at the size the opening has room for. A clone takes complete children while they fit, descends into the first one that does not, and shortens a run of words only once its ancestors are cloned — so a table keeps its head and its early rows, and a code block keeps the element its one long run of words sits in. Every cloned ancestor is closed on the way out, which is why what comes back is still markup the card can draw, and why the room is what the opening may hold rather than an exact count of the result: those closing tags are what makes it valid.
 function linkPreviewShortenedHtml(block, room) {
@@ -555,7 +559,7 @@ function fillLinkPreviewOpening(source, target, room) {
     }
     if (node.nodeType !== 1) continue;
     const whole = node.outerHTML;
-    if (whole.length <= room) {
+    if (whole.length <= room || isLinkPreviewProgramBlock(node)) {
       target.appendChild(node.cloneNode(true));
       room -= whole.length;
       continue;

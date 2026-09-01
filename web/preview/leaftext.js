@@ -16,13 +16,13 @@ async function load(url) {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  // Every string crosses as bytes the page owns until it hands them back.
-  const write = (text) => {
-    const bytes = encoder.encode(text);
+  // Everything crosses as bytes the page owns until it hands them back.
+  const put = (bytes) => {
     const at = api.leaf_alloc(bytes.length);
     new Uint8Array(api.memory.buffer).set(bytes, at);
     return [at, bytes.length];
   };
+  const write = (text) => put(encoder.encode(text));
   const read = (answer) => {
     if (!answer) return null;
     const length = new DataView(api.memory.buffer).getUint32(answer, true);
@@ -32,11 +32,12 @@ async function load(url) {
   };
 
   return {
+    // Bytes or a string, both through the one byte entry: a package has no string form, and a string encodes on the way in — so this page cannot draw a document one way while the window draws it another.
     render(source, path) {
-      const [text, textLen] = write(source);
+      const [body, bodyLen] = typeof source === 'string' ? write(source) : put(source);
       const [name, nameLen] = write(path);
-      const answer = read(api.leaf_render(text, textLen, name, nameLen));
-      api.leaf_free(text, textLen);
+      const answer = read(api.leaf_render_bytes(body, bodyLen, name, nameLen));
+      api.leaf_free(body, bodyLen);
       api.leaf_free(name, nameLen);
       return answer ? JSON.parse(answer) : null;
     },
@@ -57,7 +58,7 @@ export async function createLeaftext() {
   return {
     formats: core.formats(),
     styles: core.styles(),
-    /** The document, drawn. Colors arrive on a second pass rather than holding up the first. */
+    /** The document, drawn, off the file's own bytes. Colors arrive on a second pass rather than holding up the first. */
     async render(source, path, onRecolor) {
       const first = core.render(source, path);
       if (!first) return null;

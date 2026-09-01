@@ -270,6 +270,45 @@ pub(crate) fn content_hash(contents: &str) -> u64 {
     hasher.finish()
 }
 
+/// How much of a package's end is read to ask whether it moved. A zip's end record is 22 bytes plus a comment nobody writes, and the directory in front of it runs about fifty bytes a member, so this holds a package of some six hundred parts — more than any of the real Office files this was built against.
+const PACKAGE_TAIL_BYTES: u64 = 32 * 1024;
+
+/// A package's identity, read off the directory at the end of the file: what it says about every member's bytes, without inflating one of them.
+///
+/// The tail is read and grown until the directory is wholly inside it, ending at the whole file. `None` for a format that is not a package, and for a package whose end could not be read as one — either way the caller falls back to hashing the text it drew.
+fn package_identity(path: &Path) -> Option<u64> {
+    use std::io::{Read, Seek};
+    if !matches!(
+        DocumentFormat::from_path(path).source_shape(),
+        leaftext::SourceShape::Bytes
+    ) {
+        return None;
+    }
+    let mut file = fs::File::open(path).ok()?;
+    let length = file.metadata().ok()?.len();
+    let mut window = PACKAGE_TAIL_BYTES;
+    loop {
+        let at = length.saturating_sub(window);
+        file.seek(std::io::SeekFrom::Start(at)).ok()?;
+        let mut tail = Vec::new();
+        file.read_to_end(&mut tail).ok()?;
+        if let Some(identity) = leaftext::package_identity(&tail, at as usize) {
+            return Some(identity);
+        }
+        if at == 0 {
+            return None;
+        }
+        window = window.saturating_mul(4);
+    }
+}
+
+/// What a render of `path` is keyed on: a package by the identity written in its own directory, every other format by the text it was drawn from.
+///
+/// One function, because the side writing a cache entry and the side asking whether the page is still current have to key on the same thing or the reader is left looking at a document the file no longer holds. `contents` is read only for a format that is its own text, so a gate standing in front of a read hands over `None` and still gets an answer for a package.
+pub(crate) fn render_hash(path: &Path, contents: Option<&str>) -> Option<u64> {
+    package_identity(path).or_else(|| contents.map(content_hash))
+}
+
 /// Whether an event has nothing to act on because the buffer already holds exactly what is on disk.
 ///
 /// `active_hash` is cleared whenever the active document changes, so the first event after an open never matches it — and the whole folder is watched, so one usually arrives about something else. Ungated, that rebuilds the whole view for a file nobody touched. A dirty buffer never claims to match, so an outside change over unsaved edits is still reconciled.
@@ -286,9 +325,9 @@ pub(crate) fn page_shows_file(tab: &Tab, path: &Path, contents: &str) -> bool {
     if let Some(edit) = tab.edit.as_ref().filter(|_| tab.has_edit_for(path)) {
         return edit.is_dirty() || edit.text() == contents;
     }
-    tab.rendered
-        .as_ref()
-        .is_some_and(|cache| cache.answers_for(path, content_hash(contents)))
+    tab.rendered.as_ref().is_some_and(|cache| {
+        render_hash(path, Some(contents)).is_some_and(|hash| cache.answers_for(path, hash))
+    })
 }
 
 /// Bring the view back in step with the disk before an answer carrying offsets read off the page is handed over.
@@ -347,7 +386,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         return;
     }
 
-    let source = match read_document_source(&path) {
+    let source = match read_document_for_editing(&path) {
         Ok(source) => source,
         // May be mid-save or briefly absent during an atomic rename; a later event delivers the settled contents.
         Err(error) => {
@@ -355,7 +394,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
             return;
         }
     };
-    let contents = source.text.clone();
+    let contents = source.text.text.clone();
 
     let hash = content_hash(&contents);
     if file_watch.active_hash == Some(hash) {
@@ -384,7 +423,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         .and_then(|tab| tab.edit.as_mut())
         .filter(|_| buffer_is_current)
     {
-        edit.adopt_external(source.clone());
+        edit.adopt_external(source.text.clone());
         if in_code_view {
             let text = edit.text().to_string();
             let source_definition = leaftext::source_definition(&edit.path);
@@ -411,14 +450,14 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     }
 
     // Render through the same path as an initial open, reusing the content already read for the hash-gate.
-    let document =
-        match opened_document_for_path_with_host(&path, &contents, &DesktopHost::default()) {
-            Ok(document) => document,
-            Err(error) => {
-                eprintln!("Live reload: failed to read {}: {error}", path.display());
-                return;
-            }
-        };
+    let document = match opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
+    {
+        Ok(document) => document,
+        Err(error) => {
+            eprintln!("Live reload: failed to read {}: {error}", path.display());
+            return;
+        }
+    };
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
         // Cache it, so switching away and back doesn't redo this render.

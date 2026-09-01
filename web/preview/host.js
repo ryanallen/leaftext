@@ -15,12 +15,12 @@ async function load(url) {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  const write = (text) => {
-    const bytes = encoder.encode(text);
+  const put = (bytes) => {
     const at = api.leaf_alloc(bytes.length);
     new Uint8Array(api.memory.buffer).set(bytes, at);
     return [at, bytes.length];
   };
+  const write = (text) => put(encoder.encode(text));
   const read = (answer) => {
     if (!answer) return null;
     const length = new DataView(api.memory.buffer).getUint32(answer, true);
@@ -40,7 +40,13 @@ async function load(url) {
     script: () => read(api.leaf_script()),
     boot: () => read(api.leaf_boot_script()),
     styles: () => read(api.leaf_styles()),
-    documentScript: (source, path) => withStrings(api.leaf_document_script, source, path),
+    // A document arrives as the file's own bytes, because a Word, Excel, PowerPoint or OpenDocument file is a zip and has no string form to hand across. A text format comes this way too and is decoded exactly as the window decodes a file off the disk.
+    documentScript: (body, path) => {
+      const written = [put(body), write(path)];
+      const answer = read(api.leaf_document_script_bytes(...written.flat()));
+      for (const [at, length] of written) api.leaf_free(at, length);
+      return answer;
+    },
     glossaryScript: (href) => withStrings(api.leaf_glossary_script, href || ''),
     setGlossary: (text) => {
       const [at, length] = write(text || '');

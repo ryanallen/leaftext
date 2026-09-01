@@ -795,6 +795,61 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
     }
 }
 
+/// The line a browser sends its page when a document opens, over the document's **bytes** — which is the only shape a packaged format has, because a Word, Excel, PowerPoint or OpenDocument file is a zip. What the exported site calls is `leaf_document_script_bytes`; this is the pair of calls that entry is: the document read off bytes, and the workspace line drawn around it.
+///
+/// Both halves matter. A package has to arrive with its own heading rather than as the parse error the XML reader gives zip noise, and a text file has to arrive saying exactly what it says when it is handed over as text — otherwise every ordinary document on an exported site would change the day this call did.
+#[test]
+fn the_browsers_document_line_draws_a_word_file_and_leaves_a_text_file_alone() {
+    let word = super::office::sample_docx();
+    let path = web_core_fixture_path("report.docx");
+    let drawn = opened_document_from_bytes_with_host(&word, &path, &BareHost)
+        .expect("a Word file's bytes are a document a browser can draw");
+    assert_eq!(drawn.title, "Quarterly report");
+    assert!(
+        drawn.html.contains("Sales rose in every region"),
+        "the Word file drew without its own words: {}",
+        drawn.html
+    );
+    assert!(
+        !drawn.html.contains("parse error"),
+        "the Word file drew as the parse error the XML reader gives zip noise, which is what a page reading it as text got"
+    );
+
+    let line = workspace_state_script(
+        &[],
+        &Favorites::default(),
+        &[TabSummary {
+            title: tab_title_from_path(&path),
+            path: path.display().to_string(),
+            dirty: false,
+            undoable: false,
+            redoable: false,
+            untitled: false,
+        }],
+        Some(0),
+        Some(&drawn),
+    );
+    assert!(
+        line.contains("Quarterly report"),
+        "the line the page is sent carries no heading from the document it opened"
+    );
+
+    // A text file, both ways round: bytes and text have to draw the same document, or moving the exported site onto bytes would quietly redraw every page on it.
+    let plain = web_core_fixture_path("plain.txt");
+    let from_bytes =
+        opened_document_from_bytes_with_host(TEXT_FIXTURE.as_bytes(), &plain, &BareHost)
+            .expect("a text file's bytes are a document too");
+    let from_text = opened_document_from_source_with_host(TEXT_FIXTURE, &plain, &BareHost);
+    assert_eq!(from_bytes.html, from_text.html);
+    assert_eq!(from_bytes.title, from_text.title);
+
+    // Bytes no format can read are refused rather than drawn as something. A page that gets nothing back says the site cannot read the file; a page handed a document says the file is broken.
+    assert!(
+        opened_document_from_bytes_with_host(b"not a zip at all", &path, &BareHost).is_err(),
+        "a .docx that is not an archive was drawn as a document rather than refused"
+    );
+}
+
 /// A published site and the window draw a text file the same way: one preformatted block holding the file as typed. The block is the only thing on the page, so a browser drawing it differently would be drawing a different document rather than the same one missing a decoration.
 #[test]
 fn a_browser_draws_a_text_file_as_the_same_block_the_window_does() {

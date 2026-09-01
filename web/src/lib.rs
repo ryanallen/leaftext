@@ -240,7 +240,12 @@ pub unsafe extern "C" fn leaf_document_script(
     };
     let path = borrow_str(path_ptr, path_len).unwrap_or("document.md");
     let document = opened_document_from_source_with_host(source, Path::new(path), &PageHost);
-    // The whole workspace, not just the document: the tab strip and the floating toolbar are drawn off the tabs, so a document sent without them arrives in a window with no chrome around it. Handed over as text it has no buffer behind it, so there is nothing unsaved and nothing to take back.
+    into_length_prefixed(workspace_script_for(&document, path).into_bytes())
+}
+
+/// The whole workspace around one document, not just the document: the tab strip and the floating toolbar are drawn off the tabs, so a document sent without them arrives in a window with no chrome around it. Handed over this way it has no buffer behind it, so there is nothing unsaved and nothing to take back.
+#[cfg(feature = "shell")]
+fn workspace_script_for(document: &leaftext::OpenedDocument, path: &str) -> String {
     let tabs = vec![leaftext::TabSummary {
         title: leaftext::tab_title_from_path(Path::new(path)),
         path: path.to_string(),
@@ -250,16 +255,39 @@ pub unsafe extern "C" fn leaf_document_script(
         // A browser's document arrives under a name of its own, so Save never opens a window over it.
         untitled: false,
     }];
-    into_length_prefixed(
-        leaftext::workspace_state_script(
-            &[],
-            &leaftext::Favorites::default(),
-            &tabs,
-            Some(0),
-            Some(&document),
-        )
-        .into_bytes(),
+    leaftext::workspace_state_script(
+        &[],
+        &leaftext::Favorites::default(),
+        &tabs,
+        Some(0),
+        Some(document),
     )
+}
+
+/// The same document line over a document's own **bytes**, which is the only way a packaged format can arrive: a Word, Excel, PowerPoint or OpenDocument file is a zip, so there is no string to hand across. A text format arrives here too and is decoded exactly as the desktop decodes a file it read off the disk.
+///
+/// A null pointer back means the bytes are not a document that format can read. The page that gets one says so rather than drawing a document titled after the file whose body is a parse error, which is what reading a package as text gave a reader.
+///
+/// # Safety
+/// Both pointers must address that many initialized bytes.
+#[cfg(feature = "shell")]
+#[no_mangle]
+pub unsafe extern "C" fn leaf_document_script_bytes(
+    bytes_ptr: *const u8,
+    bytes_len: usize,
+    path_ptr: *const u8,
+    path_len: usize,
+) -> *mut u8 {
+    let Some(bytes) = borrow_bytes(bytes_ptr, bytes_len) else {
+        return std::ptr::null_mut();
+    };
+    let path = borrow_str(path_ptr, path_len).unwrap_or("document.md");
+    let Ok(document) =
+        leaftext::opened_document_from_bytes_with_host(bytes, Path::new(path), &PageHost)
+    else {
+        return std::ptr::null_mut();
+    };
+    into_length_prefixed(workspace_script_for(&document, path).into_bytes())
 }
 
 /// The glossary itself, rendered, for the sheet a `glossary:` link raises. The page asks the host for it; on the desktop the host reads the file, and here it renders the text it was handed.

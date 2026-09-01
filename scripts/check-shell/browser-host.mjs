@@ -43,7 +43,8 @@ export function run() {
       if (next > memory.buffer.byteLength) throw new Error('the stand-in module ran out of memory');
       return at;
     };
-    const take = (pointer, length) => decoder.decode(new Uint8Array(memory.buffer, pointer, length));
+    const takeBytes = (pointer, length) => new Uint8Array(memory.buffer, pointer, length).slice();
+    const take = (pointer, length) => decoder.decode(takeBytes(pointer, length));
     const give = (text) => {
       const bytes = encoder.encode(text);
       const at = alloc(4 + bytes.length);
@@ -64,9 +65,11 @@ export function run() {
         leaf_set_image_base: (pointer, length) => {
           asked.push({ call: 'setImageBase', base: take(pointer, length) });
         },
-        leaf_document_script: (sourcePointer, sourceLength, pathPointer, pathLength) => {
+        // Bytes, and no text arm beside it on purpose: a document reaches the module as the file's own bytes, because a Word, Excel, PowerPoint or OpenDocument file is a zip and a decode of one is not the document. A host that went back to handing a string across finds no arm here.
+        leaf_document_script_bytes: (bodyPointer, bodyLength, pathPointer, pathLength) => {
           const path = take(pathPointer, pathLength);
-          asked.push({ call: 'documentScript', path, source: take(sourcePointer, sourceLength) });
+          const bytes = takeBytes(bodyPointer, bodyLength);
+          asked.push({ call: 'documentScript', path, bytes, source: decoder.decode(bytes) });
           return give(`window.leafSetState(${JSON.stringify(standInState(path))});`);
         },
         leaf_glossary_script: (pointer, length) => {
@@ -82,7 +85,7 @@ export function run() {
   const SERVED_DOCUMENTS = [{ path: 'README.md' }, { path: 'notes/one.md' }, { path: 'notes/two.md' }];
 
   /** The host, in a page that has what the published one has. The export writes the pending-command stub, not the host, so it is installed here exactly as the export writes it — a check without it is not testing the page a reader is served. */
-  async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = '', kept = {} } = {}) {
+  async function bootWebHost({ pending = [], documents = SERVED_DOCUMENTS, name = '', kept = {}, read = null } = {}) {
     const module_ = standInModule();
     const extras = {
       // The published page's own queue: the front end sends its first commands before any module script can have run, and the host drains them.
@@ -131,7 +134,7 @@ export function run() {
     const leaf = await context.__startLeaftext({
       documents,
       name,
-      read: async (path) => `# ${path}\n\nWords.\n`,
+      read: read || (async (path) => new TextEncoder().encode(`# ${path}\n\nWords.\n`)),
     });
     return {
       context,
@@ -144,6 +147,22 @@ export function run() {
       send: (message) => context.window.ipc.postMessage(JSON.stringify(message)),
     };
   }
+
+  checkSettled('the browser host hands a document across as the file it read, byte for byte', async () => {
+    // A package: an archive mark, some words, and a byte no UTF-8 decoder can carry. An exported site reading this as text would hand the module replacement characters where that byte sits, and the reader would meet a parse error under the file's own name.
+    const word = new Uint8Array([0x50, 0x4b, 0x03, 0x04, ...new TextEncoder().encode('Quarterly report'), 0xff]);
+    const { leaf, asked } = await bootWebHost({
+      documents: [{ path: 'README.md' }, { path: 'report.docx' }],
+      read: async () => word,
+    });
+    await leaf.openDocument('report.docx');
+
+    const opened = asked.find((one) => one.call === 'documentScript' && one.path === 'report.docx');
+    if (!opened) throw new Error('opening a Word file never reached the module');
+    if (opened.bytes.length !== word.length || opened.bytes.some((byte, at) => byte !== word[at])) {
+      throw new Error(`the module was handed ${opened.bytes.length} bytes that are not the ${word.length} the host read, so something decoded the file on the way`);
+    }
+  });
 
   checkSettled('the browser host opens a document, fills the pane and fills the strip', async () => {
     const { leaf, seen, asked } = await bootWebHost();
@@ -233,7 +252,11 @@ export function run() {
   const servedFiles = (documents) => async (url) => {
     if (url.endsWith('.wasm')) return { ok: true, arrayBuffer: async () => new ArrayBuffer(8), url };
     if (url === 'documents.json') return { ok: true, json: async () => ({ name: 'site', documents }), url };
-    if (url.startsWith('source/')) return { ok: true, text: async () => `# ${url}\n\nWords.\n`, url };
+    // A document is served as bytes, the way a static host serves one and the way the boot reads it: the six packaged formats are zips, so text is not a shape they have.
+    if (url.startsWith('source/')) {
+      const bytes = new TextEncoder().encode(`# ${url}\n\nWords.\n`);
+      return { ok: true, text: async () => new TextDecoder().decode(bytes), arrayBuffer: async () => bytes.buffer, url };
+    }
     return { ok: false, status: 404, url };
   };
 

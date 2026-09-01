@@ -190,7 +190,8 @@ async function open(path, anchor) {
   frame.innerHTML = '<p id="status">Rendering…</p>';
   markOpen(path);
   try {
-    const source = await (await fetch(`/source/${path}`)).text();
+    // The file's own bytes: a Word, Excel, PowerPoint or OpenDocument file is a zip, and a decode of one is replacement characters the XML reader draws as a parse error.
+    const source = new Uint8Array(await (await fetch(`/source/${path}`)).arrayBuffer());
     const started = performance.now();
     const rendered = await leaftext.render(source, path, (colored) => {
       // The second module landed: same document, now with colored code.

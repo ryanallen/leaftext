@@ -581,18 +581,16 @@ impl From<SourceText> for DocumentSource {
 
 /// The document an edit buffer now holds, drawn from the buffer rather than from the file — which is what the reading view shows while there are unsaved edits.
 ///
-/// A package is drawn from its own archive with the anchored member replaced by what the buffer holds, so an edit is on screen before it is saved the way an edit to a note is. Reading the file instead would draw the last save, and a reader who typed a word would watch nothing happen.
+/// A package is drawn out of its own archive with the anchored member answered from what the buffer holds, so an edit is on screen before it is saved the way an edit to a note is. Reading the file instead would draw the last save, and a reader who typed a word would watch nothing happen.
 pub fn opened_document_from_buffer_with_host(
     edit: &EditableDocument,
     path: &Path,
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
     match edit.package() {
-        Some(package) => opened_document_from_bytes_with_host(
-            &office::archive_with_member(&package.bytes, &package.member, edit.text())?,
-            path,
-            host,
-        ),
+        Some(package) => {
+            office::opened_document_from_package_buffer(package, edit.text(), path, host)
+        }
         None => Ok(opened_document_from_source_with_host(
             edit.text(),
             path,
@@ -620,16 +618,30 @@ pub fn save_editable_document(host: &dyn LeafHost, edit: &EditableDocument) -> i
     }
 }
 
-/// The document at `path`, for a caller that has already read its source for a hash gate of its own: the text it read where the format arrives as text, and the file's own bytes where it does not. One call rather than a shape test at every render site.
+/// The document at `path`, for a caller that has already read it for a hash gate of its own: the text it read, and — where the format is a package — the archive bytes that same read produced. One call rather than a shape test at every render site, and no second read of a file already in hand.
 pub fn opened_document_for_path_with_host(
     path: &Path,
-    source: &str,
+    source: &DocumentSource,
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
-    match DocumentFormat::from_path(path).source_shape() {
-        SourceShape::Text => Ok(opened_document_from_source_with_host(source, path, host)),
-        SourceShape::Bytes => opened_document_from_bytes_with_host(&fs::read(path)?, path, host),
+    match &source.package {
+        Some(package) => office::opened_document_from_office(
+            &package.bytes,
+            path,
+            DocumentFormat::from_path(path),
+            host,
+        ),
+        None => Ok(opened_document_from_source_with_host(
+            &source.text.text,
+            path,
+            host,
+        )),
     }
+}
+
+/// What a package's own directory says about every member, hashed — whether the file moved, answered off the end of it rather than by unpacking it. `tail` is the last bytes of the file, `tail_at` where in the file they begin; `None` says read more of the tail.
+pub fn package_identity(tail: &[u8], tail_at: usize) -> Option<u64> {
+    office::package_identity(tail, tail_at)
 }
 
 /// Render source already in hand, picking the renderer by the path's format: the counterpart to [`load_document`] for live reload's hash-gated bytes and the code view's unsaved edits. The one routing table, because a second one drifts.
