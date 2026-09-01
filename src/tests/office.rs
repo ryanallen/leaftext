@@ -535,7 +535,7 @@ fn editing_a_shared_string_cell_leaves_the_cell_beside_it_alone() {
     );
 }
 
-/// A second cell typed in the same session is rewritten like the first. The rewrite answers whether it wrote, never whether the dirty flag moved — a buffer already dirty from the first edit never moves it again, so reading that answer told the caller nothing had happened and its fallback spliced the words over the cell that had just been written, taking the rest of the row with them.
+/// A second cell typed in the same session is rewritten like the first. The rewrite answers whether it wrote rather than whether the dirty flag moved, which a buffer already dirty never moves again — read the wrong one and the caller's fallback splices over the cell just written, taking the rest of the row with it.
 #[test]
 fn a_second_cell_typed_in_one_session_is_rewritten_like_the_first() {
     let before = sample_xlsx();

@@ -193,7 +193,7 @@ impl EditableDocument {
         let Some(rewritten) = crate::office::sheet_cell_saying(element, text) else {
             return false;
         };
-        // The answer is whether the cell was rewritten, never `splice`'s own — that one reports the dirty flag moving, which a buffer already dirty from an earlier edit never does. Reading it here told the caller nothing had been written, and its fallback spliced the words over the cell this call had just put there.
+        // The answer is whether the cell was rewritten, never `splice`'s own: that one reports the dirty flag moving, which a buffer already dirty from an earlier edit never does — so a caller reading it splices its words over the cell this call just wrote.
         self.splice(start, end, &rewritten, true);
         true
     }
