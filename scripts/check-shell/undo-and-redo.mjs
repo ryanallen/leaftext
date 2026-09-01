@@ -71,12 +71,13 @@ export function run() {
 
     // And the splice. The source is four blocks; a selection from the middle of the first to the middle of the last has to leave one block holding both halves.
     const source = '# Title\n\nFirst paragraph.\n\n```\ncode\n```\n\nLast paragraph.\n';
+    // The plan asks the open document where a delete of the whole run may stop, so the note goes on the page for these five.
+    booted.setDocumentSource(source);
     const at = (text) => source.indexOf(text);
     const half = (markdown) => ({ markdown, text: markdown.length });
     const applied = (plan) => source.slice(0, plan.start) + plan.text + source.slice(plan.end);
 
     const across = crossBlockDeletePlan(
-      source,
       { start: at('First'), marker: '' },
       { end: source.length - 1, marker: '' },
       half('First'),
@@ -90,7 +91,6 @@ export function run() {
 
     // A selection ending inside the fence takes the fence whole rather than half of it: that end survives as nothing.
     const intoFence = crossBlockDeletePlan(
-      source,
       { start: at('First'), marker: '' },
       { end: at('```\ncode\n```') + '```\ncode\n```'.length, marker: '' },
       half('First'),
@@ -102,7 +102,6 @@ export function run() {
 
     // The joined block keeps the kind of the first block that kept any of its own text, so a heading cut part way is still a heading.
     const fromHeading = crossBlockDeletePlan(
-      source,
       { start: 0, marker: '# ' },
       { end: at('First') + 'First paragraph.'.length, marker: '' },
       half('Ti'),
@@ -113,7 +112,6 @@ export function run() {
     }
     // And where the first block went whole, the last one's kind is what is left to keep — a heading's words do not come back as body text.
     const ontoHeading = crossBlockDeletePlan(
-      source,
       { start: at('```'), marker: '' },
       { end: source.length - 1, marker: '## ' },
       half(''),
@@ -125,9 +123,10 @@ export function run() {
 
     // Both ends empty: the whole run goes, and the range eats one blank line the way one emptied block does.
     const fenceEnd = at('```\ncode\n```') + '```\ncode\n```'.length;
-    const whole = crossBlockDeletePlan(source, { start: at('First'), marker: '' }, { end: fenceEnd, marker: '' }, half(''), half(''));
+    const whole = crossBlockDeletePlan({ start: at('First'), marker: '' }, { end: fenceEnd, marker: '' }, half(''), half(''));
     if (applied(whole) !== '# Title\n\nLast paragraph.\n') throw new Error(`the whole run left ${JSON.stringify(applied(whole))}`);
     if (applied(whole).includes('\n\n\n')) throw new Error('the blank lines from both sides were left stacked');
+    booted.setDocumentSource('');
   });
 
   // Ctrl+A widens a step per press with the caret in a block — the block, its section, the page — and the section is what the outline draws as one part of the document. The rule has to be the predictable one: stop at the next heading whatever its size, so pressing twice never takes more than what was on screen.
@@ -586,8 +585,8 @@ export function run() {
       if (written.length && written[written.length - 1].text !== 'A one') {
         throw new Error(`the save wrote ${JSON.stringify(written[written.length - 1].text)}`);
       }
-      if (vm.runInContext('currentDocumentSource', booted) !== '# Title\n\nA one\n') {
-        throw new Error(`the document became ${JSON.stringify(vm.runInContext('currentDocumentSource', booted))}`);
+      if (vm.runInContext('sliceSourceBytes(0, documentSourceLength())', booted) !== '# Title\n\nA one\n') {
+        throw new Error(`the document became ${JSON.stringify(vm.runInContext('sliceSourceBytes(0, documentSourceLength())', booted))}`);
       }
       if (!posted.some((message) => message.command === 'saveDocument')) {
         throw new Error('the save never reached the host');

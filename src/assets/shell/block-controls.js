@@ -75,7 +75,7 @@ function xmlInserts(target) {
 function xmlRowSpecId(el) {
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const source = sliceSourceBytes(currentDocumentSource, start, end);
+  const source = sliceSourceBytes(start, end);
   const record = /^<\s*([A-Za-z_][\w.:-]*)([^>]*)>/.exec(source);
   // A record that closes in its own tag holds only attributes, and an attribute is not a thing this can open a line inside of.
   if (!record || record[2].trimEnd().endsWith('/')) return null;
@@ -92,7 +92,7 @@ function xmlInsertTagName(target) {
 function xmlBlockTagName(el) {
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const match = /^<\s*([A-Za-z_][\w.:-]*)/.exec(sliceSourceBytes(currentDocumentSource, start, end));
+  const match = /^<\s*([A-Za-z_][\w.:-]*)/.exec(sliceSourceBytes(start, end));
   return match ? match[1] : null;
 }
 

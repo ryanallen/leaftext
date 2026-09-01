@@ -7,8 +7,8 @@ fn app_shell_renders_interactive_document_minimap() {
     let html = app_shell_page();
 
     for expected in [
-            "renderDocumentMinimap(state.document.minimap)",
-            "function renderDocumentMinimap(model) {",
+            "renderDocumentMinimap(state.document.has_visible_content)",
+            "function renderDocumentMinimap(hasVisibleContent) {",
             "aria-label=\"Document minimap\"",
             "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "bindDocumentMinimap();",
@@ -97,11 +97,11 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapWindowCoversView(metrics, scrollTop) {",
         "function minimapVisibleDocumentRange(metrics, scrollTop) {",
         "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
-        "const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
-        "preview = buildWindowedMinimapClone(source, first, last);",
-        "function minimapWindowRows(source) {",
-        "function buildWindowedMinimapClone(source, first, last) {",
-        "into.appendChild(rows[i].cloneNode(true));",
+        "const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
+        "preview = buildWindowedMinimapClone(source, window, first, last);",
+        "function minimapWindowRows(source, appTop, scrollTop, top, bottom) {",
+        "function buildWindowedMinimapClone(source, window, first, last) {",
+        "into.appendChild(node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true));",
         // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS variable writes. Re-measuring per wheel click forced a fresh layout of the whole document, which is what made one click take ~2 seconds.
         "function minimapMetricsForScroll(track) {",
         "function invalidateMinimapMetrics() {",
@@ -393,7 +393,7 @@ fn app_shell_rebinds_minimap_after_document_updates() {
     let html = app_shell_page();
 
     for expected in [
-            "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
+            "const minimapHtml = renderDocumentMinimap(state.document.has_visible_content);",
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
             // Rendered hidden, then revealed already decorated: see renderState.
             "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
@@ -480,7 +480,7 @@ fn app_shell_disables_minimap_without_leaving_empty_layout_column() {
 
     for expected in [
             "if (!window.leafMinimap.getEnabled()) {\n    return '';\n  }",
-            "const minimapHtml = renderDocumentMinimap(state.document.minimap);",
+            "const minimapHtml = renderDocumentMinimap(state.document.has_visible_content);",
             "const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';",
             // Rendered hidden, then revealed already decorated: see renderState.
             "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",

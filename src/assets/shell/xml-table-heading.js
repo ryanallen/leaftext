@@ -31,7 +31,7 @@ function xmlHeadingColumnRanges(th) {
 
 // The tag a range opens with, read off the file's own bytes rather than the DOM: what the page drew is the renderer's choice and this is the document's.
 function xmlHeadingTagName(range) {
-  const src = sliceSourceBytes(currentDocumentSource, range.start, range.end);
+  const src = sliceSourceBytes(range.start, range.end);
   const open = /^[ \t]*<([^\s/>!?][^\s/>]*)/.exec(src);
   return open ? open[1] : null;
 }
@@ -40,13 +40,13 @@ function xmlHeadingTagName(range) {
 function xmlColumnRenameEdit(table, ranges, name) {
   const { start, end } = rangeOf(table, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || !ranges.length) return null;
-  const run = sliceSourceBytes(currentDocumentSource, start, end);
+  const run = sliceSourceBytes(start, end);
   const spots = [];
   for (const range of ranges) {
     if (range.start < start || range.end > end) return null;
     // The buffer counts bytes and a string counts characters, so the place in the run is the length of what stands before it rather than the difference of two offsets.
-    const from = sliceSourceBytes(currentDocumentSource, start, range.start).length;
-    const element = sliceSourceBytes(currentDocumentSource, range.start, range.end);
+    const from = sliceSourceBytes(start, range.start).length;
+    const element = sliceSourceBytes(range.start, range.end);
     const open = /^[ \t]*<([^\s/>!?][^\s/>]*)/.exec(element);
     if (!open) return null;
     const closer = new RegExp('</' + open[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*>[ \\t]*$').exec(element);

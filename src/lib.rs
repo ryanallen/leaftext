@@ -35,10 +35,7 @@ pub use scripts::*;
 mod pager;
 pub use pager::{document_pager_html, pager_loaded_script, pager_loading_html};
 mod minimap;
-pub use minimap::{
-    build_minimap_model, build_minimap_model_from_html, DocumentMinimap, MinimapLineCategory,
-    MinimapLineStructure, MinimapSpan,
-};
+pub use minimap::{html_has_visible_content, markdown_has_visible_content};
 mod assets;
 pub(crate) use assets::*;
 pub use assets::{
@@ -265,7 +262,8 @@ pub struct OpenedDocument {
     pub title: String,
     pub path: String,
     pub html: String,
-    pub minimap: DocumentMinimap,
+    /// Whether there is anything here to draw the rail beside — the one question the page asks of a document before it lays the minimap column out.
+    pub has_visible_content: bool,
     /// Source format, so the reading view knows how to anchor edits. Markdown blocks carry ranges in `blocks` (positional on the DOM); the tree formats carry `data-src-*` inline in `html`.
     pub format: DocumentFormat,
     /// Top-level block source ranges in document order, for in-viewer editing. Markdown only; the tree formats stamp ranges inline on the HTML.
@@ -723,7 +721,7 @@ fn opened_document_from_code(source: &str, path: &Path, host: &dyn LeafHost) -> 
         title: title.to_string(),
         path: path.display().to_string(),
         html: article,
-        minimap: build_minimap_model_from_html(&body_html),
+        has_visible_content: html_has_visible_content(&body_html),
         format: DocumentFormat::Code,
         blocks: Vec::new(),
         tasks: Vec::new(),
@@ -837,8 +835,8 @@ pub(crate) fn opened_document_from_tree(
         None => body_html,
     };
 
-    // Chart the rendered block HTML (there is no Markdown source to line-scan), before wrapping in the <article>/pager shell so the scan sees only content.
-    let minimap = build_minimap_model_from_html(&body_html);
+    // Asked of the rendered block HTML (there is no Markdown source to look at), before wrapping in the <article>/pager shell so the scan sees only content.
+    let has_visible_content = html_has_visible_content(&body_html);
 
     let article = format!(
         r#"{base_href}<article class="document-body">{body_html}{}</article>"#,
@@ -849,7 +847,7 @@ pub(crate) fn opened_document_from_tree(
         title,
         path: path.display().to_string(),
         html: article,
-        minimap,
+        has_visible_content,
         format,
         blocks,
         tasks: Vec::new(),
@@ -886,7 +884,7 @@ pub fn opened_document_from_markdown_with_host(
         title: rendered.title,
         path: path.display().to_string(),
         html,
-        minimap: build_minimap_model(markdown),
+        has_visible_content: markdown_has_visible_content(markdown),
         format: DocumentFormat::Markdown,
         blocks: block_source_map(markdown),
         tasks: task_marker_offsets(markdown),

@@ -148,19 +148,20 @@ export function run() {
   check('byte offsets and line numbers agree in both directions', () => {
     // The reader's place is a byte offset on the Rust side and a line number in the editor; multi-byte characters are where the two disagree.
     const text = 'ascii\ncafé and ünicode\n😀 wide\nlast';
+    const encoded = new TextEncoder().encode(text);
     for (let line = 0; line < 4; line += 1) {
-      const bytes = byteOffsetAtLineIndex(text, line);
+      const bytes = byteOffsetAtLineIndex(encoded, line);
       const back = lineIndexAtByteOffset(text, bytes);
       if (back !== line) {
         throw new Error(`line ${line} -> byte ${bytes} -> line ${back}`);
       }
     }
-    if (byteOffsetAtLineIndex(text, 0) !== 0) throw new Error('line 0 is not byte 0');
+    if (byteOffsetAtLineIndex(encoded, 0) !== 0) throw new Error('line 0 is not byte 0');
     // "café" is five characters but six bytes, so the second line's start must account for the accent.
-    if (byteOffsetAtLineIndex(text, 1) !== 'ascii\n'.length) {
+    if (byteOffsetAtLineIndex(encoded, 1) !== 'ascii\n'.length) {
       throw new Error('the second line does not start after the first');
     }
-    if (byteOffsetAtLineIndex(text, 2) !== Buffer.byteLength('ascii\ncafé and ünicode\n')) {
+    if (byteOffsetAtLineIndex(encoded, 2) !== Buffer.byteLength('ascii\ncafé and ünicode\n')) {
       throw new Error('the third line does not account for multi-byte characters');
     }
   });

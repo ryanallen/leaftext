@@ -46,9 +46,9 @@ export function run() {
     const { blockInsertOptions, documentLineEnding } = booted;
     const read = (expression) => vm.runInContext(expression, booted);
     const wasFormat = read('currentDocumentFormat');
-    const wasSource = read('currentDocumentSource');
+    const wasSource = read('sliceSourceBytes(0, documentSourceLength())');
     try {
-      read("currentDocumentFormat = 'eml'; currentDocumentSource = 'Subject: a\\r\\n\\r\\nOne.\\r\\n';");
+      read("currentDocumentFormat = 'eml'; setDocumentSource('Subject: a\\r\\n\\r\\nOne.\\r\\n');");
       const offered = blockInsertOptions(null);
       if (offered.length !== 1 || offered[0].blank !== 'text') {
         throw new Error(`a message was offered ${JSON.stringify(offered.map((one) => one.id))}`);
@@ -56,7 +56,7 @@ export function run() {
       if (documentLineEnding() !== '\r\n') throw new Error('a message written with \\r\\n was given \\n');
 
       // The same message written the other way keeps that.
-      read("currentDocumentSource = 'Subject: a\\n\\nOne.\\n';");
+      read("setDocumentSource('Subject: a\\n\\nOne.\\n');");
       if (documentLineEnding() !== '\n') throw new Error('a message written with \\n was given \\r\\n');
 
       // A note is unaffected: it gets its whole menu, and its separator was always \n.
@@ -64,7 +64,7 @@ export function run() {
       if (blockInsertOptions(null).length < 5) throw new Error('a note lost entries from its plus');
       if (documentLineEnding() !== '\n') throw new Error('a note stopped being written with \\n');
     } finally {
-      read(`currentDocumentFormat = ${JSON.stringify(wasFormat)}; currentDocumentSource = ${JSON.stringify(wasSource)};`);
+      read(`currentDocumentFormat = ${JSON.stringify(wasFormat)}; setDocumentSource(${JSON.stringify(wasSource)});`);
     }
   });
 
@@ -74,14 +74,14 @@ export function run() {
     const was = {
       format: read('currentDocumentFormat'),
       dialect: read('currentDocumentDialect'),
-      source: read('currentDocumentSource'),
+      source: read('sliceSourceBytes(0, documentSourceLength())'),
       send: booted.ipc.postMessage,
     };
     const sent = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     read(
       `currentDocumentFormat = 'xml'; currentDocumentDialect = ${JSON.stringify(dialect)}; ` +
-        `currentDocumentSource = ${JSON.stringify(source)};`,
+        `setDocumentSource(${JSON.stringify(source)});`,
     );
     let line = null;
     booted.openInsertBlock(insertAt, {
@@ -108,7 +108,7 @@ export function run() {
         read(
           `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
             `currentDocumentDialect = ${JSON.stringify(was.dialect)}; ` +
-            `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+            `setDocumentSource(${JSON.stringify(was.source)}); pendingCaret = null;`,
         );
       },
     };
@@ -261,7 +261,7 @@ export function run() {
 
       // A table whose columns are all attributes has no child element to type into, so it is offered no row rather than one that cannot be filled in.
       const attributes = '<urlset><url loc="https://leaftext.com/"/><url loc="https://leaftext.com/docs/"/></urlset>';
-      vm.runInContext(`currentDocumentSource = ${JSON.stringify(attributes)};`, booted);
+      vm.runInContext(`setDocumentSource(${JSON.stringify(attributes)});`, booted);
       const bare = blockInsertOptions({
         dataset: {
           srcStart: String(attributes.indexOf('<url ')),
@@ -272,7 +272,7 @@ export function run() {
         .map((one) => one.id)
         .join(',');
       if (bare !== 'heading,comment') throw new Error(`a table of attributes was offered ${bare}`);
-      vm.runInContext(`currentDocumentSource = ${JSON.stringify(sitemap)};`, booted);
+      vm.runInContext(`setDocumentSource(${JSON.stringify(sitemap)});`, booted);
 
       // The record's tag and its first column come out of the table's own source, so what lands is another of what is already there.
       row.type('typed');
@@ -311,7 +311,7 @@ export function run() {
     const was = {
       format: read('currentDocumentFormat'),
       dialect: read('currentDocumentDialect'),
-      source: read('currentDocumentSource'),
+      source: read('sliceSourceBytes(0, documentSourceLength())'),
       send: booted.ipc.postMessage,
     };
     const sent = [];
@@ -319,7 +319,7 @@ export function run() {
       booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
       read(
         "currentDocumentFormat = 'xml'; currentDocumentDialect = 'tei'; " +
-          "currentDocumentSource = '<div><head>One</head><p>A line.</p></div>';",
+          "setDocumentSource('<div><head>One</head><p>A line.</p></div>');",
       );
       const after = { dataset: { srcStart: '5', srcEnd: '21' } };
       const comment = blockInsertOptions(after).find((one) => one.id === 'comment');
@@ -338,7 +338,7 @@ export function run() {
       read(
         `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
           `currentDocumentDialect = ${JSON.stringify(was.dialect)}; ` +
-          `currentDocumentSource = ${JSON.stringify(was.source)};`,
+          `setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -347,10 +347,10 @@ export function run() {
   check('a drawn comment opens its own source when it is pressed', () => {
     const { wireSourceEditable } = booted;
     const read = (expression) => vm.runInContext(expression, booted);
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const source = '<div><head>One</head><!-- note --><p>A line.</p></div>';
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       const comment = fakeElement('div');
       comment.dataset = { srcStart: '21', srcEnd: '34', blockKind: 'comment' };
       wireSourceEditable(comment);
@@ -371,7 +371,7 @@ export function run() {
       }
     } finally {
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -382,7 +382,7 @@ export function run() {
     const read = (expression) => vm.runInContext(expression, booted);
     const said = [];
     const wasToast = booted.leafToast;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const source = '<div><p>A <hi>word</hi> here.</p></div>';
     const pressOn = (element) => {
       wireSourceEditable(element);
@@ -392,7 +392,7 @@ export function run() {
     };
     try {
       booted.leafToast = (message) => said.push(message);
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       const paragraph = fakeElement('div');
       paragraph.dataset = { srcStart: '5', srcEnd: '33', blockKind: 'paragraph' };
       pressOn(paragraph);
@@ -400,7 +400,7 @@ export function run() {
       if (paragraph.dataset.editingSource !== 'true') throw new Error('saying why took the editor away');
 
       // A note's own source blocks stay quiet.
-      read(`currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify('```\ncode\n```\n')};`);
+      read(`currentDocumentFormat = 'markdown'; setDocumentSource(${JSON.stringify('```\ncode\n```\n')});`);
       const fence = fakeElement('div');
       fence.dataset = { srcStart: '0', srcEnd: '12', blockKind: 'code_block' };
       pressOn(fence);
@@ -408,7 +408,7 @@ export function run() {
     } finally {
       booted.leafToast = wasToast;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -430,13 +430,13 @@ export function run() {
     const read = (expression) => vm.runInContext(expression, booted);
     const was = {
       format: read('currentDocumentFormat'),
-      source: read('currentDocumentSource'),
+      source: read('sliceSourceBytes(0, documentSourceLength())'),
       send: booted.ipc.postMessage,
     };
     const sent = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     read(
-      `currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify(source)}; pendingCaret = null;`,
+      `currentDocumentFormat = 'markdown'; setDocumentSource(${JSON.stringify(source)}); pendingCaret = null;`,
     );
     let host = null;
     const place = (node) => {
@@ -476,7 +476,7 @@ export function run() {
         booted.ipc.postMessage = was.send;
         read(
           `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
-            `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+            `setDocumentSource(${JSON.stringify(was.source)}); pendingCaret = null;`,
         );
       },
     };
@@ -664,13 +664,13 @@ export function run() {
     const read = (expression) => vm.runInContext(expression, booted);
     const was = {
       format: read('currentDocumentFormat'),
-      source: read('currentDocumentSource'),
+      source: read('sliceSourceBytes(0, documentSourceLength())'),
       send: booted.ipc.postMessage,
     };
     const sent = [];
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     read(
-      `currentDocumentFormat = 'markdown'; currentDocumentSource = ${JSON.stringify(source)}; pendingCaret = null;`,
+      `currentDocumentFormat = 'markdown'; setDocumentSource(${JSON.stringify(source)}); pendingCaret = null;`,
     );
     const holder = fakeElement('documentBody');
     const block = (start, end) => {
@@ -688,7 +688,7 @@ export function run() {
       booted.ipc.postMessage = was.send;
       read(
         `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
-          `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+          `setDocumentSource(${JSON.stringify(was.source)}); pendingCaret = null;`,
       );
     }
   }
@@ -1357,7 +1357,7 @@ export function run() {
     const read = (expression) => vm.runInContext(expression, booted);
     const was = {
       format: read('currentDocumentFormat'),
-      source: read('currentDocumentSource'),
+      source: read('sliceSourceBytes(0, documentSourceLength())'),
       send: booted.ipc.postMessage,
     };
     let sent = [];
@@ -1385,7 +1385,7 @@ export function run() {
     const wrote = () => sent.filter((one) => one.command === 'editBlock');
     try {
       booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
-      read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; pendingCaret = null;");
+      read("currentDocumentFormat = 'markdown'; setDocumentSource(''); pendingCaret = null;");
 
       const both = openStart();
       write(both.title, 'A name');
@@ -1426,7 +1426,7 @@ export function run() {
       booted.ipc.postMessage = was.send;
       read(
         `currentDocumentFormat = ${JSON.stringify(was.format)}; ` +
-          `currentDocumentSource = ${JSON.stringify(was.source)}; pendingCaret = null;`,
+          `setDocumentSource(${JSON.stringify(was.source)}); pendingCaret = null;`,
       );
     }
   });

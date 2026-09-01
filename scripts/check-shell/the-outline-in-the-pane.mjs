@@ -341,7 +341,7 @@ export function run() {
         title: 'one',
         path,
         html: '<div class="document-body"><h1>Title</h1><p>An opening line.</p><h2 id="one">One</h2><p>First.</p></div>',
-        minimap: { lines: [], headings: [] },
+        has_visible_content: true,
         format: 'Markdown',
         blocks: [],
         tasks: [],
@@ -360,7 +360,8 @@ export function run() {
       { id: 2, kind: 'heading', start: 27, end: 33, editable: true },
       { id: 3, kind: 'paragraph', start: 35, end: 41, editable: true },
     ];
-    page.context.attachMarkdownBlockRanges(body, blocks, src);
+    page.context.setDocumentSource(src);
+    page.context.attachMarkdownBlockRanges(body, blocks);
     const sliced = body.children.map((child) => {
       const range = page.context.rangeOf(child, 'block');
       return src.slice(range.start, range.end);

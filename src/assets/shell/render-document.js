@@ -621,7 +621,7 @@ function renderState() {
     const arriving = renderedPath !== lastRenderedDocumentPath;
     lastRenderedDocumentPath = renderedPath;
     app.className = 'reader-shell has-document';
-    const minimapHtml = renderDocumentMinimap(state.document.minimap);
+    const minimapHtml = renderDocumentMinimap(state.document.has_visible_content);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
     // Carry the scroll origin onto the fresh body — losing it shifts the layout by the origin and the anchor restore lands off by exactly that.
     const previousBody = app.querySelector('.document-body');

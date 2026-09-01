@@ -459,7 +459,7 @@ fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
     for expected in [
         r#"data-line="${escapeAttr(String(line))}""#,
         "pendingSearchJump = anchor || line ? { path, anchor, line } : null;",
-        "scrollReadingToSrcOffset(byteOffsetAtLineIndex(currentDocumentSource, jump.line - 1));",
+        "scrollReadingToSrcOffset(byteOffsetAtLineIndex(documentSourceBytes(), jump.line - 1));",
         // The heading is still there for a document whose source the page does not hold — only Markdown carries the block ranges the offset needs.
         "if (!landed && jump.anchor && activeDocumentPath() === jump.path) {",
     ] {

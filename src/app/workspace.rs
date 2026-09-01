@@ -18,12 +18,23 @@ pub(crate) struct Tab {
     pub(crate) rendered: Option<RenderedCache>,
 }
 
+/// What a file said about itself, answered without opening it: how long it is and when it was last written.
+///
+/// A hash of a file's text needs the text, so a cache keyed on one is read whole to be told it is current. These two numbers answer the same question off the directory entry, flat in the file's size where a read is not.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct FileRecord {
+    pub(crate) len: u64,
+    pub(crate) modified: std::time::SystemTime,
+}
+
 /// See [`Tab::rendered`].
 #[derive(Debug)]
 pub(crate) struct RenderedCache {
     pub(crate) path: PathBuf,
     /// What `render_hash` answered for the document: a package's own identity, read off the directory at the end of the file, and every other format's source text hashed. Not the source either way for a package — its members are what moved, and its text is one of them.
     pub(crate) hash: u64,
+    /// What the file said about itself before it was read, where that reading could be trusted; `None` where it could not, or where whoever wrote this entry had already read the file and so could not take one safely. An entry with none is a correct entry that costs one read to earn one.
+    pub(crate) record: Option<FileRecord>,
     pub(crate) document: OpenedDocument,
 }
 
@@ -31,6 +42,15 @@ impl RenderedCache {
     /// Whether this entry answers for `path` at `hash`. The path check matters: two files can hold identical text, and a render carries the folder its images resolve against.
     pub(crate) fn answers_for(&self, path: &Path, hash: u64) -> bool {
         self.hash == hash && paths_refer_to_same_document(&self.path, path)
+    }
+
+    /// Whether this entry stands for `path` at `record` — so a caller holding a reading of the file can answer from the render without opening it.
+    ///
+    /// The same document, a record this entry kept, and a record that still matches. Either side missing one says no: an entry that kept none has nothing to compare, and a file that could not be asked is a file to read. The path check is [`Self::answers_for`]'s, for the same reason — two files can hold the same length and the same stamp.
+    pub(crate) fn stands_for(&self, path: &Path, record: Option<FileRecord>) -> bool {
+        self.record.is_some()
+            && self.record == record
+            && paths_refer_to_same_document(&self.path, path)
     }
 }
 

@@ -1518,3 +1518,16 @@ fn the_home_screen_shows_the_running_version() {
     // The number itself comes from the init script, not the markup.
     assert!(initial_version_script().contains(env!("CARGO_PKG_VERSION")));
 }
+
+#[test]
+fn settings_defaults_open_the_pane_on_the_file_list() {
+    let settings = Settings::default();
+    assert!(!settings.speed_reader_enabled);
+    assert_eq!(settings.theme_family, "random");
+    assert_eq!(settings.theme_mode, "daylight");
+    // The pane opens on the file list, at the library root.
+    assert!(settings.library_project_path.is_empty());
+    // The pane is open by default, with the 240px fallback width.
+    assert!(!settings.library_closed);
+    assert_eq!(settings.library_width, 240);
+}

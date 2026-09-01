@@ -25,7 +25,7 @@ export function run() {
     const at = note.indexOf('```mermaid');
     const end = note.indexOf('\n```\n', at) + '\n```'.length;
     const read = (expression) => vm.runInContext(expression, booted);
-    const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
+    const was = { source: read('sliceSourceBytes(0, documentSourceLength())'), send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
     const said = [];
     const block = fakeElement('flowBlockUnderTest');
@@ -33,7 +33,7 @@ export function run() {
     try {
       booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
       booted.leafToast = (message) => said.push(message);
-      read(`currentDocumentSource = ${JSON.stringify(note)};`);
+      read(`setDocumentSource(${JSON.stringify(note)});`);
       booted.openMermaidBlockSheet(block);
       if (read('flowSession && flowSession.text') !== 'flowchart TD\n    A["a"]') {
         throw new Error(`the sheet opened on ${JSON.stringify(read('flowSession && flowSession.text'))}`);
@@ -41,7 +41,7 @@ export function run() {
 
       // A pause in somebody's typing above the diagram: the buffer grows and every block's numbers move, with nothing redrawn — what advanceLiveRanges does as the splice lands.
       const grew = 'A new sentence.\n\n';
-      read(`currentDocumentSource = ${JSON.stringify(note.slice(0, at) + grew + note.slice(at))};`);
+      read(`setDocumentSource(${JSON.stringify(note.slice(0, at) + grew + note.slice(at))});`);
       block.dataset.srcStart = String(at + grew.length);
       block.dataset.srcEnd = String(end + grew.length);
 
@@ -69,7 +69,7 @@ export function run() {
       if (!read('!!flowSession')) throw new Error('the refused Save closed the sheet over the drawing');
     } finally {
       read('flowSession = null;');
-      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      read(`setDocumentSource(${JSON.stringify(was.source)});`);
       booted.ipc.postMessage = was.send;
       booted.leafToast = was.toast;
       booted.__frames.drain();
@@ -82,7 +82,7 @@ export function run() {
     const at = note.indexOf('\`\`\`mermaid');
     const end = note.indexOf('\n\`\`\`\n', at) + '\n\`\`\`'.length;
     const read = (expression) => vm.runInContext(expression, booted);
-    const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
+    const was = { source: read('sliceSourceBytes(0, documentSourceLength())'), send: booted.ipc.postMessage, toast: booted.leafToast };
     const sent = [];
     const said = [];
     const block = fakeElement('flowBlockWaitingOnTheHost');
@@ -90,7 +90,7 @@ export function run() {
     try {
       booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
       booted.leafToast = (message) => said.push(message);
-      read(`currentDocumentSource = ${JSON.stringify(note)};`);
+      read(`setDocumentSource(${JSON.stringify(note)});`);
 
       // A Save the host refuses: the sheet stays up with the drawing in it, and the reason is said where the reader is looking.
       booted.openMermaidBlockSheet(block);
@@ -125,7 +125,7 @@ export function run() {
       if (said.length) throw new Error(`a Save that landed said ${JSON.stringify(said)}`);
     } finally {
       read('flowSession = null;');
-      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      read(`setDocumentSource(${JSON.stringify(was.source)});`);
       booted.ipc.postMessage = was.send;
       booted.leafToast = was.toast;
       booted.__frames.drain();
@@ -218,14 +218,14 @@ export function run() {
   // The other way in: the plus offers a new diagram, and the gutter it was pressed on is rebuilt by every render — so a drawing that comes back after one has no line left to be written onto.
   check('a new diagram writes nothing once the line the plus stood on has gone', () => {
     const read = (expression) => vm.runInContext(expression, booted);
-    const was = { source: read('currentDocumentSource'), toast: booted.leafToast };
+    const was = { source: read('sliceSourceBytes(0, documentSourceLength())'), toast: booted.leafToast };
     const wrote = [];
     const said = [];
     const line = fakeElement('flowPlaceUnderTest');
     line.dataset = { srcStart: '9', srcEnd: '9' };
     try {
       booted.leafToast = (message) => said.push(message);
-      read(`currentDocumentSource = ${JSON.stringify('# Title\n\n\n')};`);
+      read(`setDocumentSource(${JSON.stringify('# Title\n\n\n')});`);
       const standing = (place) => booted.blockInsertPlaceStanding(place);
       if (!standing({ target: line })) throw new Error('a line still on the page was called gone');
       if (!standing({ gap: { after: line, before: null } })) throw new Error('a gap under a standing block was called gone');
@@ -257,7 +257,7 @@ export function run() {
       if (!wrote[0].answered) throw new Error('the new-diagram Save asked the insert row for no answer');
     } finally {
       read('flowSession = null;');
-      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      read(`setDocumentSource(${JSON.stringify(was.source)});`);
       booted.leafToast = was.toast;
       booted.__frames.drain();
     }
@@ -266,7 +266,7 @@ export function run() {
   // The same wait, down the door a new diagram takes: through the insert row. A diagram already in the page survives a sheet that closes on the dispatch — it is still in the file — and a new one exists nowhere else at all, so this door is the one that must hold the drawing until the host answers.
   check('a new diagram from the plus waits for the host and keeps the drawing when nothing was written', () => {
     const read = (expression) => vm.runInContext(expression, booted);
-    const was = { source: read('currentDocumentSource'), send: booted.ipc.postMessage, toast: booted.leafToast };
+    const was = { source: read('sliceSourceBytes(0, documentSourceLength())'), send: booted.ipc.postMessage, toast: booted.leafToast };
     const note = '# Title\n\n\n';
     const sent = [];
     const said = [];
@@ -280,7 +280,7 @@ export function run() {
     try {
       booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
       booted.leafToast = (message) => said.push(message);
-      read(`currentDocumentSource = ${JSON.stringify(note)};`);
+      read(`setDocumentSource(${JSON.stringify(note)});`);
 
       // Drawn on a line the row will take. The write goes out with a token on it, and the sheet stays up: nothing is in the file yet.
       const line = emptyLine();
@@ -329,7 +329,7 @@ export function run() {
       if (!read('!!flowSession')) throw new Error('a Save that wrote nothing closed the sheet over the drawing');
     } finally {
       read('flowSession = null;');
-      read(`currentDocumentSource = ${JSON.stringify(was.source)};`);
+      read(`setDocumentSource(${JSON.stringify(was.source)});`);
       booted.ipc.postMessage = was.send;
       booted.leafToast = was.toast;
       booted.__frames.drain();

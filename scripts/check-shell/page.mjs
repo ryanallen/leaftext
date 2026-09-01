@@ -349,6 +349,10 @@ export function fakeElement(id = '') {
     append(...children) {
       for (const child of children) this.appendChild(typeof child === 'string' ? textNode(child) : child);
     },
+    replaceChildren(...children) {
+      for (const child of [...this.contents]) detachChild(child);
+      for (const child of children) this.appendChild(typeof child === 'string' ? textNode(child) : child);
+    },
     removeChild: (child) => {
       detachChild(child);
       return child;

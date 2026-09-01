@@ -112,7 +112,8 @@ export function run() {
 
     // The range, over the real buffer. Deleting it must leave the neighbors one blank line apart, and never two. The offsets are UTF-8 bytes, so the cut is made on bytes.
     const leaves = (source, start, end, want) => {
-      const span = blockDeleteRange(source, start, end);
+      booted.setDocumentSource(source);
+      const span = blockDeleteRange(start, end);
       const bytes = Buffer.from(source, 'utf8');
       const got = Buffer.concat([bytes.subarray(0, span.start), bytes.subarray(span.end)]).toString('utf8');
       if (got !== want) throw new Error(`${JSON.stringify(source)} minus [${start},${end}) -> ${JSON.stringify(got)}`);
@@ -480,7 +481,7 @@ export function run() {
       if (at(after).start !== 23 || at(after).end !== 32) {
         throw new Error(`the block after it is at [${at(after).start},${at(after).end})`);
       }
-      if (vm.runInContext('currentDocumentSource', booted) !== written) {
+      if (vm.runInContext('sliceSourceBytes(0, documentSourceLength())', booted) !== written) {
         throw new Error('the page kept slicing the document it had before the pause');
       }
       // And what the shifted range names in the shifted source is still that block.
@@ -568,7 +569,7 @@ export function run() {
     booted.wireSourceEditable(fence);
     // A pause in the block above wrote eleven more bytes, and the shift moved this block's stamp with them.
     const grown = '# Title\n\nA paragraph.\n\n```\ncode\n```\n';
-    vm.runInContext(`currentDocumentSource = ${JSON.stringify(grown)};`, booted);
+    vm.runInContext(`setDocumentSource(${JSON.stringify(grown)});`, booted);
     fence.dataset.srcStart = String(grown.indexOf('```'));
     fence.dataset.srcEnd = String(grown.length - 1);
     try {

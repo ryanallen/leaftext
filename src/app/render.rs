@@ -110,6 +110,34 @@ pub(crate) fn take_disk_into_clean_buffer(
     true
 }
 
+// How old a modification time has to be before it can be trusted to tell two versions of a file apart. Not a delay: nothing waits on it, and a record dropped by it costs one read to earn back. A file system stamps as coarsely as it likes — NTFS separates writes about half a millisecond apart, HFS+ to the second, FAT32 to two — so a write landing in the same tick as the reading below carries the stamp that reading saw, and a record kept from it would leave a stale render on screen for ever. Two seconds is FAT32's own resolution, which puts every file system this app ships to on the safe side without this code having to know which one it is on.
+const FILE_RECORD_SETTLE: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// What `path` says about itself, for a caller about to decide whether it needs to read the file — answered off the directory entry in about 17 µs, flat in the file's size where the read it stands in front of is not.
+///
+/// `None` where the file cannot be asked, and where its stamp had not settled: a stamp younger than [`FILE_RECORD_SETTLE`], or one the clock cannot place behind now, which is what a file dated in the future gives.
+///
+/// Take it *before* the file is read, never after. Taken after, the record can describe a write that landed during the read, so a newer stamp is stored beside older content and the gate shows a stale render for ever. Taken before, the same race stores an older stamp beside newer content, the next arrival sees a stamp that does not match and reads — one wasted read rather than a wrong page.
+pub(crate) fn settled_file_record(path: &Path) -> Option<FileRecord> {
+    let meta = fs::metadata(path).ok()?;
+    settled_record(
+        meta.len(),
+        meta.modified().ok()?,
+        std::time::SystemTime::now(),
+    )
+}
+
+/// The settle rule alone, against a clock the caller names, so a test can ask what a file that settled long ago answers without waiting out [`FILE_RECORD_SETTLE`]. See [`settled_file_record`], which is the only caller that reads the real clock.
+pub(crate) fn settled_record(
+    len: u64,
+    modified: std::time::SystemTime,
+    now: std::time::SystemTime,
+) -> Option<FileRecord> {
+    // `duration_since` fails on a stamp ahead of `now`, so a file dated in the future drops its record rather than having its age guessed at.
+    let age = now.duration_since(modified).ok()?;
+    (age >= FILE_RECORD_SETTLE).then_some(FileRecord { len, modified })
+}
+
 /// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, the favorites to mark, and where images resolve from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
@@ -218,8 +246,20 @@ impl Reader {
 
     /// The document for `path`: the tab's cached render where the file still answers the same, a fresh render (cached on the tab) where it does not. The render is what the cache saves, and the one read here is what the render is drawn from — a package's archive travels with its text, so nothing reads the file again to unpack it.
     ///
-    /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all.
+    /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all — which is why the file's own record is asked first.
     fn document_for(&mut self, index: usize, path: &Path) -> io::Result<OpenedDocument> {
+        // Taken at the top, before anything opens the file, so the entry written below stands on a reading of the file as it was when this render was drawn from it. One call serves that entry and the gate that reads it back.
+        let record = settled_file_record(path);
+        // The record decides whether to read; the hash below still decides whether the render answers. Two questions, not one — drop the hash behind this and `page_shows_file` loses the only key it can ask about contents the live reload is already holding.
+        if let Some(cache) = self
+            .workspace
+            .tabs
+            .get(index)
+            .and_then(|tab| tab.rendered.as_ref())
+            .filter(|cache| cache.stands_for(path, record))
+        {
+            return Ok(cache.document.clone());
+        }
         let (hash, read_already) = match render_hash(path, None) {
             Some(hash) => (hash, None),
             None => {
@@ -245,6 +285,7 @@ impl Reader {
             tab.rendered = Some(RenderedCache {
                 path: path.to_path_buf(),
                 hash,
+                record,
                 document: document.clone(),
             });
         }

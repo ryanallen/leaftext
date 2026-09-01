@@ -1,137 +1,18 @@
-//! The minimap model and the markup it renders to.
+//! The one question a document is asked before the rail is drawn beside it.
 
 use super::*;
 
-fn minimap_spans(markdown: &str) -> Vec<(usize, usize, MinimapLineCategory, MinimapLineStructure)> {
-    build_minimap_model(markdown)
-        .spans
-        .into_iter()
-        .map(|span| {
-            (
-                span.start_line,
-                span.line_count,
-                span.category,
-                span.structure,
-            )
-        })
-        .collect()
+#[test]
+fn markdown_with_words_has_content_and_an_empty_source_has_none() {
+    assert!(markdown_has_visible_content("# Title\n\nA paragraph.\n"));
+    // A file holding nothing but a newline still renders a line, so it still gets a rail — the same answer the line count gave.
+    assert!(markdown_has_visible_content("\n"));
+    assert!(!markdown_has_visible_content(""));
 }
 
 #[test]
-fn minimap_model_compresses_headings_paragraphs_and_blank_lines() {
-    let long_line = "A paragraph line that is deliberately long enough to cross the minimap long-line threshold for structure.";
-    let markdown = format!("# Title\n\nShort paragraph.\n{long_line}\nSetext title\n---");
-
-    let model = build_minimap_model(&markdown);
-
-    assert_eq!(model.line_count, 6);
-    assert_eq!(
-        minimap_spans(&markdown),
-        vec![
-            (
-                0,
-                1,
-                MinimapLineCategory::Heading,
-                MinimapLineStructure::Short,
-            ),
-            (
-                1,
-                1,
-                MinimapLineCategory::Blank,
-                MinimapLineStructure::Short,
-            ),
-            (
-                2,
-                1,
-                MinimapLineCategory::Paragraph,
-                MinimapLineStructure::Short,
-            ),
-            (
-                3,
-                1,
-                MinimapLineCategory::Paragraph,
-                MinimapLineStructure::Long,
-            ),
-            (
-                4,
-                2,
-                MinimapLineCategory::Heading,
-                MinimapLineStructure::Short,
-            ),
-        ]
-    );
-}
-
-#[test]
-fn minimap_model_classifies_lists_and_blockquotes() {
-    let markdown = "- first\n- second\n\n1. ordered\n> quote\n> - quoted list\nplain";
-
-    assert_eq!(
-        minimap_spans(markdown),
-        vec![
-            (0, 2, MinimapLineCategory::List, MinimapLineStructure::Short,),
-            (
-                2,
-                1,
-                MinimapLineCategory::Blank,
-                MinimapLineStructure::Short,
-            ),
-            (3, 1, MinimapLineCategory::List, MinimapLineStructure::Short,),
-            (
-                4,
-                2,
-                MinimapLineCategory::Blockquote,
-                MinimapLineStructure::Short,
-            ),
-            (
-                6,
-                1,
-                MinimapLineCategory::Paragraph,
-                MinimapLineStructure::Short,
-            ),
-        ]
-    );
-}
-
-#[test]
-fn minimap_model_keeps_fenced_code_lines_together() {
-    let markdown =
-        "```rs\n# not a heading\n- not a list\n```\n\n~~~\n> not a quote\n~~~\n# Heading";
-
-    assert_eq!(
-        minimap_spans(markdown),
-        vec![
-            (
-                0,
-                4,
-                MinimapLineCategory::CodeFence,
-                MinimapLineStructure::Short,
-            ),
-            (
-                4,
-                1,
-                MinimapLineCategory::Blank,
-                MinimapLineStructure::Short,
-            ),
-            (
-                5,
-                3,
-                MinimapLineCategory::CodeFence,
-                MinimapLineStructure::Short,
-            ),
-            (
-                8,
-                1,
-                MinimapLineCategory::Heading,
-                MinimapLineStructure::Short,
-            ),
-        ]
-    );
-}
-
-#[test]
-fn html_minimap_model_charts_tei_blocks() {
-    // A TEI document renders straight to HTML; the model must come from the rendered blocks, not stay empty — an empty model leaves the rail blank.
+fn a_rendered_tei_body_has_content_from_its_blocks() {
+    // A TEI document renders straight to HTML, so the answer has to come off the rendered blocks; a no leaves the reader with no rail at all.
     let xml = "<TEI><teiHeader><fileDesc><titleStmt><title>A Sutra</title>\
             </titleStmt></fileDesc></teiHeader><text><body>\
             <p>A short opening line.</p>\
@@ -139,207 +20,36 @@ fn html_minimap_model_charts_tei_blocks() {
             <p>A closing paragraph.</p>\
             </body></text></TEI>";
 
-    let model = opened_document_from_xml(xml, Path::new("sutra.xml")).minimap;
+    let document = opened_document_from_xml(xml, Path::new("sutra.xml"));
 
-    assert!(model.line_count > 0, "TEI minimap must not be empty");
-    assert!(
-        !model.spans.is_empty(),
-        "TEI minimap must chart the rendered blocks"
-    );
-    // The rendered title <h1> plus the body blocks all appear as spans.
-    assert!(
-        model
-            .spans
-            .iter()
-            .any(|span| span.category == MinimapLineCategory::Heading),
-        "the TEI title heading should chart as a heading span"
-    );
-    assert!(
-        model
-            .spans
-            .iter()
-            .any(|span| span.category == MinimapLineCategory::Paragraph),
-        "body paragraphs should chart as paragraph spans"
-    );
-    // Spans stay ordered and never run past the reported line_count.
-    let mut previous = 0;
-    for span in &model.spans {
-        assert!(
-            span.start_line >= previous,
-            "spans must be in document order"
-        );
-        assert!(span.start_line + span.line_count <= model.line_count);
-        previous = span.start_line;
-    }
+    assert!(document.has_visible_content);
 }
 
 #[test]
-fn html_minimap_model_sizes_paragraphs_by_length() {
-    let short = build_minimap_model_from_html("<p>Short.</p>");
-    let long_text = "word ".repeat(60); // well past the long-line threshold
-    let long = build_minimap_model_from_html(&format!("<p>{long_text}</p>"));
-
-    assert_eq!(short.spans.len(), 1);
-    assert_eq!(short.spans[0].line_count, 1);
-    assert_eq!(short.spans[0].structure, MinimapLineStructure::Short);
-    assert!(
-        long.spans[0].line_count > 1,
-        "a long paragraph should occupy more than one thumbnail row"
-    );
-    assert_eq!(long.spans[0].structure, MinimapLineStructure::Long);
+fn a_body_whose_only_element_holds_nothing_visible_has_none() {
+    // A document that is one picture has always got no rail: there is no run of words for a bar to stand for.
+    assert!(!html_has_visible_content(r#"<img src="one.png" alt="">"#));
+    assert!(!html_has_visible_content(""));
+    assert!(!html_has_visible_content("<!-- a note nobody reads -->"));
 }
 
 #[test]
-fn minimap_model_compresses_large_documents() {
-    let markdown = (0..1_000)
-        .map(|index| format!("Paragraph line {index}"))
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let model = build_minimap_model(&markdown);
-
-    assert_eq!(model.line_count, 1_000);
-    assert_eq!(model.spans.len(), 1);
-    assert_eq!(model.spans[0].category, MinimapLineCategory::Paragraph);
-    assert_eq!(model.spans[0].line_count, 1_000);
+fn a_body_that_keeps_its_blocks_inside_a_wrapper_has_content() {
+    // The walk this replaced descended into wrappers, and a body whose blocks sit a level or two down is the ordinary case, not the odd one.
+    assert!(html_has_visible_content(
+        r#"<section><div><p>Words.</p></div></section>"#
+    ));
+    assert!(html_has_visible_content(
+        "<article><h2>A heading</h2></article>"
+    ));
+    // An unrecognized wrapper is descended into the same way.
+    assert!(html_has_visible_content(
+        "<table><tbody><tr><td>Cell</td></tr></tbody></table>"
+    ));
 }
 
 #[test]
-fn minimap_model_does_not_render_or_store_malicious_content() {
-    let markdown = r#"# Safe
-
-<script>alert("x")</script>
-<img src=x onerror=alert(1)>
-
-```html
-<script>inside code</script>
-```
-"#;
-
-    let model = build_minimap_model(markdown);
-    let serialized =
-        serde_json::to_string(&model).expect("minimap model serializes for UI handoff");
-
-    assert_eq!(model.line_count, 8);
-    assert_eq!(
-        minimap_spans(markdown),
-        vec![
-            (
-                0,
-                1,
-                MinimapLineCategory::Heading,
-                MinimapLineStructure::Short,
-            ),
-            (
-                1,
-                1,
-                MinimapLineCategory::Blank,
-                MinimapLineStructure::Short,
-            ),
-            (
-                2,
-                2,
-                MinimapLineCategory::Paragraph,
-                MinimapLineStructure::Short,
-            ),
-            (
-                4,
-                1,
-                MinimapLineCategory::Blank,
-                MinimapLineStructure::Short,
-            ),
-            (
-                5,
-                3,
-                MinimapLineCategory::CodeFence,
-                MinimapLineStructure::Short,
-            ),
-        ]
-    );
-    assert!(!serialized.contains("<script"));
-    assert!(!serialized.contains("onerror"));
-    assert_eq!(
-        markdown,
-        r#"# Safe
-
-<script>alert("x")</script>
-<img src=x onerror=alert(1)>
-
-```html
-<script>inside code</script>
-```
-"#
-    );
-}
-
-#[test]
-fn minimap_model_covers_released_categories_without_source_payloads() {
-    let markdown = "# Heading\n\nParagraph line that is deliberately long enough to become a long minimap structure entry.\n- list item\n> quote\n```rs\nfn main() {}\n```\n";
-
-    let model = build_minimap_model(markdown);
-
-    assert_eq!(model.line_count, 8);
-    use MinimapLineCategory::*;
-    for expected in [Heading, Blank, Paragraph, List, Blockquote, CodeFence] {
-        assert!(
-            model.spans.iter().any(|span| span.category == expected),
-            "the model should chart a {expected:?} span"
-        );
-    }
-    for expected in [MinimapLineStructure::Long, MinimapLineStructure::Short] {
-        assert!(
-            model.spans.iter().any(|span| span.structure == expected),
-            "the model should chart a {expected:?} span"
-        );
-    }
-    // The model holds shape, never text. Checked against the spans serialized on their own: `DocumentMinimap` does not carry them in the document payload, but they are still the only place source text could leak to.
-    let held = serde_json::to_string(&model.spans).expect("minimap spans serialize");
-    for forbidden in [
-        "Heading",
-        "Paragraph line",
-        "list item",
-        "> quote",
-        "fn main",
-    ] {
-        assert!(
-            !held.contains(forbidden),
-            "minimap model should not store source text: {forbidden}"
-        );
-    }
-    assert_eq!(
-            markdown,
-            "# Heading\n\nParagraph line that is deliberately long enough to become a long minimap structure entry.\n- list item\n> quote\n```rs\nfn main() {}\n```\n"
-        );
-}
-
-#[test]
-fn minimap_model_keeps_large_documents_compressed_by_runs() {
-    let markdown = (0..20_000)
-        .map(|index| match index % 5 {
-            0 => "# Section".to_string(),
-            1 => String::new(),
-            2 | 3 => "Paragraph line".to_string(),
-            _ => "- list item".to_string(),
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    let model = build_minimap_model(&markdown);
-
-    assert_eq!(model.line_count, 20_000);
-    assert_eq!(model.spans.len(), 16_000);
-    assert!(
-        model.spans.len() < model.line_count,
-        "large documents should render from compressed structural runs"
-    );
-    assert!(model
-        .spans
-        .iter()
-        .any(|span| span.line_count > 1 && span.category == MinimapLineCategory::Paragraph));
-}
-
-#[test]
-fn opened_document_carries_minimap_model_for_webview_state() {
+fn opened_document_hands_the_page_one_flag_and_no_model() {
     let path = scratch_dir("minimap-state").join("document.md");
     fs::write(&path, "# Map\n\nParagraph.\n\n```rs\nfn main() {}\n```")
         .expect("test markdown is written");
@@ -349,36 +59,21 @@ fn opened_document_carries_minimap_model_for_webview_state() {
 
     fs::remove_file(&path).expect("test markdown is removed");
 
-    assert_eq!(document.minimap.line_count, 7);
-    assert!(document
-        .minimap
-        .spans
-        .iter()
-        .any(|span| span.category == MinimapLineCategory::Heading));
-    assert!(document
-        .minimap
-        .spans
-        .iter()
-        .any(|span| span.category == MinimapLineCategory::CodeFence));
-    // The page is told how long the document is and nothing else: it draws the rail from a scaled clone of the real rendering, so the spans would be 5.5 MB of payload (on a 4 MB glossary) that nothing reads. See `DocumentMinimap`.
-    assert_contains(&script, r#""minimap":{"line_count":7}"#);
-    for absent in [r#""spans""#, r#""category""#, r#""start_line""#] {
+    assert!(document.has_visible_content);
+    assert_contains(&script, r#""has_visible_content":true"#);
+    // The page is told whether there is a document here and nothing else: it draws the rail from a scaled clone of the real rendering, so a line-by-line model of the source was a walk of the whole file to answer yes.
+    for absent in [r#""minimap""#, r#""spans""#, r#""line_count""#] {
         assert!(
             !script.contains(absent),
-            "the minimap handoff should not carry {absent}"
+            "the rail's handoff should not carry {absent}"
         );
     }
 }
 
 #[test]
-fn settings_defaults_open_the_pane_on_the_file_list() {
-    let settings = Settings::default();
-    assert!(!settings.speed_reader_enabled);
-    assert_eq!(settings.theme_family, "random");
-    assert_eq!(settings.theme_mode, "daylight");
-    // The pane opens on the file list, at the library root.
-    assert!(settings.library_project_path.is_empty());
-    // The pane is open by default, with the 240px fallback width.
-    assert!(!settings.library_closed);
-    assert_eq!(settings.library_width, 240);
+fn a_source_file_has_content_from_its_own_title() {
+    // The third of the three places a document is built, and the only one whose body the renderer writes rather than a parser: a source file always opens with its file name as a heading.
+    let document = opened_document_from_source("let value = 1;", "main.rs");
+
+    assert!(document.has_visible_content);
 }

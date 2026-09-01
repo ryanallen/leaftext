@@ -107,7 +107,7 @@ function restoreLiftedFootnotes(el, markdown) {
   const { start, end } = rangeOf(el, 'block');
   const body = app.querySelector('.document-body');
   if (!body || !Number.isFinite(start) || !Number.isFinite(end)) return markdown;
-  const bytes = sourceByteEncoder.encode(currentDocumentSource || '');
+  const bytes = documentSourceBytes();
   const lifted = [];
   body.querySelectorAll('.footnote-definition[data-src-start]').forEach((note) => {
     const { start: from, end: to } = rangeOf(note, 'block');
@@ -212,7 +212,7 @@ function blockquoteDomToMarkdown(el) {
 function tableDelimiterRow(el, headCells) {
   const { start, end } = rangeOf(el, 'block');
   if (Number.isFinite(start) && Number.isFinite(end)) {
-    const src = sliceSourceBytes(currentDocumentSource, start, end);
+    const src = sliceSourceBytes(start, end);
     for (const line of src.split('\n').slice(1, 3)) {
       const trimmed = line.trim();
       if (/^\|?[\s:|-]+\|?$/.test(trimmed) && trimmed.includes('-')) {

@@ -523,7 +523,7 @@ function findRewriteBlock(group, replacement) {
   if (!pattern) return null;
   const wanted = new Set(group.ranks);
   let seen = 0;
-  const rewritten = sliceSourceBytes(currentDocumentSource, group.start, group.end).replace(
+  const rewritten = sliceSourceBytes(group.start, group.end).replace(
     pattern,
     (whole) => {
       const rank = seen;
@@ -550,7 +550,7 @@ function replaceInReading(all) {
     leafToast('That match is not in an editable block. Replace it in the source view.');
     return;
   }
-  const total = utf8ByteLength(currentDocumentSource);
+  const total = documentSourceLength();
   let next = '';
   let cursor = 0;
   let refused = 0;
@@ -560,7 +560,7 @@ function replaceInReading(all) {
       refused += group.ranks.length;
       continue;
     }
-    next += sliceSourceBytes(currentDocumentSource, cursor, group.start);
+    next += sliceSourceBytes(cursor, group.start);
     next += rewritten;
     cursor = group.end;
   }
@@ -568,7 +568,7 @@ function replaceInReading(all) {
     leafToast('Formatting splits that match. Replace it in the source view.');
     return;
   }
-  next += sliceSourceBytes(currentDocumentSource, cursor, total);
+  next += sliceSourceBytes(cursor, total);
   // One splice over the whole document, so one undo puts every replacement back.
   sendEditCommand({ command: 'editBlock', start: 0, end: total, text: next });
   if (refused) {

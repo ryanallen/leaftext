@@ -60,7 +60,7 @@ export function run() {
         throw new Error('a proved range did not put the padlock back');
       }
     } finally {
-      read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; currentDocumentBindsAnything = true;");
+      read("currentDocumentFormat = 'markdown'; setDocumentSource(''); currentDocumentBindsAnything = true;");
     }
   });
 
@@ -104,9 +104,9 @@ export function run() {
       tagName: 'P',
       childNodes: [{ nodeType: 3, nodeValue: drawn }],
     });
-    const wasSource = read('currentDocumentSource');
+    const wasSource = read('sliceSourceBytes(0, documentSourceLength())');
     try {
-      read(`currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`setDocumentSource(${JSON.stringify(source)});`);
       // The paragraph, drawn exactly as the file spells it.
       if (!emailBlockTypeableInPlace(block(source.indexOf('One line.'), source.indexOf('One line.') + 9, 'One line.'))) {
         throw new Error('a paragraph drawn as the file spells it did not open for typing');
@@ -133,7 +133,7 @@ export function run() {
           { nodeType: 3, nodeValue: 'And another.' },
         ],
       };
-      read(`currentDocumentSource = ${JSON.stringify(over)};`);
+      read(`setDocumentSource(${JSON.stringify(over)});`);
       if (!emailBlockTypeableInPlace(twoLines)) {
         throw new Error('a paragraph over two lines fell back to the raw editor');
       }
@@ -143,13 +143,13 @@ export function run() {
         throw new Error('a paragraph carrying a character the message has not got opened for typing');
       }
 
-      read(`currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`setDocumentSource(${JSON.stringify(source)});`);
       // A block with no usable range is nobody's to type on.
       if (emailBlockTypeableInPlace({ dataset: {}, childNodes: [] })) {
         throw new Error('a block with no range opened for typing');
       }
     } finally {
-      read(`currentDocumentSource = ${JSON.stringify(wasSource)};`);
+      read(`setDocumentSource(${JSON.stringify(wasSource)});`);
     }
   });
 
@@ -186,7 +186,7 @@ export function run() {
     const posted = [];
     const wasIpc = booted.ipc;
     const wasFormat = read('currentDocumentFormat');
-    const wasSource = read('currentDocumentSource');
+    const wasSource = read('sliceSourceBytes(0, documentSourceLength())');
     try {
       read("currentDocumentFormat = 'xml';");
       booted.window.leafBlocksResynced({ source });
@@ -267,11 +267,11 @@ export function run() {
       cell.textContent = drawn;
       return cell;
     };
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasIpc = booted.ipc;
     const posted = [];
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
 
       const date = cellFor('<lastmod>2026-07-24</lastmod>', '2026-07-24');
@@ -302,7 +302,7 @@ export function run() {
     } finally {
       booted.ipc = wasIpc;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -344,11 +344,11 @@ ${run}
     };
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasIpc = booted.ipc;
     const posted = [];
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
 
@@ -390,7 +390,7 @@ ${run}
       booted.ipc = wasIpc;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -413,11 +413,11 @@ ${run}
     const body = { querySelectorAll: () => [id] };
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasIpc = booted.ipc;
     const posted = [];
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
 
@@ -458,7 +458,7 @@ ${run}
       booted.ipc = wasIpc;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -476,13 +476,13 @@ ${run}
     id.__innerSpan = { start: at, end: at + 'chapter-4'.length };
     id.__valueQuote = '"';
     id.__editBaseline = 'chapter-4';
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasIpc = booted.ipc;
     const wasToast = booted.leafToast;
     const said = [];
     const posted = [];
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
       booted.leafToast = (words) => said.push(words);
 
@@ -502,7 +502,7 @@ ${run}
       booted.ipc = wasIpc;
       booted.leafToast = wasToast;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -529,10 +529,10 @@ ${run}
     };
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasToast = booted.leafToast;
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       booted.leafToast = () => {};
 
@@ -555,7 +555,7 @@ ${run}
       booted.leafToast = wasToast;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -582,9 +582,9 @@ ${run}
     const wasQuery = inApp.querySelector;
     const wasSelection = booted.getSelection;
     const wasRange = booted.document.createRange;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       bindEditableBlocks('xml');
 
@@ -615,7 +615,7 @@ ${run}
       booted.getSelection = wasSelection;
       booted.document.createRange = wasRange;
       inApp.querySelector = wasQuery;
-      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`);
+      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`);
     }
   });
 
@@ -645,10 +645,10 @@ ${run}
     const wasQuery = inApp.querySelector;
     const wasSelection = booted.getSelection;
     const wasRange = booted.document.createRange;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     try {
       if (value.listeners.size) throw new Error('a locked ranged link already answered as an editor');
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       bindEditableBlocks('xml');
       if (!value.__innerSpan || source.slice(value.__innerSpan.start, value.__innerSpan.end) !== 'https://leaftext.com/') {
@@ -694,7 +694,7 @@ ${run}
       booted.getSelection = wasSelection;
       booted.document.createRange = wasRange;
       inApp.querySelector = wasQuery;
-      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`);
+      read(`currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`);
     }
   });
 
@@ -720,11 +720,11 @@ ${run}
     const body = { querySelectorAll: (selector) => nodes.filter((one) => one.matches(selector)) };
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasIpc = booted.ipc;
     const posted = [];
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
 
@@ -751,7 +751,7 @@ ${run}
       booted.ipc = wasIpc;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -819,13 +819,13 @@ ${run}
     const read = (expression) => vm.runInContext(expression, booted);
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const wasToast = booted.leafToast;
     const wasIpc = booted.ipc;
     const said = [];
     const posted = [];
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? built.body : wasQuery(selector));
       booted.leafToast = (words) => said.push(words);
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
@@ -836,7 +836,7 @@ ${run}
       booted.leafToast = wasToast;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   };
@@ -1005,12 +1005,12 @@ ${run}
     const body = { querySelectorAll: () => [plain, mixed] };
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const posted = [];
     const wasIpc = booted.ipc;
     const wasCaret = booted.caretTextOffsetIn;
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       bindEditableBlocks('xml');
       if (!plain.listeners.has('pointerup')) throw new Error('a paragraph of plain words was not opened for typing');
@@ -1049,7 +1049,7 @@ ${run}
       booted.caretTextOffsetIn = wasCaret;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -1069,9 +1069,9 @@ ${run}
     const body = { querySelectorAll: () => [heading] };
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     try {
-      read(`currentDocumentFormat = 'json'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'json'; setDocumentSource(${JSON.stringify(source)});`);
       inApp.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery(selector));
       bindEditableBlocks('json');
 
@@ -1102,7 +1102,7 @@ ${run}
     } finally {
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -1119,7 +1119,7 @@ ${run}
     const wasIpc = booted.ipc;
     const wasCaret = booted.caretTextOffsetIn;
     const wasInsert = booted.openInsertBlockAfter;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const paragraph = fakeElement('paragraph');
     paragraph.dataset = {
       blockKind: 'paragraph',
@@ -1135,7 +1135,7 @@ ${run}
       return posted.filter((message) => message.command === 'editBlock');
     };
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
       booted.openInsertBlockAfter = (el, spec) => asked.push(spec);
 
@@ -1174,7 +1174,7 @@ ${run}
       booted.openInsertBlockAfter = wasInsert;
       vm.runInContext('pendingCaret = null;', booted);
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -1196,9 +1196,9 @@ ${run}
     const wasIpc = booted.ipc;
     const inApp = read('app');
     const wasQuery = inApp.querySelector;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
 
       // The span is the words alone: the marks and the spaces the fold trimmed are outside it.
@@ -1239,7 +1239,7 @@ ${run}
       booted.ipc = wasIpc;
       inApp.querySelector = wasQuery;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });
@@ -1253,7 +1253,7 @@ ${run}
     const posted = [];
     const wasToast = booted.leafToast;
     const wasIpc = booted.ipc;
-    const was = { format: read('currentDocumentFormat'), source: read('currentDocumentSource') };
+    const was = { format: read('currentDocumentFormat'), source: read('sliceSourceBytes(0, documentSourceLength())') };
     const words = fakeElement('words');
     words.classList.add('xml-comment-body');
     words.textContent = 'A note';
@@ -1261,7 +1261,7 @@ ${run}
     words.__innerSpan = { start: source.indexOf('A note'), end: source.indexOf('A note') + 'A note'.length };
     const edits = () => posted.filter((message) => message.command === 'editBlock');
     try {
-      read(`currentDocumentFormat = 'xml'; currentDocumentSource = ${JSON.stringify(source)};`);
+      read(`currentDocumentFormat = 'xml'; setDocumentSource(${JSON.stringify(source)});`);
       booted.leafToast = (message) => said.push(message);
       booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
 
@@ -1284,7 +1284,7 @@ ${run}
       booted.leafToast = wasToast;
       booted.ipc = wasIpc;
       read(
-        `currentDocumentFormat = ${JSON.stringify(was.format)}; currentDocumentSource = ${JSON.stringify(was.source)};`,
+        `currentDocumentFormat = ${JSON.stringify(was.format)}; setDocumentSource(${JSON.stringify(was.source)});`,
       );
     }
   });

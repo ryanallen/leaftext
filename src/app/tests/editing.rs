@@ -14,6 +14,7 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
         rendered: Some(RenderedCache {
             path: path.clone(),
             hash: content_hash(text),
+            record: None,
             document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
         }),
         ..Default::default()

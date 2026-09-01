@@ -19,6 +19,7 @@ var minimapBuiltRange;
 // The rows the built clone was sliced from. A rebuild that would slice the same two cannot change anything, so it keeps the thumbnail and stops asking for another.
 var minimapBuiltFirstRow;
 var minimapBuiltLastRow;
+var minimapBuiltRowPath;
 // Rail geometry, cached for the scroll path: scrolling changes none of it, and re-measuring per wheel click forces a fresh layout of the whole document.
 var minimapScrollMetrics;
 // The last position the column's scroll wrote onto the reader. The two mirror each other, so without it the reader's answering event would carry the column straight back — and a plain flag cannot do the job: a scroll event lands a frame after the write that caused it, by which time the gliding column has moved again and would spend the flag on its own real move. A value is the whole of what has to be recognized.
@@ -48,6 +49,7 @@ function initializeMinimapState() {
   minimapBuiltRange = null;
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
+  minimapBuiltRowPath = '';
   minimapScrollMetrics = null;
   minimapMirroredScrollTop = -1;
   minimapSpacerFrame = 0;
@@ -198,11 +200,11 @@ onSettle({
 function documentMinimapMarkup() {
   return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="lt-spinner document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
-function renderDocumentMinimap(model) {
+function renderDocumentMinimap(hasVisibleContent) {
   if (!window.leafMinimap.getEnabled()) {
     return '';
   }
-  if (!model || !Number.isFinite(model.line_count) || model.line_count <= 0) {
+  if (!hasVisibleContent) {
     return '';
   }
   return documentMinimapMarkup();
@@ -438,6 +440,7 @@ function disconnectMinimapPreviewObservers() {
   minimapBuiltRange = null;
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
+  minimapBuiltRowPath = '';
   invalidateMinimapMetrics();
 }
 // Drop the cached rail geometry. Everything that can change it calls this; the scroll handler, which cannot, is the one path that reads the cache.
@@ -880,13 +883,14 @@ function minimapWindowCoversView(metrics, scrollTop) {
   return view.top >= minimapBuiltRange.top && view.bottom <= minimapBuiltRange.bottom;
 }
 // Would a rebuild clone the same rows out of the same document at the same widths? Then it puts back what is already there, and asking again cannot change the guard's answer.
-function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last) {
+function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, rowPath = '') {
   return minimapBuiltVersion === minimapContentVersion
     && minimapBuiltSourceWidth === metrics.sourceWidth
     && minimapBuiltPreviewWidth === previewWidth
     && minimapBuiltFrameWidth === frameWidth
     && minimapBuiltFirstRow === first
-    && minimapBuiltLastRow === last;
+    && minimapBuiltLastRow === last
+    && minimapBuiltRowPath === rowPath;
 }
 // Document offset of an element's top/bottom edge, on the same basis as metrics.sourceTop (the scroll container's content coordinates).
 function minimapBlockEdges(el, appTop, scrollTop) {
@@ -909,24 +913,59 @@ function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
   }
   return found;
 }
-// The rows a windowed clone slices, in document order: the body's blocks.
-function minimapWindowRows(source) {
-  return Array.from(source.children);
+// Descend through a row taller than the window, keeping the wrappers the slice must wear.
+function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
+  let holder = source;
+  const wrappers = [];
+  const path = [];
+  while (true) {
+    const rows = Array.from(holder.children);
+    let first = minimapFirstBlockPast(rows, appTop, scrollTop, top);
+    let last = Math.min(rows.length - 1, minimapFirstBlockPast(rows, appTop, scrollTop, bottom));
+    const windowHeight = Math.max(0, bottom - top);
+    let deeper = -1;
+    for (let i = first; i <= last && i < rows.length; i += 1) {
+      const edges = minimapBlockEdges(rows[i], appTop, scrollTop);
+      if (rows[i].children.length && edges.bottom - edges.top > windowHeight) {
+        deeper = i;
+        break;
+      }
+    }
+    if (deeper < 0) {
+      return { holder, rows, wrappers, path: path.join('/'), first, last };
+    }
+    path.push(deeper);
+    wrappers.push(rows[deeper]);
+    holder = rows[deeper];
+  }
 }
 // A clone holding rows `first..last` only.
-function buildWindowedMinimapClone(source, first, last) {
+function buildWindowedMinimapClone(source, window, first, last) {
+  const resetPadding = (node) => {
+    node.style.paddingTop = '0';
+    node.style.paddingBottom = '0';
+  };
   const slice = (from, into) => {
-    const rows = from.children;
-    for (let i = first; i <= last && i < rows.length; i += 1) {
-      into.appendChild(rows[i].cloneNode(true));
+    const firstNode = window.rows[first];
+    const lastNode = window.rows[Math.min(last, window.rows.length - 1)];
+    const fromIndex = Array.prototype.indexOf.call(from.childNodes, firstNode);
+    const throughIndex = Array.prototype.indexOf.call(from.childNodes, lastNode);
+    for (let i = fromIndex; i >= 0 && i <= throughIndex; i += 1) {
+      const node = from.childNodes[i];
+      into.appendChild(node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true));
     }
-    // The layer's own top padding belongs at the start of the document, not at the start of a window into the middle of it; the caller's translate places the first row instead.
-    into.style.paddingTop = '0';
-    into.style.paddingBottom = '0';
   };
   // cloneNode(false) keeps the body's own classes and attributes, so every `.document-body x` rule still matches inside the clone.
   const preview = source.cloneNode(false);
-  slice(source, preview);
+  resetPadding(preview);
+  let into = preview;
+  for (const wrapper of window.wrappers) {
+    const clone = wrapper.cloneNode(false);
+    resetPadding(clone);
+    into.appendChild(clone);
+    into = clone;
+  }
+  slice(window.holder, into);
   return preview;
 }
 // Strip the clone: nothing focusable, nothing with a duplicate id, no second copy of every link for a screen reader to find.
@@ -991,23 +1030,21 @@ function updateDocumentMinimapPreview() {
     updateMinimapViewport();
     return;
   }
-  const rows = minimapWindowRows(source);
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
-  const windowsIt = rows.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
+  const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
   const appTop = windowsIt ? app.getBoundingClientRect().top : 0;
+  const slack = view.height * MINIMAP_WINDOW_SLACK;
+  const window = minimapWindowRows(source, appTop, scrollTop, view.top - slack, view.bottom + slack);
+  const rows = window.rows;
   let first = 0;
   let last = rows.length - 1;
   if (windowsIt) {
-    const slack = view.height * MINIMAP_WINDOW_SLACK;
-    first = minimapFirstBlockPast(rows, appTop, scrollTop, view.top - slack);
-    last = Math.min(
-      rows.length - 1,
-      minimapFirstBlockPast(rows, appTop, scrollTop, view.bottom + slack),
-    );
+    first = window.first;
+    last = window.last;
     // Keep the clone already on the page and — unlike the skip above — do not ask for another: a guard that cannot be satisfied would otherwise rebuild every frame.
     if (
       content.querySelector('.document-minimap-preview') &&
-      minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last)
+      minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, window.path)
     ) {
       markMinimapWarming();
       placeMinimapViewport(minimap, metrics, null);
@@ -1031,8 +1068,9 @@ function updateDocumentMinimapPreview() {
     minimapBuiltRange = null;
     minimapBuiltFirstRow = -1;
     minimapBuiltLastRow = -1;
+    minimapBuiltRowPath = '';
   } else {
-    preview = buildWindowedMinimapClone(source, first, last);
+    preview = buildWindowedMinimapClone(source, window, first, last);
     stripMinimapClone(preview);
     preview.style.width = `${metrics.sourceWidth}px`;
     if (first < rows.length) {
@@ -1048,6 +1086,7 @@ function updateDocumentMinimapPreview() {
     };
     minimapBuiltFirstRow = first;
     minimapBuiltLastRow = last;
+    minimapBuiltRowPath = window.path;
   }
   frame.appendChild(preview);
   content.replaceChildren(frame);
@@ -1056,7 +1095,10 @@ function updateDocumentMinimapPreview() {
   }
   // A windowed clone starts mid-document, so its first block's top margin has nothing above it to collapse against and lands off by that margin — enough to shift the thumbnail on every rebuild. Cheaper to measure the miss than to model the collapsing. One read, on the rebuild path, never on scroll.
   if (minimapBuiltRange) {
-    const clonedFirst = preview.firstElementChild;
+    let clonedFirst = preview;
+    for (let depth = 0; depth <= window.wrappers.length && clonedFirst; depth += 1) {
+      clonedFirst = clonedFirst.firstElementChild;
+    }
     if (clonedFirst) {
       const wanted = firstTop * previewScale;
       const landedAt = clonedFirst.getBoundingClientRect().top - content.getBoundingClientRect().top;

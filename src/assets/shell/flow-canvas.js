@@ -1107,7 +1107,7 @@ function flowBlockSpan(block) {
   if (!block || !block.isConnected) return null;
   const { start: blockStart, end: blockEnd } = rangeOf(block, 'block');
   if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) return null;
-  const source = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
+  const source = sliceSourceBytes(blockStart, blockEnd);
   const span = fencedCodeInnerSpan(source);
   if (!span) return null;
   return {

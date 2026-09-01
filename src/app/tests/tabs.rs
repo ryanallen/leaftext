@@ -278,6 +278,7 @@ fn the_render_cache_answers_only_for_the_same_file_unchanged() {
     let cache = RenderedCache {
         path: path.clone(),
         hash,
+        record: None,
         document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     };
 
@@ -309,6 +310,7 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
     workspace.tabs[0].rendered = Some(RenderedCache {
         path: path.clone(),
         hash: content_hash(text),
+        record: None,
         document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     });
     assert!(
@@ -331,6 +333,7 @@ fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
         rendered: Some(RenderedCache {
             path: path.clone(),
             hash,
+            record: None,
             document: opened_document_from_source_with_host("", &path, &DesktopHost::default()),
         }),
         ..Tab::default()
@@ -500,5 +503,126 @@ fn a_clean_package_buffer_is_reconciled_on_its_identity_rather_than_its_words() 
     assert!(
         !package_buffer_must_take_disk(&tab_with_buffer(&note, "- [ ] one\n"), &note),
         "a note carries no archive, so this arm is not its own"
+    );
+}
+
+/// A cache entry is only allowed to say which file state it stands on where that state can tell two versions of the file apart. A file system stamps as coarsely as it likes, so a write landing in the same tick as the reading would be invisible — the record is dropped there, and the next arrival reads the file and earns one.
+#[test]
+fn a_cache_entry_stands_on_a_settled_file_and_on_nothing_else() {
+    let path = scratch_dir("tabs-record").join("note.md");
+    std::fs::write(&path, "# Just written\n").expect("the fixture file is written");
+    let meta = std::fs::metadata(&path).expect("the file answers");
+    let modified = meta.modified().expect("the file system keeps a stamp");
+
+    assert_eq!(
+        settled_file_record(&path),
+        None,
+        "written moments ago, so a second write could carry this same stamp"
+    );
+
+    let settled = settled_record(
+        meta.len(),
+        modified,
+        modified + std::time::Duration::from_secs(10),
+    )
+    .expect("a stamp ten seconds behind the clock has settled");
+    assert_eq!(settled.len, meta.len());
+    assert_eq!(settled.modified, modified);
+
+    assert_eq!(
+        settled_record(
+            meta.len(),
+            modified,
+            modified + std::time::Duration::from_secs(2)
+        ),
+        Some(settled),
+        "two seconds is settled: it is FAT32's own resolution, the coarsest this app ships to"
+    );
+    assert_eq!(
+        settled_record(
+            meta.len(),
+            modified,
+            modified + std::time::Duration::from_millis(1_999)
+        ),
+        None,
+        "a millisecond short is not settled"
+    );
+    assert_eq!(
+        settled_record(
+            meta.len(),
+            modified + std::time::Duration::from_secs(60),
+            modified,
+        ),
+        None,
+        "a file dated in the future is a stamp the clock cannot place behind it"
+    );
+
+    assert_eq!(
+        settled_file_record(&path.with_file_name("nothing-here.md")),
+        None,
+        "a file that cannot be asked answers no record rather than a guessed one"
+    );
+}
+
+/// The record is what decides whether the file is opened at all, so it has to be as strict as the hash it stands in front of: the same document, a reading this entry actually kept, and a reading that still matches. Anything else reads the file and hashes it exactly as it always did.
+#[test]
+fn the_render_cache_stands_for_a_file_only_at_the_reading_it_kept() {
+    let path = PathBuf::from("notes/a.md");
+    let text = "# Same words in two places\n";
+    let modified =
+        std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+    let record = FileRecord {
+        len: text.len() as u64,
+        modified,
+    };
+    let cache = RenderedCache {
+        path: path.clone(),
+        hash: content_hash(text),
+        record: Some(record),
+        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+    };
+
+    assert!(
+        cache.stands_for(&path, Some(record)),
+        "the file says what it said when this render was drawn from it"
+    );
+    assert!(
+        !cache.stands_for(
+            &path,
+            Some(FileRecord {
+                len: record.len + 1,
+                ..record
+            })
+        ),
+        "the length moved, so the file did"
+    );
+    assert!(
+        !cache.stands_for(
+            &path,
+            Some(FileRecord {
+                modified: modified + std::time::Duration::from_secs(1),
+                ..record
+            })
+        ),
+        "the file was written since"
+    );
+    assert!(
+        !cache.stands_for(&path, None),
+        "no reading of the file is a file to read, never a file to trust"
+    );
+    assert!(
+        !cache.stands_for(Path::new("notes/b.md"), Some(record)),
+        "another file of the same length and stamp is still another file, and a render carries the folder its images resolve against"
+    );
+
+    let unrecorded = RenderedCache {
+        path: path.clone(),
+        hash: content_hash(text),
+        record: None,
+        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+    };
+    assert!(
+        !unrecorded.stands_for(&path, Some(record)),
+        "the live reload's entry kept no record, so it earns one on the next arrival rather than answering off nothing"
     );
 }

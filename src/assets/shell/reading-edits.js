@@ -167,8 +167,8 @@ function blockSerializationEmpty(text, kind) {
 }
 
 // The range a whole-block delete covers: the block, plus the blank line after it. A mapped range stops short of that separator (`trim_block_end`), so splicing the range alone would leave the blank lines from both sides stacked. The last block has nothing after it and takes the run before instead.
-function blockDeleteRange(source, start, end) {
-  const bytes = sourceByteEncoder.encode(source || '');
+function blockDeleteRange(start, end) {
+  const bytes = documentSourceBytes();
   let from = Math.max(0, Math.min(start, bytes.length));
   let to = Math.max(from, Math.min(end, bytes.length));
   while (to < bytes.length && isSourceSpaceByte(bytes[to])) to += 1;
@@ -212,7 +212,7 @@ function deleteEmptiedBlock(el, text) {
   const { start, end } = rangeOf(el, 'block');
   // A zero-length range is a block that is only in the DOM — nothing to delete.
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return false;
-  const span = blockDeleteRange(currentDocumentSource, start, end);
+  const span = blockDeleteRange(start, end);
   const landing = caretAfterBlockDelete(el, el, span);
   sendBlockSplice(el, span.start, span.end, '');
   if (landing) setPendingCaret(landing);
@@ -253,10 +253,10 @@ function survivingHalf(el, container, offset, keepStart) {
 }
 
 // The one splice a cross-block delete makes: the first block's start to the last one's end, carrying the surviving halves joined into a single block. Everything between them is never serialized — it is simply not in the replacement. The kind comes from the first block that keeps any of its own text, so a run whose first block went whole does not leave the last one's heading as body text.
-function crossBlockDeletePlan(source, first, last, head, tail) {
+function crossBlockDeletePlan(first, last, head, tail) {
   const joined = head.markdown + tail.markdown;
   if (!joined) {
-    const span = blockDeleteRange(source, first.start, last.end);
+    const span = blockDeleteRange(first.start, last.end);
     return { start: span.start, end: span.end, text: '' };
   }
   return { start: first.start, end: last.end, text: (head.markdown ? first.marker : last.marker) + joined };
@@ -286,7 +286,6 @@ function deleteBlockRun({ elements, ranges }, range) {
   const head = survivingHalf(first, range.startContainer, range.startOffset, true);
   const tail = survivingHalf(last, range.endContainer, range.endOffset, false);
   const plan = crossBlockDeletePlan(
-    currentDocumentSource,
     { start: ranges[0][0], marker: blockMarkerOf(first) },
     { end: ranges[ranges.length - 1][1], marker: blockMarkerOf(last) },
     head,
@@ -386,7 +385,7 @@ const OFFICE_FORMATS = ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'];
 function officeCellTypeableInPlace(el) {
   const { start, end } = rangeOf(el, 'cell');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const src = sliceSourceBytes(start, end);
   if (!src.startsWith('<c') || !(src.endsWith('</c>') || src.endsWith('/>'))) return null;
   return { start, end };
 }
@@ -411,7 +410,7 @@ function valueQuoteRefused(el, text) {
   const span = el.__innerSpan;
   if (!quote || !span || !text.includes(quote)) return false;
   leafToast('A value inside a tag cannot hold the quote that closes it, so this was not written.');
-  el.textContent = sliceSourceBytes(currentDocumentSource, span.start, span.end);
+  el.textContent = sliceSourceBytes(span.start, span.end);
   return true;
 }
 
@@ -424,7 +423,7 @@ function treeTextRefused(el, text) {
 function emailBlockDomToText(el, ending) {
   if (ending === undefined) {
     const { start, end } = rangeOf(el, 'block');
-    const src = sliceSourceBytes(currentDocumentSource, start, end);
+    const src = sliceSourceBytes(start, end);
     ending = src.includes('\r\n') ? '\r\n' : '\n';
   }
   let out = '';
@@ -439,11 +438,14 @@ function emailBlockDomToText(el, ending) {
   return out;
 }
 
-// The line ending the open document is written with. A message keeps its own — splicing a `\n` into a `\r\n` message would mix the two — and everything else is `\n`, which is what the separators here have always been.
+// The line ending the open document is written with. A message keeps its own — splicing a `\n` into a `\r\n` message would mix the two — and everything else is `\n`, which is what the separators here have always been. The pair is looked for in the buffer the page holds rather than in a string of it, and only a message ever reaches the search.
 function documentLineEnding() {
-  return currentDocumentFormat === 'eml' && String(currentDocumentSource).includes('\r\n')
-    ? '\r\n'
-    : '\n';
+  if (currentDocumentFormat !== 'eml') return '\n';
+  const bytes = documentSourceBytes();
+  for (let at = 0; at + 1 < bytes.length; at += 1) {
+    if (bytes[at] === 13 && bytes[at + 1] === 10) return '\r\n';
+  }
+  return '\n';
 }
 
 // What separates two blocks in the open document: a blank line in a note and in a message, one line between two elements in a tree.
@@ -469,7 +471,7 @@ function typedBlockText(block) {
 function emailBlockTypeableInPlace(el) {
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const src = sliceSourceBytes(start, end);
   return emailBlockDomToText(el, src.includes('\r\n') ? '\r\n' : '\n') === src;
 }
 
@@ -501,20 +503,20 @@ function xmlCellTypeableInPlace(el) {
 function xmlValueTypeableInPlace(el) {
   const { start, end } = rangeOf(el, 'value');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-  if (escapeTreeText(el.textContent) !== sliceSourceBytes(currentDocumentSource, start, end)) return null;
+  if (escapeTreeText(el.textContent) !== sliceSourceBytes(start, end)) return null;
   return { start, end };
 }
 
 // The quote a value is written inside, read off the byte before it, or null where that byte is not one — a stamp the buffer has moved past cannot be typed on. An attribute takes either quote and may hold the other freely, so which one it is decides what it can never hold.
 function valueClosingQuote(start) {
-  const quote = sliceSourceBytes(currentDocumentSource, start - 1, start);
+  const quote = sliceSourceBytes(start - 1, start);
   return quote === '"' || quote === "'" ? quote : null;
 }
 
 // The proof both of those spend: `start..end` is one element, and what is drawn is exactly the bytes between its tags.
 function xmlRangeTypeableInPlace(el, start, end) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const src = sliceSourceBytes(start, end);
   const span = xmlElementInnerSpan(src);
   if (!span) return null;
   if (escapeTreeText(el.textContent) !== src.slice(span.from, span.to)) return null;
@@ -529,7 +531,7 @@ function xmlRangeTypeableInPlace(el, start, end) {
 function xmlCommentTypeableInPlace(el, words) {
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const src = sliceSourceBytes(start, end);
   if (!src.startsWith('<!--') || !src.endsWith('-->') || src.length < 7) return null;
   const inner = src.slice(4, src.length - 3);
   const text = inner.trim();
@@ -647,11 +649,7 @@ function sendLiveBlockEdit(el, words) {
 // The map, moved by the splice that just went out: the source the page slices from, the typed block's own span, and every offset after it.
 function advanceLiveRanges(el, edit) {
   const written = utf8ByteLength(edit.text);
-  const bytes = sourceByteEncoder.encode(currentDocumentSource || '');
-  currentDocumentSource =
-    sourceByteDecoder.decode(bytes.slice(0, edit.start)) +
-    edit.text +
-    sourceByteDecoder.decode(bytes.slice(edit.end));
+  spliceDocumentSource(edit.start, edit.end, edit.text);
   if (edit.inner) el.__innerSpan = { start: edit.start, end: edit.start + written };
   if (typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
   const delta = written - (edit.end - edit.start);
@@ -901,7 +899,7 @@ function splitTreeBlockAtCaret(el) {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const offset = caretTextOffsetIn(el);
   if (offset == null) return;
-  const src = sliceSourceBytes(currentDocumentSource, start, end);
+  const src = sliceSourceBytes(start, end);
   const inner = xmlElementInnerSpan(src);
   if (!inner) return;
   const open = src.slice(0, inner.from);
@@ -1464,7 +1462,7 @@ function wireSourceEditable(el) {
     start = blockStart;
     end = blockEnd;
     if (el.dataset.blockKind !== 'code_block') return;
-    const src = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
+    const src = sliceSourceBytes(blockStart, blockEnd);
     const span = fencedCodeInnerSpan(src);
     // The span counts characters and the buffer counts bytes, and the code inside can be anything — so both ends are converted rather than assumed ASCII.
     if (span) {
@@ -1478,7 +1476,7 @@ function wireSourceEditable(el) {
     readRange();
     // Swapping a rendered block (often a tall image) for its one-line source collapses its height; pin the reader to the block above first, or a near-top image shrinking the document would clamp the scroll to the top. focus() must not scroll either — preventScroll keeps the caret from yanking the view.
     const aboveAnchor = anchorAboveElement(el);
-    const src = sliceSourceBytes(currentDocumentSource, start, end);
+    const src = sliceSourceBytes(start, end);
     el.__editBaseline = src;
     el.__renderedHtml = el.innerHTML;
     el.dataset.editingSource = 'true';
@@ -1755,14 +1753,14 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   // The page is drawn whole, so the ranges start over with it — and the elements of the document that was open stop being held.
   resetDrawnRanges();
   currentDocumentFormat = doc.format || 'markdown';
-  currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
+  setDocumentSource(doc.source);
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
   // Markdown is the named exception: an empty note has no blocks and is the one page a reader unlocks precisely to start typing in.
   currentDocumentBindsAnything =
     currentDocumentFormat === 'markdown' || (Array.isArray(doc.blocks) && doc.blocks.length > 0);
   // Checkboxes stay interactive on a locked page: a task toggle is a quick action that auto-saves and records no undo, not text editing. Only the click-to-type editable blocks are behind the padlock.
   if (currentDocumentFormat === 'markdown') {
-    attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : [], currentDocumentSource);
+    attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []);
     bindTaskCheckboxes(doc.tasks || []);
   }
   // Every range the Rust renderers stamped inline — a tree's, a config's, a workbook's, a message's — joins the table now the Markdown pass has stamped its own.
@@ -1791,7 +1789,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
 // Re-sync editing state after a buffer edit that needs no re-render (a task toggle). Refreshes the dirty state and adopts the toggled buffer as the source the raw-source editors slice from, or a later edit would revert the toggle.
 window.leafBlocksResynced = (state) => {
   if (!state) return;
-  if (typeof state.source === 'string') currentDocumentSource = state.source;
+  if (typeof state.source === 'string') setDocumentSource(state.source);
   const path = activeDocumentPath();
   if (path) {
     const wasUndoable = undoableByPath.get(path) === true;

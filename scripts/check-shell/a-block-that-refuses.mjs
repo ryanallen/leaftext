@@ -149,7 +149,7 @@ export function run() {
       } finally {
         inApp.querySelector = wasQuery;
         read(`readingUnlocked = ${wasUnlocked};`);
-        read("currentDocumentFormat = 'markdown'; currentDocumentSource = ''; currentDocumentBindsAnything = true;");
+        read("currentDocumentFormat = 'markdown'; setDocumentSource(''); currentDocumentBindsAnything = true;");
       }
 
       // Both lists, pinned: dropping one leaves that format silent, and adding one that is not drawn in these shapes puts the sentence on a page whose blocks it says nothing true about.

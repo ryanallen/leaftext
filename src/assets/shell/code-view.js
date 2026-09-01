@@ -276,18 +276,16 @@ function lineIndexAtByteOffset(text, byteOffset) {
   return line;
 }
 
-// The inverse: UTF-8 byte offset of the start of a 0-based source line.
-function byteOffsetAtLineIndex(text, lineIndex) {
+// The inverse: UTF-8 byte offset of the start of a 0-based source line. Takes the bytes rather than the text: the reading view already holds its document as bytes, and the source view encodes its own at the call site, which is a jump out of that view rather than anything on the typing path.
+function byteOffsetAtLineIndex(bytes, lineIndex) {
   if (!Number.isFinite(lineIndex) || lineIndex <= 0) return 0;
-  let bytes = 0;
   let line = 0;
-  for (let i = 0; i < text.length && line < lineIndex; ) {
-    const cp = text.codePointAt(i);
-    if (cp === 0x0a) line += 1;
-    bytes += cp <= 0x7f ? 1 : cp <= 0x7ff ? 2 : cp <= 0xffff ? 3 : 4;
-    i += cp > 0xffff ? 2 : 1;
+  for (let at = 0; at < bytes.length; at += 1) {
+    if (bytes[at] !== 10) continue;
+    line += 1;
+    if (line === lineIndex) return at + 1;
   }
-  return bytes;
+  return bytes.length;
 }
 
 // The 0-based index of the code view's top visible line, by binary search over the in-order color lines.
@@ -396,7 +394,7 @@ function toggleCodeView() {
         handoff.readerScrollTop != null && viewStillLanded(handoff.codeScrollTop, handoff.codeLanded);
       const lineIndex = topVisibleCodeLineIndex();
       syncCodeViewText();
-      pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(codeViewText, lineIndex);
+      pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(sourceByteEncoder.encode(codeViewText), lineIndex);
     } else {
       pendingReadingSrcOffset = null;
       // Out of the map nothing here can be measured — the reading view has been off screen the whole time — so spend the place taken as the map went up. A map entered from the source view gives that view its own pixel straight back, which is the one thing viewStillLanded cannot say for it: the reading render it never saw landed on an element with no box, so what it read back was zero.

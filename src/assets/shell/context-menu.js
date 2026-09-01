@@ -76,7 +76,7 @@ function deletePictureFromDocument(picture) {
   if (!block || !block.classList.contains('image-lane')) return;
   const { start, end } = rangeOf(block, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
-  const span = blockDeleteRange(currentDocumentSource, start, end);
+  const span = blockDeleteRange(start, end);
   sendBlockSplice(block, span.start, span.end, '');
 }
 // Whether a right-clicked picture gets a menu of its own. Every row wants the file behind it, and a remote address, a data URL and the mark standing in for a picture that would not load have none.

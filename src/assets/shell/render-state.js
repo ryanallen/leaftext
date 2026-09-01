@@ -39,8 +39,8 @@ window.leafSetState = (state) => {
       const landed =
         activeDocumentPath() === jump.path &&
         jump.line > 1 &&
-        currentDocumentSource &&
-        scrollReadingToSrcOffset(byteOffsetAtLineIndex(currentDocumentSource, jump.line - 1));
+        documentSourceLength() > 0 &&
+        scrollReadingToSrcOffset(byteOffsetAtLineIndex(documentSourceBytes(), jump.line - 1));
       if (!landed && jump.anchor && activeDocumentPath() === jump.path) {
         window.leafScrollToFragment('#' + jump.anchor);
       }

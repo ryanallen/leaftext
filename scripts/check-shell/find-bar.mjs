@@ -354,7 +354,7 @@ export function run() {
     field.value = '';
   });
 
-  // Every caller slices the one document, so the helper keeps the bytes of the source it was last handed. A block rewrite that encoded the whole file again per slice made replace-all cost the document once per match rather than once.
+  // Every caller slices the one open document, and the door encodes it once. A block rewrite that encoded the whole file again per slice made replace-all cost the document once per match rather than once.
   check('one source is encoded once however many blocks are rewritten', () => {
     const { findRewriteBlock, sliceSourceBytes } = booted;
     const field = booted.document.getElementById('findInput');
@@ -385,17 +385,18 @@ export function run() {
       if (encodes() !== 1) throw new Error(`a source the helper had not seen encoded ${encodes()} times`);
       if (rewritten !== 'The sutra talk, and the sutra book.') throw new Error(`the second source rewrote: ${rewritten}`);
 
-      // And the first source is a fresh one again, because only the last is kept.
+      // And the first document handed over again is encoded once more, because the door holds the open document and nothing before it.
+      booted.window.leafBlocksResynced({ source: first });
       reset();
-      if (sliceSourceBytes(first, group.start, group.end) !== 'The dharma talk, and the dharma book.') {
+      if (sliceSourceBytes(group.start, group.end) !== 'The dharma talk, and the dharma book.') {
         throw new Error('the first source came back wrong after a second one');
       }
       if (encodes() !== 1) throw new Error(`going back to the first source encoded ${encodes()} times`);
 
-      // An empty source is still an empty answer rather than a throw, which is what every caller with no document open hands in.
-      reset();
-      if (sliceSourceBytes('', 0, 0) !== '') throw new Error('an empty source did not slice to nothing');
-      if (sliceSourceBytes(null, 0, 4) !== '') throw new Error('a missing source did not slice to nothing');
+      // A document with nothing in it is still an empty answer rather than a throw, which is what every slice with no document open gets.
+      booted.window.leafBlocksResynced({ source: '' });
+      if (sliceSourceBytes(0, 0) !== '') throw new Error('an empty source did not slice to nothing');
+      if (sliceSourceBytes(0, 4) !== '') throw new Error('a slice past the end of an empty source did not come back empty');
     } finally {
       vm.runInContext('TextEncoder.prototype.encode = __realEncode;', booted);
       field.value = '';

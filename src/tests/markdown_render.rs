@@ -164,7 +164,10 @@ fn opened_document_from_markdown_matches_loading_from_disk() {
     assert_eq!(from_memory.title, from_disk.title);
     assert_eq!(from_memory.html, from_disk.html);
     assert_eq!(from_memory.path, from_disk.path);
-    assert_eq!(from_memory.minimap, from_disk.minimap);
+    assert_eq!(
+        from_memory.has_visible_content,
+        from_disk.has_visible_content
+    );
 }
 
 #[test]

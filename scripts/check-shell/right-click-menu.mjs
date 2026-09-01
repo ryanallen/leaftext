@@ -303,15 +303,15 @@ export function run() {
   function whileUnlocked(source, body) {
     const was = {
       unlocked: vm.runInContext('readingUnlocked', booted),
-      source: vm.runInContext('currentDocumentSource', booted),
+      source: vm.runInContext('sliceSourceBytes(0, documentSourceLength())', booted),
     };
     booted.__menuSource = source;
     try {
-      vm.runInContext('readingUnlocked = true; currentDocumentSource = __menuSource;', booted);
+      vm.runInContext('readingUnlocked = true; setDocumentSource(__menuSource);', booted);
       body();
     } finally {
       booted.__menuWas = was;
-      vm.runInContext('readingUnlocked = __menuWas.unlocked; currentDocumentSource = __menuWas.source;', booted);
+      vm.runInContext('readingUnlocked = __menuWas.unlocked; setDocumentSource(__menuWas.source);', booted);
       delete booted.__menuWas;
       delete booted.__menuSource;
     }

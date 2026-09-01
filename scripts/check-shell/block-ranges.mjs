@@ -2,6 +2,7 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import vm from 'node:vm';
 import {
   bootReading,
   check,
@@ -16,6 +17,17 @@ import {
 export function run() {
   const booted = record.booted;
   if (!booted) return;
+
+  // The walk slices the open document to tell a closing raw-HTML tag from an opening one, so a stand-in note goes on the page for the call and what was there goes back after it.
+  const attach = (body, blocks, source) => {
+    const was = booted.sliceSourceBytes(0, booted.documentSourceLength());
+    booted.setDocumentSource(source);
+    try {
+      booted.attachMarkdownBlockRanges(body, blocks);
+    } finally {
+      booted.setDocumentSource(was);
+    }
+  };
 
   // The two things the field block asks the page for ride on `data-leaf-` attributes the renderer stamped on the table, so the names have to agree across Rust and here. They are read from the DOM rather than passed in, which means a rename on either side is silent: the class stops arriving and nothing throws.
   check('a note gets the style it asked for and one growl for what did not land', () => {
@@ -70,7 +82,7 @@ export function run() {
       classList: { contains: (name) => name === className },
     });
     const body = { children: [element('DIV', 'frontmatter'), element('H1', ''), element('P', '')] };
-    booted.attachMarkdownBlockRanges(body, blocks, source);
+    attach(body, blocks, source);
 
     const [field, heading, paragraph] = body.children;
     if ('srcStart' in field.dataset) throw new Error('the field block took a source range, so it is being edited as Markdown');
@@ -90,7 +102,7 @@ export function run() {
     const drawn = () => ({ children: [element(), element()] });
 
     const body = drawn();
-    booted.attachMarkdownBlockRanges(body, paragraphs, source);
+    attach(body, paragraphs, source);
     const [before, after] = body.children;
     const at = (el) => booted.rangeOf(el, 'block');
     if (source.slice(at(before).start, at(before).end) !== 'Before.') throw new Error('the first paragraph range does not slice back to it');
@@ -100,7 +112,7 @@ export function run() {
 
     // What the host must not send: a span for the comment, with no element to pair it with.
     const withComment = drawn();
-    booted.attachMarkdownBlockRanges(withComment, [paragraphs[0], { id: 1, kind: 'html_block', start: 9, end: 24, editable: false }, { ...paragraphs[1], id: 2 }], source);
+    attach(withComment, [paragraphs[0], { id: 1, kind: 'html_block', start: 9, end: 24, editable: false }, { ...paragraphs[1], id: 2 }], source);
     if (withComment.children.some((el) => 'srcStart' in el.dataset)) throw new Error('a span with no element still stamped, so the guard that makes this fix necessary is gone');
   });
 
@@ -132,7 +144,7 @@ export function run() {
         classList: { contains: (name) => className !== '' && name === className },
       })),
     };
-    booted.attachMarkdownBlockRanges(body, blocks, source);
+    attach(body, blocks, source);
 
     body.children.forEach((el, index) => {
       const [, , kind, text] = drawn[index];
@@ -168,7 +180,7 @@ export function run() {
     const lane = element('DIV', 'table-lane', [table]);
     const bay = element('DIV', 'table-bay', [lane]);
     const body = { children: [element('P', ''), bay, element('P', '')] };
-    booted.attachMarkdownBlockRanges(body, blocks, source);
+    attach(body, blocks, source);
 
     for (const [name, box] of [['bay', bay], ['lane', lane]]) {
       if ('srcStart' in box.dataset) throw new Error(`the ${name} took the table's source range, so an edit would write the wrapper back into the file`);
@@ -195,7 +207,7 @@ export function run() {
     });
     const stamped = (blocks, tags) => {
       const body = { children: tags.map((tag) => element(tag)) };
-      booted.attachMarkdownBlockRanges(body, blocks, source);
+      attach(body, blocks, source);
       return body.children.filter((el) => 'srcStart' in el.dataset).length;
     };
     // Each of the four kinds, handed the wrong element, with a good paragraph in front of it to prove the refusal drops that one too rather than stamping what it liked.
@@ -224,7 +236,7 @@ export function run() {
     // A footnote definition is the one of the four that needs its class as well as its tag.
     const definition = { id: 1, kind: 'footnote_definition', start: 14, end: 17, editable: false };
     const body = { children: [element('P'), element('DIV', 'footnote-definition')] };
-    booted.attachMarkdownBlockRanges(body, [good, definition], source);
+    attach(body, [good, definition], source);
     if (!body.children.every((el) => 'srcStart' in el.dataset)) throw new Error('a footnote definition on its own div was refused');
   });
 
@@ -264,7 +276,7 @@ export function run() {
         classList: { contains: (name) => className !== '' && name === className },
       })),
     };
-    booted.attachMarkdownBlockRanges(body, blocks, source);
+    attach(body, blocks, source);
     if (body.children.some((el) => 'srcStart' in el.dataset)) throw new Error('the drift stamped a range, so a click into one block would write over another');
   });
 
@@ -413,6 +425,41 @@ export function run() {
     if (appEl.querySelector('.document-body')) throw new Error('the check left a drawn document standing in the reader');
   });
 
+  // The pause used to encode the whole document, slice it either side of the edit and join the halves back into a fresh string — and assigning that fresh string killed the byte cache keyed on the old one, so the next gesture that wanted a slice paid a second full encode. The splice writes into the buffer the page already holds, so nothing after it encodes the document at all.
+  check('a slice straight after a live splice encodes nothing', () => {
+    const note = '# Notes\n\nThe first paragraph.\n\nThe second paragraph.\n';
+    const at = note.indexOf('first');
+    booted.window.leafBlocksResynced({ source: note });
+    const encodes = () => vm.runInContext('__spliceEncodes', booted);
+    const reset = () => vm.runInContext('__spliceEncodes = 0;', booted);
+    vm.runInContext(
+      '__realEncode = TextEncoder.prototype.encode; __spliceEncodes = 0; TextEncoder.prototype.encode = function (text) { __spliceEncodes += 1; return __realEncode.call(this, text); };',
+      booted
+    );
+    try {
+      // The document goes on the page as the string the host handed over, so the first ask for bytes is the one encode of it this whole run is allowed.
+      booted.sliceSourceBytes(0, 7);
+      if (encodes() !== 1) throw new Error(`the first slice encoded ${encodes()} times`);
+
+      // Six pauses in a row. Each encodes what was typed and nothing else — twelve would mean the document itself went through the encoder again.
+      reset();
+      for (let round = 0; round < 6; round += 1) booted.spliceDocumentSource(at, at + 5, 'first');
+      if (encodes() !== 6) throw new Error(`six splices encoded ${encodes()} times, so one of them encoded the whole document`);
+      if (booted.documentSourceLength() !== new TextEncoder().encode(note).length) {
+        throw new Error(`the document is ${booted.documentSourceLength()} bytes after six splices that replaced a word with itself`);
+      }
+
+      // And the slice after them — the click into another block that used to pay for the splice — encodes nothing at all.
+      reset();
+      const read = booted.sliceSourceBytes(at, at + 5);
+      if (read !== 'first') throw new Error(`the slice after the splices read ${JSON.stringify(read)}`);
+      if (encodes() !== 0) throw new Error(`a slice straight after a splice encoded ${encodes()} times`);
+    } finally {
+      vm.runInContext('TextEncoder.prototype.encode = __realEncode;', booted);
+      booted.window.leafBlocksResynced({ source: '' });
+    }
+  });
+
   // A drawn range read straight off `dataset` reads the stale mark the element wears and splices the wrong bytes into somebody's file, because the numbers live in the page's own table. So there is one door, `rangeOf`/`hasRangeOf`/`setRangeOf` in `shell/reading-blocks.js`, and this refuses every other way in. The presence tests are untouched on purpose: `closest('[data-src-start]')` asks whether an element can be typed on at all, which is a different question, and the attribute is staying to answer it.
   check('nothing reads a drawn range off the DOM but the one door', () => {
     const door = 'reading-blocks.js';
@@ -435,6 +482,53 @@ export function run() {
     for (const name of ['function rangeOf(', 'function hasRangeOf(', 'function setRangeOf(']) {
       if (!doorSource.includes(name)) throw new Error(`${door} no longer holds ${name.replace('function ', '').replace('(', '')}`);
     }
+  });
+
+  // The offsets a splice arrives with are the host's, and a map that drifted hands over one the buffer no longer has. The door clamps rather than writing off the end, because a splice at an offset the document does not reach writes the wrong bytes into somebody's file.
+  check('a splice at an offset the document does not reach is clamped to its end', () => {
+    const was = booted.sliceSourceBytes(0, booted.documentSourceLength());
+    try {
+      booted.setDocumentSource('One.\n');
+      booted.spliceDocumentSource(400, 900, ' Two.');
+      if (booted.sliceSourceBytes(0, booted.documentSourceLength()) !== 'One.\n Two.') {
+        throw new Error(`a splice past the end wrote ${JSON.stringify(booted.sliceSourceBytes(0, booted.documentSourceLength()))}`);
+      }
+      // Backwards, which is the other way a drifted map arrives: the end is pulled up to the start, so it writes what was typed in and takes nothing away.
+      booted.setDocumentSource('One.\n');
+      booted.spliceDocumentSource(4, 0, 'Two.');
+      if (booted.sliceSourceBytes(0, booted.documentSourceLength()) !== 'One.Two.\n') {
+        throw new Error(`a backwards splice wrote ${JSON.stringify(booted.sliceSourceBytes(0, booted.documentSourceLength()))}`);
+      }
+      // A document that is not a string at all is an empty one, not a throw as the page binds.
+      booted.setDocumentSource(null);
+      if (booted.documentSourceLength() !== 0) throw new Error('a document that is not a string came back with a length');
+    } finally {
+      booted.setDocumentSource(was);
+    }
+  });
+
+  // The page used to hold the open document twice — a string and the bytes it had last been encoded to — and a typing pause rebuilt both. Now it holds the bytes, behind one door, and a fragment that reaches the held buffer by name or asks the page for the whole document as a string is a second copy on its way back.
+  check('nothing reaches the open document but the one door', () => {
+    const door = 'reading-blocks.js';
+    const held = /\b(heldSourceBytes|heldSourceText|currentDocumentSource)\b/;
+    const folder = join(root, 'src/assets/shell');
+    const fragments = readdirSync(folder).filter((file) => file.endsWith('.js'));
+    if (fragments.length < 30) throw new Error(`only ${fragments.length} fragments were read out of ${folder}`);
+    const raw = [];
+    for (const file of fragments) {
+      if (file === door) continue;
+      readFileSync(join(folder, file), 'utf8').split('\n').forEach((line, at) => {
+        if (held.test(line)) raw.push(`${file}:${at + 1} ${line.trim()}`);
+      });
+    }
+    if (raw.length) throw new Error(`the open document is reached outside the door: ${raw.join(' | ')}`);
+    // And the door itself is where it is held, so it has to be there to hold it.
+    const doorSource = readFileSync(join(folder, door), 'utf8');
+    for (const name of ['function setDocumentSource(', 'function documentSourceBytes(', 'function documentSourceLength(', 'function spliceDocumentSource(', 'function sliceSourceBytes(']) {
+      if (!doorSource.includes(name)) throw new Error(`${door} no longer holds ${name.replace('function ', '').replace('(', '')}`);
+    }
+    // Nothing hands the whole document back as a string: a reader that wants text asks for the range it wants.
+    if (/function documentSourceText\s*\(/.test(doorSource)) throw new Error('the door hands the whole document back as a string again');
   });
 
   // The door answers the numbers the element is actually wearing, under each of the three names — a block's, a cell of a table's, and a value an element keeps inside its own tag. Nothing on the page wears two, so asking one thing for another kind's range has to come back empty rather than borrowing the pair beside it.
@@ -599,7 +693,7 @@ export function run() {
         favorites: [],
         tabs: [{ title, path }],
         active: 0,
-        document: { title, path, html, minimap: { lines: [], headings: [] }, format: 'Markdown', blocks: [], tasks: [], source: 'x'.repeat(at + 16) },
+        document: { title, path, html, has_visible_content: true, format: 'Markdown', blocks: [], tasks: [], source: 'x'.repeat(at + 16) },
       });
       return appEl.querySelector('.document-body').children;
     };

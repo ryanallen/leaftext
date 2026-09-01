@@ -41,7 +41,7 @@ export function renderReadingDocument(context, options = {}) {
     favorites: [],
     tabs: [{ title, path }],
     active: 0,
-    document: { title, path, html, minimap: { lines: [], headings: [] }, format: 'Markdown', blocks: [], tasks: [], source: '' },
+    document: { title, path, html, has_visible_content: true, format: 'Markdown', blocks: [], tasks: [], source: '' },
   });
   const body = app.querySelector('.document-body');
   app.getBoundingClientRect = () => ({ left: 0, top: 0, right: VIEW_WIDTH, bottom: viewport, width: VIEW_WIDTH, height: viewport });
@@ -73,7 +73,7 @@ export const standInState = (path) => ({
     title: path.split('/').pop().replace(/\.[^.]+$/, ''),
     path,
     html: `<p>${path}</p>`,
-    minimap: { lines: [], headings: [] },
+    has_visible_content: true,
     format: 'Markdown',
     blocks: [],
     tasks: [],

@@ -482,10 +482,11 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     };
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
-        // Cache it, so switching away and back doesn't redo this render.
+        // Cache it, so switching away and back doesn't redo this render. It stands on no file record: the file was read above, and a record taken after a read can describe a write that landed during it — a newer stamp beside older content, which is a stale render nothing ever clears. The next arrival reads once and earns one.
         tab.rendered = Some(RenderedCache {
             path: path.clone(),
             hash,
+            record: None,
             document: document.clone(),
         });
     }

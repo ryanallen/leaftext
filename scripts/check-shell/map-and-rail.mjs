@@ -169,25 +169,26 @@ export function run() {
     const built = (extra = '') => vm.runInContext(
       'minimapContentVersion = 7; minimapBuiltVersion = 7; minimapBuiltSourceWidth = 800;'
         + 'minimapBuiltPreviewWidth = 90; minimapBuiltFrameWidth = 760;'
-        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40;${extra}`,
+        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40; minimapBuiltRowPath = '1/0';${extra}`,
       booted,
     );
     try {
       built();
-      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40)) throw new Error('an untouched document rebuilt its thumbnail anyway');
+      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0')) throw new Error('an untouched document rebuilt its thumbnail anyway');
       // Everything that shapes a clone still forces one.
-      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 13, 40)) throw new Error('a scroll into a new slice kept the old thumbnail');
-      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 41)) throw new Error('a slice ending on a new row kept the old thumbnail');
-      if (minimapRebuildWouldChangeNothing(metrics, 91, 760, 12, 40)) throw new Error('a wider rail kept the old thumbnail');
-      if (minimapRebuildWouldChangeNothing(metrics, 90, 800, 12, 40)) throw new Error('more room for the layout kept the old thumbnail');
-      if (minimapRebuildWouldChangeNothing({ sourceWidth: 900 }, 90, 760, 12, 40)) throw new Error('a rewrapped document kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 13, 40, '1/0')) throw new Error('a scroll into a new slice kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 41, '1/0')) throw new Error('a slice ending on a new row kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '2/0')) throw new Error('the same local row numbers in another large block kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 91, 760, 12, 40, '1/0')) throw new Error('a wider rail kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 800, 12, 40, '1/0')) throw new Error('more room for the layout kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing({ sourceWidth: 900 }, 90, 760, 12, 40, '1/0')) throw new Error('a rewrapped document kept the old thumbnail');
       built('minimapContentVersion = 8;');
-      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40)) throw new Error('an edited document kept the old thumbnail');
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0')) throw new Error('an edited document kept the old thumbnail');
     } finally {
       vm.runInContext(
         'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
           + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1;'
-          + 'minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1;',
+          + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';",
         booted,
       );
     }
@@ -235,10 +236,12 @@ export function run() {
       '<pre class="mermaid" data-language="mermaid">flowchart TD</pre>',
       '<p data-block-kind="paragraph">Last words.</p>',
     ].join('');
-    if (booted.minimapWindowRows(body).length !== 4) throw new Error('the rows a window slices are not the body’s own blocks');
+    body.children.forEach((row, index) => { row.getBoundingClientRect = () => ({ top: index * 20, bottom: (index + 1) * 20 }); });
+    const window = booted.minimapWindowRows(body, 0, 0, 20, 50);
+    if (window.rows.length !== 4) throw new Error('the rows a window slices are not the body’s own blocks');
 
     // A window over the middle two rows: those rows and nothing else, in the order the document has them.
-    const windowed = booted.buildWindowedMinimapClone(body, 1, 2);
+    const windowed = booted.buildWindowedMinimapClone(body, window, 1, 2);
     if (windowed === body) throw new Error('the thumbnail is the reading body itself rather than a copy of it');
     if (windowed.children.length !== 2) throw new Error(`the window holds ${windowed.children.length} rows rather than the two it names`);
     if (windowed.textContent !== 'First words.flowchart TD') throw new Error(`the window says ${JSON.stringify(windowed.textContent)}`);
@@ -252,6 +255,106 @@ export function run() {
     if (body.children.length !== 4) throw new Error('slicing a window took rows out of the document');
     if (windowed.style.paddingTop !== '0' || windowed.style.paddingBottom !== '0') throw new Error('the window kept the layer’s own padding, which belongs at the start of the document rather than at the start of a window into the middle of it');
     if (body.style.paddingTop === '0') throw new Error('the window’s padding was written onto the reading body itself');
+  });
+
+  check('a row taller than the minimap window gives the slice its own children and wrapper chain', () => {
+    const body = fakeElement('minimap-deep-source');
+    body.innerHTML = '<h1>Title</h1><pre class="highlight"><code><span>one</span><span>two</span><span>three</span></code></pre>';
+    const [title, pre] = body.children;
+    const code = pre.children[0];
+    title.getBoundingClientRect = () => ({ top: 0, bottom: 20 });
+    pre.getBoundingClientRect = () => ({ top: 20, bottom: 2020 });
+    code.getBoundingClientRect = () => ({ top: 20, bottom: 2020 });
+    code.children.forEach((line, index) => { line.getBoundingClientRect = () => ({ top: 20 + index * 20, bottom: 40 + index * 20 }); });
+    const window = booted.minimapWindowRows(body, 0, 0, 0, 80);
+    if (window.holder !== code || window.rows.length !== 3) throw new Error('the window stopped at the one row holding the whole document');
+    if (window.wrappers.length !== 2 || window.wrappers[0] !== pre || window.wrappers[1] !== code) throw new Error('the window dropped the wrappers around the rows it reached');
+    if (window.path !== '1/0') throw new Error(`the descended window says its path is ${window.path}`);
+  });
+
+  check('a slice inside one row keeps the whitespace between the lines it cuts', () => {
+    const body = fakeElement('minimap-whitespace-source');
+    body.innerHTML = '<pre><code><span>one</span>\n<span>two</span>\n<span>three</span></code></pre>';
+    const pre = body.children[0];
+    const code = pre.children[0];
+    const window = { holder: code, rows: Array.from(code.children), wrappers: [pre, code], path: '0/0' };
+    const clone = booted.buildWindowedMinimapClone(body, window, 0, 1);
+    if (clone.textContent !== 'one\ntwo') throw new Error(`the slice joined its lines as ${JSON.stringify(clone.textContent)}`);
+    const copiedCode = clone.children[0].children[0];
+    if (copiedCode.childNodes.length !== 3 || copiedCode.childNodes[1].nodeType !== 3) throw new Error('the slice kept elements instead of the child nodes between them');
+  });
+
+  check('a descended slice keeps shallow copies of every wrapper and drops their edge padding', () => {
+    const body = fakeElement('minimap-wrapper-source');
+    body.className = 'document-body';
+    body.innerHTML = '<pre class="highlight" data-language="rust"><code class="syntax"><span>one</span><span>two</span></code></pre>';
+    const pre = body.children[0];
+    const code = pre.children[0];
+    const window = { holder: code, rows: Array.from(code.children), wrappers: [pre, code], path: '0/0' };
+    const clone = booted.buildWindowedMinimapClone(body, window, 1, 1);
+    const copiedPre = clone.children[0];
+    const copiedCode = copiedPre && copiedPre.children[0];
+    if (!copiedPre || !copiedCode || copiedCode.children.length !== 1 || copiedCode.textContent !== 'two') throw new Error('the descended slice was not put back inside its ancestor chain');
+    if (!copiedPre.classList.contains('highlight') || copiedPre.dataset.language !== 'rust' || !copiedCode.classList.contains('syntax')) throw new Error('a rebuilt wrapper dropped the names its rendering rules read');
+    for (const wrapper of [clone, copiedPre, copiedCode]) {
+      if (wrapper.style.paddingTop !== '0' || wrapper.style.paddingBottom !== '0') throw new Error('a rebuilt wrapper kept padding that belongs at the document edge');
+    }
+    if (copiedCode.children.length === code.children.length) throw new Error('the wrapper was copied deep before the slice landed');
+  });
+
+  check('a body whose second row holds a thousand lines clones only the lines in its window', () => {
+    const body = fakeElement('minimap-thousand-line-source');
+    const lines = Array.from({ length: 1000 }, (_, index) => `<span>line ${index}</span>`).join('\n');
+    body.innerHTML = `<h1>Title</h1><pre class="highlight"><code>${lines}</code></pre>`;
+    const [title, pre] = body.children;
+    const code = pre.children[0];
+    title.getBoundingClientRect = () => ({ top: 0, bottom: 20 });
+    pre.getBoundingClientRect = () => ({ top: 20, bottom: 20020 });
+    code.getBoundingClientRect = () => ({ top: 20, bottom: 20020 });
+    code.children.forEach((line, index) => { line.getBoundingClientRect = () => ({ top: 20 + index * 20, bottom: 40 + index * 20 }); });
+    const window = booted.minimapWindowRows(body, 0, 0, 0, 160);
+    const clone = booted.buildWindowedMinimapClone(body, window, window.first, window.last);
+    const copiedLines = clone.querySelectorAll('span');
+    if (window.holder !== code || copiedLines.length >= 1000) throw new Error(`the thumbnail copied ${copiedLines.length} of the thousand lines`);
+    if (copiedLines.length < 7 || copiedLines.length > 9) throw new Error(`a 160-pixel window copied ${copiedLines.length} twenty-pixel lines`);
+  });
+
+  check('a press near the foot lands at the same place with a whole thumbnail and a descended one', () => {
+    booted.setMinimapMarkup(booted.documentMinimapMarkup());
+    const rail = booted.document.getElementById('readerMinimap');
+    const track = rail.querySelector('.document-minimap-track');
+    const content = track.querySelector('.document-minimap-content');
+    const appEl = booted.document.getElementById('app');
+    const wasMeasure = booted.measureDocumentMinimap;
+    const wasHold = booted.leafHoldPointer;
+    booted.measureDocumentMinimap = () => ({ scrollable: 10000, viewportHeight: 800, previewScale: 0.05, trackHeight: 700, scaledDocumentHeight: 1200, scrollTop: appEl.scrollTop });
+    booted.leafHoldPointer = () => {};
+    content.getBoundingClientRect = () => ({ top: 0, bottom: 700, height: 700, width: 80 });
+    try {
+      booted.bindDocumentMinimap();
+      const press = (preview) => {
+        content.innerHTML = '';
+        content.appendChild(preview);
+        appEl.scrollTop = 0;
+        const event = { button: 0, pointerId: 17, clientY: 680, preventDefault() {} };
+        for (const handler of track.listeners.get('pointerdown') || []) handler(event);
+        for (const handler of track.listeners.get('pointerup') || []) handler(event);
+        return appEl.scrollTop;
+      };
+      const whole = fakeElement();
+      whole.innerHTML = '<p>whole document</p>';
+      const descended = fakeElement();
+      descended.innerHTML = '<pre><code><span>window near the foot</span></code></pre>';
+      const wholeLanding = press(whole);
+      const descendedLanding = press(descended);
+      if (wholeLanding !== descendedLanding || wholeLanding !== 10000) throw new Error(`the whole thumbnail landed at ${wholeLanding} and the descended one at ${descendedLanding}`);
+    } finally {
+      booted.measureDocumentMinimap = wasMeasure;
+      booted.leafHoldPointer = wasHold;
+      booted.setMinimapMarkup('');
+      appEl.scrollTop = 0;
+      booted.__frames.drain();
+    }
   });
 
   // The other listener that hears the document change watches the reading view's own body, and the clone lands in the rail beside it — so a landing clone was never something that watcher could see, and the toggle guard above is the only thing standing between the rail and its own thumbnail. Both halves are where the markup puts them, which is what this holds.

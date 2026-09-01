@@ -733,6 +733,7 @@ fn naming_a_new_note_gives_it_a_file_a_label_and_the_front_of_recent() {
     workspace.tabs[0].rendered = Some(RenderedCache {
         path: wearing.clone(),
         hash: content_hash(drawn),
+        record: None,
         document: opened_document_from_source_with_host(drawn, &wearing, &DesktopHost::default()),
     });
     let steps_before = workspace.tabs[0].history.entries.len();
@@ -799,6 +800,7 @@ fn closing_the_name_dialog_leaves_a_new_note_exactly_as_it_was() {
     workspace.tabs[0].rendered = Some(RenderedCache {
         path: wearing.clone(),
         hash: content_hash(drawn),
+        record: None,
         document: opened_document_from_source_with_host(drawn, &wearing, &DesktopHost::default()),
     });
     let mut recent = RecentFiles::default();
