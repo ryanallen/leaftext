@@ -555,3 +555,75 @@ fn a_watched_change_during_a_read_neither_patches_the_text_nor_redraws_the_map()
         "the change was dropped rather than kept for the end of the read"
     );
 }
+
+/// The read the gate exists to save. A package says what every member holds in the directory at its own end, so an event about an open Word file nothing wrote is answered off the tail rather than by reading the file and inflating a member out of it — and the moment a member's bytes move, the answer changes and the reload reads as it always did.
+#[test]
+fn an_untouched_package_matches_the_hash_the_last_reload_recorded() {
+    let path = scratch_dir("watch-package-gate").join("report.docx");
+    fs::write(
+        &path,
+        one_member_package("word/document.xml", b"<w:document/>"),
+    )
+    .expect("the package is written");
+    let recorded = render_hash(&path, None).expect("a package states its own identity");
+
+    assert!(
+        file_still_matches_last_reload(&path, Some(recorded)),
+        "nothing moved, so the whole file was read to be told so"
+    );
+
+    fs::write(
+        &path,
+        one_member_package("word/document.xml", b"<w:document />"),
+    )
+    .expect("the package is written again");
+    assert!(
+        !file_still_matches_last_reload(&path, Some(recorded)),
+        "a member's bytes moved and the page was left showing the old document"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// A note has no identity cheaper than its own bytes, so the gate never holds for one: the file is read and what was read is hashed, which is the reload this phase leaves exactly where it was. The cleared hash is the same answer, which is what keeps the modal path's deliberate `None` meaning "read it".
+#[test]
+fn a_text_document_never_matches_whatever_hash_was_recorded() {
+    let path = scratch_dir("watch-note-gate").join("plan.md");
+    let text = "# Plan\n\n- [ ] one\n";
+    fs::write(&path, text).expect("the note is written");
+
+    assert!(
+        !file_still_matches_last_reload(&path, Some(render_key(&path, text))),
+        "a note was waved through on a hash nothing had read the file to check"
+    );
+    assert!(
+        !file_still_matches_last_reload(&path, None),
+        "a hash cleared on purpose stopped meaning read the file"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the note sits in a folder"));
+}
+
+/// The agreement whose failure is silent. A save records what the file now holds, and the watcher event that save raises a moment later asks the gate the same question about the same file; written any other way the two keys disagree, every event falls through, and the only sign is a big deck reading itself back twice on every save.
+#[test]
+fn the_key_a_save_records_is_the_key_the_gate_reads_back() {
+    let path = scratch_dir("watch-package-save-key").join("deck.pptx");
+    let member = "<p:presentation/>";
+    fs::write(
+        &path,
+        one_member_package("ppt/presentation.xml", member.as_bytes()),
+    )
+    .expect("the package is written");
+
+    assert!(
+        file_still_matches_last_reload(&path, Some(render_key(&path, member))),
+        "the save's own event read the whole deck back to be told it holds what the save put there"
+    );
+    assert_ne!(
+        render_key(&path, member),
+        content_hash(member),
+        "the key stopped being the package's own identity, so the tail read is buying nothing"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the deck sits in a folder"));
+}

@@ -553,39 +553,51 @@ function linkPreviewOpeningHtml(blocks) {
 function isLinkPreviewProgramBlock(node) {
   return !!node && node.nodeType === 1 && node.tagName === 'PRE' && !!node.classList && node.classList.contains('mermaid');
 }
-// The block that does not fit, rebuilt at the size the opening has room for. A clone takes complete children while they fit, descends into the first one that does not, and shortens a run of words only once its ancestors are cloned — so a table keeps its head and its early rows, and a code block keeps the element its one long run of words sits in. Every cloned ancestor is closed on the way out, which is why what comes back is still markup the card can draw, and why the room is what the opening may hold rather than an exact count of the result: those closing tags are what makes it valid.
+// The block that does not fit, rebuilt at the size the opening has room for. The answer is grown as a string: complete children while they fit, then down into the first one that does not, and a run of words shortened only inside the tags of the element it sits in — so a table keeps its head and its early rows, and a code block keeps the element its one long run of words sits in. Every element the walk opened is closed on the way out, which is why what comes back is still markup the card can draw, and why the room is what the opening may hold rather than an exact count of the result: those closing tags are what makes it valid. A string rather than a shell of clones because the walk has already built the markup of every child it keeps — the string it read the child's length off — so appending a clone and serializing the shell at the end writes every one of them out a second time, which on a rest that has to rebuild is half the whole cost.
 function linkPreviewShortenedHtml(block, room) {
-  const shell = block.cloneNode(false);
-  fillLinkPreviewOpening(block, shell, room - shell.outerHTML.length);
-  return shell.outerHTML;
+  const [opening, closing] = linkPreviewTagPair(block);
+  return opening + fillLinkPreviewOpening(block, room - opening.length - closing.length) + closing;
 }
-function fillLinkPreviewOpening(source, target, room) {
-  for (const node of [...source.childNodes]) {
+// The tags an element is written with, cut out of its own empty markup rather than composed from its name. Composing them means writing the attributes by hand, and a `title` holding a quote or an angle bracket is exactly what the serializer already gets right; this way the escaping stays its. The closing tag is the tail from the last `</`, which is where a serializer always puts it — an attribute holding one of its own cannot move it, because the closing tag is written after every attribute. A void element has none at all, so the search answers -1 and its markup stands whole: a `<br>` refused for room is a `<br>` and never a `<br` with `</br>` sliced off it.
+function linkPreviewTagPair(node) {
+  const bare = node.cloneNode(false).outerHTML;
+  const closes = bare.lastIndexOf('</');
+  if (closes < 0) return [bare, ''];
+  return [bare.slice(0, closes), bare.slice(closes)];
+}
+// A run of words written the four ways the serializer writes one, with the ampersand first so an ampersand written for one of the others is not escaped a second time.
+function linkPreviewEscapedWords(words) {
+  return words.replace(/&/g, '&amp;').replace(/\u00a0/g, '&nbsp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function fillLinkPreviewOpening(source, room) {
+  let taken = '';
+  for (const node of source.childNodes) {
     if (room <= 0) break;
     if (node.nodeType === 3) {
       const words = String(node.nodeValue == null ? '' : node.nodeValue);
-      target.appendChild(document.createTextNode(words.length <= room ? words : words.slice(0, room)));
+      taken += linkPreviewEscapedWords(words.length <= room ? words : words.slice(0, room));
       room -= words.length;
       continue;
     }
     if (node.nodeType !== 1) continue;
     if (isLinkPreviewProgramBlock(node)) {
-      target.appendChild(node.cloneNode(true));
-      room -= node.outerHTML.length;
+      const whole = node.outerHTML;
+      taken += whole;
+      room -= whole.length;
       continue;
     }
     // Asked before the markup is built here too, because the child this descends into is the same enormous run of words as the block above it — a plain text file's one `code` under its one `pre`, serialized a second time only to learn it does not fit either.
     const whole = linkPreviewWholeIfItFits(node, room);
     if (whole !== null) {
-      target.appendChild(node.cloneNode(true));
+      taken += whole;
       room -= whole.length;
       continue;
     }
-    const shell = node.cloneNode(false);
-    target.appendChild(shell);
-    fillLinkPreviewOpening(node, shell, room - shell.outerHTML.length);
+    const [opening, closing] = linkPreviewTagPair(node);
+    taken += opening + fillLinkPreviewOpening(node, room - opening.length - closing.length) + closing;
     break;
   }
+  return taken;
 }
 // The part of the host's answer the card draws, as words. The answer is a base and one `article` the card measures the note by, so the opening the host wrote is kept and only what stands inside it is swapped. A glossary link names its term through the scheme, which has no `#` to cut at, so that is read first. An address naming a section gets that section, one naming none gets the file's own opening, and both are then cut to what the box can show. A glossary term the answer has not got is nothing at all, because a whole glossary is not what that reader was promised; an ordinary address naming nothing keeps the whole answer, since the file is still what the press opens.
 function linkPreviewSectionHtml(html, href) {

@@ -302,11 +302,26 @@ fn package_identity(path: &Path) -> Option<u64> {
     }
 }
 
-/// What a render of `path` is keyed on: a package by the identity written in its own directory, every other format by the text it was drawn from.
+/// What a render of `path` is keyed on, for a caller holding the text it drew: a package by the identity written in its own directory, every other format by that text.
 ///
-/// One function, because the side writing a cache entry and the side asking whether the page is still current have to key on the same thing or the reader is left looking at a document the file no longer holds. `contents` is read only for a format that is its own text, so a gate standing in front of a read hands over `None` and still gets an answer for a package.
+/// One function, because the side writing a cache entry and the side asking whether the page is still current have to key on the same thing or the reader is left looking at a document the file no longer holds.
+pub(crate) fn render_key(path: &Path, contents: &str) -> u64 {
+    package_identity(path).unwrap_or_else(|| content_hash(contents))
+}
+
+/// The same key for a caller that has not read the file: `None` where only the text could have answered, so a gate standing in front of a read hands over `None` and still gets an answer for a package.
 pub(crate) fn render_hash(path: &Path, contents: Option<&str>) -> Option<u64> {
-    package_identity(path).or_else(|| contents.map(content_hash))
+    match contents {
+        Some(contents) => Some(render_key(path, contents)),
+        None => package_identity(path),
+    }
+}
+
+/// Whether the file still holds what the last reload recorded, answered without opening it.
+///
+/// A package states what every member's bytes are in the directory at its own end, so this costs a read of the tail where the reload below costs the whole file and one member inflated out of it — which is what an event about an open document used to spend to be told nothing had moved. A format that is its own text has no identity cheaper than its bytes, so [`render_hash`] answers `None` for it, this never holds, and the file is read exactly as it always was.
+pub(crate) fn file_still_matches_last_reload(path: &Path, active_hash: Option<u64>) -> bool {
+    render_hash(path, None).is_some_and(|identity| active_hash == Some(identity))
 }
 
 /// Whether an event has nothing to act on because the buffer already holds exactly what is on disk.
@@ -364,7 +379,7 @@ pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWat
     reload_active_document(reader, file_watch);
 }
 
-/// Re-render the active document from disk, preserving scroll position. Reads the file once and hash-gates, so a spurious event with unchanged contents re-renders nothing.
+/// Re-render the active document from disk, preserving scroll position. A package that has not moved is answered off its own directory without being opened; anything else is read once and hash-gated, so a spurious event with unchanged contents re-renders nothing.
 pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileWatch) {
     let workspace = &mut reader.workspace;
     let Some(index) = workspace.active else {
@@ -386,6 +401,11 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         return;
     }
 
+    // In front of the read rather than behind it: an event about an open package is usually the app's own save coming back.
+    if file_still_matches_last_reload(&path, file_watch.active_hash) {
+        return;
+    }
+
     let source = match read_document_for_editing(&path) {
         Ok(source) => source,
         // May be mid-save or briefly absent during an atomic rename; a later event delivers the settled contents.
@@ -396,7 +416,8 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     };
     let contents = source.text.text.clone();
 
-    let hash = content_hash(&contents);
+    // The key the gate above reads, the key the save writes, and the key a tab's render cache is answered on are one key: written any other way, the gate compares an identity against a text hash and waves every event through.
+    let hash = render_key(&path, &contents);
     if file_watch.active_hash == Some(hash) {
         return;
     }

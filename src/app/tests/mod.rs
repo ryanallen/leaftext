@@ -65,6 +65,45 @@ fn two_scratch_folders_asked_for_under_different_names_are_never_the_same_folder
     let _ = fs::remove_dir_all(&second);
 }
 
+/// The smallest legal package: a zip of one stored member, written here by hand.
+///
+/// Hand-written because the library's own archive builders sit inside the library's suite and a test of the binary cannot reach them, and because what this stands up is a file the gate reads the end of rather than a document anything draws — a member's name, its checksum and its sizes in the directory is the whole of what the gate looks at.
+fn one_member_package(name: &str, contents: &[u8]) -> Vec<u8> {
+    let mut crc = flate2::Crc::new();
+    crc.update(contents);
+    let crc = crc.sum();
+    let sizes = |out: &mut Vec<u8>| {
+        out.extend_from_slice(&crc.to_le_bytes());
+        out.extend_from_slice(&(contents.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(contents.len() as u32).to_le_bytes());
+        out.extend_from_slice(&(name.len() as u16).to_le_bytes());
+    };
+
+    let mut out: Vec<u8> = Vec::new();
+    out.extend_from_slice(&0x0403_4b50u32.to_le_bytes());
+    out.extend_from_slice(&[20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    sizes(&mut out);
+    out.extend_from_slice(&0u16.to_le_bytes());
+    out.extend_from_slice(name.as_bytes());
+    out.extend_from_slice(contents);
+
+    let directory_at = out.len();
+    out.extend_from_slice(&0x0201_4b50u32.to_le_bytes());
+    out.extend_from_slice(&[20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    sizes(&mut out);
+    out.extend_from_slice(&[0; 10]);
+    out.extend_from_slice(&0u32.to_le_bytes());
+    out.extend_from_slice(name.as_bytes());
+
+    let directory_size = out.len() - directory_at;
+    out.extend_from_slice(&0x0605_4b50u32.to_le_bytes());
+    out.extend_from_slice(&[0, 0, 0, 0, 1, 0, 1, 0]);
+    out.extend_from_slice(&(directory_size as u32).to_le_bytes());
+    out.extend_from_slice(&(directory_at as u32).to_le_bytes());
+    out.extend_from_slice(&0u16.to_le_bytes());
+    out
+}
+
 /// A tab open on `path`, seeded from `saved` and typed on so it is dirty.
 fn dirty_tab_workspace(path: &Path, saved: &str, typed: &str) -> Workspace {
     let mut workspace = Workspace::default();

@@ -522,6 +522,9 @@ export function run() {
   });
 
   // One block can be bigger than the whole opening it was cut to: a document opening on a four-hundred-row table, or on a code block whose one run of words is most of the file. Taking that block whole hands the card the layout the cut exists to save, so it is rebuilt instead — complete children while they fit, then down into the first one that does not, and a run of words shortened only inside a clone of the element it sits in. What comes back closes every tag it opened, keeps the head a table is read by, and holds nothing of the block's tail or of the block after it.
+  const previewCeiling = vm.runInContext('LINK_PREVIEW_OPENING_BYTES', booted);
+  // The four tags a one-item list is rebuilt inside, so the witness below can be written to leave a named number of bytes over at the child it is really about.
+  const previewListTags = '<ul id="wide">'.length + '</ul>'.length + '<li>'.length + '</li>'.length;
   const previewOversizedWitnesses = [
     {
       name: 'a table',
@@ -540,6 +543,20 @@ export function run() {
       block: `<pre id="wide"><code>${Array.from({ length: 200 }, (unused, at) => `line ${at} of code, long enough to matter`).join('\n')}</code></pre>`,
       kept: ['id="wide"', '<code>', 'line 0 of'],
       dropped: ['line 199 of'],
+    },
+    // The rebuilt string writes a shortened run of words itself rather than handing it to a text node for the serializer to write, so the four spellings the serializer uses are the app's to get right. The four stand at the front of the one item, where any slice at all keeps them, and `&amp;amp;` is what an ampersand escaped after the others rather than before them would come back as.
+    {
+      name: 'a list whose words hold a hard space and bare angle brackets',
+      block: `<ul id="wide"><li>&amp;&nbsp;&lt;&gt;${'word '.repeat(1200)}the tail</li></ul>`,
+      kept: ['id="wide"', '&amp;&nbsp;&lt;&gt;'],
+      dropped: ['&amp;amp;', 'the tail'],
+    },
+    // A `<br>` met with less room than its own four bytes is refused whole and rebuilt, and a closing tag composed from its name would write `</br>` and leave `<br` behind. The run of words before it is written to leave exactly two bytes over, so the rebuild meets it there rather than stopping above it.
+    {
+      name: 'a list whose item holds an element with no closing tag',
+      block: `<ul id="wide"><li>${'x'.repeat(previewCeiling - previewListTags - 2)}<br>the tail${'y'.repeat(previewCeiling)}</li></ul>`,
+      kept: ['id="wide"', '<br>'],
+      dropped: ['the tail'],
     },
   ];
   check('a first block bigger than the whole opening is rebuilt to the size the card can draw, closed and complete', () => {
@@ -568,6 +585,35 @@ export function run() {
         if (reparsed.innerHTML !== inner) throw new Error(`${witness.name} came back as markup a parser had to close for it`);
         forgetPreviewParse();
       }
+    } finally {
+      forgetPreviewParse();
+    }
+  });
+
+  // Every child the rebuild keeps has had its markup built already — that is the string the fit test read its length off — so appending a deep clone of it and serializing the shell at the end writes the same bytes a second time, which is half of what a rest that rebuilds costs. Counted rather than timed: the answer is grown as a string now, so the only clone left is the shallow one the opening and closing tags are cut out of, and a deep one anywhere in the walk is the duplicate coming back.
+  check('the rebuild of a block bigger than the opening clones nothing deeply', () => {
+    try {
+      const answer = PREVIEW_SECTION_OPENING + previewOversizedWitnesses[0].block + '<p id="after">After.</p></article>';
+      seedPreviewParse(answer);
+      const deep = [];
+      let clones = 0;
+      const countClones = (node) => {
+        const was = node.cloneNode;
+        node.cloneNode = function (wholly) {
+          clones += 1;
+          if (wholly) deep.push(String(node.tagName).toLowerCase());
+          return was.call(this, wholly);
+        };
+        for (const child of node.children) countClones(child);
+      };
+      countClones(booted.__previewProbeRoot);
+      vm.runInContext('pendingPreviewTokens.set(91, "notes/no-deep-clone.md");', booted);
+      booted.window.leafLinkPreview(91, answer);
+      const cut = vm.runInContext('linkPreviewCache.get("notes/no-deep-clone.md")', booted);
+      if (!clones) throw new Error('the rebuild cloned nothing at all, so the witness proves nothing');
+      if (deep.length) throw new Error(`the rebuild deep-cloned ${[...new Set(deep)].join(' and ')}, so every child under it is serialized a second time`);
+      if (!cut.includes('id="wide"') || !cut.includes('row 0 of')) throw new Error('the rebuild lost the opening the card can draw');
+      if (cut.includes('id="after"')) throw new Error('the rebuild ran on past the block that filled the opening');
     } finally {
       forgetPreviewParse();
     }

@@ -329,8 +329,9 @@ fn after_document_saved(
     webview: Option<&WebView>,
 ) {
     edit.mark_saved();
-    file_watch.active_hash = Some(content_hash(text));
     let path = edit.path.clone();
+    // The same key the live reload's gate reads back off the file, so the watcher event this save is about to raise costs the tail of a package rather than the whole of it.
+    file_watch.active_hash = Some(render_key(&path, text));
     push_saved_document(vault_state, refresh_book, webview, &path);
     record_or_refresh_corpus_path(vault_state, &path);
 }
