@@ -2,7 +2,7 @@
 
 > Everything in `docs/` — what each page covers, how the pages fit together, and how the folder becomes [leaftext.com/docs](https://leaftext.com/docs).
 
-Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, HTML, XML, JSON, YAML, plain text (`.txt`), config (`.ini`), source, or email (`.eml`) file, get a clean rendered view, write straight into the page, and keep your place with tabs, history, a minimap, and a searchable library. Nothing leaves your device. These docs cover the whole app, from installing it to the startup-validated theme contract behind the scenes.
+Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, HTML, XML, JSON, YAML, plain text (`.txt`), config (`.ini`), source, email (`.eml`), or Word, Excel, PowerPoint or OpenDocument (`.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`) file, get a clean rendered view, write straight into the page, and keep your place with tabs, history, a minimap, and a searchable library. Nothing leaves your device. These docs cover the whole app, from installing it to the startup-validated theme contract behind the scenes.
 
 ## Map
 

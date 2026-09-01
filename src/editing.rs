@@ -193,7 +193,9 @@ impl EditableDocument {
         let Some(rewritten) = crate::office::sheet_cell_saying(element, text) else {
             return false;
         };
-        self.splice(start, end, &rewritten, true)
+        // The answer is whether the cell was rewritten, never `splice`'s own — that one reports the dirty flag moving, which a buffer already dirty from an earlier edit never does. Reading it here told the caller nothing had been written, and its fallback spliced the words over the cell this call had just put there.
+        self.splice(start, end, &rewritten, true);
+        true
     }
 
     /// Like `replace_range` but records no undo snapshot — for the auto-saving checkbox path, which is deliberately not undoable, and for every splice of a typing run after its first, so a run that paused four times is still one press of undo.

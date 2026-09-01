@@ -123,13 +123,14 @@ The other thing that walk refuses is a folder a machine filled: one that declare
 
 ## File actions
 
-![A right-click context menu open on a file row in the library pane, listing Open, Cut, Copy, Copy path, Rename, Reveal file, Properties and Delete](../../imgs/file-actions.png)
+![A right-click context menu open on a file row in the library pane, listing Open, Favorite, Cut, Copy, Copy path, Rename, Reveal file, Properties and Delete](../../imgs/file-actions.png)
 
 Right-click a file row for a context menu of file actions:
 
 | Action | What it does |
 | --- | --- |
 | Open | Opens the file in the reader |
+| Favorite | Pins the file to the top of the pane, and reads **Unfavorite** on one already there |
 | Cut | Puts the file on the system clipboard to move on paste |
 | Copy | Puts the file on the system clipboard to copy on paste |
 | Copy path | Copies the file's full path as text |
@@ -189,6 +190,7 @@ Right-clicking a **folder row** — or the empty space below the rows, which sta
 | Action | What it does |
 | --- | --- |
 | Open folder | Goes into it. Only on a folder row; the empty space is already the folder you are in |
+| Favorite | Pins the folder to the top of the pane, and reads **Unfavorite** on one already there. Only on a folder row |
 | Paste | Puts what you last cut or copied into this folder. Only shown when there is something to paste |
 | Reveal folder | Shows the folder in your OS file manager |
 | Properties | Opens the OS folder-properties view |

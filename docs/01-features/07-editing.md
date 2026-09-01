@@ -13,6 +13,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [New document](#new-document) | The **+** in the app bar (and on the home screen) starts a blank page, its reading view unlocked and ready to type |
 | [Save As](#new-document) | A new document has no file until its first save, which asks where to put it |
 | [Inline editing](#inline-editing-the-reading-view) | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
+| [Typing in a Word file or a spreadsheet](#formats) | Type into a paragraph of a `.docx` or `.odt`, or a cell of an `.xlsx` or `.ods`, where it is drawn — and everything the app never read stays byte for byte what it was on save |
 | [Typing on XML as words](#inline-editing-the-reading-view) | Press a sentence in an [XML](01-rendering.md#xml) document and type on it where it is drawn, with the tags left alone; a block whose drawn words are not the file's own bytes opens its source instead and says why |
 | [Typing in a cell of an XML table](#inline-editing-the-reading-view) | Press a value and type on it where it is drawn — one of two values joined by a comma as readily as a cell holding one — and press a column heading to rename that element in every record at once; the rest of the file is untouched, and the grid never swaps for markup |
 | [Typing on a value inside an XML tag](#inline-editing-the-reading-view) | Press a value written inside a tag — in the element's own list, in a table cell, as one of several drawn together, or as the lone value an empty element is drawn by — and type on it where it is drawn; only what sits between the quotes is written, and the quote that closes it is refused |
@@ -42,7 +43,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Code view](#code-view) | Toggle the rendered page to the raw source and back |
 | [A source view that will not open](#code-view) | Where the editor cannot be brought up, the app says so and puts you back on the document at the place you were reading, and pressing the button again is a fresh attempt |
 | [Your place is kept](#code-view) | Toggling between the two views holds your position, and toggling back and forth returns you to the exact spot |
-| [Highlighting](#code-view) | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, HTML, XML, YAML and JSON; raw [email](01-rendering.md#email-eml), [plain text](01-rendering.md#plain-text-files), [INI](01-rendering.md#ini-files) and [source files](01-rendering.md#source-files) show as uncolored text |
+| [Highlighting](#code-view) | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, HTML, XML, YAML, JSON, and the XML of the part an [Office file](01-rendering.md#office-and-opendocument-files) is anchored to; raw [email](01-rendering.md#email-eml), [plain text](01-rendering.md#plain-text-files), [INI](01-rendering.md#ini-files) and [source files](01-rendering.md#source-files) show as uncolored text |
 | [Color squares](#code-view) | A color written in the source carries a small square of itself in the line beside it — hex, `rgb()` or `hsl()` |
 | [Line numbers](#code-view) | A gutter numbers each source line, staying pinned when long lines wrap |
 | [Wrapped lines](#code-view) | Long lines wrap; the code view never scrolls sideways |
@@ -406,7 +407,7 @@ The [live reload](02-navigation.md#reload) watcher keeps working alongside editi
 
 ## Formats
 
-The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`), [HTML](01-rendering.md#html-files) (`.html`, `.htm`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), [plain text](01-rendering.md#plain-text-files) (`.txt`), [INI](01-rendering.md#ini-files) (`.ini`), [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`), and every [source file](01-rendering.md#source-files).
+The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`), [HTML](01-rendering.md#html-files) (`.html`, `.htm`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), [plain text](01-rendering.md#plain-text-files) (`.txt`), [INI](01-rendering.md#ini-files) (`.ini`), [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`), and every [source file](01-rendering.md#source-files). A [Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files) (`.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`) is the one exception to *whole-file*: it is a zip rather than one text file, so the code view shows the XML of the part the page is anchored to, and a save rewrites that part and copies every other one byte for byte.
 
 What the *reading view* offers differs by format, because a block can only be edited in place when the app knows the exact bytes it came from:
 
@@ -427,6 +428,9 @@ What the *reading view* offers differs by format, because a block can only be ed
 | YAML aliases (`*name`) and keys with no value | Read-only, and a press says why; edited in the code view |
 | INI values | Edit their exact source in place |
 | An INI section heading and the name to the left of a value | Read-only, and a press says why; edited in the code view |
+| A paragraph, heading or list item in a Word or OpenDocument text file | Edit its exact source in place, spliced into the part it came from. Everything the app never read — styles, themes, comments, tracked changes, charts, macros — is copied across untouched |
+| A cell in a spreadsheet | Type on the words where they are drawn. Excel keeps almost every cell's text in one shared table, so what is written is the cell itself carrying its own words, and a cell that shared that text with another one stops sharing it while the other reads what it always read |
+| A slide's text, and any block in a workbook or deck beyond the first sheet or slide | Read-only in the page; edited in the code view, which shows the part the page is anchored to |
 | Email lines and paragraphs the page can write back byte for byte | Type on the words where they are drawn |
 | Every other part of a message — a packed body, a folded or coded header line | Read-only in the page, and a press says so; edited in the code view |
 

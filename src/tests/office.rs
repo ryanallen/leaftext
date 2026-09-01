@@ -535,6 +535,46 @@ fn editing_a_shared_string_cell_leaves_the_cell_beside_it_alone() {
     );
 }
 
+/// A second cell typed in the same session is rewritten like the first. The rewrite answers whether it wrote, never whether the dirty flag moved — a buffer already dirty from the first edit never moves it again, so reading that answer told the caller nothing had happened and its fallback spliced the words over the cell that had just been written, taking the rest of the row with them.
+#[test]
+fn a_second_cell_typed_in_one_session_is_rewritten_like_the_first() {
+    let before = sample_xlsx();
+    let after = saved_after("budget.xlsx", &before, |buffer| {
+        for (cell, words) in [
+            ("<c r=\"C2\" t=\"s\"><v>5</v></c>", "Closed"),
+            ("<c r=\"C3\" t=\"s\"><v>5</v></c>", "Open again"),
+        ] {
+            let at = buffer.text().find(cell).expect("the cell is in the sheet");
+            assert!(
+                buffer.replace_sheet_cell(at, at + cell.len(), words),
+                "a cell element should be rewritten as an inline string, dirty or clean"
+            );
+        }
+    });
+
+    let sheet = read_archive_member(&after, "xl/worksheets/sheet1.xml").expect("the sheet");
+    assert!(
+        sheet.contains(
+            "<c r=\"C2\" t=\"inlineStr\"><is><t xml:space=\"preserve\">Closed</t></is></c>"
+        ),
+        "the first cell should still say its words inline: {sheet}"
+    );
+    assert!(
+        sheet.contains(
+            "<c r=\"C3\" t=\"inlineStr\"><is><t xml:space=\"preserve\">Open again</t></is></c>"
+        ),
+        "the second cell should say its words inline rather than being spliced over: {sheet}"
+    );
+    assert_eq!(
+        member_bytes(&after, "xl/sharedStrings.xml"),
+        member_bytes(&before, "xl/sharedStrings.xml"),
+        "the shared string table must not be touched by either edit"
+    );
+    let opened = opened_document_from_bytes(&after, Path::new("budget.xlsx")).expect("opens");
+    assert!(opened.html.contains("Closed"));
+    assert!(opened.html.contains("Open again"));
+}
+
 /// A package whose members write their sizes after the data is the shape two of three real Word documents carry, and a copy that keeps the flag while dropping the descriptor is read happily by a lenient reader and refused as corrupt by the package layer Office is built on. Every member the edit did not touch comes through byte for byte, and none of them defers its sizes.
 #[test]
 fn a_package_written_with_data_descriptors_opens_after_a_save() {

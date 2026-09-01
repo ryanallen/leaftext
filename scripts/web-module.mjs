@@ -74,6 +74,15 @@ export async function instantiateCore(file) {
       api.leaf_free(at, length);
     },
     render: (source, path) => JSON.parse(withStrings(api.leaf_render, source, path) || 'null'),
+    /** The same render over a document's own bytes, which is the only way a packaged format can arrive: a Word, Excel, PowerPoint or OpenDocument file is a zip, so there is no string to hand across. `null` back means the bytes are not a document that format can read. */
+    renderBytes: (bytes, path) => {
+      const [at, length] = writeBytes(bytes);
+      const [name, nameLength] = write(path);
+      const answer = read(api.leaf_render_bytes(at, length, name, nameLength));
+      api.leaf_free(at, length);
+      api.leaf_free(name, nameLength);
+      return JSON.parse(answer || 'null');
+    },
     /** How much linear memory the module holds. Read rather than computed: a page opening and closing documents all day must not grow it. */
     memoryBytes: () => api.memory.buffer.byteLength,
     /** The document buffer an edit splices into. `0` back from `open` means the bytes were not text at all; a `null` anywhere else means the handle names nothing. */

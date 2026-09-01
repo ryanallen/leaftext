@@ -18,7 +18,7 @@ Free · Windows 10+ and macOS Universal · **[Windows `.msi`](https://github.com
 
 Your notes deserve better than a text editor. Open a file in Leaftext and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
-There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [source files](docs/01-features/01-rendering.md#source-files), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml), [plain text](docs/01-features/01-rendering.md#plain-text-files) and [config files](docs/01-features/01-rendering.md#ini-files) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) — formats every other app can read, so you're never locked in.
+There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [source files](docs/01-features/01-rendering.md#source-files), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml), [plain text](docs/01-features/01-rendering.md#plain-text-files) and [config files](docs/01-features/01-rendering.md#ini-files) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) and [Word, Excel, PowerPoint and OpenDocument files](docs/01-features/01-rendering.md#office-and-opendocument-files) — formats every other app can read, so you're never locked in.
 
 Free, on macOS and Windows.
 
@@ -27,6 +27,7 @@ Free, on macOS and Windows.
 | If you want to… | Go to |
 | --- | --- |
 | See what it looks like | [Read your files](#read-your-files) |
+| Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
 | Write in the page, not in an editor | [Write where you read](#write-where-you-read) |
 | Search your notes and see how they link | [Keep a library](#keep-a-library) |
 | Find a word in the document you are reading | [Search everything you've written](#search-everything-youve-written) |
@@ -81,6 +82,12 @@ A `.txt` opens as one block with every space and every line break kept, so an AS
 
 An `.ini` opens as sections with their keys and values under each, every value ready to be typed into and written straight back. Each key is drawn the way it was written, because `font_size` is a name somebody chose. **[INI →](docs/01-features/01-rendering.md#ini-files)**
 
+### Word, Excel and PowerPoint files
+
+![A Word file open in Leaftext: the title Quarterly report, a What happened heading, a paragraph with a tracked change under it, a bulleted point, a numbered point, and a two-column table, with the minimap at the right and the Previous and Next cards under the document](imgs/office-documents.png)
+
+A `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods` or `.odp` opens as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as one entry per slide. Type into a paragraph or a cell, save, and everything Leaftext never read — your styles, themes, comments, tracked changes, charts and macros — is byte for byte what it was. No network, no account, no sign-in. **[Word, Excel, PowerPoint and OpenDocument →](docs/01-features/01-rendering.md#office-and-opendocument-files)**
+
 ### Read faster when you need to
 
 ![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
@@ -117,7 +124,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![Editing in code view, with save and undo button](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, or a raw email — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML and JSON come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of the part a Word, Excel, PowerPoint or OpenDocument file is anchored to — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 

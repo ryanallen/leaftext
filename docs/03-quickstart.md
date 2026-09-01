@@ -10,14 +10,14 @@ There's nothing to set up. No account, no folder to designate, no plugins to cho
 ## The five minutes
 
 1. Press `Ctrl+O` on Windows or `Cmd+O` on macOS.
-2. Pick any `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.eml`, or [source](01-features/01-rendering.md#source-files) file.
+2. Pick any `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.eml`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`, or [source](01-features/01-rendering.md#source-files) file.
 3. Scroll the document, and use the [minimap](#jump) on the right to jump.
 4. Open another file to create a [new tab](#a-second-tab).
 5. Click into a sentence and [type](#4-edit-a-line).
 
 ```mermaid
 flowchart LR
-    A[Launch Leaftext] --> B[Open a .md, .xml, .json, .yaml, or .eml file]
+    A[Launch Leaftext] --> B[Open a .md, .xml, .json, .yaml, .eml or .docx file]
     B --> C[Read in main pane]
     C --> D[Jump with minimap]
     C --> E[Open another file]
@@ -32,7 +32,7 @@ flowchart LR
 | Method | How |
 | --- | --- |
 | Keyboard | `Ctrl+O` / `Cmd+O` |
-| Drag and drop | Drop a `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.eml`, or [source](01-features/01-rendering.md#source-files) file onto the window |
+| Drag and drop | Drop a `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.eml`, `.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`, or [source](01-features/01-rendering.md#source-files) file onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaftext with a file path, or double-click an [associated file](02-installation.md#file-associations) |
 | Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |

@@ -60,7 +60,7 @@ A fenced run of code (```` ``` ````). Tag it with a language for [syntax highlig
 
 ## Code view
 
-The document as its raw source — line-numbered, editable, and colored for Markdown, HTML, XML, YAML and JSON, with every other format Leaftext reads drawn as plain text here. Reach it from the [floating toolbar](GLOSSARY.md#floating-toolbar). It is [Monaco](GLOSSARY.md#monaco) underneath, and it edits every format Leaftext opens. See [Editing](01-features/07-editing.md#code-view).
+The document as its raw source — line-numbered, editable, and colored for Markdown, HTML, XML, YAML, JSON and the XML inside a Word, Excel, PowerPoint or OpenDocument file, with every other format Leaftext reads drawn as plain text here. Reach it from the [floating toolbar](GLOSSARY.md#floating-toolbar). It is [Monaco](GLOSSARY.md#monaco) underneath, and it edits every format Leaftext opens. See [Editing](01-features/07-editing.md#code-view).
 
 ## Collapsible section
 
