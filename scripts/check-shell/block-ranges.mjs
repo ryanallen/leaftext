@@ -413,7 +413,7 @@ export function run() {
     if (appEl.querySelector('.document-body')) throw new Error('the check left a drawn document standing in the reader');
   });
 
-  // Eighty-nine places used to read a drawn range straight off `dataset`, and the numbers cannot leave the DOM while a single one of them is still looking there — one left behind splices the wrong bytes into somebody's file. So there is one door, `rangeOf`/`hasRangeOf`/`setRangeOf` in `shell/reading-blocks.js`, and this refuses every other way in. The presence tests are untouched on purpose: `closest('[data-src-start]')` asks whether an element can be typed on at all, which is a different question, and the attribute is staying to answer it.
+  // A drawn range read straight off `dataset` reads the stale mark the element wears and splices the wrong bytes into somebody's file, because the numbers live in the page's own table. So there is one door, `rangeOf`/`hasRangeOf`/`setRangeOf` in `shell/reading-blocks.js`, and this refuses every other way in. The presence tests are untouched on purpose: `closest('[data-src-start]')` asks whether an element can be typed on at all, which is a different question, and the attribute is staying to answer it.
   check('nothing reads a drawn range off the DOM but the one door', () => {
     const door = 'reading-blocks.js';
     const spelled = /\.dataset\s*\.\s*(srcStart|srcEnd|cellStart|cellEnd|valueStart|valueEnd)\b/;
@@ -551,13 +551,13 @@ export function run() {
         throw new Error(`the block drawn ${at + 1}st reads ${JSON.stringify(read[at])} rather than ${JSON.stringify(want[at])}`);
       }
     }
-    // Said plainly, because this is the whole reason the shape the earlier draft offered was refused: the two paragraphs written below the definition are drawn above it and still moved, and the two written above it did not.
+    // Said plainly, because it is the whole reason a shift cannot walk from the caret to the foot of the drawn page: the two paragraphs written below the definition are drawn above it and still moved, and the two written above it did not.
     if (read[2].start !== 153 || read[3].start !== 271) throw new Error('a paragraph written below the definition and drawn above it was left behind');
     if (read[0].start !== 0 || read[1].start !== 25) throw new Error('a paragraph written above the splice was moved');
     if (read[4].start !== 84 || read[4].end !== 110) throw new Error(`the definition typed in reads ${JSON.stringify(read[4])} rather than [84,110)`);
   });
 
-  // The caret carried across a re-render used to find its block by matching the attribute's value — `[data-src-start="123"]` — and the element wears a mark there now, so it comes back by a lookup in the table instead. This is the one place on the page that finds an element by its number rather than the other way round.
+  // The caret carried across a re-render comes back by a lookup in the table: the element wears a mark rather than a number, so there is no `[data-src-start="123"]` on the page to match against. This is the one place that finds an element by its number rather than the other way round.
   check('the caret carried across a re-render lands on the block the number names', () => {
     const { body, blocks } = outOfOrderPage();
     booted.resetDrawnRanges();

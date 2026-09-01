@@ -30,12 +30,12 @@ const RANGE_NAMES = [
 
 const rangeNamesOf = (kind) => RANGE_NAMES.find((pair) => pair.kind === kind) || null;
 
-// Every read and every write of a drawn range goes through the functions below, and nowhere in the page is one of those six names spelled against an element's own `dataset` — `scripts/check-shell/block-ranges.mjs` refuses it. Eighty-nine places used to read them straight off the DOM, and a single one left behind splices the wrong bytes into somebody's file, so there has to be exactly one place the numbers can move to.
+// Every read and every write of a drawn range goes through the functions below, and nowhere in the page is one of those six names spelled against an element's own `dataset` — `scripts/check-shell/block-ranges.mjs` refuses it. One read reaching past the door reads the DOM's stale mark and splices the wrong bytes into somebody's file, so there is exactly one place the numbers live.
 
 // Every drawn range on the page, keyed on the element wearing it, each entry holding whichever of the three kinds that element carries. The numbers live here rather than in the element's own attributes because a typing pause moves every one of them: 40,000 offsets move in this table in 0.9 ms where the same 40,000 written back as `data-*` attributes cost 33, which is a wait somebody feels at every pause in a long document. Reset and refilled once per render, so it holds one document's elements and a page that has moved on drops out of it whole.
 let drawnRanges = new Map();
 
-// What an element wears where its number used to be. The attribute stays — sixteen places ask `closest('[data-src-start]')` to know whether something can be typed on at all, which is a different question — but its value is no longer an offset, so a read that got past the check reads `NaN` and is refused by the `Number.isFinite` guard every caller already has, rather than splicing an offset the buffer left behind.
+// What an element wears in place of an offset. The attribute stays — sixteen places ask `closest('[data-src-start]')` to know whether something can be typed on at all, which is a different question — but its value is no longer an offset, so a read that got past the check reads `NaN` and is refused by the `Number.isFinite` guard every caller already has, rather than splicing an offset the buffer left behind.
 const RANGE_HELD_IN_TABLE = '-';
 
 // Start a document's table. The body is drawn whole on every render, so nothing of the last one is worth keeping and holding it would keep its elements alive.
@@ -90,7 +90,7 @@ function adoptDrawnRanges(body) {
   });
 }
 
-// Move every offset at or past `at` by `delta`, in the table rather than on the page. `alsoMove` is handed each element once with the same arithmetic, so a caller holding a span of its own on an element moves it in the same walk — which is all the `Set` the old walk built ever did, and it can never have folded two entries together because nothing on the page wears two of the three names.
+// Move every offset at or past `at` by `delta`, in the table rather than on the page. `alsoMove` is handed each element once with the same arithmetic, so a caller holding a span of its own on an element moves it in the same walk, and no element can be counted twice because nothing on the page wears two of the three names.
 function moveDrawnRangesAfter(at, delta, alsoMove) {
   const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
   drawnRanges.forEach((held, el) => {

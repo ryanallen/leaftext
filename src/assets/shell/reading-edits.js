@@ -1724,7 +1724,7 @@ function placePendingCaret(body) {
     openMediumStart(body);
     return;
   }
-  // A cell, and a value inside a tag, each answer to their own names rather than a block's — the gutter reads a block's, and either wearing them would be offered a drag handle. So the caret comes back under whichever kind it left on, looked up in the table: the element wears a mark where its number used to be, so there is no value on the page left to match on.
+  // A cell, and a value inside a tag, each answer to their own names rather than a block's — the gutter reads a block's, and either wearing them would be offered a drag handle. So the caret comes back under whichever kind it left on, looked up in the table: the element wears a mark rather than a number, so there is no value on the page to match on.
   const target = elementWithRange(body, pending.kind || 'block', pending.srcStart);
   if (!target) return;
   if (pending.insertBelow) {
