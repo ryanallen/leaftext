@@ -196,7 +196,7 @@ export function run() {
     }
   });
 
-  // The turn that puts the slack back rebuilds the same rows out of the same document at the same widths, so without the slack in the guard it is refused as a rebuild that would change nothing — and the rail draws one screen for as long as the document stays open, which is the whole of the narrow rebuild's cost with none of its saving.
+  // The widening turn rebuilds the same rows out of the same document at the same widths, so the skip guard has to count the slack to let it through.
   check('the slack the standing clone holds is one of the things the skip guard counts', () => {
     const { minimapRebuildWouldChangeNothing } = booted;
     const metrics = { sourceWidth: 800 };

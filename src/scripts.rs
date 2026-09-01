@@ -2,6 +2,7 @@ use crate::store::{DocumentGraph, SearchResults, Vault};
 use crate::*;
 use std::hash::{Hash, Hasher};
 
+/// The key a page names when it asks for a switch back. Taken from the source, so a payload built anywhere but the desktop's own render still carries one.
 fn document_render_key(source: &str) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     source.hash(&mut hasher);
@@ -350,6 +351,7 @@ pub fn workspace_switch_script(
     format!("window.leafSwitchTab({state}, {anchor});")
 }
 
+/// `leafSwitchTabCached(<state>, <anchor>, <key>);` — a switch carrying no document at all. The page holds the layout this key names and puts it back; it asks for the whole thing where it does not.
 pub fn workspace_cached_switch_script(
     recent: &[PathBuf],
     favorites: &Favorites,

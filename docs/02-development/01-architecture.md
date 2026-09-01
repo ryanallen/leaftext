@@ -171,7 +171,7 @@ Every command the page can send, one row each — the whole list, held to `IpcCo
 | `openRecent`           | Recent file list click                |
 | `newDocument`          | The **+** in the app bar, or **New document** on the home screen: an empty [unsaved buffer](../01-features/07-editing.md#new-document) in a new tab, with no file behind it until the first save |
 | `closeTab`             | Tab close button or `Ctrl+W`          |
-| `switchTab`            | Tab click                             |
+| `switchTab`            | Tab click. `renderKey` names the render the page still has the drawn layout for, and where the host's own cache answers with that same render the reply carries the workspace, the anchor and the key alone — no document HTML — and the page puts its kept layout back. `forceFull` is the page saying its kept layout has gone, which redraws the already-active tab through the whole path once and never takes the short one again |
 | `moveTab`              | Tab drag-and-drop reorder             |
 | `goBack` / `goForward` | History buttons or keyboard shortcuts |
 | `openLink`             | In-document link click. `newPage` — set by a Ctrl/Cmd-held or middle click, or the link menu's **Open in new page** — appends the document as a tab behind the one being read instead of following it in place |

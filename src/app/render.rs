@@ -149,12 +149,14 @@ pub(crate) struct Reader {
     pub(crate) image_dir: Arc<Mutex<Option<PathBuf>>>,
 }
 
+/// A render and the two things a tab switch asks of it: which render it is, and whether the tab already had it.
 pub(crate) struct RenderedDocument {
     pub(crate) document: OpenedDocument,
     pub(crate) hash: u64,
     pub(crate) reused: bool,
 }
 
+/// May the switch send the key alone? Only where the tab's own render answered, the page still holds the layout that render drew, and the page has not asked for the whole thing back. A fresh render has never been on the page, so there is nothing there to put back.
 pub(crate) fn switch_uses_cached_handoff(
     reused: bool,
     hash: u64,
@@ -324,6 +326,7 @@ impl Reader {
         let _ = self.render_with_open_result(scroll, None);
     }
 
+    /// Render for a tab switch, which may hand the page a key instead of the document.
     pub(crate) fn render_switch(
         &mut self,
         scroll: ScrollIntent,

@@ -20,7 +20,7 @@ var minimapBuiltRange;
 var minimapBuiltFirstRow;
 var minimapBuiltLastRow;
 var minimapBuiltRowPath;
-// How much slack the built clone holds, as the multiple of a screen it was asked for. Without it the widening rebuild below looks like a rebuild that would put back what is already there, and the rail stays narrow for as long as the document is open.
+// How much slack the built clone holds, as the multiple of a screen it was asked for. The skip guard counts it, which is what lets a wider rebuild over the same rows through.
 var minimapBuiltSlack;
 // The widest slack anything has asked the booked frame to build with. A scroll and a keystroke landing in the same frame get one rebuild, and it is the scroll's, because the scroll is the one that needs room either side.
 var minimapPendingSlack;
