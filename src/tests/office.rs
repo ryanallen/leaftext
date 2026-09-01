@@ -535,7 +535,7 @@ fn editing_a_shared_string_cell_leaves_the_cell_beside_it_alone() {
     );
 }
 
-/// A package whose members write their sizes after the data is the shape two of three real Word documents carry, and it is the one failure the first phase existed to catch: a copy that keeps the flag and drops the descriptor is read happily by a lenient reader and refused as corrupt by the package layer Office is built on. Every member the edit did not touch comes through byte for byte, and none of them defers its sizes any more.
+/// A package whose members write their sizes after the data is the shape two of three real Word documents carry, and a copy that keeps the flag while dropping the descriptor is read happily by a lenient reader and refused as corrupt by the package layer Office is built on. Every member the edit did not touch comes through byte for byte, and none of them defers its sizes.
 #[test]
 fn a_package_written_with_data_descriptors_opens_after_a_save() {
     let before = docx_with_data_descriptors();

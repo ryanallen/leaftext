@@ -466,7 +466,7 @@ function typedBlockText(block) {
   return inlineDomToMarkdown(block).trim();
 }
 
-// Whether the page can write this block's own bytes back out of what is on screen — the ticket's stamping rule one level up. Equal, and typing on the words is exact; not equal (a date the reader re-spelled, an address list rejoined, markup drawn from its source) and the block keeps the raw-slice editor.
+// Whether the page can write this block's own bytes back out of what is on screen — the renderer's own stamping rule, one level up. Equal, and typing on the words is exact; not equal (a date the reader re-spelled, an address list rejoined, markup drawn from its source) and the block keeps the raw-slice editor.
 function emailBlockTypeableInPlace(el) {
   const start = Number(el.dataset.srcStart);
   const end = Number(el.dataset.srcEnd);
