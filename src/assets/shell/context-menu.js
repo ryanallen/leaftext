@@ -74,8 +74,7 @@ function contextMenuPictureLane() {
 function deletePictureFromDocument(picture) {
   const block = picture && picture.parentElement;
   if (!block || !block.classList.contains('image-lane')) return;
-  const start = Number(block.dataset.srcStart);
-  const end = Number(block.dataset.srcEnd);
+  const { start, end } = rangeOf(block, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
   const span = blockDeleteRange(currentDocumentSource, start, end);
   sendBlockSplice(block, span.start, span.end, '');

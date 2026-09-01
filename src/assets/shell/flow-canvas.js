@@ -1105,8 +1105,7 @@ function openMermaidBlockSheet(block) {
 // Where a diagram block's own text sits in the buffer right now: the block's range, narrowed to the inside of its fences. Null once it has left the page, asked as connectedness — a block a render replaced still answers the numbers it was drawn with.
 function flowBlockSpan(block) {
   if (!block || !block.isConnected) return null;
-  const blockStart = Number(block.dataset.srcStart);
-  const blockEnd = Number(block.dataset.srcEnd);
+  const { start: blockStart, end: blockEnd } = rangeOf(block, 'block');
   if (!Number.isFinite(blockStart) || !Number.isFinite(blockEnd)) return null;
   const source = sliceSourceBytes(currentDocumentSource, blockStart, blockEnd);
   const span = fencedCodeInnerSpan(source);

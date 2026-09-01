@@ -702,8 +702,8 @@ export function run() {
       booted.runGapInsert({ after: pressed, before: null }, option('heading'));
       const opened = standingBelow(pressed);
       if (!opened) throw new Error('the gap under a block left nothing standing after it');
-      if (opened.dataset.srcStart !== '21') {
-        throw new Error(`the line opened at ${opened.dataset.srcStart}`);
+      if (booted.rangeOf(opened, 'block').start !== 21) {
+        throw new Error(`the line opened at ${booted.rangeOf(opened, 'block').start}`);
       }
       if (opened.dataset.placeholder !== 'Name this part...') {
         throw new Error(`the gap opened a ${JSON.stringify(opened.dataset.placeholder)}`);

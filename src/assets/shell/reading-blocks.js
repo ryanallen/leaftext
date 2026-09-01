@@ -19,13 +19,110 @@ function sliceSourceBytes(source, start, end) {
   return sourceByteDecoder.decode(sourceByteCache.slice(start, end));
 }
 
+// ---- the one door to a drawn range ------------------------------------------
+//
+// The `data-*` pair each kind of typed-on thing carries its own byte range under. A block's names are read by four other things — the gutter's plus, the drag handle, a delete over a run — so a cell of a table and a value an element keeps in a tag each wear a pair of their own, and nothing on the page wears two. Every gesture that moves a range or finds a thing by one walks this list, because a name added to one gesture and not the next is a splice at the wrong offset.
+const RANGE_NAMES = [
+  { kind: 'block', found: 'data-src-start', start: 'srcStart', end: 'srcEnd' },
+  { kind: 'cell', found: 'data-cell-start', start: 'cellStart', end: 'cellEnd' },
+  { kind: 'value', found: 'data-value-start', start: 'valueStart', end: 'valueEnd' },
+];
+
+const rangeNamesOf = (kind) => RANGE_NAMES.find((pair) => pair.kind === kind) || null;
+
+// Every read and every write of a drawn range goes through the functions below, and nowhere in the page is one of those six names spelled against an element's own `dataset` — `scripts/check-shell/block-ranges.mjs` refuses it. Eighty-nine places used to read them straight off the DOM, and a single one left behind splices the wrong bytes into somebody's file, so there has to be exactly one place the numbers can move to.
+
+// Every drawn range on the page, keyed on the element wearing it, each entry holding whichever of the three kinds that element carries. The numbers live here rather than in the element's own attributes because a typing pause moves every one of them: 40,000 offsets move in this table in 0.9 ms where the same 40,000 written back as `data-*` attributes cost 33, which is a wait somebody feels at every pause in a long document. Reset and refilled once per render, so it holds one document's elements and a page that has moved on drops out of it whole.
+let drawnRanges = new Map();
+
+// What an element wears where its number used to be. The attribute stays — sixteen places ask `closest('[data-src-start]')` to know whether something can be typed on at all, which is a different question — but its value is no longer an offset, so a read that got past the check reads `NaN` and is refused by the `Number.isFinite` guard every caller already has, rather than splicing an offset the buffer left behind.
+const RANGE_HELD_IN_TABLE = '-';
+
+// Start a document's table. The body is drawn whole on every render, so nothing of the last one is worth keeping and holding it would keep its elements alive.
+function resetDrawnRanges() {
+  drawnRanges = new Map();
+}
+
+// The two byte offsets `el` carries for `kind`, each NaN where it carries none. Callers hold the pair against `Number.isFinite` before splicing anything, the way they held the attribute. An element the table has never seen is read off its own attributes, which is what an element drawn since the render — a card's diagram, markup a step taken back put back — still wears.
+function rangeOf(el, kind) {
+  const names = el && el.dataset ? rangeNamesOf(kind) : null;
+  if (!names) return { start: NaN, end: NaN };
+  const held = drawnRanges.get(el);
+  const pair = held ? held[kind] : null;
+  if (pair) return { start: pair.start, end: pair.end };
+  return { start: Number(el.dataset[names.start]), end: Number(el.dataset[names.end]) };
+}
+
+// Whether `el` carries a range for `kind` at all, which is a different question from whether the numbers are usable: a range of no length means the document put this element here, and no range at all means the page did.
+function hasRangeOf(el, kind) {
+  const names = el && el.dataset ? rangeNamesOf(kind) : null;
+  if (!names) return false;
+  const held = drawnRanges.get(el);
+  if (held && held[kind]) return true;
+  return el.dataset[names.start] != null && el.dataset[names.end] != null;
+}
+
+// Move or stamp the pair. The numbers go in the table and the element wears the mark, so the page can still be asked whether this is something to type on while nothing can read an offset off it.
+function setRangeOf(el, kind, start, end) {
+  const names = el && el.dataset ? rangeNamesOf(kind) : null;
+  if (!names) return;
+  const held = drawnRanges.get(el) || {};
+  held[kind] = { start: Number(start), end: Number(end) };
+  drawnRanges.set(el, held);
+  el.dataset[names.start] = RANGE_HELD_IN_TABLE;
+  el.dataset[names.end] = RANGE_HELD_IN_TABLE;
+}
+
+// Take into the table every range drawn on `body` that is not in it yet — the ones the Rust renderers stamp inline for a tree, a config, a workbook and a message, and anything the page drew after the render. Finding them all costs 0.6 ms on a page of 20,000, which is why the walk can stay: it is the attribute traffic that was expensive, not the looking.
+function adoptDrawnRanges(body) {
+  if (!body) return;
+  RANGE_NAMES.forEach(({ kind, found }) => {
+    body.querySelectorAll('[' + found + ']').forEach((el) => {
+      const held = drawnRanges.get(el);
+      if (held && held[kind]) return;
+      const names = rangeNamesOf(kind);
+      const start = Number(el.dataset[names.start]);
+      const end = Number(el.dataset[names.end]);
+      // A mark and no table entry is an element carried over from a page that is gone; there is no offset in it to take.
+      if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+      setRangeOf(el, kind, start, end);
+    });
+  });
+}
+
+// Move every offset at or past `at` by `delta`, in the table rather than on the page. `alsoMove` is handed each element once with the same arithmetic, so a caller holding a span of its own on an element moves it in the same walk — which is all the `Set` the old walk built ever did, and it can never have folded two entries together because nothing on the page wears two of the three names.
+function moveDrawnRangesAfter(at, delta, alsoMove) {
+  const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
+  drawnRanges.forEach((held, el) => {
+    for (const kind of Object.keys(held)) {
+      held[kind].start = move(held[kind].start);
+      held[kind].end = move(held[kind].end);
+    }
+    if (alsoMove) alsoMove(el, move);
+  });
+}
+
+// The element still drawn on `body` whose `kind` range starts at `at`, or null. The caret carried across a re-render is the one thing that finds an element by its number rather than the other way round.
+function elementWithRange(body, kind, at) {
+  for (const [el, held] of drawnRanges) {
+    const pair = held[kind];
+    if (pair && pair.start === at && el.isConnected !== false && (!body || body === el || bodyHolds(body, el))) return el;
+  }
+  return null;
+}
+
+// Whether `el` is drawn inside `body`, walked rather than asked: the reader's own bay and lane sit between a table and the body, so a check against the parent alone would miss one.
+function bodyHolds(body, el) {
+  for (let at = el.parentElement; at; at = at.parentElement) if (at === body) return true;
+  return false;
+}
+
 // The source ranges of a run of blocks, in document order — or null unless every one is present, ordered and non-overlapping. The host refuses a run the same way, and a drifted map must not be given the chance to shred a file. Shared by the gutter's drag and the cross-block delete, which both hand the host one run.
 function blockRunRanges(elements) {
   const ranges = [];
   let previousEnd = -1;
   for (const el of elements) {
-    const start = Number(el.dataset.srcStart);
-    const end = Number(el.dataset.srcEnd);
+    const { start, end } = rangeOf(el, 'block');
     if (!Number.isFinite(start) || !Number.isFinite(end) || start < previousEnd) return null;
     previousEnd = end;
     ranges.push([start, end]);
@@ -96,8 +193,7 @@ function attachMarkdownBlockRanges(body, blocks, source) {
 
   for (const [el, block] of pairs) {
     el.dataset.blockId = String(block.id);
-    el.dataset.srcStart = String(block.start);
-    el.dataset.srcEnd = String(block.end);
+    setRangeOf(el, 'block', block.start, block.end);
     el.dataset.blockKind = block.kind;
     if (block.editable) el.dataset.editable = 'true';
     // A footnote was written in here and is drawn at the foot of the page instead, so what this block draws is not all of its source.
@@ -151,8 +247,7 @@ function bindTableCheckboxes() {
 // One table's, on their own — a step of typing taken back is new markup, so the boxes inside it need binding again.
 function bindTableCheckboxesIn(table) {
   if (!tableWysiwygSafe(table)) return;
-  const start = Number(table.dataset.srcStart);
-  const end = Number(table.dataset.srcEnd);
+  const { start, end } = rangeOf(table, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
     const cell = box.closest('td');

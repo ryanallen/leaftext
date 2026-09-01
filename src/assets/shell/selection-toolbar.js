@@ -298,8 +298,7 @@ function commitSelectionLink() {
 function applyBlockFormat(format) {
   const block = selectionToolbarBlock;
   if (!block) return;
-  const start = Number(block.dataset.srcStart);
-  const end = Number(block.dataset.srcEnd);
+  const { start, end } = rangeOf(block, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const kind = block.dataset.blockKind;
   // Recomputed rather than trusted to the disabled button: a level outside 1-6 is not a heading Markdown can write.

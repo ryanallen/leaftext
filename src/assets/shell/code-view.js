@@ -258,7 +258,7 @@ function topReadingBlockSourceOffset() {
   const anchorEl = resolveReaderAnchorElement(captureReaderScrollAnchor());
   const block = anchorEl && anchorEl.closest ? anchorEl.closest('[data-src-start]') : null;
   if (!block) return null;
-  const start = Number(block.dataset.srcStart);
+  const start = rangeOf(block, 'block').start;
   return Number.isFinite(start) ? start : null;
 }
 
@@ -363,7 +363,7 @@ function scrollReadingToSrcOffset(srcOffset) {
   if (!blocks.length) return false;
   let target = null;
   for (const el of blocks) {
-    const start = Number(el.dataset.srcStart);
+    const start = rangeOf(el, 'block').start;
     if (!Number.isFinite(start) || start > srcOffset) break;
     target = el;
   }

@@ -732,7 +732,8 @@ function addMermaidControls(diagram) {
 
 function addMermaidEditButtons(diagram) {
   if (currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
-  if (!Number.isFinite(Number(diagram.dataset.srcStart)) || !Number.isFinite(Number(diagram.dataset.srcEnd))) return;
+  const { start, end } = rangeOf(diagram, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   if (diagram.querySelector('.mermaid-tools')) return;
   const tools = document.createElement('div');
   tools.className = 'mermaid-tools';

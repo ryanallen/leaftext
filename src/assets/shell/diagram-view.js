@@ -119,7 +119,8 @@ function addDiagramStageTools(stage) {
   const overlay = stage.parentElement;
   const block = overlay ? overlay.__diagramBlock : null;
   if (!block || currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
-  if (!Number.isFinite(Number(block.dataset.srcStart)) || !Number.isFinite(Number(block.dataset.srcEnd))) return;
+  const { start, end } = rangeOf(block, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const tools = document.createElement('div');
   tools.className = 'mermaid-tools';
   tools.appendChild(mermaidToolButton('source', 'Edit the Mermaid text of this diagram', `<span class="lt-icon lt-icon-code-view"></span>`));

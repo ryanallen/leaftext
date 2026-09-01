@@ -20,10 +20,9 @@ function xmlHeadingColumnRanges(th) {
     const cell = cells[i];
     if (!cell) continue;
     const holders =
-      cell.dataset && cell.dataset.cellStart != null ? [cell] : [...cell.querySelectorAll('[data-cell-start]')];
+      hasRangeOf(cell, 'cell') ? [cell] : [...cell.querySelectorAll('[data-cell-start]')];
     for (const holder of holders) {
-      const start = Number(holder.dataset.cellStart);
-      const end = Number(holder.dataset.cellEnd);
+      const { start, end } = rangeOf(holder, 'cell');
       if (Number.isFinite(start) && Number.isFinite(end) && end > start) ranges.push({ start, end });
     }
   }
@@ -39,8 +38,7 @@ function xmlHeadingTagName(range) {
 
 // The run's own bytes with every one of `ranges` renamed to `name` and nothing else touched — spacing, comments, entity spellings and attribute order come back identical by construction, because the bytes are the run's rather than anything composed here. Null where any range is not an element the whole way, which is the same proof a cell spends.
 function xmlColumnRenameEdit(table, ranges, name) {
-  const start = Number(table.dataset.srcStart);
-  const end = Number(table.dataset.srcEnd);
+  const { start, end } = rangeOf(table, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start || !ranges.length) return null;
   const run = sliceSourceBytes(currentDocumentSource, start, end);
   const spots = [];

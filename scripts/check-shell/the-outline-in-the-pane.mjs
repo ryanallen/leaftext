@@ -361,7 +361,10 @@ export function run() {
       { id: 3, kind: 'paragraph', start: 35, end: 41, editable: true },
     ];
     page.context.attachMarkdownBlockRanges(body, blocks, src);
-    const sliced = body.children.map((child) => src.slice(Number(child.dataset.srcStart), Number(child.dataset.srcEnd)));
+    const sliced = body.children.map((child) => {
+      const range = page.context.rangeOf(child, 'block');
+      return src.slice(range.start, range.end);
+    });
     if (sliced.join(' | ') !== '# Title | An opening line. | ## One | First.') throw new Error(`the ranges slice back to: ${JSON.stringify(sliced)}`);
   });
 }

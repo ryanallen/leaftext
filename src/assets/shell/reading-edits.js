@@ -180,7 +180,7 @@ function blockDeleteRange(source, start, end) {
 
 // Where the caret goes when a run of blocks is taken away: the end of the block above it, or the start of the one below when the run started the document. The offsets are post-splice — a block above keeps its own, one below moves up to where the run started.
 function caretAfterBlockDelete(first, last, span) {
-  const offsetOf = (node) => (node && node.dataset ? Number(node.dataset.srcStart) : NaN);
+  const offsetOf = (node) => rangeOf(node, 'block').start;
   const prev = first.previousElementSibling;
   if (Number.isFinite(offsetOf(prev))) {
     return { srcStart: offsetOf(prev), textOffset: visibleTextLength(prev) };
@@ -209,8 +209,7 @@ function deleteEmptiedBlock(el, text) {
   const kind = el.dataset.blockKind;
   if (kind !== 'paragraph' && kind !== 'heading') return false;
   if (!blockSerializationEmpty(text, kind)) return false;
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   // A zero-length range is a block that is only in the DOM — nothing to delete.
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return false;
   const span = blockDeleteRange(currentDocumentSource, start, end);
@@ -385,8 +384,7 @@ const OFFICE_FORMATS = ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'];
 
 // Whether a sheet cell can be typed on. There is no proof against the source here and there cannot be: a workbook keeps its cell text in `xl/sharedStrings.xml`, so the words on screen are usually nowhere in the member this range points into. What is proved instead is the shape — the range is one whole cell element — and the host rewrites that element to say what was typed, which is what leaves a string two cells share alone.
 function officeCellTypeableInPlace(el) {
-  const start = Number(el.dataset.cellStart);
-  const end = Number(el.dataset.cellEnd);
+  const { start, end } = rangeOf(el, 'cell');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
   const src = sliceSourceBytes(currentDocumentSource, start, end);
   if (!src.startsWith('<c') || !(src.endsWith('</c>') || src.endsWith('/>'))) return null;
@@ -425,7 +423,8 @@ function treeTextRefused(el, text) {
 // An email block as the file spells it: text as it stands, a break as the ending its own slice uses, a link as the text it shows. Never the Markdown serializer, which would write asterisks and bracket forms into a message that never had them.
 function emailBlockDomToText(el, ending) {
   if (ending === undefined) {
-    const src = sliceSourceBytes(currentDocumentSource, Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
+    const { start, end } = rangeOf(el, 'block');
+    const src = sliceSourceBytes(currentDocumentSource, start, end);
     ending = src.includes('\r\n') ? '\r\n' : '\n';
   }
   let out = '';
@@ -468,8 +467,7 @@ function typedBlockText(block) {
 
 // Whether the page can write this block's own bytes back out of what is on screen — the renderer's own stamping rule, one level up. Equal, and typing on the words is exact; not equal (a date the reader re-spelled, an address list rejoined, markup drawn from its source) and the block keeps the raw-slice editor.
 function emailBlockTypeableInPlace(el) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   const src = sliceSourceBytes(currentDocumentSource, start, end);
   return emailBlockDomToText(el, src.includes('\r\n') ? '\r\n' : '\n') === src;
@@ -487,27 +485,21 @@ function xmlElementInnerSpan(src) {
   return { from, to: close.index };
 }
 
-// The `data-*` pair each kind of typed-on thing carries its own byte range under. A block's names are read by four other things — the gutter's plus, the drag handle, a delete over a run — so a cell of a table and a value an element keeps in a tag each wear a pair of their own, and nothing on the page wears two. Every gesture that moves a range or finds a thing by one walks this list, because a name added to one gesture and not the next is a splice at the wrong offset.
-const RANGE_NAMES = [
-  { found: 'data-src-start', start: 'srcStart', end: 'srcEnd' },
-  { found: 'data-cell-start', start: 'cellStart', end: 'cellEnd' },
-  { found: 'data-value-start', start: 'valueStart', end: 'valueEnd' },
-];
-
 // The span this tree block may be typed on, or null for one that keeps the raw editor — the message's question asked of an element. The drawn words, escaped the way a tree holds them, have to be exactly the bytes between the element's own tags: that equality is the whole safety, and inline markup the renderer flattened, whitespace it collapsed and an entity spelled another way all fail it.
 function xmlBlockTypeableInPlace(el) {
-  return xmlRangeTypeableInPlace(el, Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
+  const { start, end } = rangeOf(el, 'block');
+  return xmlRangeTypeableInPlace(el, start, end);
 }
 
 // The same question asked of one cell of a table. A cell is not a block and must never answer to a block's own names, so it carries its element's range under names of its own; everything after that is the block's proof unchanged, because a cell's words come from one leaf element exactly as a paragraph's do.
 function xmlCellTypeableInPlace(el) {
-  return xmlRangeTypeableInPlace(el, Number(el.dataset.cellStart), Number(el.dataset.cellEnd));
+  const { start, end } = rangeOf(el, 'cell');
+  return xmlRangeTypeableInPlace(el, start, end);
 }
 
 // The same question asked of a value an element keeps in a tag. The renderer stamped the bytes inside the quotes, so there are no tags in the slice to find: the drawn words are held straight against those bytes, which is the block's proof with the one step it has nothing to do taken out.
 function xmlValueTypeableInPlace(el) {
-  const start = Number(el.dataset.valueStart);
-  const end = Number(el.dataset.valueEnd);
+  const { start, end } = rangeOf(el, 'value');
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
   if (escapeTreeText(el.textContent) !== sliceSourceBytes(currentDocumentSource, start, end)) return null;
   return { start, end };
@@ -535,8 +527,7 @@ function xmlRangeTypeableInPlace(el, start, end) {
 
 // The span a comment's words may be typed on, given the words as they are drawn, or null for one that keeps the raw editor. A comment escapes nothing, so the drawn words are held against the bytes between the marks as they stand — allowing only for the ends the fold trims, which is the one change the renderer makes to them.
 function xmlCommentTypeableInPlace(el, words) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const src = sliceSourceBytes(currentDocumentSource, start, end);
   if (!src.startsWith('<!--') || !src.endsWith('-->') || src.length < 7) return null;
@@ -570,8 +561,9 @@ function commitBlockEdit(el, text, range) {
   if (!el.isConnected) return false;
   if (treeTextRefused(el, text)) return false;
   const span = range || el.__innerSpan || null;
-  const start = span ? span.start : Number(el.dataset.srcStart);
-  const end = span ? span.end : Number(el.dataset.srcEnd);
+  const blockRange = rangeOf(el, 'block');
+  const start = span ? span.start : blockRange.start;
+  const end = span ? span.end : blockRange.end;
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   if (!blockTextNeedsWriting(el, text)) return false;
   if (!span && deleteEmptiedBlock(el, text)) return true;
@@ -587,16 +579,16 @@ function commitBlockEdit(el, text, range) {
     const active = document.activeElement;
     if (!active || !active.dataset) return;
     // A caret that walked into a cell of a table, or into a value inside a tag, is carried by that thing's own names — the block's would find the table or the element around it, whose range does not move with the splice.
-    const held = RANGE_NAMES.find((pair) => active.dataset[pair.start] != null);
+    const held = RANGE_NAMES.find((pair) => hasRangeOf(active, pair.kind));
     if (!held) return;
     if (active.getAttribute('contenteditable') !== 'true') return;
     if (active.dataset.editingSource === 'true') return;
-    const activeStart = Number(active.dataset[held.start]);
+    const activeStart = rangeOf(active, held.kind).start;
     if (!Number.isFinite(activeStart)) return;
     const offset = caretTextOffsetIn(active);
     setPendingCaret({
       srcStart: activeStart >= end ? activeStart + delta : activeStart,
-      found: held.found,
+      kind: held.kind,
       textOffset: offset == null ? 0 : offset,
     });
   }, 0);
@@ -623,8 +615,7 @@ function liveEditOf(el, words) {
   const text = words === undefined ? blockDomToSource(el) : words;
   const span = el.__innerSpan;
   if (span) return { start: span.start, end: span.end, text, inner: true };
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   // A line with no bytes of its own yet is written by its own commit, which carries the marker and the separator with it.
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
   // A block typed empty is a block taken away, which is a structural edit and the click-out's to make.
@@ -671,16 +662,9 @@ function advanceLiveRanges(el, edit) {
 function shiftBlockRangesAfter(at, delta, typed) {
   const body = app.querySelector('.document-body');
   if (!body) return;
-  const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
-  const moved = new Set();
-  RANGE_NAMES.forEach(({ found, start, end }) => {
-    body.querySelectorAll(`[${found}]`).forEach((node) => {
-      node.dataset[start] = String(move(Number(node.dataset[start])));
-      node.dataset[end] = String(move(Number(node.dataset[end])));
-      moved.add(node);
-    });
-  });
-  moved.forEach((node) => {
+  // Anything drawn since the render — a card's diagram, markup a step taken back put back — joins the table before the move, so nothing on the page is left holding an offset the buffer moved past.
+  adoptDrawnRanges(body);
+  moveDrawnRangesAfter(at, delta, (node, move) => {
     // The typed block's own span was just set to what was written; moving it again would count the splice twice.
     if (node === typed || !node.__innerSpan) return;
     node.__innerSpan = { start: move(node.__innerSpan.start), end: move(node.__innerSpan.end) };
@@ -870,8 +854,7 @@ function splitBlockAtCaret(el) {
   if (!selection || !selection.rangeCount) return;
   const caret = selection.getRangeAt(0);
   if (!el.contains(caret.startContainer)) return;
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const beforeRange = document.createRange();
   beforeRange.selectNodeContents(el);
@@ -914,8 +897,7 @@ function splitTreeBlockAtCaret(el) {
   // Only a paragraph. A second heading in the same part, and a second title in a document's header, are not drawn at all — splitting one would take the words off the page while leaving them in the file.
   if (el.dataset.blockKind !== 'paragraph') return;
   if (el.classList && el.classList.contains('tei-doc-subtitle')) return;
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const offset = caretTextOffsetIn(el);
   if (offset == null) return;
@@ -952,8 +934,8 @@ function splitTreeBlockAtCaret(el) {
 
 // Backspace at the very start of a paragraph/heading: merge it into the previous block, Notion-style — the two texts join at a caret that stays put. Only fires when the previous sibling is itself a WYSIWYG paragraph/heading; anything else (a list, a code block, a rule) leaves Backspace inert at the boundary.
 function mergeBlockIntoPrevious(el, prev) {
-  const start = Number(prev.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const start = rangeOf(prev, 'block').start;
+  const end = rangeOf(el, 'block').end;
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const junction = visibleTextLength(prev);
   const merged = blockDomToMarkdown(prev) + inlineDomToMarkdown(el).trim();
@@ -969,8 +951,7 @@ function makeBlankBlock(tag, kind, placeholder, insertAt) {
   block.className = 'leaf-editable leaf-insert-block';
   block.dataset.blockKind = kind;
   block.dataset.blank = 'true';
-  block.dataset.srcStart = String(insertAt);
-  block.dataset.srcEnd = String(insertAt);
+  setRangeOf(block, 'block', insertAt, insertAt);
   if (placeholder) block.dataset.placeholder = placeholder;
   block.setAttribute('contenteditable', 'true');
   block.setAttribute('spellcheck', 'false');
@@ -1177,7 +1158,7 @@ function openInsertBlock(
   block.focus({ preventScroll: true });
 }
 function openInsertBlockAfter(el, specId) {
-  const insertAt = Number(el.dataset.srcEnd);
+  const insertAt = rangeOf(el, 'block').end;
   if (!Number.isFinite(insertAt)) return;
   openInsertBlock(insertAt, {
     spec: blankBlockSpec(specId) || PLAIN_LINE_SPEC,
@@ -1393,7 +1374,7 @@ function closeWysiwygBlock(el) {
 
 // Wire `el` as a live Markdown editor: keep the rendered styling, edit in place, commit on blur. Checkboxes stay non-editable islands; focus moving within the block neither resets the baseline nor commits.
 function wireMarkdownEditable(el) {
-  const editsLinkedValue = el.dataset && el.dataset.valueStart != null;
+  const editsLinkedValue = hasRangeOf(el, 'value');
   // A link click is navigation, not "edit here": swallow the mousedown so the block never takes focus (the delegated click still navigates), and commit the block being edited first, since no focusout will fire.
   el.addEventListener('mousedown', (event) => {
     const target = event.target;
@@ -1473,13 +1454,13 @@ function fencedCodeInnerSpan(src) {
 
 // Wire `el` as a raw-source editor, for XML blocks and Markdown blocks that don't round-trip WYSIWYG. The block swaps to its exact source on focus and splices it back on blur; no change restores the rendered view, a real change triggers a host re-render. Unlike a WYSIWYG block it is not an editing host up front — `contenteditable` goes on at pointerdown, one block at a time.
 function wireSourceEditable(el) {
-  if (!Number.isFinite(Number(el.dataset.srcStart)) || !Number.isFinite(Number(el.dataset.srcEnd))) return;
+  const wired = rangeOf(el, 'block');
+  if (!Number.isFinite(wired.start) || !Number.isFinite(wired.end)) return;
   let start = 0;
   let end = 0;
   // Worked out on the press rather than when the block was wired: a pause in another block's typing writes into the buffer without redrawing the page, so the range this block is stamped with is the only one that is still true by then.
   const readRange = () => {
-    const blockStart = Number(el.dataset.srcStart);
-    const blockEnd = Number(el.dataset.srcEnd);
+    const { start: blockStart, end: blockEnd } = rangeOf(el, 'block');
     start = blockStart;
     end = blockEnd;
     if (el.dataset.blockKind !== 'code_block') return;
@@ -1583,7 +1564,8 @@ function bindEditableBlocks(format) {
   const wysiwygBlocks = [];
   const sourceBlocks = [];
   body.querySelectorAll('[data-src-start]').forEach((el) => {
-    if (el.dataset.srcStart == null || el.dataset.srcEnd == null) return;
+    if (!hasRangeOf(el, 'block')) return;
+    const blockRange = rangeOf(el, 'block');
     const kind = el.dataset.blockKind;
     if (kind === 'rule') return;
     // A comment's words are drawn inside the block rather than as it, and the block's own row opens the fold — so what is wired for typing is the box holding the words, and the fold itself is left to the row. Words that are not the file's own bytes fall through to the raw editor the fold has today.
@@ -1614,7 +1596,7 @@ function bindEditableBlocks(format) {
       wysiwygBlocks.push(el);
     } else if (format === 'xml' && kind === 'table') {
       // A table is the one block whose shape is the reading: swapping the grid for the markup of every record takes the page away from somebody who pressed one word. So it takes no listener at all, and never a message saying why. What answers a press is what was pressed — a cell where its words are one element's own bytes, a value of a folded cell on a span of its own, and a heading over a column that has an element to rename.
-    } else if (Number.isFinite(Number(el.dataset.srcStart)) && Number.isFinite(Number(el.dataset.srcEnd))) {
+    } else if (Number.isFinite(blockRange.start) && Number.isFinite(blockRange.end)) {
       // A block with an unusable range gets neither the class nor a listener; wireSourceEditable's own guard would drop it anyway.
       sourceBlocks.push(el);
     }
@@ -1632,7 +1614,7 @@ function bindEditableBlocks(format) {
   // A cell of a table is drawn from one leaf element, so it can answer the same question — but nothing walks a cell, because the pass above walks the names a block is found by. So the cells get a pass of their own, and the ones that cannot be proved are left to the table's own press to answer. The question is asked of anything in a table carrying the range rather than of a cell: where several elements folded into one cell, each is a span of its own and the cell carries no range at all.
   if (format === 'xml') {
     body.querySelectorAll('table [data-cell-start]').forEach((el) => {
-      if (el.dataset.cellStart == null) return;
+      if (!hasRangeOf(el, 'cell')) return;
       const cellSpan = xmlCellTypeableInPlace(el);
       if (!cellSpan) return;
       el.__innerSpan = cellSpan;
@@ -1742,8 +1724,8 @@ function placePendingCaret(body) {
     openMediumStart(body);
     return;
   }
-  // A cell, and a value inside a tag, each answer to their own names rather than a block's — the gutter reads a block's, and either wearing them would be offered a drag handle. So the caret comes back under whichever name it left on.
-  const target = body.querySelector(`[${pending.found || 'data-src-start'}="${pending.srcStart}"]`);
+  // A cell, and a value inside a tag, each answer to their own names rather than a block's — the gutter reads a block's, and either wearing them would be offered a drag handle. So the caret comes back under whichever kind it left on, looked up in the table: the element wears a mark where its number used to be, so there is no value on the page left to match on.
+  const target = elementWithRange(body, pending.kind || 'block', pending.srcStart);
   if (!target) return;
   if (pending.insertBelow) {
     openInsertBlockAfter(target, pending.blockSpec);
@@ -1770,6 +1752,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (!doc) return;
   const body = app.querySelector('.document-body');
   if (!body) return;
+  // The page is drawn whole, so the ranges start over with it — and the elements of the document that was open stop being held.
+  resetDrawnRanges();
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentSource = typeof doc.source === 'string' ? doc.source : '';
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
@@ -1781,6 +1765,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : [], currentDocumentSource);
     bindTaskCheckboxes(doc.tasks || []);
   }
+  // Every range the Rust renderers stamped inline — a tree's, a config's, a workbook's, a message's — joins the table now the Markdown pass has stamped its own.
+  adoptDrawnRanges(body);
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
     if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);

@@ -1,7 +1,9 @@
 // A block's own range, and typing a block in: what the page hands the host to splice into the file it will write.
 
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  bootReading,
   check,
   fakeElement,
   names,
@@ -72,8 +74,9 @@ export function run() {
 
     const [field, heading, paragraph] = body.children;
     if ('srcStart' in field.dataset) throw new Error('the field block took a source range, so it is being edited as Markdown');
-    if (heading.dataset.srcStart !== '22' || paragraph.dataset.srcStart !== '33') throw new Error(`the ranges did not land: ${JSON.stringify([heading.dataset, paragraph.dataset])}`);
-    if (source.slice(Number(paragraph.dataset.srcStart), Number(paragraph.dataset.srcEnd)) !== 'A paragraph.') throw new Error('the paragraph range does not slice back to the paragraph');
+    const at = (el) => booted.rangeOf(el, 'block');
+    if (at(heading).start !== 22 || at(paragraph).start !== 33) throw new Error(`the ranges did not land: ${JSON.stringify([at(heading), at(paragraph)])}`);
+    if (source.slice(at(paragraph).start, at(paragraph).end) !== 'A paragraph.') throw new Error('the paragraph range does not slice back to the paragraph');
   });
 
   // The other side of the same bargain: a comment is stripped before the page sees it, so the host must not report a span for it (`block_source_map_leaves_out_a_comment_between_two_paragraphs`). This proves both halves — the spans it reports stamp every element, and a span for the comment would leave the whole note uneditable.
@@ -89,8 +92,9 @@ export function run() {
     const body = drawn();
     booted.attachMarkdownBlockRanges(body, paragraphs, source);
     const [before, after] = body.children;
-    if (source.slice(Number(before.dataset.srcStart), Number(before.dataset.srcEnd)) !== 'Before.') throw new Error('the first paragraph range does not slice back to it');
-    if (source.slice(Number(after.dataset.srcStart), Number(after.dataset.srcEnd)) !== 'After.') throw new Error('the second paragraph range does not slice back to it');
+    const at = (el) => booted.rangeOf(el, 'block');
+    if (source.slice(at(before).start, at(before).end) !== 'Before.') throw new Error('the first paragraph range does not slice back to it');
+    if (source.slice(at(after).start, at(after).end) !== 'After.') throw new Error('the second paragraph range does not slice back to it');
     // The blank-page pair opens on a document with no `[data-src-start]` anywhere, which is why an unstamped note claimed to be a new one.
     if (!body.children.every((el) => 'srcStart' in el.dataset)) throw new Error('a block was left unstamped, so the page would offer the new-document lines over a note with content');
 
@@ -133,7 +137,8 @@ export function run() {
     body.children.forEach((el, index) => {
       const [, , kind, text] = drawn[index];
       if (!('srcStart' in el.dataset)) throw new Error(`the ${kind} was left unstamped, so the note is read-only with nothing saying why`);
-      const shown = source.slice(Number(el.dataset.srcStart), Number(el.dataset.srcEnd));
+      const range = booted.rangeOf(el, 'block');
+      const shown = source.slice(range.start, range.end);
       if (shown !== text) throw new Error(`the ${kind} wears somebody else's bytes: ${JSON.stringify(shown)}`);
       if (el.dataset.blockKind !== kind) throw new Error(`the ${kind} is stamped as a ${el.dataset.blockKind}`);
     });
@@ -168,8 +173,9 @@ export function run() {
     for (const [name, box] of [['bay', bay], ['lane', lane]]) {
       if ('srcStart' in box.dataset) throw new Error(`the ${name} took the table's source range, so an edit would write the wrapper back into the file`);
     }
-    if (source.slice(Number(table.dataset.srcStart), Number(table.dataset.srcEnd)) !== shown[1]) {
-      throw new Error(`the table's range does not slice back to the table: ${JSON.stringify(table.dataset)}`);
+    const tableRange = booted.rangeOf(table, 'block');
+    if (source.slice(tableRange.start, tableRange.end) !== shown[1]) {
+      throw new Error(`the table's range does not slice back to the table: ${JSON.stringify(tableRange)}`);
     }
     const [before, , after] = body.children;
     for (const [name, block] of [['paragraph above', before], ['paragraph below', after]]) {
@@ -405,5 +411,209 @@ export function run() {
       table.body.remove();
     }
     if (appEl.querySelector('.document-body')) throw new Error('the check left a drawn document standing in the reader');
+  });
+
+  // Eighty-nine places used to read a drawn range straight off `dataset`, and the numbers cannot leave the DOM while a single one of them is still looking there — one left behind splices the wrong bytes into somebody's file. So there is one door, `rangeOf`/`hasRangeOf`/`setRangeOf` in `shell/reading-blocks.js`, and this refuses every other way in. The presence tests are untouched on purpose: `closest('[data-src-start]')` asks whether an element can be typed on at all, which is a different question, and the attribute is staying to answer it.
+  check('nothing reads a drawn range off the DOM but the one door', () => {
+    const door = 'reading-blocks.js';
+    const spelled = /\.dataset\s*\.\s*(srcStart|srcEnd|cellStart|cellEnd|valueStart|valueEnd)\b/;
+    const computed = /\.dataset\s*\[/;
+    const folder = join(root, 'src/assets/shell');
+    const fragments = readdirSync(folder).filter((file) => file.endsWith('.js'));
+    if (fragments.length < 30) throw new Error(`only ${fragments.length} fragments were read out of ${folder}`);
+    const raw = [];
+    for (const file of fragments) {
+      readFileSync(join(folder, file), 'utf8').split('\n').forEach((line, at) => {
+        if (spelled.test(line)) raw.push(`${file}:${at + 1} ${line.trim()}`);
+        // The door reaches its own names through the table, which is the one computed read the page is allowed.
+        else if (file !== door && computed.test(line)) raw.push(`${file}:${at + 1} ${line.trim()}`);
+      });
+    }
+    if (raw.length) throw new Error(`a drawn range is read off the DOM outside the door: ${raw.join(' | ')}`);
+    // And the door itself is where the numbers can be moved to, so it has to be there to move them.
+    const doorSource = readFileSync(join(folder, door), 'utf8');
+    for (const name of ['function rangeOf(', 'function hasRangeOf(', 'function setRangeOf(']) {
+      if (!doorSource.includes(name)) throw new Error(`${door} no longer holds ${name.replace('function ', '').replace('(', '')}`);
+    }
+  });
+
+  // The door answers the numbers the element is actually wearing, under each of the three names — a block's, a cell of a table's, and a value an element keeps inside its own tag. Nothing on the page wears two, so asking one thing for another kind's range has to come back empty rather than borrowing the pair beside it.
+  check('the door answers the range each kind of thing wears, and no other', () => {
+    const { rangeOf, hasRangeOf, setRangeOf } = booted;
+    const wearing = (attribute, start, end) => {
+      const el = fakeElement('');
+      el.setAttribute(attribute, String(start));
+      el.setAttribute(attribute.replace('-start', '-end'), String(end));
+      return el;
+    };
+    const kinds = [
+      { kind: 'block', attribute: 'data-src-start', start: 149, end: 267 },
+      { kind: 'cell', attribute: 'data-cell-start', start: 12, end: 40 },
+      { kind: 'value', attribute: 'data-value-start', start: 55, end: 61 },
+    ];
+    for (const { kind, attribute, start, end } of kinds) {
+      const el = wearing(attribute, start, end);
+      const read = rangeOf(el, kind);
+      if (read.start !== start || read.end !== end) throw new Error(`the door read a ${kind} as ${JSON.stringify(read)} where the element wears ${start}..${end}`);
+      if (!hasRangeOf(el, kind)) throw new Error(`the door says a ${kind} wearing ${start}..${end} carries no range`);
+      // Every other kind comes back empty: a cell must never answer to a block's names, or a splice would move the table around it.
+      for (const other of kinds) {
+        if (other.kind === kind) continue;
+        if (hasRangeOf(el, other.kind)) throw new Error(`a ${kind} answered to a ${other.kind}'s names`);
+        if (Number.isFinite(rangeOf(el, other.kind).start)) throw new Error(`a ${kind} handed back a ${other.kind}'s start`);
+      }
+      // A write goes into the table, and the element is left wearing a mark rather than an offset — so it can still be found by the attribute and nothing can read a number off it.
+      setRangeOf(el, kind, start + 7, end + 7);
+      const moved = rangeOf(el, kind);
+      if (moved.start !== start + 7 || moved.end !== end + 7) throw new Error(`the door read a moved ${kind} as ${JSON.stringify(moved)}`);
+      if (el.getAttribute(attribute) == null) throw new Error(`a ${kind} lost the attribute the page asks it whether it can be typed on by`);
+      if (Number.isFinite(Number(el.getAttribute(attribute)))) throw new Error(`a ${kind} still wears ${el.getAttribute(attribute)} on the page, which a read that got past the check could splice at`);
+    }
+    // Nothing wearing a range at all, and an element that is not one: both answer nothing rather than throwing, because the gutter asks this of whatever is under the pointer.
+    const bare = fakeElement('');
+    if (hasRangeOf(bare, 'block') || Number.isFinite(rangeOf(bare, 'block').start)) throw new Error('an element wearing no range was given one');
+    if (hasRangeOf(null, 'block') || Number.isFinite(rangeOf(null, 'block').start)) throw new Error('nothing at all was given a range');
+    if (Number.isFinite(rangeOf(bare, 'nothing-of-that-name').start)) throw new Error('a kind with no names of its own was given a range');
+  });
+
+  // ---- the numbers live in a table, and a splice moves that ---------------------
+  //
+  // The page a splice has to be right on: the blocks are drawn in an order that is not their order in the file. A footnote definition is written in the middle and drawn at the foot — `relocate_footnote_definition_blocks` does that on purpose — so anything that walked from the caret to the end of the drawn page would move a range written above the splice and miss two written below it, and that is a splice at the wrong offset in somebody's file. The stand is the ticket's own watched page: drawn at 0, 25, 149, 267, 84, 202.
+  const outOfOrderPage = () => {
+    const body = fakeElement('');
+    body.className = 'document-body';
+    const drawn = [
+      ['heading', 0, 7],
+      ['paragraph', 25, 45],
+      ['paragraph', 149, 164],
+      ['paragraph', 267, 282],
+      ['footnote_definition', 84, 106],
+      ['footnote_definition', 202, 224],
+    ];
+    const blocks = drawn.map(([kind, start, end]) => {
+      const el = fakeElement('');
+      el.dataset.blockKind = kind;
+      el.setAttribute('data-src-start', String(start));
+      el.setAttribute('data-src-end', String(end));
+      body.appendChild(el);
+      return el;
+    });
+    return { body, blocks, drawn };
+  };
+
+  // Stand the page in the reader for as long as `run` takes, so the shift finds it the way it finds a real one.
+  const standingIn = (body, run) => {
+    const appEl = booted.document.getElementById('app');
+    const wasQuery = appEl.querySelector;
+    appEl.querySelector = (selector) => (selector === '.document-body' ? body : wasQuery.call(appEl, selector));
+    try {
+      return run();
+    } finally {
+      appEl.querySelector = wasQuery;
+    }
+  };
+
+  check('a splice moves every range below it and none above it, on a page drawn out of its own order', () => {
+    const { body, blocks, drawn } = outOfOrderPage();
+    booted.resetDrawnRanges();
+    standingIn(body, () => {
+      booted.adoptDrawnRanges(body);
+      // Typing in the block at 149 that grew it by five.
+      booted.shiftBlockRangesAfter(164, 5);
+    });
+    blocks.forEach((el, at) => {
+      const [kind, start, end] = drawn[at];
+      const want = { start: start >= 164 ? start + 5 : start, end: end >= 164 ? end + 5 : end };
+      const read = booted.rangeOf(el, 'block');
+      if (read.start !== want.start || read.end !== want.end) {
+        throw new Error(`the ${kind} drawn ${at + 1}st at [${start},${end}) reads ${JSON.stringify(read)} rather than ${JSON.stringify(want)}`);
+      }
+      // And nothing on the page is left wearing an offset a read that got past the check could splice at.
+      if (Number.isFinite(Number(el.getAttribute('data-src-start')))) {
+        throw new Error(`the ${kind} drawn ${at + 1}st still wears ${el.getAttribute('data-src-start')} on the page`);
+      }
+    });
+  });
+
+  // The direction the drawn order gets wrong both ways round. A splice inside the definition written at 84 has two paragraphs below it in the file — 149 and 267 — that are drawn above it, and they have to move; and the paragraphs at 0 and 25 are written above the splice and have to stay, whichever side of it they are drawn on.
+  check('a splice inside a footnote definition leaves what is written before it exactly where it was', () => {
+    const { body, blocks, drawn } = outOfOrderPage();
+    booted.resetDrawnRanges();
+    standingIn(body, () => {
+      booted.adoptDrawnRanges(body);
+      // Typing inside the definition drawn at the foot and written at 84, which grew it by four.
+      booted.shiftBlockRangesAfter(100, 4);
+    });
+    const read = blocks.map((el) => booted.rangeOf(el, 'block'));
+    const want = drawn.map(([, start, end]) => ({ start: start >= 100 ? start + 4 : start, end: end >= 100 ? end + 4 : end }));
+    for (let at = 0; at < read.length; at += 1) {
+      if (read[at].start !== want[at].start || read[at].end !== want[at].end) {
+        throw new Error(`the block drawn ${at + 1}st reads ${JSON.stringify(read[at])} rather than ${JSON.stringify(want[at])}`);
+      }
+    }
+    // Said plainly, because this is the whole reason the shape the earlier draft offered was refused: the two paragraphs written below the definition are drawn above it and still moved, and the two written above it did not.
+    if (read[2].start !== 153 || read[3].start !== 271) throw new Error('a paragraph written below the definition and drawn above it was left behind');
+    if (read[0].start !== 0 || read[1].start !== 25) throw new Error('a paragraph written above the splice was moved');
+    if (read[4].start !== 84 || read[4].end !== 110) throw new Error(`the definition typed in reads ${JSON.stringify(read[4])} rather than [84,110)`);
+  });
+
+  // The caret carried across a re-render used to find its block by matching the attribute's value — `[data-src-start="123"]` — and the element wears a mark there now, so it comes back by a lookup in the table instead. This is the one place on the page that finds an element by its number rather than the other way round.
+  check('the caret carried across a re-render lands on the block the number names', () => {
+    const { body, blocks } = outOfOrderPage();
+    booted.resetDrawnRanges();
+    const landed = blocks[3];
+    for (const el of blocks) el.classList.add('leaf-editable');
+    standingIn(body, () => {
+      booted.adoptDrawnRanges(body);
+      booted.setPendingCaret({ srcStart: 267, textOffset: 3 });
+      booted.placePendingCaret(body);
+    });
+    if (landed.getAttribute('contenteditable') !== 'true') {
+      const opened = blocks.filter((el) => el.getAttribute('contenteditable') === 'true');
+      throw new Error(`the caret opened ${opened.length} blocks, and the one written at 267 was not among them`);
+    }
+    for (const el of blocks) {
+      if (el !== landed && el.getAttribute('contenteditable') === 'true') throw new Error('the caret opened a second block as well');
+    }
+    // A number no block is at opens nothing rather than the first block on the page.
+    booted.resetDrawnRanges();
+    const second = outOfOrderPage();
+    standingIn(second.body, () => {
+      booted.adoptDrawnRanges(second.body);
+      booted.setPendingCaret({ srcStart: 9999 });
+      booted.placePendingCaret(second.body);
+    });
+    if (second.blocks.some((el) => el.getAttribute('contenteditable') === 'true')) throw new Error('a caret at an offset no block holds opened one anyway');
+  });
+
+  // The table is one document's. A render draws the page whole, so a document the reader has moved on from has to drop out of it — otherwise the page holds every element of every document opened in the session, and a number looked up in it could still find one nobody can see.
+  check('a document the reader has moved on from stops being held', () => {
+    const { context } = bootReading({ path: 'C:\Notes\first.md' });
+    const appEl = context.document.getElementById('app');
+    // A document drawn the way a renderer draws one, with both ends of every range stamped.
+    const drawTwoBlocks = (path, at) => {
+      const title = path.split(/[\/]/).pop().replace(/\.[^.]+$/, '');
+      const html = `<div class="document-body"><p data-src-start="${at}" data-src-end="${at + 7}">One</p><p data-src-start="${at + 9}" data-src-end="${at + 16}">Two</p></div>`;
+      context.window.leafSetState({
+        recent: [],
+        favorites: [],
+        tabs: [{ title, path }],
+        active: 0,
+        document: { title, path, html, minimap: { lines: [], headings: [] }, format: 'Markdown', blocks: [], tasks: [], source: 'x'.repeat(at + 16) },
+      });
+      return appEl.querySelector('.document-body').children;
+    };
+
+    const [first] = drawTwoBlocks('C:\Notes\first.md', 0);
+    if (context.rangeOf(first, 'block').start !== 0) throw new Error('the first document was not taken into the table at all, so this proves nothing');
+    if (Number.isFinite(Number(first.getAttribute('data-src-start')))) throw new Error('the render left the number on the element, so the table is not what the door is reading');
+
+    const [standing] = drawTwoBlocks('C:\Notes\second.md', 12);
+    const read = context.rangeOf(first, 'block');
+    if (Number.isFinite(read.start) || Number.isFinite(read.end)) {
+      throw new Error(`a block of the document that was closed still reads ${JSON.stringify(read)}`);
+    }
+    // And the page drawn now is in the table, so the reset did not take the live one with it.
+    if (context.rangeOf(standing, 'block').start !== 12) throw new Error('the document now on screen has no range, so the render left the page unreadable');
   });
 }

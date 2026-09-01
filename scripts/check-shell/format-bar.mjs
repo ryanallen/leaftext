@@ -475,15 +475,16 @@ export function run() {
       }
 
       // The map moved with it: the typed block grew, the block after it shifted by the same, and the source the page slices from is the spliced one.
-      if (block.dataset.srcEnd !== '21') throw new Error(`the typed block ends at ${block.dataset.srcEnd}`);
-      if (after.dataset.srcStart !== '23' || after.dataset.srcEnd !== '32') {
-        throw new Error(`the block after it is at [${after.dataset.srcStart},${after.dataset.srcEnd})`);
+      const at = (el) => booted.rangeOf(el, 'block');
+      if (at(block).end !== 21) throw new Error(`the typed block ends at ${at(block).end}`);
+      if (at(after).start !== 23 || at(after).end !== 32) {
+        throw new Error(`the block after it is at [${at(after).start},${at(after).end})`);
       }
       if (vm.runInContext('currentDocumentSource', booted) !== written) {
         throw new Error('the page kept slicing the document it had before the pause');
       }
       // And what the shifted range names in the shifted source is still that block.
-      if (written.slice(Number(after.dataset.srcStart), Number(after.dataset.srcEnd)) !== 'After it.') {
+      if (written.slice(at(after).start, at(after).end) !== 'After it.') {
         throw new Error('the shifted range no longer covers the block it belongs to');
       }
 

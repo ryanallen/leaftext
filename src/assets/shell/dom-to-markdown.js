@@ -104,15 +104,13 @@ function sourceLineEnd(bytes, at) {
 // A footnote written inside a quote or a list item is lifted out and drawn at the foot of the page, so it is not in what the container draws — serializing the container alone would write its line out of the file. Its own lines go back on the end, taken from the source verbatim rather than rebuilt, separated by the container's own blank line (`>` in a quote, nothing in a list item).
 function restoreLiftedFootnotes(el, markdown) {
   if (el.dataset.holdsFootnote !== 'true') return markdown;
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   const body = app.querySelector('.document-body');
   if (!body || !Number.isFinite(start) || !Number.isFinite(end)) return markdown;
   const bytes = sourceByteEncoder.encode(currentDocumentSource || '');
   const lifted = [];
   body.querySelectorAll('.footnote-definition[data-src-start]').forEach((note) => {
-    const from = Number(note.dataset.srcStart);
-    const to = Number(note.dataset.srcEnd);
+    const { start: from, end: to } = rangeOf(note, 'block');
     if (!Number.isFinite(from) || !Number.isFinite(to) || from < start || to > end) return;
     const lines = sourceByteDecoder.decode(bytes.slice(sourceLineStart(bytes, from), sourceLineEnd(bytes, to)));
     // A trailing line holding nothing but the quote's own marker is the separator, not the note.
@@ -212,8 +210,7 @@ function blockquoteDomToMarkdown(el) {
 
 // The delimiter row for a serialized table. The original row is reused verbatim while the column count holds, so a cell edit never reformats the table.
 function tableDelimiterRow(el, headCells) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (Number.isFinite(start) && Number.isFinite(end)) {
     const src = sliceSourceBytes(currentDocumentSource, start, end);
     for (const line of src.split('\n').slice(1, 3)) {

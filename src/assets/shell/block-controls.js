@@ -73,8 +73,7 @@ function xmlInserts(target) {
 
 // The record a new row is written as: the run's own tag and the first column with an element behind it, read out of the table block's source. A run whose columns are all attributes has nothing to type into, so it is offered nothing.
 function xmlRowSpecId(el) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const source = sliceSourceBytes(currentDocumentSource, start, end);
   const record = /^<\s*([A-Za-z_][\w.:-]*)([^>]*)>/.exec(source);
@@ -91,8 +90,7 @@ function xmlInsertTagName(target) {
 
 // The tag a block's source opens with. Read from the source rather than the DOM: the reading view renders an XML element as whatever HTML suits it, so the DOM tag name is the renderer's choice, not the document's.
 function xmlBlockTagName(el) {
-  const start = Number(el.dataset.srcStart);
-  const end = Number(el.dataset.srcEnd);
+  const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const match = /^<\s*([A-Za-z_][\w.:-]*)/.exec(sliceSourceBytes(currentDocumentSource, start, end));
   return match ? match[1] : null;
@@ -253,8 +251,7 @@ function openLineBelow(after, specId) {
     after.__lineBelow(specId);
     return;
   }
-  const start = Number(after.dataset.srcStart);
-  const end = Number(after.dataset.srcEnd);
+  const { start, end } = rangeOf(after, 'block');
   // A block holding no source of its own has to own the splice (above). Opening a line under one from out here would be undone by its own save a moment later.
   if (!Number.isFinite(start) || !Number.isFinite(end) || end === start) return;
   if (after.__editingActive) {
@@ -271,7 +268,7 @@ function openLineBelow(after, specId) {
 
 // The same, above the first block: the break goes after the new line instead.
 function openLineAbove(before, specId) {
-  const at = before && Number(before.dataset.srcStart);
+  const at = before && rangeOf(before, 'block').start;
   if (!Number.isFinite(at)) return;
   openInsertBlock(at, {
     spec: blankBlockSpec(specId) || PLAIN_LINE_SPEC,
@@ -357,12 +354,13 @@ function unwrapTableLane(el) {
 
 // Whether the gutter has anything to say about this element at all. A range, even an empty one, means the document put it here; no range means the page did.
 function blockHasRange(el) {
-  return !!(el.dataset && el.dataset.srcStart != null && el.dataset.srcEnd != null);
+  return hasRangeOf(el, 'block');
 }
 
 // A block a new line can be written beside. A zero-length range is a block that exists only in the DOM — a blank line waiting for its first keystroke — with no offset in the buffer to write at.
 function blockHasSource(el) {
-  return blockHasRange(el) && Number(el.dataset.srcEnd) > Number(el.dataset.srcStart);
+  const { start, end } = rangeOf(el, 'block');
+  return blockHasRange(el) && end > start;
 }
 
 // The nearest block with source, searching out from `index` in one direction.
@@ -668,8 +666,7 @@ window.leafImagePicked = (token, destination, alt) => {
 
 // Where the buffer ends for the block above the gap. A block being typed in ends wherever its unsaved text ends, so it is saved first and the offset taken from what was written — insert at the old end and the new block would land inside the sentence, or the sentence would be thrown away.
 function gapInsertOffsetAfter(after) {
-  const start = Number(after.dataset.srcStart);
-  const end = Number(after.dataset.srcEnd);
+  const { start, end } = rangeOf(after, 'block');
   if (!after.__editingActive || !Number.isFinite(start) || !Number.isFinite(end)) return end;
   const text = blockDomToMarkdown(after);
   after.__editingActive = false;
@@ -707,7 +704,7 @@ function runGapInsert(gap, option) {
     return token === undefined ? true : token;
   }
   // Above the first block: the break goes after the new block instead.
-  const at = Number(before.dataset.srcStart);
+  const at = rangeOf(before, 'block').start;
   if (!Number.isFinite(at)) return false;
   const token = insertEditToken(option);
   sendEditCommand({ command: 'editBlock', start: at, end: at, text: option.text + separator, token });
@@ -719,8 +716,7 @@ function runGapInsert(gap, option) {
 //
 // It answers what went out, on the same three terms as the gap insert above.
 function runBlockInsert(target, option) {
-  const start = Number(target.dataset.srcStart);
-  const end = Number(target.dataset.srcEnd);
+  const { start, end } = rangeOf(target, 'block');
   collapseBlockInsertRow();
   hideBlockGutter();
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
@@ -854,8 +850,7 @@ function moveBlockDrag(event) {
 function commitBeforeBlockMove() {
   const active = document.activeElement;
   if (!active || !active.__editingActive || !active.dataset) return null;
-  const start = Number(active.dataset.srcStart);
-  const end = Number(active.dataset.srcEnd);
+  const { start, end } = rangeOf(active, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
   const text = blockDomToMarkdown(active);
   active.__editingActive = false;

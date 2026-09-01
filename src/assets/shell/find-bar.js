@@ -502,8 +502,7 @@ function findRenderedGroups(wanted) {
     const node = range && range.startContainer;
     const element = node && (node.nodeType === 1 ? node : node.parentElement);
     const block = element && element.closest('[data-src-start]');
-    const start = block ? Number(block.dataset.srcStart) : NaN;
-    const end = block ? Number(block.dataset.srcEnd) : NaN;
+    const { start, end } = rangeOf(block, 'block');
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
       // Nothing to splice through: a match outside any block's source range.
       if (chosen.has(index)) return null;

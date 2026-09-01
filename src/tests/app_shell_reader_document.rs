@@ -652,9 +652,10 @@ fn the_full_window_diagram_carries_the_edit_buttons_on_an_unlocked_markdown_docu
         tools,
         "if (!block || currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;",
     );
+    assert_contains(tools, "const { start, end } = rangeOf(block, 'block');");
     assert_contains(
         tools,
-        "if (!Number.isFinite(Number(block.dataset.srcStart)) || !Number.isFinite(Number(block.dataset.srcEnd))) return;",
+        "if (!Number.isFinite(start) || !Number.isFinite(end)) return;",
     );
     // The same two buttons, built by the same maker rather than a second copy of them.
     assert_contains(tools, "mermaidToolButton('source',");
