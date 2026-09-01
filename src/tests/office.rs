@@ -483,7 +483,7 @@ fn a_buffer_render_still_reads_the_members_beside_the_one_it_holds() {
     );
 }
 
-/// A save writes the same archive however many times the page was drawn on the way. The render stopped building one, and what it must not have done is quietly change what the save builds — so this is the byte-for-byte demand made again, after the buffer has been rendered.
+/// A save writes the same archive however many times the page was drawn on the way. A render builds no archive of its own, and what it must not do is quietly change what the save builds — so this is the byte-for-byte demand made again, after the buffer has been rendered.
 #[test]
 fn a_save_after_a_render_still_writes_every_part_byte_for_byte() {
     let before = sample_docx();

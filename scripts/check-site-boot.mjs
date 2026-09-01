@@ -1619,7 +1619,7 @@ const docsPage = await check('the docs reader boots', async () => {
   return page;
 });
 
-/** One address served the way `res.text()` used to leave it: the bytes decoded to a string and encoded again. A package loses its words here and a byte order mark takes the heading with it, which is exactly what both sites did to every document before the pages handed bytes over. */
+/** One address served the way `res.text()` leaves it: the bytes decoded to a string and encoded again. A package loses its words that way and a byte order mark takes the heading with it, which is what a page reaching for text rather than bytes hands the module. */
 function decodedOn(path) {
   return (base, address) => {
     const fetch = async (url, options) => {
