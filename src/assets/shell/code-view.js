@@ -1049,6 +1049,7 @@ function disposeMonacoEditor() {
 
 // Swap the reader shell over to Monaco for the active document's source. Monaco loads lazily; the spinner (armed by the toggle) stays up until the editor is on screen. Re-entering (live reload) disposes and rebuilds.
 function renderCodeView(state) {
+  clearKeptReaderRender();
   // Asked before the editor it replaces is gone, because on an in-place rebuild that editor is the only thing that knows where the reader was — see codeViewLandingFraction.
   pendingCodeViewFraction = codeViewLandingFraction(state);
   disposeMonacoEditor();

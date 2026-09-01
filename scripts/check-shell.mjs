@@ -35,6 +35,7 @@ import { run as runTheReadingRender } from './check-shell/the-reading-render.mjs
 import { run as runReadingUnderTheMap } from './check-shell/reading-under-the-map.mjs';
 import { run as runTheReadersScrollOrigin } from './check-shell/the-readers-scroll-origin.mjs';
 import { run as runFilenamesAndTabs } from './check-shell/filenames-and-tabs.mjs';
+import { run as runTabSwitchCache } from './check-shell/tab-switch-cache.mjs';
 import { run as runVaultsAndRecent } from './check-shell/vaults-and-recent.mjs';
 import { run as runTheStartScreen } from './check-shell/the-start-screen.mjs';
 import { run as runScrollEdgesAndBars } from './check-shell/scroll-edges-and-bars.mjs';
@@ -87,6 +88,7 @@ runTheReadingRender();
 runReadingUnderTheMap();
 runTheReadersScrollOrigin();
 runFilenamesAndTabs();
+runTabSwitchCache();
 runVaultsAndRecent();
 runTheStartScreen();
 runScrollEdgesAndBars();

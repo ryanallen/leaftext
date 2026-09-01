@@ -21,6 +21,28 @@ function setDocumentSource(text) {
   heldSourceBytes = null;
 }
 
+function captureReadingDocumentState() {
+  return {
+    sourceText: heldSourceText,
+    sourceBytes: heldSourceBytes,
+    ranges: drawnRanges,
+    format: currentDocumentFormat,
+    dialect: currentDocumentDialect,
+    bindsAnything: currentDocumentBindsAnything,
+    outlineRows: documentOutlineRows,
+  };
+}
+
+function restoreReadingDocumentState(state) {
+  heldSourceText = state.sourceText;
+  heldSourceBytes = state.sourceBytes;
+  drawnRanges = state.ranges;
+  currentDocumentFormat = state.format;
+  currentDocumentDialect = state.dialect;
+  currentDocumentBindsAnything = state.bindsAnything;
+  setDocumentOutlineRows(state.outlineRows);
+}
+
 // The open document as bytes. Encoded on the first ask and kept, so a replace-all taking two ranges per match group and a column rename taking two per cell encode nothing after the first.
 function documentSourceBytes() {
   if (heldSourceBytes === null) heldSourceBytes = sourceByteEncoder.encode(heldSourceText || '');
@@ -317,4 +339,3 @@ const MARKDOWN_RAW_INLINE_ATTRIBUTES = {
   div: ['align', 'id'],
   span: ['id'],
 };
-

@@ -21,15 +21,12 @@ impl FileWatch {
     pub(crate) fn new(proxy: EventLoopProxy<UserEvent>) -> Self {
         let reading_in: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(None));
         let handler_reading_in = Arc::clone(&reading_in);
-        // A short debounce coalesces a save's burst of events into one reload; kept small so the reload still feels immediate.
+        // The reload waits until the path has been quiet for 200ms, so a save's burst of events costs one; kept short so the reload still feels immediate.
         let debouncer = new_debouncer(
             Duration::from_millis(200),
             move |result: DebounceEventResult| {
                 if let Ok(events) = result {
-                    let changed = watched_changes(
-                        events.into_iter().map(|event| event.path),
-                        &handler_reading_in,
-                    );
+                    let changed = watched_changes(events, &handler_reading_in);
                     if !changed.is_empty() {
                         let _ = proxy.send_event(UserEvent::FileChanged(changed));
                     }
@@ -193,13 +190,16 @@ pub(crate) fn watched_change(
 }
 
 /// Keep every useful path from one debounced batch together for the loop.
+///
+/// A write still going at the deadline is reported twice: `AnyContinuous` while the writer still has the path, then `Any` once it has been quiet. Only the settled report is news — the first re-reads a file nobody has finished writing, and dropping it moves nothing later, because the second arrives when it always did.
 pub(crate) fn watched_changes(
-    paths: impl IntoIterator<Item = PathBuf>,
+    events: impl IntoIterator<Item = DebouncedEvent>,
     reading_in: &Arc<Mutex<Option<PathBuf>>>,
 ) -> Vec<PathBuf> {
-    paths
+    events
         .into_iter()
-        .filter_map(|path| watched_change(path, reading_in))
+        .filter(|event| event.kind == DebouncedEventKind::Any)
+        .filter_map(|event| watched_change(event.path, reading_in))
         .collect()
 }
 
@@ -508,6 +508,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
             &tabs,
             Some(index),
             Some(&document),
+            Some(hash),
         ),
         "Live reload: failed to update document view",
     );

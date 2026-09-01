@@ -73,7 +73,11 @@ fn every_way_of_opening_a_page_draws_one_fully_opaque_page_and_nothing_else() {
         &html,
         "const arriving = renderedPath !== lastRenderedDocumentPath;",
     );
-    assert_contains(&html, "lastRenderedDocumentPath = renderedPath;");
+    assert_in(
+        &html,
+        "function renderState(keepDetachedRender = false) {",
+        "lastRenderedDocumentPath = renderedPath;",
+    );
     assert_contains(&html, "if (arriving) applyFrontmatterAsks(readerLayout);");
     // Cleared on the home screen, so reopening the document just closed is an arrival.
     assert_contains(
@@ -315,7 +319,7 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
     // The page holds all three of these lines in several places, so which block each is in is the claim: a render asks for the sweep, the sweep names the undrawn fences, and the batch draw starts mermaid.
     assert_in(
         &html,
-        "function renderState() {",
+        "function renderState(keepDetachedRender = false) {",
         "renderMermaidDiagrams();",
     );
     assert_in(
@@ -620,10 +624,17 @@ fn a_drawn_diagram_opens_on_the_whole_window() {
         "the overlay must never write its own SVG into the render memo"
     );
     // A render empties `app`, which would take the overlay with it and leave the Escape handler listening for a diagram that is gone.
-    for entry in [
-        "function renderState() {",
-        "function renderCodeView(state) {",
-    ] {
+    assert_in(
+        &script,
+        "function prepareStateRender(state, keepDetachedRender) {",
+        "closeDiagramOverlay();",
+    );
+    assert_in(
+        &script,
+        "function renderState(keepDetachedRender = false) {",
+        "prepareStateRender(state, keepDetachedRender);",
+    );
+    for entry in ["function renderCodeView(state) {"] {
         let body = script.split(entry).nth(1).expect(entry);
         let head = &body[..body
             .find("app.innerHTML")

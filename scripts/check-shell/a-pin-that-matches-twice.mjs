@@ -114,6 +114,7 @@ const HAYSTACKS = [
   { builder: 'document_state_script', why: 'the same, for the document being opened' },
   { builder: 'workspace_reload_script', why: 'the same, for a reload keeping its place' },
   { builder: 'workspace_switch_script', why: 'the same, for a switch to another vault' },
+  { builder: 'workspace_cached_switch_script', why: 'the same, for a switch naming a page already kept' },
   { builder: 'source_updated_script', why: 'the same, for the source coming back from a save' },
 ];
 

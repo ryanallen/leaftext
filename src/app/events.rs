@@ -253,6 +253,10 @@ pub(crate) enum IpcCommand {
         /// Code-view scroll fraction when the outgoing tab is showing source; `None` for a reading-view tab.
         #[serde(default)]
         code_scroll: Option<f64>,
+        #[serde(rename = "renderKey", default)]
+        render_key: Option<String>,
+        #[serde(rename = "forceFull", default)]
+        force_full: bool,
     },
     #[serde(rename = "moveTab")]
     MoveTab { from: usize, to: usize },

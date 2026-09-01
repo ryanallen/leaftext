@@ -598,8 +598,27 @@ window.leafStartupDone = () => {
   const card = document.getElementById('startupCard');
   if (card) card.hidden = true;
 };
-function renderState() {
-  const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
+function clearKeptReaderRender() {
+  keptReaderRender = null;
+}
+function takeCurrentReaderRender() {
+  const layout = app.querySelector('.reader-layout');
+  if (codeViewActive || !layout || !currentState || !currentState.document) {
+    clearKeptReaderRender();
+    return null;
+  }
+  app.removeChild(layout);
+  return {
+    path: currentState.document.path || activeDocumentPath(),
+    html: currentState.document.html,
+    key: currentState.renderKey || null,
+    document: currentState.document,
+    layout,
+    documentState: captureReadingDocumentState(),
+  };
+}
+function prepareStateRender(state, keepDetachedRender) {
+  if (!keepDetachedRender) clearKeptReaderRender();
   disconnectMinimapPreviewObservers();
   disconnectReaderReflowObserver();
   cancelReaderScrollSettle();
@@ -615,6 +634,46 @@ function renderState() {
   disposeMonacoEditor();
   document.documentElement.dataset.codeView = 'false';
   renderTabs(state);
+}
+function finishRestoredReaderRender(state, kept) {
+  const renderedPath = state.document.path || activeDocumentPath();
+  document.title = `${state.document.title} - Leaftext`;
+  lastRenderedDocumentPath = renderedPath;
+  app.className = 'reader-shell has-document';
+  app.appendChild(kept.layout);
+  restoreReadingDocumentState(kept.documentState);
+  setMinimapMarkup(renderDocumentMinimap(state.document.has_visible_content));
+  scheduleLibraryOutline();
+  requestDocumentPager(renderedPath);
+  bindDocumentMinimap();
+  observeReaderReflow();
+  scheduleMinimapPreviewUpdate();
+  dropViewLandingsFromAnotherDocument(renderedPath);
+  if (readerOffScreen()) heldReadingLandingPath = renderedPath;
+  else runReadingLanding(renderedPath);
+  updateEditingChrome();
+  sayStartupDrawn(true);
+}
+function restoreKeptReaderRender(state, kept) {
+  if (!kept || !state || !state.document) return false;
+  const path = state.document.path || activeDocumentPath();
+  if (kept.path !== path || kept.html !== state.document.html) return false;
+  prepareStateRender(state, true);
+  finishRestoredReaderRender(state, kept);
+  return true;
+}
+function restoreKeptReaderRenderByKey(state, kept, key) {
+  if (!kept || !state || !kept.document || kept.key !== key) return false;
+  const tab = (state.tabs || [])[state.active];
+  if (!tab || kept.path !== tab.path) return false;
+  state.document = kept.document;
+  prepareStateRender(state, true);
+  finishRestoredReaderRender(state, kept);
+  return true;
+}
+function renderState(keepDetachedRender = false) {
+  const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
+  prepareStateRender(state, keepDetachedRender);
   if (state.document) {
     document.title = `${state.document.title} - Leaftext`;
     const renderedPath = state.document.path || activeDocumentPath();

@@ -580,22 +580,27 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     index,
                     scroll_anchor,
                     code_scroll,
+                    render_key,
+                    force_full,
                 } => {
                     // Clicking the active tab is a no-op; re-rendering would jump the reader.
-                    if reader.workspace.active == Some(index) {
+                    if reader.workspace.active == Some(index) && !force_full {
                         return;
                     }
-                    if let Some(active) = reader.workspace.active {
-                        if let Some(tab) = reader.workspace.tabs.get_mut(active) {
-                            tab.history.stamp_current(scroll_anchor);
-                            // Remember where the source editor was left; `None` for a reading-view tab, which leaves nothing to restore.
-                            tab.saved_code_scroll = code_scroll;
+                    if !force_full {
+                        if let Some(active) = reader.workspace.active {
+                            if let Some(tab) = reader.workspace.tabs.get_mut(active) {
+                                tab.history.stamp_current(scroll_anchor);
+                                // Remember where the source editor was left; `None` for a reading-view tab, which leaves nothing to restore.
+                                tab.saved_code_scroll = code_scroll;
+                            }
                         }
+                        reader.workspace.set_active(index);
                     }
-                    if reader.workspace.set_active(index) {
+                    if reader.workspace.active == Some(index) {
                         // Reopen where the reader left it (`None` starts at the top).
                         if let Some(intent) = restore_front_tab_intent(&reader.workspace) {
-                            reader.render(intent);
+                            reader.render_switch(intent, render_key.as_deref(), force_full);
                         }
                     }
                 }

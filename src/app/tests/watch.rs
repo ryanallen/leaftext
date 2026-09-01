@@ -264,10 +264,76 @@ fn one_watcher_path_keeps_the_same_answer_inside_a_batch() {
     let path = PathBuf::from(r"\\?\C:\notes\mail.eml");
 
     assert_eq!(
-        watched_changes([path.clone()], &nothing_open),
+        watched_changes(
+            [DebouncedEvent {
+                path: path.clone(),
+                kind: DebouncedEventKind::Any,
+            }],
+            &nothing_open
+        ),
         watched_change(path, &nothing_open)
             .into_iter()
             .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn a_path_still_being_written_waits_for_the_report_that_says_it_settled() {
+    // A write going on past the debouncer's deadline is reported twice for the one save: while the writer still has the path, then once it has been quiet. Acting on the first re-reads a half-written file and costs the whole reload for an answer that is replaced a moment later.
+    let nothing_open: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(None));
+    let path = PathBuf::from("/vault/notes/report.md");
+
+    assert!(
+        watched_changes(
+            [DebouncedEvent {
+                path: path.clone(),
+                kind: DebouncedEventKind::AnyContinuous,
+            }],
+            &nothing_open
+        )
+        .is_empty(),
+        "a file still being written reloaded before its writer had finished"
+    );
+
+    assert_eq!(
+        watched_changes(
+            [DebouncedEvent {
+                path: path.clone(),
+                kind: DebouncedEventKind::Any,
+            }],
+            &nothing_open
+        ),
+        vec![path],
+        "the settled report that follows it never reached the loop"
+    );
+}
+
+#[test]
+fn a_settled_report_still_meets_every_rule_the_boundary_already_had() {
+    // Reading the report's kind sits in front of the path filter, so the filter has to keep answering exactly as it did: git's bookkeeping and a machine's build output refused, the folder being read out of one of them excepted, and every surviving path translated once.
+    let reading_in: Arc<Mutex<Option<PathBuf>>> = Arc::new(Mutex::new(Some(PathBuf::from(
+        "/vault/site/node_modules/pkg",
+    ))));
+    let settled = |path: &str| DebouncedEvent {
+        path: PathBuf::from(path),
+        kind: DebouncedEventKind::Any,
+    };
+
+    assert_eq!(
+        watched_changes(
+            [
+                settled("/vault/.git/index"),
+                settled(r"\\?\C:\notes\mail.eml"),
+                settled("/vault/site/build/bundle.js"),
+                settled("/vault/site/node_modules/pkg/README.md"),
+            ],
+            &reading_in
+        ),
+        vec![
+            PathBuf::from(r"C:\notes\mail.eml"),
+            PathBuf::from("/vault/site/node_modules/pkg/README.md"),
+        ],
+        "the settled report stopped meeting the refusal and translation rules"
     );
 }
 

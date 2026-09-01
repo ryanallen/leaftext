@@ -60,7 +60,7 @@ use leaftext::{
 use notify_debouncer_mini::{
     new_debouncer,
     notify::{RecommendedWatcher, RecursiveMode},
-    DebounceEventResult, Debouncer,
+    DebounceEventResult, DebouncedEvent, DebouncedEventKind, Debouncer,
 };
 use rfd::FileDialog;
 use rusqlite::Connection;

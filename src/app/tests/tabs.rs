@@ -3,6 +3,21 @@
 use super::*;
 
 #[test]
+fn a_matching_reused_render_uses_the_cached_handoff_and_every_other_case_is_full() {
+    let hash = 0x1234_abcd_u64;
+    let key = format!("{hash:016x}");
+    assert!(switch_uses_cached_handoff(true, hash, Some(&key), false));
+    assert!(!switch_uses_cached_handoff(false, hash, Some(&key), false));
+    assert!(!switch_uses_cached_handoff(
+        true,
+        hash,
+        Some("0000000000000000"),
+        false
+    ));
+    assert!(!switch_uses_cached_handoff(true, hash, Some(&key), true));
+}
+
+#[test]
 fn move_tab_reorders_and_keeps_active_document_selected() {
     let mut workspace = Workspace::default();
     workspace.open_path(PathBuf::from("/docs/a.md"));

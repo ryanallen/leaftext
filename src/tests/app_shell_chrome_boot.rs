@@ -157,6 +157,11 @@ fn app_shell_renders_history_controls_and_intercepts_document_links() {
             expected,
         );
     }
+    assert_in(
+        &html,
+        "tabBar.addEventListener('click', (event) => {",
+        "if (keptReaderRender && tab && keptReaderRender.path === tab.path && keptReaderRender.key) command.renderKey = keptReaderRender.key;",
+    );
 
     assert!(
         !html.contains(r#"<path d="m15 18-6-6 6-6"/>"#),

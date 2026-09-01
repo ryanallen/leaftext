@@ -169,7 +169,8 @@ export function run() {
     const built = (extra = '') => vm.runInContext(
       'minimapContentVersion = 7; minimapBuiltVersion = 7; minimapBuiltSourceWidth = 800;'
         + 'minimapBuiltPreviewWidth = 90; minimapBuiltFrameWidth = 760;'
-        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40; minimapBuiltRowPath = '1/0';${extra}`,
+        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40; minimapBuiltRowPath = '1/0';`
+        + `minimapBuiltSlack = 1;${extra}`,
       booted,
     );
     try {
@@ -188,9 +189,144 @@ export function run() {
       vm.runInContext(
         'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
           + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1;'
-          + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';",
+          + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
+          + 'minimapBuiltSlack = -1;',
         booted,
       );
+    }
+  });
+
+  // The turn that puts the slack back rebuilds the same rows out of the same document at the same widths, so without the slack in the guard it is refused as a rebuild that would change nothing — and the rail draws one screen for as long as the document stays open, which is the whole of the narrow rebuild's cost with none of its saving.
+  check('the slack the standing clone holds is one of the things the skip guard counts', () => {
+    const { minimapRebuildWouldChangeNothing } = booted;
+    const metrics = { sourceWidth: 800 };
+    const built = (slack) => vm.runInContext(
+      'minimapContentVersion = 7; minimapBuiltVersion = 7; minimapBuiltSourceWidth = 800;'
+        + 'minimapBuiltPreviewWidth = 90; minimapBuiltFrameWidth = 760;'
+        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40; minimapBuiltRowPath = '1/0'; minimapBuiltSlack = ${slack};`,
+      booted,
+    );
+    try {
+      built(0);
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0', 1)) throw new Error('the turn that widens a narrow thumbnail was refused, so the rail stays one screen wide');
+      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0', 0)) throw new Error('a narrow rebuild over a narrow thumbnail asked for another');
+      built(1);
+      // The other way round: a clone already holding the screen either side answers a narrow ask without drawing anything.
+      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0', 0)) throw new Error('a narrow rebuild threw away a wider thumbnail that already held its rows');
+      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0', 1)) throw new Error('an untouched wide thumbnail rebuilt itself anyway');
+    } finally {
+      vm.runInContext(
+        'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
+          + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1;'
+          + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
+          + 'minimapBuiltSlack = -1;',
+        booted,
+      );
+    }
+  });
+
+  // The rail stood up over a document of a hundred twenty-pixel rows, with the two answers the rebuild reads off a real page swapped for known ones — the rail's geometry, and the body it clones. Everything between them is the shipped rebuild, so what these two checks read back is the slice it really built. A 70-pixel track over a 2,000-pixel document drawn at a tenth covers the first 700 pixels of it, which is rows 0 to 35; a screen either side reaches row 70.
+  const railOverARowedDocument = () => {
+    const body = fakeElement('rail-slack-source');
+    body.className = 'document-body';
+    body.innerHTML = Array.from({ length: 100 }, (_, index) => `<p>row ${index}</p>`).join('');
+    body.children.forEach((row, index) => {
+      row.getBoundingClientRect = () => ({ top: index * 20, bottom: (index + 1) * 20, height: 20, width: 800 });
+    });
+    const metrics = {
+      sourceWidth: 800,
+      sourceTop: 0,
+      scrollHeight: 2000,
+      viewportHeight: 700,
+      scrollable: 1300,
+      scrollTop: 0,
+      trackHeight: 70,
+      scaledDocumentHeight: 200,
+      previewScale: 0.1,
+    };
+    const was = {
+      measure: booted.measureDocumentMinimap,
+      source: booted.minimapSourceElement,
+      setTimeout: booted.setTimeout,
+      clearTimeout: booted.clearTimeout,
+    };
+    booted.measureDocumentMinimap = () => metrics;
+    booted.minimapSourceElement = () => body;
+    // The quiet turn, held rather than run: the page's own setTimeout throws its callback away, and a turn nobody can run is one no check can prove came back.
+    const turns = { booked: [], cleared: [], next: 1, run: new Map() };
+    booted.setTimeout = (fn) => {
+      const id = turns.next;
+      turns.next += 1;
+      turns.run.set(id, fn);
+      turns.booked.push(id);
+      return id;
+    };
+    booted.clearTimeout = (id) => {
+      turns.cleared.push(id);
+      turns.run.delete(id);
+    };
+    booted.setMinimapMarkup(booted.documentMinimapMarkup());
+    const rail = booted.document.getElementById('readerMinimap');
+    const content = rail.querySelector('.document-minimap-track').querySelector('.document-minimap-content');
+    content.getBoundingClientRect = () => ({ top: 0, bottom: 70, height: 70, width: 80 });
+    return {
+      turns,
+      read: (name) => vm.runInContext(name, booted),
+      restore: () => {
+        booted.measureDocumentMinimap = was.measure;
+        booted.minimapSourceElement = was.source;
+        booted.setTimeout = was.setTimeout;
+        booted.clearTimeout = was.clearTimeout;
+        booted.setMinimapMarkup('');
+        booted.__frames.drain();
+        vm.runInContext(
+          'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
+            + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1; minimapBuiltRange = null;'
+            + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
+            + 'minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;',
+          booted,
+        );
+      },
+    };
+  };
+
+  // The whole of a rebuild is the browser laying the slice out, and that falls with the rows in it — three screens is 13.7ms of a 15.6ms rebuild on a long config and one screen about 5. So the words landing draw the track's own screen and nothing either side, and the quiet turn behind them puts back the room a scroll slides into.
+  check('a change to the words draws the screen the track covers, and the turn behind it draws one either side', () => {
+    const stand = railOverARowedDocument();
+    try {
+      booted.invalidateMinimapPreview();
+      booted.__frames.drain();
+      if (stand.read('minimapBuiltSlack') !== 0) throw new Error(`the words changed and the rail still built with ${stand.read('minimapBuiltSlack')} screens either side`);
+      const narrow = [stand.read('minimapBuiltFirstRow'), stand.read('minimapBuiltLastRow')];
+      if (narrow[0] !== 0 || narrow[1] !== 35) throw new Error(`the words changed and the rail sliced rows ${narrow[0]} to ${narrow[1]} rather than the 0 to 35 its track covers`);
+      if (stand.turns.booked.length !== 1) throw new Error('the narrow rebuild booked no quiet turn, so the screen either side never comes back');
+
+      stand.turns.run.get(stand.turns.booked[0])();
+      booted.__frames.drain();
+      if (stand.read('minimapBuiltSlack') !== 1) throw new Error('the quiet turn came round and left the thumbnail a screen wide');
+      const wide = [stand.read('minimapBuiltFirstRow'), stand.read('minimapBuiltLastRow')];
+      if (wide[0] !== 0 || wide[1] !== 70) throw new Error(`the quiet turn sliced rows ${wide[0]} to ${wide[1]} rather than the 0 to 70 a screen either side reaches`);
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // A turn booked against a document the reader has gone on typing into would clone a slice of the words as they were, so it never runs: each change to the words drops the standing turn and books its own behind itself.
+  check('a change to the words drops the turn that was going to widen the thumbnail', () => {
+    const stand = railOverARowedDocument();
+    try {
+      booted.invalidateMinimapPreview();
+      booted.__frames.drain();
+      const booked = stand.turns.booked[0];
+
+      booted.invalidateMinimapPreview();
+      if (!stand.turns.cleared.includes(booked)) throw new Error('the words changed again and the turn booked against the words before them still stood');
+      if (stand.turns.run.has(booked)) throw new Error('the dropped turn can still run');
+      booted.__frames.drain();
+      if (stand.turns.booked.length !== 2) throw new Error('the second change to the words booked no turn of its own, so the screen either side never comes back');
+      if (stand.read('minimapWidenTimer') !== stand.turns.booked[1]) throw new Error('the rail is waiting on a turn that is not the one it booked last');
+    } finally {
+      stand.restore();
     }
   });
 

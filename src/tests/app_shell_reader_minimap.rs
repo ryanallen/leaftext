@@ -7,11 +7,9 @@ fn app_shell_renders_interactive_document_minimap() {
     let html = app_shell_page();
 
     for expected in [
-            "renderDocumentMinimap(state.document.has_visible_content)",
             "function renderDocumentMinimap(hasVisibleContent) {",
             "aria-label=\"Document minimap\"",
             "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
-            "bindDocumentMinimap();",
             "function bindDocumentMinimap() {",
             // The rail says it is working until there is a thumbnail to show: the clone can't exist before the document has been laid out, and on a large file an empty rail beside a finished page looks broken.
             "class=\"document-minimap is-loading\"",
@@ -19,6 +17,16 @@ fn app_shell_renders_interactive_document_minimap() {
         ] {
             assert_contains(&html, expected);
         }
+    assert_in(
+        &html,
+        "function renderState(keepDetachedRender = false) {",
+        "renderDocumentMinimap(state.document.has_visible_content)",
+    );
+    assert_in(
+        &html,
+        "function renderState(keepDetachedRender = false) {",
+        "bindDocumentMinimap();",
+    );
 
     // The hold a diagram pass takes must never name that state — a wheel down a page of diagrams is a settle and a pass every few hundred milliseconds, so the box blinked all the way down. The hold itself stays: one rebuild per pass rather than one per batch of three.
     assert!(
@@ -73,9 +81,9 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function invalidateMinimapPreview() {",
         "minimapContentVersion += 1;",
         "function disconnectMinimapPreviewObservers() {",
-        "function scheduleMinimapPreviewUpdate() {",
+        "function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {",
         "minimapPreviewFrame = window.requestAnimationFrame(() => {",
-        "function updateDocumentMinimapPreview() {",
+        "function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {",
         // The clone is skipped when nothing shaping the thumbnail changed, so a height-only resize doesn't rebuild the whole document.
         "minimapBuiltVersion === minimapContentVersion &&",
         "minimapBuiltSourceWidth === metrics.sourceWidth &&",
@@ -398,10 +406,14 @@ fn app_shell_rebinds_minimap_after_document_updates() {
             // Rendered hidden, then revealed already decorated: see renderState.
             "app.innerHTML = `<div class=\"${layoutClass}\" style=\"display:none\">${state.document.html}</div>`;",
             "setMinimapMarkup(minimapHtml);",
-            "bindDocumentMinimap();",
         ] {
         assert_contains(&html, expected);
     }
+    assert_in(
+        &html,
+        "function renderState(keepDetachedRender = false) {",
+        "bindDocumentMinimap();",
+    );
 
     // The page places the box all over, so the rebind is the one that has to.
     assert_in(

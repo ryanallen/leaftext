@@ -87,30 +87,56 @@ function renderStateKeepingPlace() {
 }
 // Switch to another tab and land where it was last left. `anchor` is a content anchor that survives the re-render, null the first time (starts at the top). Skips the reset-to-top that leafSetState runs so a tab click never jumps up.
 window.leafSwitchTab = (state, anchor) => {
+  const outgoing = takeCurrentReaderRender();
+  const target = keptReaderRender;
   currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
   if (!currentState.document) {
     homeMessage = pickHomeMessage();
   }
   runViewRender(currentState.document && currentState.document.html, () => {
     resetReaderScrollOnNextRender = false;
-    renderState();
-    // Switching to a tab is "going to" that file: reveal and select it, and in graph mode fly to its node when the switch changed the active document.
-    const switchedPath = activeDocumentPath();
-    followFileInLibrary(switchedPath, !!switchedPath && switchedPath !== librarySelectedPath);
-    if (!anchor) {
-      resetReaderScrollToContentStart();
-      return;
-    }
-    readerScrollAnchor = anchor;
-    // Restore synchronously, before the browser paints the freshly rendered document, so switching tabs never flashes at the top for a frame.
+    if (!restoreKeptReaderRender(currentState, target)) renderState(true);
+    keptReaderRender = outgoing;
+    finishTabSwitch(anchor);
+  });
+};
+function finishTabSwitch(anchor) {
+  // Switching to a tab is "going to" that file: reveal and select it, and in graph mode fly to its node when the switch changed the active document.
+  const switchedPath = activeDocumentPath();
+  followFileInLibrary(switchedPath, !!switchedPath && switchedPath !== librarySelectedPath);
+  if (!anchor) {
+    resetReaderScrollToContentStart();
+    return;
+  }
+  readerScrollAnchor = anchor;
+  // Restore synchronously, before the browser paints the freshly rendered document, so switching tabs never flashes at the top for a frame.
+  restoreReaderScrollAnchor(anchor);
+  updateMinimapViewport();
+  // Re-apply after layout settles; renderState's reflow observer keeps re-pinning the anchor as images above it decode and grow, so the landing doesn't drift.
+  window.requestAnimationFrame(() => {
     restoreReaderScrollAnchor(anchor);
+    refreshReaderScrollAnchor();
     updateMinimapViewport();
-    // Re-apply after layout settles; renderState's reflow observer keeps re-pinning the anchor as images above it decode and grow, so the landing doesn't drift.
-    window.requestAnimationFrame(() => {
-      restoreReaderScrollAnchor(anchor);
-      refreshReaderScrollAnchor();
-      updateMinimapViewport();
-    });
+  });
+}
+window.leafSwitchTabCached = (state, anchor, key) => {
+  const outgoing = takeCurrentReaderRender();
+  const target = keptReaderRender;
+  currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
+  if (restoreKeptReaderRenderByKey(currentState, target, key)) {
+    keptReaderRender = outgoing;
+    finishTabSwitch(anchor);
+    clearReaderLoading();
+    return;
+  }
+  keptReaderRender = outgoing;
+  renderTabs(currentState);
+  send({
+    command: 'switchTab',
+    index: currentState.active,
+    scroll_anchor: anchor || { section: null, block: 0, offsetY: 0 },
+    code_scroll: null,
+    forceFull: true,
   });
 };
 // Tabs and recents with no document attached. A tab opened straight into the code view renders from the code view's own payload, so the state script never runs for it — without this it would have no entry in the strip and nothing for the page to call the active document.
@@ -289,16 +315,18 @@ tabBar.addEventListener('click', (event) => {
   if (!label || suppressTabClick) return;
   const index = Number(label.dataset.tabIndex);
   const wasActive = index === (currentState && currentState.active);
+  const tab = (currentState.tabs || [])[index];
   // A real switch renders the other document (which may be slow); show the spinner. Re-clicking the active tab is a host no-op, so skip it there.
   if (!wasActive) beginReaderLoading();
-  send({
+  const command = {
     command: 'switchTab',
     index,
     scroll_anchor: currentScrollAnchor(),
     code_scroll: codeViewActive ? viewScrollFraction() : null,
-  });
+  };
+  if (keptReaderRender && tab && keptReaderRender.path === tab.path && keptReaderRender.key) command.renderKey = keptReaderRender.key;
+  send(command);
   // Reveal even when this is already the active tab (no state round-trip from the host): clicking a file's tab snaps the library back to it, and in graph mode flies the camera to that node and zooms in. Clicking the tab you are already on is a deliberate resync — force the graph to rebuild so it can't stay stuck on a stale scene in memory.
-  const tab = (currentState.tabs || [])[index];
   followFileInLibrary(tab ? tab.path || null : null, true, wasActive);
 });
 tabBar.addEventListener('pointerdown', (event) => {

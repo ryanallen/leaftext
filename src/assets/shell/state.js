@@ -45,6 +45,8 @@ let readerScrollAnchor = null;
 let readerScrolling = false;
 let resetReaderScrollOnNextRender = false;
 let readerAnchorBlocks = null;
+// The one reading layout not on screen, exchanged on a tab switch.
+let keptReaderRender = null;
 
 // ---- the box that means "the app" (dom.js, context-menu.js, glossary.js, hints.js, library.js, render-document.js, decorate.js, code-view.js, minimap.js, frontmatter-fields.js)
 

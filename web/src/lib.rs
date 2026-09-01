@@ -261,6 +261,7 @@ fn workspace_script_for(document: &leaftext::OpenedDocument, path: &str) -> Stri
         &tabs,
         Some(0),
         Some(document),
+        None,
     )
 }
 
@@ -468,6 +469,7 @@ pub extern "C" fn leaf_buffer_document_script(handle: u32) -> *mut u8 {
         &tabs,
         Some(0),
         Some(&document),
+        None,
     );
     let Some(resync) = with_buffer(handle, |edit| {
         leaftext::blocks_resynced_script(

@@ -1,5 +1,12 @@
 use crate::store::{DocumentGraph, SearchResults, Vault};
 use crate::*;
+use std::hash::{Hash, Hasher};
+
+fn document_render_key(source: &str) -> u64 {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    source.hash(&mut hasher);
+    hasher.finish()
+}
 
 /// `f(<state>);` — the state written out as a JavaScript value.
 ///
@@ -29,7 +36,7 @@ pub fn initial_state_script(
     tabs: &[TabSummary],
     active: Option<usize>,
 ) -> String {
-    let state = workspace_payload(recent, favorites, tabs, active, None);
+    let state = workspace_payload(recent, favorites, tabs, active, None, None);
     format!(
         "window.__leafInitialState = {};",
         serde_json::json!({
@@ -227,7 +234,9 @@ fn workspace_payload(
     tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
+    render_key: Option<u64>,
 ) -> serde_json::Value {
+    let render_key = render_key.or_else(|| document.map(|item| document_render_key(&item.source)));
     let recent: Vec<String> = recent
         .iter()
         .map(|path| path.display().to_string())
@@ -256,6 +265,7 @@ fn workspace_payload(
         "tabs": tabs,
         "active": active,
         "document": document,
+        "renderKey": render_key.map(|key| format!("{key:016x}")),
     })
 }
 
@@ -266,10 +276,11 @@ pub fn workspace_state_script(
     tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
+    render_key: Option<u64>,
 ) -> String {
     call_with_json(
         "window.leafSetState",
-        &workspace_payload(recent, favorites, tabs, active, document),
+        &workspace_payload(recent, favorites, tabs, active, document, render_key),
     )
 }
 
@@ -282,7 +293,7 @@ pub fn workspace_only_script(
 ) -> String {
     format!(
         "window.leafSetWorkspace({});",
-        workspace_payload(recent, favorites, tabs, active, None)
+        workspace_payload(recent, favorites, tabs, active, None, None)
     )
 }
 
@@ -293,10 +304,11 @@ pub fn workspace_reload_script(
     tabs: &[TabSummary],
     active: Option<usize>,
     document: Option<&OpenedDocument>,
+    render_key: Option<u64>,
 ) -> String {
     call_with_json(
         "window.leafReloadDocument",
-        &workspace_payload(recent, favorites, tabs, active, document),
+        &workspace_payload(recent, favorites, tabs, active, document, render_key),
     )
 }
 
@@ -328,13 +340,31 @@ pub fn workspace_switch_script(
     active: Option<usize>,
     document: Option<&OpenedDocument>,
     anchor: Option<&ScrollAnchor>,
+    render_key: Option<u64>,
 ) -> String {
-    let state = workspace_payload(recent, favorites, tabs, active, document);
+    let state = workspace_payload(recent, favorites, tabs, active, document, render_key);
     let anchor = match anchor {
         Some(anchor) => scroll_anchor_json(anchor),
         None => "null".to_string(),
     };
     format!("window.leafSwitchTab({state}, {anchor});")
+}
+
+pub fn workspace_cached_switch_script(
+    recent: &[PathBuf],
+    favorites: &Favorites,
+    tabs: &[TabSummary],
+    active: Option<usize>,
+    anchor: Option<&ScrollAnchor>,
+    render_key: u64,
+) -> String {
+    let state = workspace_payload(recent, favorites, tabs, active, None, Some(render_key));
+    let anchor = match anchor {
+        Some(anchor) => scroll_anchor_json(anchor),
+        None => "null".to_string(),
+    };
+    let key = serde_json::to_string(&format!("{render_key:016x}")).expect("render key serializes");
+    format!("window.leafSwitchTabCached({state}, {anchor}, {key});")
 }
 
 pub fn navigation_state_script(can_go_back: bool, can_go_forward: bool) -> String {

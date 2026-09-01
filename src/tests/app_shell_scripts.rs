@@ -92,6 +92,7 @@ fn workspace_reload_script_preserves_scroll_via_reload_entry_point() {
         &tabs,
         Some(0),
         None,
+        None,
     );
 
     // The reload path must call leafReloadDocument (which keeps the reader's scroll position), never leafSetState (which jumps back to the top).
@@ -118,10 +119,10 @@ fn workspace_payload_carries_favorites_beside_recents() {
 
     // Every screen reads this one payload, so a sender left out of it would never hear about a mark.
     for script in [
-        workspace_state_script(&[], &favorites, &tabs, Some(0), None),
+        workspace_state_script(&[], &favorites, &tabs, Some(0), None, None),
         workspace_only_script(&[], &favorites, &tabs, Some(0)),
-        workspace_reload_script(&[], &favorites, &tabs, Some(0), None),
-        workspace_switch_script(&[], &favorites, &tabs, Some(0), None, None),
+        workspace_reload_script(&[], &favorites, &tabs, Some(0), None, None),
+        workspace_switch_script(&[], &favorites, &tabs, Some(0), None, None, None),
     ] {
         assert_contains(&script, r#""kind":"folder""#);
         assert_contains(&script, r#""vaultId":4"#);
@@ -145,6 +146,7 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
         Some(0),
         None,
         Some(&anchor),
+        None,
     );
 
     // Switching must render through leafSwitchTab (renders, then restores the saved anchor) rather than leafSetState (which snaps back to the top).
@@ -155,9 +157,64 @@ fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
 
     // No saved anchor (first visit to a tab) passes null, which starts the reader at the top of the content.
     assert!(
-        workspace_switch_script(&[], &Favorites::default(), &[], None, None, None)
+        workspace_switch_script(&[], &Favorites::default(), &[], None, None, None, None)
             .ends_with(", null);")
     );
+}
+
+#[test]
+fn full_document_handoffs_carry_the_exact_render_key_and_cached_switches_carry_no_document() {
+    let document = opened_document_from_source("# ONLY_IN_THE_DOCUMENT", "guide.md");
+    let tabs = [strip_tab("Guide", "guide.md")];
+    let hash = 0x12ab_u64;
+    let key = r#""renderKey":"00000000000012ab""#;
+    for script in [
+        workspace_state_script(
+            &[],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            Some(hash),
+        ),
+        workspace_reload_script(
+            &[],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            Some(hash),
+        ),
+        workspace_switch_script(
+            &[],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            None,
+            Some(hash),
+        ),
+    ] {
+        assert_contains(&script, key);
+        assert_contains(&script, "ONLY_IN_THE_DOCUMENT");
+    }
+
+    let cached = workspace_cached_switch_script(
+        &[],
+        &Favorites::default(),
+        &tabs,
+        Some(0),
+        Some(&ScrollAnchor {
+            section: Some("place".to_string()),
+            block: 2,
+            offset_y: 3.0,
+        }),
+        hash,
+    );
+    assert!(cached.starts_with("window.leafSwitchTabCached({"));
+    assert_contains(&cached, key);
+    assert_contains(&cached, r#""section":"place""#);
+    assert!(!cached.contains("ONLY_IN_THE_DOCUMENT"));
 }
 
 #[test]

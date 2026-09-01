@@ -149,6 +149,21 @@ pub(crate) struct Reader {
     pub(crate) image_dir: Arc<Mutex<Option<PathBuf>>>,
 }
 
+pub(crate) struct RenderedDocument {
+    pub(crate) document: OpenedDocument,
+    pub(crate) hash: u64,
+    pub(crate) reused: bool,
+}
+
+pub(crate) fn switch_uses_cached_handoff(
+    reused: bool,
+    hash: u64,
+    page_key: Option<&str>,
+    force_full: bool,
+) -> bool {
+    reused && !force_full && page_key == Some(format!("{hash:016x}").as_str())
+}
+
 impl Reader {
     /// The page, when there is one. `None` from the close handler onward.
     pub(crate) fn page(&self) -> Option<&WebView> {
@@ -247,7 +262,7 @@ impl Reader {
     /// The document for `path`: the tab's cached render where the file still answers the same, a fresh render (cached on the tab) where it does not. The render is what the cache saves, and the one read here is what the render is drawn from — a package's archive travels with its text, so nothing reads the file again to unpack it.
     ///
     /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all — which is why the file's own record is asked first.
-    fn document_for(&mut self, index: usize, path: &Path) -> io::Result<OpenedDocument> {
+    fn document_for(&mut self, index: usize, path: &Path) -> io::Result<RenderedDocument> {
         // Taken at the top, before anything opens the file, so the entry written below stands on a reading of the file as it was when this render was drawn from it. One call serves that entry and the gate that reads it back.
         let record = settled_file_record(path);
         // The record decides whether to read; the hash below still decides whether the render answers. Two questions, not one — drop the hash behind this and `page_shows_file` loses the only key it can ask about contents the live reload is already holding.
@@ -258,7 +273,11 @@ impl Reader {
             .and_then(|tab| tab.rendered.as_ref())
             .filter(|cache| cache.stands_for(path, record))
         {
-            return Ok(cache.document.clone());
+            return Ok(RenderedDocument {
+                document: cache.document.clone(),
+                hash: cache.hash,
+                reused: true,
+            });
         }
         let (hash, read_already) = match render_hash(path, None) {
             Some(hash) => (hash, None),
@@ -274,7 +293,11 @@ impl Reader {
             .and_then(|tab| tab.rendered.as_ref())
             .filter(|cache| cache.answers_for(path, hash))
         {
-            return Ok(cache.document.clone());
+            return Ok(RenderedDocument {
+                document: cache.document.clone(),
+                hash: cache.hash,
+                reused: true,
+            });
         }
         let source = match read_already {
             Some(source) => source,
@@ -289,20 +312,37 @@ impl Reader {
                 document: document.clone(),
             });
         }
-        Ok(document)
+        Ok(RenderedDocument {
+            document,
+            hash,
+            reused: false,
+        })
     }
 
     /// Render the active tab's document (or the home screen) into the webview and refresh the tab bar, window title, image source dir, and navigation buttons.
     pub(crate) fn render(&mut self, scroll: ScrollIntent) {
-        let _ = self.render_with_open_result(scroll);
+        let _ = self.render_with_open_result(scroll, None);
+    }
+
+    pub(crate) fn render_switch(
+        &mut self,
+        scroll: ScrollIntent,
+        page_key: Option<&str>,
+        force_full: bool,
+    ) {
+        let _ = self.render_with_open_result(scroll, Some((page_key, force_full)));
     }
 
     /// Render for a caller that needs to know whether the document opened.
     pub(crate) fn render_for_pipe(&mut self, scroll: ScrollIntent) -> Result<(), String> {
-        self.render_with_open_result(scroll)
+        self.render_with_open_result(scroll, None)
     }
 
-    fn render_with_open_result(&mut self, scroll: ScrollIntent) -> Result<(), String> {
+    fn render_with_open_result(
+        &mut self,
+        scroll: ScrollIntent,
+        switch: Option<(Option<&str>, bool)>,
+    ) -> Result<(), String> {
         // Pop the spinner for navigations (open, back/forward, tab switch), where the load below can be slow; the state script clears it. In-place re-renders (Preserve: edits, saves, renames) and the home screen skip it, so a checkbox click doesn't flash an overlay.
         if self.workspace.active.is_some() && !matches!(scroll, ScrollIntent::Preserve { .. }) {
             begin_reader_loading(self.page());
@@ -316,7 +356,7 @@ impl Reader {
                     .and_then(|tab| tab.history.current().cloned())
                 else {
                     self.workspace.active = None;
-                    return self.render_with_open_result(scroll);
+                    return self.render_with_open_result(scroll, switch);
                 };
                 // Opening, Back, Forward and a tab switch are the four ways a reader arrives at a document they have been away from, and any of them can arrive at a buffer the disk has moved past. A `Preserve` render is the app redrawing its own edit, where the buffer is the truth and a read could only ever say the same thing.
                 if !matches!(scroll, ScrollIntent::Preserve { .. }) {
@@ -361,21 +401,26 @@ impl Reader {
                     .tabs
                     .get(index)
                     .is_some_and(|tab| tab.has_edit_for(&path));
-                let document = if has_edit {
+                let rendered = if has_edit {
                     let edit = self
                         .workspace
                         .tabs
                         .get(index)
                         .and_then(|tab| tab.edit.as_ref())
                         .expect("edit buffer present");
-                    reading_document_from_buffer(edit, &path)
+                    let document = reading_document_from_buffer(edit, &path);
+                    RenderedDocument {
+                        hash: content_hash(&document.source),
+                        document,
+                        reused: false,
+                    }
                 } else {
                     match self.document_for(index, &path) {
-                        Ok(document) => {
+                        Ok(rendered) => {
                             // The same recent-files bookkeeping an initial open does.
                             self.recent.record(path.clone());
                             self.save_recent();
-                            document
+                            rendered
                         }
                         Err(error) => {
                             let reason = error.to_string();
@@ -391,12 +436,13 @@ impl Reader {
                             // Don't strand the user on a tab that can't render: fall back to the previous document, or close the tab.
                             recover_failed_open(&mut self.workspace, index);
 
-                            let _ = self.render_with_open_result(ScrollIntent::Reset);
+                            let _ = self.render_with_open_result(ScrollIntent::Reset, None);
                             show_open_error(self.page(), &path, &reason);
                             return Err(refusal);
                         }
                     }
                 };
+                let document = &rendered.document;
 
                 if let Some(tab) = self.workspace.tabs.get_mut(index) {
                     tab.title = document.title.clone();
@@ -412,22 +458,46 @@ impl Reader {
                         &self.favorites,
                         &tabs,
                         Some(index),
-                        Some(&document),
+                        Some(document),
+                        Some(rendered.hash),
                     ),
-                    ScrollIntent::Restore { anchor, .. } => workspace_switch_script(
-                        &self.recent.files,
-                        &self.favorites,
-                        &tabs,
-                        Some(index),
-                        Some(&document),
-                        anchor.as_ref(),
-                    ),
+                    ScrollIntent::Restore { anchor, .. } => {
+                        let cached = switch.is_some_and(|(page_key, force_full)| {
+                            switch_uses_cached_handoff(
+                                rendered.reused,
+                                rendered.hash,
+                                page_key,
+                                force_full,
+                            )
+                        });
+                        if cached {
+                            leaftext::workspace_cached_switch_script(
+                                &self.recent.files,
+                                &self.favorites,
+                                &tabs,
+                                Some(index),
+                                anchor.as_ref(),
+                                rendered.hash,
+                            )
+                        } else {
+                            workspace_switch_script(
+                                &self.recent.files,
+                                &self.favorites,
+                                &tabs,
+                                Some(index),
+                                Some(document),
+                                anchor.as_ref(),
+                                Some(rendered.hash),
+                            )
+                        }
+                    }
                     ScrollIntent::Reset => workspace_state_script(
                         &self.recent.files,
                         &self.favorites,
                         &tabs,
                         Some(index),
-                        Some(&document),
+                        Some(document),
+                        Some(rendered.hash),
                     ),
                 };
                 run_page_script(self.page(), &script, "Failed to update document view");
@@ -438,7 +508,14 @@ impl Reader {
                 let tabs = self.workspace.tab_summaries();
                 run_page_script(
                     self.page(),
-                    &workspace_state_script(&self.recent.files, &self.favorites, &tabs, None, None),
+                    &workspace_state_script(
+                        &self.recent.files,
+                        &self.favorites,
+                        &tabs,
+                        None,
+                        None,
+                        None,
+                    ),
                     "Failed to update view",
                 );
             }

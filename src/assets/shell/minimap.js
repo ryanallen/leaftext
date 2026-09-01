@@ -20,6 +20,12 @@ var minimapBuiltRange;
 var minimapBuiltFirstRow;
 var minimapBuiltLastRow;
 var minimapBuiltRowPath;
+// How much slack the built clone holds, as the multiple of a screen it was asked for. Without it the widening rebuild below looks like a rebuild that would put back what is already there, and the rail stays narrow for as long as the document is open.
+var minimapBuiltSlack;
+// The widest slack anything has asked the booked frame to build with. A scroll and a keystroke landing in the same frame get one rebuild, and it is the scroll's, because the scroll is the one that needs room either side.
+var minimapPendingSlack;
+// The quiet turn a narrow rebuild books behind itself to put the slack back.
+var minimapWidenTimer;
 // Rail geometry, cached for the scroll path: scrolling changes none of it, and re-measuring per wheel click forces a fresh layout of the whole document.
 var minimapScrollMetrics;
 // The last position the column's scroll wrote onto the reader. The two mirror each other, so without it the reader's answering event would carry the column straight back — and a plain flag cannot do the job: a scroll event lands a frame after the write that caused it, by which time the gliding column has moved again and would spend the flag on its own real move. A value is the whole of what has to be recognized.
@@ -50,6 +56,9 @@ function initializeMinimapState() {
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
   minimapBuiltRowPath = '';
+  minimapBuiltSlack = -1;
+  minimapPendingSlack = 0;
+  minimapWidenTimer = 0;
   minimapScrollMetrics = null;
   minimapMirroredScrollTop = -1;
   minimapSpacerFrame = 0;
@@ -432,6 +441,8 @@ function disconnectMinimapPreviewObservers() {
     window.cancelAnimationFrame(minimapPreviewFrame);
     minimapPreviewFrame = 0;
   }
+  cancelMinimapWiden();
+  minimapPendingSlack = 0;
   // A different document is coming: force the next update to rebuild the clone.
   minimapBuiltVersion = -1;
   minimapBuiltSourceWidth = -1;
@@ -441,6 +452,7 @@ function disconnectMinimapPreviewObservers() {
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
   minimapBuiltRowPath = '';
+  minimapBuiltSlack = -1;
   invalidateMinimapMetrics();
 }
 // Drop the cached rail geometry. Everything that can change it calls this; the scroll handler, which cannot, is the one path that reads the cache.
@@ -836,20 +848,45 @@ function resumeMinimapPreview() {
     scheduleMinimapPreviewUpdate();
   }
 }
-function scheduleMinimapPreviewUpdate() {
+// Extra document to keep either side of the visible slice, as a multiple of it. One each way means a whole rail's worth of scrolling before a rebuild.
+const MINIMAP_WINDOW_SLACK = 1;
+// How long the rail waits for the typing to stop before it puts the slack back. Longer than a gap between two keystrokes, or the widening lands in the middle of a sentence and is thrown away by the next word.
+const MINIMAP_WIDEN_REST_MS = 400;
+// How much slack the rebuild is asked for, rather than a constant it reads where it stands: the whole of a rebuild is the browser laying the slice out, and that falls with the rows in it. Three screens is 13.7ms on a long config and one screen about 5, so a change to the words asks for none of it.
+function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {
+  minimapPendingSlack = Math.max(minimapPendingSlack, slack);
   if (minimapPreviewFrame || minimapPreviewHolds) {
     return;
   }
   minimapPreviewFrame = window.requestAnimationFrame(() => {
     minimapPreviewFrame = 0;
-    updateDocumentMinimapPreview();
+    const asked = minimapPendingSlack;
+    minimapPendingSlack = 0;
+    updateDocumentMinimapPreview(asked);
   });
 }
+function cancelMinimapWiden() {
+  if (minimapWidenTimer) {
+    window.clearTimeout(minimapWidenTimer);
+    minimapWidenTimer = 0;
+  }
+}
+// A narrow rebuild leaves the rail nothing to scroll into, so one quiet turn behind it puts the slack back — off the typing path, where three screens of layout cost nobody a pause. Another change to the words cancels it and books its own, so the rail never widens onto a document that has moved on.
+function bookMinimapWiden() {
+  cancelMinimapWiden();
+  minimapWidenTimer = window.setTimeout(() => {
+    minimapWidenTimer = 0;
+    scheduleMinimapPreviewUpdate(MINIMAP_WINDOW_SLACK);
+  }, MINIMAP_WIDEN_REST_MS);
+}
 // The document content changed: mark the clone stale and schedule a rebuild. Geometry-only triggers (resize) call scheduleMinimapPreviewUpdate directly and let the width check decide whether a rebuild is needed.
+//
+// No slack, because nothing is scrolling while the words are landing: the rail draws the screen it can show and the booked turn above brings the rest back.
 function invalidateMinimapPreview() {
   minimapContentVersion += 1;
   invalidateMinimapMetrics();
-  scheduleMinimapPreviewUpdate();
+  cancelMinimapWiden();
+  scheduleMinimapPreviewUpdate(0);
 }
 // Any <details> open/close (outline, settings, library folders) changes document height, so the minimap clone goes stale. The body MutationObserver misses the bare `open` flip; `toggle` catches both — in capture phase, since it doesn't bubble.
 //
@@ -872,8 +909,6 @@ function minimapVisibleDocumentRange(metrics, scrollTop) {
   const height = metrics.previewScale > 0 ? metrics.trackHeight / metrics.previewScale : 0;
   return { top, bottom: top + height, height };
 }
-// Extra document to keep either side of the visible slice, as a multiple of it. One each way means a whole rail's worth of scrolling before a rebuild.
-const MINIMAP_WINDOW_SLACK = 1;
 // Does the built clone still hold everything the rail is showing?
 function minimapWindowCoversView(metrics, scrollTop) {
   if (!minimapBuiltRange) {
@@ -882,15 +917,16 @@ function minimapWindowCoversView(metrics, scrollTop) {
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   return view.top >= minimapBuiltRange.top && view.bottom <= minimapBuiltRange.bottom;
 }
-// Would a rebuild clone the same rows out of the same document at the same widths? Then it puts back what is already there, and asking again cannot change the guard's answer.
-function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, rowPath = '') {
+// Would a rebuild clone the same rows out of the same document at the same widths, with at least the slack it is asking for? Then it puts back what is already there, and asking again cannot change the guard's answer. The slack has to be counted or the turn that widens a narrow clone is refused as a rebuild that changes nothing, and the rail stays a screen wide for good.
+function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, rowPath = '', slack = MINIMAP_WINDOW_SLACK) {
   return minimapBuiltVersion === minimapContentVersion
     && minimapBuiltSourceWidth === metrics.sourceWidth
     && minimapBuiltPreviewWidth === previewWidth
     && minimapBuiltFrameWidth === frameWidth
     && minimapBuiltFirstRow === first
     && minimapBuiltLastRow === last
-    && minimapBuiltRowPath === rowPath;
+    && minimapBuiltRowPath === rowPath
+    && minimapBuiltSlack >= slack;
 }
 // Document offset of an element's top/bottom edge, on the same basis as metrics.sourceTop (the scroll container's content coordinates).
 function minimapBlockEdges(el, appTop, scrollTop) {
@@ -1004,7 +1040,7 @@ function minimapFrameWidth(fallbackWidth) {
 // Build the thumbnail: clone the document, strip ids/links, shrink to the rail width with a transform. Rebuilt on content changes and when scrolling leaves the window it was built for; scroll otherwise just repositions the box and slides it.
 //
 // The clone holds only the slice the rail can show. Cloning the whole document put a second copy of every element on the page — 99.9% of it off-screen — which cost ~890ms a frame to slide on a 4MB glossary. It is still a clone of the real rendering, so the rail keeps real text rather than a synthesized line pattern.
-function updateDocumentMinimapPreview() {
+function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   const minimap = currentMinimap();
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
   const content = track ? track.querySelector('.document-minimap-content') : null;
@@ -1025,6 +1061,7 @@ function updateDocumentMinimapPreview() {
     minimapBuiltSourceWidth === metrics.sourceWidth &&
     minimapBuiltPreviewWidth === previewWidth &&
     minimapBuiltFrameWidth === frameWidth &&
+    minimapBuiltSlack >= slack &&
     minimapWindowCoversView(metrics, scrollTop)
   ) {
     updateMinimapViewport();
@@ -1033,8 +1070,8 @@ function updateDocumentMinimapPreview() {
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
   const appTop = windowsIt ? app.getBoundingClientRect().top : 0;
-  const slack = view.height * MINIMAP_WINDOW_SLACK;
-  const window = minimapWindowRows(source, appTop, scrollTop, view.top - slack, view.bottom + slack);
+  const slackHeight = view.height * slack;
+  const window = minimapWindowRows(source, appTop, scrollTop, view.top - slackHeight, view.bottom + slackHeight);
   const rows = window.rows;
   let first = 0;
   let last = rows.length - 1;
@@ -1044,7 +1081,7 @@ function updateDocumentMinimapPreview() {
     // Keep the clone already on the page and — unlike the skip above — do not ask for another: a guard that cannot be satisfied would otherwise rebuild every frame.
     if (
       content.querySelector('.document-minimap-preview') &&
-      minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, window.path)
+      minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, window.path, slack)
     ) {
       markMinimapWarming();
       placeMinimapViewport(minimap, metrics, null);
@@ -1069,6 +1106,8 @@ function updateDocumentMinimapPreview() {
     minimapBuiltFirstRow = -1;
     minimapBuiltLastRow = -1;
     minimapBuiltRowPath = '';
+    // The whole document is in the clone, which is more than any slack could ask for.
+    minimapBuiltSlack = MINIMAP_WINDOW_SLACK;
   } else {
     preview = buildWindowedMinimapClone(source, window, first, last);
     stripMinimapClone(preview);
@@ -1087,6 +1126,7 @@ function updateDocumentMinimapPreview() {
     minimapBuiltFirstRow = first;
     minimapBuiltLastRow = last;
     minimapBuiltRowPath = window.path;
+    minimapBuiltSlack = slack;
   }
   frame.appendChild(preview);
   content.replaceChildren(frame);
@@ -1114,6 +1154,10 @@ function updateDocumentMinimapPreview() {
   minimapBuiltSourceWidth = metrics.sourceWidth;
   minimapBuiltPreviewWidth = previewWidth;
   minimapBuiltFrameWidth = frameWidth;
+  // A clone built short of the full slack has a rail's worth of scrolling missing from either end of it, so book the quiet turn that puts it back.
+  if (minimapBuiltSlack < MINIMAP_WINDOW_SLACK) {
+    bookMinimapWiden();
+  }
   updateMinimapViewport();
 }
 function scheduleMinimapViewportUpdate() {

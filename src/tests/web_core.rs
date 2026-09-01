@@ -828,6 +828,7 @@ fn the_browsers_document_line_draws_a_word_file_and_leaves_a_text_file_alone() {
         }],
         Some(0),
         Some(&drawn),
+        Some(0x1234),
     );
     assert!(
         line.contains("Quarterly report"),
