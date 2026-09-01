@@ -425,7 +425,7 @@ export function run() {
     if (appEl.querySelector('.document-body')) throw new Error('the check left a drawn document standing in the reader');
   });
 
-  // The pause used to encode the whole document, slice it either side of the edit and join the halves back into a fresh string — and assigning that fresh string killed the byte cache keyed on the old one, so the next gesture that wanted a slice paid a second full encode. The splice writes into the buffer the page already holds, so nothing after it encodes the document at all.
+  // Encoding the whole document, slicing it either side of the edit and joining the halves back into a fresh string kills the byte cache keyed on the old string, so the next gesture wanting a slice pays a second full encode. The splice writes into the buffer the page already holds, so nothing after it encodes the document at all.
   check('a slice straight after a live splice encodes nothing', () => {
     const note = '# Notes\n\nThe first paragraph.\n\nThe second paragraph.\n';
     const at = note.indexOf('first');
@@ -449,7 +449,7 @@ export function run() {
         throw new Error(`the document is ${booted.documentSourceLength()} bytes after six splices that replaced a word with itself`);
       }
 
-      // And the slice after them — the click into another block that used to pay for the splice — encodes nothing at all.
+      // And the slice after them — the click into another block — encodes nothing at all.
       reset();
       const read = booted.sliceSourceBytes(at, at + 5);
       if (read !== 'first') throw new Error(`the slice after the splices read ${JSON.stringify(read)}`);
@@ -507,7 +507,7 @@ export function run() {
     }
   });
 
-  // The page used to hold the open document twice — a string and the bytes it had last been encoded to — and a typing pause rebuilt both. Now it holds the bytes, behind one door, and a fragment that reaches the held buffer by name or asks the page for the whole document as a string is a second copy on its way back.
+  // The page holds the open document once, as bytes behind one door, so a fragment that reaches the held buffer by name or asks the page for the whole document as a string is a second copy on its way back.
   check('nothing reaches the open document but the one door', () => {
     const door = 'reading-blocks.js';
     const held = /\b(heldSourceBytes|heldSourceText|currentDocumentSource)\b/;
