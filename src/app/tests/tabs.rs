@@ -530,7 +530,7 @@ fn a_clean_package_buffer_is_reconciled_on_its_identity_rather_than_its_words() 
     );
 }
 
-/// The other side of that same comparison: the reconciliation the picture dialog runs asks whether the page still shows the file, and a tab holding a clean buffer over a package answers off the archive the buffer is already carrying. No member is inflated, and the file is never opened past its own tail — where before this the whole archive was read to produce words this arm does not look at.
+/// The other side of that same comparison: the reconciliation the picture dialog runs asks whether the page still shows the file, and a tab holding a clean buffer over a package answers off the archive the buffer is already carrying. No member is inflated, and the file is never opened past its own tail, because a whole-archive read here buys only words this arm does not look at.
 #[test]
 fn a_package_buffer_answers_the_reconciliation_off_its_own_archive() {
     let path = scratch_dir("tabs-package-buffer-shown").join("report.docx");
