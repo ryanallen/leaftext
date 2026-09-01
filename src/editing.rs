@@ -212,6 +212,36 @@ impl EditableDocument {
         self.splice(start, end, replacement, false)
     }
 
+    /// Replace several sorted, non-overlapping byte ranges in one pass and record one undo snapshot. Refuses the whole list when any range is invalid.
+    pub fn replace_ranges(&mut self, replacements: &[(usize, usize, &str)]) -> bool {
+        if replacements.is_empty() {
+            return false;
+        }
+        let mut previous_end = 0;
+        for (start, end, _) in replacements {
+            if *start < previous_end || end < start || *end > self.text.len() {
+                return false;
+            }
+            if !self.text.is_char_boundary(*start) || !self.text.is_char_boundary(*end) {
+                return false;
+            }
+            previous_end = *end;
+        }
+
+        let before = std::mem::take(&mut self.text);
+        let mut rebuilt = String::with_capacity(before.len());
+        let mut cursor = 0;
+        for (start, end, replacement) in replacements {
+            rebuilt.push_str(&before[cursor..*start]);
+            rebuilt.push_str(replacement);
+            cursor = *end;
+        }
+        rebuilt.push_str(&before[cursor..]);
+        self.text = rebuilt;
+        self.push_undo(before);
+        true
+    }
+
     /// Reorder sibling blocks by moving the text of slot `from` to slot `to`.
     ///
     /// `ranges` are the source ranges of one run of siblings, in document order. The texts rotate through the slots; whatever sits *between* the slots — blank lines in Markdown, indentation and commas in a structured file — never moves. That is what makes one routine safe for every format: the separators are the part a naive cut-and-paste gets wrong.

@@ -157,6 +157,7 @@ export const COMMANDS = {
   codeLint: [LATER, 'web-app-commands'],
   toggleTask: [LATER, 'web-app-commands'],
   editBlock: [LATER, 'web-app-commands'],
+  editBlocks: [LATER, 'web-app-commands'],
   setField: [LATER, 'web-app-commands'],
   setListField: [LATER, 'web-app-commands'],
   renameField: [LATER, 'web-app-commands'],

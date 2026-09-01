@@ -100,6 +100,7 @@ export const COMMANDS = {
   codeLint: [REFUSED, 'it checks the links in a document against the files around it, and an embed has no files around it'],
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],
+  editBlocks: [ANSWERED],
   setField: [ANSWERED],
   setListField: [ANSWERED],
   renameField: [ANSWERED],
@@ -203,6 +204,7 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
       say();
       return done;
     },
+    editBlocks: (command) => apply({ edit: 'blocks', blocks: command.blocks }),
     // A tick the buffer would not take — no task at that number, a document with no tasks in it — leaves the page a box it drew ticked over nothing, so the answer says nothing is held and the box comes back up. A product that refuses the save is the other case: the buffer holds the tick and the document is dirty, so the box is right to stay ticked and the reason is on screen.
     toggleTask: async (command) => {
       const took = !!apply({ edit: 'task', index: command.index })?.changed;

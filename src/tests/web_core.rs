@@ -737,6 +737,18 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
                 edit.replace_range(start, end, text("text_in"));
             }
         }
+        Some("blocks") => {
+            let replacements: Vec<(usize, usize, &str)> = step["blocks"]
+                .as_array()
+                .expect("blocks to replace")
+                .iter()
+                .map(|block| {
+                    let (start, end) = range(edit, block["block"].as_str().unwrap_or_default());
+                    (start, end, block["text_in"].as_str().unwrap_or_default())
+                })
+                .collect();
+            edit.replace_ranges(&replacements);
+        }
         // A workbook's cell is named by its own element rather than by a block, because the buffer here is a sheet member and the blocks over it are rows, not cells.
         Some("sheet_cell") => {
             let element = text("element");

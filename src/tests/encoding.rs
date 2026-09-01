@@ -364,3 +364,91 @@ fn documents_that_used_to_fail_to_open_now_open() {
 
     fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn a_file_the_app_cannot_read_is_told_that_rather_than_told_it_is_not_text() {
+    let dir = scratch_dir("encoding-unread-ending");
+    // Bytes with a zero among them and no reading as text, which is what a Word file, an archive and a font all are to the decoder.
+    let mut package = b"PK\x03\x04\x14\x00\x00\x00\x08\x00".to_vec();
+    package.extend_from_slice(&[0xFF; 32]);
+
+    for (name, said) in [
+        ("report.docm", ".docm"),
+        ("plain.zip", ".zip"),
+        // Said as the file spells it, not as the table looks it up.
+        ("Logo.TTF", ".TTF"),
+    ] {
+        let path = dir.join(name);
+        fs::write(&path, &package).expect("fixture is written");
+
+        let message = read_source(&path)
+            .expect_err("a file the app does not read is refused")
+            .to_string();
+        assert_eq!(message, format!("Leaftext doesn't open {said} files"));
+    }
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn an_ending_nothing_reads_still_opens_as_markdown_where_its_bytes_are_text() {
+    // The fallback is why an extension-less README opens at all, so the refusal above must rest on the bytes as well as the ending.
+    let dir = scratch_dir("encoding-fallback");
+
+    for name in ["table.csv", "README"] {
+        let path = dir.join(name);
+        fs::write(&path, b"# Heading\n\nwords\n").expect("fixture is written");
+        assert_contains(
+            &load_document(&path)
+                .expect("an ending nothing reads still opens where its bytes are text")
+                .html,
+            "Heading",
+        );
+    }
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn a_named_format_holding_bytes_that_are_not_text_still_says_where_the_zero_byte_is() {
+    // The new arm must not swallow this one: the reader named the format, so the bytes are the surprise.
+    let dir = scratch_dir("encoding-named-ending");
+    let path = dir.join("photo.md");
+    fs::write(&path, b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR").expect("fixture is written");
+
+    let message = read_source(&path)
+        .expect_err("a PNG is not a document")
+        .to_string();
+    assert!(
+        message.contains("zero byte at 8"),
+        "the offset should still be there, got: {message}"
+    );
+
+    fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn every_door_a_failed_decode_reaches_says_the_same_thing_about_an_ending_nothing_reads() {
+    // The loader and the head read compose the refusal through the same function `read_source` does, so a file the app cannot read is refused in one sentence wherever it was opened.
+    let dir = scratch_dir("encoding-every-door");
+    let mut package = b"PK\x03\x04\x14\x00\x00\x00\x08\x00".to_vec();
+    package.extend_from_slice(&[0xFF; 32]);
+    let path = dir.join("report.docm");
+    fs::write(&path, &package).expect("fixture is written");
+    let said = "Leaftext doesn't open .docm files";
+
+    assert_eq!(
+        read_source_head(&path, 16)
+            .expect_err("a head read refuses it too")
+            .to_string(),
+        said
+    );
+    assert_eq!(
+        opened_document_from_bytes(&package, &path)
+            .expect_err("the loader refuses it too")
+            .to_string(),
+        said
+    );
+
+    fs::remove_dir_all(&dir).ok();
+}

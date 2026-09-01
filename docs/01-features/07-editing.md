@@ -39,7 +39,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits, a word at a time while you are typing; a Redo button beside it (and `Ctrl+Y` or `Ctrl+Shift+Z`) brings back what you took back |
 | [When the app cannot write it](#when-the-app-cannot-write-it) | A file that has gone takes the tab dot, Save and Undo down and raises a message naming it; the flowchart editor keeps the drawing and the image box keeps the address you typed, rather than closing over them |
 | [The padlock](#the-padlock) | Two padlocks, one for the reading view and one for the source, each remembered. Both start locked, except in a [new document](#new-document) — and checkboxes toggle either way |
-| [Replacing text](02-navigation.md#find-in-this-document) | The find bar's Replace and All write through the same padlock as typing does — in the reading view as one splice of the source, so one Undo puts it all back |
+| [Replacing text](02-navigation.md#find-in-this-document) | The find bar's Replace and All write through the same padlock as typing does — in the reading view as one edit carrying only the blocks that changed, so one Undo puts it all back |
 | [Code view](#code-view) | Toggle the rendered page to the raw source and back |
 | [A source view that will not open](#code-view) | Where the editor cannot be brought up, the app says so and puts you back on the document at the place you were reading, and pressing the button again is a fresh attempt |
 | [Your place is kept](#code-view) | Toggling between the two views holds your position, and toggling back and forth returns you to the exact spot |

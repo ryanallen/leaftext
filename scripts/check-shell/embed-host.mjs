@@ -206,6 +206,7 @@ export function run() {
   /** Every editing command the page can send, and the edit the buffer has to be handed for it. The desktop's own arms are the other side of each of these. */
   const EMBED_EDITS = [
     [{ command: 'editBlock', start: 0, end: 7, text: '# Retitled' }, { edit: 'block', start: 0, end: 7, text: '# Retitled', undo: true }],
+    [{ command: 'editBlocks', blocks: [{ start: 0, end: 7, text: '# Retitled' }, { start: 21, end: 40, text: 'The last line.' }] }, { edit: 'blocks', blocks: [{ start: 0, end: 7, text: '# Retitled' }, { start: 21, end: 40, text: 'The last line.' }] }],
     [{ command: 'toggleTask', index: 0 }, { edit: 'task', index: 0 }],
     [{ command: 'setField', key: 'title', value: 'Notes' }, { edit: 'field', key: 'title', set: 'Notes' }],
     [{ command: 'setField', key: 'title' }, { edit: 'field', key: 'title', remove: true }],

@@ -3,6 +3,19 @@
 use super::*;
 
 #[test]
+fn a_block_replacement_run_arrives_under_the_names_the_page_sends() {
+    let sent = r#"{"command":"editBlocks","blocks":[{"start":2,"end":7,"text":"first"},{"start":20,"end":24,"text":"last"}]}"#;
+    match serde_json::from_str::<IpcCommand>(sent) {
+        Ok(IpcCommand::EditBlocks { blocks }) => {
+            assert_eq!(blocks.len(), 2);
+            assert_eq!((blocks[0].start, blocks[0].end), (2, 7));
+            assert_eq!(blocks[1].text, "last");
+        }
+        other => panic!("the block replacement run did not arrive: {other:?}"),
+    }
+}
+
+#[test]
 fn a_table_cell_edit_arrives_under_the_names_the_page_sends() {
     // Nothing on this enum rejects an unknown field, so a cell spelled differently on the two sides would deserialize to None and every cell edit would silently go back to rewriting the whole table — which is the fault this was built to fix, back with nothing on screen to show for it.
     let sent = r#"{"command":"editBlock","start":11,"end":60,"text":"the whole table rewritten","cell":{"row":1,"column":0,"columns":1,"text":"2"}}"#;

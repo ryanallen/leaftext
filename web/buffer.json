@@ -162,6 +162,23 @@
       ]
     },
     {
+      "why": "Replace all rewrites several source blocks at once while leaving every byte between them alone.",
+      "path": "replace.md",
+      "source": "# Replace\n\nalpha here.\n\nmiddle untouched.\n\nalpha there.\n",
+      "steps": [
+        {
+          "what": "several block ranges replaced in one buffer edit",
+          "kind": "blocks",
+          "blocks": [
+            { "block": "alpha here.", "text_in": "beta here." },
+            { "block": "alpha there.", "text_in": "beta there." }
+          ],
+          "changed": true,
+          "text": "# Replace\n\nbeta here.\n\nmiddle untouched.\n\nbeta there.\n"
+        }
+      ]
+    },
+    {
       "why": "A workbook is the one document whose words are not in the buffer at all: every text cell takes its text from `xl/sharedStrings.xml` and holds an index into it, so what an edit rewrites is the cell element rather than any run of words. The buffer here is the sheet member, which is exactly what a package's buffer holds. Two cells share string 2, and the pinned text after the first step is what says the other one was left alone.",
       "path": "figures.xlsx",
       "source": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n  <sheetData>\n    <row r=\"1\"><c r=\"A1\" t=\"s\"><v>0</v></c><c r=\"B1\" t=\"s\"><v>1</v></c></row>\n    <row r=\"2\"><c r=\"A2\" s=\"1\" t=\"s\"><v>2</v></c><c r=\"B2\" t=\"s\"><v>2</v></c></row>\n  </sheetData>\n</worksheet>\n",

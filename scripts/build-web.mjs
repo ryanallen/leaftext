@@ -338,6 +338,14 @@ function pinnedEdit(step, text, blocks) {
       // A step marked `continuing` is a splice of a typing run after its first, which records no undo point of its own — so one press takes the whole run back however many times it paused.
       return { edit: 'block', start: span.start, end: span.end, text: step.text_in, undo: !step.continuing };
     }
+    case 'blocks':
+      return {
+        edit: 'blocks',
+        blocks: step.blocks.map((block) => {
+          const span = blockHolding(text, blocks, block.block);
+          return { start: span.start, end: span.end, text: block.text_in };
+        }),
+      };
     // A workbook's cell is named by its own element rather than by a block, and its offsets are counted in bytes the way every block range is.
     case 'sheet_cell': {
       const at = text.indexOf(step.element);

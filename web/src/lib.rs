@@ -545,7 +545,7 @@ pub extern "C" fn leaf_buffer_render(handle: u32) -> *mut u8 {
 
 /// Make one edit, described as JSON, and answer whether the buffer moved together with its new state.
 ///
-/// `{"edit":"splice","start":0,"removed":2,"inserted":"hi"}` — a range given in UTF-16 code units, which is what a JavaScript string index counts. No undo step, like the code-view typing it serves. `{"edit":"block","start":0,"end":9,"text":"...","undo":true,"cell":{"row":1,"column":0,"columns":3,"text":"..."}}` — an inline edit over one block's source range. `cell` names the one cell that really changed, written on its own where the source map can prove where it sits so a table lined up by hand keeps its spacing; where it cannot, the whole-block rewrite is what lands, so no edit is ever refused. `{"edit":"text","text":"..."}` — the whole buffer replaced, which is the code view's resync path for when a splice left the page and the buffer disagreeing. `{"edit":"task","index":2}` — flip one task-list marker. One ASCII byte for another, so nothing after it shifts, and no undo step: the desktop's checkbox is not undoable either. `{"edit":"field","key":"title","set":"..."}`, `"items":[...]`, `"rename":"..."` or `"remove":true` — one frontmatter field. The splice comes from the parser, so the block keeps its order, its comments and its quoting. `{"edit":"move","ranges":[[0,9],[10,20]],"from":1,"to":0}` — reorder one run of sibling blocks. Whatever sits between them never moves. `{"edit":"undo"}` — take the last undoable edit back. `{"edit":"redo"}` — bring back what the last undo displaced.
+/// `{"edit":"splice","start":0,"removed":2,"inserted":"hi"}` — a range given in UTF-16 code units, which is what a JavaScript string index counts. No undo step, like the code-view typing it serves. `{"edit":"block","start":0,"end":9,"text":"...","undo":true,"cell":{"row":1,"column":0,"columns":3,"text":"..."}}` — an inline edit over one block's source range. `cell` names the one cell that really changed, written on its own where the source map can prove where it sits so a table lined up by hand keeps its spacing; where it cannot, the whole-block rewrite is what lands, so no edit is ever refused. `{"edit":"blocks","blocks":[{"start":0,"end":9,"text":"..."}]}` — several sorted block replacements in one undo step. `{"edit":"text","text":"..."}` — the whole buffer replaced, which is the code view's resync path for when a splice left the page and the buffer disagreeing. `{"edit":"task","index":2}` — flip one task-list marker. One ASCII byte for another, so nothing after it shifts, and no undo step: the desktop's checkbox is not undoable either. `{"edit":"field","key":"title","set":"..."}`, `"items":[...]`, `"rename":"..."` or `"remove":true` — one frontmatter field. The splice comes from the parser, so the block keeps its order, its comments and its quoting. `{"edit":"move","ranges":[[0,9],[10,20]],"from":1,"to":0}` — reorder one run of sibling blocks. Whatever sits between them never moves. `{"edit":"undo"}` — take the last undoable edit back. `{"edit":"redo"}` — bring back what the last undo displaced.
 ///
 /// An edit this does not know, or one whose numbers do not describe anything, answers `changed: false` and leaves the buffer alone. A null pointer back means the handle names nothing or the JSON was not text.
 ///
@@ -622,6 +622,27 @@ fn apply_buffer_edit(edit: &mut EditableDocument, asked: &serde_json::Value) -> 
                 } else {
                     edit.replace_range_without_undo(at("start"), at("end"), replacement);
                 }
+            }
+        }
+        Some("blocks") => {
+            let Some(blocks) = asked.get("blocks").and_then(serde_json::Value::as_array) else {
+                return false;
+            };
+            let replacements: Option<Vec<(usize, usize, &str)>> = blocks
+                .iter()
+                .map(|block| {
+                    Some((
+                        block.get("start")?.as_u64()? as usize,
+                        block.get("end")?.as_u64()? as usize,
+                        block.get("text")?.as_str()?,
+                    ))
+                })
+                .collect();
+            let Some(replacements) = replacements else {
+                return false;
+            };
+            if !edit.replace_ranges(&replacements) {
+                return false;
             }
         }
         Some("text") => {

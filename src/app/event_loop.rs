@@ -920,6 +920,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     },
                     token,
                 ),
+                IpcCommand::EditBlocks { blocks } => {
+                    editing_cmds::edit_blocks(&mut reader, &blocks)
+                }
                 IpcCommand::SetField { key, value } => {
                     editing_cmds::set_frontmatter_field(&mut reader, &key, value.as_deref())
                 }

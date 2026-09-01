@@ -62,12 +62,7 @@ impl SourceText {
 pub fn read_source(path: impl AsRef<Path>) -> io::Result<SourceText> {
     let path = path.as_ref();
     let bytes = fs::read(path)?;
-    decode_source(&bytes).map_err(|message| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("{} ({})", message, path.display()),
-        )
-    })
+    decode_source(&bytes).map_err(|message| decode_refusal(path, message))
 }
 
 /// Read at most `limit` bytes of a document and decode those. For a caller that wants only what is at the top of a file — the frontmatter block — across a folder of them, where reading each one whole is the cost.
@@ -81,12 +76,7 @@ pub fn read_source_head(path: impl AsRef<Path>, limit: usize) -> io::Result<Sour
         .take(limit as u64)
         .read_to_end(&mut bytes)?;
     bytes.truncate(whole_characters(&bytes));
-    decode_source(&bytes).map_err(|message| {
-        io::Error::new(
-            io::ErrorKind::InvalidData,
-            format!("{} ({})", message, path.display()),
-        )
-    })
+    decode_source(&bytes).map_err(|message| decode_refusal(path, message))
 }
 
 /// How much of a part-read buffer is whole characters, by the encoding its mark declares. A split code unit, or a surrogate whose other half is past the cut, is not an error in the file — so it comes off rather than failing the read.
@@ -116,6 +106,23 @@ fn whole_characters(bytes: &[u8]) -> usize {
             Err(_) => bytes.len(),
         },
     }
+}
+
+/// The refusal a reader meets when a file's bytes would not decode as text. Where the path's ending is one no arm of the format table names, the app is what could not read the file and says so; otherwise the decoder's own sentence stands, with the file named after it.
+///
+/// The one composer for every door, so a file is refused in the same words wherever it was opened from. The ending is said as the file spells it, because the reader is looking at their own file name.
+pub(crate) fn decode_refusal(path: &Path, message: String) -> io::Error {
+    let unread_ending = DocumentFormat::for_path(path)
+        .is_none()
+        .then(|| path.extension().and_then(|ending| ending.to_str()))
+        .flatten();
+    io::Error::new(
+        io::ErrorKind::InvalidData,
+        match unread_ending {
+            Some(ending) => format!("Leaftext doesn't open .{ending} files"),
+            None => format!("{} ({})", message, path.display()),
+        },
+    )
 }
 
 /// Decode file bytes. Split from [`read_source`] so the decision table is testable without touching the disk.

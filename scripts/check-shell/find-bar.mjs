@@ -354,6 +354,141 @@ export function run() {
     field.value = '';
   });
 
+  check('a match at the first character of a block resolves into that block', () => {
+    const firstBlock = { name: 'first' };
+    const secondBlock = { name: 'second' };
+    const text = (name, block) => ({ name, nodeType: 3, parentElement: { closest: () => block } });
+    const nodes = [text('first words', firstBlock), text('separator', null), text('second words', secondBlock)];
+    booted.__boundaryNodes = nodes;
+    const wasCreateRange = booted.document.createRange;
+    booted.document.createRange = () => ({
+      startContainer: null,
+      endContainer: null,
+      setStart(node) { this.startContainer = node; },
+      setEnd(node) { this.endContainer = node; },
+    });
+    try {
+      vm.runInContext(
+        `findTextNodes = [
+          { node: __boundaryNodes[0], start: 0, end: 5 },
+          { node: __boundaryNodes[1], start: 5, end: 6 },
+          { node: __boundaryNodes[2], start: 6, end: 11 }
+        ];`,
+        booted
+      );
+      const range = booted.findRangeFor({ start: 6, end: 11 });
+      if (range.startContainer !== nodes[2]) throw new Error(`the match started in ${range.startContainer.name}`);
+      if (range.endContainer !== nodes[2]) throw new Error(`the match ended in ${range.endContainer.name}`);
+      if (range.startContainer.parentElement.closest('[data-src-start]') !== secondBlock) {
+        throw new Error('the match at the block boundary resolved outside the block');
+      }
+    } finally {
+      vm.runInContext('findTextValid = false; findTextNodes = []; findNodeRecords = new Map();', booted);
+      delete booted.__boundaryNodes;
+      booted.document.createRange = wasCreateRange;
+    }
+  });
+
+  check('replace all rewrites blocks whose matches start on text boundaries', () => {
+    const source = 'dharma one\n\ndharma two\n';
+    const blocks = [{ dataset: {} }, { dataset: {} }];
+    const parent = (block) => ({ closest: () => block });
+    const nodes = [
+      { name: 'first block', nodeType: 3, parentElement: parent(blocks[0]) },
+      { name: 'separator', nodeType: 3, parentElement: parent(null) },
+      { name: 'second block', nodeType: 3, parentElement: parent(blocks[1]) },
+    ];
+    booted.setRangeOf(blocks[0], 'block', 0, 10);
+    booted.setRangeOf(blocks[1], 'block', 12, 22);
+    booted.__boundaryNodes = nodes;
+    const wasCreateRange = booted.document.createRange;
+    booted.document.createRange = () => ({
+      startContainer: null,
+      endContainer: null,
+      setStart(node) { this.startContainer = node; },
+      setEnd(node) { this.endContainer = node; },
+    });
+    const sent = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (message) => sent.push(JSON.parse(message)) };
+    const field = booted.document.getElementById('findInput');
+    const replacement = booted.document.getElementById('findReplaceInput');
+    field.value = 'dharma';
+    replacement.value = 'sutra';
+    booted.setReadingUnlocked(true);
+    booted.window.leafBlocksResynced({ source });
+    try {
+      vm.runInContext(
+        `currentState = { tabs: [{ path: 'C:\\\\Notes\\\\boundary.md' }], active: 0 };
+         currentDocumentFormat = 'markdown';
+         findTextNodes = [
+           { node: __boundaryNodes[0], start: 0, end: 10 },
+           { node: __boundaryNodes[1], start: 10, end: 11 },
+           { node: __boundaryNodes[2], start: 11, end: 21 }
+         ];
+         findMatches = [{ start: 0, end: 6 }, { start: 11, end: 17 }];
+         findCurrent = 0;
+         replaceInReading(true);`,
+        booted
+      );
+      const edits = sent.filter((message) => message.command === 'editBlocks');
+      if (edits.length !== 1) throw new Error(`replace all sent ${edits.length} edits`);
+      if (JSON.stringify(edits[0].blocks) !== JSON.stringify([
+        { start: 0, end: 10, text: 'sutra one' },
+        { start: 12, end: 22, text: 'sutra two' },
+      ])) throw new Error(`replace all wrote ${JSON.stringify(edits[0].blocks)}`);
+    } finally {
+      vm.runInContext('findTextValid = false; findTextNodes = []; findNodeRecords = new Map(); findMatches = []; findCurrent = -1;', booted);
+      delete booted.__boundaryNodes;
+      booted.document.createRange = wasCreateRange;
+      field.value = '';
+      replacement.value = '';
+      booted.setReadingUnlocked(false);
+      booted.ipc = wasIpc;
+    }
+  });
+
+  check('replace all sends one message carrying only the blocks it rewrote', () => {
+    const source = 'first words\n\nmiddle untouched\n\nlast words\n';
+    const sent = [];
+    const wasIpc = booted.ipc;
+    booted.ipc = { postMessage: (message) => sent.push(JSON.parse(message)) };
+    booted.setReadingUnlocked(true);
+    booted.window.leafBlocksResynced({ source });
+    try {
+      vm.runInContext('__wasGroups = findRenderedGroups; __wasRewrite = findRewriteBlock;', booted);
+      vm.runInContext(
+        `currentState = { tabs: [{ path: 'C:\\\\Notes\\\\several.md' }], active: 0 };
+         currentDocumentFormat = 'markdown';
+         findMatches = [{}, {}];
+         findCurrent = 0;
+         findRenderedGroups = () => [
+           { start: 0, end: 11, ranks: [0], total: 1 },
+           { start: 31, end: 41, ranks: [0], total: 1 }
+         ];
+         findRewriteBlock = (group) => group.start === 0 ? 'FIRST WORDS' : 'LAST WORDS';
+         replaceInReading(true);`,
+        booted
+      );
+      const edits = sent.filter((message) => message.command === 'editBlocks');
+      if (edits.length !== 1) throw new Error(`replace all sent ${edits.length} messages`);
+      const expected = [
+        { start: 0, end: 11, text: 'FIRST WORDS' },
+        { start: 31, end: 41, text: 'LAST WORDS' },
+      ];
+      if (JSON.stringify(edits[0].blocks) !== JSON.stringify(expected)) {
+        throw new Error(`replace all sent ${JSON.stringify(edits[0].blocks)}`);
+      }
+      if (JSON.stringify(edits[0]).includes('middle untouched')) {
+        throw new Error('replace all sent the bytes between the changed blocks');
+      }
+    } finally {
+      vm.runInContext('findRenderedGroups = __wasGroups; findRewriteBlock = __wasRewrite; findMatches = []; findCurrent = -1;', booted);
+      booted.setReadingUnlocked(false);
+      booted.ipc = wasIpc;
+    }
+  });
+
   // Every caller slices the one open document, and the door encodes it once. A block rewrite that encoded the whole file again per slice made replace-all cost the document once per match rather than once.
   check('one source is encoded once however many blocks are rewritten', () => {
     const { findRewriteBlock, sliceSourceBytes } = booted;

@@ -500,7 +500,7 @@ pub fn tab_title_from_path(path: &Path) -> String {
 
 /// Render a file's bytes, decoding them first where the path's format is one that arrives as text. The counterpart to [`opened_document_from_source`] for a format whose file is not text at all, and the one place that decides which of the two a path takes — so the loader asks this rather than choosing for itself.
 ///
-/// Fails where a text format's bytes are not text (the zero-byte refusal, unchanged) and where a byte-shaped format's bytes are not a document its reader can read. That is deliberately not the total fallback [`DocumentFormat::from_path`] gives an unknown extension: an unreadable `.docx` opening as Markdown would draw a page of zip noise and call it a document.
+/// Fails where a text format's bytes are not text — naming the ending where that is what the app cannot read, and the zero byte otherwise — and where a byte-shaped format's bytes are not a document its reader can read. That is deliberately not the total fallback [`DocumentFormat::from_path`] gives an unknown extension: an unreadable `.docx` opening as Markdown would draw a page of zip noise and call it a document.
 pub fn opened_document_from_bytes(
     bytes: &[u8],
     path: impl AsRef<Path>,
@@ -518,12 +518,8 @@ pub fn opened_document_from_bytes_with_host(
     let format = DocumentFormat::from_path(path);
     match format.source_shape() {
         SourceShape::Text => {
-            let source = decode_source(bytes).map_err(|message| {
-                io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    format!("{} ({})", message, path.display()),
-                )
-            })?;
+            let source =
+                decode_source(bytes).map_err(|message| encoding::decode_refusal(path, message))?;
             Ok(opened_document_from_source_with_host(
                 &source.text,
                 path,

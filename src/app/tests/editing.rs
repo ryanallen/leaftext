@@ -19,17 +19,24 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
         }),
         ..Default::default()
     };
-    assert!(
-        page_shows_file(&opened, &path, text),
+    assert_eq!(
+        page_shows_file(&opened, &path, None),
+        None,
+        "a note has no identity cheaper than its own bytes, so this is the one arm still worth the read"
+    );
+    assert_eq!(
+        page_shows_file(&opened, &path, Some(text)),
+        Some(true),
         "the last render is of exactly what the file holds, so the picture lands where the plus stood"
     );
-    assert!(
-        !page_shows_file(&opened, &path, moved),
+    assert_eq!(
+        page_shows_file(&opened, &path, Some(moved)),
+        Some(false),
         "the file moved while the dialog was up"
     );
 
-    // Neither a buffer nor a render: nothing says what the page shows, so it cannot be trusted with offsets.
-    assert!(!page_shows_file(&Tab::default(), &path, text));
+    // Neither a buffer nor a render: nothing says what the page shows, so it cannot be trusted with offsets — and saying so costs no read.
+    assert_eq!(page_shows_file(&Tab::default(), &path, None), Some(false));
 
     // A clean buffer is what the page is drawn from once the document has been edited and saved.
     let mut edited = Tab {
@@ -39,8 +46,13 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
         )),
         ..Default::default()
     };
-    assert!(page_shows_file(&edited, &path, text));
-    assert!(!page_shows_file(&edited, &path, moved));
+    assert_eq!(
+        page_shows_file(&edited, &path, None),
+        None,
+        "a note's buffer is held against the file's own words, so it waits for the read too"
+    );
+    assert_eq!(page_shows_file(&edited, &path, Some(text)), Some(true));
+    assert_eq!(page_shows_file(&edited, &path, Some(moved)), Some(false));
 
     // Unsaved edits are left alone: the disk cannot move that page, and the reload refuses it anyway.
     edited
@@ -48,10 +60,12 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
         .as_mut()
         .expect("the buffer was just made")
         .replace_range(2, 7, "Other");
-    assert!(
-        page_shows_file(&edited, &path, moved),
-        "a page holding unsaved edits is answered as it stands"
+    assert_eq!(
+        page_shows_file(&edited, &path, None),
+        Some(true),
+        "a page holding unsaved edits is answered as it stands, with nothing read to say so"
     );
+    assert_eq!(page_shows_file(&edited, &path, Some(moved)), Some(true));
 }
 
 /// The whole of the fault this file's editing tests were missing: a document whose file has gone answers nothing at all, and the reader is left able to press Save on a document nothing reached. The refusal has to come back as words, and the tab must be left holding no buffer — a half-seeded one would be a document invented out of a failed read.
@@ -82,6 +96,47 @@ fn an_edit_whose_file_has_gone_answers_why_and_leaves_the_tab_holding_nothing() 
         apply_block_edit(&mut empty, 0, 0, "alpha", true, None),
         Err("no document is open".to_string())
     );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_block_replacement_list_is_taken_whole_or_refused_whole() {
+    let dir = scratch_dir("a_block_replacement_list_is_taken_whole_or_refused_whole");
+    let path = dir.join("blocks.md");
+    let source = "first\nmiddle\nlast\n";
+    fs::write(&path, source).expect("the document is written");
+    let block = |start, end, text: &str| BlockReplacement {
+        start,
+        end,
+        text: text.to_string(),
+    };
+
+    let mut valid = Workspace::default();
+    valid.open_path(path.clone());
+    assert_eq!(
+        apply_block_replacements(&mut valid, &[block(0, 5, "FIRST"), block(13, 17, "LAST")],),
+        Ok(())
+    );
+    assert_eq!(
+        valid.active_edit().expect("the buffer was seeded").text(),
+        "FIRST\nmiddle\nLAST\n"
+    );
+
+    for replacements in [
+        Vec::new(),
+        vec![block(13, 17, "LAST"), block(0, 5, "FIRST")],
+        vec![block(0, 7, "FIRST"), block(6, 12, "MIDDLE")],
+    ] {
+        let mut refused = Workspace::default();
+        refused.open_path(path.clone());
+        assert!(apply_block_replacements(&mut refused, &replacements).is_err());
+        assert_eq!(
+            refused.active_edit().expect("the buffer was seeded").text(),
+            source,
+            "a refused list wrote part of the document"
+        );
+    }
 
     let _ = fs::remove_dir_all(&dir);
 }

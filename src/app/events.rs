@@ -512,6 +512,9 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         token: Option<u64>,
     },
+    /// Rewrite several reading-view blocks as one undoable edit.
+    #[serde(rename = "editBlocks")]
+    EditBlocks { blocks: Vec<BlockReplacement> },
     /// Write one frontmatter field on the active buffer, or remove it when `value` is absent. The host works out the splice: where the field's bytes are, and whether a quote goes back on, is the parser's to know, and a second reader of the block in the page would be a second answer.
     #[serde(rename = "setField")]
     SetField {
@@ -660,6 +663,13 @@ pub(crate) struct TableCellEdit {
     pub row: usize,
     pub column: usize,
     pub columns: usize,
+    pub text: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct BlockReplacement {
+    pub start: usize,
+    pub end: usize,
     pub text: String,
 }
 

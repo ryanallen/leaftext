@@ -746,6 +746,32 @@ fn a_dropped_block_really_does_reach_the_page_as_nothing() {
 }
 
 #[test]
+fn replace_ranges_writes_several_ranges_and_one_undo_takes_the_run_back() {
+    let source = "# Notes\n\nalpha one.\n\nbetween café.\n\nalpha two.\n";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(source.to_string()),
+    );
+    let first = source.find("alpha one.").expect("the first block");
+    let second = source.find("alpha two.").expect("the second block");
+    assert!(edit.replace_ranges(&[
+        (first, first + "alpha one.".len(), "beta one."),
+        (second, second + "alpha two.".len(), "beta two."),
+    ]));
+    assert_eq!(
+        edit.text(),
+        "# Notes\n\nbeta one.\n\nbetween café.\n\nbeta two.\n",
+        "the bytes between the replacements moved"
+    );
+    assert!(edit.undo(), "the replacement run recorded no undo step");
+    assert_eq!(edit.text(), source);
+    assert!(
+        !edit.undo(),
+        "the replacement run recorded more than one undo step"
+    );
+}
+
+#[test]
 fn editable_document_tracks_dirty_and_save() {
     let mut doc = EditableDocument::new(
         PathBuf::from("notes.md"),

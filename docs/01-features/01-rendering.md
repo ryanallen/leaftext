@@ -661,7 +661,7 @@ Most text files are UTF-8, and those need no thought. Leaftext reads the others 
 
 **Unmarked files that are not UTF-8** — a text file from an older Windows program, say — have nothing in them that says what they are, so they are read as Windows-1252. That is an assumption, not a fact: if it is the wrong one, you get mojibake (`café` as `cafÃ©`), which is at least something you can see. Such a file becomes UTF-8 when you save it, because writing the guess back out would drop any character the guess has no room for.
 
-**Files that are not text at all** are refused rather than shown as noise. A zero byte in the first few kilobytes is the tell, and the message says where it was found — so opening a `.dat` by mistake tells you that, instead of "failed to open".
+**Files that are not text at all** are refused rather than shown as noise. Which words you get depends on whether Leaftext reads that kind of file: a `.docm` or a `.zip` is an ending it opens nothing for, so it says `Leaftext doesn't open .docm files`; a file named for a format it does read — a `.md` holding a picture — is described by its bytes instead, with a zero byte in the first few kilobytes as the tell and the message saying where it was found. Either way you are told what is wrong rather than "failed to open".
 
 > [!NOTE]
 > A byte order mark is removed from the text on the way in and put back on the way out. It is invisible, but it is a character: left in place it would keep `---` from opening [frontmatter](#frontmatter) and turn a first-line list into a paragraph.

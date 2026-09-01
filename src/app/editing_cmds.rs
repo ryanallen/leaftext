@@ -372,6 +372,25 @@ pub(crate) fn apply_block_edit(
     Ok(())
 }
 
+/// Seed the edit buffer, then rewrite several blocks as one undoable edit. A malformed list is refused whole before the buffer moves.
+pub(crate) fn apply_block_replacements(
+    workspace: &mut Workspace,
+    blocks: &[BlockReplacement],
+) -> Result<(), String> {
+    let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
+    let replacements: Vec<(usize, usize, &str)> = blocks
+        .iter()
+        .map(|block| (block.start, block.end, block.text.as_str()))
+        .collect();
+    if edit.replace_ranges(&replacements) {
+        Ok(())
+    } else {
+        Err(String::from(
+            "the replacement list is empty, out of order, overlapping, or outside the document",
+        ))
+    }
+}
+
 /// One reading-view edit as the page sent it, so the decision below takes two arguments rather than eight.
 pub(crate) struct BlockEdit<'a> {
     pub start: usize,
@@ -1135,6 +1154,12 @@ pub(crate) fn edit_block(
             say_edit_outcome(reader.page(), token, false, Some(&said));
         }
     }
+}
+
+/// Several reading-view blocks rewritten in one buffer pass and one undo step.
+pub(crate) fn edit_blocks(reader: &mut Reader, blocks: &[BlockReplacement]) {
+    let changed = apply_block_replacements(&mut reader.workspace, blocks).map(|()| true);
+    after_source_change(reader, changed);
 }
 
 /// What every frontmatter and block change ends with: the document drawn again where something moved, the chrome put back in step, and a refusal said in the reader's words.

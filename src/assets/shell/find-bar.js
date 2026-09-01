@@ -2,7 +2,7 @@
 //
 // Monaco's own find widget is not in the vendored bundle (see scripts/bundle-monaco.mjs) and our generated theme maps none of its colors, so it would arrive in Monaco's own defaults; two bars behaving differently in two views is also two keyboard paths to learn. So this is one bar, and underneath it the source view uses Monaco's searching (`findMatches`, decorations, `executeEdits`) while the reading view searches the text on the page.
 //
-// A replace in the reading view is a source splice on the editBlock path, never a DOM edit: the buffer in Rust is the document, and the page is a picture of it.
+// A replace in the reading view rewrites source blocks through the host, never the DOM: the buffer is the document, and the page is a picture of it.
 
 const findBar = document.getElementById('findBar');
 const findInput = document.getElementById('findInput');
@@ -103,23 +103,23 @@ function collectRenderedText() {
   findTextValid = true;
 }
 
-// The piece of text holding flat offset `at`. On a boundary either neighbor is the same DOM position, so whichever the search lands on is right.
-function findNodeAt(at) {
+// The piece of text holding one end of a match. A boundary starts in the piece after it and ends in the piece before it.
+function findNodeAt(at, edge) {
   let low = 0;
   let high = findTextNodes.length - 1;
   while (low <= high) {
     const middle = (low + high) >> 1;
     const entry = findTextNodes[middle];
-    if (at < entry.start) high = middle - 1;
-    else if (at > entry.end) low = middle + 1;
+    if (at < entry.start || (edge === 'end' && at === entry.start && middle > 0)) high = middle - 1;
+    else if (at > entry.end || (edge === 'start' && at === entry.end && middle < findTextNodes.length - 1)) low = middle + 1;
     else return entry;
   }
   return null;
 }
 
 function findRangeFor(match) {
-  const from = findNodeAt(match.start);
-  const to = findNodeAt(match.end);
+  const from = findNodeAt(match.start, 'start');
+  const to = findNodeAt(match.end, 'end');
   if (!from || !to) return null;
   const range = document.createRange();
   range.setStart(from.node, match.start - from.start);
@@ -550,9 +550,7 @@ function replaceInReading(all) {
     leafToast('That match is not in an editable block. Replace it in the source view.');
     return;
   }
-  const total = documentSourceLength();
-  let next = '';
-  let cursor = 0;
+  const blocks = [];
   let refused = 0;
   for (const group of groups) {
     const rewritten = findRewriteBlock(group, findReplaceInput.value);
@@ -560,17 +558,13 @@ function replaceInReading(all) {
       refused += group.ranks.length;
       continue;
     }
-    next += sliceSourceBytes(cursor, group.start);
-    next += rewritten;
-    cursor = group.end;
+    blocks.push({ start: group.start, end: group.end, text: rewritten });
   }
-  if (!cursor) {
+  if (!blocks.length) {
     leafToast('Formatting splits that match. Replace it in the source view.');
     return;
   }
-  next += sliceSourceBytes(cursor, total);
-  // One splice over the whole document, so one undo puts every replacement back.
-  sendEditCommand({ command: 'editBlock', start: 0, end: total, text: next });
+  sendEditCommand({ command: 'editBlocks', blocks });
   if (refused) {
     leafToast(
       `${formatCountLabel(refused, 'match is', 'matches are')} split by formatting — replace those in the source view.`

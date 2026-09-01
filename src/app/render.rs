@@ -38,22 +38,15 @@ pub(crate) fn buffer_is_worth_opening_the_file(tab: &Tab, path: &Path) -> bool {
 /// A package's buffer holds one member while the file is the whole archive, so there is no text comparison to make here. What the two do share is the identity a zip writes into the directory at its end: the file's comes off a tail read, the buffer's off the archive it is already carrying, and neither inflates a member.
 ///
 /// A dirty buffer says no, the way the text path does. So does a file whose tail will not read as a package — mid-save, or briefly gone during an atomic rename — because that is a read which would have settled.
+///
+/// The comparison itself is [`package_buffer_matches_file`], which the picture dialog's reconciliation asks too. The rule about a dirty buffer stays here, because that caller answers it the other way.
 pub(crate) fn package_buffer_must_take_disk(tab: &Tab, path: &Path) -> bool {
-    let Some(edit) = tab
+    let clean = tab
         .edit
         .as_ref()
         .filter(|_| tab.has_edit_for(path))
-        .filter(|edit| !edit.is_dirty())
-    else {
-        return false;
-    };
-    let Some(held) = edit
-        .package()
-        .and_then(|package| leaftext::package_identity(&package.bytes, 0))
-    else {
-        return false;
-    };
-    render_hash(path, None).is_some_and(|on_disk| on_disk != held)
+        .is_some_and(|edit| !edit.is_dirty());
+    clean && package_buffer_matches_file(tab, path) == Some(false)
 }
 
 /// Bring tab `index`'s clean edit buffer into step with the file at `path`, the way the live reload does for the tab at the front. Answers whether the buffer took the file, so a caller holding something drawn from it knows it is drawn from words the buffer no longer holds.

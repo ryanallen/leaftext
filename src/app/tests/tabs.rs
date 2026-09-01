@@ -335,6 +335,8 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
 }
 
 /// A package is gated on what its own directory says about every member, so a tab switched back to a file nobody has touched answers out of its cache without the package being unpacked — and the same tab re-renders the moment any member's bytes move underneath it. Both sides of the gate ask one function, which is what stops a cache written on one key being read on another.
+///
+/// Asked with no text at all, which is what the picture dialog's reconciliation asks first: the answer comes off the identity at the end of the file, so the whole archive is never opened to produce words this arm does not look at.
 #[test]
 fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
     let path = scratch_dir("tabs-package").join("report.docx");
@@ -354,9 +356,15 @@ fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
         ..Tab::default()
     };
 
-    assert!(
-        page_shows_file(&tab, &path, ""),
-        "nothing moved, so the tab's own render still answers for the file"
+    assert_eq!(
+        page_shows_file(&tab, &path, None),
+        Some(true),
+        "nothing moved, so the tab's own render still answers for the file, and nothing was read to say so"
+    );
+    assert_eq!(
+        page_shows_file(&tab, &path, Some("")),
+        Some(true),
+        "the words a caller already holds change nothing: the identity is what answers"
     );
 
     std::fs::write(
@@ -364,9 +372,10 @@ fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
         one_member_package("word/document.xml", b"<w:document />"),
     )
     .expect("the package is written again");
-    assert!(
-        !page_shows_file(&tab, &path, ""),
-        "a member's bytes moved, so the render on the tab is out"
+    assert_eq!(
+        page_shows_file(&tab, &path, None),
+        Some(false),
+        "a member's bytes moved, so the render on the tab is out and the picture is dropped rather than spliced against text nobody has seen"
     );
 }
 
@@ -518,6 +527,52 @@ fn a_clean_package_buffer_is_reconciled_on_its_identity_rather_than_its_words() 
     assert!(
         !package_buffer_must_take_disk(&tab_with_buffer(&note, "- [ ] one\n"), &note),
         "a note carries no archive, so this arm is not its own"
+    );
+}
+
+/// The other side of that same comparison: the reconciliation the picture dialog runs asks whether the page still shows the file, and a tab holding a clean buffer over a package answers off the archive the buffer is already carrying. No member is inflated, and the file is never opened past its own tail — where before this the whole archive was read to produce words this arm does not look at.
+#[test]
+fn a_package_buffer_answers_the_reconciliation_off_its_own_archive() {
+    let path = scratch_dir("tabs-package-buffer-shown").join("report.docx");
+    let opened = one_member_package("word/document.xml", b"<w:document/>");
+    std::fs::write(&path, &opened).expect("the package is written");
+    let mut tab = Tab {
+        edit: Some(EditableDocument::over_package(
+            path.clone(),
+            SourceText::utf8("<w:document/>".to_string()),
+            leaftext::PackageBuffer {
+                bytes: opened,
+                member: "word/document.xml".to_string(),
+            },
+        )),
+        ..Tab::default()
+    };
+
+    assert_eq!(
+        page_shows_file(&tab, &path, None),
+        Some(true),
+        "the archive the buffer holds is the archive on disk, and nothing was read to say so"
+    );
+
+    std::fs::write(
+        &path,
+        one_member_package("word/document.xml", b"<w:document />"),
+    )
+    .expect("the package is written again");
+    assert_eq!(
+        page_shows_file(&tab, &path, None),
+        Some(false),
+        "a member's bytes moved while the dialog stood open, so the page is out"
+    );
+
+    tab.edit
+        .as_mut()
+        .expect("buffer")
+        .replace_range(0, 0, "<w:p/>");
+    assert_eq!(
+        page_shows_file(&tab, &path, None),
+        Some(true),
+        "the disk cannot move a page somebody is typing into, and answering that costs no read at all"
     );
 }
 

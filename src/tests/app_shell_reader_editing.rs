@@ -87,11 +87,8 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
     // The reading view draws with the highlight API rather than wrapping matches in tags, which the editor would serialize back into the file.
     assert_contains(&html, "CSS.highlights.set(FIND_HIGHLIGHT_ALL, all);");
 
-    // And a replace there is one splice over the whole document, so one undo puts every replacement back. One send, and its range is the whole buffer.
-    assert_contains(
-        &html,
-        "sendEditCommand({ command: 'editBlock', start: 0, end: total, text: next });",
-    );
+    // And a replace there is one command carrying only the blocks that moved, so one undo puts every replacement back without shipping the bytes between them.
+    assert_contains(&html, "sendEditCommand({ command: 'editBlocks', blocks });");
     let reading_replace = html
         .split("function replaceInReading(all) {")
         .nth(1)
@@ -103,7 +100,7 @@ fn one_find_bar_serves_both_views_and_replaces_through_the_source() {
     assert_eq!(
         body.matches("sendEditCommand(").count(),
         1,
-        "replace all in the reading view must write one splice, not one per match"
+        "replace all in the reading view must write one command, not one per match"
     );
 }
 

@@ -317,6 +317,21 @@ pub(crate) fn render_hash(path: &Path, contents: Option<&str>) -> Option<u64> {
     }
 }
 
+/// Whether `tab`'s buffer for `path` holds the same archive the file does, asked on the identity a zip writes into its own directory rather than on any member's words.
+///
+/// A package's buffer holds one inflated member while the file is the whole archive, so the two can never be compared as text. What they do share is that identity: the file's comes off a tail read, the buffer's off the archive it is already carrying, and neither inflates anything.
+///
+/// `None` where the identity is not there to compare — no buffer for this document, a buffer carrying no archive, or a file whose tail will not read as a package, which is a mid-save or an atomic rename in flight. Whether the buffer is dirty is left to the callers, who answer it opposite ways.
+pub(crate) fn package_buffer_matches_file(tab: &Tab, path: &Path) -> Option<bool> {
+    let held = tab
+        .edit
+        .as_ref()
+        .filter(|_| tab.has_edit_for(path))?
+        .package()
+        .and_then(|package| leaftext::package_identity(&package.bytes, 0))?;
+    Some(render_hash(path, None)? == held)
+}
+
 /// Whether the file still holds what the last reload recorded, answered without opening it.
 ///
 /// A package states what every member's bytes are in the directory at its own end, so this costs a read of the tail where the reload below costs the whole file and one member inflated out of it, which is what an event about an open document nothing wrote would otherwise spend to be told nothing had moved. A format that is its own text has no identity cheaper than its bytes, so [`render_hash`] answers `None` for it, this never holds, and the file is read exactly as it always was.
@@ -331,46 +346,56 @@ pub(crate) fn buffer_already_shows(edit: Option<&EditableDocument>, contents: &s
     edit.is_some_and(|edit| !edit.is_dirty() && edit.text() == contents)
 }
 
-/// Whether the page still shows what `contents` holds for `path` in `tab`.
+/// Whether the page still shows what `path` holds in `tab`, answered without the file's words wherever they are not what settles it.
 ///
 /// Answered from what the page was actually drawn from: this tab's edit buffer where it has one for this document, and the tab's last render otherwise. A tab with neither has nothing to stand on, so it counts as moved — asking [`FileWatch::active_hash`] instead would say "moved" for every freshly opened document, since that hash is `None` until something reloads or saves.
 ///
 /// A buffer holding unsaved edits says yes: the disk cannot move a page the reader is typing into, and [`reload_active_document`] refuses one anyway.
-pub(crate) fn page_shows_file(tab: &Tab, path: &Path, contents: &str) -> bool {
+///
+/// `contents` is what the file holds, where the caller has already read it. `None` answers `None` only on the one arm that has nothing but the words to go on — a text document, which has no identity cheaper than its own bytes — so a caller can ask first and read only if it must. A package answers either way off the identity at the end of its file, which is a 32 KB tail read rather than the whole archive and one member inflated out of it.
+pub(crate) fn page_shows_file(tab: &Tab, path: &Path, contents: Option<&str>) -> Option<bool> {
     if let Some(edit) = tab.edit.as_ref().filter(|_| tab.has_edit_for(path)) {
-        return edit.is_dirty() || edit.text() == contents;
+        if edit.is_dirty() {
+            return Some(true);
+        }
+        if let Some(matches) = package_buffer_matches_file(tab, path) {
+            return Some(matches);
+        }
+        return contents.map(|contents| edit.text() == contents);
     }
-    tab.rendered.as_ref().is_some_and(|cache| {
-        render_hash(path, Some(contents)).is_some_and(|hash| cache.answers_for(path, hash))
-    })
+    let Some(cache) = tab.rendered.as_ref() else {
+        return Some(false);
+    };
+    Some(cache.answers_for(path, render_hash(path, contents)?))
 }
 
 /// Bring the view back in step with the disk before an answer carrying offsets read off the page is handed over.
 ///
-/// A modal dialog blocks the loop, so the file can move while it stands open and the answer reaches the page ahead of any queued reload — offsets then spent against text the page has never seen. Reading the disk here rather than taking the pending change first is what covers both ways in: a document with no edit buffer seeds one from disk on the write itself, and that path raises no watcher event at all.
+/// A modal dialog blocks the loop, so the file can move while it stands open and the answer reaches the page ahead of any queued reload — offsets then spent against text the page has never seen. Looking at the disk here rather than taking the pending change first is what covers both ways in: a document with no edit buffer seeds one from disk on the write itself, and that path raises no watcher event at all.
+///
+/// The question comes before the read: a package answers off the identity at the end of its file, and only a text document is opened whole — which for a big Word file, spreadsheet or deck is every byte of it and one member inflated out of the archive, spent to produce words nothing then looks at.
 ///
 /// When the file moved, the reload redraws, and the redraw is what clears the page's pending writer — so the answer that follows has nothing to write with and is dropped. When it did not, nothing is redrawn.
 pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWatch) {
     let Some(index) = reader.workspace.active else {
         return;
     };
-    let Some(path) = reader
-        .workspace
-        .tabs
-        .get(index)
-        .and_then(|tab| tab.history.current().cloned())
-    else {
+    let Some(tab) = reader.workspace.tabs.get(index) else {
         return;
     };
-    // Unreadable mid-save or briefly gone: leave the page as it is rather than dropping the answer over a read that would have settled.
-    let Ok(source) = read_document_source(&path) else {
+    let Some(path) = tab.history.current().cloned() else {
         return;
     };
-    let still_shown = reader
-        .workspace
-        .tabs
-        .get(index)
-        .is_some_and(|tab| page_shows_file(tab, &path, &source.text));
+    let still_shown = match page_shows_file(tab, &path, None) {
+        Some(shown) => shown,
+        // Only this document's own words can settle it. Unreadable mid-save or briefly gone: leave the page as it is rather than dropping the answer over a read that would have settled.
+        None => {
+            let Ok(source) = read_document_source(&path) else {
+                return;
+            };
+            page_shows_file(tab, &path, Some(&source.text)).unwrap_or(false)
+        }
+    };
     if still_shown {
         return;
     }
