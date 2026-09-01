@@ -1,6 +1,6 @@
 //! PowerPoint decks. `ppt/presentation.xml` holds the slide order and points at one member per slide.
 //!
-//! **A deck reads as one entry per slide, headed by the slide's own title.** That was the open question the plan left the phase that draws a deck to settle: the alternative was one flat list of titles, which loses every word that is not one. A slide with no title placeholder is headed by its number, so the outline never skips a slide somebody has to scroll past.
+//! **A deck reads as one entry per slide, headed by the slide's own title**, rather than as one flat list of titles, which loses every word that is not one. A slide with no title placeholder is headed by its number, so the outline never skips a slide somebody has to scroll past.
 //!
 //! Text on a slide sits in shapes: `p:sp > p:txBody > a:p > a:r > a:t`, and which shape is the title is written on the shape rather than guessed from its position.
 
