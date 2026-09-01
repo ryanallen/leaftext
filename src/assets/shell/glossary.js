@@ -523,13 +523,24 @@ let linkPreviewParsedHtml = null;
 let linkPreviewParsedRoot = null;
 // How much of the answer the card is given. The box shows 176 pixels and throws the rest away, so a whole file put into it is laid out entire to draw a strip: on a 400-row table document the answer was 148 KB and 35ms of layout, and cutting it here takes that to 68 KB. The cut is on whole top-level blocks so the card can never draw half a table or an unclosed element, and a block with no room left for it is rebuilt below rather than taken whole — one four-hundred-row table is bigger than the whole opening it was cut to. The one exception is a block whose words are a program, which is taken whole or not at all.
 const LINK_PREVIEW_OPENING_BYTES = 4096;
+// A node's markup when it fits the room, and null when it does not. The words under a node are a floor under its markup — a tag only adds characters, and an `&` or a `<` among the words escapes into more of them — so a node whose words alone overrun the room cannot fit however it is written, and the string is never built for it. That is what a plain text file costs: it reaches the card as one `pre` holding the whole file, up to a megabyte, and reading its words takes 0.005ms where serializing it takes 1.7ms. Where the words do sit inside the room nothing is settled yet, and the markup itself decides as it always did.
+function linkPreviewWholeIfItFits(node, room) {
+  if (node.textContent.length > room) return null;
+  const whole = node.outerHTML;
+  return whole.length <= room ? whole : null;
+}
 function linkPreviewOpeningHtml(blocks) {
   let taken = '';
   for (const block of blocks) {
     const room = LINK_PREVIEW_OPENING_BYTES - taken.length;
     if (room <= 0) break;
-    const whole = block.outerHTML;
-    if (whole.length <= room || isLinkPreviewProgramBlock(block)) {
+    // A diagram is asked neither question: it is taken whole or not at all, so its size never decides anything.
+    if (isLinkPreviewProgramBlock(block)) {
+      taken += block.outerHTML;
+      continue;
+    }
+    const whole = linkPreviewWholeIfItFits(block, room);
+    if (whole !== null) {
       taken += whole;
       continue;
     }
@@ -558,8 +569,14 @@ function fillLinkPreviewOpening(source, target, room) {
       continue;
     }
     if (node.nodeType !== 1) continue;
-    const whole = node.outerHTML;
-    if (whole.length <= room || isLinkPreviewProgramBlock(node)) {
+    if (isLinkPreviewProgramBlock(node)) {
+      target.appendChild(node.cloneNode(true));
+      room -= node.outerHTML.length;
+      continue;
+    }
+    // Asked before the markup is built here too, because the child this descends into is the same enormous run of words as the block above it — a plain text file's one `code` under its one `pre`, serialized a second time only to learn it does not fit either.
+    const whole = linkPreviewWholeIfItFits(node, room);
+    if (whole !== null) {
       target.appendChild(node.cloneNode(true));
       room -= whole.length;
       continue;

@@ -466,6 +466,238 @@ fn a_task_toggle_through_the_pipe_moves_one_marker_and_keeps_the_file_spelling()
     let _ = fs::remove_dir_all(&dir);
 }
 
+/// A file changed outside the app after it was read: the tick is refused rather than writing the app's own copy back over it, and the words somebody else wrote are still in the file.
+///
+/// This is the whole fault the guard exists to catch and could not: the fingerprint was taken over the buffer the caller had already been handed, so a stale copy matched itself.
+#[test]
+fn a_task_toggle_is_refused_when_the_file_moved_under_a_clean_buffer() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-task-moved-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("moved.md");
+    fs::write(&note, "# Probe\n\n- [ ] one\n- [ ] two\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    let mut vaults = VaultState::load(None);
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let quoted = read["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+
+    let outside = "# Probe\n\nA line written outside Leaftext.\n\n- [ ] one\n- [ ] two\n";
+    fs::write(&note, outside).expect("the file is changed outside the app");
+
+    let refusal = pipe_toggle_task(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        &note,
+        0,
+        &quoted,
+    )
+    .expect_err("a file that moved under the buffer refuses the tick");
+    assert!(
+        refusal.contains("changed since that fingerprint"),
+        "{refusal}"
+    );
+
+    // The buffer took the file on the way in, so the read behind the refusal is the file's own words and its fingerprint is the one the refusal named.
+    let fresh = pipe_document_answer(&mut workspace).expect("the buffer answers again");
+    assert_eq!(
+        fresh["text"], outside,
+        "the buffer holds what the file holds"
+    );
+    let now = fresh["fingerprint"].as_str().expect("a fingerprint");
+    assert_ne!(now, quoted, "the fingerprint moved with the file");
+    assert!(
+        refusal.contains(now),
+        "the refusal says what to quote next: {refusal}"
+    );
+
+    assert_eq!(
+        fs::read_to_string(&note).expect("the file is read"),
+        outside,
+        "the tick wrote the app's own copy back over the file"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The same for the save, which is worse when it lands: it writes the whole buffer rather than one marker byte.
+#[test]
+fn a_save_is_refused_when_the_file_moved_under_a_clean_buffer() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-save-moved-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("moved.md");
+    fs::write(&note, "# Probe\n\n- [ ] one\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    let mut vaults = VaultState::load(None);
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let quoted = read["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+
+    let outside = "# Probe\n\nA line written outside Leaftext.\n\n- [ ] one\n";
+    fs::write(&note, outside).expect("the file is changed outside the app");
+
+    let refusal = pipe_save_document(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        &note,
+        &quoted,
+    )
+    .expect_err("a file that moved under the buffer refuses the save");
+    assert!(
+        refusal.contains("changed since that fingerprint"),
+        "{refusal}"
+    );
+    assert_eq!(
+        fs::read_to_string(&note).expect("the file is read"),
+        outside,
+        "the save wrote the app's own copy back over the file"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// The same for the splice, and it is the one that would defeat a fix to the other two: a splice accepted against a stale buffer leaves the buffer dirty, and nothing is ever allowed to reconcile a dirty buffer — so the save behind it writes the stale words with no guard left that can catch them.
+#[test]
+fn a_splice_is_refused_when_the_file_moved_under_a_clean_buffer() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-edit-moved-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("moved.md");
+    fs::write(&note, "# Probe\n\n- [ ] one\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let quoted = read["fingerprint"]
+        .as_str()
+        .expect("a fingerprint")
+        .to_string();
+
+    let outside = "# Probe\n\nA line written outside Leaftext.\n\n- [ ] one\n";
+    fs::write(&note, outside).expect("the file is changed outside the app");
+
+    let refusal = pipe_edit_document(&mut workspace, &note, 0, 0, "- [ ] three\n", &quoted)
+        .expect_err("a file that moved under the buffer refuses the splice");
+    assert!(
+        refusal.contains("changed since that fingerprint"),
+        "{refusal}"
+    );
+
+    let fresh = pipe_document_answer(&mut workspace).expect("the buffer answers again");
+    assert_eq!(
+        fresh["text"], outside,
+        "the buffer holds what the file holds"
+    );
+    assert_eq!(
+        fresh["unsaved"], false,
+        "a refused splice leaves nothing for a save to write over the file"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Unsaved words still beat the disk. The reconciliation the three writes now make refuses a dirty buffer, so a document somebody is part-way through typing is written on its own fingerprint exactly as it was — which is the case the save ask exists for.
+#[test]
+fn a_buffer_with_unsaved_words_is_still_written_on_its_own_fingerprint() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-save-dirty-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("held.md");
+    fs::write(&note, "# Probe\n\n- [ ] one\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    let mut file_watch = FileWatch::default();
+    let mut vaults = VaultState::load(None);
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let read = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    let spliced = pipe_edit_document(
+        &mut workspace,
+        &note,
+        0,
+        7,
+        "# Typed",
+        read["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("the splice lands");
+    assert_eq!(spliced["unsaved"], true);
+
+    // The file moves under a buffer nobody has saved. Nothing may correct that buffer, so the save still writes what the person typed.
+    fs::write(
+        &note,
+        "# Probe\n\nA line written outside Leaftext.\n\n- [ ] one\n",
+    )
+    .expect("the file is changed outside the app");
+    let held = pipe_document_answer(&mut workspace).expect("the buffer answers");
+    assert_eq!(held["unsaved"], true, "the buffer was not reconciled away");
+
+    pipe_save_document(
+        None,
+        &mut workspace,
+        &mut file_watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        &note,
+        held["fingerprint"].as_str().expect("a fingerprint"),
+    )
+    .expect("a dirty buffer is written on its own fingerprint");
+    assert_eq!(
+        fs::read_to_string(&note).expect("the file is read"),
+        "# Typed\n\n- [ ] one\n"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+/// Two reads either side of a change made outside the app, on a document that never left the front: the second answers the file rather than the copy the app was sitting on.
+///
+/// The read is where an agent takes the fingerprint it will quote back, and arriving at a document was the only thing that ever reconciled — so for every read after the first, the answer was the stale one. That is what made the loss the ordinary case rather than a race.
+#[test]
+fn a_second_read_of_the_document_at_the_front_answers_the_file_that_moved() {
+    let dir = std::env::temp_dir().join(format!("leaf-pipe-read-moved-{}", std::process::id()));
+    fs::create_dir_all(&dir).expect("fixture directory is created");
+    let note = dir.join("moved.md");
+    fs::write(&note, "# Probe\n\n- [ ] one\n").expect("the fixture is written");
+
+    let mut workspace = Workspace::default();
+    pipe_bring_to_front(&mut workspace, &note).expect("the file opens");
+    let (took_first, first) = pipe_document_read(&mut workspace).expect("the document answers");
+    assert!(
+        !took_first,
+        "nothing moved under the buffer before the first read"
+    );
+    let front = workspace.active;
+
+    let outside = "# Probe\n\nA line written outside Leaftext.\n\n- [ ] one\n";
+    fs::write(&note, outside).expect("the file is changed outside the app");
+
+    let (took_second, second) = pipe_document_read(&mut workspace).expect("the document answers");
+    assert!(took_second, "the second read took the file");
+    assert_eq!(second["text"], outside);
+    assert_ne!(
+        second["fingerprint"], first["fingerprint"],
+        "the fingerprint a write has to quote moved with the file"
+    );
+    assert_eq!(
+        workspace.active, front,
+        "the document never left the front, which is the case that answered stale"
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
 /// The task list the document read answers: what a caller names a task by. Its order and its checked states are the source's, and a `[ ]` that is not a list marker is not in it.
 #[test]
 fn the_document_read_answers_the_tasks_a_caller_can_name() {

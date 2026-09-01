@@ -461,3 +461,83 @@ fn a_clean_buffer_takes_the_file_and_unsaved_words_are_kept() {
         "a tab left showing raw source is drawn from the same buffer, so it is answered the same"
     );
 }
+
+#[test]
+fn a_package_is_not_opened_for_a_reconciliation_that_could_only_refuse_it() {
+    // The gate in front of the file read. A package's buffer holds one member and the file is the archive, so reading it costs the whole file and answers nothing.
+    for extension in ["docx", "xlsx", "pptx", "odt", "ods", "odp"] {
+        let path = PathBuf::from(format!("decks/slides.{extension}"));
+        assert!(
+            !buffer_is_worth_opening_the_file(&tab_with_buffer(&path, "<w:document />"), &path),
+            "a .{extension} is never opened to be handed to the text decoder"
+        );
+    }
+
+    let note = PathBuf::from("notes/plan.md");
+    assert!(
+        buffer_is_worth_opening_the_file(&tab_with_buffer(&note, "- [ ] one\n"), &note),
+        "a note's buffer and its file are the same text, so the read still happens"
+    );
+    assert!(
+        !buffer_is_worth_opening_the_file(&Tab::default(), &note),
+        "a tab with no buffer is left to the render that reads the file itself"
+    );
+    assert!(
+        !buffer_is_worth_opening_the_file(
+            &tab_with_buffer(Path::new("notes/other.md"), "# Other\n"),
+            &note
+        ),
+        "a buffer belonging to another document is not this document's"
+    );
+}
+
+#[test]
+fn a_clean_package_buffer_is_reconciled_on_its_identity_rather_than_its_words() {
+    // The gate that replaces the read phase 1 took away. A package's buffer holds one member, so what says the file moved is the identity its own directory states.
+    let path = scratch_dir("tabs-package-buffer").join("report.docx");
+    let opened = one_member_package("word/document.xml", b"<w:document/>");
+    std::fs::write(&path, &opened).expect("the package is written");
+    let tab = Tab {
+        edit: Some(EditableDocument::over_package(
+            path.clone(),
+            SourceText::utf8("<w:document/>".to_string()),
+            leaftext::PackageBuffer {
+                bytes: opened,
+                member: "word/document.xml".to_string(),
+            },
+        )),
+        ..Tab::default()
+    };
+
+    assert!(
+        !package_buffer_must_take_disk(&tab, &path),
+        "nothing moved, so the buffer stands and no member is unpacked"
+    );
+
+    std::fs::write(
+        &path,
+        one_member_package("word/document.xml", b"<w:document />"),
+    )
+    .expect("the package is written again");
+    assert!(
+        package_buffer_must_take_disk(&tab, &path),
+        "a member's bytes moved, so the buffer is behind the file"
+    );
+
+    let mut typed_into = tab;
+    typed_into
+        .edit
+        .as_mut()
+        .expect("buffer")
+        .replace_range(0, 0, "<w:p/>");
+    assert!(
+        !package_buffer_must_take_disk(&typed_into, &path),
+        "unsaved words are never written over by the disk"
+    );
+
+    let note = PathBuf::from("notes/plan.md");
+    assert!(
+        !package_buffer_must_take_disk(&tab_with_buffer(&note, "- [ ] one\n"), &note),
+        "a note carries no archive, so this arm is not its own"
+    );
+}

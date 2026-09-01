@@ -769,6 +769,16 @@ pub(crate) fn pipe_document_answer(workspace: &mut Workspace) -> Result<serde_js
     }))
 }
 
+/// The pipe's document read: the front document's clean buffer brought into step with its file, then what it holds. Answers whether the buffer took the file as well, because the page is then drawn from words nobody holds and the arm behind this has to redraw.
+///
+/// Separate from `pipe_document_answer` so the arm can be told that — see `front_buffer_takes_disk` for what the reconciliation is guarding.
+pub(crate) fn pipe_document_read(
+    workspace: &mut Workspace,
+) -> Result<(bool, serde_json::Value), String> {
+    let took_disk = front_buffer_takes_disk(workspace);
+    Ok((took_disk, pipe_document_answer(workspace)?))
+}
+
 /// The tasks in a buffer, in document order. Empty for anything that is not Markdown, which is the one format a task marker means something in.
 fn document_tasks(edit: &EditableDocument) -> Vec<TaskEntry> {
     if edit.format == DocumentFormat::Markdown {
@@ -776,6 +786,16 @@ fn document_tasks(edit: &EditableDocument) -> Vec<TaskEntry> {
     } else {
         Vec::new()
     }
+}
+
+/// Bring the front document's clean buffer into step with its file, before a fingerprint is taken over it. Answers whether the buffer took the file, so the arm behind the write knows the page is drawn from words nobody holds any more.
+///
+/// Every write here guards itself with a fingerprint of the buffer, and the answer the caller quoted was taken from the same buffer — so a file somebody changed outside the app matches its own stale copy, the guard passes, and the write puts the old words back. Asking the file first is what makes the guard a guard.
+fn front_buffer_takes_disk(workspace: &mut Workspace) -> bool {
+    let Some((index, path)) = active_tab_path(workspace) else {
+        return false;
+    };
+    take_disk_into_clean_buffer(workspace, index, &path)
 }
 
 /// A write refused because the document moved on under it, saying what it is now so the asker reads it again rather than guessing.
@@ -795,6 +815,7 @@ pub(crate) fn pipe_edit_document(
     expect: &str,
 ) -> Result<serde_json::Value, String> {
     front_document(workspace, path)?;
+    front_buffer_takes_disk(workspace);
     let (path, edit) = pipe_active_edit(workspace)?;
     let holding = source_fingerprint(edit.text());
     if holding != expect {
@@ -823,6 +844,7 @@ pub(crate) fn pipe_toggle_task(
     expect: &str,
 ) -> Result<serde_json::Value, String> {
     front_document(workspace, path)?;
+    front_buffer_takes_disk(workspace);
     let (_, edit) = pipe_active_edit(workspace)?;
     let holding = source_fingerprint(edit.text());
     if holding != expect {
@@ -853,6 +875,7 @@ pub(crate) fn pipe_save_document(
     expect: &str,
 ) -> Result<serde_json::Value, String> {
     front_document(workspace, path)?;
+    front_buffer_takes_disk(workspace);
     let (path, edit) = pipe_active_edit(workspace)?;
     if edit.untitled {
         return Err(format!(

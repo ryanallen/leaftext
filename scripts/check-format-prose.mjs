@@ -156,6 +156,7 @@ const LISTS = [
       ['src/tests/conformance/yaml.rs', 'names the pair of fixture files one suite reads its cases from, which a new row in the table leaves exactly as it is'],
       ['src/tests/indexer_pager.rs', 'a walkthrough naming the three pages a test stands on in order, the way it would name three headings'],
       ['src/assets/shell/dom-to-markdown.js', 'the serializers for Markdown and TEI editing, not the formats the app admits'],
+      ['src/assets/shell/glossary.js', 'why the link card refuses a block before it serializes it — the words are the shape a plain text file reaches the card in, one `pre` holding one `code`, not the formats the app admits'],
       ['src/assets/shell/speed-reader.js', 'the acronym rule and the Markdown badge, not the formats the app admits'],
       ['src/eml.rs', 'the email renderer and the HTML policy it shares with Markdown, not the formats the app admits'],
       ['src/markdown/images.rs', 'image paths written in Markdown or HTML, not the formats the app admits'],

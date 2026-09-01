@@ -12,19 +12,24 @@ pub(crate) fn state(reader: &Reader, vault_state: &VaultState, reply: &PipeReply
 }
 
 /// A document's source, spelling, unsaved state and fingerprint — with the file brought to the front first, which is the one honest visible effect of an agent reading a document: the window shows what it is holding, exactly as if somebody had opened it.
+///
+/// The fingerprint this answers is what a later write has to quote back, so it is taken over the file rather than over a copy the app has been sitting on. Arriving at a document reconciles inside the render; a document already at the front — every read after the first — reconciles here instead.
 pub(crate) fn doc(reader: &mut Reader, path: &Path, reply: &PipeReply) {
-    let answer = match pipe_bring_to_front(&mut reader.workspace, path) {
-        Ok(moved) => {
-            let rendered = if moved {
-                reader.render_for_pipe(ScrollIntent::Reset)
-            } else {
-                Ok(())
-            };
-            pipe_document_answer_after_render(&mut reader.workspace, rendered)
-        }
-        Err(reason) => Err(reason),
-    };
-    let _ = reply.try_send(answer);
+    let _ = reply.try_send(document_answer(reader, path));
+}
+
+fn document_answer(reader: &mut Reader, path: &Path) -> Result<serde_json::Value, String> {
+    if pipe_bring_to_front(&mut reader.workspace, path)? {
+        // Arriving at a document renders, and the render is where a buffer takes the file.
+        let rendered = reader.render_for_pipe(ScrollIntent::Reset);
+        return pipe_document_answer_after_render(&mut reader.workspace, rendered);
+    }
+    let (took_disk, answer) = pipe_document_read(&mut reader.workspace)?;
+    if took_disk {
+        // The page is drawn from words the buffer has just replaced. Redraw in place, the way the live reload does.
+        reader.render_for_pipe(ScrollIntent::Preserve { code: None })?;
+    }
+    Ok(answer)
 }
 
 pub(crate) fn pipe_document_answer_after_render(
@@ -46,14 +51,17 @@ pub(crate) fn edit(
     reply: &PipeReply,
 ) {
     let answer = pipe_edit_document(&mut reader.workspace, path, start, end, text, expect);
-    if answer.is_ok() {
-        reader.render(ScrollIntent::Preserve { code: None });
-        resync_editing_state(reader.page(), &reader.workspace);
-    }
+    redraw_after_pipe_write(reader);
     let _ = reply.try_send(answer);
 }
 
-/// One task marker checked or cleared and the file written at once. No render: one marker byte changed, and the resync inside the toggle is what the reader's own checkbox does with it.
+/// Put the window back in step with the buffer after a pipe write, which is why every one of them draws on a refusal. The guard brings a clean buffer up to the file before it compares, so a write that comes back refused is one that may have left the page drawn from words nobody holds. Only the error path pays for it.
+fn redraw_after_pipe_write(reader: &mut Reader) {
+    reader.render(ScrollIntent::Preserve { code: None });
+    resync_editing_state(reader.page(), &reader.workspace);
+}
+
+/// One task marker checked or cleared and the file written at once. No render where it lands: one marker byte changed, and the resync inside the toggle is what the reader's own checkbox does with it.
 pub(crate) fn task(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
@@ -74,6 +82,9 @@ pub(crate) fn task(
         index,
         expect,
     );
+    if answer.is_err() {
+        redraw_after_pipe_write(reader);
+    }
     let _ = reply.try_send(answer);
 }
 
@@ -96,6 +107,9 @@ pub(crate) fn save(
         path,
         expect,
     );
+    if answer.is_err() {
+        redraw_after_pipe_write(reader);
+    }
     let _ = reply.try_send(answer);
 }
 

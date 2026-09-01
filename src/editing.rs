@@ -164,9 +164,13 @@ impl EditableDocument {
     }
 
     /// Adopt `contents` as a fresh baseline without a save — used when live-reload accepts an external change into a clean buffer. The spelling comes along, since an outside edit may have re-spelled the file.
-    pub fn adopt_external(&mut self, contents: SourceText) {
-        let SourceText { text, spelling } = contents;
+    ///
+    /// The whole source rather than the text out of it, because a package's text is one member and the archive behind it is what a save copies. Taking the member alone would draw the new words against the old numbering, shared strings and pictures, and then write that archive back.
+    pub fn adopt_external(&mut self, contents: impl Into<DocumentSource>) {
+        let DocumentSource { text, package } = contents.into();
+        let SourceText { text, spelling } = text;
         self.spelling = spelling;
+        self.package = package;
         self.saved = text.clone();
         self.text = text;
         // Both histories are snapshots of a document this one has replaced, so stepping into either would put somebody else's file back.

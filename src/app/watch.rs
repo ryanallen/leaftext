@@ -423,7 +423,8 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         .and_then(|tab| tab.edit.as_mut())
         .filter(|_| buffer_is_current)
     {
-        edit.adopt_external(source.text.clone());
+        // The whole source, not the text out of it: a package's new member has to arrive with the archive it came out of, or the next save writes the stale one back.
+        edit.adopt_external(source.clone());
         if in_code_view {
             let text = edit.text().to_string();
             let source_definition = leaftext::source_definition(&edit.path);

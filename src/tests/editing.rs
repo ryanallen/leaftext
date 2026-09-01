@@ -1245,3 +1245,32 @@ fn an_ini_document_saves_in_the_spelling_it_was_read_in() {
         }
     }
 }
+
+#[test]
+fn a_buffer_adopting_an_outside_change_takes_the_archive_with_it() {
+    // A package's buffer holds one member and the archive it came out of; a save puts the member back into that archive and copies every other one. So an outside change that handed over the member alone would leave the new words sitting against the old numbering, shared strings and pictures — and the next save would write that stale archive back.
+    let mut doc = EditableDocument::over_package(
+        PathBuf::from("report.docx"),
+        SourceText::utf8("<w:document/>".to_string()),
+        PackageBuffer {
+            bytes: b"the archive it was opened over".to_vec(),
+            member: "word/document.xml".to_string(),
+        },
+    );
+
+    doc.adopt_external(DocumentSource {
+        text: SourceText::utf8("<w:document><w:p/></w:document>".to_string()),
+        package: Some(PackageBuffer {
+            bytes: b"the archive that member came out of".to_vec(),
+            member: "word/document.xml".to_string(),
+        }),
+    });
+
+    assert_eq!(doc.text(), "<w:document><w:p/></w:document>");
+    assert_eq!(
+        doc.package().expect("the buffer is still a package").bytes,
+        b"the archive that member came out of",
+        "the archive travels with the member it holds"
+    );
+    assert!(!doc.is_dirty(), "an adopted change is the saved baseline");
+}

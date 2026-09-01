@@ -573,6 +573,42 @@ export function run() {
     }
   });
 
+  // The block that does not fit is rebuilt from its own children, and the string the fit test built for it is never read again — so building it was work thrown away, twice over on a plain text file, where the descent then asks the one `code` child for the same megabyte to learn it does not fit either. The words under a node are a floor under its markup, so a node whose words already overrun the room is refused without the string being built at all. Counted rather than timed: a clock on this cut reads zero on an ordinary block, and what is being held is that the app stopped asking.
+  check('a block whose words already overrun the opening never has its markup built', () => {
+    try {
+      const ceiling = vm.runInContext('LINK_PREVIEW_OPENING_BYTES', booted);
+      const source = Array.from({ length: 400 }, (unused, at) => `line ${at} of code, written long enough to run past the opening`).join(String.fromCharCode(10));
+      const answer = PREVIEW_SECTION_OPENING + `<pre id="wide"><code>${source}</code></pre>` + '<p id="after">After.</p></article>';
+      seedPreviewParse(answer);
+      const article = booted.__previewProbeRoot.querySelector('article');
+      const wide = article.children[0];
+      const inner = wide.children[0];
+      if (!inner || wide.textContent.length <= ceiling) throw new Error('the witness fits the opening, so it proves nothing');
+      // Every read of the markup the app asked for, on the two nodes whose words already say they cannot fit. The clone the rebuild works through is its own element and answers its own getter, so what this counts is the source the cut was handed.
+      const built = [];
+      for (const [name, node] of [['the block', wide], ['its one child', inner]]) {
+        const was = Object.getOwnPropertyDescriptor(node, 'outerHTML');
+        Object.defineProperty(node, 'outerHTML', {
+          ...was,
+          get: () => {
+            built.push(name);
+            return was.get.call(node);
+          },
+        });
+      }
+      vm.runInContext('linkHoverTip.hidden = true; pendingPreviewTokens.set(80, "notes/never-built.md");', booted);
+      booted.window.leafLinkPreview(80, answer);
+      const cut = vm.runInContext('linkPreviewCache.get("notes/never-built.md")', booted);
+      if (built.length) throw new Error(`the cut built the markup of ${[...new Set(built)].join(' and ')} only to throw it away`);
+      if (cut.length >= answer.length) throw new Error('the witness was handed to the card whole, so the guard was never reached');
+      if (!cut.includes('id="wide"') || !cut.includes('line 0 of')) throw new Error('the block the guard refused lost the opening the card can draw');
+      if (cut.includes('id="after"')) throw new Error('the cut ran on past the block that filled the opening');
+      if (!cut.endsWith('</article>')) throw new Error("the block the guard refused left the card's own element open");
+    } finally {
+      forgetPreviewParse();
+    }
+  });
+
   // One block cannot be rebuilt to the room there is, and it is the one whose words are a program. A Mermaid fence reaches the card as a `pre.mermaid` holding the diagram's source, and half that source is not half a drawing: mermaid refuses it and the card falls back to the strip it keeps for a drawing it could not make. So it is taken whole or not at all — at the top level, and inside a list item or a quote, where a fence renders as a `pre.mermaid` under the block the cut had to descend into.
   const previewDiagramSource = ['flowchart TD', ...Array.from({ length: 8 }, (unused, at) => `  N${at}[node ${at} of a diagram written long enough to matter]`), '  Z[the last node of the diagram]'].join('\n');
   const previewDiagramBlock = `<pre class="mermaid">${previewDiagramSource}</pre>`;

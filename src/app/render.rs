@@ -23,6 +23,93 @@ pub(crate) fn buffer_must_take_disk(tab: &Tab, path: &Path, disk: &str) -> bool 
         .is_some_and(|edit| !edit.is_dirty() && edit.text() != disk)
 }
 
+/// Whether `tab`'s buffer for `path` is worth opening the file for at all.
+///
+/// Asked before anything touches the disk, because the read behind it is the whole file. A package's buffer holds one member of an archive while the file is the archive, so the two can never be compared as text — the decoder refuses the archive at the first byte no text file could hold, and tens of megabytes are read to be dropped. `format.rs` answers that from the extension for nothing.
+///
+/// No buffer says no as well: that render reads the file itself.
+pub(crate) fn buffer_is_worth_opening_the_file(tab: &Tab, path: &Path) -> bool {
+    tab.has_edit_for(path)
+        && DocumentFormat::from_path(path).source_shape() == leaftext::SourceShape::Text
+}
+
+/// Whether `tab`'s clean package buffer is behind what `path` now holds, asked on the archive's own identity rather than on its words.
+///
+/// A package's buffer holds one member while the file is the whole archive, so there is no text comparison to make here. What the two do share is the identity a zip writes into the directory at its end: the file's comes off a tail read, the buffer's off the archive it is already carrying, and neither inflates a member.
+///
+/// A dirty buffer says no, the way the text path does. So does a file whose tail will not read as a package — mid-save, or briefly gone during an atomic rename — because that is a read which would have settled.
+pub(crate) fn package_buffer_must_take_disk(tab: &Tab, path: &Path) -> bool {
+    let Some(edit) = tab
+        .edit
+        .as_ref()
+        .filter(|_| tab.has_edit_for(path))
+        .filter(|edit| !edit.is_dirty())
+    else {
+        return false;
+    };
+    let Some(held) = edit
+        .package()
+        .and_then(|package| leaftext::package_identity(&package.bytes, 0))
+    else {
+        return false;
+    };
+    render_hash(path, None).is_some_and(|on_disk| on_disk != held)
+}
+
+/// Bring tab `index`'s clean edit buffer into step with the file at `path`, the way the live reload does for the tab at the front. Answers whether the buffer took the file, so a caller holding something drawn from it knows it is drawn from words the buffer no longer holds.
+///
+/// A free function over the workspace rather than a method on the `Reader`, because the pipe's three writes need it and none of them has a `Reader`. Each guards itself with a fingerprint of the buffer, so a buffer left behind matches its own stale self and the write puts the old words back over a file somebody changed outside the app.
+///
+/// The read below is the whole file, and for a package it was only ever spent: a 50 MB deck read 50,347,428 bytes here to be refused by the decoder and dropped. Hence the shape test in front of it.
+pub(crate) fn take_disk_into_clean_buffer(
+    workspace: &mut Workspace,
+    index: usize,
+    path: &Path,
+) -> bool {
+    // A package answers first, on the identity at the end of its file. The two arms are exclusive: only a package carries an archive, and only a text format is worth opening whole.
+    if workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| package_buffer_must_take_disk(tab, path))
+    {
+        // The one place a package's file is opened here, and only where the identity really moved. The archive comes with its anchored member, because a save writes that member back into the archive it was read from.
+        let Ok(source) = read_document_for_editing(path) else {
+            return false;
+        };
+        let Some(edit) = workspace
+            .tabs
+            .get_mut(index)
+            .and_then(|tab| tab.edit.as_mut())
+        else {
+            return false;
+        };
+        edit.adopt_external(source);
+        return true;
+    }
+    if !workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| buffer_is_worth_opening_the_file(tab, path))
+    {
+        return false;
+    }
+    // Unreadable mid-save or briefly gone during an atomic rename: leave the buffer as it is rather than acting on a read that would have settled.
+    let Ok(source) = read_source(path) else {
+        return false;
+    };
+    let Some(tab) = workspace.tabs.get_mut(index) else {
+        return false;
+    };
+    if !buffer_must_take_disk(tab, path, &source.text) {
+        return false;
+    }
+    let Some(edit) = tab.edit.as_mut() else {
+        return false;
+    };
+    edit.adopt_external(source);
+    true
+}
+
 /// What it takes to put a document on screen: the window to title, the page to write to, the tabs to draw, the recents to record, the favorites to mark, and where images resolve from. One bundle because they always travel together.
 pub(crate) struct Reader {
     pub(crate) window: tao::window::Window,
@@ -129,31 +216,6 @@ impl Reader {
         );
     }
 
-    /// Bring this tab's clean edit buffer into step with the file before the page is drawn from it, the way the live reload does for the tab at the front. Reads only where the page is about to come out of a buffer, so the branch that reads the file anyway pays nothing.
-    fn take_disk_into_clean_buffer(&mut self, index: usize, path: &Path) {
-        if !self
-            .workspace
-            .tabs
-            .get(index)
-            .is_some_and(|tab| tab.has_edit_for(path))
-        {
-            return;
-        }
-        // Unreadable mid-save or briefly gone during an atomic rename: leave the buffer as it is rather than acting on a read that would have settled.
-        let Ok(source) = read_source(path) else {
-            return;
-        };
-        let Some(tab) = self.workspace.tabs.get_mut(index) else {
-            return;
-        };
-        if !buffer_must_take_disk(tab, path, &source.text) {
-            return;
-        }
-        if let Some(edit) = tab.edit.as_mut() {
-            edit.adopt_external(source);
-        }
-    }
-
     /// The document for `path`: the tab's cached render where the file still answers the same, a fresh render (cached on the tab) where it does not. The render is what the cache saves, and the one read here is what the render is drawn from — a package's archive travels with its text, so nothing reads the file again to unpack it.
     ///
     /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all.
@@ -217,7 +279,7 @@ impl Reader {
                 };
                 // Opening, Back, Forward and a tab switch are the four ways a reader arrives at a document they have been away from, and any of them can arrive at a buffer the disk has moved past. A `Preserve` render is the app redrawing its own edit, where the buffer is the truth and a read could only ever say the same thing.
                 if !matches!(scroll, ScrollIntent::Preserve { .. }) {
-                    self.take_disk_into_clean_buffer(index, &path);
+                    take_disk_into_clean_buffer(&mut self.workspace, index, &path);
                 }
 
                 // A tab left in code view must stay in code view when it is re-rendered (switching tabs away and back, a save, a rename, the file changing on disk). The reading-view render below would silently drop out of the source editor, so restore the code view from the tab's buffer instead.
