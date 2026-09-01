@@ -167,6 +167,44 @@ fn a_doc_ask_for_a_file_that_cannot_be_read_is_refused() {
 }
 
 #[test]
+fn a_failed_open_names_the_file_once_in_every_sentence() {
+    let dir = scratch_dir("failed-open-names-once");
+    let photo = dir.join("photo.md");
+    fs::write(&photo, b"II*\0\x08\xFF\xFF\xFF\xFF").expect("the picture is written");
+    let name = photo.display().to_string();
+
+    // The decoder still names the file, because its error also travels alone through the public reading calls.
+    let decoded = read_source(&photo)
+        .expect_err("the picture will not decode")
+        .to_string();
+    assert!(decoded.ends_with(&format!(" ({name})")), "{decoded}");
+
+    // What the failed open hands both outward sentences carries no path of its own.
+    let reason = opened_file_named_once(&photo, &decoded);
+    assert!(!reason.contains(&name), "{reason}");
+    assert_eq!(format!("{reason} ({name})"), decoded);
+
+    // The log and the ask: the file once, at the front.
+    let refusal = open_refusal(&photo, &reason);
+    assert_eq!(refusal.matches(&name).count(), 1, "{refusal}");
+    assert_eq!(
+        pipe_document_answer_after_render(&mut Workspace::default(), Err(refusal.clone())),
+        Err(refusal)
+    );
+
+    // A reason that never carried this file's name comes through untouched, so an ordinary open failure and the unread-ending sentence read exactly as they did.
+    let bare = "there is no file at somewhere else";
+    assert_eq!(opened_file_named_once(&photo, bare), bare);
+    let other = format!(
+        "This doesn't look like a text file ({})",
+        dir.join("other.md").display()
+    );
+    assert_eq!(opened_file_named_once(&photo, &other), other);
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn a_doc_ask_for_a_file_that_opens_keeps_its_answer() {
     let dir = scratch_dir("doc-ask-opens");
     let note = dir.join("tasks.md");

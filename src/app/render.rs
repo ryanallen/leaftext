@@ -457,7 +457,8 @@ impl Reader {
                             rendered
                         }
                         Err(error) => {
-                            let reason = error.to_string();
+                            // One reason for every outward sentence, with this file's name taken off the end of it. The log, the ask refusal and the message in the corner all name the file at the front themselves, so they cannot part company and none of them says it twice.
+                            let reason = opened_file_named_once(&path, &error.to_string());
                             let missing = error.kind() == io::ErrorKind::NotFound;
                             let refusal = open_refusal(&path, &reason);
                             eprintln!("{refusal}");
@@ -557,6 +558,14 @@ impl Reader {
         update_active_navigation(self.page(), &self.workspace);
         Ok(())
     }
+}
+
+/// A failed open's reason with the decoder's own trailing copy of this file's name taken off.
+///
+/// The decoder names the file because its error also travels alone into public reading calls and log lines. Here both outward sentences put the path at the front themselves — [`open_refusal`] for the log and the ask, the page for the message in the corner — so that trailing copy is the same name a second time and wraps a real path over extra lines. Only an exact trailing ` (path)` for the file being opened comes off; every other reason is returned as it arrived.
+pub(crate) fn opened_file_named_once(path: &Path, reason: &str) -> String {
+    let trailing = format!(" ({})", path.display());
+    reason.strip_suffix(&trailing).unwrap_or(reason).to_string()
 }
 
 pub(crate) fn open_refusal(path: &Path, reason: &str) -> String {

@@ -427,6 +427,58 @@ export function run() {
     if (descended.rows !== code.children) throw new Error('a descended window copied every child of the row it descended into');
   });
 
+  // A fixture whose rows count the rectangle reads taken on them, so a check can say which rows the window search touched rather than only what it handed back. `spans` is one [top, bottom] per row and `kids` how many children each gets, since only a row with children can be descended into.
+  const countingRows = (id, spans, kids) => {
+    const body = fakeElement(id);
+    body.innerHTML = spans.map((_, i) => `<div>${'<span></span>'.repeat(kids[i] ?? 0)}</div>`).join('');
+    const reads = spans.map(() => 0);
+    body.children.forEach((row, i) => {
+      row.getBoundingClientRect = () => {
+        reads[i] += 1;
+        return { top: spans[i][0], bottom: spans[i][1] };
+      };
+    });
+    return { body, reads };
+  };
+
+  // Only an end of the run can be taller than the window, so the search asks those two rows and nothing between them. The scan this replaced read every row of the window — 1,552 rectangles on a description list of 40,000 children, 13.7 ms of a typing pause. Here both ends are tall enough, and the first is the one that answers.
+  check('the minimap window search descends through the first end of its run and never reads the last after that', () => {
+    const spans = [[-500, 50], [50, 60], [60, 70], [70, 80], [80, 90], [90, 1200]];
+    const { body, reads } = countingRows('minimap-first-end-source', spans, [2, 0, 0, 0, 0, 2]);
+    const opening = body.children[0];
+    opening.children[0].getBoundingClientRect = () => ({ top: -500, bottom: 40 });
+    opening.children[1].getBoundingClientRect = () => ({ top: 40, bottom: 50 });
+    const window = booted.minimapWindowRows(body, 0, 0, 0, 100);
+    if (window.holder !== opening) throw new Error('the search did not descend through the first end of its run');
+    // Rows 2 and 4 are read by the two binary searches alone; row 0 is read once by a search and once as the candidate. A read on row 1 or row 3 is the full-window scan come back, and a second read on row 5 is the last end asked after the first had already answered.
+    if (reads.join(',') !== '2,0,2,0,1,1') throw new Error(`the rows were read ${reads.join(',')} times rather than 2,0,2,0,1,1`);
+  });
+
+  // The three runs the two binary searches settle on their own: none, one, and one whose first end is not the tall row.
+  check('the minimap window search reads no row for an empty run, one row twice over for a single-row run, and its last end when the first does not answer', () => {
+    const none = countingRows('minimap-empty-run-source', [[0, 10], [10, 20]], [1, 1]);
+    const empty = booted.minimapWindowRows(none.body, 0, 0, 100, 200);
+    if (empty.first <= empty.last) throw new Error('a window below every row still named a run of them');
+    // Both rows are read by the two searches; a third read on either is a candidate asked for a run that holds no rows.
+    if (none.reads.join(',') !== '2,2') throw new Error(`the empty run read its rows ${none.reads.join(',')} times rather than 2,2`);
+
+    const alone = countingRows('minimap-one-row-run-source', [[0, 50]], [1]);
+    const single = booted.minimapWindowRows(alone.body, 0, 0, 0, 100);
+    if (single.first !== 0 || single.last !== 0) throw new Error('the one-row run did not come back as one row');
+    // Two reads from the searches and one candidate read: the row is both ends, so it is asked once rather than twice.
+    if (alone.reads.join(',') !== '3') throw new Error(`the one-row run read its row ${alone.reads.join(',')} times rather than 3`);
+
+    const spans = [[0, 50], [50, 60], [60, 70], [70, 80], [80, 90], [90, 1200]];
+    const { body, reads } = countingRows('minimap-last-end-source', spans, [0, 1, 1, 1, 1, 2]);
+    const closing = body.children[5];
+    closing.children[0].getBoundingClientRect = () => ({ top: 90, bottom: 200 });
+    closing.children[1].getBoundingClientRect = () => ({ top: 200, bottom: 1200 });
+    const window = booted.minimapWindowRows(body, 0, 0, 0, 100);
+    if (window.holder !== closing) throw new Error('the search did not descend through the last end of its run');
+    // Rows 1 and 3 are never read at all: the searches skip them and the candidate pass has no reason to ask them. Any number there is the walk over the whole window come back.
+    if (reads.join(',') !== '2,0,2,0,1,2') throw new Error(`the rows were read ${reads.join(',')} times rather than 2,0,2,0,1,2`);
+  });
+
   check('a slice inside one row keeps the whitespace between the lines it cuts', () => {
     const body = fakeElement('minimap-whitespace-source');
     body.innerHTML = '<pre><code><span>one</span>\n<span>two</span>\n<span>three</span></code></pre>';
