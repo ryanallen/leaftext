@@ -49,7 +49,7 @@ use leaftext::{
     update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
     workspace_only_script, workspace_reload_script, workspace_state_script,
     workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument, DesktopHost, DocumentFormat,
-    DocumentSource, EditableDocument, Favorite, FavoriteKind, Favorites, FilterHints,
+    DocumentSource, EditableDocument, Favorite, FavoriteKind, Favorites, FileRecord, FilterHints,
     FolderListing, GitTooling, GraphScope, LeafHost, OpenedDocument, Query, RecentFiles,
     ScrollAnchor, Session, SessionTab, Settings, SettingsLoad, SourceEncoding, SourceSpelling,
     SourceText, TabSummary, TaskEntry, UpdateDownload, VaultCorpus, VaultRepo,

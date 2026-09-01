@@ -18,15 +18,6 @@ pub(crate) struct Tab {
     pub(crate) rendered: Option<RenderedCache>,
 }
 
-/// What a file said about itself, answered without opening it: how long it is and when it was last written.
-///
-/// A hash of a file's text needs the text, so a cache keyed on one is read whole to be told it is current. These two numbers answer the same question off the directory entry, flat in the file's size where a read is not.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct FileRecord {
-    pub(crate) len: u64,
-    pub(crate) modified: std::time::SystemTime,
-}
-
 /// See [`Tab::rendered`].
 #[derive(Debug)]
 pub(crate) struct RenderedCache {

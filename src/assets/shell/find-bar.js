@@ -476,6 +476,24 @@ function unwatchFindRender() {
 
 // ---- replacing -----------------------------------------------------------
 
+// What All left behind, in one sentence. Both views stop collecting at the cap, so All over a word that appears more often than that rewrites the list it was handed and the rest of the document keeps the old word; the flag is still standing when the replacement finishes, and each view says so before it refreshes or redraws it away. One growl, because the page has one slot for it: two calls would replace one another and the reader would keep whichever landed last.
+function growlReplaceLeftBehind(capped, split) {
+  const splitWords = split
+    ? `${formatCountLabel(split, 'match is', 'matches are')} split by formatting`
+    : '';
+  if (capped && splitWords) {
+    leafToast(
+      `More matches remain, and ${splitWords} — press All again, then replace the split matches in the source view.`
+    );
+    return;
+  }
+  if (capped) {
+    leafToast('More matches remain — press All again.');
+    return;
+  }
+  if (splitWords) leafToast(`${splitWords} — replace those in the source view.`);
+}
+
 function replaceInSource(all) {
   if (!codeUnlocked) {
     growlLockedForReading();
@@ -489,6 +507,8 @@ function replaceInSource(all) {
   if (!edits.length) return;
   // One call, so one undo puts every replacement back.
   monacoEditor.executeEdits('leaf-find', edits);
+  // Before the refresh, which searches the rewritten source and answers the cap question again for that list.
+  growlReplaceLeftBehind(all && findTruncated, 0);
   refreshFind({ keepCurrent: !all });
   findStep(0);
 }
@@ -565,11 +585,7 @@ function replaceInReading(all) {
     return;
   }
   sendEditCommand({ command: 'editBlocks', blocks });
-  if (refused) {
-    leafToast(
-      `${formatCountLabel(refused, 'match is', 'matches are')} split by formatting — replace those in the source view.`
-    );
-  }
+  growlReplaceLeftBehind(all && findTruncated, refused);
 }
 
 function findReplace(all) {

@@ -6,6 +6,13 @@ use std::ops::Range;
 /// Reading-view undo entries kept per document; each is a full buffer snapshot.
 const UNDO_STACK_CAP: usize = 200;
 
+/// What a file said about itself without being opened: how long it is and when it was last written.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FileRecord {
+    pub len: u64,
+    pub modified: std::time::SystemTime,
+}
+
 /// A document open for editing: Rust's authoritative copy of the source text. `text` is the live buffer; `saved` is the last-written text, so dirty is just `text != saved`. `version` increments on save so the file watcher can tell our own saves from external edits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EditableDocument {
@@ -18,6 +25,7 @@ pub struct EditableDocument {
     text: String,
     saved: String,
     version: u64,
+    file_record: Option<FileRecord>,
     /// Buffer snapshots taken before each reading-view edit, newest last. The browser's native undo can't cross the re-render an edit triggers, so inline-edit undo lives here. Code-view typing is not snapshotted — the editor's own undo covers it.
     undo_stack: Vec<String>,
     /// What each undo displaced, newest last, so a press too many can be walked forward again. A fresh undoable edit drops it: the future those snapshots belonged to no longer exists.
@@ -48,6 +56,7 @@ impl EditableDocument {
             saved: text.clone(),
             text,
             version: 0,
+            file_record: None,
             undo_stack: Vec::new(),
             redo_stack: Vec::new(),
             package: None,
@@ -155,9 +164,23 @@ impl EditableDocument {
         self.version
     }
 
+    /// Remember the file state this buffer was read from. The desktop composes the record; the shared buffer only stores and compares it.
+    pub fn remember_file_record(&mut self, record: Option<FileRecord>) {
+        self.file_record = record;
+    }
+
+    pub fn file_record(&self) -> Option<FileRecord> {
+        self.file_record
+    }
+
+    pub fn matches_file_record(&self, record: FileRecord) -> bool {
+        self.file_record == Some(record)
+    }
+
     /// Record that the current buffer was written to disk: the buffer becomes the saved baseline (so dirty clears), reader-edit history resets in both directions, and the version advances.
     pub fn mark_saved(&mut self) {
         self.saved = self.text.clone();
+        self.file_record = None;
         self.undo_stack.clear();
         self.redo_stack.clear();
         self.version += 1;
@@ -171,6 +194,7 @@ impl EditableDocument {
         let SourceText { text, spelling } = text;
         self.spelling = spelling;
         self.package = package;
+        self.file_record = None;
         self.saved = text.clone();
         self.text = text;
         // Both histories are snapshots of a document this one has replaced, so stepping into either would put somebody else's file back.

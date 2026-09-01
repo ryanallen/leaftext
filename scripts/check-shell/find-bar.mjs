@@ -604,6 +604,113 @@ export function run() {
     }
   });
 
+  // Both searches stop collecting at the cap, so All over a commoner word replaces the list it was handed and the rest of the document keeps the old word. Silence there reads as finished, which is the one thing the button named All must not do.
+  check('All says so when the cap left more matches, in either view', () => {
+    const growls = [];
+    const wasToast = booted.leafToast;
+    const wasSend = booted.ipc;
+    booted.leafToast = (message) => growls.push(message);
+    booted.ipc = { postMessage: () => {} };
+    booted.setReadingUnlocked(true);
+    booted.setCodeUnlocked(true);
+    booted.window.leafBlocksResynced({ source: 'The dharma talk.\n' });
+    const field = booted.document.getElementById('findInput');
+    const replacement = booted.document.getElementById('findReplaceInput');
+    field.value = 'dharma';
+    replacement.value = 'sutra';
+    try {
+      // The blocks and the rewrite stand in, so what is under test is the sentence the shipped path composes rather than a copy of it.
+      vm.runInContext('__wasGroups = findRenderedGroups; __wasRewrite = findRewriteBlock;', booted);
+      const reading = (capped, split) => {
+        growls.length = 0;
+        booted.__capped = capped;
+        booted.__split = split;
+        vm.runInContext(
+          `currentDocumentFormat = 'markdown';
+           findMatches = [{}];
+           findCurrent = 0;
+           findTruncated = __capped;
+           findRenderedGroups = () => (__split
+             ? [{ start: 0, end: 4, ranks: [0] }, { start: 4, end: 8, ranks: new Array(__split).fill(0) }]
+             : [{ start: 0, end: 4, ranks: [0] }]);
+           findRewriteBlock = (group) => (group.start === 0 ? 'Kept' : null);
+           replaceInReading(true);`,
+          booted
+        );
+        return growls;
+      };
+
+      // The cap alone: one growl, and it names the press that finishes the job.
+      const capped = reading(true, 0);
+      if (capped.length !== 1) throw new Error(`a capped All in the page said: ${JSON.stringify(capped)}`);
+      if (capped[0] !== 'More matches remain — press All again.') {
+        throw new Error(`a capped All in the page said: ${capped[0]}`);
+      }
+
+      // Nothing left behind: silence, because a growl after a finished run teaches the reader to ignore the next one.
+      const finished = reading(false, 0);
+      if (finished.length) throw new Error(`an uncapped All in the page said: ${JSON.stringify(finished)}`);
+
+      // Both reasons at once. The page has one growl slot, so two calls would replace one another and the reader would keep whichever landed last.
+      const both = reading(true, 2);
+      if (both.length !== 1) throw new Error(`a capped All over split matches said: ${JSON.stringify(both)}`);
+      if (both[0] !== 'More matches remain, and 2 matches are split by formatting — press All again, then replace the split matches in the source view.') {
+        throw new Error(`the combined sentence read: ${both[0]}`);
+      }
+      if (!reading(true, 1)[0].includes('1 match is split by formatting')) {
+        throw new Error(`one split match in the combined sentence read: ${reading(true, 1)[0]}`);
+      }
+
+      // The source view runs the same sentence off the same flag, and Replace one never speaks of a cap it did not reach.
+      booted.__fakeMonaco = {
+        executeEdits: () => {},
+        createDecorationsCollection: () => ({ set: () => {}, clear: () => {} }),
+        setSelection: () => {},
+        revealRangeInCenterIfOutsideViewport: () => {},
+      };
+      const inSource = (capped, all) => {
+        growls.length = 0;
+        booted.__capped = capped;
+        booted.__all = all;
+        vm.runInContext(
+          `monacoEditor = __fakeMonaco;
+           codeViewActive = true;
+           findOpen = false;
+           findMatches = [{ startLineNumber: 1, startColumn: 1, endLineNumber: 1, endColumn: 7 }];
+           findCurrent = 0;
+           findTruncated = __capped;
+           replaceInSource(__all);`,
+          booted
+        );
+        return growls;
+      };
+      const cappedSource = inSource(true, true);
+      if (cappedSource.length !== 1 || cappedSource[0] !== 'More matches remain — press All again.') {
+        throw new Error(`a capped All in the source said: ${JSON.stringify(cappedSource)}`);
+      }
+      const finishedSource = inSource(false, true);
+      if (finishedSource.length) throw new Error(`an uncapped All in the source said: ${JSON.stringify(finishedSource)}`);
+      const one = inSource(true, false);
+      if (one.length) throw new Error(`Replace one in the source said: ${JSON.stringify(one)}`);
+    } finally {
+      vm.runInContext(
+        `findRenderedGroups = __wasGroups; findRewriteBlock = __wasRewrite; findMatches = []; findCurrent = -1;
+         findTruncated = false; monacoEditor = null; codeViewActive = false;`,
+        booted
+      );
+      delete booted.__capped;
+      delete booted.__split;
+      delete booted.__all;
+      delete booted.__fakeMonaco;
+      field.value = '';
+      replacement.value = '';
+      booted.setReadingUnlocked(false);
+      booted.setCodeUnlocked(false);
+      booted.leafToast = wasToast;
+      booted.ipc = wasSend;
+    }
+  });
+
   // Carets in a read-only editor are a set of cursors every keystroke then growls at, so the button asks the padlock before it places any. And the modifier that adds one by hand is ours, not the editor's default Alt — Alt is the menu key here.
   check('a cursor on every match asks the padlock first, and Ctrl adds one by hand', () => {
     const { findSelectAllOccurrences } = booted;

@@ -955,7 +955,8 @@ function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
   const wrappers = [];
   const path = [];
   while (true) {
-    const rows = Array.from(holder.children);
+    // The live list, never a copy of it: every reader here and downstream takes an index, and copying a description list of 40,000 children was 2.8 ms of a 3.4 ms call. That is safe only while nothing writes into the reading body between this line and the last read of `rows` — the clone below is built with cloneNode into a detached wrapper, the strip and the diagram fill touch that copy alone, and the rail is written after both index reads. A step added in that stretch that moves a row breaks it.
+    const rows = holder.children;
     let first = minimapFirstBlockPast(rows, appTop, scrollTop, top);
     let last = Math.min(rows.length - 1, minimapFirstBlockPast(rows, appTop, scrollTop, bottom));
     const windowHeight = Math.max(0, bottom - top);

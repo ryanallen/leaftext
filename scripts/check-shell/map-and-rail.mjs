@@ -408,6 +408,25 @@ export function run() {
     if (window.path !== '1/0') throw new Error(`the descended window says its path is ${window.path}`);
   });
 
+  // The whole of the copy ticket: the window hands its readers the holder's own list rather than a snapshot of it. Identity is the only thing that says so — a copy answers every index the same way, at any size, which is why no number of rows would prove this.
+  check('a window carries the holder’s own list of rows rather than a copy of it', () => {
+    const body = fakeElement('minimap-live-rows-source');
+    body.innerHTML = '<h1>Title</h1><pre class="highlight"><code><span>one</span><span>two</span><span>three</span></code></pre>';
+    const [title, pre] = body.children;
+    const code = pre.children[0];
+    title.getBoundingClientRect = () => ({ top: 0, bottom: 20 });
+    pre.getBoundingClientRect = () => ({ top: 20, bottom: 2020 });
+    code.getBoundingClientRect = () => ({ top: 20, bottom: 2020 });
+    code.children.forEach((line, index) => { line.getBoundingClientRect = () => ({ top: 20 + index * 20, bottom: 40 + index * 20 }); });
+
+    const shallow = booted.minimapWindowRows(body, 0, 0, 0, 10);
+    if (shallow.rows !== body.children) throw new Error('a window that never descended copied the reading body’s rows instead of carrying them');
+
+    const descended = booted.minimapWindowRows(body, 0, 0, 0, 80);
+    if (descended.holder !== code) throw new Error('the window did not descend, so this proves nothing about the row it descended into');
+    if (descended.rows !== code.children) throw new Error('a descended window copied every child of the row it descended into');
+  });
+
   check('a slice inside one row keeps the whitespace between the lines it cuts', () => {
     const body = fakeElement('minimap-whitespace-source');
     body.innerHTML = '<pre><code><span>one</span>\n<span>two</span>\n<span>three</span></code></pre>';

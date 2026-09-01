@@ -27,10 +27,30 @@ pub(crate) fn buffer_must_take_disk(tab: &Tab, path: &Path, disk: &str) -> bool 
 ///
 /// Asked before anything touches the disk, because the read behind it is the whole file. A package's buffer holds one member of an archive while the file is the archive, so the two can never be compared as text — the decoder refuses the archive at the first byte no text file could hold, and tens of megabytes are read to be dropped. `format.rs` answers that from the extension for nothing.
 ///
-/// No buffer says no as well: that render reads the file itself.
+/// A dirty buffer says no because the comparison behind the read already refuses to replace unsaved words. No buffer says no as well: that render reads the file itself.
 pub(crate) fn buffer_is_worth_opening_the_file(tab: &Tab, path: &Path) -> bool {
-    tab.has_edit_for(path)
-        && DocumentFormat::from_path(path).source_shape() == leaftext::SourceShape::Text
+    tab.edit
+        .as_ref()
+        .filter(|edit| !edit.is_dirty())
+        .is_some_and(|_| {
+            tab.has_edit_for(path)
+                && DocumentFormat::from_path(path).source_shape() == leaftext::SourceShape::Text
+        })
+}
+
+/// The record only gates the read; the byte comparison still decides whether the buffer takes the file.
+pub(crate) fn buffer_record_requires_read(
+    tab: &Tab,
+    path: &Path,
+    record: Option<FileRecord>,
+) -> bool {
+    tab.edit
+        .as_ref()
+        .filter(|_| tab.has_edit_for(path))
+        .is_some_and(|edit| match record {
+            Some(record) => !edit.matches_file_record(record),
+            None => true,
+        })
 }
 
 /// Whether `tab`'s clean package buffer is behind what `path` now holds, asked on the archive's own identity rather than on its words.
@@ -59,6 +79,15 @@ pub(crate) fn take_disk_into_clean_buffer(
     index: usize,
     path: &Path,
 ) -> bool {
+    take_disk_into_clean_buffer_at(workspace, index, path, std::time::SystemTime::now())
+}
+
+pub(crate) fn take_disk_into_clean_buffer_at(
+    workspace: &mut Workspace,
+    index: usize,
+    path: &Path,
+    now: std::time::SystemTime,
+) -> bool {
     // A package answers first, on the identity at the end of its file. The two arms are exclusive: only a package carries an archive, and only a text format is worth opening whole.
     if workspace
         .tabs
@@ -86,6 +115,14 @@ pub(crate) fn take_disk_into_clean_buffer(
     {
         return false;
     }
+    let record = file_record_at(path, now);
+    if workspace
+        .tabs
+        .get(index)
+        .is_some_and(|tab| !buffer_record_requires_read(tab, path, record))
+    {
+        return false;
+    }
     // Unreadable mid-save or briefly gone during an atomic rename: leave the buffer as it is rather than acting on a read that would have settled.
     let Ok(source) = read_source(path) else {
         return false;
@@ -93,14 +130,15 @@ pub(crate) fn take_disk_into_clean_buffer(
     let Some(tab) = workspace.tabs.get_mut(index) else {
         return false;
     };
-    if !buffer_must_take_disk(tab, path, &source.text) {
-        return false;
-    }
+    let took_disk = buffer_must_take_disk(tab, path, &source.text);
     let Some(edit) = tab.edit.as_mut() else {
         return false;
     };
-    edit.adopt_external(source);
-    true
+    if took_disk {
+        edit.adopt_external(source);
+    }
+    edit.remember_file_record(record);
+    took_disk
 }
 
 // How old a modification time has to be before it can be trusted to tell two versions of a file apart. Not a delay: nothing waits on it, and a record dropped by it costs one read to earn back. A file system stamps as coarsely as it likes — NTFS separates writes about half a millisecond apart, HFS+ to the second, FAT32 to two — so a write landing in the same tick as the reading below carries the stamp that reading saw, and a record kept from it would leave a stale render on screen for ever. Two seconds is FAT32's own resolution, which puts every file system this app ships to on the safe side without this code having to know which one it is on.
@@ -112,12 +150,12 @@ const FILE_RECORD_SETTLE: std::time::Duration = std::time::Duration::from_secs(2
 ///
 /// Take it *before* the file is read, never after. Taken after, the record can describe a write that landed during the read, so a newer stamp is stored beside older content and the gate shows a stale render for ever. Taken before, the same race stores an older stamp beside newer content, the next arrival sees a stamp that does not match and reads — one wasted read rather than a wrong page.
 pub(crate) fn settled_file_record(path: &Path) -> Option<FileRecord> {
+    file_record_at(path, std::time::SystemTime::now())
+}
+
+fn file_record_at(path: &Path, now: std::time::SystemTime) -> Option<FileRecord> {
     let meta = fs::metadata(path).ok()?;
-    settled_record(
-        meta.len(),
-        meta.modified().ok()?,
-        std::time::SystemTime::now(),
-    )
+    settled_record(meta.len(), meta.modified().ok()?, now)
 }
 
 /// The settle rule alone, against a clock the caller names, so a test can ask what a file that settled long ago answers without waiting out [`FILE_RECORD_SETTLE`]. See [`settled_file_record`], which is the only caller that reads the real clock.

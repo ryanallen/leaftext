@@ -460,11 +460,24 @@ fn a_package_is_not_opened_for_a_reconciliation_that_could_only_refuse_it() {
             "a .{extension} is never opened to be handed to the text decoder"
         );
     }
+}
 
+#[test]
+fn a_dirty_note_buffer_is_not_opened_to_be_refused() {
     let note = PathBuf::from("notes/plan.md");
+    let mut dirty = tab_with_buffer(&note, "- [ ] one\n");
+    dirty
+        .edit
+        .as_mut()
+        .expect("the note has a buffer")
+        .replace_range(4, 7, "done");
+    assert!(
+        !buffer_is_worth_opening_the_file(&dirty, &note),
+        "the comparison behind the read already refuses a dirty buffer"
+    );
     assert!(
         buffer_is_worth_opening_the_file(&tab_with_buffer(&note, "- [ ] one\n"), &note),
-        "a note's buffer and its file are the same text, so the read still happens"
+        "a clean note's buffer and its file are the same text, so the read still happens"
     );
     assert!(
         !buffer_is_worth_opening_the_file(&Tab::default(), &note),
@@ -631,6 +644,141 @@ fn a_cache_entry_stands_on_a_settled_file_and_on_nothing_else() {
         settled_file_record(&path.with_file_name("nothing-here.md")),
         None,
         "a file that cannot be asked answers no record rather than a guessed one"
+    );
+}
+
+#[test]
+fn reconciliation_keeps_only_a_settled_file_record() {
+    let path = scratch_dir("tabs-buffer-record").join("note.md");
+    std::fs::write(&path, "# On disk\n").expect("the fixture file is written");
+    let modified = std::fs::metadata(&path)
+        .expect("the file answers")
+        .modified()
+        .expect("the file has a modification time");
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        path.clone(),
+        SourceText::utf8("# On disk\n".to_string()),
+    ));
+
+    take_disk_into_clean_buffer_at(&mut workspace, 0, &path, modified);
+    assert_eq!(
+        workspace.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the buffer remains")
+            .file_record(),
+        None,
+        "a file written moments ago has not settled"
+    );
+
+    take_disk_into_clean_buffer_at(
+        &mut workspace,
+        0,
+        &path,
+        modified + std::time::Duration::from_secs(10),
+    );
+    assert_eq!(
+        workspace.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the buffer remains")
+            .file_record(),
+        Some(FileRecord {
+            len: "# On disk\n".len() as u64,
+            modified,
+        }),
+        "a settled file leaves the record read before its bytes"
+    );
+}
+
+#[test]
+fn a_buffer_record_opens_only_a_file_that_moved() {
+    let path = PathBuf::from("notes/a.md");
+    let modified =
+        std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+    let record = FileRecord { len: 8, modified };
+    let mut tab = tab_with_buffer(&path, "# Same\n");
+    tab.edit
+        .as_mut()
+        .expect("the tab has a buffer")
+        .remember_file_record(Some(record));
+
+    assert!(
+        !buffer_record_requires_read(&tab, &path, Some(record)),
+        "the file still says what the buffer remembers"
+    );
+    assert!(buffer_record_requires_read(
+        &tab,
+        &path,
+        Some(FileRecord {
+            len: record.len + 1,
+            ..record
+        })
+    ));
+    assert!(buffer_record_requires_read(
+        &tab,
+        &path,
+        Some(FileRecord {
+            modified: modified + std::time::Duration::from_secs(1),
+            ..record
+        })
+    ));
+    tab.edit
+        .as_mut()
+        .expect("the tab has a buffer")
+        .remember_file_record(None);
+    assert!(
+        buffer_record_requires_read(&tab, &path, Some(record)),
+        "a buffer remembering no reading has to earn one"
+    );
+}
+
+#[test]
+fn a_same_length_rewrite_inside_the_clock_tick_is_still_reconciled() {
+    let path = scratch_dir("tabs-buffer-clock-tick").join("note.md");
+    std::fs::write(&path, "# First\n").expect("the first version is written");
+    let first_modified = std::fs::metadata(&path)
+        .expect("the first version answers")
+        .modified()
+        .expect("the first version has a modification time");
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        path.clone(),
+        SourceText::utf8("# First\n".to_string()),
+    ));
+    take_disk_into_clean_buffer_at(&mut workspace, 0, &path, first_modified);
+    assert_eq!(
+        workspace.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the buffer remains")
+            .file_record(),
+        None,
+        "the recent stamp is not trusted"
+    );
+
+    std::fs::write(&path, "# Other\n").expect("the same-length version is written");
+    let second_modified = std::fs::metadata(&path)
+        .expect("the second version answers")
+        .modified()
+        .expect("the second version has a modification time");
+    assert!(take_disk_into_clean_buffer_at(
+        &mut workspace,
+        0,
+        &path,
+        second_modified,
+    ));
+    assert_eq!(
+        workspace.tabs[0]
+            .edit
+            .as_ref()
+            .expect("the buffer remains")
+            .text(),
+        "# Other\n",
+        "the unchanged length and recent stamp never replace the byte comparison"
     );
 }
 

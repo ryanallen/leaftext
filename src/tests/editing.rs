@@ -818,6 +818,32 @@ fn editable_document_adopts_external_change_when_clean() {
 }
 
 #[test]
+fn a_file_record_follows_only_the_read_it_describes() {
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("original\n".to_string()),
+    );
+    let record = FileRecord {
+        len: 9,
+        modified: std::time::SystemTime::UNIX_EPOCH,
+    };
+    doc.remember_file_record(Some(record));
+    assert_eq!(doc.file_record(), Some(record));
+    assert!(doc.matches_file_record(record));
+
+    doc.mark_saved();
+    assert_eq!(doc.file_record(), None, "a save has not read the file back");
+
+    doc.remember_file_record(Some(record));
+    doc.adopt_external(SourceText::utf8("changed on disk\n".to_string()));
+    assert_eq!(
+        doc.file_record(),
+        None,
+        "an outside change leaves no reading to remember"
+    );
+}
+
+#[test]
 fn a_code_view_splice_lands_on_the_same_bytes_the_page_meant() {
     // The page sends UTF-16 offsets (JS string indices) and the host converts them against its own copy. Byte offsets diverge from those the moment there is a diacritic or an emoji, and a splice landing one byte off corrupts the file. The offsets here are exactly what sourceSpliceSince computes on the page.
     fn splice_of(before: &str, after: &str) -> (usize, usize, String) {
