@@ -134,6 +134,8 @@ There is no manifest — the bundler globs `themes/*.md`. `scripts/bundle-themes
 
 A family carries a set of drawings as well as a palette. Every icon class in `src/assets/icons.css` reads `var(--lt-icon-<name>)` rather than carrying its own drawing, and the generated stylesheet declares all sixty-three at `:root`. A pack is one block of those same properties redeclared under the family selectors that name it, so switching family swaps the drawings with the colors and no class is touched.
 
+The four window marks — minimize, maximize, restore and close — carry two more properties each, `--lt-icon-<name>-chip` and `--lt-icon-<name>-dot`: the same drawing moved onto the pixel grid of the Windows chip and of the Mac dot, which are worn at different sizes and so need different moves. The window controls read those instead of the plain property; every other control reads the plain one, which is byte for byte what it always was. A pack redeclares the held pair exactly as it redeclares the plain one, so a family wearing an outside pack gets that pack's drawings held to the same grid.
+
 Seven packs ship. `leaftext` is the app's own mixed set — the drawings that were here before packs existed — and it is both a family's permanent choice and the fallback every other pack falls back to: an icon a pack has no drawing for keeps the `:root` value, so a control is never blank.
 
 A family names its pack on a `**Pack:**` line beside its `**Family ID:**`, and `ThemeSource.pack` is that value at runtime; a file naming none wears `leaftext`. `just bundle-icons` writes each pack block's byte range into `src/theme.rs` as `LEAF_ICON_PACK_RANGES` beside the sheet itself, which is what lets `exported_page_css()` hand a written-out page one block instead of six.
