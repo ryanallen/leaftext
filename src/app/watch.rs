@@ -408,6 +408,8 @@ pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWat
 ///
 /// The archive comes from the source that reload read and from nothing else — not from the entry being replaced, nor from the buffer on screen, both of which hold the file as it was before the change, so a save splicing into either would write the old file back over the new one.
 ///
+/// Where a clean edit buffer was open, that buffer has already taken the archive out of the source above and this entry carries none, which is the state a buffer opening over a render leaves behind anyway: the archive is the whole file and it sits in exactly one place. A later seed off such an entry reads the disk rather than being handed a second copy.
+///
 /// It stands on no file record: the file was read above, and a record taken after a read can describe a write that landed during it — a newer stamp beside older content, which is a stale render nothing ever clears. The next arrival reads once and earns one.
 pub(crate) fn cache_reloaded_render(
     tab: &mut Tab,
@@ -460,10 +462,11 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
             return;
         }
     };
-    let contents = source.text.text.clone();
+    // Read in place: both gates below take a borrowed string and keep none of it, and on a package this text is a whole inflated member.
+    let contents: &str = &source.text.text;
 
     // The key the gate above reads, the key the save writes, and the key a tab's render cache is answered on are one key: written any other way, the gate compares an identity against a text hash and waves every event through.
-    let hash = render_key(&path, &contents);
+    let hash = render_key(&path, contents);
     if file_watch.active_hash == Some(hash) {
         return;
     }
@@ -481,7 +484,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         .get(index)
         .and_then(|tab| tab.edit.as_ref())
         .filter(|_| buffer_is_current);
-    if buffer_already_shows(shown, &contents) {
+    if buffer_already_shows(shown, contents) {
         return;
     }
     if let Some(edit) = workspace
@@ -490,10 +493,16 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         .and_then(|tab| tab.edit.as_mut())
         .filter(|_| buffer_is_current)
     {
-        // The whole source, not the text out of it: a package's new member has to arrive with the archive it came out of, or the next save writes the stale one back.
-        edit.adopt_external(source.clone());
+        // The archive as well as the text: a package's new member has to arrive with the archive it came out of, or the next save writes the stale one back. Moved rather than copied, because the archive is the whole file and belongs in exactly one place — the buffer, once one is open over it. No parse, since the buffer only drops it, and the render below picks its package arm off the parse rather than off the archive. The text alone is copied, because that render takes the source's own away.
+        edit.adopt_external(DocumentSource {
+            text: SourceText {
+                text: source.text.text.clone(),
+                spelling: source.text.spelling,
+            },
+            package: source.package.take(),
+            document: None,
+        });
         if in_code_view {
-            let text = edit.text().to_string();
             let source_definition = leaftext::source_definition(&edit.path);
             let language = source_definition
                 .map(|definition| definition.language_token)
@@ -503,8 +512,12 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
                 .map(|definition| definition.display_name)
                 .unwrap_or(edit.format.display_name())
                 .to_string();
+            // The buffer's own text, borrowed: the payload reads it and keeps none of it.
             let url = stage_source_payload(code_view_payload(
-                &text, &language, &display, false,
+                edit.text(),
+                &language,
+                &display,
+                false,
                 // Live reload refreshes in place; the page keeps its scroll.
                 None,
             ));

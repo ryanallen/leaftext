@@ -152,6 +152,7 @@ const LISTS = [
       'src/tests/office.rs',
     ],
     looked: [
+      ['src/state.rs', 'JSON names the app-owned config files and source names the saved editor state, not the formats the app admits'],
       ['src/tests/conformance/mod.rs', 'the CommonMark suite ships its own examples as JSON files — the word is the fixture\'s file type, not a format the app reads'],
       ['src/tests/conformance/yaml.rs', 'names the pair of fixture files one suite reads its cases from, which a new row in the table leaves exactly as it is'],
       ['src/tests/indexer_pager.rs', 'a walkthrough naming the three pages a test stands on in order, the way it would name three headings'],
@@ -174,6 +175,7 @@ const LISTS = [
       ['src/store/frontmatter.rs', 'the quote a YAML field carried and why it goes back on — the word is how YAML says a value is not a number'],
       ['src/tests/editing.rs', 'why a data block edits as source rather than as rendered words — the word is what the Markdown path would write'],
       ['src/tests/markdown_code.rs', 'what a paragraph inside a highlighted document must arrive as — the word is an unstyled run, not a format'],
+      ['src/app/tests/watch.rs', 'what a live reload draws a package as — the words are the archive member a Word file is read through and the markup inside it, not the formats the app admits'],
     ],
     read: (formatSource) => documentRows(formatSource),
   },

@@ -775,3 +775,92 @@ fn a_reloaded_note_leaves_no_archive_on_the_tab() {
 
     let _ = fs::remove_dir_all(path.parent().expect("the note sits in a folder"));
 }
+
+/// What the archive moving into the buffer rests on. The render picks its package arm off the parse that came out of the same read, not off the archive beside it, so a source whose archive a buffer has taken still draws as the document's words. Keyed on the archive instead, the same source would fall through to the plain-text arm and put the member's raw XML on the page.
+#[test]
+fn a_source_whose_archive_the_buffer_took_still_draws_as_a_package() {
+    let path = scratch_dir("watch-archive-taken-draws").join("report.docx");
+    fs::write(
+        &path,
+        one_member_package("word/document.xml", word_document("one").as_bytes()),
+    )
+    .expect("the package is written");
+    let mut source = read_document_for_editing(&path).expect("the package is read");
+
+    let taken = source
+        .package
+        .take()
+        .expect("a package's read carries the archive its member came out of");
+    assert_eq!(
+        taken.member, "word/document.xml",
+        "and names the member a save splices back into it"
+    );
+
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+        .expect("the package draws with its archive gone");
+    assert!(
+        drawn.html.contains("one"),
+        "the document's own words never reached the page"
+    );
+    assert!(
+        !drawn.html.contains("w:document"),
+        "the member's raw XML was drawn, so the render's arm is keyed on the archive rather than the parse"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// The archive sits in exactly one place. Where a clean edit buffer took it out of the read, the entry that same reload writes carries none — which is the state a buffer opening over a render already leaves behind — and a seed off that entry answers nothing rather than handing out a second copy of the whole file.
+#[test]
+fn a_reload_whose_buffer_took_the_archive_leaves_the_tab_carrying_none() {
+    let path = scratch_dir("watch-archive-taken-seed").join("report.docx");
+    fs::write(
+        &path,
+        one_member_package("word/document.xml", word_document("one").as_bytes()),
+    )
+    .expect("the package is written");
+    // Old enough to be settled, so the seed below reaches the archive rather than stopping at a reading it cannot trust.
+    stamp_written(&path, a_minute_ago());
+    let record = settled_file_record(&path);
+    let mut source = read_document_for_editing(&path).expect("the package is read");
+
+    // What the reload hands a clean buffer: the archive moved out of the read rather than copied.
+    let taken = source
+        .package
+        .take()
+        .expect("a package's read carries the archive its member came out of");
+
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+        .expect("the package draws");
+    let mut tab = Tab::default();
+    cache_reloaded_render(&mut tab, &path, 1, source, Rc::new(drawn));
+    // A reload's entry keeps no reading of the file on purpose, and the seed asks for one in front of the archive; handed the reading taken above, the seed answers on the archive alone.
+    tab.rendered
+        .as_mut()
+        .expect("the reload left an entry")
+        .record = record;
+
+    assert!(
+        tab.rendered
+            .as_ref()
+            .expect("the reload left an entry")
+            .package
+            .is_none(),
+        "the reload left a second archive on the tab behind the buffer that had already taken the first"
+    );
+    assert!(
+        tab.seed_from_render(&path).is_none(),
+        "a later seed was handed an archive the buffer already owns"
+    );
+
+    tab.rendered
+        .as_mut()
+        .expect("the reload left an entry")
+        .package = Some(taken);
+    assert!(
+        tab.seed_from_render(&path).is_some(),
+        "the seed stopped answering for some reason of its own, so the refusal above proves nothing about the archive"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
