@@ -15,19 +15,27 @@ Build a ticket from its path, phase by phase, and stop at the owner's box.
 
 ## Process
 
-### 1. Read the ticket, its row and the running order
+### 1. The owner's words go in the ticket first, before anything else in this turn
+
+**Where the message being answered hands back built work to be fixed, nothing else happens until that message is in the ticket.** Not after the cause is read, not after a file is opened, not after one line of code: the very first act of the turn is the round written into the ticket — the owner's prompt quoted whole and word for word, every picture they attached saved into `../docs/imgs/` and embedded under the line it is evidence for, and one box per thing they said they will look for. Then [`/design`](../design/SKILL.md) over that round, so the fix is read against the code before it is built. Only then does the turn go on to the step below and build it.
+
+**Reading the code first is the failure this step exists to stop.** A session that opens a file before it writes the round has already decided what the owner meant, and the owner is left watching a build happen against a ticket that says nothing about what they just asked for — which is the one thing they cannot check, because the ticket is where they read it. A round taken from memory also loses whichever ask came last in the sentence, every time.
+
+**Every clause is its own box, the asides included**, and the whole message goes in even where half of it is not about the code. `## Refining what was built goes in the ticket, every round, unasked` below holds the shape; this step holds when it happens, which is first.
+
+### 2. Read the ticket, its row and the running order
 
 Read the ticket, its README row, `../docs/PLAN.md`, and `../docs/GLOSSARY.md` before building.
 
 **A ticket with no dated `Designed` line is not built here.** Run [`/design`](../design/SKILL.md) over it first and let that pass write the line; only then does this skill open a phase. There is no shortcut for a one-line change, for work the owner just asked for out loud, or for a ticket this pass wrote itself moments earlier — a plan written and built in the same breath has been read against nothing, and the code lands the way the plan guessed rather than the way the tree is. `scripts/gate-design.mjs` refuses the turn, naming the ticket.
 
-### 2. Date the ticket as building and run `just bundle-plan-status`, before anything else is touched
+### 3. Date the ticket as building and run `just bundle-plan-status`, before anything else is touched
 
 **Write `> **Building since 18 August 2026, 9:11pm.**` under the ticket's dated `Designed` line before anything else is touched** — the ticket is read, the line is written, and no phase is opened until it is. Never "when implementation starts": reading the code and weighing an option are implementation starting and neither writes anything down, so the running order keeps saying `Designed` through the longest part of a build and the owner has to ask whether one is happening at all, which is the question the whole tree is written to answer without being asked. The clock is read rather than remembered (`Get-Date`). **The line goes in the ticket and never in the running order**: that file is one ranked list two builds must not both write, and the `Status` cell is computed off this line — `just bundle-plan-status` writes it and `just check-plan-stage` refuses a cell that disagrees, so there is nothing here to keep synchronized. It is the proof of `Dev` from the moment a build starts.
 
 **Then run `just bundle-plan-status` in the same breath, before a phase is opened.** Writing the line without it leaves the running order saying `Designed` for the whole build, which is the exact thing the line was written to stop — the owner reads the running order, not the ticket, and a stale cell there tells them nobody has started. The recipe is not an authored write: it reads every ticket and stamps the one computed column, so it is safe beside another build in a way `/pm` is not.
 
-### 3. Work the phases in order
+### 4. Work the phases in order
 
 Work phases in order. Drive what the running app can reach; name anything that needs the owner's gesture in the ticket.
 
@@ -43,17 +51,17 @@ Work phases in order. Drive what the running app can reach; name anything that n
 
 **A change that moves something on the screen is proved by sampled positions, never by classes.** `just probe-motion <selector> <trigger>` watches one element's computed value every frame while the trigger runs and fails when the first frame is already at the resting value. Classes arrive on schedule whether or not anything draws — the leg runner carries a timer for the case where no `transitionend` comes — so a proof that reads the class timeline passes on a motion that snapped, which is how the bottom sheet's entrance shipped.
 
-### 4. Build each phase's test with its code
+### 5. Build each phase's test with its code
 
 Build the phase's test box with its code, and write the test's name on the box in the same edit that ticks it. Where the ticket asks for a test but does not say where it goes, design it — [`/sync-tests`](../sync-tests/SKILL.md) holds the table and the naming rule — and record the choice in the ticket as a decision. Where a phase has no test box at all, write one and build it rather than shipping the code bare; only a real window, live selected text or a held pointer excuses one, and that is struck on the box with the reason.
 
 **A phase that adds or changes a command writes its browser line in the same edit as the code**, the way it ticks a box in the same edit. The app and a published site are one front end with two hosts under it, so a new command is two pieces of work and only one of them is obvious: the line goes in `web/preview/host.js`'s table, saying the browser answers it, will not and why, or not yet and which ticket owns it. `just check-web-commands` refuses the build without it, and the answer is decided while the code is in front of you rather than by whoever finds the dead control months later. A command whose browser answer turns out to be real work is that work's own ticket, not this phase's.
 
-### 5. File what building turned up beside the work, in the same pass
+### 6. File what building turned up beside the work, in the same pass
 
 Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass and never mentioned in the reply. The section below holds the rule and the sentences that break it.
 
-### 6. `/check` once, after the last phase
+### 7. `/check` once, after the last phase
 
 **This pass owns the only automatic complete gate in the workflow, and it runs once — after the last phase, never after each one.** A phase is finished when its boxes are ticked and its test is written; the suite is what the whole ticket pays for at the end, not what every phase pays for on the way. Nothing downstream runs it again over the same code: the shipping pass lands the work, brings the published pages and the comments up to date and lands again, and none of that re-proves what this gate already proved.
 
@@ -64,7 +72,7 @@ Run [`/check`](../check/SKILL.md). A red is fixed and the suite is re-run from t
 
 **<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, wait, retry and finish after it clears; never name it in the hand-back.
 
-### 7. Hand back at the owner's box
+### 8. Hand back at the owner's box
 
 Stop at the owner's box: never run `/done` or `/git-release` yourself, because retiring a ticket is the owner's word and nothing written in the ticket stands in for it. The whole reply is the owner's message repeated word for word; whether anything is broken, and what is left before it ships, are both written in the ticket, which is where the owner reads them.
 
