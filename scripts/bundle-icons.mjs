@@ -13,10 +13,14 @@
 // The row's Stroke cell is the line weight, and it is stamped over whatever the file draws at. A drawing arrives carrying its tool's number; left alone those drift, and this set had reached seven weights before the column existed.
 //
 // The row's Source cell is the pack the drawing came from, and a pack named there has to have its license notice beside the drawings. The box beside a weight is the box that number was set for, and a drawing in a wider box is scaled up to it: a weight only means a thickness once you know how many units across the drawing is, so left alone a 32-unit drawing taking the regular weight comes out at three quarters of everything beside it.
+//
+// A hairline window row gets two more masks beside its own — `--lt-icon-<name>-chip` and `--lt-icon-<name>-dot` — each the same drawing held to the pixel grid of one of the two sizes the window controls wear it at. A one-pixel line centered on a pixel boundary draws at half its ink in each of two rows, which is what made the minimize, maximize and close read paler than the palette and folder beside them. The move is `icon-grid.mjs`'s, the same measurement `check-icon-grid` refuses on, and it is carried by the mask's own viewBox origin so no drawing on disk moves and the ordinary mask every other control wears is left exactly as it was.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { boxOf, flatStrokes, gridShift, shiftedViewBox, wornWindowSizes } from './icon-grid.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const check = process.argv.includes('--check');
@@ -237,6 +241,24 @@ function collisions(masks) {
   }
   return found;
 }
+// Where the window's own four marks are worn, off the rules that size them. A row that is not one of them is worn wherever anything wants it, at eleven sizes, and no one move holds a drawing to all of them — which is why only the hairline rows take a held mask.
+const windowSizes = wornWindowSizes(readFileSync(join(root, 'src/assets/reading/app-bar.css'), 'utf8'));
+for (const { worn, size } of windowSizes) {
+  if (!size) problems.push(`src/assets/reading/app-bar.css no longer says how wide ${worn}'s mark is drawn, so nothing can compile a mask held to its grid`);
+}
+
+/** The one drawing, held to each grid it is worn on, as the lines a block declares. A row that is not a window mark takes none; a drawing already on a grid still gets its own name there, so the stylesheet asks for the variant rather than for whether there is one. */
+function heldMasks(row, svg) {
+  if (row.stroke !== 'hairline' || !windowSizes.every(({ size }) => size)) return [];
+  const drawnIn = boxOf(svg);
+  if (!drawnIn) return [];
+  const flat = flatStrokes(svg);
+  return windowSizes.map(({ variant, size }) => {
+    const { shift } = gridShift(flat, drawnIn, size);
+    return `  --lt-icon-${row.name}-${variant}: url("data:image/svg+xml,${encode(shiftedViewBox(svg, shift))}");`;
+  });
+}
+
 // The rules prove their own refusals on made-up rows, ahead of the real table: a check that only ever sees good rows is one nobody has watched refuse anything, and putting this last would skip it on the runs where something is actually wrong.
 if (check) {
   const one = { label: 'a (a.svg)', uri: 'x' };
@@ -357,6 +379,23 @@ if (check) {
     }
   }
 
+  // The held window masks, on made-up drawings put through the same code the four rows go through. A pack's 24-unit midline is half a pixel off the grid at both sizes; the app's own 12-unit minimize already fills its row at the chip and is a sixth of a pixel off at the dot, which is why the move is measured per drawing and per size rather than written down as a number.
+  const heldViewBoxes = (svg) => heldMasks({ name: 'w', stroke: 'hairline' }, svg).map((line) => /viewBox='([^']+)'/.exec(line)[1]);
+  const packLine = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/></svg>';
+  const ownLine = '<svg viewBox="0 0 12 12"><line x1="2.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" stroke-width="1"/></svg>';
+  for (const [what, svg, wanted] of [
+    ['a 24-unit pack drawing', packLine, ['0 -1 24 24', '0 -1.5 24 24']],
+    ["the app's own 12-unit drawing", ownLine, ['0 0 12 12', '0 -0.25 12 12']],
+  ]) {
+    const got = heldViewBoxes(svg);
+    if (got.join(' and ') !== wanted.join(' and ')) fails.push(`${what} was held at ${got.join(' and ') || 'nothing'}, not ${wanted.join(' and ')}`);
+  }
+  if (heldMasks({ name: 'x', stroke: 'regular' }, packLine).length) fails.push('a row that is not a window mark was given a held mask, and no one move holds a drawing worn at eleven sizes');
+  // A drawing already on its grid is handed back byte for byte, so a held mask is the ordinary one under a second name rather than a re-encoding of it.
+  if (!heldMasks({ name: 'w', stroke: 'hairline' }, ownLine)[0].endsWith(`url("data:image/svg+xml,${encode(ownLine)}");`)) {
+    fails.push('a drawing already on the chip grid was changed on its way to its held mask');
+  }
+
   if (fails.length) {
     console.error('bundle-icons: the row rules do not hold:');
     for (const fail of fails) console.error(`  ${fail}`);
@@ -427,6 +466,7 @@ for (const file of readdirSync(join(root, 'themes')).filter((f) => f.endsWith('.
 
 let drawn = 0;
 const values = [];
+const held = [];
 const classes = [];
 const heavy = [];
 const set = [];
@@ -454,8 +494,10 @@ for (const row of rows) {
   // No scale here: one of the app's own drawings is refused unless it sits in the box its weight was set for.
   const stamped = wanted ? atWeight(raw, wanted) : raw;
   const uri = `url("data:image/svg+xml,${encode(stamped)}")`;
+  // The held masks are not rows, so they stay out of the copy check: a drawing already on its grid compiles to the same bytes as its own ordinary mask, which is one mask under two names rather than two controls wearing one drawing.
   masks.push({ label: `${name} (${file})`, uri });
   values.push(`  --lt-icon-${name}: ${uri};`);
+  held.push(...heldMasks(row, stamped));
   classes.push(`.lt-icon-${name} {`, `  -webkit-mask-image: var(--lt-icon-${name});`, `  mask-image: var(--lt-icon-${name});`, '}');
   const entry = iconSetEntry(name, stamped);
   if (!entry) problems.push(`src/assets/${file} has no viewBox, or no <svg> wrapper, so ${name} cannot be an icon in a diagram`);
@@ -488,6 +530,7 @@ for (const pack of outsidePacks()) {
     const stamped = wanted && STROKE_WIDTH.test(svg) ? atWeight(svg, weightInBox(wanted, BOXES.get(row.stroke), drawnIn)) : svg;
     STROKE_WIDTH.lastIndex = 0;
     covers.push(`  --lt-icon-${row.name}: url("data:image/svg+xml,${encode(stamped)}");`);
+    covers.push(...heldMasks(row, stamped));
   }
   if (!covers.length) continue;
   // Two ways in, one copy of the drawings. `data-leaf-theme` on the page root is what the app writes, and `data-leaf-pack` is a name any element can take — which is how the design-system gallery shows all seven packs on one page, where seven page roots do not exist. Nothing in the app ever writes the second.
@@ -510,6 +553,7 @@ const cssLines = [
   ':root {',
   ...values,
   ...(heavy.length ? ['  /* The bolder drawing an active control swaps to. */', ...heavy] : []),
+  ...(held.length ? ["  /* The window's own marks, each held to the pixel grid of a size the title bar wears it at. */", ...held] : []),
   '}',
 ];
 // Where each pack's block starts and ends in the sheet being written, in bytes, counted as the lines go in: this is the only place a block's exact shape is known, so reading the boundaries back off the finished CSS would be a second parser of the same thing.

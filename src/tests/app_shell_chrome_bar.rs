@@ -117,6 +117,48 @@ fn app_bar_keeps_one_gap_between_visible_groups() {
 }
 
 #[test]
+fn the_window_marks_wear_the_mask_held_to_the_size_they_are_drawn_at() {
+    // A one-pixel line centered on a pixel boundary draws at half its ink in each of two rows, so the same mark reads paler than the palette and folder beside it while carrying the same color. `bundle-icons` publishes each window drawing twice more, once held to each grid the title bar wears it on, and the bar hands the held value to the icon's own name so the class the markup carries is still the one drawing it.
+    let css = reading_mode_css();
+
+    // Neither box moves. The two grids are two because the chip's mark is 12px and the dot's is 8, so a mask held to one is not held to the other.
+    let chip = rule_body(css, ".window-control .lt-icon {");
+    assert!(
+        chip.contains("width: 12px;") && chip.contains("height: 12px;"),
+        "the Windows chip's mark keeps its 12px box: {chip}"
+    );
+    let dot = rule_body(css, ".mac-frame .window-control .lt-icon {");
+    assert!(
+        dot.contains("width: 8px;") && dot.contains("height: 8px;"),
+        "the Mac dot's mark keeps its 8px box: {dot}"
+    );
+
+    for mark in [
+        "window-minimize",
+        "window-maximize",
+        "window-restore",
+        "window-close",
+    ] {
+        for (scope, variant, worn) in [
+            ("", "chip", "the Windows chip"),
+            (".mac-frame ", "dot", "the Mac dot"),
+        ] {
+            let body = rule_body(css, &format!("{scope}.window-control .lt-icon-{mark} {{"));
+            assert!(
+                body.contains(&format!(
+                    "--lt-icon-{mark}: var(--lt-icon-{mark}-{variant});"
+                )),
+                "{mark} on {worn} wears the mask held to that grid: {body}"
+            );
+            assert!(
+                css.contains(&format!("--lt-icon-{mark}-{variant}: url(")),
+                "the sheet publishes the mask {mark} wears on {worn}"
+            );
+        }
+    }
+}
+
+#[test]
 fn an_emptied_history_strip_stops_taking_a_gap() {
     // The gap above lands between every pair of the lead's children, so the strip the fold leaves behind is 16px spent on nothing at the one moment the bar has no room. `:empty` cannot see that state: the markup writes the strip over eight lines, so three whitespace text nodes stay when the two buttons go. The child combinator and the attribute are the actions group's shape rather than anything the strip needs — its arrows are `disabled` and never `hidden` — and both containers are written in it so a reader meets one question rather than two.
     let css = reading_mode_css();

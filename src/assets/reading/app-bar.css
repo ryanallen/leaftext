@@ -416,6 +416,19 @@
   width: 12px;
   height: 12px;
 }
+/* The four window marks take the mask `bundle-icons` held to this size's pixel grid, in place of the one every other control wears. A one-pixel line centered on a pixel boundary draws at half its ink in each of two rows, which is what made these read paler than the palette and folder beside them. The held mask is handed to the icon's own value rather than to `mask-image`, so the class the markup names is still the one drawing it, and a theme family wearing an outside pack redeclares the held value the same way it redeclares the ordinary one. */
+.window-control .lt-icon-window-minimize {
+  --lt-icon-window-minimize: var(--lt-icon-window-minimize-chip);
+}
+.window-control .lt-icon-window-maximize {
+  --lt-icon-window-maximize: var(--lt-icon-window-maximize-chip);
+}
+.window-control .lt-icon-window-restore {
+  --lt-icon-window-restore: var(--lt-icon-window-restore-chip);
+}
+.window-control .lt-icon-window-close {
+  --lt-icon-window-close: var(--lt-icon-window-close-chip);
+}
 /* Maximize shows a single square; when the window is maximized the restore-down glyph (two offset squares) takes its place. Exactly one is ever displayed, so the grid button keeps a single centered child. */
 .window-control .wc-restore {
   display: none;
@@ -475,6 +488,19 @@ body.is-maximized #winMaximize .wc-restore {
 .mac-frame .window-control .lt-icon {
   width: 8px;
   height: 8px;
+}
+/* The dot wears the same drawing two thirds of the size, which is a different grid, so it takes the mask held to that one. */
+.mac-frame .window-control .lt-icon-window-minimize {
+  --lt-icon-window-minimize: var(--lt-icon-window-minimize-dot);
+}
+.mac-frame .window-control .lt-icon-window-maximize {
+  --lt-icon-window-maximize: var(--lt-icon-window-maximize-dot);
+}
+.mac-frame .window-control .lt-icon-window-restore {
+  --lt-icon-window-restore: var(--lt-icon-window-restore-dot);
+}
+.mac-frame .window-control .lt-icon-window-close {
+  --lt-icon-window-close: var(--lt-icon-window-close-dot);
 }
 /* Hover shows the mark, punched out of the dot in the bar's own color. Each dot keeps its color, so all three are said again here rather than letting the toolbar chip below take them. */
 .mac-frame .window-control:hover {
