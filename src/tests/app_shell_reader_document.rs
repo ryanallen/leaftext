@@ -47,7 +47,7 @@ fn every_way_of_opening_a_page_draws_one_fully_opaque_page_and_nothing_else() {
     assert!(!html.contains("leavingCopy"));
     assert!(!html.contains("is-swapping"));
 
-    // Nothing writes or spends a navigation direction any more: Back, Forward, a search hit, a start-screen row, the right-click menu and a document link all just send their command.
+    // Nothing writes or spends a navigation direction: Back, Forward, a search hit, a start-screen row, the right-click menu and a document link all just send their command.
     assert!(!html.contains("navigationDirection"));
     assert_contains(
         &html,

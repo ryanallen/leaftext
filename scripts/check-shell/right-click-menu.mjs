@@ -541,7 +541,7 @@ export function run() {
   }
 
   check('opening a menu builds its row list once', () => {
-    // The list was built twice: once to decide whether there was anything to show, and again to draw it — so every rule deciding a row was read twice over. It reaches every menu, not a link's, which is why the page is read here beside the link.
+    // Building the list twice — once to decide whether there is anything to show, again to draw it — reads every rule that decides a row twice over. It reaches every menu, not a link's, which is why the page is read here beside the link.
     const link = whileTheDocumentAnswers(() => {
       const made = linkOn('notes/first.md');
       return askedWhileOpening(() => {
@@ -561,7 +561,7 @@ export function run() {
   });
 
   check('a link menu reads what kind of link it is once', () => {
-    // Four rules decide the rows — Reveal file, Copy path, Open in new page, and the word Open takes — and each used to walk the ladder for itself. The href is saved when the menu opens, so the readings could only ever agree.
+    // Four rules decide the rows — Reveal file, Copy path, Open in new page, and the word Open takes — and a rule walking the ladder for itself reads what one href already answered. The href is saved when the menu opens, so the readings could only ever agree.
     for (const [name, href] of LINK_ROWS) {
       const was = booted.linkHoverInfo;
       let read = 0;
