@@ -69,10 +69,10 @@ impl DocumentFormat {
             Self::Text => &["txt"],
             // A config file is a page of sections rather than a colored block, so it has its own reader and its own arm — which is why `SOURCE_DEFINITIONS` below does not name it.
             Self::Ini => &["ini"],
-            // The six packaged formats: a zip of XML rather than a file somebody typed. The macro-enabled spellings — `.docm`, `.xlsm`, `.pptm` — are not here; they are their own ticket.
-            Self::Docx => &["docx"],
-            Self::Xlsx => &["xlsx"],
-            Self::Pptx => &["pptx"],
+            // The six packaged formats: a zip of XML rather than a file somebody typed. The macro-enabled spellings ride the arm they belong to rather than taking a variant of their own — a `.docm` is a `.docx` whose package also carries a macro, and the reader asks for `word/document.xml` either way.
+            Self::Docx => &["docx", "docm"],
+            Self::Xlsx => &["xlsx", "xlsm"],
+            Self::Pptx => &["pptx", "pptm"],
             Self::Odt => &["odt"],
             Self::Ods => &["ods"],
             Self::Odp => &["odp"],

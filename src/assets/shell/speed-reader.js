@@ -52,6 +52,7 @@ function isSpeedReaderWord(word) {
 function isSpeedReaderAcronym(word) {
   return /^\p{Lu}+$/u.test(word);
 }
+const DIRECT_SLICE_SPEED_READER_WORD = /^[A-Za-z]+(?:['\u2019][A-Za-z]+)?$/;
 function leadAnchorPrefixLength(count) {
   if (count <= 1) return 0;
   if (count <= 3) return 1;
@@ -61,16 +62,18 @@ function leadAnchorPrefixLength(count) {
   return Math.min(6, Math.ceil(count * 0.35));
 }
 function appendSpeedReaderWord(fragment, word) {
-  const chars = speedReaderGraphemes(word);
-  const prefixLength = isSpeedReaderAcronym(word) ? chars.length : leadAnchorPrefixLength(chars.length);
+  const chars = DIRECT_SLICE_SPEED_READER_WORD.test(word) ? null : speedReaderGraphemes(word);
+  const count = chars ? chars.length : word.length;
+  const prefixLength = isSpeedReaderAcronym(word) ? count : leadAnchorPrefixLength(count);
   if (prefixLength === 0) {
     fragment.append(document.createTextNode(word));
     return;
   }
   const anchor = document.createElement('span');
   anchor.className = 'speed-reader-anchor';
-  anchor.textContent = chars.slice(0, prefixLength).join('');
-  fragment.append(anchor, document.createTextNode(chars.slice(prefixLength).join('')));
+  anchor.textContent = chars ? chars.slice(0, prefixLength).join('') : word.slice(0, prefixLength);
+  const tail = chars ? chars.slice(prefixLength).join('') : word.slice(prefixLength);
+  fragment.append(anchor, document.createTextNode(tail));
 }
 function appendSpeedReaderCandidate(fragment, token) {
   const parts = token.split(/(-)/);

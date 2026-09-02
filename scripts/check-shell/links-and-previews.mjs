@@ -116,6 +116,37 @@ export function run() {
     }
   });
 
+  // The kind and the address line are read apart now, so the line each kind gets is what says the branch under them is keyed right. Seven of the eight kinds that take the address as written were pinned by nothing, and a branch sending any of them through the path resolution instead would have passed every check. Percent-encoded addresses, because the line is the decoded address rather than the href.
+  check('the card writes the address as it was written for every kind that is not opened by another app', () => {
+    const { linkHoverInfo } = booted;
+    // The card resolves against the document on screen, so a wrongly keyed branch would join these onto its folder rather than leaving them alone.
+    booted.__wasState = vm.runInContext('currentState', booted);
+    vm.runInContext('currentState = { tabs: [{ path: "/notes/guide/chapter/README.md" }], active: 0 }', booted);
+    try {
+      const pinned = [
+        ['the whole glossary', 'glossary:', 'Full glossary', 'glossary:'],
+        ['a glossary entry', 'glossary:vault', 'Glossary entry', 'glossary:vault'],
+        ['a place in this page', '#a%20heading', 'In-page jump', '#a heading'],
+        ['an email address', 'mailto:someone@example.com', 'Email link', 'mailto:someone@example.com'],
+        ['a site out on the web', 'https://example.com/a%20b.pdf', 'External site', 'https://example.com/a b.pdf'],
+        ['an address belonging to another program', 'obsidian://open?vault=my%20vault', 'App link', 'obsidian://open?vault=my vault'],
+        ['a page written beside the note', 'notes/my%20note.md', 'Another page', 'notes/my note.md'],
+      ];
+      for (const [name, href, kind, detail] of pinned) {
+        const card = linkHoverInfo(href);
+        if (card.kind !== kind) throw new Error(`${name} is called ${card.kind}`);
+        if (card.detail !== detail) throw new Error(`the card shows ${card.detail} under ${name} rather than ${detail}`);
+      }
+      // An address that is not valid percent-encoding is shown as it stands rather than throwing the card away.
+      const broken = linkHoverInfo('https://example.com/%zz');
+      if (broken.detail !== 'https://example.com/%zz') throw new Error(`a half-written escape came back as ${broken.detail}`);
+      // An empty address still answers nothing at all, which is what keeps the card down over a link with no address.
+      if (linkHoverInfo('') !== null) throw new Error('an empty address drew a card');
+    } finally {
+      vm.runInContext('currentState = __wasState', booted);
+    }
+  });
+
   // The tip and the menu describe one link, so the item a right-click draws is named off the same answer the tip gives. A link that leaves the app says so on the item before it is picked; one that stays keeps the bare word.
   check('the menu says where a link sends you, in the words the tip over that link uses', () => {
     const { labelForLinkEntry, linkHoverKind } = booted;

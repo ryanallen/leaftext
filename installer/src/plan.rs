@@ -37,9 +37,9 @@ pub const UNINSTALLER_RELATIVE_PATH: &str = "leaftext-setup.exe";
 /// Every extension the app reads, claimed in the same three registry shapes `wix/main.wxs` uses. `src/format.rs` is the source; `installer_claims_every_readable_extension` fails when this list falls behind it.
 pub const EXTENSIONS: &[&str] = &[
     "md", "markdown", "mdown", "mdc", "xml", "json", "yaml", "yml", "eml", "mht", "mhtml", "html",
-    "htm", "txt", "ini", "docx", "xlsx", "pptx", "odt", "ods", "odp", "ts", "tsx", "js", "jsx",
-    "jsonc", "css", "scss", "sh", "bash", "zsh", "toml", "rs", "py", "sql", "diff", "patch", "env",
-    "graphql", "gql",
+    "htm", "txt", "ini", "docx", "docm", "xlsx", "xlsm", "pptx", "pptm", "odt", "ods", "odp", "ts",
+    "tsx", "js", "jsx", "jsonc", "css", "scss", "sh", "bash", "zsh", "toml", "rs", "py", "sql",
+    "diff", "patch", "env", "graphql", "gql",
 ];
 
 /// Readable extensions Leaftext may claim where no default exists. HTML stays with the browser, plain text with whatever already opens it, and a Word, Excel, PowerPoint or OpenDocument file with the application that owns it — taking a file type away from the app that owns it is the class of thing that has cost this app version numbers.

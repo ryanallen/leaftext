@@ -6,7 +6,7 @@ use super::*;
 use crate::office::testing::{
     any_local_header_defers_its_sizes, archive, archive_deferring_every_size,
     archive_with_data_descriptor, archive_with_directory_entries, blocks, member_bytes,
-    member_names, read_archive_member, written_archive,
+    member_names, read_archive_member, written_archive, written_archive_bytes,
 };
 
 // ---------------------------------------------------------------------------
@@ -228,6 +228,49 @@ fn a_vault_reads_a_word_files_words() {
         !words.contains("<w:t>"),
         "search should index the words, not the markup: {words}"
     );
+}
+
+/// The macro-enabled spellings read as the documents they are. A `.docm` is a `.docx` whose package also carries a macro, so what proves the arm rather than the reader is the same bytes under the other name: each sample is opened twice, and the two draw the same page.
+#[test]
+fn a_macro_enabled_package_reads_as_the_document_it_is() {
+    for (ordinary, macro_enabled, bytes, words) in [
+        (
+            "report.docx",
+            "report.docm",
+            sample_docx(),
+            vec!["Quarterly report", "Sales rose in every region"],
+        ),
+        (
+            "budget.xlsx",
+            "budget.xlsm",
+            sample_xlsx(),
+            vec!["Region", "North"],
+        ),
+        (
+            "deck.pptx",
+            "deck.pptm",
+            sample_pptx(),
+            vec!["What we shipped"],
+        ),
+    ] {
+        let opened = opened_document_from_bytes(&bytes, Path::new(macro_enabled))
+            .unwrap_or_else(|refusal| panic!("{macro_enabled} should open: {refusal}"));
+        for word in &words {
+            assert!(
+                opened.html.contains(word),
+                "{macro_enabled} drew nothing where {word} should be: {}",
+                opened.html
+            );
+        }
+        // The page itself, rather than the whole answer: the two differ in the path they were opened at and in nothing else.
+        let beside = opened_document_from_bytes(&bytes, Path::new(ordinary))
+            .expect("the ordinary spelling opens");
+        assert_eq!(
+            (opened.html, opened.format, opened.source),
+            (beside.html, beside.format, beside.source),
+            "{macro_enabled} drew a different page from {ordinary} out of the same bytes"
+        );
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -643,6 +686,65 @@ fn every_part_the_app_never_read_survives_a_save_byte_for_byte() {
     assert!(read_archive_member(&after, "word/document.xml")
         .expect("the body")
         .contains("A sentence somebody added with track changes on."));
+}
+
+/// The member holding a macro is bytes rather than text, and a save has to copy it exactly as it found it. The test above proves the same bargain for every XML part, and every part of its sample is XML — so this is the half no sample carried: a member that is not text at all, in the spelling somebody gets it in.
+#[test]
+fn a_binary_member_survives_a_save_byte_for_byte() {
+    // A compiled VBA project starts with the OLE compound-file signature and is not text at any point.
+    let mut macro_bytes = vec![0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+    macro_bytes.extend((0u16..512).map(|byte| (byte % 256) as u8));
+
+    let body = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Sales rose in every region.</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+    let types = format!(
+        r#"{XML_HEAD}
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Default Extension="bin" ContentType="application/vnd.ms-office.vbaProject"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.ms-word.document.macroEnabled.main+xml"/>
+</Types>"#
+    );
+    let package_rels = relationships(&[(
+        "rId1",
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument",
+        "word/document.xml",
+    )]);
+
+    let before = written_archive_bytes(&[
+        (CONTENT_TYPES, types.as_bytes(), false),
+        ("_rels/.rels", package_rels.as_bytes(), false),
+        ("word/document.xml", body.as_bytes(), false),
+        // Stored rather than deflated, the way a macro project usually rides in a real package.
+        ("word/vbaProject.bin", &macro_bytes, true),
+    ]);
+
+    let after = saved_after("report.docm", &before, |buffer| {
+        let at = buffer
+            .text()
+            .find("Sales")
+            .expect("the paragraph is in the buffer");
+        buffer.replace_range(at, at + "Sales".len(), "Takings");
+    });
+
+    assert!(read_archive_member(&after, "word/document.xml")
+        .expect("the body")
+        .contains("Takings rose in every region."));
+    assert_eq!(
+        member_bytes(&after, "word/vbaProject.bin"),
+        Some(macro_bytes),
+        "the macro did not survive the save byte for byte"
+    );
+    assert_eq!(
+        member_names(&after),
+        member_names(&before),
+        "a save must not drop or reorder a member it never read"
+    );
 }
 
 /// A saved package still opens as the document it was. There is no Word on this machine to ask, so what is asked instead is the two things Word asks first: every part is still readable out of the package, and the app's own reader draws the document again with the edit in it.

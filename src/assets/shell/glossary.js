@@ -642,42 +642,34 @@ window.leafLinkPreview = (token, html) => {
   if (token !== activeHoverToken || linkHoverTip.hidden || typeof html !== 'string') return;
   applyLinkHoverPreview(note);
 };
-// The href alone, so the card, the middle click and the menu cannot answer differently about one link.
+// What the hover card draws for a link: what kind of thing it is, and the address line under it. The only reader of that second line, which is why composing it lives here and not in the ladder.
 function linkHoverInfo(rawHref) {
-  if (!rawHref) return null;
-  if (/^glossary:\s*$/i.test(rawHref)) {
-    return { kind: 'Full glossary', detail: hoverDetail(rawHref) };
-  }
-  if (glossaryAnchorFromHref(rawHref)) {
-    return { kind: 'Glossary entry', detail: hoverDetail(rawHref) };
-  }
-  if (sameDocumentFragmentHref(rawHref)) {
-    return { kind: 'In-page jump', detail: hoverDetail(rawHref) };
-  }
-  if (/^mailto:/i.test(rawHref)) {
-    return { kind: 'Email link', detail: hoverDetail(rawHref) };
-  }
-  if (/^https?:\/\//i.test(rawHref)) {
-    return { kind: 'External site', detail: hoverDetail(rawHref) };
-  }
+  const kind = linkKindFromHref(rawHref);
+  if (!kind) return null;
+  return { kind, detail: hoverDetailForKind(kind, rawHref) };
+}
+// What kind of link an href is, and nothing else. The href alone, so the card, the middle click and the menu cannot answer differently about one link — and a caller wanting only the kind pays for the ladder rather than for the card's second line as well.
+function linkKindFromHref(rawHref) {
+  if (!rawHref) return '';
+  if (/^glossary:\s*$/i.test(rawHref)) return 'Full glossary';
+  if (glossaryAnchorFromHref(rawHref)) return 'Glossary entry';
+  if (sameDocumentFragmentHref(rawHref)) return 'In-page jump';
+  if (/^mailto:/i.test(rawHref)) return 'Email link';
+  if (/^https?:\/\//i.test(rawHref)) return 'External site';
   // The pager's buttons carry one, and the host opens it in place like any page — so this goes ahead of the scheme test, which would call it an app command.
-  if (/^file:/i.test(rawHref) && DOCUMENT_HREF_RE.test(rawHref)) {
-    return { kind: 'Another page', detail: hoverDetail(rawHref) };
-  }
+  if (/^file:/i.test(rawHref) && DOCUMENT_HREF_RE.test(rawHref)) return 'Another page';
   // Any other `file:` address is still a file on this disk, so it takes the words every other such file gets rather than being read as an app's own scheme below.
-  if (/^file:/i.test(rawHref)) {
-    return { kind: 'Opens in another app', detail: resolvedHoverDetail(rawHref) };
-  }
+  if (/^file:/i.test(rawHref)) return 'Opens in another app';
   // A scheme of its own: another app's address, a phone number. A single letter is a drive rather than a scheme, which is how a whole path is written on Windows and how the guard below and the host both read one.
-  if (/^[a-z][a-z0-9+.-]+:/i.test(rawHref)) {
-    return { kind: 'App link', detail: hoverDetail(rawHref) };
-  }
+  if (/^[a-z][a-z0-9+.-]+:/i.test(rawHref)) return 'App link';
   // Any format the app reads, not just Markdown — the host follows all of them in place, so the hint has to promise the same.
-  if (DOCUMENT_HREF_RE.test(rawHref)) {
-    return { kind: 'Another page', detail: hoverDetail(rawHref) };
-  }
-  // Everything left is a file this app does not read, whichever way it was written — `./report.pdf` and `/notes/report.pdf` are the same link doing the same thing, so a reader hovering both is not told two different things about them. The address under it is where that file actually sits, which is what tells a dead link from a live one.
-  return { kind: 'Opens in another app', detail: resolvedHoverDetail(rawHref) };
+  if (DOCUMENT_HREF_RE.test(rawHref)) return 'Another page';
+  // Everything left is a file this app does not read, whichever way it was written — `./report.pdf` and `/notes/report.pdf` are the same link doing the same thing, so a reader hovering both is not told two different things about them.
+  return 'Opens in another app';
+}
+// The card's second line, chosen by the kind rather than by the href, so nothing but the card composes one. A file another app opens is shown where it actually sits; every other kind is shown the address as written. An eleventh arm above is picking one of these two sides.
+function hoverDetailForKind(kind, rawHref) {
+  return kind === 'Opens in another app' ? resolvedHoverDetail(rawHref) : hoverDetail(rawHref);
 }
 // Where the file a link names actually sits: joined onto the folder the open document is in, the way the host joins it before handing it to the machine. A whole path stands on its own, and with nothing open there is nothing to join onto, so the address is shown as it was written.
 function resolvedHoverDetail(rawHref) {
@@ -852,8 +844,7 @@ function isAnotherPageHref(rawHref, kind = linkHoverKind(rawHref)) {
 // What a link is, in the words the hover tip uses. Read by the right-click menu to name Open after where it sends you. A caller deciding several things about one link reads it once and hands the answer to each — the href alone decides it, so a second walk of the ladder could only agree.
 function linkHoverKind(rawHref, known) {
   if (typeof known === 'string') return known;
-  const info = linkHoverInfo((rawHref || '').trim());
-  return info ? info.kind : '';
+  return linkKindFromHref((rawHref || '').trim());
 }
 function bindDocumentLinks() {
   if (documentLinksBound) {

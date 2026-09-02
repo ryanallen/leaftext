@@ -32,7 +32,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Read [XML](01-features/01-rendering.md#xml) without opening an editor — [sitemaps, feeds, and config files](01-features/01-rendering.md#any-xml) as readable pages, [84000 TEI translations](01-features/01-rendering.md#tei-xml-84000-translations) as translations.
 - Read [JSON and YAML](01-features/01-rendering.md#data-files-json-and-yaml) as pages too — a lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned fields, and record tables instead of punctuation.
 - Open a [saved email](01-features/01-rendering.md#email-eml) (`.eml` from Gmail, Outlook, or Apple Mail) as the message it carries — headers, body, inline images, and attachments — instead of a wall of base64.
-- Open a [Word, Excel, PowerPoint or OpenDocument file](01-features/01-rendering.md#office-and-opendocument-files) (`.docx`, `.xlsx`, `.pptx`, `.odt`, `.ods`, `.odp`) as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as one entry per slide — and type into it in place, with everything Leaftext never read kept byte for byte on save.
+- Open a [Word, Excel, PowerPoint or OpenDocument file](01-features/01-rendering.md#office-and-opendocument-files) (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`) as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as one entry per slide — and type into it in place, with everything Leaftext never read kept byte for byte on save.
 - Turn on [Speed Reader](01-features/05-settings.md#speed-reader) to dim the page back and mark each word's start, so your eye follows the reading path down.
 
 ### Move around

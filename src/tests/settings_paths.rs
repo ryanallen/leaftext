@@ -774,13 +774,15 @@ fn installer_claims_every_readable_extension() {
     }
 }
 
-/// The six packaged formats are offered and never taken. Word owns `.docx` on a machine that has Word, Excel owns `.xlsx` and PowerPoint owns `.pptx`, and taking a file type away from the application that owns it is the class of thing that has cost this app version numbers — so all three registry shapes claim them, the bare class key never names one, and neither installer makes Leaftext their default.
+/// The nine packaged spellings are offered and never taken. Word owns `.docx` and `.docm` on a machine that has Word, Excel owns `.xlsx` and `.xlsm` and PowerPoint owns `.pptx` and `.pptm`, and taking a file type away from the application that owns it is the class of thing that has cost this app version numbers — so all three registry shapes claim them, the bare class key never names one, and neither installer makes Leaftext their default.
 #[test]
 fn the_installers_offer_the_packaged_formats_and_own_none_of_them() {
     let wxs = include_str!("../../wix/main.wxs");
     let entries = macos_document_type_entries();
 
-    for extension in ["docx", "xlsx", "pptx", "odt", "ods", "odp"] {
+    for extension in [
+        "docx", "docm", "xlsx", "xlsm", "pptx", "pptm", "odt", "ods", "odp",
+    ] {
         assert!(
             !wxs.contains(&format!(r"Key='Software\Classes\.{extension}' Type=")),
             "the MSI takes .{extension} away from the application that owns it"

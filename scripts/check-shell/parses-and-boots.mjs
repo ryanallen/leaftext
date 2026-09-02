@@ -1111,10 +1111,18 @@ export function run() {
   const counting = runShell(source, { Intl: countingIntl });
   const splittersAtLoad = segmentersBuilt.count;
 
-  check('the front end builds no grapheme splitter while it loads, and one on the first word it splits', () => {
+  check('the front end builds no grapheme splitter while it loads, skips it for ordinary Latin words, and holds one once a word needs it', () => {
     if (splittersAtLoad) throw new Error(`a grapheme splitter was built while the fragments loaded (${splittersAtLoad} of them) — that is a language service every launch pays for and nothing on screen asked for`);
-    counting.speedReaderGraphemes('word');
+    const plain = counting.speedReaderFragment('reading');
+    if (segmentersBuilt.count !== 0) throw new Error(`an ordinary Latin word built ${segmentersBuilt.count} splitters rather than taking its lead and tail straight from the word`);
+    if (plain.querySelector('.speed-reader-anchor').textContent !== 'rea') throw new Error(`the ordinary word came out anchored on ${JSON.stringify(plain.querySelector('.speed-reader-anchor').textContent)}`);
+    const precomposed = counting.speedReaderFragment('caf\u00e9');
     if (segmentersBuilt.count !== 1) throw new Error(`splitting the first word built ${segmentersBuilt.count} splitters rather than one`);
+    if (precomposed.querySelector('.speed-reader-anchor').textContent !== 'ca') throw new Error(`the accented word came out anchored on ${JSON.stringify(precomposed.querySelector('.speed-reader-anchor').textContent)}`);
+    const decomposed = counting.speedReaderFragment('cafe\u0301');
+    if (decomposed.querySelector('.speed-reader-anchor').textContent !== 'ca' || decomposed.textContent !== 'cafe\u0301') throw new Error('a decomposed accent moved away from the tail of its word');
+    const astralWord = counting.speedReaderFragment('\u{10400}\u{10428}\u{10428}');
+    if (astralWord.querySelector('.speed-reader-anchor').textContent !== '\u{10400}') throw new Error(`an astral word was cut through a letter as ${JSON.stringify(astralWord.querySelector('.speed-reader-anchor').textContent)}`);
     counting.speedReaderGraphemes('another');
     if (segmentersBuilt.count !== 1) throw new Error('splitting a second word built another splitter, so the first one is not being kept');
     // Both are written as escapes: each is a run of code points an editor draws as one mark, so the characters themselves would leave the source saying nothing about what is being counted.

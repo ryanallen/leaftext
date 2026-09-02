@@ -417,6 +417,7 @@ jobs:
                 <key>CFBundleTypeExtensions</key>
                 <array>
                   <string>docx</string>
+                  <string>docm</string>
                 </array>
               </dict>
               <dict>
@@ -431,6 +432,7 @@ jobs:
                 <key>CFBundleTypeExtensions</key>
                 <array>
                   <string>xlsx</string>
+                  <string>xlsm</string>
                 </array>
               </dict>
               <dict>
@@ -445,6 +447,7 @@ jobs:
                 <key>CFBundleTypeExtensions</key>
                 <array>
                   <string>pptx</string>
+                  <string>pptm</string>
                 </array>
               </dict>
               <dict>

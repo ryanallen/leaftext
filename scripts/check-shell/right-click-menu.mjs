@@ -560,22 +560,48 @@ export function run() {
     if (empty.asked !== 0) throw new Error('an empty path asked for a row list it had already decided against');
   });
 
-  check('a link menu reads what kind of link it is once', () => {
-    // Four rules decide the rows — Reveal file, Copy path, Open in new page, and the word Open takes — and a rule walking the ladder for itself reads what one href already answered. The href is saved when the menu opens, so the readings could only ever agree.
+  check('a link menu composes no address line for the card', () => {
+    // The address line is the card's alone, and for a PDF beside the note it is a whole path resolved against the open document. A menu asking the ladder for a kind has no use for it, so a composer running here at all is the ladder glued back to the card.
     for (const [name, href] of LINK_ROWS) {
-      const was = booted.linkHoverInfo;
+      const was = booted.hoverDetailForKind;
+      let composed = 0;
+      const rows = whileTheDocumentAnswers(() => {
+        const made = linkOn(href);
+        try {
+          booted.hoverDetailForKind = (kind, given) => {
+            composed += 1;
+            return was(kind, given);
+          };
+          if (!rightClick(made)) throw new Error(`the right-click on ${href} was left to the web view`);
+          return openRows();
+        } finally {
+          booted.hoverDetailForKind = was;
+          booted.hideContextMenu();
+        }
+      });
+      if (composed !== 0) throw new Error(`${name} composed an address line ${composed} times to draw a menu that never shows one`);
+      if (!rows.length) throw new Error(`${name} drew no rows, so the count was read off nothing`);
+    }
+    // And the card still composes one, so the count above is zero because nothing asked rather than because the composer went missing.
+    if (booted.linkHoverInfo('assets/report.pdf').detail === undefined) throw new Error('the card lost its address line');
+  });
+
+  check('a link menu reads what kind of link it is once', () => {
+    // Four rules decide the rows — Reveal file, Copy path, Open in new page, and the word Open takes — and a rule walking the ladder for itself reads what one href already answered. The href is saved when the menu opens, so the readings could only ever agree. Counted on the ladder itself rather than on the card, which the menu no longer goes through.
+    for (const [name, href] of LINK_ROWS) {
+      const was = booted.linkKindFromHref;
       let read = 0;
       const rows = whileTheDocumentAnswers(() => {
         const made = linkOn(href);
         try {
-          booted.linkHoverInfo = (given) => {
+          booted.linkKindFromHref = (given) => {
             read += 1;
             return was(given);
           };
           if (!rightClick(made)) throw new Error(`the right-click on ${href} was left to the web view`);
           return openRows();
         } finally {
-          booted.linkHoverInfo = was;
+          booted.linkKindFromHref = was;
           booted.hideContextMenu();
         }
       });

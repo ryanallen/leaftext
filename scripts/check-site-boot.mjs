@@ -1045,7 +1045,7 @@ check('every file the site owns is booted by one of the two readers', () => {
 //
 // Node keys its module cache on the resolved URL, and the boots above have already imported this module through both readers — so each load below carries a fresh query. Without one the counting `Intl` sees nothing built, and the check passes on code that never changed.
 
-await check('the published speed reader builds its splitter on the first word and never again', async () => {
+await check('the published speed reader builds its splitter only for a word that needs it and never again', async () => {
   const realIntl = globalThis.Intl;
   const load = async (intl) => {
     Object.defineProperty(globalThis, 'Intl', { value: intl, writable: true, configurable: true });
@@ -1072,9 +1072,20 @@ await check('the published speed reader builds its splitter on the first word an
     want(built === 0, `loading the module built ${built} splitters, so every published page pays for a reading mode it may never turn on`);
     const first = words('reading');
     reader.applySpeedReader(first);
-    want(built === 1, `the first word built ${built} splitters`);
+    want(built === 0, `an ordinary Latin word built ${built} splitters rather than taking its lead and tail straight from the word`);
     want(first.querySelector('.speed-reader-anchor').textContent === 'rea', `the first word came out anchored on ${JSON.stringify(first.querySelector('.speed-reader-anchor').textContent)}`);
-    reader.applySpeedReader(words('reading'));
+    const accented = words('caf\u00e9');
+    reader.applySpeedReader(accented);
+    want(built === 1, `the first word outside the direct path built ${built} splitters`);
+    want(accented.querySelector('.speed-reader-anchor').textContent === 'ca', `the accented word came out anchored on ${JSON.stringify(accented.querySelector('.speed-reader-anchor').textContent)}`);
+    const decomposed = words('cafe\u0301');
+    reader.applySpeedReader(decomposed);
+    want(decomposed.querySelector('.speed-reader-anchor').textContent === 'ca', `the decomposed word came out anchored on ${JSON.stringify(decomposed.querySelector('.speed-reader-anchor').textContent)}`);
+    want(decomposed.textContent === 'cafe\u0301', `the decomposed accent moved away from its letter: ${JSON.stringify(decomposed.textContent)}`);
+    const astral = words('\u{10400}\u{10428}\u{10428}');
+    reader.applySpeedReader(astral);
+    want(astral.querySelector('.speed-reader-anchor').textContent === '\u{10400}', `the astral word was cut through a letter: ${JSON.stringify(astral.querySelector('.speed-reader-anchor').textContent)}`);
+    reader.applySpeedReader(words('na\u00efve'));
     want(built === 1, `a second document took the splitter count to ${built}, so it is built per document rather than held`);
     // A browser with no `Intl.Segmenter` answers `null` rather than nothing, which is why the held value is told apart by `undefined`: asked twice, it goes to `Intl` once and walks by code point both times.
     let asked = 0;
@@ -1087,7 +1098,9 @@ await check('the published speed reader builds its splitter on the first word an
     const bareReader = await load(bare);
     const plain = words('reading');
     bareReader.applySpeedReader(plain);
-    bareReader.applySpeedReader(words('reading'));
+    want(asked === 0, `an ordinary word asked a browser with no segmenter for one ${asked} times`);
+    bareReader.applySpeedReader(words('caf\u00e9'));
+    bareReader.applySpeedReader(words('na\u00efve'));
     want(asked === 1, `a browser with no segmenter was asked for one ${asked} times, so the construction is retried on every word`);
     want(plain.querySelector('.speed-reader-anchor').textContent === 'rea', 'a browser with no segmenter stopped splitting words, so its reader loses every bold lead');
   } finally {

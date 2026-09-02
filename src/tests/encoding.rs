@@ -368,12 +368,12 @@ fn documents_that_used_to_fail_to_open_now_open() {
 #[test]
 fn a_file_the_app_cannot_read_is_told_that_rather_than_told_it_is_not_text() {
     let dir = scratch_dir("encoding-unread-ending");
-    // Bytes with a zero among them and no reading as text, which is what a Word file, an archive and a font all are to the decoder.
+    // Bytes with a zero among them and no reading as text, which is what a rich text file, an archive and a font all are to the decoder. The ending has to be one no arm of the format table names, or the refusal this asks for never happens.
     let mut package = b"PK\x03\x04\x14\x00\x00\x00\x08\x00".to_vec();
     package.extend_from_slice(&[0xFF; 32]);
 
     for (name, said) in [
-        ("report.docm", ".docm"),
+        ("report.rtf", ".rtf"),
         ("plain.zip", ".zip"),
         // Said as the file spells it, not as the table looks it up.
         ("Logo.TTF", ".TTF"),
@@ -433,9 +433,9 @@ fn every_door_a_failed_decode_reaches_says_the_same_thing_about_an_ending_nothin
     let dir = scratch_dir("encoding-every-door");
     let mut package = b"PK\x03\x04\x14\x00\x00\x00\x08\x00".to_vec();
     package.extend_from_slice(&[0xFF; 32]);
-    let path = dir.join("report.docm");
+    let path = dir.join("report.rtf");
     fs::write(&path, &package).expect("fixture is written");
-    let said = "Leaftext doesn't open .docm files";
+    let said = "Leaftext doesn't open .rtf files";
 
     assert_eq!(
         read_source_head(&path, 16)

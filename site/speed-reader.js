@@ -56,6 +56,8 @@ function isAcronym(word) {
   return /^\p{Lu}+$/u.test(word);
 }
 
+const DIRECT_SLICE_WORD = /^[A-Za-z]+(?:['\u2019][A-Za-z]+)?$/;
+
 export function leadAnchorPrefixLength(count) {
   if (count <= 1) return 0;
   if (count <= 3) return 1;
@@ -66,16 +68,18 @@ export function leadAnchorPrefixLength(count) {
 }
 
 function appendAnchoredWord(fragment, word) {
-  const chars = graphemes(word);
-  const prefixLength = isAcronym(word) ? chars.length : leadAnchorPrefixLength(chars.length);
+  const chars = DIRECT_SLICE_WORD.test(word) ? null : graphemes(word);
+  const count = chars ? chars.length : word.length;
+  const prefixLength = isAcronym(word) ? count : leadAnchorPrefixLength(count);
   if (prefixLength === 0) {
     fragment.append(document.createTextNode(word));
     return;
   }
   const anchor = document.createElement('span');
   anchor.className = 'speed-reader-anchor';
-  anchor.textContent = chars.slice(0, prefixLength).join('');
-  fragment.append(anchor, document.createTextNode(chars.slice(prefixLength).join('')));
+  anchor.textContent = chars ? chars.slice(0, prefixLength).join('') : word.slice(0, prefixLength);
+  const tail = chars ? chars.slice(prefixLength).join('') : word.slice(prefixLength);
+  fragment.append(anchor, document.createTextNode(tail));
 }
 
 function appendCandidate(fragment, token) {
