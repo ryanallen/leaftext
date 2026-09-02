@@ -634,6 +634,8 @@ Leaftext opens `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.o
 | A slide in a deck | A heading with the slide's title, then the words in its boxes |
 | The macro in a `.docm`, `.xlsm` or `.pptm` | Nothing. It is read past, not run |
 
+**A file that is not the document it claims to be says so instead of taking the machine.** A part claiming to hold more than 256 MB of words, or one that unpacks past that however small it looked, is refused by name; a spreadsheet naming a column no spreadsheet has is refused the same way; and a cell that says it repeats a billion times fills the 16,384 cells a sheet has room for and stops. Each of those draws a sentence about the file, and the window stays where it was.
+
 **A macro is never run.** `.docm`, `.xlsm` and `.pptm` are the spellings a file takes the moment somebody records a macro in it, and Leaftext opens one exactly as it opens the file without a macro: the part holding the words is drawn, and the part holding the macro is carried along untouched. Leaftext has no way to run one, and a file somebody sent you because it is macro-enabled is safe to read here.
 
 **An edit is written back into the file it came out of, and nothing else in that file is touched.** Only the part holding the words is rewritten; the styles, the theme, the comments, the tracked changes, the charts and the macros are copied across exactly as they were, because nothing here reads them and nothing here rewrites them. An OpenDocument file keeps the first part that says what it is, in the place a computer looks for it.

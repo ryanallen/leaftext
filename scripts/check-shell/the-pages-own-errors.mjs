@@ -144,7 +144,7 @@ export function run() {
     }
   });
 
-  // A host can refuse a save with nothing to say — an empty string over the browser module's `error || ''`, a null where the exported call was handed no pointer. The page used to draw nothing at all for either, which leaves a reader looking at an empty corner and edits they believe are on the disk. Driven with both spellings of nothing, because they arrive down different paths and the sentence has to be the same one.
+  // A host can refuse a save with nothing to say — an empty string over the browser module's `error || ''`, a null where the exported call was handed no pointer. Drawing nothing for either leaves a reader looking at an empty corner and edits they believe are on the disk. Driven with both spellings of nothing, because they arrive down different paths and the sentence has to be the same one.
   check('a refused save with no reason still says the write failed', () => {
     for (const nothing of ['', null, undefined]) {
       const context = runShell(source);

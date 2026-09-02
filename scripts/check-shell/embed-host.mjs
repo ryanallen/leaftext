@@ -325,7 +325,7 @@ export function run() {
     }
   });
 
-  // A product can mount a document and hand over no way to write it, and the reader can still ask for a save — the product's own control, or the `save` function this returns. The host used to answer with a line in the browser console, which is a place no reader of that document is looking, so they were left with an empty corner and edits they believed were on the disk. Driven rather than read, because what is held is the sentence a reader meets and the event the product acts on.
+  // A product can mount a document and hand over no way to write it, and the reader can still ask for a save — the product's own control, or the `save` function this returns. A refusal that goes only to the browser console goes where no reader of that document is looking, leaving them an empty corner and edits they believe are on the disk. Driven rather than read, because what is held is the sentence a reader meets and the event the product acts on.
   checkSettled('a save an embed cannot make reaches the reader and the product', async () => {
     const { send, seen, events } = await bootEmbedHost();
     send({ command: 'editBlock', start: 21, end: 40, text: 'The last line.' });
