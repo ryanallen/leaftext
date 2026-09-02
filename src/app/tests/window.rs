@@ -341,7 +341,7 @@ fn the_page_is_told_the_native_window_lost_focus_and_told_again_when_it_comes_ba
     assert_ne!(window_active_line(true), window_active_line(false));
 }
 
-/// What a launch reads to decide the first state. `Window::is_focused` cannot answer it: tao gives `is_active && is_focused`, and the web view takes the second half inside a window that is plainly the one in front, so a first launch drew its whole chrome as if another app had it and stayed that way until the window was clicked.
+/// What a launch reads to decide the first state. `Window::is_focused` cannot answer it: tao gives `is_active && is_focused`, and the web view takes the second half inside a window that is plainly the one in front, so a first launch draws its whole chrome as if another app had it and stays that way until the window is clicked.
 #[cfg(windows)]
 #[test]
 fn a_launch_asks_which_window_is_in_front_rather_than_which_one_holds_the_keyboard() {
@@ -450,7 +450,7 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
         WindowEvent::Resized(PhysicalSize::new(800, 600)),
         WindowEvent::CloseRequested,
         WindowEvent::Focused(true),
-        // Losing the window has an arm of its own now: the page is told, so the tail has to run for this one too.
+        // Losing the window has an arm of its own: the page is told, so the tail has to run for this one too.
         WindowEvent::Focused(false),
     ] {
         assert!(

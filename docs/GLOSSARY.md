@@ -164,7 +164,7 @@ What the image button in the [insert row](GLOSSARY.md#insert-row) opens: **Choos
 
 ## INI file
 
-An `.ini` file. Leaftext reads it as a page of `[section]` headings with their keys and values under each, every key drawn with the spelling it was written with and every value ready to be typed into. See [Rendering](01-features/01-rendering.md#ini-files).
+An `.ini` file. Leaftext reads it as a page of `[section]` headings with their keys and values under each, every key drawn with the spelling it was written with, and the values, the key names and the section headings all ready to be typed into. See [Rendering](01-features/01-rendering.md#ini-files).
 
 ## Inline editing
 

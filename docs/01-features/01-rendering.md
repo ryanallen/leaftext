@@ -85,7 +85,7 @@ There is no INI standard — dialects disagree about nearly everything — so Le
 | A key keeps its own spelling | `font_size` draws `font_size`, not "Font size", because that is a name somebody chose |
 | A line that is none of these is drawn with no name | Its words are in the file, so they are on the page |
 
-**Every value can be typed into where you read it.** The reader holds the exact bytes between the `=` and the end of the line, which is the smallest useful thing to edit, and the save writes the file back in the spelling it was read in. See [Editing data files](07-editing.md#editing-data-files).
+**Every value, key name and section heading can be typed into where you read it.** The reader holds the exact bytes between the `=` and the end of the line, the key's own bytes without the spacing around them, and the section's name inside its brackets — each the smallest useful thing to edit — and the save writes the file back in the spelling it was read in. See [Editing data files](07-editing.md#editing-data-files).
 
 Installing Leaftext offers it under **Open with** for `.ini` without taking the extension from whatever opens it today.
 

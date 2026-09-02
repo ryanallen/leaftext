@@ -100,7 +100,7 @@ export function run() {
     const selector = inactiveSelector();
     const body = inactiveBody();
 
-    // The whole of round 3. `opacity` composites the bar's own shade with the page behind it, so the top of the window reads as see-through and every tab edge, divider and panel seam that shade was covering comes out as a line; `filter: grayscale` takes a tinted family's shade off the bar and leaves the card beside it tinted. Neither may come back, and the general form of the rule is what holds it: a declaration here is a custom property or it is painting something.
+    // `opacity` composites the bar's own shade with the page behind it, so the top of the window reads as see-through and every tab edge, divider and panel seam that shade covers comes out as a line; `filter: grayscale` takes a tinted family's shade off the bar and leaves the card beside it tinted. Neither may come back, and the general form of the rule is what holds it: a declaration here is a custom property or it is painting something.
     for (const line of body.split(';')) {
       const declaration = line.trim();
       if (!declaration) continue;
@@ -109,7 +109,7 @@ export function run() {
       }
     }
 
-    // Nothing in the rule makes a stacking context now, so both roots are named whole and the corner arc that a stacking context on the pane used to sever is out of this rule's reach entirely.
+    // A stacking context on the pane severs its corner arc, and nothing in the rule makes one, so both roots are named whole and the arc is out of this rule's reach entirely.
     if (selector.includes('> *')) {
       throw new Error(`the inactive rule still reaches a root's children, which nothing here needs any more: ${selector}`);
     }
@@ -173,7 +173,7 @@ export function run() {
       }
     }
 
-    // Ink, all of it: the miniature is the largest block of text the frame holds, and left out it was a bright picture beside quiet chrome.
+    // Ink, all of it: the miniature is the largest block of text the frame holds, and left out it is a bright picture beside quiet chrome.
     const grayed = [
       'markdown-foreground', 'markdown-heading', 'markdown-heading-2', 'markdown-heading-3', 'markdown-heading-4',
       'markdown-heading-5', 'markdown-heading-6', 'markdown-rule', 'markdown-link', 'markdown-blockquote-border',
@@ -322,7 +322,7 @@ export function run() {
   });
 
   check('the page sees the switch itself, so the first one is enough', () => {
-    // The whole of round 4. On Windows the top-level window never holds the keyboard while the web view has it, so `tao` raises no focus event at all and the state did not arrive until the window had been left and come back twice. The page's own blur and focus fire from the first switch, so both platforms watch for themselves.
+    // On Windows the top-level window never holds the keyboard while the web view has it, so `tao` raises no focus event at all and without this the state arrives only once the window has been left and come back twice. The page's own blur and focus fire from the first switch, so both platforms watch for themselves.
     for (const [when, dot] of [['a Mac', dots({ macFrame: true })], ['Windows', dots()]]) {
       dot.windowEvent('blur');
       if (!dot.bodyClasses().includes('is-window-inactive')) {

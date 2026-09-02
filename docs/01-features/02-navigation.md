@@ -26,6 +26,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the theme's color under the pointer and throwing a dotted shadow around themselves |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
+| [When another app is in front](#when-another-app-is-in-front) | Leaftext's own chrome goes gray and quiet the moment the window falls behind another app, and the document stays exactly as it was |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
 
@@ -103,6 +104,14 @@ A quiet note names the file when it is written, and the name is a press — clic
 **There is no Settings button.** Every control stands where it applies — see [Settings](05-settings.md). The one thing that comes and goes is the [update](05-settings.md#updates) bell, which is in the bar only while there is something to download or install.
 
 The app bar doubles as the title bar on both platforms, and Leaftext draws the window buttons itself on each: squares at its right end on [Windows](06-themes.md#windows), and three dots at its left end on [macOS](06-themes.md#macos), where a Mac's belong. Both fold into the chevron menu when the bar runs out of room.
+
+### When another app is in front
+
+Click into another app and Leaftext's chrome steps back: the window buttons, the tabs and their names, the [library pane](03-library.md), the [floating toolbar](#the-floating-toolbar), the [find bar](#find-in-this-document), the [minimap](04-minimap.md) and its little picture of the page all drop to the quiet gray the theme already uses for text that is not the main text. Click back and the color returns.
+
+The document does not move. Its words, its code, its diagrams, its pictures, the card it sits on, that card's border and its rounded corners are all left exactly as they were, because reading is what the window is for and a window nobody is typing in is still a window somebody is reading. Nothing goes see-through and no background changes, so a tinted theme stays tinted and no line appears that an active window does not draw.
+
+It follows the window rather than the page. Clicking another tab in a browser showing an [exported page](#export-the-page) or the published documentation leaves that page alone: only the app's own window has a front and a back to tell apart.
 
 ### The floating toolbar
 
