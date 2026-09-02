@@ -71,6 +71,8 @@ fn shut_down(
     settings.window_height = windowed_size.height.round() as u32;
     settings.window_maximized = reader.window.is_maximized();
     persist_settings(settings, settings_path);
+    // The marker goes only from here, after the session is safe: every other way out — a panic, an abort, a forced kill, the host dying under us — leaves it standing, which is how the next launch knows it was one of those.
+    crate::journal::clear_run_marker();
     let _ = reader.webview.take();
     *control_flow = ControlFlow::Exit;
 }

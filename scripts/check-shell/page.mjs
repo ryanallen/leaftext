@@ -1056,6 +1056,7 @@ export function runShell(source, extras = {}) {
     __leafDocumentExts: ['md', 'markdown', 'mdown', 'mdc', 'xml', 'json', 'yaml', 'yml', 'eml', 'mht', 'mhtml'],
     __leafSettingsUnreadable: false,
     __leafUpdateFailed: null,
+    __leafClosedUnexpectedly: false,
   };
   sandbox.window = sandbox;
   sandbox.self = sandbox;

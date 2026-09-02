@@ -170,6 +170,37 @@ export function run() {
     if (bootGrowls({ __leafUpdateFailed: null }).length !== 0) throw new Error('a null flag still growled');
   });
 
+  // ---- 2b2. a run that never reached the saved close says so at boot ---------
+  //
+  // The one thing a reader can be told after the window simply went. Read off the drawn toast rather than off the flag, for the reason 2b is: the sentence is the whole feature, and the three boot growls share one slot, so whether it is standing is a different question from whether it was called.
+
+  check('a run that missed the saved close growls once, carrying both sentences', () => {
+    const growls = bootGrowls({ __leafClosedUnexpectedly: true });
+    if (growls.length !== 1) throw new Error(`expected one growl, got ${growls.length}`);
+    const said = String(growls[0].textContent);
+    for (const part of ['closed unexpectedly last time', 'The journal may say why']) {
+      if (!said.includes(part)) throw new Error(`the growl lost "${part}": ${said}`);
+    }
+    if (!growls[0].className.includes('is-error')) throw new Error(`the notice drew the quiet growl: ${growls[0].className}`);
+  });
+
+  check('a launch after a saved close growls nothing', () => {
+    if (bootGrowls({ __leafClosedUnexpectedly: false }).length !== 0) throw new Error('a false flag still growled');
+  });
+
+  check('the notice yields the one slot to a failed install', () => {
+    // Both facts on one launch, and only one growl can stand. The failed install is about the build the reader is looking at, so it is the one that stays; the run marker's fact is in the journal either way.
+    const growls = bootGrowls({
+      __leafClosedUnexpectedly: true,
+      __leafUpdateFailed: { version: '1.14.13', message: 'Leaftext was still open, so nothing was changed' },
+      __leafVersion: '1.14.12',
+    });
+    if (growls.length !== 1) throw new Error(`expected one growl, got ${growls.length}`);
+    if (!String(growls[0].textContent).includes('v1.14.13')) {
+      throw new Error(`the launch notice took the slot off the failed install: ${growls[0].textContent}`);
+    }
+  });
+
   // ---- 2c. a theme change runs the sweep it registered ------------------------
   //
   // The picker, the system's own light/dark switch and the resolution at startup all reach the page as the theme attribute changing on the root element, so one sweep answers all three — and a name retired out of it throws on every one of them. Fired here rather than read as text: running it catches any retired name in the sweep, including the ones nobody has thought of. Its own page, because the sweep empties the page-level mermaid sheet the checks below set up.

@@ -43,6 +43,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 | `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
 | `{data_dir}/journal.prev.log` | The previous journal, kept when the live one fills up |
+| `{data_dir}/run.marker` | An empty file saying a run is under way; the close that saves takes it away ([Journal](#journal)) |
 
 Here `{config_dir}` and `{data_dir}` are the per-app directories derived from the app id `com.ryanallen.leaftext` — they already include the vendor/app path segments (there is no extra `leaftext/` component to add). See [Paths](#paths) for the real per-platform locations.
 
@@ -216,6 +217,13 @@ Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It
 - **Your writing is never in it.** File paths are recorded, document text is not
 - It stops at about a megabyte, at which point it becomes `journal.prev.log` and a fresh one starts. That is two files, and it never grows past them
 - It is safe to delete, and it is not sent anywhere — nothing leaves your machine unless you attach it yourself
+
+**A run that ended without closing.** Beside the journal sits an empty `run.marker`. Leaftext leaves it there when it opens and takes it away when it closes, so a marker still sitting there on the next launch means the run before it never got that far — it was ended from Task Manager, the machine went down, or it stopped on its own. That launch says so once, in the corner: *Leaftext closed unexpectedly last time. The journal may say why.*
+
+- It says only that the last run did not close. It does not claim to know what happened, and it makes no promise about the tabs or the words that were open
+- The journal beside it is where a reason would be if there is one, which is what the sentence points at. A crash the app noticed is in there; a machine that went down leaves nothing to write
+- **The marker holds nothing.** It is a zero-byte file, and it is the same one every launch — nothing about your documents is in it, and it is safe to delete
+- The notice is written to the journal as well, so it can be quoted in a bug report
 
 ## Paths
 

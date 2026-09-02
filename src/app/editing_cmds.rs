@@ -92,6 +92,7 @@ fn seeded_active_edit<'a>(
         DocumentSource {
             text: SourceText::utf8(String::new()),
             package: None,
+            document: None,
         }
     };
     let Some(tab) = workspace.tabs.get_mut(index) else {

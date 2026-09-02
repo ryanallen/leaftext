@@ -78,7 +78,11 @@ impl Tab {
         contents: impl Into<DocumentSource>,
     ) -> &mut EditableDocument {
         if self.needs_edit_seed(path) {
-            let DocumentSource { text, package } = contents.into();
+            let DocumentSource {
+                text,
+                package,
+                document: _,
+            } = contents.into();
             self.edit = Some(match package {
                 Some(package) => EditableDocument::over_package(path.to_path_buf(), text, package),
                 None => EditableDocument::new(path.to_path_buf(), text),

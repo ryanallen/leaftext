@@ -129,6 +129,21 @@ export function run() {
     if (named !== 1) throw new Error(`the file is named ${named} times: ${said[0]}`);
   });
 
+  // A refused save is not a refused open, and the page said it was. What is held is the whole sentence a reader meets: it names the write as what failed, and it says the buffer still holds what they typed — the half a failed-open message has no reason to carry. Driven through the save report rather than the composer, because the fault was the caller reaching for its neighbor.
+  check('a refused save says the write failed and the edits are still here', () => {
+    const context = runShell(source);
+    const said = [];
+    context.window.leafShowError = (message) => said.push(message);
+    context.window.leafSaved('C:\\notes\\report.md', false, 'Access is denied. (os error 5)');
+    if (said.length !== 1) throw new Error(`expected one error, got ${said.length}`);
+    if (said[0] !== 'C:\\notes\\report.md was not saved: Access is denied. (os error 5). Your edits are still here.') {
+      throw new Error(`the page composed "${said[0]}"`);
+    }
+    if (said[0].includes('Failed to open')) {
+      throw new Error(`a refused save borrows the failed-open sentence: ${said[0]}`);
+    }
+  });
+
   // ---- 6a. a source view that will not open says so and gives the document back ----
   //
   // Both ways into the source view can give up, and each has to draw something: the editor's own load fails after the reader has already been emptied into its container, and the staged payload fails before that. Drawing nothing leaves the reader a blank page the app is calling the source view, or a press that did nothing. Driven rather than read, because what is being held is a growl on the surface and a command on the wire.

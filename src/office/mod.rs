@@ -154,9 +154,19 @@ fn read_archive(
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
     let document = read_document(archive, format).map_err(|refusal| unreadable(refusal, path))?;
+    Ok(render_document(&document, path, format, host))
+}
+
+/// Hand a parsed package to the one routing table every tree format goes through.
+pub(crate) fn render_document(
+    document: &OfficeDocument,
+    path: &Path,
+    format: DocumentFormat,
+    host: &dyn LeafHost,
+) -> OpenedDocument {
     let title = document.title.clone();
     let anchor_text = document.anchor_text.clone();
-    Ok(crate::opened_document_from_tree(
+    crate::opened_document_from_tree(
         &anchor_text,
         path,
         format,
@@ -165,7 +175,7 @@ fn read_archive(
             (heading.or_else(|| title.clone()), html, blocks)
         },
         host,
-    ))
+    )
 }
 
 /// The anchored member's text and its name: the source the code view colors, the string a hash gate compares, and the member a save puts back. A package's members carry their own spelling, so the one this answers with is the only spelling there is to spend.
@@ -173,10 +183,14 @@ pub(crate) fn anchored_member_source(
     bytes: &[u8],
     path: &Path,
     format: DocumentFormat,
-) -> io::Result<(SourceText, String)> {
+) -> io::Result<(SourceText, String, PackageDocument)> {
     let archive = Archive::read(bytes).map_err(|refusal| unreadable(refusal, path))?;
     let document = read_document(&archive, format).map_err(|refusal| unreadable(refusal, path))?;
-    Ok((SourceText::utf8(document.anchor_text), document.anchor))
+    Ok((
+        SourceText::utf8(document.anchor_text.clone()),
+        document.anchor.clone(),
+        PackageDocument(document),
+    ))
 }
 
 /// The whole archive again with one member replaced by `text`, which is what a save writes.

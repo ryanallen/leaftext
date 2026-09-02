@@ -357,9 +357,10 @@ fn a_taken_code_view_edit_reports_only_the_dirty_state() {
 /// The two sides are joined by a name in a string, so a rename on one side is a silent no-op at runtime. Every name the host emits must exist in the page, and every one the page defines must be reached.
 #[test]
 fn the_host_and_the_page_agree_on_every_call() {
-    /// Names the page owns. `leafShowCodeView` it calls itself after fetching the payload; the next two are state one fragment publishes for the rest, each with a `subscribe` — the shape new shared state should copy. `leafSetFavorites` is called by the browser host, whose stand-in test executes that call rather than this Rust-host scan reading it. The last two are forcing switches for the first-run bubble, driven from outside over `eval` so one can be looked at without a fresh install; nothing in the host reaches them, and that is the point.
+    /// Names the page owns. `leafShowCodeView` it calls itself after fetching the payload, and `leafShowSaveError` the same way, from the save report the host does call; the next two are state one fragment publishes for the rest, each with a `subscribe` — the shape new shared state should copy. `leafSetFavorites` is called by the browser host, whose stand-in test executes that call rather than this Rust-host scan reading it. The last two are forcing switches for the first-run bubble, driven from outside over `eval` so one can be looked at without a fresh install; nothing in the host reaches them, and that is the point.
     const PAGE_ONLY: &[&str] = &[
         "window.leafShowCodeView",
+        "window.leafShowSaveError",
         "window.leafMinimap",
         "window.leafTheme",
         "window.leafSetFavorites",

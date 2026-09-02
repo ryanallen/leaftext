@@ -1324,6 +1324,7 @@ fn a_buffer_adopting_an_outside_change_takes_the_archive_with_it() {
             bytes: b"the archive that member came out of".to_vec(),
             member: "word/document.xml".to_string(),
         }),
+        document: None,
     });
 
     assert_eq!(doc.text(), "<w:document><w:p/></w:document>");

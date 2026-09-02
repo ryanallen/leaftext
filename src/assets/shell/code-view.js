@@ -1140,6 +1140,6 @@ window.leafSaved = (path, ok, error) => {
     redoableByPath.delete(path);
     setDirtyState(path, false);
   } else if (error) {
-    window.leafShowOpenError(path, error);
+    window.leafShowSaveError(path, error);
   }
 };

@@ -121,6 +121,18 @@ export const ALLOWED = [
     because: 'surfacing takes a `&tao::window::Window`, and nothing in this suite can build one',
   },
   {
+    file: 'src/app/tests/log.rs',
+    reads: 'main.rs',
+    asserts: '"the marker is armed before the launch knows this copy owns the window"',
+    because: 'the arm sits in `run_app`, which builds an event loop, a native window and a web view, so where it falls among that function\'s early returns is not a value any test can ask for',
+  },
+  {
+    file: 'src/app/tests/log.rs',
+    reads: 'event_loop.rs',
+    asserts: '"the saved close clears the marker outside the window between saving and exiting"',
+    because: '`shut_down` takes a `&mut Reader`, which carries the native window it reads the maximized state off and the web view it drops',
+  },
+  {
     file: 'src/tests/app_shell_chrome_export.rs',
     reads: 'fileops.rs',
     asserts: '"only the PDF and picture renders have a hold to release"',

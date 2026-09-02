@@ -542,27 +542,29 @@ pub fn read_document_for_editing(path: impl AsRef<Path>) -> io::Result<DocumentS
     let path = path.as_ref();
     let format = DocumentFormat::from_path(path);
     match format.source_shape() {
-        SourceShape::Text => Ok(DocumentSource {
-            text: read_source(path)?,
-            package: None,
-        }),
+        SourceShape::Text => Ok(read_source(path)?.into()),
         SourceShape::Bytes => {
             let bytes = fs::read(path)?;
-            let (text, member) = office::anchored_member_source(&bytes, path, format)?;
+            let (text, member, document) = office::anchored_member_source(&bytes, path, format)?;
             Ok(DocumentSource {
                 text,
                 package: Some(PackageBuffer { bytes, member }),
+                document: Some(document),
             })
         }
     }
 }
 
-/// A document as an edit buffer takes it.
+/// A parsed package stays opaque because the binary is a second crate and the document belongs to this library.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PackageDocument(office::OfficeDocument);
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocumentSource {
     pub text: SourceText,
     /// The archive behind a package, or `None` for a file somebody typed.
     pub package: Option<PackageBuffer>,
+    pub document: Option<PackageDocument>,
 }
 
 /// Text on its own is a document with no archive behind it, which is every format but the six packaged ones.
@@ -571,6 +573,7 @@ impl From<SourceText> for DocumentSource {
         Self {
             text,
             package: None,
+            document: None,
         }
     }
 }
@@ -614,20 +617,26 @@ pub fn save_editable_document(host: &dyn LeafHost, edit: &EditableDocument) -> i
     }
 }
 
-/// The document at `path`, for a caller that has already read it for a hash gate of its own: the text it read, and — where the format is a package — the archive bytes that same read produced. One call rather than a shape test at every render site, and no second read of a file already in hand.
+/// The document at `path`, for a caller that has already read it for a hash gate of its own: a package's read, unpack and parse happen once, and the document that pass built is rendered here.
 pub fn opened_document_for_path_with_host(
     path: &Path,
     source: &DocumentSource,
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
-    match &source.package {
-        Some(package) => office::opened_document_from_office(
+    match (&source.document, &source.package) {
+        (Some(document), _) => Ok(office::render_document(
+            &document.0,
+            path,
+            DocumentFormat::from_path(path),
+            host,
+        )),
+        (None, Some(package)) => office::opened_document_from_office(
             &package.bytes,
             path,
             DocumentFormat::from_path(path),
             host,
         ),
-        None => Ok(opened_document_from_source_with_host(
+        (None, None) => Ok(opened_document_from_source_with_host(
             &source.text.text,
             path,
             host,

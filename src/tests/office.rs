@@ -134,6 +134,62 @@ fn each_of_the_six_renders() {
     }
 }
 
+/// The document kept by the first unpack is the same document a fresh unpack would draw, including its title and every stamped range.
+#[test]
+fn each_package_source_carries_the_document_its_bytes_build() {
+    let folder = scratch_dir("office-carried-document");
+    for (name, bytes, _) in every_sample() {
+        let path = folder.join(&name);
+        std::fs::write(&path, &bytes).unwrap_or_else(|error| panic!("{name}: {error}"));
+        let source = read_document_for_editing(&path)
+            .unwrap_or_else(|error| panic!("{name} should open: {error}"));
+        let document = source
+            .document
+            .as_ref()
+            .unwrap_or_else(|| panic!("{name} should carry its parsed document"));
+        let carried = crate::office::render_document(
+            &document.0,
+            &path,
+            DocumentFormat::from_path(&path),
+            &DesktopHost::default(),
+        );
+        let rebuilt = crate::office::opened_document_from_office(
+            &bytes,
+            &path,
+            DocumentFormat::from_path(&path),
+            &DesktopHost::default(),
+        )
+        .unwrap_or_else(|error| panic!("{name} should rebuild: {error}"));
+        assert_eq!(carried, rebuilt, "{name} carried a different document");
+    }
+}
+
+/// A text document never carries a parsed package, whichever of the nine text formats names it.
+#[test]
+fn each_text_source_carries_no_package_document() {
+    let folder = scratch_dir("office-no-carried-document");
+    for format in DocumentFormat::ALL {
+        if format.source_shape() != SourceShape::Text {
+            continue;
+        }
+        let extension = format
+            .extensions()
+            .first()
+            .copied()
+            .or_else(|| source_extensions().first().copied())
+            .expect("a readable extension");
+        let path = folder.join(format!("sample.{extension}"));
+        std::fs::write(&path, b"plain source").expect("the sample is written");
+        let source = read_document_for_editing(&path)
+            .unwrap_or_else(|error| panic!("{} should read: {error}", format.display_name()));
+        assert!(
+            source.document.is_none(),
+            "{} carried a package document",
+            format.display_name()
+        );
+    }
+}
+
 /// A range is a promise: the reading view splices what it is given back over exactly those bytes, so a range that is off by one corrupts somebody's document. Every range a reader stamps has to cut the block's own words out of the member it names.
 #[test]
 fn a_range_stamped_on_a_block_really_is_that_blocks_bytes() {
@@ -456,7 +512,7 @@ fn an_unsaved_edit_to_a_package_is_on_the_page_before_it_is_saved() {
 fn buffer_over(name: &str, bytes: Vec<u8>) -> (PathBuf, EditableDocument) {
     let path = PathBuf::from(name);
     let format = DocumentFormat::from_path(&path);
-    let (source, member) =
+    let (source, member, _) =
         crate::office::anchored_member_source(&bytes, &path, format).expect("the sample opens");
     let buffer =
         EditableDocument::over_package(path.clone(), source, PackageBuffer { bytes, member });
@@ -563,29 +619,74 @@ fn a_save_after_a_render_still_writes_every_part_byte_for_byte() {
     }
 }
 
-/// The read a caller already took is the only read there is. Handed a package's bytes, the entry draws them for a path with no file behind it at all — which a second read of that path could not survive, so this is what proves the second read is gone rather than restating that it was removed.
+/// The first unpack is the only unpack there is. Replacing its archive bytes with rubbish cannot stop the parsed document it already carried from drawing.
 #[test]
-fn a_package_draws_for_a_path_with_no_file_behind_it() {
+fn a_package_draws_from_its_carried_document_when_its_archive_bytes_are_rubbish() {
     let bytes = sample_docx();
     let path = scratch_dir("office-unread").join("never-written.docx");
     assert!(
         !path.exists(),
         "the point of the path is that nothing is there"
     );
-    let (text, member) = crate::office::anchored_member_source(&bytes, &path, DocumentFormat::Docx)
-        .expect("the sample opens");
-    let source = DocumentSource {
+    let (text, member, document) =
+        crate::office::anchored_member_source(&bytes, &path, DocumentFormat::Docx)
+            .expect("the sample opens");
+    let mut source = DocumentSource {
         text,
         package: Some(PackageBuffer { bytes, member }),
+        document: Some(document),
     };
+    source.package.as_mut().expect("the package").bytes = b"not an archive".to_vec();
 
     let drawn = opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
-        .expect("a package draws from the bytes already in hand");
+        .expect("a package draws from the document already in hand");
     assert!(
         drawn.html.contains("Sales rose in every region"),
         "the document should be on the page: {}",
         drawn.html
     );
+}
+
+/// A caller holding package bytes without a carried document still gets the package reader.
+#[test]
+fn a_package_source_without_a_carried_document_draws_from_its_bytes() {
+    let bytes = sample_docx();
+    let path = PathBuf::from("report.docx");
+    let (text, member, _) =
+        crate::office::anchored_member_source(&bytes, &path, DocumentFormat::Docx)
+            .expect("the sample opens");
+    let source = DocumentSource {
+        text,
+        package: Some(PackageBuffer { bytes, member }),
+        document: None,
+    };
+    let drawn = opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
+        .expect("the bytes arm draws");
+    assert!(drawn.html.contains("Sales rose in every region"));
+}
+
+/// The same source draws for an initial open, a live reload and the no-pager host a link card uses.
+#[test]
+fn a_package_source_draws_for_all_three_render_sites() {
+    let folder = scratch_dir("office-render-sites");
+    let path = folder.join("report.docx");
+    std::fs::write(&path, sample_docx()).expect("the sample is written");
+    let source = read_document_for_editing(&path).expect("the sample opens");
+    for (name, host) in [
+        ("initial open", DesktopHost::default()),
+        ("live reload", DesktopHost::default()),
+        (
+            "link card",
+            DesktopHost {
+                no_pager_placeholder: true,
+                ..DesktopHost::default()
+            },
+        ),
+    ] {
+        let drawn = opened_document_for_path_with_host(&path, &source, &host)
+            .unwrap_or_else(|error| panic!("{name} should draw: {error}"));
+        assert!(drawn.html.contains("Sales rose in every region"));
+    }
 }
 
 /// A package's identity, read over the whole of it — the shape the app's own gate reads off the tail alone.
@@ -605,7 +706,7 @@ fn a_packages_identity_moves_when_a_member_does_and_holds_when_none_do() {
         );
 
         let path = PathBuf::from(&name);
-        let (source, member) =
+        let (source, member, _) =
             crate::office::anchored_member_source(&bytes, &path, DocumentFormat::from_path(&path))
                 .expect("the sample opens");
         let edited =

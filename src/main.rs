@@ -45,17 +45,17 @@ use leaftext::{
     save_favorites, save_recent_files, save_result_script, scroll_anchor_script,
     scrollbars_always_script, search_results_script, set_git_identity, settings_file_path,
     settings_unreadable_script, source_payload_url, source_updated_script, sync_vault_repo,
-    task_entries, task_marker_offsets, today_or_utc, unlock_reading_script, update_failed_script,
-    update_progress_script, update_state_script, vaults_script, webview_user_data_dir,
-    workspace_only_script, workspace_reload_script, workspace_state_script,
-    workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument, DesktopHost, DocumentFormat,
-    DocumentSource, EditableDocument, Favorite, FavoriteKind, Favorites, FileRecord, FilterHints,
-    FolderListing, GitTooling, GraphScope, LeafHost, OpenedDocument, Query, RecentFiles,
-    ScrollAnchor, Session, SessionTab, Settings, SettingsLoad, SourceEncoding, SourceSpelling,
-    SourceText, TabSummary, TaskEntry, UpdateDownload, VaultCorpus, VaultRepo,
-    CORPUS_SLICE_DOCUMENTS, EXPORTED_PAGE_ASSETS_FOLDER, EXPORTED_PAGE_MATH_FONTS_FOLDER,
-    EXPORTED_PAGE_MATH_STYLESHEET, EXPORTED_PAGE_MINIMAP_SCRIPT, KATEX_CSS, KATEX_FONTS,
-    LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL, MARKDOWN_EXPORT_EXTENSIONS,
+    task_entries, task_marker_offsets, today_or_utc, unexpected_close_script,
+    unlock_reading_script, update_failed_script, update_progress_script, update_state_script,
+    vaults_script, webview_user_data_dir, workspace_only_script, workspace_reload_script,
+    workspace_state_script, workspace_switch_script, CloudFolder, CloudRoots, CorpusDocument,
+    DesktopHost, DocumentFormat, DocumentSource, EditableDocument, Favorite, FavoriteKind,
+    Favorites, FileRecord, FilterHints, FolderListing, GitTooling, GraphScope, LeafHost,
+    OpenedDocument, Query, RecentFiles, ScrollAnchor, Session, SessionTab, Settings, SettingsLoad,
+    SourceEncoding, SourceSpelling, SourceText, TabSummary, TaskEntry, UpdateDownload, VaultCorpus,
+    VaultRepo, CORPUS_SLICE_DOCUMENTS, EXPORTED_PAGE_ASSETS_FOLDER,
+    EXPORTED_PAGE_MATH_FONTS_FOLDER, EXPORTED_PAGE_MATH_STYLESHEET, EXPORTED_PAGE_MINIMAP_SCRIPT,
+    KATEX_CSS, KATEX_FONTS, LOCAL_ASSET_PROTOCOL, LOCAL_IMAGE_PROTOCOL, MARKDOWN_EXPORT_EXTENSIONS,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -305,6 +305,13 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         );
     }
 
+    // The last thing before the window exists, and after both returns above: a forwarded copy and a copy handing off an update never own the window, so neither may leave the marker. What comes back is whether the previous primary copy skipped the close that saves — carried to the page below, because there is nothing else on the next launch that can tell a kill from a quit.
+    let closed_unexpectedly = journal::arm_run();
+    if closed_unexpectedly {
+        // Into the journal as well as to the page: the journal is what a bug report quotes, and this line is the one thing in it that the run which vanished could not have written itself.
+        eprintln!("the previous run ended without reaching the close that saves");
+    }
+
     let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
     // The window library registers every mouse and keyboard for raw input and hands the loop one device event per hardware packet while focused — up to a thousand a second on a gaming mouse, and no arm reads one. Windows-only by tao's own doc, so the skip in `could_have_changed_anything` stays: it is the half a Mac runs.
     event_loop.set_device_event_filter(DeviceEventFilter::Always);
@@ -412,6 +419,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         // The operating system's own accessibility answer, not one of the app's switches, so it is read here at launch rather than persisted.
         .with_initialization_script(scrollbars_always_script(platform::scrollbars_always_shown()))
         .with_initialization_script(update_failed_script(apply_outcome.as_ref()))
+        .with_initialization_script(unexpected_close_script(closed_unexpectedly))
         .with_initialization_script(initial_vaults_script(
             &vault_state.vaults(),
             vault_state.active,

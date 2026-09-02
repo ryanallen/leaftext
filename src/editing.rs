@@ -190,7 +190,11 @@ impl EditableDocument {
     ///
     /// The whole source rather than the text out of it, because a package's text is one member and the archive behind it is what a save copies. Taking the member alone would draw the new words against the old numbering, shared strings and pictures, and then write that archive back.
     pub fn adopt_external(&mut self, contents: impl Into<DocumentSource>) {
-        let DocumentSource { text, package } = contents.into();
+        let DocumentSource {
+            text,
+            package,
+            document: _,
+        } = contents.into();
         let SourceText { text, spelling } = text;
         self.spelling = spelling;
         self.package = package;

@@ -1298,6 +1298,10 @@ window.leafFileWritten = (path) => {
 window.leafShowOpenError = (path, reason) => {
   window.leafShowError(`Failed to open ${path}: ${reason}`);
 };
+// A write the disk refused. Its own words, because the reader is looking at the document and the one thing they need to know is that the buffer still holds what they typed.
+window.leafShowSaveError = (path, reason) => {
+  window.leafShowError(`${path} was not saved: ${reason}. Your edits are still here.`);
+};
 // A file went to the bin, and can come back. Sent by the host once the delete has actually happened, which is what keeps the app from ever drawing an offer it could not keep. The offer and the message are the same thing, so it expires with it — nothing here counts down on its own.
 window.leafFileDeleted = (path, name) => {
   undoableDelete = path;
@@ -1320,11 +1324,17 @@ runSettlePass();
 window.__leafBooted = true;
 window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
+// The run before this one never reached the close that saves, so the window it had went without saving anything. Says only that, because the marker knows only that: naming a cause the app did not watch would be a guess, and the journal beside it is where a reason would be if there is one.
+//
+// First of the three boot growls, and the one that yields: they share one slot, so the last call is the only one left standing, and both the others are about the launch the reader is looking at rather than the one before it. The journal keeps this line either way.
+if (window.__leafClosedUnexpectedly) {
+  window.leafShowError('Leaftext closed unexpectedly last time. The journal may say why.');
+}
 // Came up on defaults because the settings file would not read. Nothing on screen distinguishes that from a first launch, so say it; the file is left alone for its owner to look at.
 if (window.__leafSettingsUnreadable) {
   window.leafShowError('Your settings file could not be read, so Leaftext started with its defaults. Your saved choices are still in the file.');
 }
-// A failed install relaunches the build that was already there, so the window coming back looks exactly like one that updated. Second of the two boot growls on purpose: they share one slot, and this is the one nobody could work out for themselves.
+// A failed install relaunches the build that was already there, so the window coming back looks exactly like one that updated. Last of the three boot growls on purpose: they share one slot, and this is the one nobody could work out for themselves.
 if (window.__leafUpdateFailed) {
   const failed = window.__leafUpdateFailed;
   // The applier names no version when the staging path was malformed, and a bare "v" is worse than saying nothing.

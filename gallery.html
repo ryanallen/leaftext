@@ -2994,7 +2994,7 @@ body.is-window-inactive :is(.app-bar, .library-pane, .reader-toolbar, .reader-mi
   /* What every hover fill is mixed from. A window nobody is in still gets pointed at on the way past, and a full-strength wash under the pointer is the loudest thing left once everything else has stepped back. */
   --lt-hover-tint: var(--lt-border-strong);
 }
-/* The rail holds a clone of the document drawn in the document's own colors, so the tokens above never reach it and it stayed a bright picture beside quiet chrome. It is chrome — a picture of the page rather than the page — so its ink goes quiet with everything else the frame holds. Ink only: every background, fill and paper color is left exactly where the family put it, so nothing behind the miniature moves. The document itself is untouched, and reading it is what the window is for. */
+/* The rail holds a clone of the document drawn in the document's own colors, so the tokens above never reach it and without this it is a bright picture beside quiet chrome. It is chrome — a picture of the page rather than the page — so its ink goes quiet with everything else the frame holds. Ink only: every background, fill and paper color is left exactly where the family put it, so nothing behind the miniature moves. The document itself is untouched, and reading it is what the window is for. */
 body.is-window-inactive .reader-minimap {
   --lt-markdown-foreground: var(--lt-muted-foreground);
   --lt-markdown-heading: var(--lt-muted-foreground);

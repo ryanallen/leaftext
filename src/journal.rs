@@ -2,6 +2,8 @@
 //!
 //! The Windows build opens no console (`main.rs:1`), so every `eprintln!` in the app prints into nothing there. This points stderr at a file beside the vault registry and sends a crash down the same path, so a bug report has something to quote instead of a description from memory.
 //!
+//! Beside the journal sits one marker saying a run is under way. The journal can only hold what the app managed to print, so a kill, an abort or the host dying leaves it looking like an ordinary quiet run; the marker survives all four, because only the close that saves takes it away.
+//!
 //! Two rules hold it in place. **Nothing here may take the app down** — every failure is swallowed, and an app that cannot write its journal still opens. **No document text**: a file path says which document, and that is the whole of what a diagnosis needs.
 
 use crate::platform;
@@ -46,6 +48,38 @@ pub fn start_in(data_dir: &Path) {
     if platform::redirect_stderr(file) {
         install_panic_hook();
     }
+}
+
+/// The marker that says a run is under way. Its whole content is that it is there: the launch leaves it, and only the saved close takes it away.
+pub fn run_marker_path(data_dir: &Path) -> PathBuf {
+    data_dir.join("run.marker")
+}
+
+/// Leave the marker for this run, and answer whether a previous run left one behind — `true` means the last primary copy never reached the close that saves. Called once at launch, after the single-instance guard says this copy owns the window and a staged update has handed off or declined, so a forwarded copy and an update handoff never arm it.
+pub fn arm_run() -> bool {
+    app_data_dir().is_some_and(|data_dir| arm_run_in(&data_dir))
+}
+
+/// The same, against a named folder. Split out so a test can arm a marker in a temporary directory instead of the one the installed app uses.
+pub fn arm_run_in(data_dir: &Path) -> bool {
+    let found = run_marker_path(data_dir).is_file();
+    if fs::create_dir_all(data_dir).is_ok() {
+        // A folder that will not take the marker answers false and opens anyway, the rule the whole module keeps.
+        let _ = fs::write(run_marker_path(data_dir), []);
+    }
+    found
+}
+
+/// Take the marker away, so the next launch knows this run ended the way it meant to. Called from the one saved close and nowhere else: every other way out has to leave the marker standing.
+pub fn clear_run_marker() {
+    if let Some(data_dir) = app_data_dir() {
+        clear_run_marker_in(&data_dir);
+    }
+}
+
+/// The same, against a named folder.
+pub fn clear_run_marker_in(data_dir: &Path) {
+    let _ = fs::remove_file(run_marker_path(data_dir));
 }
 
 /// The journal's text, or its last `lines` lines. Empty when there is no file yet, which is indistinguishable from a quiet run and does not need to be.

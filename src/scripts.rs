@@ -99,6 +99,13 @@ pub fn update_failed_script(outcome: Option<&ApplyOutcome>) -> String {
     format!("window.__leafUpdateFailed = {state};")
 }
 
+/// Whether the previous run missed the close that saves, as `window.__leafClosedUnexpectedly`; the boot growls once when it is true. Always emitted, so the flag is never undefined.
+///
+/// An init script rather than a message, for the reason the two above are: the launch reads the run marker before the event loop starts and there is no page to send anything to yet. A published page and an exported one carry no init scripts at all, and neither has a desktop run marker to read, so both keep saying nothing.
+pub fn unexpected_close_script(closed_unexpectedly: bool) -> String {
+    format!("window.__leafClosedUnexpectedly = {closed_unexpectedly};")
+}
+
 /// Which favorites are not on the disk, and which vaults' own folders have gone, as `window.leafSetFavoritesMissing`. Sent when the start screen asks, because only the binary reads the disk: this payload's builder is library code a browser compiles too, and it is rebuilt on every render — including every document open, where nobody is looking at the favorites. Nothing marked is the resting state, so a browser and a reply still in flight both say the same true thing.
 pub fn favorites_missing_script(paths: &[String], vaults: &[i64]) -> String {
     format!(
