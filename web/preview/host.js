@@ -217,6 +217,7 @@ export function sayMissing(file, reason) {
 }
 
 export async function startLeaftext({ documents, name = '', read }) {
+  // Before the module loads, because the front end asks this as it draws and a control it asked about too early is one drawn on a guess.
   window.__leafHostAnswers = answers;
   const core = await load(MODULE);
   const known = new Set(documents.map((entry) => entry.path));

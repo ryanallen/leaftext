@@ -620,7 +620,7 @@ function crumbElisionHtml(hidden) {
   const label = escapeAttr(`Skipped folders: ${names.join(' › ')}`);
   return `<button type="button" class="library-crumb is-elided" data-crumb-more="1" title="${label}" aria-label="${label}" aria-haspopup="menu" aria-expanded="false">…</button>`;
 }
-// What the trail was last laid out for: its path chain and the width it was fitted at. The library re-renders whenever a disk change touches the folder on screen, and rebuilding the crumbs throws away the "…" an open menu hangs off.
+// What the trail was last laid out for: its path chain, the width it was fitted at, and whether the document is a favorite, since the heart at its end is measured with the crumbs and changes width when it fills. The library re-renders whenever a disk change touches the folder on screen, and rebuilding the crumbs throws away the "…" an open menu hangs off.
 let libraryCrumbFitKey = null;
 function crumbFitKey(segments, width) {
   return segments.map((segment) => segment.path + '>' + segment.name).join('|') + '@' + width + '@' + isFavoritePath(activeDocumentPath());

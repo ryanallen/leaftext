@@ -292,7 +292,7 @@ pub fn source_definition_for_extension(extension: &str) -> Option<SourceDefiniti
     })
 }
 
-/// The source definition `path` names, by whole file name first and then by extension. The two are asked one after the other rather than the extension table being asked again inside every definition, which is the same answer for one walk instead of sixteen — only `.env` and `Dockerfile` are named as whole files, and neither has an extension to disagree with.
+/// The source definition `path` names, by whole file name first and then by extension. The two are asked one after the other rather than the extension table being asked again inside every definition, which is the same answer for one walk of the extension table instead of one per definition, seventeen of them for a file it does not recognize — only `.env` and `Dockerfile` are named as whole files, and neither has an extension to disagree with.
 pub fn source_definition_for_path(path: &Path) -> Option<SourceDefinition> {
     let file_name = path.file_name()?.to_str()?;
     SOURCE_DEFINITIONS

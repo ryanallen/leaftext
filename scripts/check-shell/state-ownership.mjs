@@ -1,6 +1,6 @@
 // Mutable state belongs to its only writer, or in state.js when fragments share the writing.
 //
-// The same file owns where a shared name lives, for the four the whole front end writes text with: they were declared at the foot of the last fragment and called by seven loading ahead of it, which stood only because a function declaration hoists over the joined script.
+// The same file owns where a shared name lives, for the four the whole front end writes text with: a declaration hoists over the joined script, so a home nobody pins drifts into any fragment and a boot still passes.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';

@@ -315,11 +315,13 @@
   border-color: transparent;
   color: var(--lt-primary-foreground);
 }
+/* In the trail the heart is a crumb rather than a corner mark, so it drops out of the tab's absolute placing and into the row's own flow, and carries no plate of its own against the band behind it. */
 .library-crumb-trail > .tab-favorite {
   position: static;
   flex: none;
   background: transparent;
 }
+/* The trail is the row that reveals it, the way the tab is on a tab; the colors are named again for the same reason the tab's are. */
 .library-crumb-trail:hover > .tab-favorite,
 .library-crumb-trail:focus-within > .tab-favorite {
   opacity: 1;
