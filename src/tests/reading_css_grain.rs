@@ -643,6 +643,24 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
 }
 
 #[test]
+fn a_site_trail_places_and_reveals_the_shared_favorite_heart() {
+    let css = reading_mode_css();
+    let placed = rule_body(css, ".library-crumb-trail > .tab-favorite {");
+    assert_contains(placed, "position: static;");
+    assert_contains(placed, "flex: none;");
+
+    let revealed = rule_body(
+        css,
+        ".library-crumb-trail:hover > .tab-favorite,\n.library-crumb-trail:focus-within > .tab-favorite {",
+    );
+    assert_contains(revealed, "opacity: 1;");
+    assert_contains(
+        revealed,
+        "opacity var(--lt-duration-120) var(--lt-ease-decelerate)",
+    );
+}
+
+#[test]
 fn the_confirmation_throws_the_shared_dot_shadow_rather_than_a_blur_of_its_own() {
     // Nothing in this app casts a smooth shadow: every floating surface is a name in one dot-lattice rule, and none of the shadow tokens is a cast shadow. A new surface growing its own `box-shadow` beside that rule is the drift this pins.
     let css = reading_mode_css();

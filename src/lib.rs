@@ -147,6 +147,8 @@ pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     "assets/shell/journal.js",
     // Shared state follows the journal and leads every subject that reaches it.
     "assets/shell/state.js",
+    // The text every subject writes with — escaping markup and counting a thing without saying "1 matches" — ahead of every fragment that draws a word.
+    "assets/shell/text.js",
     // Then the flowchart sheet, in seven: the grammar, the sheet that asks it, then five more of that sheet. Mermaid draws the canvas, so there is no layout of ours in between, and the grammar leads because everything else calls into it.
     "assets/shell/flow-model.js",
     "assets/shell/flow-canvas.js",

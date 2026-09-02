@@ -1,4 +1,6 @@
 // Mutable state belongs to its only writer, or in state.js when fragments share the writing.
+//
+// The same file owns where a shared name lives, for the four the whole front end writes text with: they were declared at the foot of the last fragment and called by seven loading ahead of it, which stood only because a function declaration hoists over the joined script.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -217,13 +219,62 @@ function proveScanner() {
   if (!stale.some((one) => one.includes('shell/one.js:stale'))) throw new Error('a stale ownership baseline entry passed without its file and binding');
 }
 
+// ---- where a shared name lives ----------------------------------------------
+
+// The four the whole front end writes text with. Their home is pinned rather than left to hoisting: seven fragments call them and every one loads ahead of the file declaring them, so a move back into a subject file breaks nothing a boot would notice.
+const TEXT_HELPERS = ['escapeText', 'escapeAttr', 'formatCount', 'formatCountLabel'];
+const TEXT_HELPER_HOME = 'shell/text.js';
+
+function textHelperProblems(fragments) {
+  const declaredIn = new Map(TEXT_HELPERS.map((name) => [name, []]));
+  for (const { file, source } of fragments) {
+    for (const name of TEXT_HELPERS) {
+      const declarations = source.match(new RegExp(String.raw`^[ \t]*function\s+` + name + String.raw`\s*\(`, 'gm')) || [];
+      for (const _ of declarations) declaredIn.get(name).push(file);
+    }
+  }
+  const problems = [];
+  for (const [name, files] of declaredIn) {
+    if (!files.length) problems.push(`${name} is declared in no fragment; it belongs in ${TEXT_HELPER_HOME}`);
+    else if (files.length > 1) problems.push(`${name} is declared in ${files.join(' and ')}; it belongs in ${TEXT_HELPER_HOME} alone`);
+    else if (files[0] !== TEXT_HELPER_HOME) problems.push(`${name} is declared in ${files[0]}; it belongs in ${TEXT_HELPER_HOME}`);
+  }
+  return problems;
+}
+
+// Proved on made-up fragments before a real one is opened, so a green run is evidence the pin can still fail rather than an empty walk.
+function proveTextHelperPin() {
+  const declarations = (names) => `${names.map((name) => `function ${name}(value) { return value; }`).join('\n')}\n`;
+  const home = { file: TEXT_HELPER_HOME, source: declarations(TEXT_HELPERS) };
+  const caller = { file: 'shell/library.js', source: 'const label = formatCountLabel(1, "match", "matches");\n' };
+  const settled = textHelperProblems([home, caller]);
+  if (settled.length) throw new Error(`the four in their own fragment were called a fault: ${settled.join('; ')}`);
+  const moved = textHelperProblems([
+    { file: TEXT_HELPER_HOME, source: declarations(['escapeAttr', 'formatCount', 'formatCountLabel']) },
+    { file: 'shell/minimap.js', source: declarations(['escapeText']) },
+  ]);
+  if (!moved.some((one) => one.includes('escapeText') && one.includes('shell/minimap.js'))) throw new Error(`a helper declared outside its home passed without its name and the fragment holding it: ${moved.join('; ')}`);
+  const copied = textHelperProblems([home, { file: 'shell/library.js', source: '  function formatCount(value) { return value; }\n' }]);
+  if (!copied.some((one) => one.includes('formatCount') && one.includes('shell/library.js') && one.includes(TEXT_HELPER_HOME))) throw new Error(`a second copy passed without both fragments holding it: ${copied.join('; ')}`);
+  const dropped = textHelperProblems([caller]);
+  if (dropped.length !== TEXT_HELPERS.length) throw new Error(`a fragment list with no home for the four passed: ${dropped.join('; ')}`);
+}
+
+function shellFragments() {
+  return names.filter((name) => name.startsWith('shell/')).map((file) => ({ file, source: readFileSync(join(root, 'src/assets', file), 'utf8') }));
+}
+
 export function run() {
   check('mutable front-end state is assigned only by its owning fragment', () => {
     proveScanner();
     if (names[0] !== 'shell/journal.js' || names[1] !== 'shell/state.js') throw new Error(`the shell must load journal.js then state.js, found ${names.slice(0, 2).join(', ')}`);
-    const fragments = names.filter((name) => name.startsWith('shell/')).map((file) => ({ file, source: readFileSync(join(root, 'src/assets', file), 'utf8') }));
-    const found = foreignAssignments(fragments);
+    const found = foreignAssignments(shellFragments());
     const problems = ownershipProblems(found, new Set());
+    if (problems.length) throw new Error(problems.join('; '));
+  });
+  check(`the four helpers the front end writes text with are declared in ${TEXT_HELPER_HOME} alone`, () => {
+    proveTextHelperPin();
+    const problems = textHelperProblems(shellFragments());
     if (problems.length) throw new Error(problems.join('; '));
   });
 }

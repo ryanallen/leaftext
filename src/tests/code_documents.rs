@@ -106,3 +106,63 @@ fn source_files_open_directly_without_becoming_folder_or_vault_documents() {
 
     fs::remove_dir_all(root).expect("test directory removed");
 }
+
+#[test]
+fn the_listed_document_gate_admits_every_named_spelling_and_no_source_one() {
+    for format in DocumentFormat::ALL {
+        for extension in format.extensions() {
+            for spelling in [
+                extension.to_string(),
+                extension.to_ascii_uppercase(),
+                format!("{}{}", extension[..1].to_ascii_uppercase(), &extension[1..]),
+            ] {
+                let path = PathBuf::from(format!("note.{spelling}"));
+                assert!(is_listed_document_path(&path), "{spelling}");
+                assert!(is_supported_document_path(&path), "{spelling}");
+                assert_eq!(DocumentFormat::for_path(&path), Some(format), "{spelling}");
+            }
+        }
+    }
+
+    for definition in source_definitions() {
+        for extension in definition.extensions {
+            for spelling in [extension.to_string(), extension.to_ascii_uppercase()] {
+                let path = PathBuf::from(format!("file.{spelling}"));
+                assert!(is_supported_document_path(&path), "{spelling}");
+                assert!(!is_listed_document_path(&path), "{spelling}");
+                assert_eq!(
+                    DocumentFormat::for_path(&path),
+                    Some(DocumentFormat::Code),
+                    "{spelling}"
+                );
+                assert_eq!(source_definition(&path), Some(*definition), "{spelling}");
+            }
+        }
+        for name in definition.file_names {
+            for spelling in [name.to_string(), name.to_ascii_uppercase()] {
+                let path = PathBuf::from(&spelling);
+                assert!(is_supported_document_path(&path), "{spelling}");
+                assert!(!is_listed_document_path(&path), "{spelling}");
+                assert_eq!(source_definition(&path), Some(*definition), "{spelling}");
+            }
+        }
+    }
+
+    for unknown in [
+        "shot.png",
+        "app.exe",
+        "font.woff2",
+        "lock.LOCK",
+        "archive.Zip",
+    ] {
+        let path = PathBuf::from(unknown);
+        assert_eq!(DocumentFormat::for_path(&path), None, "{unknown}");
+        assert!(!is_supported_document_path(&path), "{unknown}");
+        assert!(!is_listed_document_path(&path), "{unknown}");
+    }
+
+    // A file with no extension is nobody's listed document, whether or not the source table knows its whole name.
+    for bare in ["README", "Dockerfile", ".env"] {
+        assert!(!is_listed_document_path(Path::new(bare)), "{bare}");
+    }
+}

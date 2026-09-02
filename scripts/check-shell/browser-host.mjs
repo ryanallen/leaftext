@@ -110,7 +110,7 @@ export function run() {
     new vm.Script(readFileSync(join(root, 'web/preview/settings.js'), 'utf8'), { filename: 'settings.js' }).runInContext(context);
 
     // Everything the host hands the page, recorded on the way through. The pane and the strip still run the page's own call, so a payload the front end cannot take fails here. The state call is recorded and not run: it renders a whole document, and nothing is rendered on this page for it to render into — what is being proved is that the host reached the page by the call it reads a document in by.
-    const seen = { state: [], folder: [], pager: [], fragment: [], place: [] };
+    const seen = { state: [], favorites: [], folder: [], pager: [], fragment: [], place: [] };
     const watch = (name, into, through) => {
       const was = context.window[name];
       context.window[name] = (payload) => {
@@ -119,6 +119,7 @@ export function run() {
       };
     };
     watch('leafSetState', seen.state, false);
+    watch('leafSetFavorites', seen.favorites, true);
     watch('leafSetLibraryFolder', seen.folder, true);
     watch('leafSetPager', seen.pager, true);
     // The two the history work rides on. Recorded and not run, for the same reason the state call is: nothing is rendered on this page to scroll.
@@ -535,6 +536,15 @@ export function run() {
     if (!context.window.__printed) throw new Error('the site host answered exportPdf and never reached the browser print it is written as');
   });
 
+  checkSettled('the page can ask exactly what the published-site host answers', async () => {
+    const { context } = await bootWebHost();
+    if (context.window.__leafHostAnswers !== context.__answers) throw new Error("the page's answer did not come from the host's command table");
+    if (!context.window.__leafHostAnswers('toggleFavorite')) throw new Error('the page was told the published-site host does not mark pages');
+    if (context.window.__leafHostAnswers('open') || context.window.__leafHostAnswers('search')) {
+      throw new Error('the page was told the published-site host answers a command it refuses or has not built yet');
+    }
+  });
+
   checkSettled("the browser's own Back walks the site and lands on the paragraph the reader left", async () => {
     const { leaf, send, seen, address } = await bootWebHost();
     const opened = () => seen.state.map((one) => one.document && one.document.path);
@@ -690,13 +700,19 @@ export function run() {
         ],
       }),
     };
-    const { context, send, stored } = await bootWebHost({ documents, kept: held });
+    const { context, leaf, send, stored } = await bootWebHost({ documents, kept: held });
 
     // Back over the state the page starts from, before the first render, the way a kept theme comes back over its settings.
     const landed = (context.window.__leafInitialState || {}).favorites || [];
     if (landed.map((one) => one.path).join(',') !== 'notes/two.md,gone.md') {
       throw new Error(`the kept marks did not reach the page's boot state: ${JSON.stringify(landed)}`);
     }
+    await leaf.openAddress('README.md');
+    if (!context.isFavoritePath('notes/two.md')) throw new Error('opening the first document cleared the mark the browser restored');
+
+    send({ command: 'openRecent', path: 'notes/one.md' });
+    await settle();
+    if (!context.isFavoritePath('notes/two.md')) throw new Error('opening another document cleared the marks the browser restored');
 
     const marks = () => (stored().favorites || []).map((one) => one.path).join(',');
 

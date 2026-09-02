@@ -217,6 +217,7 @@ export function sayMissing(file, reason) {
 }
 
 export async function startLeaftext({ documents, name = '', read }) {
+  window.__leafHostAnswers = answers;
   const core = await load(MODULE);
   const known = new Set(documents.map((entry) => entry.path));
   let open = null;
@@ -428,6 +429,7 @@ export async function startLeaftext({ documents, name = '', read }) {
     open = path;
     const source = await read(path);
     run(core.documentScript(source, path));
+    run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
     run(`window.leafSetPager && window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`);

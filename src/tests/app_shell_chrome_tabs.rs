@@ -196,8 +196,8 @@ fn marking_from_the_tab_and_from_the_menu_take_the_same_path() {
 
     // One function, so the heart and the menu item can never disagree about what marking means — and it flips the page's own copy before it tells the host, which is what makes the change instant.
     assert_eq!(script.matches("function toggleFavorite(").count(), 1);
-    // The declaration, the tab heart's click, the menu item, and the favorite row's heart — which calls it twice, once to unfavorite and once to take that back. Three gestures, one path.
-    assert_eq!(script.matches("toggleFavorite(").count(), 5);
+    // The declaration, the tab and trail hearts, the menu item, and the favorite row's heart — which calls it twice, once to unfavorite and once to take that back. Four gestures, one path.
+    assert_eq!(script.matches("toggleFavorite(").count(), 6);
     assert_contains(
         script,
         "send({ command: 'toggleFavorite', path, kind: kind || 'document' });",

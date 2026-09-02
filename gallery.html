@@ -3387,6 +3387,17 @@ body.frameless.is-fullscreen::before {
   border-color: transparent;
   color: var(--lt-primary-foreground);
 }
+.library-crumb-trail > .tab-favorite {
+  position: static;
+  flex: none;
+  background: transparent;
+}
+.library-crumb-trail:hover > .tab-favorite,
+.library-crumb-trail:focus-within > .tab-favorite {
+  opacity: 1;
+  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
+}
 /* Back and forward are one paired control, so they sit at the tight gap the window buttons use rather than the bar's 16px between groups. */
 .history-actions {
   display: flex;

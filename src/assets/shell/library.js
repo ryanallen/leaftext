@@ -596,6 +596,15 @@ function siteCrumbChain() {
   last.name = documentNameParts(last.name).stem || last.name;
   return chain;
 }
+function trailFavoriteHtml() {
+  if (typeof window.__leafHostAnswers !== 'function' || !window.__leafHostAnswers('toggleFavorite')) return '';
+  const path = activeDocumentPath();
+  const favorite = isFavoritePath(path);
+  const mark = favorite ? 'Unfavorite' : 'Favorite';
+  const classes = favorite ? 'tab-favorite is-on' : 'tab-favorite';
+  const icon = favorite ? 'on' : 'off';
+  return `<button type="button" class="${classes}" data-trail-favorite="${escapeAttr(path || '')}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${icon}"></span></button>`;
+}
 // The chain the trail is currently drawing, kept so a resize can refit without re-walking the tree.
 let libraryCrumbChain = [];
 const CRUMB_SEP_HTML = '<span class="library-crumb-sep" aria-hidden="true">›</span>';
@@ -614,7 +623,7 @@ function crumbElisionHtml(hidden) {
 // What the trail was last laid out for: its path chain and the width it was fitted at. The library re-renders whenever a disk change touches the folder on screen, and rebuilding the crumbs throws away the "…" an open menu hangs off.
 let libraryCrumbFitKey = null;
 function crumbFitKey(segments, width) {
-  return segments.map((segment) => segment.path + '>' + segment.name).join('|') + '@' + width;
+  return segments.map((segment) => segment.path + '>' + segment.name).join('|') + '@' + width + '@' + isFavoritePath(activeDocumentPath());
 }
 // Lay the trail out for a pane of this width, in the three steps the settle pass orders: the measuring markup, then every reading of it, then the fit and the one final write. `fitLibraryCrumbs` below runs the three in a row, which is what every caller but the launch reaches for.
 //
@@ -627,7 +636,7 @@ function prepareCrumbFit() {
   // Past here the trail is rebuilt, so a menu hanging off the "…" loses the button under it. Only that one: the switcher stands outside the trail, and closing it here left it unopenable beside a git vault, where asking about the repository brings a watcher event round to shut the menu that asked.
   if (crumbMenuOwner && libraryCrumbTrail.contains(crumbMenuOwner)) hideCrumbMenu();
   libraryCrumbTrail.classList.add('is-measuring');
-  libraryCrumbTrail.innerHTML = fullHtml + CRUMB_SEP_HTML + crumbElisionHtml([]);
+  libraryCrumbTrail.innerHTML = fullHtml + trailFavoriteHtml() + CRUMB_SEP_HTML + crumbElisionHtml([]);
   return segments;
 }
 // Every reading the fit needs, taken together: the room the trail has, each box's natural width, the elision button's, and the gap between them.
@@ -640,6 +649,7 @@ function readCrumbFit(segments) {
     // The trail fills the band whatever is in it, so its width keys the fit safely.
     avail: libraryCrumbTrail.clientWidth,
     crumbWidths: segments.map((_, index) => widthOf(parts[index * 2])),
+    favoriteWidth: widthOf(libraryCrumbTrail.querySelector('[data-trail-favorite]')),
     sepWidth: widthOf(parts[1]),
     moreWidth: widthOf(parts[parts.length - 1]),
     gap: parseFloat(getComputedStyle(libraryCrumbTrail).columnGap) || 0,
@@ -648,21 +658,22 @@ function readCrumbFit(segments) {
 // The fit is arithmetic off those readings, and the trail is written once.
 function applyCrumbFit(reading) {
   if (!reading) return;
-  const { segments, avail, crumbWidths, sepWidth, moreWidth, gap } = reading;
+  const { segments, avail, crumbWidths, favoriteWidth, sepWidth, moreWidth, gap } = reading;
   libraryCrumbFitKey = crumbFitKey(segments, avail);
   libraryCrumbTrail.classList.remove('is-measuring');
   let hidden = [];
   let shown = segments;
   // Width of a row of boxes: the boxes plus the gaps between them.
   const rowWidth = (boxes) => boxes.reduce((sum, w) => sum + w, 0) + Math.max(0, boxes.length - 1) * gap;
-  const full = rowWidth(crumbWidths.flatMap((w, index) => (index ? [sepWidth, w] : [w])));
+  const favoriteBox = favoriteWidth > 0 ? [favoriteWidth] : [];
+  const full = rowWidth(crumbWidths.flatMap((w, index) => (index ? [sepWidth, w] : [w])).concat(favoriteBox));
   if (avail > 0 && segments.length > 2 && full > avail) {
     // Root and current folder always stay. Between them, keep as many of the nearest ancestors as fit behind the "…" — at least the current folder, which shrinks with an ellipsis of its own if even that overruns.
     let keep = 1;
     for (let first = segments.length - 2; first >= 2; first -= 1) {
       const tail = segments.slice(first);
       const boxes = [crumbWidths[0], sepWidth, moreWidth]
-        .concat(tail.flatMap((_, i) => [sepWidth, crumbWidths[first + i]]));
+        .concat(tail.flatMap((_, i) => [sepWidth, crumbWidths[first + i]]), favoriteBox);
       if (rowWidth(boxes) > avail) break;
       keep = segments.length - first;
     }
@@ -670,9 +681,10 @@ function applyCrumbFit(reading) {
     shown = segments.slice(segments.length - keep);
   }
   const rendered = shown.map((segment, index) => crumbHtml(segment, index === shown.length - 1));
-  libraryCrumbTrail.innerHTML = hidden.length
+  const pathHtml = hidden.length
     ? [crumbHtml(segments[0], false), crumbElisionHtml(hidden)].concat(rendered).join(CRUMB_SEP_HTML)
     : rendered.join(CRUMB_SEP_HTML);
+  libraryCrumbTrail.innerHTML = pathHtml + trailFavoriteHtml();
   bindCrumbTrailButtons(hidden);
 }
 // The three in a row. A trail already laid out for this path at this width is left alone.
@@ -686,6 +698,14 @@ function bindCrumbTrailButtons(hidden) {
   libraryCrumbTrail.querySelectorAll('[data-crumb-path]').forEach((crumb) => {
     crumb.addEventListener('click', () => setLibraryFolder(crumb.dataset.crumbPath));
   });
+  const favorite = libraryCrumbTrail.querySelector('[data-trail-favorite]');
+  if (favorite) {
+    favorite.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      toggleFavorite(favorite.dataset.trailFavorite, 'document');
+    });
+  }
   const more = libraryCrumbTrail.querySelector('[data-crumb-more]');
   if (more) {
     // On the press, and stopped there, so the menu's own close-on-outside-press does not fight this toggle -- same reasoning as the vault switcher.

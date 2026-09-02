@@ -47,6 +47,10 @@ window.leafSetState = (state) => {
     }
   });
 };
+window.leafSetFavorites = (favorites) => {
+  currentState.favorites = Array.isArray(favorites) ? favorites : [];
+  renderTabs(currentState);
+};
 // Re-render the active document after a live reload without scrolling to the top: capture the position, re-render, restore it (clamped if the document shrank).
 window.leafReloadDocument = (state) => {
   // A source-block commit leaves an above-edit anchor; prefer it over the top-visible capture, which would target the momentarily zero-height block.

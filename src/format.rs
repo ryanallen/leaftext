@@ -81,13 +81,20 @@ impl DocumentFormat {
         }
     }
 
+    /// The named format an extension spells, or `None` when no arm above claims it — the source table is not asked. Matched against the static spellings themselves, so asking costs no lowercased copy: every path a folder, vault, graph or pager meets asks this once per file.
+    fn named_format_for_extension(extension: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|format| {
+            format
+                .extensions()
+                .iter()
+                .any(|spelling| spelling.eq_ignore_ascii_case(extension))
+        })
+    }
+
     /// The format an extension names, or `None` when the app can't read it. Case-insensitive: extensions arrive from the filesystem as typed.
     pub fn from_extension(extension: &str) -> Option<Self> {
-        let extension = extension.to_ascii_lowercase();
-        Self::ALL
-            .into_iter()
-            .find(|format| format.extensions().contains(&extension.as_str()))
-            .or_else(|| source_definition_for_extension(&extension).map(|_| Self::Code))
+        Self::named_format_for_extension(extension)
+            .or_else(|| source_definition_for_extension(extension).map(|_| Self::Code))
     }
 
     /// The format `path` names, or `None` when the app can't read it. This is the question to ask before opening a file; [`Self::from_path`] is the one to ask once it is already open.
@@ -275,28 +282,33 @@ pub fn source_definitions() -> &'static [SourceDefinition] {
     SOURCE_DEFINITIONS
 }
 
+/// The source definition an extension spells. Matched against the static spellings themselves, so an extension arrives as it was typed on disk and no lowercased copy is made to ask.
 pub fn source_definition_for_extension(extension: &str) -> Option<SourceDefinition> {
+    SOURCE_DEFINITIONS.iter().copied().find(|definition| {
+        definition
+            .extensions
+            .iter()
+            .any(|spelling| spelling.eq_ignore_ascii_case(extension))
+    })
+}
+
+/// The source definition `path` names, by whole file name first and then by extension. The two are asked one after the other rather than the extension table being asked again inside every definition, which is the same answer for one walk instead of sixteen — only `.env` and `Dockerfile` are named as whole files, and neither has an extension to disagree with.
+pub fn source_definition_for_path(path: &Path) -> Option<SourceDefinition> {
+    let file_name = path.file_name()?.to_str()?;
     SOURCE_DEFINITIONS
         .iter()
         .copied()
-        .find(|definition| definition.extensions.contains(&extension))
-}
-
-pub fn source_definition_for_path(path: &Path) -> Option<SourceDefinition> {
-    let file_name = path.file_name()?.to_str()?;
-    SOURCE_DEFINITIONS.iter().copied().find(|definition| {
-        definition
-            .file_names
-            .iter()
-            .any(|name| name.eq_ignore_ascii_case(file_name))
-            || path
-                .extension()
+        .find(|definition| {
+            definition
+                .file_names
+                .iter()
+                .any(|name| name.eq_ignore_ascii_case(file_name))
+        })
+        .or_else(|| {
+            path.extension()
                 .and_then(|extension| extension.to_str())
-                .and_then(|extension| {
-                    source_definition_for_extension(&extension.to_ascii_lowercase())
-                })
-                .is_some_and(|found| found == *definition)
-    })
+                .and_then(source_definition_for_extension)
+        })
 }
 
 pub fn source_extensions() -> Vec<&'static str> {
@@ -329,7 +341,10 @@ pub fn is_supported_document_path(path: &Path) -> bool {
     DocumentFormat::for_path(path).is_some()
 }
 
-/// True when `path` belongs in a folder, pager, corpus, or graph. Source files open when named, without turning a repository into a library of its code.
+/// True when `path` belongs in a folder, pager, corpus, or graph. Source files open when named, without turning a repository into a library of its code — so this asks the named formats alone rather than recognizing a source file in order to refuse it. That is the whole of the answer: every question here ends in the named table, and a folder of pictures and build output never touches the source table at all.
 pub fn is_listed_document_path(path: &Path) -> bool {
-    matches!(DocumentFormat::for_path(path), Some(format) if format != DocumentFormat::Code)
+    path.extension()
+        .and_then(|extension| extension.to_str())
+        .and_then(DocumentFormat::named_format_for_extension)
+        .is_some()
 }

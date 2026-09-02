@@ -1314,21 +1314,6 @@ function undoLastDelete() {
   undoableDelete = null;
   send({ command: 'undoDelete', path });
 }
-function escapeText(value) {
-  return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-}
-function escapeAttr(value) {
-  return escapeText(value).replace(/`/g, '&#96;');
-}
-// Thousands separators, so a big count reads as "2,000" rather than "2000".
-function formatCount(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number.toLocaleString('en-US') : String(value);
-}
-// The one place a counted sentence chooses its word, so a count of one never reads as a plural. Whole labels, because the pair is sometimes "match is" against "matches are".
-function formatCountLabel(value, singular, plural) {
-  return `${formatCount(value)} ${Number(value) === 1 ? singular : plural}`;
-}
 // Settle layout before the first render.
 runSettlePass();
 // Every fragment is loaded, so a render from here on is a page somebody could use — which is what the startup card is waiting to be replaced by.

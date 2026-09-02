@@ -134,8 +134,9 @@ export function run() {
   });
 
   /** A site or desktop boot standing on one document, so the trail and the strip can both be read. `document: null` keeps the home screen's cheap render — what is being proved is the bar, and the trail's chain comes off the active tab either way. */
-  function bootedWithDocument(site, path) {
+  function bootedWithDocument(site, path, hostAnswers) {
     const booted = siteBoot(site);
+    if (hostAnswers) booted.context.window.__leafHostAnswers = hostAnswers;
     booted.context.leafSetLibraryFolder({ path: 'docs/guide', chain: [{ name: 'docs', path: 'docs' }, { name: 'guide', path: 'docs/guide' }], rootName: 'Emptyguru', entries: [] });
     booted.context.leafSetState({ recent: [], favorites: [], tabs: [{ path, title: path }], active: 0, document: null });
     return booted;
@@ -182,6 +183,34 @@ export function run() {
     if (desktopTrail.parentElement.id !== 'libraryCrumbs') throw new Error(`the desktop's trail left the pane's band for ${desktopTrail.parentElement.id}`);
     if (!/is-current"[^>]*>guide</.test(desktopTrail.innerHTML)) {
       throw new Error(`the desktop's trail stopped ending at the folder the pane is showing: ${desktopTrail.innerHTML}`);
+    }
+  });
+
+  check("a site whose host marks pages draws the heart at the trail's end", () => {
+    const site = bootedWithDocument(true, 'docs/guide/README.md', (command) => command === 'toggleFavorite');
+    const trail = site.context.document.getElementById('libraryCrumbTrail');
+    let heart = trail.querySelector('[data-trail-favorite]');
+    if (!heart || trail.children[trail.children.length - 1] !== heart) throw new Error(`the heart is not the last thing in the trail: ${trail.innerHTML}`);
+    if (heart.getAttribute('aria-pressed') !== 'false' || !heart.innerHTML.includes('lt-icon-favorite-off')) {
+      throw new Error(`an unmarked page drew ${heart.outerHTML}`);
+    }
+    const press = (heart.listeners.get('pointerdown') || [])[0];
+    if (!press) throw new Error('the trail heart has no press');
+    press({ button: 0, stopPropagation() {} });
+    const sent = site.sent[site.sent.length - 1];
+    if (!sent || sent.command !== 'toggleFavorite' || sent.path !== 'docs/guide/README.md') {
+      throw new Error(`pressing the trail heart sent ${JSON.stringify(sent)}`);
+    }
+    heart = trail.querySelector('[data-trail-favorite]');
+    if (!heart || heart.getAttribute('aria-pressed') !== 'true' || !heart.innerHTML.includes('lt-icon-favorite-on')) {
+      throw new Error(`the pressed heart did not fill: ${trail.innerHTML}`);
+    }
+
+    const refused = bootedWithDocument(true, 'docs/guide/README.md', () => false);
+    const refusedTrail = refused.context.document.getElementById('libraryCrumbTrail');
+    if (refusedTrail.querySelector('[data-trail-favorite]')) throw new Error(`a host that does not mark pages drew a heart: ${refusedTrail.innerHTML}`);
+    if (!/is-current"[^>]*>README<\/span>$/.test(refusedTrail.innerHTML)) {
+      throw new Error(`a host that does not mark pages no longer ends at the document: ${refusedTrail.innerHTML}`);
     }
   });
 
