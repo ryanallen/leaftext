@@ -18,6 +18,7 @@ mod xlsx;
 mod zip;
 
 use crate::*;
+use std::borrow::Cow;
 use std::fmt::Write as _;
 use std::ops::Range;
 use zip::{Archive, ArchiveError};
@@ -153,21 +154,30 @@ fn read_archive(
     format: DocumentFormat,
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
-    let document = read_document(archive, format).map_err(|refusal| unreadable(refusal, path))?;
-    Ok(render_document(&document, path, format, host))
+    let mut document =
+        read_document(archive, format).map_err(|refusal| unreadable(refusal, path))?;
+    // The render reads the member's name and never its text, so the source can move into the opened document.
+    let source = std::mem::take(&mut document.anchor_text);
+    Ok(render_document(
+        &document,
+        Cow::Owned(source),
+        path,
+        format,
+        host,
+    ))
 }
 
 /// Hand a parsed package to the one routing table every tree format goes through.
 pub(crate) fn render_document(
     document: &OfficeDocument,
+    source: Cow<'_, str>,
     path: &Path,
     format: DocumentFormat,
     host: &dyn LeafHost,
 ) -> OpenedDocument {
     let title = document.title.clone();
-    let anchor_text = document.anchor_text.clone();
     crate::opened_document_from_tree(
-        &anchor_text,
+        source,
         path,
         format,
         |_, fallback_title| {
@@ -185,9 +195,12 @@ pub(crate) fn anchored_member_source(
     format: DocumentFormat,
 ) -> io::Result<(SourceText, String, PackageDocument)> {
     let archive = Archive::read(bytes).map_err(|refusal| unreadable(refusal, path))?;
-    let document = read_document(&archive, format).map_err(|refusal| unreadable(refusal, path))?;
+    let mut document =
+        read_document(&archive, format).map_err(|refusal| unreadable(refusal, path))?;
+    // The carried render reads the member's name and never its text, so the source can own the parsed string.
+    let source = std::mem::take(&mut document.anchor_text);
     Ok((
-        SourceText::utf8(document.anchor_text.clone()),
+        SourceText::utf8(source),
         document.anchor.clone(),
         PackageDocument(document),
     ))

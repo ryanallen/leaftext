@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import {
   bootReading,
   check,
+  checkSettled,
   record,
   renderReadingDocument,
   runShell,
@@ -19,6 +20,28 @@ export function run() {
   // Every file a reader opens comes through this render. What the checks below drive is the end of it: the guard that drops a landing armed on another document, and the three landings after it — the reader's own pixel, the block holding a source line, and the reset that catches what neither of those answered.
   //
   // Geometry is each check's own, never the stand-in element's. Every pixel a landing writes goes through the clamp, which measures the surface, the body and the body's first block, so a check standing none of them in reads every landing back as zero and passes on numbers nobody chose.
+
+  checkSettled('a staged reading payload is fetched and handed to its state entry point', async () => {
+    const context = runShell(source);
+    const payload = { recent: [], favorites: [], tabs: [], active: null, document: { source: 'from the payload' } };
+    const fetched = [];
+    const landed = [];
+    context.fetch = (url) => {
+      fetched.push(url);
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(payload) });
+    };
+    context.window.leafSetState = (state) => landed.push(state);
+    context.window.leafLoadWorkspace('leaf-source://localhost/payload/7', 'state', null);
+    await new Promise((done) => setImmediate(done));
+    if (fetched.join('') !== 'leaf-source://localhost/payload/7') throw new Error(`the page fetched ${JSON.stringify(fetched)} rather than the staged payload URL`);
+    if (landed.length !== 1 || landed[0] !== payload) throw new Error('the fetched payload did not reach the state entry point');
+    const buffer = new TextEncoder().encode(JSON.stringify(payload)).buffer;
+    let released = null;
+    context.window.chrome = { webview: { releaseBuffer: (value) => { released = value; } } };
+    context.acceptWorkspaceSharedBuffer({ getBuffer: () => buffer, additionalData: { action: 'state', detail: null } });
+    if (landed.length !== 2 || landed[1].document.source !== 'from the payload') throw new Error('the shared payload did not reach the state entry point');
+    if (released !== buffer) throw new Error('the page kept the shared payload after reading it');
+  });
 
   check('a document handed to the page is rendered into the reading view', () => {
     const { context, app, body } = bootReading({ path: 'C:\\Notes\\opened.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });

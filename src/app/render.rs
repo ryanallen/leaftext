@@ -332,16 +332,19 @@ impl Reader {
                 reused: true,
             });
         }
-        let source = match read_already {
+        let mut source = match read_already {
             Some(source) => source,
             None => read_document_for_editing(path)?,
         };
-        let document = opened_document_for_path_with_host(path, &source, &DesktopHost::default())?;
+        let document =
+            opened_document_for_path_with_host(path, &mut source, &DesktopHost::default())?;
         if let Some(tab) = self.workspace.tabs.get_mut(index) {
             tab.rendered = Some(RenderedCache {
                 path: path.to_path_buf(),
                 hash,
                 record,
+                // Moved rather than cloned: the drawing above took a borrow of this source, so the archive travels into the entry without a second copy of the file.
+                package: source.package,
                 document: document.clone(),
             });
         }
@@ -487,8 +490,8 @@ impl Reader {
                 let image_source_path = fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
                 self.set_image_dir(local_image_source_dir(&image_source_path));
                 let tabs = self.workspace.tab_summaries();
-                let script = match scroll {
-                    ScrollIntent::Preserve { .. } => workspace_reload_script(
+                let message = match scroll {
+                    ScrollIntent::Preserve { .. } => workspace_reload_message(
                         &self.recent.files,
                         &self.favorites,
                         &tabs,
@@ -506,7 +509,7 @@ impl Reader {
                             )
                         });
                         if cached {
-                            leaftext::workspace_cached_switch_script(
+                            workspace_cached_switch_message(
                                 &self.recent.files,
                                 &self.favorites,
                                 &tabs,
@@ -515,7 +518,7 @@ impl Reader {
                                 rendered.hash,
                             )
                         } else {
-                            workspace_switch_script(
+                            workspace_switch_message(
                                 &self.recent.files,
                                 &self.favorites,
                                 &tabs,
@@ -526,7 +529,7 @@ impl Reader {
                             )
                         }
                     }
-                    ScrollIntent::Reset => workspace_state_script(
+                    ScrollIntent::Reset => workspace_state_message(
                         &self.recent.files,
                         &self.favorites,
                         &tabs,
@@ -535,7 +538,7 @@ impl Reader {
                         Some(rendered.hash),
                     ),
                 };
-                run_page_script(self.page(), &script, "Failed to update document view");
+                run_workspace_payload(self.page(), message, "Failed to update document view");
             }
             None => {
                 self.window.set_title("Leaftext");

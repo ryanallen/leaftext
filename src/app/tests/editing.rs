@@ -15,6 +15,7 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
             path: path.clone(),
             hash: content_hash(text),
             record: None,
+            package: None,
             document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
         }),
         ..Default::default()
@@ -1019,4 +1020,149 @@ fn a_second_tick_refreshes_the_copy_the_first_one_left_rather_than_making_anothe
     );
 
     let _ = fs::remove_dir_all(&dir);
+}
+
+/// A tab open on a package, with the render entry the open leaves behind: the drawn document, the archive it was unpacked from, and a reading of the file taken before it was read. The file is then overwritten with rubbish of its own length and stamped as never having moved, so anything the seed answers with could only have come off the tab.
+fn package_tab_over_rubbish(label: &str, words: &str) -> (PathBuf, Workspace, String) {
+    let path = scratch_dir(label).join("report.docx");
+    let member = word_document(words);
+    let archive = one_member_package("word/document.xml", member.as_bytes());
+    fs::write(&path, &archive).expect("the package is written");
+    let written_at = a_minute_ago();
+    stamp_written(&path, written_at);
+
+    let mut source = read_document_for_editing(&path).expect("the package is read");
+    let hash = content_hash(&source.text.text);
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+        .expect("the package is drawn");
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: path.clone(),
+        hash,
+        record: settled_file_record(&path),
+        package: source.package,
+        document: drawn,
+    });
+
+    fs::write(&path, vec![b'x'; archive.len()]).expect("the rubbish is written");
+    stamp_written(&path, written_at);
+    (path, workspace, member)
+}
+
+/// The first click into a Word file the app is already showing. The package was unpacked once by the open and its member is on the tab, so the buffer is built from what is there rather than from a second inflate and a second parse of the file.
+///
+/// The file underneath holds rubbish of exactly the archive's length, stamped as though nothing had touched it — bytes no reader could unpack. So an answer carrying the document's own words is proof the file was not opened, where asserting that a call was not made would only restate the change.
+#[test]
+fn a_first_click_into_a_package_is_answered_off_the_tab_rather_than_the_file() {
+    let (path, mut workspace, member) =
+        package_tab_over_rubbish("editing-package-seed", "the words on the page");
+
+    let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");
+    assert_eq!(
+        answered["text"], member,
+        "the buffer holds the member the render drew, which the file no longer contains"
+    );
+    assert!(
+        workspace.tabs[0]
+            .rendered
+            .as_ref()
+            .expect("the render is still on the tab")
+            .package
+            .is_none(),
+        "the archive was taken by the buffer rather than left behind as a second copy"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// What a save then writes. The buffer carries the archive the render read, so the member goes back into the file the reader opened — and everything else in that archive travels across untouched, which is the whole reason a package's buffer holds one at all.
+#[test]
+fn a_save_from_a_seeded_package_writes_the_archive_the_render_read() {
+    let (path, mut workspace, member) =
+        package_tab_over_rubbish("editing-package-save", "the words a save keeps");
+    pipe_document_answer(&mut workspace).expect("the buffer is seeded");
+
+    let edit = workspace.tabs[0]
+        .edit
+        .as_ref()
+        .expect("the seed left a buffer");
+    save_editable_document(&DesktopHost::default(), edit).expect("the package is written back");
+
+    let written = read_document_for_editing(&path).expect("the written package is read");
+    assert_eq!(
+        written.text.text, member,
+        "the member a save spliced back is the one that was on screen"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// The gate failing closed. A live reload writes its entry with no reading of the file on purpose, and an entry nothing can date cannot say the file has not moved — so the seed opens the file, which costs one read rather than a wrong document.
+#[test]
+fn a_tab_whose_entry_kept_no_reading_of_the_file_seeds_from_the_disk() {
+    let path = scratch_dir("editing-package-undated").join("report.docx");
+    let stale = word_document("what the tab is showing");
+    let stale_archive = one_member_package("word/document.xml", stale.as_bytes());
+    fs::write(&path, &stale_archive).expect("the package is written");
+    let mut source = read_document_for_editing(&path).expect("the package is read");
+    let hash = content_hash(&source.text.text);
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+        .expect("the package is drawn");
+
+    let fresh = word_document("what the file now holds");
+    fs::write(
+        &path,
+        one_member_package("word/document.xml", fresh.as_bytes()),
+    )
+    .expect("the package is written again");
+    stamp_written(&path, a_minute_ago());
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: path.clone(),
+        hash,
+        record: None,
+        package: source.package,
+        document: drawn,
+    });
+
+    let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");
+    assert_eq!(
+        answered["text"], fresh,
+        "an entry nothing can date is not asked what the file holds"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// A text document is its own file, and how it is spelled — its encoding, and whether it carries a byte order mark — is read off those bytes and written nowhere on the drawn document. So the seed opens it however fresh the render entry is, or a save would spend a spelling nobody read and rewrite the file as something else.
+#[test]
+fn a_text_document_seeds_from_the_disk_with_its_own_spelling() {
+    let path = scratch_dir("editing-note-seed").join("plan.md");
+    let text = "# Plan\n\n- [ ] one\n";
+    let mut bytes = vec![0xEF, 0xBB, 0xBF];
+    bytes.extend_from_slice(text.as_bytes());
+    fs::write(&path, &bytes).expect("the note is written");
+    stamp_written(&path, a_minute_ago());
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: path.clone(),
+        hash: content_hash(text),
+        record: settled_file_record(&path),
+        package: None,
+        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+    });
+
+    let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");
+    assert_eq!(answered["text"], text, "the file's own words");
+    assert_eq!(
+        answered["spelling"]["mark"], true,
+        "and the byte order mark a save has to spend again, which only the read knows about"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the note sits in a folder"));
 }

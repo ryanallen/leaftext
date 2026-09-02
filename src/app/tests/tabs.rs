@@ -294,6 +294,7 @@ fn the_render_cache_answers_only_for_the_same_file_unchanged() {
         path: path.clone(),
         hash,
         record: None,
+        package: None,
         document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     };
 
@@ -326,6 +327,7 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
         path: path.clone(),
         hash: content_hash(text),
         record: None,
+        package: None,
         document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     });
     assert!(
@@ -351,6 +353,7 @@ fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
             path: path.clone(),
             hash,
             record: None,
+            package: None,
             document: opened_document_from_source_with_host("", &path, &DesktopHost::default()),
         }),
         ..Tab::default()
@@ -797,6 +800,7 @@ fn the_render_cache_stands_for_a_file_only_at_the_reading_it_kept() {
         path: path.clone(),
         hash: content_hash(text),
         record: Some(record),
+        package: None,
         document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     };
 
@@ -837,6 +841,7 @@ fn the_render_cache_stands_for_a_file_only_at_the_reading_it_kept() {
         path: path.clone(),
         hash: content_hash(text),
         record: None,
+        package: None,
         document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
     };
     assert!(

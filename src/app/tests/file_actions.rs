@@ -134,6 +134,7 @@ fn renaming_a_file_a_tab_has_left_moves_its_buried_step_and_nothing_else() {
         path: linked.clone(),
         hash: content_hash(text),
         record: None,
+        package: None,
         document: opened_document_from_source_with_host(text, &linked, &DesktopHost::default()),
     });
 

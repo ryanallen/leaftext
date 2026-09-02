@@ -13,6 +13,38 @@ function runViewRender(payload, render) {
     run();
   }
 }
+function deliverWorkspacePayload(state, action, detail) {
+  if (action === 'reload') window.leafReloadDocument(state);
+  else if (action === 'switch') window.leafSwitchTab(state, detail);
+  else if (action === 'cachedSwitch') window.leafSwitchTabCached(state, detail && detail.anchor, detail && detail.key);
+  else window.leafSetState(state);
+}
+function failWorkspacePayload(error) {
+  console.error('reading view: the document payload would not load', error);
+  clearReaderLoading();
+  window.leafShowError('The document could not be opened.');
+}
+window.leafLoadWorkspace = (url, action, detail) => {
+  fetch(url)
+    .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+    .then((state) => deliverWorkspacePayload(state, action, detail))
+    .catch(failWorkspacePayload);
+};
+function acceptWorkspaceSharedBuffer(event) {
+  const buffer = event.getBuffer();
+  try {
+    const state = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer)));
+    const route = event.additionalData || {};
+    deliverWorkspacePayload(state, route.action, route.detail);
+  } catch (error) {
+    failWorkspacePayload(error);
+  } finally {
+    window.chrome.webview.releaseBuffer(buffer);
+  }
+}
+if (window.chrome && window.chrome.webview && window.chrome.webview.addEventListener) {
+  window.chrome.webview.addEventListener('sharedbufferreceived', acceptWorkspaceSharedBuffer);
+}
 window.leafSetState = (state) => {
   currentState = state || { recent: [], favorites: [], tabs: [], active: null, document: null };
   // Only the gestures that meant "leave the map" close it. Opening a file from the pane while reading the map is a change of subject, not a change of view — the graph stays up and moves its highlight to what you opened.

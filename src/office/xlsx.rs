@@ -10,6 +10,9 @@ const WORKBOOK: &str = "xl/workbook.xml";
 const WORKBOOK_RELATIONSHIPS: &str = "xl/_rels/workbook.xml.rels";
 const SHARED_STRINGS: &str = "xl/sharedStrings.xml";
 
+/// The longest letter run a cell reference can have. `XFD` — column 16,384 — is the last column in every shipping version of the format, so a longer run names no column at all.
+const MAX_COLUMN_LETTERS: usize = 3;
+
 pub(super) fn read(archive: &Archive<'_>) -> Result<OfficeDocument, ArchiveError> {
     let workbook_text = archive
         .member_text(WORKBOOK)
@@ -90,9 +93,11 @@ fn read_sheet(
             .filter(|child| child.is_element() && child.tag_name().name() == "c")
         {
             // A sheet writes only the cells that hold something, so a gap in the references is a gap in the row.
-            let column = attribute(cell, "r")
-                .and_then(column_index)
-                .unwrap_or(cells.len());
+            let column = match attribute(cell, "r") {
+                // A reference this sheet cannot have is carried out rather than falling through to the next column: a hostile reference silently landing where the row had got to writes its cell into somebody's data.
+                Some(reference) => column_index(member, reference)?.unwrap_or(cells.len()),
+                None => cells.len(),
+            };
             if cells.len() < column {
                 cells.resize(column, String::new());
                 cell_spans.resize(column, None);
@@ -160,18 +165,36 @@ fn shared_strings(text: &str) -> Vec<String> {
         .collect()
 }
 
-/// Which column a cell reference names, counting from zero: `A1` is 0, `B7` is 1, `AA1` is 26.
-fn column_index(reference: &str) -> Option<usize> {
+/// Which column a cell reference names, counting from zero: `A1` is 0, `B7` is 1, `AA1` is 26. `None` where the reference begins with no letter at all, which is a malformed reference rather than a hostile one and leaves the cell where the row had got to.
+///
+/// The row is sized off this number, so a long letter run is an allocation the file chose: twelve letters ask for about ninety-five quadrillion strings, and an `.xlsx` of 858 bytes naming `ABCDEFGHIJKL1` killed the process before it could draw a sentence.
+fn column_index(member: &str, reference: &str) -> Result<Option<usize>, ArchiveError> {
     let letters: String = reference
         .chars()
         .take_while(|character| character.is_ascii_alphabetic())
         .collect();
     if letters.is_empty() {
-        return None;
+        return Ok(None);
+    }
+    if letters.len() > MAX_COLUMN_LETTERS {
+        return Err(no_such_column(member, reference));
     }
     let mut index = 0usize;
     for letter in letters.bytes() {
-        index = index * 26 + (letter.to_ascii_uppercase() - b'A' + 1) as usize;
+        // Checked, because an overflow here wraps silently in a release build and panics in a debug one, which is two different bugs out of one line.
+        index = index
+            .checked_mul(26)
+            .and_then(|so_far| {
+                so_far.checked_add((letter.to_ascii_uppercase() - b'A' + 1) as usize)
+            })
+            .ok_or_else(|| no_such_column(member, reference))?;
     }
-    Some(index - 1)
+    Ok(Some(index - 1))
+}
+
+/// The sentence a reader sees for a reference no sheet can hold, naming the sheet's own part the way the refusals beside it do.
+fn no_such_column(member: &str, reference: &str) -> ArchiveError {
+    ArchiveError::from(format!(
+        "{member} inside this file names a cell in a column that cannot exist: {reference}"
+    ))
 }

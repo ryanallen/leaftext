@@ -83,3 +83,48 @@ fn the_code_view_script_carries_a_url_and_not_the_source() {
         "the script should be a URL, not a payload: {script}"
     );
 }
+
+#[test]
+fn the_reading_view_handoff_keeps_the_document_out_of_the_page_command() {
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let document = OpenedDocument {
+        title: "large".to_string(),
+        path: "C:\\Notes\\large.txt".to_string(),
+        html: String::new(),
+        has_visible_content: false,
+        format: DocumentFormat::Text,
+        blocks: Vec::new(),
+        tasks: Vec::new(),
+        source: "huge document".to_string(),
+        dialect: None,
+    };
+    let message =
+        workspace_state_message(&[], &Favorites::default(), &[], None, Some(&document), None);
+    let script = message.stage_with(stage_page_payload);
+
+    assert!(script.contains("leafLoadWorkspace"), "{script}");
+    assert!(
+        !script.contains("huge document"),
+        "the page command must not carry the document: {script}"
+    );
+    assert!(
+        script.len() < 200,
+        "the page command should carry only a URL: {script}"
+    );
+    let url = script
+        .split('"')
+        .nth(1)
+        .expect("the page command carries its payload URL");
+    let served = source_payload_response(url);
+    let json: serde_json::Value = serde_json::from_slice(&served.body).expect("payload is JSON");
+    assert_eq!(json["document"]["source"], "huge document");
+
+    let message =
+        workspace_state_message(&[], &Favorites::default(), &[], None, Some(&document), None);
+    let metadata: serde_json::Value =
+        serde_json::from_str(&message.shared_metadata()).expect("shared-buffer route is JSON");
+    assert_eq!(metadata["action"], "state");
+    assert_eq!(metadata["detail"], serde_json::Value::Null);
+}

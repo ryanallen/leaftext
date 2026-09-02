@@ -2,10 +2,10 @@
 
 use super::*;
 
-/// The scheme the page fetches the code view's payload over.
+/// The scheme the page fetches large JSON payloads over.
 pub(crate) const SOURCE_PAYLOAD_PROTOCOL: &str = "leaf-source";
 
-/// The code view's payload, staged for the page to fetch rather than pushed to it.
+/// The page's pending payload, staged for it to fetch rather than pushed to it.
 ///
 /// `evaluate_script` hands the whole script across WebView2's process boundary, which was 4.4s of a 4 MB source's 8.8s entry — and `JSON.parse` instead of an object literal changed nothing, because the cost is the crossing, not the parse.
 static PENDING_SOURCE_PAYLOAD: std::sync::Mutex<Option<(u64, Vec<u8>)>> =
@@ -22,12 +22,78 @@ pub(crate) struct SourcePayload {
 }
 
 /// Stage `json` and return the URL that serves it. Each call supersedes the last, so at most one payload is held.
-pub(crate) fn stage_source_payload(json: String) -> String {
+pub(crate) fn stage_page_payload(json: Vec<u8>) -> String {
     let id = SOURCE_PAYLOAD_SERIAL.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
     if let Ok(mut slot) = PENDING_SOURCE_PAYLOAD.lock() {
-        *slot = Some((id, json.into_bytes()));
+        *slot = Some((id, json));
     }
     source_payload_url(SOURCE_PAYLOAD_PROTOCOL, id)
+}
+
+pub(crate) fn stage_source_payload(json: String) -> String {
+    stage_page_payload(json.into_bytes())
+}
+
+/// Hand a document-bearing workspace update to the page without putting its bytes in a page command.
+pub(crate) fn run_workspace_payload(
+    webview: Option<&WebView>,
+    message: WorkspacePayloadMessage,
+    context: &str,
+) {
+    #[cfg(target_os = "windows")]
+    if let Some(webview) = webview {
+        if post_workspace_shared_buffer(webview, &message).is_ok() {
+            return;
+        }
+    }
+    let script = message.stage_with(stage_page_payload);
+    run_page_script(webview, &script, context);
+}
+
+#[cfg(target_os = "windows")]
+fn post_workspace_shared_buffer(
+    webview: &WebView,
+    message: &WorkspacePayloadMessage,
+) -> Result<(), String> {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        ICoreWebView2Environment12, ICoreWebView2_17, COREWEBVIEW2_SHARED_BUFFER_ACCESS_READ_ONLY,
+    };
+    use windows::core::{Interface, HSTRING};
+    use wry::WebViewExtWindows;
+
+    let environment: ICoreWebView2Environment12 = webview
+        .environment()
+        .cast()
+        .map_err(|error| error.to_string())?;
+    let shared = unsafe {
+        environment
+            .CreateSharedBuffer(message.shared_json().len() as u64)
+            .map_err(|error| error.to_string())?
+    };
+    let mut target = std::ptr::null_mut();
+    unsafe {
+        shared
+            .Buffer(&mut target)
+            .map_err(|error| error.to_string())?;
+        std::ptr::copy_nonoverlapping(
+            message.shared_json().as_ptr(),
+            target,
+            message.shared_json().len(),
+        );
+    }
+    let page: ICoreWebView2_17 = webview
+        .webview()
+        .cast()
+        .map_err(|error| error.to_string())?;
+    let metadata = HSTRING::from(message.shared_metadata());
+    unsafe {
+        page.PostSharedBufferToScript(
+            &shared,
+            COREWEBVIEW2_SHARED_BUFFER_ACCESS_READ_ONLY,
+            &metadata,
+        )
+        .map_err(|error| error.to_string())
+    }
 }
 
 /// Resolve a payload request. Kept rather than taken, so a retried fetch still finds it; the next code-view entry replaces it.
@@ -84,9 +150,17 @@ fn seeded_active_edit<'a>(
         .get(index)
         .is_some_and(|tab| tab.needs_edit_seed(&path));
     let contents = if needs_seed {
-        match read_document_for_editing(&path) {
-            Ok(contents) => contents,
-            Err(error) => return Err(SeedRefusal::Unreadable { path, error }),
+        // The tab first: a package this session rendered is already holding both halves of what the buffer wants, so the file is opened only where it is not.
+        let from_render = workspace
+            .tabs
+            .get_mut(index)
+            .and_then(|tab| tab.seed_from_render(&path));
+        match from_render {
+            Some(contents) => contents,
+            None => match read_document_for_editing(&path) {
+                Ok(contents) => contents,
+                Err(error) => return Err(SeedRefusal::Unreadable { path, error }),
+            },
         }
     } else {
         DocumentSource {

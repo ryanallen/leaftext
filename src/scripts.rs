@@ -1,6 +1,7 @@
 use crate::store::{DocumentGraph, SearchResults, Vault};
 use crate::*;
 use std::hash::{Hash, Hasher};
+use std::io::Write as _;
 
 /// The key a page names when it asks for a switch back. Taken from the source, so a payload built anywhere but the desktop's own render still carries one.
 fn document_render_key(source: &str) -> u64 {
@@ -12,8 +13,17 @@ fn document_render_key(source: &str) -> u64 {
 /// `f(<state>);` — the state written out as a JavaScript value.
 ///
 /// Not `JSON.parse("…")`, which is slower here. That trick wins when a payload is dense structure (the blocks array alone parses 3x faster that way) and loses on long strings, because the text is scanned and unescaped once as a JS string before the JSON reader sees it at all. A document payload is mostly two very large strings — the rendered HTML and the source — so it came out ~40 ms slower on a 4 MB glossary, and 1.4 MB larger to hand across.
-fn call_with_json(function: &str, value: &serde_json::Value) -> String {
-    format!("{function}({value});")
+fn call_with_json(
+    function: &str,
+    value: &impl serde::Serialize,
+    suffix: &str,
+    capacity: usize,
+) -> String {
+    let mut script = Vec::with_capacity(capacity);
+    write!(&mut script, "{function}(").expect("script buffer accepts text");
+    serde_json::to_writer(&mut script, value).expect("workspace state serializes");
+    script.extend_from_slice(suffix.as_bytes());
+    String::from_utf8(script).expect("JSON and script syntax are UTF-8")
 }
 
 /// One tab as the strip draws it: the label, the document it stands for, whether that document has edits nobody has saved, and whether there is a step to take back.
@@ -41,10 +51,10 @@ pub fn initial_state_script(
     format!(
         "window.__leafInitialState = {};",
         serde_json::json!({
-            "recent": state["recent"],
-            "favorites": state["favorites"],
-            "tabs": state["tabs"],
-            "active": state["active"],
+            "recent": state.recent,
+            "favorites": state.favorites,
+            "tabs": state.tabs,
+            "active": state.active,
             "document": serde_json::Value::Null,
         })
     )
@@ -232,49 +242,243 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
         "recent": recent,
         "document": document,
     });
-    call_with_json("window.leafSetState", &state)
+    call_with_json("window.leafSetState", &state, ");", 0)
 }
 
 /// The payload every workspace script carries: recents, the favorites, tabs, active index and document (`null` on the home screen). One builder so the four senders agree — a screen left out of it is a screen that never hears about a change.
-fn workspace_payload(
-    recent: &[PathBuf],
-    favorites: &Favorites,
-    tabs: &[TabSummary],
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkspacePayload<'a> {
     active: Option<usize>,
-    document: Option<&OpenedDocument>,
+    document: Option<&'a OpenedDocument>,
+    favorites: Vec<WorkspaceFavorite<'a>>,
+    recent: Vec<String>,
+    render_key: Option<String>,
+    tabs: Vec<WorkspaceTab<'a>>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkspaceFavorite<'a> {
+    kind: &'a FavoriteKind,
+    path: String,
+    vault_id: Option<i64>,
+}
+
+#[derive(serde::Serialize)]
+struct WorkspaceTab<'a> {
+    dirty: bool,
+    path: &'a str,
+    redoable: bool,
+    title: &'a str,
+    undoable: bool,
+    untitled: bool,
+}
+
+impl WorkspacePayload<'_> {
+    fn payload_capacity(&self) -> usize {
+        let document = self
+            .document
+            .map(|document| document.source.len() + document.html.len())
+            .unwrap_or_default();
+        let recent = self.recent.iter().map(String::len).sum::<usize>();
+        let favorites = self
+            .favorites
+            .iter()
+            .map(|favorite| favorite.path.len() + 64)
+            .sum::<usize>();
+        let tabs = self
+            .tabs
+            .iter()
+            .map(|tab| tab.title.len() + tab.path.len() + 96)
+            .sum::<usize>();
+        document + recent + favorites + tabs + 256
+    }
+}
+
+fn workspace_payload<'a>(
+    recent: &[PathBuf],
+    favorites: &'a Favorites,
+    tabs: &'a [TabSummary],
+    active: Option<usize>,
+    document: Option<&'a OpenedDocument>,
     render_key: Option<u64>,
-) -> serde_json::Value {
+) -> WorkspacePayload<'a> {
     let render_key = render_key.or_else(|| document.map(|item| document_render_key(&item.source)));
     let recent: Vec<String> = recent
         .iter()
         .map(|path| path.display().to_string())
         .collect();
     // Spelled out rather than serialized whole, so a favorite reaches the page the way a recent does: as the text the page compares against a document's own path.
-    let favorites: Vec<serde_json::Value> = favorites
+    let favorites = favorites
         .entries
         .iter()
-        .map(|favorite| {
-            serde_json::json!({
-                "vaultId": favorite.vault_id,
-                "path": favorite.path.display().to_string(),
-                "kind": favorite.kind,
-            })
+        .map(|favorite| WorkspaceFavorite {
+            kind: &favorite.kind,
+            path: favorite.path.display().to_string(),
+            vault_id: favorite.vault_id,
         })
         .collect();
-    let tabs: Vec<serde_json::Value> = tabs
+    let tabs = tabs
         .iter()
-        .map(|tab| {
-            serde_json::json!({ "title": tab.title, "path": tab.path, "dirty": tab.dirty, "undoable": tab.undoable, "redoable": tab.redoable, "untitled": tab.untitled })
+        .map(|tab| WorkspaceTab {
+            dirty: tab.dirty,
+            path: &tab.path,
+            redoable: tab.redoable,
+            title: &tab.title,
+            undoable: tab.undoable,
+            untitled: tab.untitled,
         })
         .collect();
-    serde_json::json!({
-        "recent": recent,
-        "favorites": favorites,
-        "tabs": tabs,
-        "active": active,
-        "document": document,
-        "renderKey": render_key.map(|key| format!("{key:016x}")),
+    WorkspacePayload {
+        active,
+        document,
+        favorites,
+        recent,
+        render_key: render_key.map(|key| format!("{key:016x}")),
+        tabs,
+    }
+}
+
+fn workspace_call(function: &str, state: &WorkspacePayload<'_>, suffix: &str) -> String {
+    call_with_json(
+        function,
+        state,
+        suffix,
+        function.len() + suffix.len() + state.payload_capacity(),
+    )
+}
+
+fn workspace_json(state: &WorkspacePayload<'_>) -> Vec<u8> {
+    let mut json = Vec::with_capacity(state.payload_capacity());
+    serde_json::to_writer(&mut json, state).expect("workspace state serializes");
+    json
+}
+
+/// A document-bearing workspace update staged for the desktop page to fetch.
+pub struct WorkspacePayloadMessage {
+    action: &'static str,
+    detail: Option<String>,
+    json: Vec<u8>,
+}
+
+impl WorkspacePayloadMessage {
+    /// The short page command that fetches this message instead of carrying its document.
+    pub fn fetch_script(&self, url: &str) -> String {
+        format!(
+            "window.leafLoadWorkspace({}, {}, {});",
+            serde_json::json!(url),
+            serde_json::json!(self.action),
+            self.detail.as_deref().unwrap_or("null")
+        )
+    }
+
+    /// The JSON served when the page fetches the staged message.
+    pub fn into_json(self) -> Vec<u8> {
+        self.json
+    }
+
+    /// Stage the JSON and return the short command that points the page at it.
+    pub fn stage_with(self, stage: impl FnOnce(Vec<u8>) -> String) -> String {
+        let url = stage(self.json);
+        format!(
+            "window.leafLoadWorkspace({}, {}, {});",
+            serde_json::json!(url),
+            serde_json::json!(self.action),
+            self.detail.as_deref().unwrap_or("null")
+        )
+    }
+
+    /// The bytes sent through WebView2's shared-buffer door.
+    pub fn shared_json(&self) -> &[u8] {
+        &self.json
+    }
+
+    /// The small routing record sent beside WebView2's shared buffer.
+    pub fn shared_metadata(&self) -> String {
+        format!(
+            "{{\"action\":{},\"detail\":{}}}",
+            serde_json::json!(self.action),
+            self.detail.as_deref().unwrap_or("null")
+        )
+    }
+}
+
+/// Full workspace state as a staged desktop payload.
+pub fn workspace_state_message(
+    recent: &[PathBuf],
+    favorites: &Favorites,
+    tabs: &[TabSummary],
+    active: Option<usize>,
+    document: Option<&OpenedDocument>,
+    render_key: Option<u64>,
+) -> WorkspacePayloadMessage {
+    let state = workspace_payload(recent, favorites, tabs, active, document, render_key);
+    WorkspacePayloadMessage {
+        action: "state",
+        detail: None,
+        json: workspace_json(&state),
+    }
+}
+
+/// A live reload as a staged desktop payload.
+pub fn workspace_reload_message(
+    recent: &[PathBuf],
+    favorites: &Favorites,
+    tabs: &[TabSummary],
+    active: Option<usize>,
+    document: Option<&OpenedDocument>,
+    render_key: Option<u64>,
+) -> WorkspacePayloadMessage {
+    let state = workspace_payload(recent, favorites, tabs, active, document, render_key);
+    WorkspacePayloadMessage {
+        action: "reload",
+        detail: None,
+        json: workspace_json(&state),
+    }
+}
+
+/// A tab switch as a staged desktop payload.
+pub fn workspace_switch_message(
+    recent: &[PathBuf],
+    favorites: &Favorites,
+    tabs: &[TabSummary],
+    active: Option<usize>,
+    document: Option<&OpenedDocument>,
+    anchor: Option<&ScrollAnchor>,
+    render_key: Option<u64>,
+) -> WorkspacePayloadMessage {
+    let state = workspace_payload(recent, favorites, tabs, active, document, render_key);
+    let anchor = anchor
+        .map(scroll_anchor_json)
+        .unwrap_or_else(|| "null".to_string());
+    WorkspacePayloadMessage {
+        action: "switch",
+        detail: Some(anchor),
+        json: workspace_json(&state),
+    }
+}
+
+/// A cached tab switch as a staged desktop payload.
+pub fn workspace_cached_switch_message(
+    recent: &[PathBuf],
+    favorites: &Favorites,
+    tabs: &[TabSummary],
+    active: Option<usize>,
+    anchor: Option<&ScrollAnchor>,
+    render_key: u64,
+) -> WorkspacePayloadMessage {
+    let state = workspace_payload(recent, favorites, tabs, active, None, Some(render_key));
+    let detail = serde_json::json!({
+        "anchor": anchor,
+        "key": format!("{render_key:016x}"),
     })
+    .to_string();
+    WorkspacePayloadMessage {
+        action: "cachedSwitch",
+        detail: Some(detail),
+        json: workspace_json(&state),
+    }
 }
 
 /// Full workspace state, applied via `leafSetState` (resets the scroll).
@@ -286,10 +490,8 @@ pub fn workspace_state_script(
     document: Option<&OpenedDocument>,
     render_key: Option<u64>,
 ) -> String {
-    call_with_json(
-        "window.leafSetState",
-        &workspace_payload(recent, favorites, tabs, active, document, render_key),
-    )
+    let state = workspace_payload(recent, favorites, tabs, active, document, render_key);
+    workspace_call("window.leafSetState", &state, ");")
 }
 
 /// Tabs, recents and the active index with no document. The code view renders itself from its own payload, so the state script never runs for a tab showing source — this is how such a tab still gets its entry in the strip and gives the page an active document to name. The page reads only the fields it merges (recent, tabs, active); the null document is ignored.
@@ -299,10 +501,8 @@ pub fn workspace_only_script(
     tabs: &[TabSummary],
     active: Option<usize>,
 ) -> String {
-    format!(
-        "window.leafSetWorkspace({});",
-        workspace_payload(recent, favorites, tabs, active, None, None)
-    )
+    let state = workspace_payload(recent, favorites, tabs, active, None, None);
+    workspace_call("window.leafSetWorkspace", &state, ");")
 }
 
 /// Like [`workspace_state_script`] but via `leafReloadDocument`, which re-renders in place and preserves scroll position. Used by live-reload.
@@ -314,10 +514,8 @@ pub fn workspace_reload_script(
     document: Option<&OpenedDocument>,
     render_key: Option<u64>,
 ) -> String {
-    call_with_json(
-        "window.leafReloadDocument",
-        &workspace_payload(recent, favorites, tabs, active, document, render_key),
-    )
+    let state = workspace_payload(recent, favorites, tabs, active, document, render_key);
+    workspace_call("window.leafReloadDocument", &state, ");")
 }
 
 /// A document-intrinsic scroll position that survives a full re-render (tab switch, history nav, live reload). Names the nearest heading above the top edge, the block ordinal within that section, and the offset into it — unlike a raw pixel offset, which drifts as images settle the layout.
@@ -355,7 +553,7 @@ pub fn workspace_switch_script(
         Some(anchor) => scroll_anchor_json(anchor),
         None => "null".to_string(),
     };
-    format!("window.leafSwitchTab({state}, {anchor});")
+    workspace_call("window.leafSwitchTab", &state, &format!(", {anchor});"))
 }
 
 /// `leafSwitchTabCached(<state>, <anchor>, <key>);` — a switch carrying no document at all. The page holds the layout this key names and puts it back; it asks for the whole thing where it does not.
@@ -373,7 +571,11 @@ pub fn workspace_cached_switch_script(
         None => "null".to_string(),
     };
     let key = serde_json::to_string(&format!("{render_key:016x}")).expect("render key serializes");
-    format!("window.leafSwitchTabCached({state}, {anchor}, {key});")
+    workspace_call(
+        "window.leafSwitchTabCached",
+        &state,
+        &format!(", {anchor}, {key});"),
+    )
 }
 
 pub fn navigation_state_script(can_go_back: bool, can_go_forward: bool) -> String {

@@ -65,9 +65,31 @@ fn two_scratch_folders_asked_for_under_different_names_are_never_the_same_folder
     let _ = fs::remove_dir_all(&second);
 }
 
+/// A stamp old enough that a reading of the file settles at once rather than waiting out the two seconds a fresh write has to. Named once so two writes of one file can carry the identical stamp, which is what lets a test move a file's contents without moving what the file says about itself.
+fn a_minute_ago() -> std::time::SystemTime {
+    std::time::SystemTime::now() - std::time::Duration::from_secs(60)
+}
+
+/// Say `path` was written at `when`.
+fn stamp_written(path: &Path, when: std::time::SystemTime) {
+    fs::OpenOptions::new()
+        .write(true)
+        .open(path)
+        .expect("the file is opened to be stamped")
+        .set_modified(when)
+        .expect("the file takes the modification time");
+}
+
+/// The one member a Word file is read through, holding `words` as its only paragraph. Enough of WordprocessingML to be parsed rather than refused, and no more.
+fn word_document(words: &str) -> String {
+    format!(
+        "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:body><w:p><w:r><w:t>{words}</w:t></w:r></w:p></w:body></w:document>"
+    )
+}
+
 /// The smallest legal package: a zip of one stored member, written here by hand.
 ///
-/// Hand-written because the library's own archive builders sit inside the library's suite and a test of the binary cannot reach them, and because what this stands up is a file the gate reads the end of rather than a document anything draws — a member's name, its checksum and its sizes in the directory is the whole of what the gate looks at.
+/// Hand-written because the library's own archive builders sit inside the library's suite and a test of the binary cannot reach them. Written against the specification rather than against what any one caller happens to look at: the tail gate reads only a member's name, checksum and sizes out of the directory, but a test that opens the package needs every field the reader walks — which is why the central directory record here carries its full 46 bytes before the name.
 fn one_member_package(name: &str, contents: &[u8]) -> Vec<u8> {
     let mut crc = flate2::Crc::new();
     crc.update(contents);
@@ -91,7 +113,9 @@ fn one_member_package(name: &str, contents: &[u8]) -> Vec<u8> {
     out.extend_from_slice(&0x0201_4b50u32.to_le_bytes());
     out.extend_from_slice(&[20, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     sizes(&mut out);
-    out.extend_from_slice(&[0; 10]);
+    // Extra length, comment length, the disk it starts on, and both attribute words.
+    out.extend_from_slice(&[0; 12]);
+    // Where the local header sits, which for one stored member is the front of the file.
     out.extend_from_slice(&0u32.to_le_bytes());
     out.extend_from_slice(name.as_bytes());
 

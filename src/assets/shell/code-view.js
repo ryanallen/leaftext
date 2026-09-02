@@ -1139,7 +1139,8 @@ window.leafSaved = (path, ok, error) => {
     undoableByPath.delete(path);
     redoableByPath.delete(path);
     setDirtyState(path, false);
-  } else if (error) {
-    window.leafShowSaveError(path, error);
+  } else {
+    // A failure reported with nothing to say still has to say the write did not happen: a host can refuse a save it never attempted, and the reader is left with an empty corner and edits they think are on the disk.
+    window.leafShowSaveError(path, error || 'no reason was given');
   }
 };

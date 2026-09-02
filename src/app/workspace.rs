@@ -26,6 +26,8 @@ pub(crate) struct RenderedCache {
     pub(crate) hash: u64,
     /// What the file said about itself before it was read, where that reading could be trusted; `None` where it could not, or where whoever wrote this entry had already read the file and so could not take one safely. An entry with none is a correct entry that costs one read to earn one.
     pub(crate) record: Option<FileRecord>,
+    /// The archive this render was unpacked from, where the document is a package: the bytes a save splices the edited member back into. It rides inside this entry rather than beside it, so a file that moved replaces it whole and a cleared entry clears it — there is no second thing to keep in step. `None` for every text format, and for a package whose buffer has already taken it.
+    pub(crate) package: Option<leaftext::PackageBuffer>,
     pub(crate) document: OpenedDocument,
 }
 
@@ -69,6 +71,27 @@ impl Tab {
     /// Whether starting an edit of `path` needs the file read from disk first: true when there is no buffer, or the buffer is for a different document.
     pub(crate) fn needs_edit_seed(&self, path: &Path) -> bool {
         !self.has_edit_for(path)
+    }
+
+    /// What an edit buffer can be seeded with without opening the file: the member text the drawn document is already carrying, and the archive this tab kept when it rendered — the whole of what a package's buffer wants, so a first click into a Word file costs a folder read rather than a second inflate and a second parse of its largest member.
+    ///
+    /// `None` for every text format, whose spelling lives in the read and is nowhere on the drawn document, and for a tab whose entry no longer stands for the file — a moved file, or an entry that kept no reading to be asked about. Both read the disk, as they always did.
+    ///
+    /// The archive is taken rather than cloned: the buffer is about to own it, and a copy left behind would be a second archive held for nobody.
+    pub(crate) fn seed_from_render(&mut self, path: &Path) -> Option<DocumentSource> {
+        let cache = self.rendered.as_mut()?;
+        // Behind the entry, not in front of it: a tab with no render has nothing to compare a reading against, and the reading is a folder read.
+        if !cache.stands_for(path, settled_file_record(path)) {
+            return None;
+        }
+        let package = cache.package.take()?;
+        Some(DocumentSource {
+            // A package's member has no spelling but UTF-8, which is the one the read would have given it too.
+            text: SourceText::utf8(cache.document.source.clone()),
+            package: Some(package),
+            // The buffer drops a parsed package, so parsing one to hand over would be work for nothing.
+            document: None,
+        })
     }
 
     /// The edit buffer for `path`, seeded from `contents` when there's no buffer yet. Re-editing the same document reuses it; a different document replaces it. A package's buffer carries the archive its text came out of, so a save can put that one member back.

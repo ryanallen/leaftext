@@ -141,6 +141,9 @@ fn read_slides(body: roxmltree::Node, blocks: &mut Vec<OfficeBlock>) {
     }
 }
 
+/// The widest a sheet can be: 16,384 columns in both Excel and LibreOffice. A repeat past that is padding nobody typed: unheld, a 456-byte file whose one cell says it repeats a billion times reaches 46 GB of memory and is still climbing.
+const MAX_ROW_CELLS: usize = 16_384;
+
 /// A table as a header row and the rows under it. A cell may say it repeats, which is how OpenDocument writes a run of identical or empty cells.
 fn read_table(node: roxmltree::Node) -> Option<OfficeBlock> {
     let mut rows: Vec<Vec<String>> = Vec::new();
@@ -160,6 +163,8 @@ fn read_table(node: roxmltree::Node) -> Option<OfficeBlock> {
             } else {
                 repeats
             };
+            // The row rather than the count, because a file can write as many repeating cells as it likes: capping each one at the grid width still lets a thousand of them ask for sixteen million.
+            let repeats = repeats.min(MAX_ROW_CELLS.saturating_sub(cells.len()));
             for _ in 0..repeats {
                 cells.push(words.clone());
             }

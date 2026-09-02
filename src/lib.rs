@@ -107,6 +107,7 @@ pub use updater::{
 };
 
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     error::Error,
     fmt, fs, io,
@@ -202,8 +203,6 @@ pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     "assets/shell/minimap.js",
 ];
 
-/// The whole front-end, joined and served as `app.js` over the asset protocol.
-///
 /// The page goes to WebView2 as one string with a ~2 MB ceiling, and the script was 505,232 of its 576,693 characters. Served instead, the page is a skeleton — and because no fragment carries a placeholder, this is a join and nothing else: no substitution pass, and one file on the wire rather than two.
 pub fn app_shell_script() -> &'static str {
     static SCRIPT: OnceLock<String> = OnceLock::new();
@@ -500,9 +499,7 @@ pub fn tab_title_from_path(path: &Path) -> String {
         .unwrap_or_else(|| path.display().to_string())
 }
 
-/// Render a file's bytes, decoding them first where the path's format is one that arrives as text. The counterpart to [`opened_document_from_source`] for a format whose file is not text at all, and the one place that decides which of the two a path takes — so the loader asks this rather than choosing for itself.
-///
-/// Fails where a text format's bytes are not text — naming the ending where that is what the app cannot read, and the zero byte otherwise — and where a byte-shaped format's bytes are not a document its reader can read. That is deliberately not the total fallback [`DocumentFormat::from_path`] gives an unknown extension: an unreadable `.docx` opening as Markdown would draw a page of zip noise and call it a document.
+/// Render a file's bytes, decoding them first where the path's format is one that arrives as text. The counterpart to [`opened_document_from_source`] for a format whose file is not text at all, and the one place that decides which of the two a path takes — so the loader asks this rather than choosing for itself. Fails where a text format's bytes are not text — naming the ending where that is what the app cannot read, and the zero byte otherwise — and where a byte-shaped format's bytes are not a document its reader can read. That is deliberately not the total fallback [`DocumentFormat::from_path`] gives an unknown extension: an unreadable `.docx` opening as Markdown would draw a page of zip noise and call it a document.
 pub fn opened_document_from_bytes(
     bytes: &[u8],
     path: impl AsRef<Path>,
@@ -580,8 +577,6 @@ impl From<SourceText> for DocumentSource {
     }
 }
 
-/// The document an edit buffer now holds, drawn from the buffer rather than from the file — which is what the reading view shows while there are unsaved edits.
-///
 /// A package is drawn out of its own archive with the anchored member answered from what the buffer holds, so an edit is on screen before it is saved the way an edit to a note is. Reading the file instead would draw the last save, and a reader who typed a word would watch nothing happen.
 pub fn opened_document_from_buffer_with_host(
     edit: &EditableDocument,
@@ -600,8 +595,6 @@ pub fn opened_document_from_buffer_with_host(
     }
 }
 
-/// Write an edit buffer to its own path through `host`: the text spelled the way the file arrived, or — where the document is a package — the whole archive with the anchored member replaced by what the buffer now holds.
-///
 /// The one door a document leaves the app by, so the question of which of the two a path takes is answered once. [`LeafHost::save`] refuses a package outright, which is what stops any other route writing one member's XML over a whole Word file.
 pub fn save_editable_document(host: &dyn LeafHost, edit: &EditableDocument) -> io::Result<()> {
     match edit.package() {
@@ -622,12 +615,13 @@ pub fn save_editable_document(host: &dyn LeafHost, edit: &EditableDocument) -> i
 /// The document at `path`, for a caller that has already read it for a hash gate of its own. One call rather than a shape test at every render site, and a package's read, unpack and parse all happen once: the document that pass built is what is rendered here.
 pub fn opened_document_for_path_with_host(
     path: &Path,
-    source: &DocumentSource,
+    source: &mut DocumentSource,
     host: &dyn LeafHost,
 ) -> io::Result<OpenedDocument> {
     match (&source.document, &source.package) {
         (Some(document), _) => Ok(office::render_document(
             &document.0,
+            Cow::Owned(std::mem::take(&mut source.text.text)),
             path,
             DocumentFormat::from_path(path),
             host,
@@ -666,34 +660,42 @@ pub fn opened_document_from_source_with_host(
     match DocumentFormat::from_path(path) {
         DocumentFormat::Xml => opened_document_from_xml_with_host(source, path, host),
         DocumentFormat::Json => opened_document_from_tree(
-            source,
+            Cow::Borrowed(source),
             path,
             DocumentFormat::Json,
             render_json_document,
             host,
         ),
         DocumentFormat::Yaml => opened_document_from_tree(
-            source,
+            Cow::Borrowed(source),
             path,
             DocumentFormat::Yaml,
             render_yaml_document,
             host,
         ),
-        DocumentFormat::Eml => {
-            opened_document_from_tree(source, path, DocumentFormat::Eml, render_eml_document, host)
-        }
+        DocumentFormat::Eml => opened_document_from_tree(
+            Cow::Borrowed(source),
+            path,
+            DocumentFormat::Eml,
+            render_eml_document,
+            host,
+        ),
         DocumentFormat::Html => opened_document_from_tree(
-            source,
+            Cow::Borrowed(source),
             path,
             DocumentFormat::Html,
             render_html_document,
             host,
         ),
-        DocumentFormat::Ini => {
-            opened_document_from_tree(source, path, DocumentFormat::Ini, render_ini_document, host)
-        }
+        DocumentFormat::Ini => opened_document_from_tree(
+            Cow::Borrowed(source),
+            path,
+            DocumentFormat::Ini,
+            render_ini_document,
+            host,
+        ),
         DocumentFormat::Text => opened_document_from_tree(
-            source,
+            Cow::Borrowed(source),
             path,
             DocumentFormat::Text,
             render_text_document,
@@ -759,7 +761,7 @@ fn opened_document_from_xml_with_host(
 ) -> OpenedDocument {
     let dialect = std::cell::Cell::new(None);
     let mut document = opened_document_from_tree(
-        xml,
+        Cow::Borrowed(xml),
         path,
         DocumentFormat::Xml,
         |source, fallback_title| {
@@ -776,7 +778,7 @@ fn opened_document_from_xml_with_host(
 /// Render a JSON string into an `OpenedDocument`.
 pub fn opened_document_from_json(json: &str, path: impl AsRef<Path>) -> OpenedDocument {
     opened_document_from_tree(
-        json,
+        Cow::Borrowed(json),
         path.as_ref(),
         DocumentFormat::Json,
         render_json_document,
@@ -787,7 +789,7 @@ pub fn opened_document_from_json(json: &str, path: impl AsRef<Path>) -> OpenedDo
 /// Render a YAML string into an `OpenedDocument`.
 pub fn opened_document_from_yaml(yaml: &str, path: impl AsRef<Path>) -> OpenedDocument {
     opened_document_from_tree(
-        yaml,
+        Cow::Borrowed(yaml),
         path.as_ref(),
         DocumentFormat::Yaml,
         render_yaml_document,
@@ -798,7 +800,7 @@ pub fn opened_document_from_yaml(yaml: &str, path: impl AsRef<Path>) -> OpenedDo
 /// Render a MIME message (.eml, .mht) into an `OpenedDocument`.
 pub fn opened_document_from_eml(eml: &str, path: impl AsRef<Path>) -> OpenedDocument {
     opened_document_from_tree(
-        eml,
+        Cow::Borrowed(eml),
         path.as_ref(),
         DocumentFormat::Eml,
         render_eml_document,
@@ -811,7 +813,7 @@ pub(crate) const BORROWED_TITLE_ATTR: &str = " data-borrowed-title";
 
 /// Render a document that is a tree rather than prose — every format but Markdown — into an `OpenedDocument`. They differ only in the reader that turns source into HTML; the shell around it is the same, and none of them can be reconstructed from the DOM, so each sends its `source` along.
 pub(crate) fn opened_document_from_tree(
-    source: &str,
+    source: Cow<'_, str>,
     path: &Path,
     format: DocumentFormat,
     render: impl Fn(&str, Option<&str>) -> (Option<String>, String, Vec<BlockSpan>),
@@ -826,7 +828,7 @@ pub(crate) fn opened_document_from_tree(
         .and_then(plain_document_title)
         .map(|stem| xml_fallback_title(&stem));
 
-    let (title, body_html, blocks) = render(source, fallback_title.as_deref());
+    let (title, body_html, blocks) = render(source.as_ref(), fallback_title.as_deref());
 
     let title = title
         .or(fallback_title)
@@ -860,7 +862,7 @@ pub(crate) fn opened_document_from_tree(
         format,
         blocks,
         tasks: Vec::new(),
-        source: source.to_string(),
+        source: source.into_owned(),
         dialect: None,
     }
 }
@@ -1270,9 +1272,7 @@ pub(crate) fn nearest_glossary_terms(doc_dir: &Path) -> Vec<GlossaryTerm> {
         .collect()
 }
 
-/// The desktop's page: the one every host is served, with the front-end held back until the startup card already in it has been painted.
-///
-/// The card is literal markup and needs no script, so the only thing between a laid-out page and its first pixel was the front end's own execution — measured at 157ms on a page that was interactive at 15ms. The loader is what closes that: it is inline, it preloads the same joined script as parsing ends, and it appends it from the second animation-frame callback, one painted frame later.
+/// The desktop's page: the one every host is served, with the front-end held back until the startup card already in it has been painted. The card is literal markup and needs no script, so the only thing between a laid-out page and its first pixel was the front end's own execution — measured at 157ms on a page that was interactive at 15ms. The loader is what closes that: it is inline, it preloads the same joined script as parsing ends, and it appends it from the second animation-frame callback, one painted frame later.
 pub fn app_shell_html() -> String {
     app_shell_html_with_front_end(APP_SHELL_SCRIPT_ASSET)
 }
@@ -1302,9 +1302,7 @@ fn app_shell_page_for_host(host: &dyn LeafHost, front_end: &str) -> String {
         .replace("{{KATEX_CSS_URL}}", &asset("katex/katex.min.css"))
 }
 
-/// The front-end as a browser host carries it: one deferred tag at the foot of the page.
-///
-/// `defer` because the parser otherwise stops on it for the whole of the script's own execution: three launches each way put the first paint 20ms later and the page's interactive mark 100ms later without it. It still runs before `DOMContentLoaded` and still last on the page, which is where a published site's own module boot expects to find it. Anonymous mode is the request half of the CORS pair that lets a throw inside the script reach `window.onerror` with its place instead of the masked `Script error.`
+/// The front-end as a browser host carries it: one deferred tag at the foot of the page. `defer` because the parser otherwise stops on it for the whole of the script's own execution: three launches each way put the first paint 20ms later and the page's interactive mark 100ms later without it. It still runs before `DOMContentLoaded` and still last on the page, which is where a published site's own module boot expects to find it. Anonymous mode is the request half of the CORS pair that lets a throw inside the script reach `window.onerror` with its place instead of the masked `Script error.`
 fn front_end_tag_html(host: &dyn LeafHost) -> String {
     format!(
         "<script src=\"{}\" crossorigin=\"anonymous\" defer></script>",
@@ -1325,13 +1323,7 @@ fn desktop_front_end_loader_html(host: &dyn LeafHost, script_asset: &str) -> Str
     )
 }
 
-/// The document as a page of its own: what a reader hands to somebody who does not have Leaftext.
-///
-/// `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in the stylesheet is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font. One thing runs, off the folder beside the page — the minimap rail, which is the only way a reader handed this file can see the shape of the whole document.
-///
-/// `sheet` is the drawings' own stylesheet. Mermaid writes one per drawing and the page hoists them into a single element in its head, so the rules are neither in the stylesheet nor inside the SVG — a copy of the document alone comes out a page of black boxes with clipped labels. It travels inline rather than as a second file because it is markup the page already holds as one string.
-///
-/// `theme` and `appearance` are the two attributes every theme's colors are keyed on, so the page opens in the theme it was written from with no script at all.
+/// The document as a page of its own: what a reader hands to somebody who does not have Leaftext. `markup` is the document as the page has already drawn it, cleaned of the app's own controls and wrapped in the ancestors every rule in the stylesheet is keyed on — the page builds that chain, because the page is what knows which of its own elements are controls. Nothing here is fetched: a drawn diagram is already an SVG in that markup, an icon is a mask inside the stylesheet, and ordinary text takes the reader's own system font. One thing runs, off the folder beside the page — the minimap rail, which is the only way a reader handed this file can see the shape of the whole document. `sheet` is the drawings' own stylesheet. Mermaid writes one per drawing and the page hoists them into a single element in its head, so the rules are neither in the stylesheet nor inside the SVG — a copy of the document alone comes out a page of black boxes with clipped labels. It travels inline rather than as a second file because it is markup the page already holds as one string. `theme` and `appearance` are the two attributes every theme's colors are keyed on, so the page opens in the theme it was written from with no script at all.
 pub fn exported_page_document(
     theme: &str,
     appearance: &str,

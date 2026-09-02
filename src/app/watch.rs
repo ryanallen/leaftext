@@ -404,6 +404,27 @@ pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWat
     reload_active_document(reader, file_watch);
 }
 
+/// Put the render a live reload just drew on the tab, so switching away and back doesn't redo it.
+///
+/// The archive comes from the source that reload read and from nothing else — not from the entry being replaced, nor from the buffer on screen, both of which hold the file as it was before the change, so a save splicing into either would write the old file back over the new one.
+///
+/// It stands on no file record: the file was read above, and a record taken after a read can describe a write that landed during it — a newer stamp beside older content, which is a stale render nothing ever clears. The next arrival reads once and earns one.
+pub(crate) fn cache_reloaded_render(
+    tab: &mut Tab,
+    path: &Path,
+    hash: u64,
+    source: DocumentSource,
+    document: &OpenedDocument,
+) {
+    tab.rendered = Some(RenderedCache {
+        path: path.to_path_buf(),
+        hash,
+        record: None,
+        package: source.package,
+        document: document.clone(),
+    });
+}
+
 /// Re-render the active document from disk, preserving scroll position. A package that has not moved is answered off its own directory without being opened; anything else is read once and hash-gated, so a spurious event with unchanged contents re-renders nothing.
 pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileWatch) {
     let workspace = &mut reader.workspace;
@@ -431,7 +452,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         return;
     }
 
-    let source = match read_document_for_editing(&path) {
+    let mut source = match read_document_for_editing(&path) {
         Ok(source) => source,
         // May be mid-save or briefly absent during an atomic rename; a later event delivers the settled contents.
         Err(error) => {
@@ -497,23 +518,17 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     }
 
     // Render through the same path as an initial open, reusing the content already read for the hash-gate.
-    let document = match opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
-    {
-        Ok(document) => document,
-        Err(error) => {
-            eprintln!("Live reload: failed to read {}: {error}", path.display());
-            return;
-        }
-    };
+    let document =
+        match opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default()) {
+            Ok(document) => document,
+            Err(error) => {
+                eprintln!("Live reload: failed to read {}: {error}", path.display());
+                return;
+            }
+        };
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
-        // Cache it, so switching away and back doesn't redo this render. It stands on no file record: the file was read above, and a record taken after a read can describe a write that landed during it — a newer stamp beside older content, which is a stale render nothing ever clears. The next arrival reads once and earns one.
-        tab.rendered = Some(RenderedCache {
-            path: path.clone(),
-            hash,
-            record: None,
-            document: document.clone(),
-        });
+        cache_reloaded_render(tab, &path, hash, source, &document);
     }
     reader
         .window
@@ -525,9 +540,9 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
     }
 
     let tabs = reader.workspace.tab_summaries();
-    run_page_script(
+    run_workspace_payload(
         reader.page(),
-        &workspace_reload_script(
+        workspace_reload_message(
             &reader.recent.files,
             &reader.favorites,
             &tabs,

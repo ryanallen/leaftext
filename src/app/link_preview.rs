@@ -25,13 +25,13 @@ pub(crate) fn link_preview_html(href: &str, current_path: &Path) -> Option<Strin
             .map(|entry| entry.html.clone())
     });
     cached.or_else(|| {
-        let source = read_for_preview(&path, meta.len())?;
+        let mut source = read_for_preview(&path, meta.len())?;
         // The card walks no folder, so it is drawn by a host that promises no Previous/Next strip.
         let host = DesktopHost {
             no_pager_placeholder: true,
             ..DesktopHost::default()
         };
-        let html = opened_document_for_path_with_host(&path, &source, &host)
+        let html = opened_document_for_path_with_host(&path, &mut source, &host)
             .ok()?
             .html;
         LINK_PREVIEW_CACHE.with(|cache| {

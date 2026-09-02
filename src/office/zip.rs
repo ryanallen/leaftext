@@ -32,6 +32,9 @@ const FLAG_DATA_DESCRIPTOR: u16 = 1 << 3;
 /// A zip's end-of-directory record is 22 bytes plus a comment nobody writes, and the comment may be up to 64 KB.
 const END_RECORD_MIN: usize = 22;
 
+/// The most one member of a package may weigh unpacked. Twice `MAX_UPDATE_BYTES`, which is what this app already refuses a whole installer over; no corpus set it, because there are no real Office documents here to measure and one XML part above a quarter of a gigabyte is not a document somebody typed.
+pub(super) const MAX_MEMBER_BYTES: usize = 256 * 1024 * 1024;
+
 /// Why an archive could not be read, phrased for someone looking at the file rather than at the specification.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ArchiveError(String);
@@ -156,10 +159,24 @@ impl<'a> Archive<'a> {
         match member.method {
             METHOD_STORED => Ok(packed.to_vec()),
             METHOD_DEFLATED => {
+                // The claim and the stream are two separate lies, so both are held: a 260-byte file claiming four gigabytes reserves them before a byte is read, and a file claiming a hundred bytes over a stream of zeros grows past nine gigabytes without the claim being involved at all.
+                if member.uncompressed_size > MAX_MEMBER_BYTES {
+                    return Err(refuse(format!(
+                        "{} inside this file claims to be far larger than this app will open",
+                        member.name
+                    )));
+                }
                 let mut out = Vec::with_capacity(member.uncompressed_size);
                 DeflateDecoder::new(packed)
+                    .take(MAX_MEMBER_BYTES as u64 + 1)
                     .read_to_end(&mut out)
                     .map_err(|_| refuse(format!("{} inside this file is damaged", member.name)))?;
+                if out.len() > MAX_MEMBER_BYTES {
+                    return Err(refuse(format!(
+                        "{} inside this file unpacks to far more than this app will open",
+                        member.name
+                    )));
+                }
                 Ok(out)
             }
             other => Err(refuse(format!(

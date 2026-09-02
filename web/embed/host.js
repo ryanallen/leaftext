@@ -129,7 +129,7 @@ export function answers(command) {
 
 /** Start Leaftext over one document, in the page the frame already loaded.
  *
- * `module` is the loaded browser module. `source` is the document, as bytes or as text. `path` is whatever the product calls it — the name is what the page shows and what comes back with the save, and it names nothing on the machine reading it. `save` is called with the document whenever it has to be written, and whatever it throws is what the page is told; leaving it out makes this a reader that can still be typed in and never persists. `glossary` is a glossary document text, if the product has one, so its terms auto-link the way they do on the desktop. `onEvent` hears everything the product might want to act on.
+ * `module` is the loaded browser module. `source` is the document, as bytes or as text. `path` is whatever the product calls it — the name is what the page shows and what comes back with the save, and it names nothing on the machine reading it. `save` is called with the document whenever it has to be written, and whatever it throws is what the page is told; leaving it out makes this a reader that can still be typed in and never persists, and a save asked for anyway is refused on screen and reported back as a failed save. `glossary` is a glossary document text, if the product has one, so its terms auto-link the way they do on the desktop. `onEvent` hears everything the product might want to act on.
  */
 export function startLeaftextEmbed({ module, source, path = 'document.md', save = null, glossary = '', onEvent = null }) {
   if (glossary) module.setGlossary(glossary);
@@ -157,19 +157,20 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     return state;
   };
 
-  /** The document, to whoever mounted this. The only thing that ends a dirty buffer, since nothing here can write a file. */
+  /** The document, to whoever mounted this. The only thing that ends a dirty buffer, since nothing here can write a file — and where the product handed over no way to write it, a refused save that says so rather than a silence. */
   const write = async () => {
-    if (typeof save !== 'function') {
-      console.info('this host does not answer saveDocument — nothing was handed a save callback, so the document stays unsaved');
-      return;
-    }
-    const state = module.buffer.state(held);
     let failed = null;
-    try {
-      // The text and the bytes both: a product holding a string takes the first, and one holding a file takes the second, which is spelled the way the document arrived.
-      await save({ text: module.buffer.source(held), bytes: module.buffer.encoded(held), path: state.path, spelling: state.spelling });
-    } catch (error) {
-      failed = String((error && error.message) || error || 'the save failed');
+    if (typeof save !== 'function') {
+      // Nowhere to write is a refused save like any other, reported down the same path: a console line is a place no reader of this document is looking, and they are left with an empty corner and edits they believe are on the disk.
+      failed = 'this reader has nowhere to write it';
+    } else {
+      const state = module.buffer.state(held);
+      try {
+        // The text and the bytes both: a product holding a string takes the first, and one holding a file takes the second, which is spelled the way the document arrived.
+        await save({ text: module.buffer.source(held), bytes: module.buffer.encoded(held), path: state.path, spelling: state.spelling });
+      } catch (error) {
+        failed = String((error && error.message) || error || 'the save failed');
+      }
     }
     // The buffer is marked clean by this call and not before it, so a refused save leaves the document dirty and the reason on screen rather than a Save button that has gone out.
     run(module.buffer.saveScript(held, !failed, failed || ''));

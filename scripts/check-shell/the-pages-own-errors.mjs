@@ -144,6 +144,21 @@ export function run() {
     }
   });
 
+  // A host can refuse a save with nothing to say — an empty string over the browser module's `error || ''`, a null where the exported call was handed no pointer. The page used to draw nothing at all for either, which leaves a reader looking at an empty corner and edits they believe are on the disk. Driven with both spellings of nothing, because they arrive down different paths and the sentence has to be the same one.
+  check('a refused save with no reason still says the write failed', () => {
+    for (const nothing of ['', null, undefined]) {
+      const context = runShell(source);
+      const said = [];
+      context.window.leafShowError = (message) => said.push(message);
+      context.window.leafSaved('C:\\notes\\report.md', false, nothing);
+      const spelled = nothing === '' ? 'an empty reason' : `a ${String(nothing)} reason`;
+      if (said.length !== 1) throw new Error(`${spelled}: expected one error, got ${said.length}`);
+      if (said[0] !== 'C:\\notes\\report.md was not saved: no reason was given. Your edits are still here.') {
+        throw new Error(`${spelled}: the page composed "${said[0]}"`);
+      }
+    }
+  });
+
   // ---- 6a. a source view that will not open says so and gives the document back ----
   //
   // Both ways into the source view can give up, and each has to draw something: the editor's own load fails after the reader has already been emptied into its container, and the staged payload fails before that. Drawing nothing leaves the reader a blank page the app is calling the source view, or a press that did nothing. Driven rather than read, because what is being held is a growl on the surface and a command on the wire.

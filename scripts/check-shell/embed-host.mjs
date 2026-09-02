@@ -325,13 +325,31 @@ export function run() {
     }
   });
 
-  checkSettled('an embed with no save callback says so rather than reporting a document written', async () => {
-    const { send, seen } = await bootEmbedHost();
+  // A product can mount a document and hand over no way to write it, and the reader can still ask for a save — the product's own control, or the `save` function this returns. The host used to answer with a line in the browser console, which is a place no reader of that document is looking, so they were left with an empty corner and edits they believed were on the disk. Driven rather than read, because what is held is the sentence a reader meets and the event the product acts on.
+  checkSettled('a save an embed cannot make reaches the reader and the product', async () => {
+    const { send, seen, events } = await bootEmbedHost();
     send({ command: 'editBlock', start: 21, end: 40, text: 'The last line.' });
     await settle();
     send({ command: 'saveDocument' });
     await settle();
-    if (seen.saved.length) throw new Error(`a reader with nowhere to save told the page it saved: ${JSON.stringify(seen.saved)}`);
+
+    // The reader, through the one refused-save sentence the page composes for every host.
+    const reply = seen.saved[seen.saved.length - 1];
+    if (!reply) throw new Error('a reader with nowhere to write told the page nothing at all');
+    if (reply[1] !== false) throw new Error(`a save an embed cannot make was reported to the page as ${JSON.stringify(reply)}`);
+    if (String(reply[2]) !== 'this reader has nowhere to write it') throw new Error(`the reason the reader meets is ${JSON.stringify(reply[2])}`);
+
+    // The product, through the same failed save event a callback that throws produces.
+    const told = events.filter((event) => event.kind === 'save');
+    if (told.length !== 1) throw new Error(`the product was told about ${told.length} saves for one press`);
+    if (told[0].ok !== false || told[0].error !== 'this reader has nowhere to write it') {
+      throw new Error(`the product was handed ${JSON.stringify(told[0])}`);
+    }
+
+    // And the document is still dirty on both sides, so the Save button stays lit over edits nothing wrote.
+    if (told[0].state.dirty !== true) throw new Error('the event told the product the document was clean');
+    const resynced = seen.resynced[seen.resynced.length - 1];
+    if (!resynced || resynced.dirty !== true) throw new Error('a save an embed cannot make cleared the Save button, so the reader would think it was written');
   });
 
   checkSettled('the front end sends its first commands before the host is standing, and the embed host drains them', async () => {

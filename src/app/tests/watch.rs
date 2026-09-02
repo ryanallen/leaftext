@@ -693,3 +693,81 @@ fn the_key_a_save_records_is_the_key_the_gate_reads_back() {
 
     let _ = fs::remove_dir_all(path.parent().expect("the deck sits in a folder"));
 }
+
+/// A live reload rewrites the tab's entry in place rather than replacing the tab, so the archive left on it has to come out of the bytes that reload just read. Filled from the entry it replaced — or from the buffer the page is showing, which is the same file — a save would splice the new member into the old archive and write the reader's change away.
+#[test]
+fn a_live_reload_leaves_the_tab_holding_the_archive_it_just_read() {
+    let path = scratch_dir("watch-reload-archive").join("report.docx");
+    let first = one_member_package("word/document.xml", word_document("one").as_bytes());
+    fs::write(&path, &first).expect("the package is written");
+    let opened = read_document_for_editing(&path).expect("the package is read");
+    let drawn = opened_document_from_source_with_host(
+        &opened.text.text.clone(),
+        &path,
+        &DesktopHost::default(),
+    );
+    let mut tab = Tab::default();
+    cache_reloaded_render(&mut tab, &path, 1, opened, &drawn);
+
+    let second = one_member_package("word/document.xml", word_document("two").as_bytes());
+    fs::write(&path, &second).expect("the package is written again");
+    let reloaded = read_document_for_editing(&path).expect("the changed package is read");
+    let redrawn = opened_document_from_source_with_host(
+        &reloaded.text.text.clone(),
+        &path,
+        &DesktopHost::default(),
+    );
+    cache_reloaded_render(&mut tab, &path, 2, reloaded, &redrawn);
+
+    let kept = tab
+        .rendered
+        .as_ref()
+        .expect("the reload left an entry")
+        .package
+        .as_ref()
+        .expect("a package's entry carries the archive it was unpacked from");
+    assert_eq!(
+        kept.bytes, second,
+        "the archive on the tab is the file as this reload read it"
+    );
+    assert_ne!(
+        kept.bytes, first,
+        "the archive the first render left behind was replaced rather than kept"
+    );
+    assert_eq!(
+        kept.member, "word/document.xml",
+        "and it names the member a save splices back into it"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// A note is its own file, so there is no archive to keep and the entry says so — which is what stops the seed reading a package-shaped shortcut into a format whose spelling lives in the read.
+#[test]
+fn a_reloaded_note_leaves_no_archive_on_the_tab() {
+    let path = scratch_dir("watch-reload-note").join("plan.md");
+    let text = "# Plan
+
+- [ ] one
+";
+    fs::write(&path, text).expect("the note is written");
+    let mut tab = Tab::default();
+    cache_reloaded_render(
+        &mut tab,
+        &path,
+        1,
+        read_document_for_editing(&path).expect("the note is read"),
+        &opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+    );
+
+    assert!(
+        tab.rendered
+            .as_ref()
+            .expect("the reload left an entry")
+            .package
+            .is_none(),
+        "a text document has no archive behind it"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the note sits in a folder"));
+}

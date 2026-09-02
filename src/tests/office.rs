@@ -4,10 +4,11 @@
 
 use super::*;
 use crate::office::testing::{
-    any_local_header_defers_its_sizes, archive, archive_deferring_every_size,
+    any_local_header_defers_its_sizes, archive, archive_deferring_every_size, archive_of_zeros,
     archive_with_data_descriptor, archive_with_directory_entries, blocks, member_bytes,
-    member_names, read_archive_member, written_archive, written_archive_bytes,
+    member_names, read_archive_member, written_archive, written_archive_bytes, MAX_MEMBER_BYTES,
 };
+use crate::office::OfficeBlock;
 
 // ---------------------------------------------------------------------------
 // How a document arrives
@@ -147,8 +148,13 @@ fn each_package_source_carries_the_document_its_bytes_build() {
             .document
             .as_ref()
             .unwrap_or_else(|| panic!("{name} should carry its parsed document"));
+        assert!(
+            document.0.anchor_text.is_empty(),
+            "{name} kept a second copy of its source on the carried document"
+        );
         let carried = crate::office::render_document(
             &document.0,
+            std::borrow::Cow::Borrowed(&source.text.text),
             &path,
             DocumentFormat::from_path(&path),
             &DesktopHost::default(),
@@ -180,11 +186,20 @@ fn each_text_source_carries_no_package_document() {
             .expect("a readable extension");
         let path = folder.join(format!("sample.{extension}"));
         std::fs::write(&path, b"plain source").expect("the sample is written");
-        let source = read_document_for_editing(&path)
+        let mut source = read_document_for_editing(&path)
             .unwrap_or_else(|error| panic!("{} should read: {error}", format.display_name()));
         assert!(
             source.document.is_none(),
             "{} carried a package document",
+            format.display_name()
+        );
+        let opened =
+            opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+                .unwrap_or_else(|error| panic!("{} should draw: {error}", format.display_name()));
+        assert_eq!(
+            opened.source,
+            source.text.text,
+            "{} did not answer with its own source",
             format.display_name()
         );
     }
@@ -417,6 +432,185 @@ fn a_package_missing_the_part_it_is_named_for_opens_nothing() {
     );
 }
 
+/// A member whose directory claims four gigabytes is refused before a byte of it is reserved. A 260-byte file claiming that drove the app to eight gigabytes of memory: the claim alone sizes the buffer, so nothing has to be delivered for it to cost.
+#[test]
+fn a_member_claiming_to_be_enormous_is_refused_before_it_is_reserved() {
+    let bytes = archive_of_zeros("word/document.xml", 8, u32::MAX as usize);
+    let refusal = archive(&bytes)
+        .member("word/document.xml")
+        .expect("the archive lists the member")
+        .expect_err("a member claiming four gigabytes cannot be read");
+    assert!(
+        refusal.to_string().contains("word/document.xml")
+            && refusal.to_string().contains("claims to be far larger"),
+        "the refusal should name the member and say what is wrong: {refusal}"
+    );
+}
+
+/// A member that claims a hundred bytes and unpacks past the ceiling is refused rather than grown. The claim is not what fills the buffer, so a ceiling on the claim alone would have let this one through — a 6 MB file of this shape reached nine gigabytes.
+#[test]
+fn a_member_that_unpacks_past_the_ceiling_is_refused_rather_than_grown() {
+    let bytes = archive_of_zeros("word/document.xml", MAX_MEMBER_BYTES + 1, 100);
+    let refusal = archive(&bytes)
+        .member("word/document.xml")
+        .expect("the archive lists the member")
+        .expect_err("a member unpacking past the ceiling cannot be read");
+    assert!(
+        refusal.to_string().contains("word/document.xml")
+            && refusal.to_string().contains("unpacks to far more"),
+        "the refusal should name the member and say what is wrong: {refusal}"
+    );
+}
+
+/// A member standing exactly on the ceiling still opens, so neither comparison is out by one.
+#[test]
+fn a_member_of_exactly_the_ceiling_still_opens() {
+    let bytes = archive_of_zeros("word/document.xml", MAX_MEMBER_BYTES, MAX_MEMBER_BYTES);
+    let read = archive(&bytes)
+        .member("word/document.xml")
+        .expect("the archive lists the member")
+        .expect("a member of exactly the ceiling opens");
+    assert_eq!(read.len(), MAX_MEMBER_BYTES);
+}
+
+/// The ceiling sits far above anything a genuine document holds. A ceiling a real part could touch would refuse somebody's own file, which is the failure this fix must not trade for the one it stops.
+#[test]
+fn no_part_of_a_genuine_document_comes_near_the_ceiling() {
+    for (name, bytes, _) in every_sample() {
+        let package = archive(&bytes);
+        for member in package.names().map(str::to_string).collect::<Vec<_>>() {
+            let read = package
+                .member(&member)
+                .expect("the archive lists it")
+                .unwrap_or_else(|error| panic!("{name}: {member} should open: {error}"));
+            assert!(
+                read.len() * 1024 < MAX_MEMBER_BYTES,
+                "{name}: {member} is {} bytes, close enough to the ceiling to worry",
+                read.len()
+            );
+        }
+    }
+}
+
+/// A cell reference longer than a column can be is refused, and the refusal names the sheet. `ABCDEFGHIJKL1` asks for about ninety-five quadrillion strings, and an 858-byte workbook naming it killed the process before it could say anything.
+#[test]
+fn a_sheet_naming_a_column_that_cannot_exist_is_refused() {
+    let bytes = xlsx_with_row(r#"<c r="ABCDEFGHIJKL1" t="inlineStr"><is><t>x</t></is></c>"#);
+    let refusal = opened_document_from_bytes(&bytes, Path::new("budget.xlsx"))
+        .expect_err("a sheet naming a column that cannot exist opens nothing");
+    assert!(
+        refusal.to_string().contains("xl/worksheets/sheet1.xml")
+            && refusal.to_string().contains("column that cannot exist"),
+        "the refusal should name the sheet and say what is wrong: {refusal}"
+    );
+}
+
+/// `XFD`, the last column the format has, still reads where it always did, so the ceiling stands at the edge of a real sheet rather than inside one.
+#[test]
+fn the_last_column_a_sheet_can_have_still_reads_where_it_is() {
+    let bytes = xlsx_with_row(
+        r#"<c r="A1" t="inlineStr"><is><t>first</t></is></c><c r="XFD1" t="inlineStr"><is><t>last</t></is></c>"#,
+    );
+    let header = sheet_header(&bytes, DocumentFormat::Xlsx);
+    assert_eq!(header.len(), 16_384);
+    assert_eq!(header[0], "first");
+    assert_eq!(header[16_383], "last");
+}
+
+/// An ordinary run of references still lands each cell in the column it names, gaps and all. The cheap fix here would clamp a refused reference to the last real column, which is the same code path every honest gap takes.
+#[test]
+fn an_ordinary_run_of_references_still_lays_its_columns_out() {
+    let bytes = xlsx_with_row(
+        r#"<c r="A1" t="inlineStr"><is><t>one</t></is></c><c r="C1" t="inlineStr"><is><t>three</t></is></c><c r="AA1" t="inlineStr"><is><t>twenty-seven</t></is></c>"#,
+    );
+    let header = sheet_header(&bytes, DocumentFormat::Xlsx);
+    assert_eq!(header.len(), 27);
+    assert_eq!(header[0], "one");
+    assert_eq!(header[1], "");
+    assert_eq!(header[2], "three");
+    assert_eq!(header[26], "twenty-seven");
+}
+
+/// The sample workbook with its one sheet swapped for a single row of the cells a test names, every other part of the package left as it was.
+fn xlsx_with_row(cells: &str) -> Vec<u8> {
+    let sheet = format!(
+        r#"{XML_HEAD}
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData><row r="1">{cells}</row></sheetData>
+</worksheet>"#
+    );
+    let sample = sample_xlsx();
+    archive(&sample)
+        .with_member_replaced("xl/worksheets/sheet1.xml", sheet.as_bytes())
+        .expect("the sample holds a sheet to replace")
+}
+
+/// The header row of the first table this document drew.
+fn sheet_header(bytes: &[u8], format: DocumentFormat) -> Vec<String> {
+    let drawn = blocks(bytes, format).expect("the document reads");
+    for block in drawn {
+        if let OfficeBlock::Table { header, .. } = block {
+            return header;
+        }
+    }
+    panic!("a sheet should draw a table");
+}
+
+/// A cell that says it repeats a billion times draws a row a sheet can hold rather than taking the window. A 456-byte file of this shape reached 46 GB of memory and was still climbing when it was stopped.
+#[test]
+fn an_open_document_cell_repeating_a_billion_times_draws_a_row_a_sheet_can_hold() {
+    let bytes = ods_with_row(
+        r#"<table:table-cell table:number-columns-repeated="1000000000" office:value-type="string"><text:p>x</text:p></table:table-cell>"#,
+    );
+    let header = sheet_header(&bytes, DocumentFormat::Ods);
+    assert_eq!(header.len(), 16_384);
+    assert!(header.iter().all(|cell| cell == "x"));
+}
+
+/// A row of repeating cells is held at the same width however many of them there are, so a file cannot get past the ceiling by writing a thousand cells that each stop just under it.
+#[test]
+fn a_row_of_many_repeating_cells_is_held_to_the_same_width() {
+    let cell = r#"<table:table-cell table:number-columns-repeated="16384" office:value-type="string"><text:p>x</text:p></table:table-cell>"#;
+    let bytes = ods_with_row(&cell.repeat(64));
+    assert_eq!(sheet_header(&bytes, DocumentFormat::Ods).len(), 16_384);
+}
+
+/// The two sample tables written with repeated columns still lay their columns out the way they did — one in a text document, one in a spreadsheet.
+#[test]
+fn the_sample_tables_still_lay_their_columns_out() {
+    assert_eq!(
+        sheet_header(&sample_odt(), DocumentFormat::Odt),
+        vec!["Region".to_string(), "Sales".to_string()]
+    );
+    assert_eq!(
+        sheet_header(&sample_ods(), DocumentFormat::Ods),
+        vec![
+            "Region".to_string(),
+            "Sales".to_string(),
+            "Status".to_string()
+        ]
+    );
+}
+
+/// The sample spreadsheet with its one table swapped for a single row of the cells a test names.
+fn ods_with_row(cells: &str) -> Vec<u8> {
+    let content = format!(
+        r#"{XML_HEAD}
+<office:document-content {ODF_NAMESPACES} office:version="1.3">
+  <office:body><office:spreadsheet>
+    <table:table table:name="Figures">
+      <table:table-row>{cells}</table:table-row>
+    </table:table>
+  </office:spreadsheet></office:body>
+</office:document-content>"#
+    );
+    open_document(
+        "application/vnd.oasis.opendocument.spreadsheet",
+        &content,
+        "spreadsheet",
+    )
+}
+
 /// A package is read here and not written yet, and the guard is at the one place a document leaves the app: writing an edit buffer over a `.docx` would replace a Word document with the XML of one member.
 #[test]
 fn a_package_is_never_written_over_as_text() {
@@ -638,7 +832,7 @@ fn a_package_draws_from_its_carried_document_when_its_archive_bytes_are_rubbish(
     };
     source.package.as_mut().expect("the package").bytes = b"not an archive".to_vec();
 
-    let drawn = opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
         .expect("a package draws from the document already in hand");
     assert!(
         drawn.html.contains("Sales rose in every region"),
@@ -655,12 +849,12 @@ fn a_package_source_without_a_carried_document_draws_from_its_bytes() {
     let (text, member, _) =
         crate::office::anchored_member_source(&bytes, &path, DocumentFormat::Docx)
             .expect("the sample opens");
-    let source = DocumentSource {
+    let mut source = DocumentSource {
         text,
         package: Some(PackageBuffer { bytes, member }),
         document: None,
     };
-    let drawn = opened_document_for_path_with_host(&path, &source, &DesktopHost::default())
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
         .expect("the bytes arm draws");
     assert!(drawn.html.contains("Sales rose in every region"));
 }
@@ -671,7 +865,6 @@ fn a_package_source_draws_for_all_three_render_sites() {
     let folder = scratch_dir("office-render-sites");
     let path = folder.join("report.docx");
     std::fs::write(&path, sample_docx()).expect("the sample is written");
-    let source = read_document_for_editing(&path).expect("the sample opens");
     for (name, host) in [
         ("initial open", DesktopHost::default()),
         ("live reload", DesktopHost::default()),
@@ -683,7 +876,8 @@ fn a_package_source_draws_for_all_three_render_sites() {
             },
         ),
     ] {
-        let drawn = opened_document_for_path_with_host(&path, &source, &host)
+        let mut source = read_document_for_editing(&path).expect("the sample opens");
+        let drawn = opened_document_for_path_with_host(&path, &mut source, &host)
             .unwrap_or_else(|error| panic!("{name} should draw: {error}"));
         assert!(drawn.html.contains("Sales rose in every region"));
     }

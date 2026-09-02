@@ -132,6 +132,118 @@ fn workspace_payload_carries_favorites_beside_recents() {
 }
 
 #[test]
+fn all_four_workspace_scripts_carry_the_same_fields() {
+    fn payload(script: &str) -> serde_json::Value {
+        let start = script.find('(').expect("the call opens") + 1;
+        let mut values =
+            serde_json::Deserializer::from_str(&script[start..]).into_iter::<serde_json::Value>();
+        values.next().expect("the payload is there").expect("JSON")
+    }
+
+    let document = opened_document_from_source("# Guide", "guide.md");
+    let tabs = [strip_tab("Guide", "guide.md")];
+    let expected = payload(&workspace_state_script(
+        &[PathBuf::from("guide.md")],
+        &Favorites::default(),
+        &tabs,
+        Some(0),
+        Some(&document),
+        None,
+    ));
+    for script in [
+        workspace_reload_script(
+            &[PathBuf::from("guide.md")],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            None,
+        ),
+        workspace_switch_script(
+            &[PathBuf::from("guide.md")],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            None,
+            None,
+        ),
+    ] {
+        assert_eq!(payload(&script), expected);
+    }
+    for message in [
+        workspace_state_message(
+            &[PathBuf::from("guide.md")],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            None,
+        ),
+        workspace_reload_message(
+            &[PathBuf::from("guide.md")],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            None,
+        ),
+        workspace_switch_message(
+            &[PathBuf::from("guide.md")],
+            &Favorites::default(),
+            &tabs,
+            Some(0),
+            Some(&document),
+            None,
+            None,
+        ),
+    ] {
+        let staged: serde_json::Value =
+            serde_json::from_slice(message.shared_json()).expect("staged workspace JSON");
+        assert_eq!(staged, expected);
+    }
+
+    let workspace = payload(&workspace_only_script(
+        &[PathBuf::from("guide.md")],
+        &Favorites::default(),
+        &tabs,
+        Some(0),
+    ));
+    let mut without_document = expected;
+    without_document["document"] = serde_json::Value::Null;
+    without_document["renderKey"] = serde_json::Value::Null;
+    assert_eq!(workspace, without_document);
+}
+
+#[test]
+fn a_workspace_payload_escapes_every_document_string() {
+    let special = "a \\\"quote\\\", a \\\\ slash, and </script>";
+    let mut document = opened_document_from_source("# Seed", "seed.md");
+    document.title = special.to_string();
+    document.path = special.to_string();
+    document.source = special.to_string();
+    let script =
+        workspace_state_script(&[], &Favorites::default(), &[], None, Some(&document), None);
+    let start = script.find('(').expect("the call opens") + 1;
+    let payload = serde_json::Deserializer::from_str(&script[start..])
+        .into_iter::<serde_json::Value>()
+        .next()
+        .expect("the payload is there")
+        .expect("JSON");
+
+    assert_eq!(payload["document"]["title"], special);
+    assert_eq!(payload["document"]["path"], special);
+    assert_eq!(payload["document"]["source"], special);
+    let message =
+        workspace_state_message(&[], &Favorites::default(), &[], None, Some(&document), None);
+    let staged: serde_json::Value =
+        serde_json::from_slice(message.shared_json()).expect("staged workspace JSON");
+    assert_eq!(staged["document"]["title"], special);
+    assert_eq!(staged["document"]["path"], special);
+    assert_eq!(staged["document"]["source"], special);
+}
+
+#[test]
 fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
     let tabs = [strip_tab("Guide", "guide.md")];
     let anchor = ScrollAnchor {
