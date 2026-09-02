@@ -20,6 +20,10 @@ check-installer:
 test:
     cargo test
 
+# Fail on a doc comment linking to something that crate cannot reach. Only rustdoc reads a comment's links, and the binary half of the source had never been read by anything, so a dead reference there survived every other check. Both crates in one invocation; cargo's warning about the two same-named targets sharing an output path is expected, since the lints are the result and the generated pages are not.
+check-rust-docs:
+    cargo doc --no-deps --lib --bin leaftext
+
 # Write the six sample Office documents into ../docs/tests/office/ and print where they
 # went, for somebody who wants to open one in Word or read one in Leaftext. They sit beside
 # the other sample documents in the plan tree, which is the folder somebody would look in.
@@ -599,7 +603,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

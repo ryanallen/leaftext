@@ -378,7 +378,7 @@ pub(crate) struct PendingGraph {
 pub(crate) enum GraphSource {
     /// The active vault: every document under it. The bigger picture, because what links *back* to a document is only ever written in another one, and a whole collection is where `[[wiki]]` names can resolve.
     Vault(PathBuf),
-    /// One document, its folder, and what it links to — [`document_graph`].
+    /// One document, its folder, and what it links to — [`leaftext::document_graph`].
     Document(PathBuf),
 }
 
