@@ -224,6 +224,7 @@ Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It
 - The journal beside it is where a reason would be if there is one, which is what the sentence points at. A crash the app noticed is in there; a machine that went down leaves nothing to write
 - **The marker holds nothing.** It is a zero-byte file, and it is the same one every launch — nothing about your documents is in it, and it is safe to delete
 - The notice is written to the journal as well, so it can be quoted in a bug report
+- **A launch with more than one thing to say says all of them**, one after another in the same corner, each for its full eight seconds: the [settings file that could not be read](#files) first, then the [install that did not take](#updates), then this one. None of them is lost behind another. A message you asked for by pressing something takes the corner straight away and clears whatever was still waiting, so an answer to a gesture never arrives behind a launch notice
 
 ## Paths
 

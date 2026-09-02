@@ -234,7 +234,7 @@ export function run() {
 
   // ---- 2b3. a launch with more than one thing to say says every one of them ---
   //
-  // The three launch facts share the one growl slot, and the slot replaces itself. Through the replacing door a launch with two of them draws the first and takes it straight back down with the second, and the reader never sees the first at all — not late, not smaller, not anywhere, and nothing logs it. Read off the drawn growls in turn, because what goes missing is the drawing rather than the call.
+  // The three launch facts share the one growl slot. Through the replacing door a launch with two of them draws the first and takes it straight back down with the second, so the reader never sees it at all and nothing logs it — which is why these read off the drawn growls rather than the calls.
 
   check('a launch with two facts says both, the second in the same slot once the first has gone', () => {
     const { context, growls } = bootPage({

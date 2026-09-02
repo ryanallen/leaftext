@@ -129,7 +129,7 @@ fn the_reading_view_handoff_keeps_the_document_out_of_the_page_command() {
     assert_eq!(metadata["detail"], serde_json::Value::Null);
 }
 
-/// Nothing pinned what the code view actually carries end to end: the payload test above builds one out of a made-up string, and the two tests entering the view take the arm where the file has gone. So the buffer's whole text reaching the page unchanged rested on reading alone.
+/// The one test holding what the code view carries end to end: the payload test above builds one out of a made-up string, and the two tests entering the view take the arm where the file has gone.
 #[test]
 fn entering_the_code_view_stages_the_buffers_whole_text() {
     let _slot = SOURCE_PAYLOAD_SLOT
