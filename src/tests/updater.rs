@@ -541,7 +541,7 @@ fn the_applier_s_verdict_reaches_the_page_as_a_growl() {
     assert_contains(&html, "if (window.__leafUpdateFailed) {");
     assert_contains(&html, "Updating to v${failed.version} failed");
     assert_contains(&html, "You are still on v${LEAF_VERSION}.");
-    assert_contains(&html, "window.leafShowError(`${opening}");
+    assert_contains(&html, "leafQueueToast(`${opening}");
 }
 
 #[test]

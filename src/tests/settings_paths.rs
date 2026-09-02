@@ -538,7 +538,7 @@ fn a_settings_file_from_before_the_pane_had_one_view_still_loads() {
 
 #[test]
 fn an_unreadable_settings_file_reaches_the_page_as_a_growl() {
-    // The whole point of the flag: coming up on defaults is invisible, so the page has to say it. Host side, it is always emitted so the flag is never undefined; page side, the boot growls only when it is true.
+    // The whole point of the flag: coming up on defaults is invisible, so the page has to say it. Host side, it is always emitted so the flag is never undefined; page side, the boot queues the growl only when it is true, through the door that waits its turn rather than the one that replaces what is standing.
     assert_eq!(
         settings_unreadable_script(true),
         "window.__leafSettingsUnreadable = true;"
@@ -552,7 +552,7 @@ fn an_unreadable_settings_file_reaches_the_page_as_a_growl() {
     assert_contains(&html, "if (window.__leafSettingsUnreadable) {");
     assert_contains(
         &html,
-        "window.leafShowError('Your settings file could not be read",
+        "leafQueueToast('Your settings file could not be read",
     );
 }
 

@@ -1080,6 +1080,41 @@ fn a_first_click_into_a_package_is_answered_off_the_tab_rather_than_the_file() {
     let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
 }
 
+/// A live reload has already read the package, so its entry keeps no reading of the file. Corrupting only the member bytes leaves the directory identity intact while making a second unpack fail, which proves the click takes the archive the reload kept.
+#[test]
+fn a_reload_entry_seeds_the_next_click_from_its_archive_without_reading_the_file() {
+    let path = scratch_dir("editing-package-reload-seed").join("report.docx");
+    let member = word_document("the words the reload drew");
+    let archive = one_member_package("word/document.xml", member.as_bytes());
+    fs::write(&path, &archive).expect("the package is written");
+    let mut source = read_document_for_editing(&path).expect("the package is read");
+    let hash = render_key(&path, &source.text.text);
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+        .expect("the package is drawn");
+
+    let mut broken = archive;
+    broken[30 + "word/document.xml".len()] = b'!';
+    fs::write(&path, broken).expect("the package member is corrupted");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: path.clone(),
+        hash,
+        record: None,
+        package: source.package,
+        document: Rc::new(drawn),
+    });
+
+    let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");
+    assert_eq!(
+        answered["text"], member,
+        "the member comes from the reload entry because the file's copy no longer unpacks"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
 /// What a save then writes. The buffer carries the archive the render read, so the member goes back into the file the reader opened — and everything else in that archive travels across untouched, which is the whole reason a package's buffer holds one at all.
 #[test]
 fn a_save_from_a_seeded_package_writes_the_archive_the_render_read() {
@@ -1102,7 +1137,7 @@ fn a_save_from_a_seeded_package_writes_the_archive_the_render_read() {
     let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
 }
 
-/// The gate failing closed. A live reload writes its entry with no reading of the file on purpose, and an entry nothing can date cannot say the file has not moved — so the seed opens the file, which costs one read rather than a wrong document.
+/// The gate fails closed when the package identity on disk no longer matches the archive the entry kept, so the seed opens the file rather than handing stale bytes to a later save.
 #[test]
 fn a_tab_whose_entry_kept_no_reading_of_the_file_seeds_from_the_disk() {
     let path = scratch_dir("editing-package-undated").join("report.docx");
@@ -1110,7 +1145,7 @@ fn a_tab_whose_entry_kept_no_reading_of_the_file_seeds_from_the_disk() {
     let stale_archive = one_member_package("word/document.xml", stale.as_bytes());
     fs::write(&path, &stale_archive).expect("the package is written");
     let mut source = read_document_for_editing(&path).expect("the package is read");
-    let hash = content_hash(&source.text.text);
+    let hash = render_key(&path, &source.text.text);
     let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
         .expect("the package is drawn");
 
@@ -1135,7 +1170,50 @@ fn a_tab_whose_entry_kept_no_reading_of_the_file_seeds_from_the_disk() {
     let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");
     assert_eq!(
         answered["text"], fresh,
-        "an entry nothing can date is not asked what the file holds"
+        "an entry whose package identity moved is not used to seed the buffer"
+    );
+
+    let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+/// A package being replaced can expose a file whose directory is not complete yet. With no identity to compare, the seed leaves the held archive on the render entry and lets the ordinary disk read decide what the click receives.
+#[test]
+fn a_package_with_an_unreadable_end_refuses_to_seed_from_the_render_entry() {
+    let path = scratch_dir("editing-package-in-flight").join("report.docx");
+    let member = word_document("the words on the page");
+    let archive = one_member_package("word/document.xml", member.as_bytes());
+    fs::write(&path, &archive).expect("the package is written");
+    let mut source = read_document_for_editing(&path).expect("the package is read");
+    let hash = render_key(&path, &source.text.text);
+    let drawn = opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default())
+        .expect("the package is drawn");
+
+    let mut incomplete = archive;
+    incomplete.truncate(incomplete.len() - 22);
+    fs::write(&path, incomplete).expect("the package end is still being written");
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].rendered = Some(RenderedCache {
+        path: path.clone(),
+        hash,
+        record: None,
+        package: source.package,
+        document: Rc::new(drawn),
+    });
+
+    assert!(
+        workspace.tabs[0].seed_from_render(&path).is_none(),
+        "an unreadable package identity cannot admit the held archive"
+    );
+    assert!(
+        workspace.tabs[0]
+            .rendered
+            .as_ref()
+            .expect("the render entry remains")
+            .package
+            .is_some(),
+        "a refused seed does not consume the archive"
     );
 
     let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));

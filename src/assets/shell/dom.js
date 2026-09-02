@@ -310,13 +310,32 @@ let toastTimer = 0;
 let toastElement = null;
 // What to run when the current toast leaves, whether it timed out or another replaced it. An offer riding on a toast is only good while the toast is up, so whatever armed it is told the moment it is not.
 let toastGone = null;
+// The line waiting for the slot. Only `leafQueueToast` puts anything in it and only the boot calls that, so it holds at most the launch facts and nothing else -- and it can only ever hold a plain sentence, which is why an offer can never end up waiting behind another growl.
+const toastQueue = [];
 function endToast() {
   const gone = toastGone;
   toastGone = null;
   if (gone) gone();
 }
 // `action` is an optional { label, run, gone } -- a single button beside the words. `link` is an optional { text, run } pressed inside the sentence instead, for the growl that names a file it can open: the path is what the reader reaches for, so the path is what takes the press.
+//
+// Every one of these answers something the reader just did, so it takes the slot at once and drops whatever the launch still had to say: a sentence about the boot arriving over the top of the answer to a press is worse than one nobody read.
 function leafToast(message, tone, action, link) {
+  toastQueue.length = 0;
+  drawToast(message, tone, action, link);
+}
+
+// A sentence that waits its turn rather than taking the slot off the one standing. A message and a tone and nothing else -- no button, no pressable path -- because an offer is only good while its growl is up and this door can hold one for eight seconds.
+function leafQueueToast(message, tone) {
+  if (!message) return;
+  if (toastElement) {
+    toastQueue.push({ message, tone });
+    return;
+  }
+  drawToast(message, tone, null, null);
+}
+
+function drawToast(message, tone, action, link) {
   if (toastElement) {
     toastElement.remove();
     toastElement = null;
@@ -377,7 +396,11 @@ function leafToast(message, tone, action, link) {
     // It fades out before it goes, so the slot is only free once it is actually gone -- a growl arriving mid-fade must take this one down rather than leave it fading behind itself.
     setTimeout(() => {
       toast.remove();
-      if (toastElement === toast) toastElement = null;
+      if (toastElement !== toast) return;
+      toastElement = null;
+      // The slot is free at exactly this point and no earlier, so the next sentence takes it here rather than on a timer of its own.
+      const next = toastQueue.shift();
+      if (next) drawToast(next.message, next.tone, null, null);
     }, 200);
     endToast();
   }, error ? TOAST_ERROR_MS : TOAST_MS);

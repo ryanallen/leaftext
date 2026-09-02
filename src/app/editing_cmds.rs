@@ -217,7 +217,6 @@ pub(crate) fn enter_code_view(
     let (index, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     // Building the editor on a big source takes a while; the code-view script clears the spinner once it is on screen.
     begin_reader_loading(webview);
-    let text = edit.text().to_string();
     let source_definition = leaftext::source_definition(&edit.path);
     let language = source_definition
         .map(|definition| definition.language_token)
@@ -229,8 +228,9 @@ pub(crate) fn enter_code_view(
         .to_string();
     let dirty = edit.is_dirty();
 
+    // The buffer's own text, never a copy of it: on a package member the copy was a whole inflated member taken and dropped inside one press, and `code_view_payload` only borrows.
     let url = stage_source_payload(code_view_payload(
-        &text,
+        edit.text(),
         &language,
         &display,
         dirty,

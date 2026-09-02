@@ -24,7 +24,7 @@ pub(crate) struct RenderedCache {
     pub(crate) path: PathBuf,
     /// What `render_hash` answered for the document: a package's own identity, read off the directory at the end of the file, and every other format's source text hashed. Not the source either way for a package — its members are what moved, and its text is one of them.
     pub(crate) hash: u64,
-    /// What the file said about itself before it was read, where that reading could be trusted; `None` where it could not, or where whoever wrote this entry had already read the file and so could not take one safely. An entry with none is a correct entry that costs one read to earn one.
+    /// What the file said about itself before it was read, where that reading could be trusted; `None` where it could not, or where whoever wrote this entry had already read the file and so could not take one safely. A package entry with none can still be checked against the identity in the file's own directory.
     pub(crate) record: Option<FileRecord>,
     /// The archive this render was unpacked from, where the document is a package: the bytes a save splices the edited member back into. It rides inside this entry rather than beside it, so a file that moved replaces it whole and a cleared entry clears it — there is no second thing to keep in step. `None` for every text format, and for a package whose buffer has already taken it.
     pub(crate) package: Option<leaftext::PackageBuffer>,
@@ -81,14 +81,17 @@ impl Tab {
 
     /// What an edit buffer can be seeded with without opening the file: the member text the drawn document is already carrying, and the archive this tab kept when it rendered — the whole of what a package's buffer wants, so a first click into a Word file costs a folder read rather than a second inflate and a second parse of its largest member.
     ///
-    /// `None` for every text format, whose spelling lives in the read and is nowhere on the drawn document, and for a tab whose entry no longer stands for the file — a moved file, or an entry that kept no reading to be asked about. Both read the disk, as they always did.
+    /// `None` for every text format, whose spelling lives in the read and is nowhere on the drawn document, and for a tab whose entry no longer stands for the file by either its reading or a package identity.
     ///
     /// The archive is taken rather than cloned: the buffer is about to own it, and a copy left behind would be a second archive held for nobody.
     pub(crate) fn seed_from_render(&mut self, path: &Path) -> Option<DocumentSource> {
         let cache = self.rendered.as_mut()?;
         // Behind the entry, not in front of it: a tab with no render has nothing to compare a reading against, and the reading is a folder read.
         if !cache.stands_for(path, settled_file_record(path)) {
-            return None;
+            let hash = render_hash(path, None)?;
+            if !cache.answers_for(path, hash) {
+                return None;
+            }
         }
         let package = cache.package.take()?;
         Some(DocumentSource {

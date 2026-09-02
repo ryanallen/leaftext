@@ -883,6 +883,8 @@ export function runShell(source, extras = {}) {
   const noop = () => {};
   const frames = new Map();
   let frameId = 0;
+  const timers = new Map();
+  let timerId = 0;
   // Kept rather than swallowed, the way the document's are: a check raises a made-up event on the window and gets the page's own handlers. The mouse's own back button and the browser's own history both arrive this way.
   const windowListeners = new Map();
   // Every watcher the page registered, with the element and the options it was handed, so a check can find the one guarding an attribute and run it.
@@ -931,8 +933,16 @@ export function runShell(source, extras = {}) {
     __watchers: watchers,
     navigator: { userAgent: 'leaf-check', platform: 'test', clipboard: { writeText: noop } },
     performance: { now: () => 0 },
-    setTimeout: () => 0,
-    clearTimeout: noop,
+    // A real queue, like the frame queue below and for the same reason: a callback swallowed as it is armed is a moment no check can reach, and the growl's own dwell is the only thing that frees the one slot. Nothing fires on its own — a check runs what is waiting by asking for it — so a check that never asks behaves as it does over a stub.
+    setTimeout: (fn, delay) => {
+      if (typeof fn !== 'function') return 0;
+      timerId += 1;
+      timers.set(timerId, { fn, delay: Number(delay) || 0 });
+      return timerId;
+    },
+    clearTimeout: (id) => {
+      timers.delete(id);
+    },
     setInterval: () => 0,
     clearInterval: noop,
     queueMicrotask: noop,
@@ -1100,6 +1110,33 @@ export function runShell(source, extras = {}) {
     },
   };
 
+  // Run every callback the page has waiting on a timer, and every one those arm in turn, until there are none left. Same shape and same cap as the frame queue: a callback that re-arms itself is a page that never goes quiet, so the cap is the failure rather than a hang.
+  sandbox.__timers = {
+    // The queue itself, so the walk that hands the page back can take off a callback one check left waiting rather than letting it run inside the next.
+    queue: timers,
+    waiting: () => timers.size,
+    // What is waiting and how long each was armed for, so a check can name the timer it means rather than running the lot.
+    armed: () => [...timers].map(([id, one]) => ({ id, delay: one.delay })),
+    // One named timer, and nothing else — which is how a check reads what stands in a slot the moment the thing before it left.
+    run: (id) => {
+      const one = timers.get(id);
+      if (!one) throw new Error(`no timer ${id} was waiting`);
+      timers.delete(id);
+      one.fn();
+    },
+    drain: (cap = 200) => {
+      let ran = 0;
+      while (timers.size) {
+        if (ran >= cap) throw new Error(`the page kept arming another timer (${cap} of them)`);
+        const [id, one] = timers.entries().next().value;
+        timers.delete(id);
+        ran += 1;
+        one.fn();
+      }
+      return ran;
+    },
+  };
+
   // Whatever this run needs on top of the page: the browser host's fetch, its module, and the queue the export writes above it.
   Object.assign(sandbox, extras);
 
@@ -1235,7 +1272,7 @@ function putElement(taken) {
   }
 }
 
-/** Everything the page is surrounded by that no element holds: the window's own listeners, every watcher it registered, the frames it has queued, and whatever a check swapped out on the window itself. Taken the same way an element is — every own property, by identity as well as by contents — so a handler armed by one check does not fire inside the next. */
+/** Everything the page is surrounded by that no element holds: the window's own listeners, every watcher it registered, the frames it has queued, the callbacks it has waiting on a timer, and whatever a check swapped out on the window itself. Taken the same way an element is — every own property, by identity as well as by contents — so a handler armed by one check does not fire inside the next. */
 function takeSurroundings(context) {
   const own = new Map();
   for (const name of Object.getOwnPropertyNames(context)) {

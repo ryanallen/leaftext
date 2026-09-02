@@ -108,18 +108,20 @@ export function run() {
     if (scanned.length < 200) throw new Error(`the scan found only ${scanned.length} of the page own values`);
   });
 
-  check('a check that arms a handler or queues a frame leaves neither standing for the next one', () => {
+  check('a check that arms a handler, queues a frame or arms a timer leaves none of them standing for the next one', () => {
     const button = booted.document.getElementById('openButton');
     const wasOnButton = (button.listeners.get('click') || []).length;
     const wasOnWindow = (booted.__windowListeners.get('resize') || []).length;
     const wasWatchers = booted.__watchers.length;
     const wasWaiting = booted.__frames.waiting();
+    const wasTimers = booted.__timers.waiting();
 
     let fired = 0;
     button.addEventListener('click', () => (fired += 1));
     booted.window.addEventListener('resize', () => (fired += 1));
     new booted.ResizeObserver(() => (fired += 1)).observe(button, {});
     booted.requestAnimationFrame(() => (fired += 1));
+    booted.setTimeout(() => (fired += 1), 8000);
 
     record.restore();
 
@@ -127,23 +129,65 @@ export function run() {
     if ((booted.__windowListeners.get('resize') || []).length !== wasOnWindow) throw new Error('a handler armed on the window was left standing');
     if (booted.__watchers.length !== wasWatchers) throw new Error('a watcher a check registered was left standing');
     if (booted.__frames.waiting() !== wasWaiting) throw new Error('a frame a check queued was left waiting for the next one');
+    if (booted.__timers.waiting() !== wasTimers) throw new Error('a timer a check armed was left waiting for the next one');
 
     // And nothing the check armed runs afterwards, which is the whole of what a left-behind handler costs.
     (button.listeners.get('click') || []).forEach((handler) => handler({ type: 'click' }));
     booted.__frames.drain();
+    booted.__timers.drain();
     if (fired) throw new Error(`${fired} of the handlers a check armed ran after the page was handed back`);
+  });
+
+  check('a callback that arms itself again fails the check by name rather than hanging it', () => {
+    const context = runShell(source);
+    const arm = () => context.setTimeout(arm, 0);
+    arm();
+    let said = '';
+    try {
+      context.__timers.drain(12);
+    } catch (why) {
+      said = String(why.message);
+    }
+    if (!said.includes('kept arming another timer')) throw new Error(`a runaway timer was not named: ${said || 'it ran to the end'}`);
   });
 
   // ---- 2b. an update that did not install says so at boot ---------------------
   //
   // The host reads the applier's verdict before the event loop starts, so it arrives as a seeded flag rather than a message. Read off the drawn toast rather than off the flag: what makes a failed install invisible is that the old build comes back looking like a new one, and only the sentence carries the version still running.
 
-  /** Every growl standing on the app surface after a boot seeded with `extras`. */
-  function bootGrowls(extras) {
+  /** A boot seeded with `extras`, and a way to read every growl standing on its app surface at any moment. */
+  function bootPage(extras) {
     const context = runShell(source, extras);
     const surface = context.document.getElementById('appSurface');
-    return surface.children.filter((child) => String(child.className || '').includes('app-toast'));
+    const growls = () => surface.children.filter((child) => String(child.className || '').includes('app-toast'));
+    return { context, growls };
   }
+
+  /** Every growl standing on the app surface after a boot seeded with `extras`. */
+  function bootGrowls(extras) {
+    return bootPage(extras).growls();
+  }
+
+  /** The timer the standing growl armed for its own dwell, named by the dwell rather than counted, so a timer something else armed on the same boot cannot be mistaken for it. */
+  function growlDwell(context, ms = 8000) {
+    const armed = context.__timers.armed().filter((one) => one.delay === ms);
+    if (armed.length !== 1) throw new Error(`expected one ${ms}ms growl timer, got ${JSON.stringify(context.__timers.armed())}`);
+    return armed[0].id;
+  }
+
+  /** Run the standing growl out the way the page does: its dwell, then the fade that actually frees the slot. */
+  function growlOut(context, ms = 8000) {
+    context.__timers.run(growlDwell(context, ms));
+    context.__timers.run(growlDwell(context, 200));
+  }
+
+  check('a growl leaves its own dwell waiting, and running it takes the growl off the page', () => {
+    // The moment the whole of the queue below turns on, and the one a page with no timer cannot reach: without the dwell, nothing can ask what the slot does next.
+    const { context, growls } = bootPage({ __leafClosedUnexpectedly: true });
+    if (growls().length !== 1) throw new Error('the boot drew no growl to time');
+    growlOut(context);
+    if (growls().length !== 0) throw new Error('the growl stood after its own dwell and fade had both run');
+  });
 
   check('a failed install growls once at boot, carrying all three parts', () => {
     const growls = bootGrowls({
@@ -188,17 +232,81 @@ export function run() {
     if (bootGrowls({ __leafClosedUnexpectedly: false }).length !== 0) throw new Error('a false flag still growled');
   });
 
-  check('the notice yields the one slot to a failed install', () => {
-    // Both facts on one launch, and only one growl can stand. The failed install is about the build the reader is looking at, so it is the one that stays; the run marker's fact is in the journal either way.
-    const growls = bootGrowls({
+  // ---- 2b3. a launch with more than one thing to say says every one of them ---
+  //
+  // The three launch facts share the one growl slot, and the slot replaces itself. Through the replacing door a launch with two of them draws the first and takes it straight back down with the second, and the reader never sees the first at all — not late, not smaller, not anywhere, and nothing logs it. Read off the drawn growls in turn, because what goes missing is the drawing rather than the call.
+
+  check('a launch with two facts says both, the second in the same slot once the first has gone', () => {
+    const { context, growls } = bootPage({
       __leafClosedUnexpectedly: true,
       __leafUpdateFailed: { version: '1.14.13', message: 'Leaftext was still open, so nothing was changed' },
       __leafVersion: '1.14.12',
     });
-    if (growls.length !== 1) throw new Error(`expected one growl, got ${growls.length}`);
-    if (!String(growls[0].textContent).includes('v1.14.13')) {
-      throw new Error(`the launch notice took the slot off the failed install: ${growls[0].textContent}`);
+    if (growls().length !== 1) throw new Error(`expected one growl standing, got ${growls().length}`);
+    if (!String(growls()[0].textContent).includes('v1.14.13')) {
+      throw new Error(`the failed install was not said first: ${growls()[0].textContent}`);
     }
+    growlOut(context);
+    if (growls().length !== 1) throw new Error('the second fact never took the slot the first left');
+    if (!String(growls()[0].textContent).includes('closed unexpectedly last time')) {
+      throw new Error(`the second fact said the wrong thing: ${growls()[0].textContent}`);
+    }
+  });
+
+  check('a launch with all three facts says all three, in the reading order', () => {
+    const { context, growls } = bootPage({
+      __leafSettingsUnreadable: true,
+      __leafClosedUnexpectedly: true,
+      __leafUpdateFailed: { version: '1.14.13', message: 'Leaftext was still open, so nothing was changed' },
+      __leafVersion: '1.14.12',
+    });
+    // The settings file first because it is written down nowhere else, the build second, the launch before this one last.
+    const wanted = ['settings file could not be read', 'v1.14.13', 'closed unexpectedly last time'];
+    for (const part of wanted) {
+      if (growls().length !== 1) throw new Error(`nothing stood in the slot where "${part}" should have been`);
+      const said = String(growls()[0].textContent);
+      if (!said.includes(part)) throw new Error(`the slot said "${said}" where "${part}" was due`);
+      growlOut(context);
+    }
+    if (growls().length !== 0) throw new Error('a fourth growl stood after all three had been said');
+  });
+
+  check('a launch with one fact says it and leaves nothing waiting behind it', () => {
+    const { context, growls } = bootPage({ __leafSettingsUnreadable: true });
+    if (growls().length !== 1) throw new Error(`expected one growl, got ${growls().length}`);
+    growlOut(context);
+    if (growls().length !== 0) throw new Error('one launch fact left a second growl waiting behind it');
+  });
+
+  check('a queued launch fact keeps the failure tone and the full eight seconds', () => {
+    // A second failure is not less of a failure for being second: a queued sentence that drew quietly, or dwelled for the five seconds a success gets, would be a sentence the reader is likelier to miss than the one in front of it.
+    const { context, growls } = bootPage({
+      __leafSettingsUnreadable: true,
+      __leafClosedUnexpectedly: true,
+    });
+    growlOut(context);
+    const [second] = growls();
+    if (!second) throw new Error('the queued fact never drew');
+    if (!String(second.className).includes('is-error')) throw new Error(`the queued fact drew the quiet growl: ${second.className}`);
+    // Named rather than counted: this is the dwell the second growl armed for itself, and it is the failure's eight seconds rather than the five a success gets.
+    growlDwell(context);
+  });
+
+  check('a growl the reader asked for takes the slot and empties the line behind it', () => {
+    // Anything answering a press is the thing the reader is waiting on, so it must not queue behind the boot and the boot must not arrive over the top of it afterwards.
+    const { context, growls } = bootPage({
+      __leafSettingsUnreadable: true,
+      __leafClosedUnexpectedly: true,
+      __leafUpdateFailed: { version: '1.14.13', message: 'Leaftext was still open, so nothing was changed' },
+      __leafVersion: '1.14.12',
+    });
+    context.leafShowError('notes.md was not saved: the disk is full. Your edits are still here.');
+    if (growls().length !== 1) throw new Error(`expected one growl, got ${growls().length}`);
+    if (!String(growls()[0].textContent).includes('was not saved')) {
+      throw new Error(`the answer to a press waited behind a launch fact: ${growls()[0].textContent}`);
+    }
+    growlOut(context);
+    if (growls().length !== 0) throw new Error('a launch fact arrived after the answer to a press');
   });
 
   // ---- 2c. a theme change runs the sweep it registered ------------------------

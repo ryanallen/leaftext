@@ -128,3 +128,45 @@ fn the_reading_view_handoff_keeps_the_document_out_of_the_page_command() {
     assert_eq!(metadata["action"], "state");
     assert_eq!(metadata["detail"], serde_json::Value::Null);
 }
+
+/// Nothing pinned what the code view actually carries end to end: the payload test above builds one out of a made-up string, and the two tests entering the view take the arm where the file has gone. So the buffer's whole text reaching the page unchanged rested on reading alone.
+#[test]
+fn entering_the_code_view_stages_the_buffers_whole_text() {
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let dir = scratch_dir("entering_the_code_view_stages_the_buffers_whole_text");
+    let path = dir.join("source.md");
+    // Long enough that a payload carrying a truncation rather than the buffer is visible, and spelled so no other staged body could match it.
+    let source = format!(
+        "# Heading\n\n{}\n",
+        "a paragraph nobody trims\n".repeat(400)
+    );
+    fs::write(&path, &source).expect("the document is written");
+
+    // The slot's next id is one past the one this marker took, and the serial itself is private to the command.
+    let marker = stage_source_payload("{}".to_string());
+    let staged = marker
+        .rsplit('/')
+        .next()
+        .and_then(|id| id.parse::<u64>().ok())
+        .expect("the staged URL ends in its id")
+        + 1;
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    assert_eq!(enter_code_view(None, &mut workspace, None), Ok(()));
+
+    let served = source_payload_response(&source_payload_url(SOURCE_PAYLOAD_PROTOCOL, staged));
+    assert_eq!(served.status, 200, "the code view staged its payload");
+    let json: serde_json::Value = serde_json::from_slice(&served.body).expect("payload is JSON");
+    assert_eq!(
+        json["text"], source,
+        "the page is owed the buffer's whole text, byte for byte"
+    );
+    assert_eq!(json["language"], "markdown");
+    assert_eq!(json["dirty"], false);
+    assert!(workspace.tabs[0].code_view, "the tab is left in the view");
+
+    let _ = fs::remove_dir_all(&dir);
+}
