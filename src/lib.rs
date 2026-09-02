@@ -559,11 +559,13 @@ pub fn read_document_for_editing(path: impl AsRef<Path>) -> io::Result<DocumentS
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageDocument(office::OfficeDocument);
 
+/// A document as an edit buffer takes it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocumentSource {
     pub text: SourceText,
     /// The archive behind a package, or `None` for a file somebody typed.
     pub package: Option<PackageBuffer>,
+    /// The document the package's one parse already built, so the render draws it rather than unpacking the same archive again.
     pub document: Option<PackageDocument>,
 }
 
@@ -617,7 +619,7 @@ pub fn save_editable_document(host: &dyn LeafHost, edit: &EditableDocument) -> i
     }
 }
 
-/// The document at `path`, for a caller that has already read it for a hash gate of its own: a package's read, unpack and parse happen once, and the document that pass built is rendered here.
+/// The document at `path`, for a caller that has already read it for a hash gate of its own. One call rather than a shape test at every render site, and a package's read, unpack and parse all happen once: the document that pass built is what is rendered here.
 pub fn opened_document_for_path_with_host(
     path: &Path,
     source: &DocumentSource,

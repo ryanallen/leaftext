@@ -129,7 +129,7 @@ export function run() {
     if (named !== 1) throw new Error(`the file is named ${named} times: ${said[0]}`);
   });
 
-  // A refused save is not a refused open, and the page said it was. What is held is the whole sentence a reader meets: it names the write as what failed, and it says the buffer still holds what they typed — the half a failed-open message has no reason to carry. Driven through the save report rather than the composer, because the fault was the caller reaching for its neighbor.
+  // A refused save is not a refused open. What is held is the whole sentence a reader meets: it names the write as what failed, and it says the buffer still holds what they typed — the half a failed-open message has no reason to carry. Driven through the save report rather than the composer, because a caller reaching for its neighbor is what this catches.
   check('a refused save says the write failed and the edits are still here', () => {
     const context = runShell(source);
     const said = [];

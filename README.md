@@ -220,7 +220,7 @@ The one exception is the one you ask for: [GitHub sync](docs/01-features/03-libr
 
 Your [settings](docs/01-features/05-settings.md) are a JSON file on your machine, and your documents are the files you already had. Delete Leaftext tomorrow and every word you wrote is still sitting in the folder you put it in, readable by anything.
 
-Leaftext also keeps a plain text [journal](docs/01-features/05-settings.md#journal) of what it did, so a bug report has something to attach. It records file paths and errors — never a word you wrote — it stops at about a megabyte, and it goes nowhere unless you send it.
+Leaftext also keeps a plain text [journal](docs/01-features/05-settings.md#journal) of what it did, so a bug report has something to attach. It records file paths and errors — never a word you wrote — it stops at about a megabyte, and it goes nowhere unless you send it. Beside it sits an empty marker file saying a run is under way, which the close takes away — so a launch that still finds one says the run before it ended without closing. It holds nothing at all.
 
 ### How an update lands
 
