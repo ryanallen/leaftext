@@ -431,9 +431,20 @@ impl VaultCorpus {
             .filter(|paths| paths.len() < self.documents.len())
             .map(|paths| paths.iter().map(String::as_str).collect());
 
+        // The field names nothing has been seen to set yet. Answered on this walk rather than on one of its own: a second walk builds a second candidate per document and parses the same block again, and a name no document sets pays that for the whole vault every keystroke.
+        let mut unnamed: Vec<&str> = query.field_names();
+
         let mut ranked: Vec<Candidate> = Vec::new();
         let mut matched: Vec<String> = Vec::new();
         for document in &self.documents {
+            // One candidate per document per query, so a frontmatter block is parsed once and both the filter and the unknown-name answer read that parse. A plain query is proved by the scan below and names no field, so it builds none at all.
+            let candidate = (!required).then(|| DocumentCandidate::new(document));
+            // Asked before the narrowing below can skip a document, because which names the *vault* sets is not a question a narrowed set can answer. `within` is offered only to a plain query, which names no field, so this costs a narrowed scan nothing.
+            if let Some(candidate) = &candidate {
+                if !unnamed.is_empty() {
+                    unnamed.retain(|name| !matches!(candidate.field(name), FieldAnswer::Values(_)));
+                }
+            }
             if let Some(paths) = &narrowed {
                 if !paths.contains(document.path.as_str()) {
                     continue;
@@ -442,9 +453,10 @@ impl VaultCorpus {
             if overtaken() {
                 return None;
             }
-            // A plain query is proved by the scan below, which is why it does not pay for a pass of its own — the words it needs are exactly the words it scores.
-            if !required && !query.matches(&DocumentCandidate::new(document)) {
-                continue;
+            if let Some(candidate) = &candidate {
+                if !query.matches(candidate) {
+                    continue;
+                }
             }
             if let Some(candidate) = score_document(document, &needles, required) {
                 matched.push(document.path.clone());
@@ -468,27 +480,26 @@ impl VaultCorpus {
             } else {
                 query.describe()
             },
-            unknown_fields: self.unknown_fields(query),
+            // What the walk above never saw set: a filter naming one of these can only ever match nothing, so the box says which name it did not know instead of showing an empty list and leaving somebody to guess.
+            unknown_fields: unnamed.into_iter().map(str::to_string).collect(),
             // Every answer carries it, not just a cut one: a vault whose search finds everything it looked at still did not look at all of it.
             skipped: self.skipped.clone(),
         })
     }
+}
 
-    /// The field names in `query` that no document in this vault sets. A filter naming one can only ever match nothing, so the box says which name it did not know instead of showing an empty list and leaving somebody to guess.
-    pub fn unknown_fields(&self, query: &Query) -> Vec<String> {
-        let mut wanted: Vec<&str> = query.field_names();
-        if wanted.is_empty() {
-            return Vec::new();
-        }
-        for document in &self.documents {
-            if wanted.is_empty() {
-                break;
-            }
-            let candidate = DocumentCandidate::new(document);
-            wanted.retain(|name| !matches!(candidate.field(name), FieldAnswer::Values(_)));
-        }
-        wanted.into_iter().map(str::to_string).collect()
-    }
+#[cfg(test)]
+thread_local! {
+    /// How many frontmatter blocks this thread has parsed for a filter. Only a test wants it: the whole of the fault it guards is a query that parsed each block twice, and a count is the only thing that can tell one pass from two. Per thread, because `cargo test` runs tests beside each other and a shared tally would read another test's work.
+    pub(crate) static FIELD_PARSES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Start the count again and answer what it reached while `scan` ran.
+#[cfg(test)]
+pub(crate) fn field_parses_during(scan: impl FnOnce()) -> usize {
+    FIELD_PARSES.with(|count| count.set(0));
+    scan();
+    FIELD_PARSES.with(std::cell::Cell::get)
 }
 
 /// One corpus document with the answers a filter asks for. Frontmatter is parsed and checkboxes counted at most once per document per query, and only if something asks — a plain word query pays for neither.
@@ -526,9 +537,11 @@ impl crate::Candidate for DocumentCandidate<'_> {
     }
 
     fn field(&self, name: &str) -> FieldAnswer {
-        let fields = self
-            .fields
-            .get_or_init(|| document_fields(&self.document.text));
+        let fields = self.fields.get_or_init(|| {
+            #[cfg(test)]
+            FIELD_PARSES.with(|count| count.set(count.get() + 1));
+            document_fields(&self.document.text)
+        });
         let Some(field) = fields.iter().find(|field| field.key_is(name)) else {
             return FieldAnswer::Missing;
         };

@@ -28,7 +28,8 @@ pub(crate) struct RenderedCache {
     pub(crate) record: Option<FileRecord>,
     /// The archive this render was unpacked from, where the document is a package: the bytes a save splices the edited member back into. It rides inside this entry rather than beside it, so a file that moved replaces it whole and a cleared entry clears it — there is no second thing to keep in step. `None` for every text format, and for a package whose buffer has already taken it.
     pub(crate) package: Option<leaftext::PackageBuffer>,
-    pub(crate) document: OpenedDocument,
+    /// The drawn document this entry owns. Every reader takes a handle on it rather than a copy: a switch back to a rendered tab is answered with the tab's name and a key, so copying the article markup, the block ranges and a package member's whole text to read one field of it is work spent on a path the page is sent none of. `Rc` and not `Arc` because a tab never leaves the window thread — [`Reader`] holds the window itself.
+    pub(crate) document: Rc<OpenedDocument>,
 }
 
 impl RenderedCache {
@@ -44,6 +45,11 @@ impl RenderedCache {
         self.record.is_some()
             && self.record == record
             && paths_refer_to_same_document(&self.path, path)
+    }
+
+    /// What a switch takes when this entry answers: a handle on the drawn document and the key it was drawn under. Both gates make this one call, so neither can reach past it and copy — the answer is the entry's own allocation, which is what a test can hold it to.
+    pub(crate) fn reuse(&self) -> (Rc<OpenedDocument>, u64) {
+        (Rc::clone(&self.document), self.hash)
     }
 }
 

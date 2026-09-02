@@ -1485,11 +1485,95 @@ fn a_field_name_nobody_defined_says_so_instead_of_returning_everything() {
     assert!(known.hits.is_empty());
     assert!(known.unknown_fields.is_empty());
 
+    // A name only the *last* document sets is not reported either. The corpus is ordered smallest file first and `rating` is set by the largest note alone, so this is the case a walk of its own paid for in full.
+    let last = corpus
+        .search_until(&filter_query("rating:>4"), None, &|| false)
+        .expect("nothing overtook it");
+    assert!(!last.hits.is_empty(), "the last note does set it");
+    assert!(last.unknown_fields.is_empty());
+
     // A plain query explains nothing, because it would only read the box back.
     let plain_answer = corpus
         .search_until(&filter_query("dharma"), None, &|| false)
         .expect("nothing overtook it");
     assert!(plain_answer.understood.is_empty());
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn narrowing_the_scan_does_not_change_which_names_the_vault_is_said_not_to_know() {
+    let (dir, root) = filtered_vault("filter-unknown-narrowed");
+    let corpus = VaultCorpus::read(&root);
+
+    // Everything but the one note that sets `rating`. `within` is offered only to a plain query, so this is a narrowing no caller makes today — and the answer still has to be the vault's, because the reader asked what the vault knows rather than what this slice of it knows.
+    let all = corpus
+        .search_until(&filter_query("dharma"), None, &|| false)
+        .expect("nothing overtook it")
+        .matched;
+    let elsewhere: Vec<String> = all
+        .iter()
+        .filter(|path| !path.contains("plan"))
+        .cloned()
+        .collect();
+    assert!(!elsewhere.is_empty() && elsewhere.len() < all.len());
+
+    let known = corpus
+        .search_until(&filter_query("rating:>4"), Some(&elsewhere), &|| false)
+        .expect("nothing overtook it");
+    assert!(
+        known.unknown_fields.is_empty(),
+        "a name the vault sets outside the narrowed paths is still a name it knows"
+    );
+
+    let unknown = corpus
+        .search_until(&filter_query("duee:friday"), Some(&elsewhere), &|| false)
+        .expect("nothing overtook it");
+    assert_eq!(unknown.unknown_fields, vec!["duee".to_string()]);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn one_filter_opens_each_notes_field_block_once_and_plain_words_open_none() {
+    let dir = corpus_dir("filter-parse-count");
+    let root = dir.join("vault");
+    // Four notes, all found by the same plain word, so the count below is the whole vault and not a slice of it.
+    write(
+        &root.join("a.md"),
+        "---\nstatus: open\n---\n\n# A\n\nA sutra.\n",
+    );
+    write(
+        &root.join("b.md"),
+        "---\nstatus: done\n---\n\n# B\n\nA sutra, and a longer one.\n",
+    );
+    write(
+        &root.join("c.md"),
+        "# C\n\nA sutra with no field block at all.\n",
+    );
+    write(
+        &root.join("d.md"),
+        "---\nowner: ana\n---\n\n# D\n\nA sutra, the last of them.\n",
+    );
+    let corpus = VaultCorpus::read(&root);
+
+    // A name no note sets is the expensive case: it is looked for in every document and found nowhere. One parse each is the whole of this ticket — two was a second walk building a second candidate over the same blocks.
+    let parses = crate::vault_corpus::field_parses_during(|| {
+        let answer = corpus
+            .search_until(&filter_query("duee:friday"), None, &|| false)
+            .expect("nothing overtook it");
+        assert_eq!(answer.unknown_fields, vec!["duee".to_string()]);
+    });
+    assert_eq!(parses, 4, "one parse per note, never two");
+
+    // Plain words ask no field anything, so no block is opened at all.
+    let plain = crate::vault_corpus::field_parses_during(|| {
+        let answer = corpus
+            .search_until(&filter_query("sutra"), None, &|| false)
+            .expect("nothing overtook it");
+        assert_eq!(answer.matched.len(), 4);
+    });
+    assert_eq!(plain, 0);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }

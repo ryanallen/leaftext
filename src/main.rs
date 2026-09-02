@@ -76,6 +76,7 @@ use std::{
     io,
     path::{Path, PathBuf},
     process::Command,
+    rc::Rc,
     sync::{Arc, Mutex},
     thread,
     time::Duration,

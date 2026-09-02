@@ -295,7 +295,11 @@ fn the_render_cache_answers_only_for_the_same_file_unchanged() {
         hash,
         record: None,
         package: None,
-        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        document: Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
     };
 
     assert!(cache.answers_for(&path, hash), "same file, unchanged");
@@ -306,6 +310,41 @@ fn the_render_cache_answers_only_for_the_same_file_unchanged() {
     assert!(
         !cache.answers_for(Path::new("notes/b.md"), hash),
         "another file with identical text is still another file"
+    );
+}
+
+/// A switch back to a rendered tab is answered with the tab's name and a key, so the drawn document behind it is read for one field and never sent. Holding the answer to being the entry's own allocation is what a copy cannot satisfy: put `cache.document.clone()` back in place of the handle and this fails, where "the same words come back" passes either way.
+#[test]
+fn a_reuse_hands_back_the_entrys_own_drawn_document_rather_than_a_copy() {
+    let text = "# The document the tab is holding
+";
+    let hash = content_hash(text);
+    let path = PathBuf::from("notes/a.md");
+    let cache = RenderedCache {
+        path: path.clone(),
+        hash,
+        record: None,
+        package: None,
+        document: Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
+    };
+
+    let (document, answered) = cache.reuse();
+    assert!(
+        Rc::ptr_eq(&document, &cache.document),
+        "the switch is handed the drawn document the entry is holding, not a second one built from it"
+    );
+    assert_eq!(
+        answered, hash,
+        "and the key it was drawn under travels with it, so the arm behind the gate has nothing left to read off the entry"
+    );
+    assert_eq!(
+        Rc::strong_count(&cache.document),
+        2,
+        "the entry and the answer are the two holders of one document"
     );
 }
 
@@ -328,7 +367,11 @@ fn a_tab_starts_with_nothing_cached_and_keeps_what_it_renders() {
         hash: content_hash(text),
         record: None,
         package: None,
-        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        document: Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
     });
     assert!(
         workspace.tabs[1].rendered.is_none(),
@@ -354,7 +397,11 @@ fn a_switch_back_to_an_unedited_package_answers_from_the_cache() {
             hash,
             record: None,
             package: None,
-            document: opened_document_from_source_with_host("", &path, &DesktopHost::default()),
+            document: Rc::new(opened_document_from_source_with_host(
+                "",
+                &path,
+                &DesktopHost::default(),
+            )),
         }),
         ..Tab::default()
     };
@@ -801,7 +848,11 @@ fn the_render_cache_stands_for_a_file_only_at_the_reading_it_kept() {
         hash: content_hash(text),
         record: Some(record),
         package: None,
-        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        document: Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
     };
 
     assert!(
@@ -842,7 +893,11 @@ fn the_render_cache_stands_for_a_file_only_at_the_reading_it_kept() {
         hash: content_hash(text),
         record: None,
         package: None,
-        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        document: Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
     };
     assert!(
         !unrecorded.stands_for(&path, Some(record)),

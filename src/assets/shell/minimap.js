@@ -785,8 +785,7 @@ function observeReaderReflow() {
   }
   if (typeof ResizeObserver !== 'undefined') {
     readerReflowObserver = new ResizeObserver(() => {
-      // A resize means the block set may have changed (images decoding, Mermaid/KaTeX/code decoration swapping nodes in). Drop the cached anchor list so the next capture reflects the current DOM. Cheap: resizes are rare.
-      readerAnchorBlocks = null;
+      // A resize changes geometry; the paths that replace blocks clear their membership cache themselves.
       scheduleReaderLayoutUpdate();
     });
     readerReflowObserver.observe(source);

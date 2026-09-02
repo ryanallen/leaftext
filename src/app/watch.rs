@@ -414,14 +414,14 @@ pub(crate) fn cache_reloaded_render(
     path: &Path,
     hash: u64,
     source: DocumentSource,
-    document: &OpenedDocument,
+    document: Rc<OpenedDocument>,
 ) {
     tab.rendered = Some(RenderedCache {
         path: path.to_path_buf(),
         hash,
         record: None,
         package: source.package,
-        document: document.clone(),
+        document,
     });
 }
 
@@ -517,10 +517,10 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         }
     }
 
-    // Render through the same path as an initial open, reusing the content already read for the hash-gate.
+    // Render through the same path as an initial open, reusing the content already read for the hash-gate, and wrapped where it is drawn so the entry this reload writes and the document it draws with are one allocation.
     let document =
         match opened_document_for_path_with_host(&path, &mut source, &DesktopHost::default()) {
-            Ok(document) => document,
+            Ok(document) => Rc::new(document),
             Err(error) => {
                 eprintln!("Live reload: failed to read {}: {error}", path.display());
                 return;
@@ -528,7 +528,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
         };
     if let Some(tab) = workspace.tabs.get_mut(index) {
         tab.title = document.title.clone();
-        cache_reloaded_render(tab, &path, hash, source, &document);
+        cache_reloaded_render(tab, &path, hash, source, Rc::clone(&document));
     }
     reader
         .window
@@ -547,7 +547,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
             &reader.favorites,
             &tabs,
             Some(index),
-            Some(&document),
+            Some(&*document),
             Some(hash),
         ),
         "Live reload: failed to update document view",

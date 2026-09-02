@@ -707,7 +707,7 @@ fn a_live_reload_leaves_the_tab_holding_the_archive_it_just_read() {
         &DesktopHost::default(),
     );
     let mut tab = Tab::default();
-    cache_reloaded_render(&mut tab, &path, 1, opened, &drawn);
+    cache_reloaded_render(&mut tab, &path, 1, opened, Rc::new(drawn));
 
     let second = one_member_package("word/document.xml", word_document("two").as_bytes());
     fs::write(&path, &second).expect("the package is written again");
@@ -717,7 +717,7 @@ fn a_live_reload_leaves_the_tab_holding_the_archive_it_just_read() {
         &path,
         &DesktopHost::default(),
     );
-    cache_reloaded_render(&mut tab, &path, 2, reloaded, &redrawn);
+    cache_reloaded_render(&mut tab, &path, 2, reloaded, Rc::new(redrawn));
 
     let kept = tab
         .rendered
@@ -757,7 +757,11 @@ fn a_reloaded_note_leaves_no_archive_on_the_tab() {
         &path,
         1,
         read_document_for_editing(&path).expect("the note is read"),
-        &opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
     );
 
     assert!(

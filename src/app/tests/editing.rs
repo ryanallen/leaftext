@@ -16,7 +16,11 @@ fn a_picture_picked_after_the_file_moved_is_never_spliced_at_the_offsets_the_pag
             hash: content_hash(text),
             record: None,
             package: None,
-            document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+            document: Rc::new(opened_document_from_source_with_host(
+                text,
+                &path,
+                &DesktopHost::default(),
+            )),
         }),
         ..Default::default()
     };
@@ -1042,7 +1046,7 @@ fn package_tab_over_rubbish(label: &str, words: &str) -> (PathBuf, Workspace, St
         hash,
         record: settled_file_record(&path),
         package: source.package,
-        document: drawn,
+        document: Rc::new(drawn),
     });
 
     fs::write(&path, vec![b'x'; archive.len()]).expect("the rubbish is written");
@@ -1125,7 +1129,7 @@ fn a_tab_whose_entry_kept_no_reading_of_the_file_seeds_from_the_disk() {
         hash,
         record: None,
         package: source.package,
-        document: drawn,
+        document: Rc::new(drawn),
     });
 
     let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");
@@ -1154,7 +1158,11 @@ fn a_text_document_seeds_from_the_disk_with_its_own_spelling() {
         hash: content_hash(text),
         record: settled_file_record(&path),
         package: None,
-        document: opened_document_from_source_with_host(text, &path, &DesktopHost::default()),
+        document: Rc::new(opened_document_from_source_with_host(
+            text,
+            &path,
+            &DesktopHost::default(),
+        )),
     });
 
     let answered = pipe_document_answer(&mut workspace).expect("the buffer is seeded");

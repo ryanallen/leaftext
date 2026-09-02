@@ -214,7 +214,7 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
             "readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;",
             // A resize is what queues the pass, and the pair is that path — either line on its own is in the page several times.
             "invalidateMinimapMetrics();\n  scheduleReaderLayoutUpdate();",
-            // The reflow observer re-pins the anchor as images decode and grow, and drops the stale anchor-block cache so the re-pin resolves against the current DOM rather than detached, zero-rect entries.
+            // The reflow observer re-pins the anchor as images decode and grow.
             "function observeReaderReflow() {",
             "readerReflowObserver = new ResizeObserver(() => {",
             "image.addEventListener('load', () => scheduleReaderLayoutUpdate(), { once: true });",
@@ -225,7 +225,6 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
         assert_in(&html, "function initializeMinimapState() {", expected);
     }
 
-    // The page holds all three of these lines in several places, so the block each is in is the claim: the capture reads the cached list, the queued pass re-origins, and the reflow observer drops the cache.
     for (inside, expected) in [
         (
             "function captureReaderScrollAnchor() {",
@@ -237,11 +236,33 @@ fn app_shell_preserves_reader_anchor_across_layout_reflow() {
         ),
         (
             "readerReflowObserver = new ResizeObserver(() => {",
+            "scheduleReaderLayoutUpdate();",
+        ),
+        (
+            "function prepareStateRender(state, keepDetachedRender) {",
+            "readerAnchorBlocks = null;",
+        ),
+        (
+            "function renderCodeView(state) {",
+            "readerAnchorBlocks = null;",
+        ),
+        (
+            "function mermaidPageTextChanged() {",
+            "readerAnchorBlocks = null;",
+        ),
+        (
+            "function drawMermaidBatches(diagrams, generation, warming) {",
             "readerAnchorBlocks = null;",
         ),
     ] {
         assert_in(&html, inside, expected);
     }
+    let reflow = block_opened_by(&html, "readerReflowObserver = new ResizeObserver(() => {")
+        .expect("the reader reflow observer should remain in the page");
+    assert!(
+        !reflow.contains("readerAnchorBlocks = null;"),
+        "a geometry-only reflow must not discard the ordered block list"
+    );
 }
 
 #[test]

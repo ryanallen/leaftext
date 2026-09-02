@@ -135,6 +135,41 @@ export function run() {
     }
   });
 
+  check('a geometry-only reflow keeps the reader block list', () => {
+    const appEl = booted.document.getElementById('app');
+    const body = fakeElement('reader-anchor-source');
+    body.className = 'document-body';
+    body.innerHTML = '<p>First block.</p><p>Second block.</p>';
+    body.children.forEach((block, index) => {
+      block.getBoundingClientRect = () => ({ top: index * 40, bottom: (index + 1) * 40 });
+    });
+    const query = body.querySelectorAll;
+    let walks = 0;
+    body.querySelectorAll = (selector) => {
+      if (String(selector).includes('blockquote')) walks += 1;
+      return query.call(body, selector);
+    };
+    booted.__heldState = vm.runInContext('currentState', booted);
+    appEl.appendChild(body);
+    try {
+      vm.runInContext("currentState = { recent: [], tabs: [{ path: 'long.md' }], active: 0, document: {} };", booted);
+      booted.captureReaderScrollAnchor();
+      if (walks !== 1) throw new Error(`the first capture walked the document ${walks} times`);
+      booted.observeReaderReflow();
+      const watch = booted.__watchers.filter((one) => one.kind === 'ResizeObserver' && one.target === body).at(-1);
+      if (!watch) throw new Error('the reader body has no reflow watcher to fire');
+      watch.callback([{ target: body, contentRect: { width: 800, height: 80 } }], watch);
+      booted.__frames.drain();
+      booted.captureReaderScrollAnchor();
+      if (walks !== 1) throw new Error(`a size-only reflow walked the document ${walks} times`);
+    } finally {
+      booted.disconnectReaderReflowObserver();
+      appEl.removeChild(body);
+      vm.runInContext('currentState = __heldState; delete __heldState; readerAnchorBlocks = null; readerAnchorBlocksCount = -1; readerAnchorBlocksSource = null;', booted);
+      booted.__frames.drain();
+    }
+  });
+
   // The rail's thumbnail is a clone of one slice of the document, and this comparison decides whether the slice on the page still holds what the rail shows. A no asks for another rebuild, on the next animation frame, and a rebuild deep-clones the slice — so a no that can never become a yes is about a gigabyte a minute until the page dies. Numbers here are a real document's: 13,142px tall, scaled to a tenth.
   check('the thumbnail counts as covering the view at the top and the foot', () => {
     const { minimapWindowCoversView } = booted;

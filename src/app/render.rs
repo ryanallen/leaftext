@@ -182,7 +182,8 @@ pub(crate) struct Reader {
 
 /// A render and the two things a tab switch asks of it: which render it is, and whether the tab already had it.
 pub(crate) struct RenderedDocument {
-    pub(crate) document: OpenedDocument,
+    /// A handle on the drawn document, never a copy of it: the tab's entry owns it, and a switch back reads its title and hands the page a key.
+    pub(crate) document: Rc<OpenedDocument>,
     pub(crate) hash: u64,
     pub(crate) reused: bool,
 }
@@ -306,9 +307,10 @@ impl Reader {
             .and_then(|tab| tab.rendered.as_ref())
             .filter(|cache| cache.stands_for(path, record))
         {
+            let (document, hash) = cache.reuse();
             return Ok(RenderedDocument {
-                document: cache.document.clone(),
-                hash: cache.hash,
+                document,
+                hash,
                 reused: true,
             });
         }
@@ -326,9 +328,10 @@ impl Reader {
             .and_then(|tab| tab.rendered.as_ref())
             .filter(|cache| cache.answers_for(path, hash))
         {
+            let (document, hash) = cache.reuse();
             return Ok(RenderedDocument {
-                document: cache.document.clone(),
-                hash: cache.hash,
+                document,
+                hash,
                 reused: true,
             });
         }
@@ -336,8 +339,12 @@ impl Reader {
             Some(source) => source,
             None => read_document_for_editing(path)?,
         };
-        let document =
-            opened_document_for_path_with_host(path, &mut source, &DesktopHost::default())?;
+        // Wrapped the moment it is drawn, so the entry below and the answer handed back are one allocation the tab owns rather than two documents to keep in step.
+        let document = Rc::new(opened_document_for_path_with_host(
+            path,
+            &mut source,
+            &DesktopHost::default(),
+        )?);
         if let Some(tab) = self.workspace.tabs.get_mut(index) {
             tab.rendered = Some(RenderedCache {
                 path: path.to_path_buf(),
@@ -345,7 +352,7 @@ impl Reader {
                 record,
                 // Moved rather than cloned: the drawing above took a borrow of this source, so the archive travels into the entry without a second copy of the file.
                 package: source.package,
-                document: document.clone(),
+                document: Rc::clone(&document),
             });
         }
         Ok(RenderedDocument {
@@ -445,7 +452,8 @@ impl Reader {
                         .get(index)
                         .and_then(|tab| tab.edit.as_ref())
                         .expect("edit buffer present");
-                    let document = reading_document_from_buffer(edit, &path);
+                    // A handle over a document no tab holds: this arm draws from the buffer, so nothing keeps it — the wrapper is what lets one field serve every arm.
+                    let document = Rc::new(reading_document_from_buffer(edit, &path));
                     RenderedDocument {
                         hash: content_hash(&document.source),
                         document,
@@ -480,7 +488,7 @@ impl Reader {
                         }
                     }
                 };
-                let document = &rendered.document;
+                let document: &OpenedDocument = &rendered.document;
 
                 if let Some(tab) = self.workspace.tabs.get_mut(index) {
                     tab.title = document.title.clone();
