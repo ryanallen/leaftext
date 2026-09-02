@@ -20,7 +20,7 @@ check-installer:
 test:
     cargo test
 
-# Fail on a doc comment linking to something that crate cannot reach. Only rustdoc reads a comment's links, and the binary half of the source had never been read by anything, so a dead reference there survived every other check. Both crates in one invocation; cargo's warning about the two same-named targets sharing an output path is expected, since the lints are the result and the generated pages are not.
+# Fail on a doc comment linking to something that crate cannot reach. Only rustdoc reads a comment's links, so nothing else here sees a dead reference, in the binary half of the source as much as in the library. Both crates in one invocation; cargo's warning about the two same-named targets sharing an output path is expected, since the lints are the result and the generated pages are not.
 check-rust-docs:
     cargo doc --no-deps --lib --bin leaftext
 
