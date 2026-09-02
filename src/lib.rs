@@ -5,8 +5,6 @@ mod host;
 mod markdown;
 mod state;
 pub use host::{BareHost, DesktopHost, GlossaryTerm, LeafHost, SourceSplice};
-#[cfg(all(test, target_os = "macos"))]
-pub(crate) use state::macos_application_support_dir;
 #[cfg(test)]
 pub(crate) use state::MAX_RECENT_FILES;
 pub use state::*;
