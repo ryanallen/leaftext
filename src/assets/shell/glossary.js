@@ -842,16 +842,16 @@ function newPageModifierHeld(event) {
   return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
 }
 // Whether a link names a file on this machine, whichever way a click opens it. Reveal file and Copy path act on the file rather than on where the click sends you, so they are the two items this gates rather than `isAnotherPageHref`.
-function linkHasAFileBehindIt(rawHref) {
-  const kind = linkHoverKind(rawHref);
+function linkHasAFileBehindIt(rawHref, kind = linkHoverKind(rawHref)) {
   return kind === 'Another page' || kind === 'Opens in another app';
 }
 // Whether a link has a page in this app to open at all. The hover tip's own test, so what the tip promised and what the gesture does cannot disagree.
-function isAnotherPageHref(rawHref) {
-  return linkHoverKind(rawHref) === 'Another page';
+function isAnotherPageHref(rawHref, kind = linkHoverKind(rawHref)) {
+  return kind === 'Another page';
 }
-// What a link is, in the words the hover tip uses. Read by the right-click menu to name Open after where it sends you.
-function linkHoverKind(rawHref) {
+// What a link is, in the words the hover tip uses. Read by the right-click menu to name Open after where it sends you. A caller deciding several things about one link reads it once and hands the answer to each — the href alone decides it, so a second walk of the ladder could only agree.
+function linkHoverKind(rawHref, known) {
+  if (typeof known === 'string') return known;
   const info = linkHoverInfo((rawHref || '').trim());
   return info ? info.kind : '';
 }

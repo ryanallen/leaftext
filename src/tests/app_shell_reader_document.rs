@@ -844,13 +844,15 @@ fn app_shell_gives_a_document_link_its_own_right_click_menu() {
         "{ action: 'revealLink', label: 'Reveal file', fileBehind: true },",
         "{ action: 'copyLinkPath', label: 'Copy path', fileBehind: true },",
         "showContextMenu(event.clientX, event.clientY, href, 'link', documentLink);",
+        // What kind of link it is, read once and handed to every rule below: they all ask the one question, of an href saved when the menu opened.
+        "const kind = linkHoverKind(contextMenuPath);",
         // An external link and an in-page jump have no page here to open, so the items that would need one are left out rather than shown dead.
-        "!entry.pageOnly || isAnotherPageHref(contextMenuPath)",
+        "!entry.pageOnly || isAnotherPageHref(contextMenuPath, kind)",
         // The two that act on the file want one behind the link rather than somewhere in the app to go, so a saved page or a PDF beside the note carries them.
-        "if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath);",
+        "if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath, kind);",
         // The one item that leaves the app says where it is sending you, in the words the hover tip over that same link already uses.
         "const LINK_OPEN_LABELS = { 'External site': 'Open in browser', 'Opens in another app': 'Open in another app', 'Email link': 'Open in your mail app' };",
-        "const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath)];",
+        "const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath, kind)];",
         "return { action: entry.action, label };",
         // The two copies are the page's own; only a real path has to go to the host.
         "function copyPlainText(text) {",

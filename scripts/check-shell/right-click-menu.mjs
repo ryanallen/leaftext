@@ -461,4 +461,126 @@ export function run() {
       booted.hideContextMenu();
     }
   });
+
+  // ---- the rows a link answers with, and how often it is asked ----------------
+  //
+  // Every rule deciding whether a row belongs asks the same question about the link, so the rows and the number of readings behind them are one subject. Read by right-clicking a real link of each kind: the per-href rules in `links-and-previews.mjs` answer about an address and never about what a menu draws.
+
+  /** A document link on a reader page, wearing the address named. */
+  function linkOn(href) {
+    const layout = fakeElement('menuLinkLayout');
+    layout.classList.add('reader-layout');
+    const body = fakeElement('menuLinkBody');
+    body.classList.add('document-body');
+    layout.appendChild(body);
+    const link = fakeElement('menuLink');
+    link.tagName = 'A';
+    link.setAttribute('href', href);
+    body.appendChild(link);
+    return link;
+  }
+
+  /** Run `body` with the page's `app` answering for the document, which is what `documentLinkFor` asks before it calls anything a link at all. */
+  function whileTheDocumentAnswers(body) {
+    const app = booted.document.getElementById('app');
+    const wasContains = app.contains;
+    try {
+      app.contains = () => true;
+      return body();
+    } finally {
+      app.contains = wasContains;
+    }
+  }
+
+  /** Right-click a link wearing `href`, and the words on the rows that came up. */
+  function linkRows(href) {
+    return whileTheDocumentAnswers(() => {
+      try {
+        if (!rightClick(linkOn(href))) throw new Error(`the right-click on ${href} was left to the web view`);
+        return openRows();
+      } finally {
+        booted.hideContextMenu();
+      }
+    });
+  }
+
+  // One link of every kind a reader meets, and the rows it has always answered with. `.mhtml` is a page saved out of a browser, which the app reads, so it is a page to open rather than a file to hand over.
+  const LINK_ROWS = [
+    ['a note in the vault', 'notes/first.md', ['Open', 'Open in new page', 'Copy link', 'Copy link text', 'Reveal file', 'Copy path']],
+    ['a page saved out of a browser', 'archive/page.mhtml', ['Open', 'Open in new page', 'Copy link', 'Copy link text', 'Reveal file', 'Copy path']],
+    ['a PDF beside the note', 'assets/report.pdf', ['Open in another app', 'Copy link', 'Copy link text', 'Reveal file', 'Copy path']],
+    ['a site out on the web', 'https://example.com/a', ['Open in browser', 'Copy link', 'Copy link text']],
+    ['a place in this page', '#a-heading', ['Open', 'Copy link', 'Copy link text']],
+    ['an email address', 'mailto:someone@example.com', ['Open in your mail app', 'Copy link', 'Copy link text']],
+  ];
+
+  check('a right-click on a link answers with the rows that kind of link has always had', () => {
+    for (const [name, href, wanted] of LINK_ROWS) {
+      const rows = linkRows(href);
+      if (rows.join(' | ') !== wanted.join(' | ')) {
+        throw new Error(`${name} answered with ${JSON.stringify(rows)} rather than ${JSON.stringify(wanted)}`);
+      }
+    }
+  });
+
+  /** How many times `open` asks for a row list, and the rows it ended up drawing. */
+  function askedWhileOpening(open) {
+    const was = booted.contextMenuEntries;
+    let asked = 0;
+    try {
+      booted.contextMenuEntries = (...given) => {
+        asked += 1;
+        return was(...given);
+      };
+      open();
+      return { asked, rows: openRows() };
+    } finally {
+      booted.contextMenuEntries = was;
+      booted.hideContextMenu();
+    }
+  }
+
+  check('opening a menu builds its row list once', () => {
+    // The list was built twice: once to decide whether there was anything to show, and again to draw it — so every rule deciding a row was read twice over. It reaches every menu, not a link's, which is why the page is read here beside the link.
+    const link = whileTheDocumentAnswers(() => {
+      const made = linkOn('notes/first.md');
+      return askedWhileOpening(() => {
+        if (!rightClick(made)) throw new Error('the right-click on a link was left to the web view');
+      });
+    });
+    if (link.asked !== 1) throw new Error(`a link menu built its row list ${link.asked} times`);
+    if (!link.rows.length) throw new Error('the count was read off a menu that drew nothing');
+
+    const page = askedWhileOpening(() => booted.showContextMenu(300, 300, 'notes/first.md', 'page'));
+    if (page.asked !== 1) throw new Error(`the page's menu built its row list ${page.asked} times`);
+    if (!page.rows.length) throw new Error('the count was read off a menu that drew nothing');
+
+    // A menu with nothing to offer still builds its list, and the build is what decides it opens nothing at all.
+    const empty = askedWhileOpening(() => booted.showContextMenu(300, 300, '', 'folder'));
+    if (empty.asked !== 0) throw new Error('an empty path asked for a row list it had already decided against');
+  });
+
+  check('a link menu reads what kind of link it is once', () => {
+    // Four rules decide the rows — Reveal file, Copy path, Open in new page, and the word Open takes — and each used to walk the ladder for itself. The href is saved when the menu opens, so the readings could only ever agree.
+    for (const [name, href] of LINK_ROWS) {
+      const was = booted.linkHoverInfo;
+      let read = 0;
+      const rows = whileTheDocumentAnswers(() => {
+        const made = linkOn(href);
+        try {
+          booted.linkHoverInfo = (given) => {
+            read += 1;
+            return was(given);
+          };
+          if (!rightClick(made)) throw new Error(`the right-click on ${href} was left to the web view`);
+          return openRows();
+        } finally {
+          booted.linkHoverInfo = was;
+          booted.hideContextMenu();
+        }
+      });
+      if (read !== 1) throw new Error(`${name} was read ${read} times to draw one menu`);
+      if (!rows.length) throw new Error(`${name} drew no rows, so the count was read off nothing`);
+    }
+  });
 }

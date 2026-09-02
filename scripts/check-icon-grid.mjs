@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The window's minimize, maximize, restore and close, measured against the pixel grid each is actually worn on. They looked lighter than the palette and folder buttons beside them while carrying the same color: an outside pack draws them in a 24-unit box, `bundle-icons` gives the stroke the right one-pixel width for that box, and the drawing's own whole-unit center then lands on a pixel boundary, splitting the line over two rows at half its ink in each.
 //
-//   node scripts/check-icon-grid.mjs   report every window mask against both grids, and fail on one a move would hold (`just verify`)
+//   node scripts/check-icon-grid.mjs   report every window mask against both grids, and fail on one a move or redraw would hold (`just verify`)
 //
 // It reads the masks that actually ship rather than the drawings behind them, out of `src/assets/icons.css`, because that sheet is what the window wears: the row's weight is already stamped, an outside pack's block has already replaced the app's own drawing, and the grid a stroke lands on is a fact about the compiled mask. The two sizes it is worn at come out of `src/assets/reading/app-bar.css`, so a chip or a dot that changes size is measured at its new size rather than at a number written down twice.
 //
@@ -55,21 +55,21 @@ function masksByPack(css) {
 }
 
 /**
- * What one drawing at one worn size is: held, a move away from held, or something nothing here can hold.
+ * What one drawing at one worn size is: held, a move away from held, in need of a redraw, or something the grid cannot judge.
  *
- * The two answers are different on purpose. A stroke one move would put on the grid is refused, because a mask that could be right and is not is exactly the fault this exists for. A diagonal, a curve, a filled drawing and a square whose two edges are a fractional number of pixels apart are named and let through: no move holds any of them, so failing would be a build nobody could make pass without redrawing a mark.
+ * A moveable stroke and conflicting flat edges are refused because both can be fixed. Diagonals, curves and filled drawings are named and let through because this grid cannot judge them.
  */
 function judge(svg, size) {
   const drawn = boxOf(svg);
-  if (!drawn) return { named: ['no square viewBox, so nothing can say what a coordinate in it is worth'] };
+  if (!drawn) return { named: ['no square viewBox, so nothing can say what a coordinate in it is worth'], refused: [], judged: 0 };
   const flat = flatStrokes(svg);
   const measured = gridShift(flat, drawn, size);
-  const named = [...measured.unjudged, ...measured.conflicts];
-  // A drawing can be neither refused nor held: the close cross asks for no move because every stroke in it is a diagonal, and a square whose edges are a fraction apart asks for none because no move would work.
+  const named = [...measured.unjudged];
+  const refused = [...measured.conflicts];
+  // A diagonal can be neither refused nor held because it asks for no move the grid can judge.
   const judged = flat.strokes.x.length + flat.strokes.y.length;
-  const stuck = measured.conflicts.length;
-  if (measured.held || stuck) return { drawn, named, judged, stuck };
-  return { drawn, named, judged, stuck, move: measured.shift };
+  if (measured.held || refused.length) return { drawn, named, refused, judged };
+  return { drawn, named, refused, judged, move: measured.shift };
 }
 
 // The rules prove their own refusals on made-up drawings before the real masks are read, so a run where nothing is wrong is still a run that watched the grid refuse something.
@@ -93,19 +93,34 @@ for (const [what, svg, size] of [
   ['a stroke already centered in its own pixel row', lineAt(12, 6.5, 1), 12],
   ['a rectangle whose four sides all land', squareOf(24, 18, 2), 12],
 ]) {
-  const { move, named } = judge(svg, size);
-  if (move || named.length) fails.push(`${what} was called off the grid: ${named.join(' ') || `move ${JSON.stringify(move)}`}`);
+  const { move, named, refused } = judge(svg, size);
+  if (move || named.length || refused.length) fails.push(`${what} was called off the grid: ${[...named, ...refused].join(' ') || `move ${JSON.stringify(move)}`}`);
+}
+for (const [what, svg, size, refused] of [
+  ['a 5.5-unit square at the chip size', squareOf(12, 5.5, 1), 12, 'no one move holds them both'],
+  ['a 7-unit square at the dot size', squareOf(12, 7, 1), 8, 'no one move holds them both'],
+]) {
+  const answered = judge(svg, size);
+  if (!answered.refused.join(' ').includes(refused)) fails.push(`${what} was not refused for needing a redraw (got "${answered.refused.join(' ') || 'nothing'}")`);
+  if (answered.move) fails.push(`${what} was refused with a move of ${JSON.stringify(answered.move)}, and no move holds it`);
+}
+for (const [what, size] of [
+  ['a six-unit square at the chip size', 12],
+  ['a six-unit square at the dot size', 8],
+]) {
+  const svg = squareOf(12, 6, 1);
+  const answered = judge(svg, size);
+  const held = answered.move ? judge(shiftedViewBox(svg, answered.move), size) : answered;
+  if (answered.refused.length || held.move || held.refused.length) fails.push(`${what} could not be held on its grid`);
 }
 for (const [what, svg, size, named] of [
   ['a diagonal', madeUp(24, '<line x1="6" y1="6" x2="18" y2="18" stroke="#000" stroke-width="2"/>'), 12, 'a diagonal'],
   ['a curve', madeUp(24, '<path d="M6 6C10 6 14 18 18 18" stroke="#000" stroke-width="2"/>'), 12, 'curves'],
   ['a filled drawing', madeUp(24, '<path d="M5 11V13H19V11H5Z" fill="#000"/>'), 12, 'filled drawing'],
-  ['a 5.5-unit square at the chip size', squareOf(12, 5.5, 1), 12, 'no one move holds them both'],
-  ['a 7-unit square at the dot size', squareOf(12, 7, 1), 8, 'no one move holds them both'],
 ]) {
   const answered = judge(svg, size);
-  if (!answered.named.join(' ').includes(named)) fails.push(`${what} was not named as something no move holds (got "${answered.named.join(' ') || 'nothing'}")`);
-  if (answered.move) fails.push(`${what} was refused with a move of ${JSON.stringify(answered.move)}, and no move holds it`);
+  if (!answered.named.join(' ').includes(named)) fails.push(`${what} was not named as something the grid cannot judge (got "${answered.named.join(' ') || 'nothing'}")`);
+  if (answered.move || answered.refused.length) fails.push(`${what} was refused even though the grid cannot judge it`);
 }
 if (fails.length) {
   console.error('check-icon-grid: the grid rules do not hold:');
@@ -123,6 +138,7 @@ const packs = masksByPack(read('src/assets/icons.css'));
 
 const off = [];
 const cannot = [];
+const redraw = [];
 let held = 0;
 for (const { worn, size, variant } of sizes) {
   for (const [pack, masks] of packs) {
@@ -130,10 +146,11 @@ for (const { worn, size, variant } of sizes) {
       // The window wears the variant held to this grid where the sheet publishes one, and the ordinary mask before phase 2 compiles them; a pack with no drawing for this job declares neither and the reader keeps the app's own, which the root block was already measured for.
       const svg = masks.get(`${name}-${variant}`) || masks.get(name);
       if (!svg) continue;
-      const { drawn, named, judged, stuck, move } = judge(svg, size);
+      const { drawn, named, refused, judged, move } = judge(svg, size);
       for (const said of named) cannot.push(`${pack} ${name} on ${worn}: ${said}`);
+      for (const said of refused) redraw.push(`${pack} ${name} on ${worn}: ${said}`);
       if (!move) {
-        if (judged > 0 && !stuck) held += 1;
+        if (judged > 0 && !refused.length) held += 1;
         continue;
       }
       const asked = ['x', 'y']
@@ -149,6 +166,12 @@ for (const { worn, size, variant } of sizes) {
 if (cannot.length) {
   console.log(`icon grid: ${cannot.length} window marks the grid cannot judge, each left as it is drawn:`);
   for (const said of cannot) console.log(`  ${said}`);
+}
+if (redraw.length) {
+  console.error(`icon grid: ${redraw.length} window masks have flat edges no one move can hold:`);
+  for (const said of redraw) console.error(`  ${said}`);
+  console.error('Redraw each flat-edged mark so one move can put every edge on its worn grid.');
+  process.exit(1);
 }
 if (off.length) {
   console.error(`icon grid: ${off.length} window masks miss the grid they are worn on:`);

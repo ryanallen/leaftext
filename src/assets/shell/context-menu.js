@@ -180,12 +180,14 @@ function runContextAction(action, path, link, selected, picture) {
 // The list this menu should show for what was right-clicked. Items that would do nothing are left out rather than shown dead: Paste with nothing cut, or Open folder over the folder you are already in.
 function contextMenuEntries() {
   if (contextMenuTargetKind === 'link') {
+    // What kind of link it is, read once for the whole list. Every rule below asks that one question, and the href it is read off was saved when the menu opened — so a rule reading again could only get the same answer.
+    const kind = linkHoverKind(contextMenuPath);
     return tidySeparators(
       LINK_MENU_ITEMS.filter((entry) => {
         if (entry === 'separator') return true;
-        if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath);
-        return !entry.pageOnly || isAnotherPageHref(contextMenuPath);
-      }).map(labelForLinkEntry)
+        if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath, kind);
+        return !entry.pageOnly || isAnotherPageHref(contextMenuPath, kind);
+      }).map((entry) => labelForLinkEntry(entry, kind))
     );
   }
   if (contextMenuTargetKind === 'picture') {
@@ -223,10 +225,10 @@ function labelForFavoriteEntry(entry) {
 }
 // The word Open takes when the click leaves the app, keyed on the hover tip's own answer about the link — so a reader who hovered and then right-clicked reads one sentence twice rather than two things about one link.
 const LINK_OPEN_LABELS = { 'External site': 'Open in browser', 'Opens in another app': 'Open in another app', 'Email link': 'Open in your mail app' };
-// Open says where it is sending you when that is out of the app, so the one item that leaves says so before you pick it.
-function labelForLinkEntry(entry) {
+// Open says where it is sending you when that is out of the app, so the one item that leaves says so before you pick it. Takes the kind its caller has already read, and reads it for itself where nobody handed one over.
+function labelForLinkEntry(entry, kind) {
   if (entry === 'separator' || entry.action !== 'openLink') return entry;
-  const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath)];
+  const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath, kind)];
   if (!label) return entry;
   return { action: entry.action, label };
 }
@@ -243,9 +245,10 @@ function tidySeparators(entries) {
   while (kept.length && kept[kept.length - 1] === 'separator') kept.pop();
   return kept;
 }
-function buildContextMenu() {
+// Takes the row list its caller already worked out, because the one place that opens a menu has to build the list anyway to know whether there is anything to show. Asks for itself only where nobody handed one over.
+function buildContextMenu(given) {
   contextMenu.textContent = '';
-  const entries = contextMenuEntries();
+  const entries = given || contextMenuEntries();
   for (const entry of entries) {
     if (entry === 'separator') {
       const sep = document.createElement('div');
@@ -286,13 +289,14 @@ function showContextMenu(x, y, path, kind, link, picture) {
   contextMenuPicture = contextMenuTargetKind === 'picture' ? picture || null : null;
   // Asked as the menu opens: closing the full-window view removes the overlay, so a row asking later would find nothing above the picture.
   contextMenuPictureFullWindow = !!(contextMenuPicture && contextMenuPicture.closest('.image-sheet-overlay'));
-  // Nothing to offer — an empty pane with nothing cut — so no empty box either.
-  if (!contextMenuEntries().some((entry) => entry !== 'separator')) {
+  // Nothing to offer — an empty pane with nothing cut — so no empty box either. The list is kept rather than asked for twice: it is the same answer, and every rule that decides a row is read again to get it.
+  const entries = contextMenuEntries();
+  if (!entries.some((entry) => entry !== 'separator')) {
     return;
   }
   // A right-click moves no pointer, so a card the rest before it raised is still up and nothing else takes it down. Below both returns on purpose: a menu that decides not to open leaves the card standing.
   dismissLinkHoverTip();
-  buildContextMenu();
+  buildContextMenu(entries);
   clampContextMenu(x, y);
   leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
 }
