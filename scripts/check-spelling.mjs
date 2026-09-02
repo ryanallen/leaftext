@@ -101,6 +101,25 @@ const BRITISH = {
 // Spelled the British way by an external specification; not ours to change.
 const EXEMPT = ['aria-labelledby', 'ProgramMenuFolder'];
 
+// A ticket records the owner's own message word for word, and their words are theirs: respelling one is editing what somebody said. This marker on its own line takes the block quote under it out of the scan, and only that quote — the first line after it that is not a `>` is read again. Everything else in the file stays this repo's own writing, which is what the rule is for.
+const QUOTED_MARKER = '<!-- quoted-verbatim -->';
+
+/** The zero-based line numbers a `<!-- quoted-verbatim -->` marker takes out of the scan: the marker and the block quote directly under it. */
+function quotedLines(lines) {
+  const out = new Set();
+  for (let i = 0; i < lines.length; i += 1) {
+    if (lines[i].trim() !== QUOTED_MARKER) continue;
+    out.add(i);
+    let j = i + 1;
+    while (j < lines.length && lines[j].startsWith('>')) {
+      out.add(j);
+      j += 1;
+    }
+    i = j - 1;
+  }
+  return out;
+}
+
 const SKIP_DIRS = new Set(['.git', 'target', 'node_modules', 'dist', 'imgs']);
 // Third-party text, generated files, and anything that is not prose.
 const SKIP_PATHS = [
@@ -163,11 +182,23 @@ const SCAN_CASES = [
   ['a picture is not prose', '../docs/learn/a.png', false],
 ];
 
+// The marker's own cases, run before the tree is opened for the same reason the scan's are: a marker that took a line too many would hide this repo's writing behind somebody else's quote.
+const QUOTE_CASES = [
+  ['a marked quote is left as it was typed', ['<!-- quoted-verbatim -->', '> grey and colour', 'grey here'], [0, 1]],
+  ['an unmarked quote is still read', ['> grey and colour', 'grey here'], []],
+  ['the marker takes only the quote directly under it', ['<!-- quoted-verbatim -->', '> grey', '', '> colour'], [0, 1]],
+  ['two marked quotes are both held', ['<!-- quoted-verbatim -->', '> grey', 'x', '<!-- quoted-verbatim -->', '> colour'], [0, 1, 3, 4]],
+];
+
 function scanSelfTest() {
   const fails = [];
   for (const [name, rel, want] of SCAN_CASES) {
     const got = scanned(rel);
     if (got !== want) fails.push(`${name}: read ${got}, want ${want}`);
+  }
+  for (const [name, lines, want] of QUOTE_CASES) {
+    const got = [...quotedLines(lines)].sort((a, b) => a - b);
+    if (got.join(',') !== want.join(',')) fails.push(`${name}: held [${got}], want [${want}]`);
   }
   return fails;
 }
@@ -194,7 +225,9 @@ for (const file of [...files(root), ...ticketFiles()]) {
   const rel = relative(root, file).split('\\').join('/');
   if (!scanned(rel)) continue;
   const lines = readFileSync(file, 'utf8').split('\n');
+  const quoted = quotedLines(lines);
   lines.forEach((line, index) => {
+    if (quoted.has(index)) return;
     let stripped = line;
     for (const exempt of EXEMPT) stripped = stripped.split(exempt).join('');
     for (const match of stripped.matchAll(pattern)) {

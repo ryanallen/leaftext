@@ -423,12 +423,11 @@ What the *reading view* offers differs by format, because a block can only be ed
 | A value written inside an XML tag | Type on the words where they are drawn, including the lone value an empty element is drawn by; only the bytes between that value's quotes are written, and the quote that closes it is refused |
 | Every other XML block | Edit its exact source in place, with a line saying why the markup appeared. [Block gutter](#the-block-gutter) |
 | An XML field name, a section heading with no element behind it, and a value the page cannot place | Read-only, and a press says why; edited in the code view |
-| JSON | Edit their exact source in place |
+| JSON values | Edit their exact source in place; names stay read-only because their humanized labels are not the file's bytes |
 | YAML plain and quoted values | Edit their exact source in place — a quoted one with its quotes, the way a JSON string opens |
 | YAML lists, tables, block scalars, and a quoted value the file spells another way | Read-only, and a press says why; edited in the code view |
 | YAML aliases (`*name`) and keys with no value | Read-only, and a press says why; edited in the code view |
-| INI values | Edit their exact source in place |
-| An INI section heading and the name to the left of a value | Read-only, and a press says why; edited in the code view |
+| INI values, key names and section headings | Edit their exact source in place — a key opens without the spacing around it, and a section opens without its brackets |
 | A paragraph, heading or list item in a Word or OpenDocument text file | Edit its exact source in place, spliced into the part it came from. Everything the app never read — styles, themes, comments, tracked changes, charts, macros — is copied across untouched |
 | A cell in a spreadsheet | Type on the words where they are drawn. Excel keeps almost every cell's text in one shared table, so what is written is the cell itself carrying its own words, and a cell that shared that text with another one stops sharing it while the other reads what it always read |
 | A slide's text, and any block in a workbook or deck beyond the first sheet or slide | Read-only in the page; edited in the code view, which shows the part the page is anchored to |
@@ -443,13 +442,13 @@ The big heading is one of those values wherever the file names its own title wit
 
 That only works where the byte range is certain, so Leaftext offers it only where it is:
 
-- **JSON** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit.
-- **[INI](01-rendering.md#ini-files)** — every value. The reader holds the exact bytes between the `=` and the end of the line, and nothing is unquoted, unescaped or joined on the way to the page, so what you see is what the file says. A key with nothing after it is not drawn, so there is nothing there to press.
+- **JSON values** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit. A name stays read-only because the humanized label on the page is not the file's own bytes.
+- **[INI](01-rendering.md#ini-files)** — every drawn value, key name and section heading. The reader holds the exact bytes after the `=`, around the key without its spacing, and inside the section's brackets; nothing is unquoted, unescaped, joined or relabeled on the way to the page, so what you see is what the file says. A key with nothing after it is not drawn, so there is nothing there to press.
 - **YAML plain and quoted values** — where proven. A scalar's source text is checked character-for-character against the value it parsed to — for a quoted one, against the value with its own quotes around it; when they match, the range is exact and the value is editable. The quotes are part of what opens, exactly as they are for a JSON string.
 - **Everything else in YAML** — read-only in the reading view. A block scalar (`|`, `>`) carries an indicator and an indent its value does not; a quoted value holding an escape, a doubled quote, or a run of lines is spelled differently in the file from the value it means; and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaftext offers no inline editor and leaves these to the code view.
 - **An alias, and a key with nothing after it** — read-only for the same reason. `b: *x` shows the value written up at `&x`, so the only text an edit could replace is on the anchor's line, not the alias's. And a key with no value has no text at all: typing into the gap after `key:` would write `key:x`, which is one scalar rather than a key and a value.
-- **A press on any of those says why.** Rather than answering with nothing, the page raises a line naming the source view: that the file does not say where a list or table ends, that a heading's words come from the file, that the name to the left of a value comes from the file, or that a value is written a way the page cannot place. A value written as two quotes with nothing between them is not drawn at all, the way every empty value is, so there is nothing there to press.
-- **No [block gutter](#the-block-gutter) in either.** A data range covers a value, not the key naming it, so dragging one would leave its key behind and inserting between two would land outside the syntax that gives them meaning.
+- **A press on any of those says why.** Rather than answering with nothing, the page raises a line naming the source view: that the file does not say where a list or table ends, that a JSON or YAML heading's words come from the file, that a JSON or YAML name comes from the file, or that a value is written a way the page cannot place. A value written as two quotes with nothing between them is not drawn at all, the way every empty value is, so there is nothing there to press.
+- **No [block gutter](#the-block-gutter) in any data file.** Its ranges name bytes that can be typed over, not standalone pieces of the surrounding syntax, so dragging or inserting around one would split a key from its value or land outside the syntax that gives it meaning.
 
 > [!NOTE]
 > This is a deliberate floor, not a gap to work around: a range that is off by one byte writes an edit into the wrong place silently. Where the range cannot be proved, the code view edits the file with the full source in front of you.

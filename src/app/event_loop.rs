@@ -210,12 +210,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 control_flow,
             ),
             Event::WindowEvent {
-                event: WindowEvent::Focused(true),
+                event: WindowEvent::Focused(active),
                 ..
             } => {
-                if let Some(id) = vault_to_reread(&vault_state) {
-                    refresh_vault_status(&mut vault_state, &proxy, id);
+                if active {
+                    if let Some(id) = vault_to_reread(&vault_state) {
+                        refresh_vault_status(&mut vault_state, &proxy, id);
+                    }
                 }
+                run_page_script(
+                    reader.page(),
+                    &window_active_line(active),
+                    "Failed to sync the window focus",
+                );
             }
             // macOS delivers a double-clicked document as an Apple Event, not an argument, so file associations there are inert without this. Before the page is up the path waits with the command-line one.
             Event::Opened { urls } => {
@@ -233,6 +240,12 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 } else if let Some(scroll) = startup_restore_intent(&reader.workspace, false) {
                     reader.render(scroll);
                 }
+                // A window can come up behind another app, and the focus event only fires on a change — so without this the page would read as whatever the last event said, and at a launch nothing has said anything. Which window is in front is asked of the platform rather than of `is_focused`, whose answer is false while the web view holds the keyboard inside a window the reader is looking straight at.
+                run_page_script(
+                    reader.page(),
+                    &window_active_line(window_is_frontmost(&reader.window)),
+                    "Failed to sync the window focus",
+                );
                 // Once there is a page to tell: any cloud folder on this machine becomes a vault, and the page learns which folders they are. Off the loop, so a slow disk never delays the first paint.
                 request_cloud_folders(&proxy);
             }

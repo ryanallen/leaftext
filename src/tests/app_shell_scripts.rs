@@ -317,6 +317,18 @@ fn glossary_failed_script_gives_the_page_a_reason_to_show() {
     );
 }
 
+/// The corner message a failed open draws is composed in the page, so the host owes it two values rather than a sentence: the path first, then a reason with this file's name already taken off it. Swap them and the page says the reason is the file.
+#[test]
+fn an_open_error_script_keeps_the_path_and_reason_as_separate_values() {
+    assert_eq!(
+        open_error_state_script(
+            Path::new("C:/notes/broken.md"),
+            r#"Reason with "quotes" and a \ backslash"#
+        ),
+        r#"window.leafShowOpenError("C:/notes/broken.md", "Reason with \"quotes\" and a \\ backslash");"#
+    );
+}
+
 /// The page refreshes every remembered link answer.
 #[test]
 fn aging_the_link_cards_is_one_call_carrying_no_address() {

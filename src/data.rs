@@ -23,13 +23,19 @@ const MAX_PARSE_DEPTH: usize = 128;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DataNode {
     pub(crate) value: DataValue,
+    /// The byte range of this node's key where the reader can prove the drawn label is the source text.
+    pub(crate) key_span: Option<Range<usize>>,
     /// The node's byte range in the source, where the reader can vouch for it exactly. `None` is normal and always safe: the block simply renders without `data-src-*`.
     pub(crate) span: Option<Range<usize>>,
 }
 
 impl DataNode {
     fn new(value: DataValue, span: Option<Range<usize>>) -> Self {
-        Self { value, span }
+        Self {
+            value,
+            key_span: None,
+            span,
+        }
     }
 
     /// A node standing in for something that could not be resolved (a YAML alias with no anchor). Renders as nothing, like an empty XML element.
@@ -39,6 +45,7 @@ impl DataNode {
 
     /// Drop every range in this node and everything under it. A YAML alias is a copy of the anchored value, and the anchor's text is where the anchor is — keeping the ranges gives two blocks one slice, so editing the alias rewrites the anchor's line. Recursive because a collection is `None` at its top while every scalar inside it still holds a real range.
     pub(crate) fn strip_spans(&mut self) {
+        self.key_span = None;
         self.span = None;
         match &mut self.value {
             DataValue::Scalar(_) => {}
@@ -925,7 +932,10 @@ fn render_mapping(
         if depth >= MAX_DEPTH {
             render_prose(&flatten_text(value), value.span.clone(), ctx);
         } else {
-            ctx.heading((2 + depth).min(6), &ctx.label(key), None, false);
+            let key_span = (ctx.labels == LabelStyle::AsWritten)
+                .then(|| value.key_span.clone())
+                .flatten();
+            ctx.heading((2 + depth).min(6), &ctx.label(key), key_span, false);
             render_node(value, ctx, depth + 1);
         }
         index += 1;
@@ -983,7 +993,17 @@ fn render_fields(pairs: &[(String, DataNode)], ctx: &mut DataCtx, skipped_key: O
             opened = true;
         }
         let label = ctx.label(key);
-        write!(&mut ctx.out, "<dt>{}</dt><dd", encode_text(&label)).expect("writing into a string");
+        ctx.push("<dt");
+        write_block_attrs(
+            &mut ctx.out,
+            &mut ctx.blocks,
+            &mut ctx.next_block_id,
+            "data_field_name",
+            (ctx.labels == LabelStyle::AsWritten)
+                .then(|| node.key_span.clone())
+                .flatten(),
+        );
+        write!(&mut ctx.out, ">{}</dt><dd", encode_text(&label)).expect("writing into a string");
         write_block_attrs(
             &mut ctx.out,
             &mut ctx.blocks,

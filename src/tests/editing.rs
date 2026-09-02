@@ -1240,20 +1240,28 @@ fn typing_into_an_ini_value_writes_that_value_and_nothing_else() {
     );
 
     let blocks = editable.block_source_map();
-    // The heading carries no range, so the map is the three values that do.
-    assert_eq!(blocks.len(), 3);
-    for block in &blocks {
-        assert_eq!(block.kind, "data_field");
-    }
-    assert_eq!(&source[blocks[0].start..blocks[0].end], "14");
+    assert_eq!(blocks.len(), 7);
     assert_eq!(
-        &source[blocks[1].start..blocks[1].end],
+        blocks.iter().map(|block| block.kind).collect::<Vec<_>>(),
+        vec![
+            "data_heading",
+            "data_field_name",
+            "data_field",
+            "data_field_name",
+            "data_field",
+            "data_field_name",
+            "data_field",
+        ]
+    );
+    assert_eq!(&source[blocks[2].start..blocks[2].end], "14");
+    assert_eq!(
+        &source[blocks[4].start..blocks[4].end],
         "https://example.com/page#anchor"
     );
-    assert_eq!(&source[blocks[2].start..blocks[2].end], "16");
+    assert_eq!(&source[blocks[6].start..blocks[6].end], "16");
 
     // The second `font_size` is spliced, and the first one is left where it was.
-    let second = &blocks[2];
+    let second = &blocks[6];
     assert!(editable.replace_range(second.start, second.end, "18"));
     assert_eq!(
         editable.text(),
@@ -1287,8 +1295,8 @@ fn an_ini_document_saves_in_the_spelling_it_was_read_in() {
 
             let mut editable = EditableDocument::new(PathBuf::from("settings.ini"), read);
             let blocks = editable.block_source_map();
-            assert_eq!(blocks.len(), 1);
-            assert!(editable.replace_range(blocks[0].start, blocks[0].end, "16"));
+            assert_eq!(blocks.len(), 3);
+            assert!(editable.replace_range(blocks[2].start, blocks[2].end, "16"));
 
             let written = encode_source(editable.text(), editable.spelling);
             let back = decode_source(&written).expect("what was written reads back");

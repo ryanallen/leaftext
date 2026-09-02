@@ -621,7 +621,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "ini",
-        "3adcca3566982916f5f9f6aee7a464344ce31d2a5274f5ef2e15299e759f30a8",
+        "817a45bba1d5dbe70d57a30138c6b63d21be7eef259de54c91eacb08cd3e60ae",
     ),
 ];
 

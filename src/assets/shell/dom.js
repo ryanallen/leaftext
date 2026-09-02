@@ -579,6 +579,18 @@ window.leafSetWindowMaximized = (maximized) => {
   document.body.classList.toggle('is-maximized', !!maximized);
   if (!window.__leafMacFrame) leafWinMaxLabel(maximized ? 'Restore' : 'Maximize');
 };
+// Gray and quiet the chrome while another app owns the window. The host sends this off the native focus event, because a browser's own blur fires when the reader clicks another tab and a published site must not go quiet for that. Defined unconditionally, like the two above, so the call is safe on every host; a page nobody tells stays active, which is what a browser wants.
+window.leafSetWindowActive = (active) => {
+  document.body.classList.toggle('is-window-inactive', !active);
+};
+// The native focus event is not enough on Windows and the page has to watch for itself. `tao` answers focus as `is_active && is_focused`, and the second half is the top-level window's own keyboard focus, which the web view holds from the first paint — so the pair never changes, no `Focused` event is raised at all, and the state did not arrive until the window had been left and come back twice. The web view's own blur and focus do fire, every time, from the first switch. Both signals stay: the host's is the one a launch arrives on, and this one is what a switch arrives on. Only on the native host. A browser raises the same blur when the reader clicks another tab, and a published site must never gray its own chrome for that — so the marker the browser hosts set is read inside the handler rather than at load, because a host that sets it after this script runs would otherwise be taken for the desktop.
+const leafWindowFocusIsNative = () => typeof window.__leafHostAnswers !== 'function';
+window.addEventListener('blur', () => {
+  if (leafWindowFocusIsNative()) window.leafSetWindowActive(false);
+});
+window.addEventListener('focus', () => {
+  if (leafWindowFocusIsNative()) window.leafSetWindowActive(true);
+});
 // Put a floating thing where it was asked for, but inside the app: a menu opened near the right edge would otherwise hang off it, and one at the bottom would open below the fold. Both menus place themselves this way, so the arithmetic is here. The point comes in as the window's and goes out as the app's — leafClampToApp does that crossing for everything that places an overlay.
 const LEAF_FLOAT_MARGIN = 8;
 function leafPlaceFloating(el, x, y) {

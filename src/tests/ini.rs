@@ -1,4 +1,5 @@
 use super::*;
+use std::ops::Range;
 
 /// Every rule of the dialect in one file: both comment characters, a `#` inside a value, a key written before any section, a repeated key, a repeated section, a value carrying an `=`, a quoted value, a `[` inside a value, and a line that is not a pair at all.
 const DIALECT: &str = "; a comment
@@ -123,6 +124,152 @@ fn every_value_carries_the_bytes_it_came_from() {
     }
     walk(pairs, DIALECT, &mut checked);
     assert_eq!(checked, 10, "every value but the empty one carries a range");
+}
+
+#[test]
+fn ini_key_ranges_name_only_the_drawn_keys() {
+    let root = parse_ini(DIALECT);
+    let DataValue::Mapping(pairs) = &root.value else {
+        panic!("an INI file is a mapping");
+    };
+
+    let mut scalar_keys = Vec::new();
+    fn collect(
+        pairs: &[(String, DataNode)],
+        source: &str,
+        scalar_keys: &mut Vec<(String, Range<usize>)>,
+    ) {
+        for (key, node) in pairs {
+            match &node.value {
+                DataValue::Mapping(inner) => collect(inner, source, scalar_keys),
+                DataValue::Scalar(_) => {
+                    if key.is_empty() {
+                        assert!(node.key_span.is_none(), "an empty key carried a range");
+                        continue;
+                    }
+                    let span = node.key_span.clone().expect("a key's own range");
+                    assert_eq!(&source[span.clone()], key, "a range around a key");
+                    scalar_keys.push((key.clone(), span));
+                }
+                DataValue::Sequence(_) => panic!("an INI file has no sequences"),
+            }
+        }
+    }
+    collect(pairs, DIALECT, &mut scalar_keys);
+
+    let font_sizes: Vec<_> = scalar_keys
+        .iter()
+        .filter(|(key, _)| key == "font_size")
+        .map(|(_, span)| span.clone())
+        .collect();
+    assert_eq!(font_sizes.len(), 2, "the repeated key keeps both ranges");
+    assert_ne!(
+        font_sizes[0], font_sizes[1],
+        "the repeated keys share a range"
+    );
+
+    let ini = opened_document_from_source(DIALECT, "settings.ini");
+    for (key, span) in &scalar_keys {
+        if key == "theme" {
+            continue;
+        }
+        assert_contains(
+            &ini.html,
+            &format!(
+                "<dt data-src-start=\"{}\" data-src-end=\"{}\">{key}</dt>",
+                span.start, span.end
+            ),
+        );
+    }
+    assert!(!ini.html.contains(">theme</dt>"), "{}", ini.html);
+
+    let json = opened_document_from_source("{ \"lastBuildDate\": 1 }", "settings.json");
+    let label = json
+        .html
+        .find(">Last built</dt>")
+        .expect("the humanized label");
+    let open = &json.html[json.html[..label].rfind("<dt").expect("the label tag")..label];
+    assert!(!open.contains("data-src-start"), "{open}");
+}
+
+#[test]
+fn stripping_a_data_node_drops_key_ranges_too() {
+    let mut root = parse_ini(DIALECT);
+    root.strip_spans();
+
+    fn assert_clear(node: &DataNode) {
+        assert!(
+            node.key_span.is_none(),
+            "a copied key kept its source range"
+        );
+        assert!(node.span.is_none(), "a copied value kept its source range");
+        match &node.value {
+            DataValue::Scalar(_) => {}
+            DataValue::Sequence(items) => items.iter().for_each(assert_clear),
+            DataValue::Mapping(pairs) => {
+                pairs.iter().for_each(|(_, value)| assert_clear(value));
+            }
+        }
+    }
+    assert_clear(&root);
+}
+
+#[test]
+fn ini_section_ranges_name_only_the_drawn_sections() {
+    let root = parse_ini(DIALECT);
+    let DataValue::Mapping(pairs) = &root.value else {
+        panic!("an INI file is a mapping");
+    };
+    let sections: Vec<_> = pairs
+        .iter()
+        .filter(|(_, node)| matches!(&node.value, DataValue::Mapping(_)))
+        .map(|(name, node)| {
+            let span = node.key_span.clone().expect("the section name's range");
+            assert_eq!(
+                &DIALECT[span.clone()],
+                name,
+                "a range around a section name"
+            );
+            (name, span)
+        })
+        .collect();
+    let displays: Vec<_> = sections
+        .iter()
+        .filter(|(name, _)| *name == "display")
+        .map(|(_, span)| span.clone())
+        .collect();
+    assert_eq!(displays.len(), 2, "the repeated section keeps both ranges");
+    assert_ne!(
+        displays[0], displays[1],
+        "the repeated sections share a range"
+    );
+
+    let ini = opened_document_from_source(DIALECT, "settings.ini");
+    for (name, span) in sections {
+        assert_contains(
+            &ini.html,
+            &format!(
+                "<h2 data-src-start=\"{}\" data-src-end=\"{}\"",
+                span.start, span.end
+            ),
+        );
+        assert_contains(&ini.html, &format!(">{name}</h2>"));
+    }
+
+    for (source, path) in [
+        ("{ \"group\": { \"item\": 1 } }", "settings.json"),
+        ("group:\n  item: 1\n", "settings.yaml"),
+    ] {
+        let document = opened_document_from_source(source, path);
+        let label = document
+            .html
+            .find(">Group</h2>")
+            .expect("the nested heading");
+        let open = &document.html[document.html[..label]
+            .rfind("<h2")
+            .expect("the heading tag")..label];
+        assert!(!open.contains("data-src-start"), "{open}");
+    }
 }
 
 /// A config file's keys are names the person who wrote the file chose, so they are drawn as typed. The shared helper would spell `url` "Link" and `id` "ID", and sentence-case the rest.

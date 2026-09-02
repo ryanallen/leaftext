@@ -2971,6 +2971,68 @@ body.frameless:not(.mac-frame).is-maximized::before,
 body.frameless.is-fullscreen::before {
   content: none;
 }
+/* Another app has the window: the color goes out of what the frame holds, and nothing else moves at all. This rule paints nothing — it only re-points the color tokens the chrome draws with at the quiet-text ink, so every surface, every border and every text color keeps the value its family gave it. Neither `filter` nor `opacity` may come back. `opacity` composites the bar's own shade with the page behind it, so the top of the window read as see-through and every tab edge, divider and panel seam that shade had been covering came out as a line; `filter: grayscale` would take a tinted family's shade off the bar and leave the card beside it tinted, which is a seam of the same kind. Everything colored in the frame follows the tokens by existing — the leaf, an unsaved tab's dot, the update button, the sync count, a pressed tool, the danger button, the minimap's viewport ring — because a value in this stylesheet has to come from a token, so a control added later is gray here without being listed. The `-foreground` halves are left alone: each is what prints on a fill, and graying both would take the contrast with them. Outside the scope and full color on purpose: the document, and the minimap's clone of it, which draws in the document's own tokens. Every floating part is named rather than swept with `.app-surface > *`, because that sweep would take `.diagram-print` and `.picture-print`, which a printed or exported page is rendered out of, and bake an inactive window into a file somebody keeps. Nothing here makes a stacking context, so `.library-pane` is named whole and the arc that turns the bar's divider down into the card's border is not at risk from this rule at all. A custom property carries no transition, and the state wants none: a window's color arrives with the click that brought it forward. */
+body.is-window-inactive :is(.app-bar, .library-pane, .reader-toolbar, .reader-minimap, .find-bar, .selection-toolbar, .app-toast, .hint-bubble, .leaf-sheet, .flow-sheet, .confirm-dialog) {
+  /* The ink as well as the color, or the state is one grayed logo among chrome that never moved. Every tab label, the breadcrumb, the pane's rows and headings and the window controls' glyphs write in this token, and an icon is a mask painted by `currentColor`, so they all step back together. It is the one token here that a rule elsewhere also mixes a surface from — a pressed subtool's fill is 12% of it — so that chip quiets with the chrome rather than staying lit, which is the state doing its job rather than the background moving under it. */
+  --lt-foreground: var(--lt-muted-foreground);
+  --lt-primary: var(--lt-muted-foreground);
+  --lt-accent: var(--lt-muted-foreground);
+  --lt-danger: var(--lt-muted-foreground);
+  --lt-warning: var(--lt-muted-foreground);
+  --lt-success: var(--lt-muted-foreground);
+  --lt-done: var(--lt-muted-foreground);
+  --lt-link: var(--lt-muted-foreground);
+  --lt-link-hover: var(--lt-muted-foreground);
+  --lt-focus-ring: var(--lt-muted-foreground);
+  /* A chrome button under the pointer, the tab's close cross included: a window can be pointed at while another one holds it, and a colored chip is the loudest thing left if this one is missed. */
+  --lt-navigation-button-hover-background: var(--lt-muted-foreground);
+  --lt-minimap-viewport-border: var(--lt-muted-foreground);
+  /* The viewport's fill is a wash of its own border color, so it is mixed here rather than dropped: the ring alone would leave the reader's place on the rail harder to find than an active window makes it. */
+  --lt-minimap-viewport-background: color-mix(in srgb, var(--lt-muted-foreground) 14%, transparent);
+  /* The hairlines step back with the ink, so the frame reads as one quiet surface rather than quiet writing inside full-strength boxes. The weighted line drops to the ordinary one — the two are the same kind of value and the quieter is already named, so nothing is mixed here — and the three inset edges built from it follow, along with the two built from the ink above. The ordinary hairline itself stays: every neutral below it is a surface, and a line drawn in one of those is a line gone, which changes the shape of the frame rather than quieting it. */
+  --lt-border-strong: var(--lt-border);
+  /* What every hover fill is mixed from. A window nobody is in still gets pointed at on the way past, and a full-strength wash under the pointer is the loudest thing left once everything else has stepped back. */
+  --lt-hover-tint: var(--lt-border-strong);
+}
+/* The rail holds a clone of the document drawn in the document's own colors, so the tokens above never reach it and it stayed a bright picture beside quiet chrome. It is chrome — a picture of the page rather than the page — so its ink goes quiet with everything else the frame holds. Ink only: every background, fill and paper color is left exactly where the family put it, so nothing behind the miniature moves. The document itself is untouched, and reading it is what the window is for. */
+body.is-window-inactive .reader-minimap {
+  --lt-markdown-foreground: var(--lt-muted-foreground);
+  --lt-markdown-heading: var(--lt-muted-foreground);
+  --lt-markdown-heading-2: var(--lt-muted-foreground);
+  --lt-markdown-heading-3: var(--lt-muted-foreground);
+  --lt-markdown-heading-4: var(--lt-muted-foreground);
+  --lt-markdown-heading-5: var(--lt-muted-foreground);
+  --lt-markdown-heading-6: var(--lt-muted-foreground);
+  --lt-markdown-rule: var(--lt-border);
+  --lt-markdown-link: var(--lt-muted-foreground);
+  --lt-markdown-blockquote-border: var(--lt-border);
+  --lt-markdown-blockquote-foreground: var(--lt-muted-foreground);
+  --lt-markdown-alert-note: var(--lt-muted-foreground);
+  --lt-markdown-alert-tip: var(--lt-muted-foreground);
+  --lt-markdown-alert-important: var(--lt-muted-foreground);
+  --lt-markdown-alert-warning: var(--lt-muted-foreground);
+  --lt-markdown-alert-caution: var(--lt-muted-foreground);
+  --lt-markdown-badge-foreground: var(--lt-muted-foreground);
+  --lt-markdown-table-border: var(--lt-border);
+  --lt-markdown-thematic-break: var(--lt-border);
+  --lt-markdown-keyboard-border: var(--lt-border);
+  --lt-editor-inline-code-foreground: var(--lt-muted-foreground);
+  --lt-editor-code-foreground: var(--lt-muted-foreground);
+  --lt-editor-code-border: var(--lt-border);
+  --lt-syntax-foreground: var(--lt-muted-foreground);
+  --lt-syntax-comment: var(--lt-muted-foreground);
+  --lt-syntax-keyword: var(--lt-muted-foreground);
+  --lt-syntax-string: var(--lt-muted-foreground);
+  --lt-syntax-number: var(--lt-muted-foreground);
+  --lt-syntax-function: var(--lt-muted-foreground);
+  --lt-syntax-variable: var(--lt-muted-foreground);
+  --lt-syntax-type: var(--lt-muted-foreground);
+  --lt-syntax-operator: var(--lt-muted-foreground);
+  --lt-syntax-punctuation: var(--lt-muted-foreground);
+  --lt-syntax-inserted: var(--lt-muted-foreground);
+  --lt-syntax-deleted: var(--lt-muted-foreground);
+  --lt-syntax-changed: var(--lt-muted-foreground);
+}
 ::selection {
   background: var(--lt-focus-selection-background);
   color: var(--lt-focus-selection-foreground);

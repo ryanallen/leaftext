@@ -204,6 +204,33 @@ pub(crate) fn window_state_lines(was: WindowState, now: WindowState) -> Vec<Stri
     lines
 }
 
+/// Whether Windows has this window in front. Asked instead of `tao::window::Window::is_focused`, which answers `is_active && is_focused` — and the second half is the top-level window's own keyboard focus, which the web view takes inside a window that is plainly the one the reader is looking at. Read through `is_focused`, a first launch says it is behind another app and stays saying it, because the focus change that would put it right happened before there was a page to tell.
+#[cfg(windows)]
+pub(crate) fn window_is_frontmost(window: &tao::window::Window) -> bool {
+    use tao::platform::windows::WindowExtWindows;
+    use windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+
+    let foreground = unsafe { GetForegroundWindow() };
+    handle_is_frontmost(window.hwnd() as isize, foreground as isize)
+}
+
+/// Whether the handle holding the front is this window's. Split out so a test reads the comparison without a real window; a foreground of zero is Windows saying nobody has it, which is never this window.
+#[cfg(windows)]
+pub(crate) fn handle_is_frontmost(window: isize, foreground: isize) -> bool {
+    window != 0 && window == foreground
+}
+
+/// A Mac's web view is a subview of the same window rather than a window of its own, so the window's own answer is the window's state.
+#[cfg(not(windows))]
+pub(crate) fn window_is_frontmost(window: &tao::window::Window) -> bool {
+    window.is_focused()
+}
+
+/// The line that tells the page whether the native window still has focus. Only the native event can say it: a browser host's own blur fires when the reader clicks another tab, and a published site graying its chrome for that would quiet somebody else's product.
+pub(crate) fn window_active_line(active: bool) -> String {
+    format!("window.leafSetWindowActive({active});")
+}
+
 /// The window moved by a press on the app bar.
 pub(crate) fn drag(reader: &Reader) {
     let _ = reader.window.drag_window();

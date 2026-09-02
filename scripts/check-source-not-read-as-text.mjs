@@ -104,6 +104,12 @@ export const ALLOWED = [
   },
   {
     file: 'src/app/tests/window.rs',
+    reads: 'event_loop.rs',
+    asserts: '"the ready arm sends the first state off which window is in front"',
+    because: 'the arm sits inside `run_event_loop`, which takes a real event loop and a native window, so what it reads at a launch is not a value any test can ask for',
+  },
+  {
+    file: 'src/app/tests/window.rs',
     reads: 'main.rs',
     asserts: '"the window and the web view are the two things that take the keyboard, and one of them no longer asks for none"',
     because: 'the window builder chain and the web view builder chain, neither of which is a value any test can build',

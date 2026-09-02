@@ -112,6 +112,8 @@ export function run() {
 
       // A block that opens answers for itself, the big heading over a file with no title of its own opens the rename box, a definition outside a field list is not a data block, a press on nothing at all is not a block, and the parse-error notice is the page talking rather than a value anybody can edit.
       press({ target: at(['[data-src-start]'], field) });
+      press({ target: at(['[data-src-start]'], name) });
+      press({ target: at(['[data-src-start]'], heading) });
       press({ target: at(['[data-borrowed-title]'], heading) });
       press({ target: at([], looseName) });
       press({ target: at([], null) });

@@ -324,6 +324,50 @@ fn full_screen_is_read_off_the_window_not_off_a_gesture() {
     );
 }
 
+/// The one line the native focus event hands the page, and the only signal that can carry it: a browser's own blur fires when the reader clicks another tab, so a page-level guess would gray a published site's chrome for somebody else's product.
+#[test]
+fn the_page_is_told_the_native_window_lost_focus_and_told_again_when_it_comes_back() {
+    assert_eq!(
+        window_active_line(false),
+        "window.leafSetWindowActive(false);",
+        "the chrome goes quiet when another app takes the window"
+    );
+    assert_eq!(
+        window_active_line(true),
+        "window.leafSetWindowActive(true);",
+        "and comes back the moment the window does"
+    );
+    // A window that came up behind another app gets the same line at startup, since the event only fires on a change — so the two spellings above are every state the page is ever handed.
+    assert_ne!(window_active_line(true), window_active_line(false));
+}
+
+/// What a launch reads to decide the first state. `Window::is_focused` cannot answer it: tao gives `is_active && is_focused`, and the web view takes the second half inside a window that is plainly the one in front, so a first launch drew its whole chrome as if another app had it and stayed that way until the window was clicked.
+#[cfg(windows)]
+#[test]
+fn a_launch_asks_which_window_is_in_front_rather_than_which_one_holds_the_keyboard() {
+    assert!(
+        handle_is_frontmost(42, 42),
+        "the window holding the front is this one"
+    );
+    assert!(
+        !handle_is_frontmost(42, 43),
+        "another app has it, so the chrome steps back"
+    );
+    // Windows answers zero when no window at all holds the front. That is never this one, and a window with no handle yet is not either — without both halves the two zeros would agree and a handleless window would read as the front.
+    assert!(!handle_is_frontmost(42, 0));
+    assert!(!handle_is_frontmost(0, 0));
+
+    let source = include_str!("../event_loop.rs");
+    assert!(
+        source.contains("&window_active_line(window_is_frontmost(&reader.window))"),
+        "the ready arm sends the first state off which window is in front"
+    );
+    assert!(
+        !source.contains("window_active_line(reader.window.is_focused())"),
+        "and never off the window's own keyboard focus, which the web view holds"
+    );
+}
+
 /// The green dot's own command, which is not zoom: a Mac gives full screen a space of its own, and zoom only fills the room the menu bar and the Dock leave over.
 #[test]
 fn the_green_dot_asks_for_the_kind_of_full_screen_that_takes_a_space_of_its_own() {
@@ -406,6 +450,8 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
         WindowEvent::Resized(PhysicalSize::new(800, 600)),
         WindowEvent::CloseRequested,
         WindowEvent::Focused(true),
+        // Losing the window has an arm of its own now: the page is told, so the tail has to run for this one too.
+        WindowEvent::Focused(false),
     ] {
         assert!(
             window_event_could_have_changed_anything(&event),

@@ -10,14 +10,15 @@
 //! - A repeated key draws twice, in order, which [`crate::data`]'s renderer already does.
 //! - A line that is none of these is drawn as a value with no name, so a file that turns out not to be INI at all still puts every word it holds on the page rather than rendering empty.
 //!
-//! The tree it answers is [`crate::data`]'s, so the page is the one a JSON file already draws: a section is a heading and its scalar keys are the label-and-value list under it. What differs is the labels — a key is drawn as it was typed, because `font_size` is a name somebody chose rather than a phrase to sentence-case.
+//! The tree it answers is [`crate::data`]'s, so the page is the one a JSON file already draws: a section is a heading and its scalar keys are the label-and-value list under it. What differs is the labels — a key is drawn as it was typed, because `font_size` is a name somebody chose rather than a phrase to sentence-case — and their exact ranges let those names open onto their own source.
 
 use crate::*;
+use std::ops::Range;
 
-/// Parse an INI file into the shared data tree. Every scalar carries the exact byte range of its value, which is what [`crate::editing`] splices when the value is typed into.
+/// Parse an INI file into the shared data tree. Every drawn key, section and scalar carries the exact byte range that [`crate::editing`] splices when it is typed into.
 pub(crate) fn parse_ini(source: &str) -> DataNode {
     let mut root: Vec<(String, DataNode)> = Vec::new();
-    let mut section: Option<(String, Vec<(String, DataNode)>)> = None;
+    let mut section: Option<(String, Option<Range<usize>>, Vec<(String, DataNode)>)> = None;
 
     let mut offset = 0usize;
     for line in source.split_inclusive('\n') {
@@ -30,54 +31,73 @@ pub(crate) fn parse_ini(source: &str) -> DataNode {
             continue;
         }
 
-        if let Some(name) = section_name(trimmed) {
-            if let Some((name, pairs)) = section.take() {
-                root.push((name, DataNode::mapping(pairs)));
+        if let Some((name, key_span)) = section_name(body, start) {
+            if let Some((name, key_span, pairs)) = section.take() {
+                let mut node = DataNode::mapping(pairs);
+                node.key_span = key_span;
+                root.push((name, node));
             }
-            section = Some((name.to_string(), Vec::new()));
+            section = Some((name.to_string(), key_span, Vec::new()));
             continue;
         }
 
-        let (key, value) = read_pair(body, start);
+        let (key, key_span, mut value) = read_pair(body, start);
+        value.key_span = key_span;
         match &mut section {
-            Some((_, pairs)) => pairs.push((key, value)),
+            Some((_, _, pairs)) => pairs.push((key, value)),
             None => root.push((key, value)),
         }
     }
 
-    if let Some((name, pairs)) = section.take() {
-        root.push((name, DataNode::mapping(pairs)));
+    if let Some((name, key_span, pairs)) = section.take() {
+        let mut node = DataNode::mapping(pairs);
+        node.key_span = key_span;
+        root.push((name, node));
     }
 
     DataNode::mapping(root)
 }
 
 /// The name a `[section]` line opens, or `None` when the line is not one. The whole trimmed line has to be the brackets and their contents — a value like `pattern = [a-z]` is a key, not a section.
-fn section_name(trimmed: &str) -> Option<&str> {
+fn section_name(line: &str, start: usize) -> Option<(&str, Option<Range<usize>>)> {
+    let trimmed = line.trim();
     let inner = trimmed.strip_prefix('[')?.strip_suffix(']')?;
-    Some(inner.trim())
+    let name = inner.trim();
+    let at = start
+        + (line.len() - line.trim_start().len())
+        + 1
+        + (inner.len() - inner.trim_start().len());
+    Some((name, (!name.is_empty()).then(|| at..at + name.len())))
 }
 
-/// One `key = value` line, as a key and a scalar carrying the value's own byte range. `line` is the line without its ending, and `start` is where it begins in the source, so every range is an offset into the whole file.
+/// One `key = value` line, as a key with its own byte range and a scalar carrying the value's. `line` is the line without its ending, and `start` is where it begins in the source, so every range is an offset into the whole file.
 ///
 /// A line with no `=` names nothing, so it is drawn as a value with an empty key: the words are on the page, which is what "show the file as written" means for a file that turns out not to be INI at all. Giving it the line as its key instead would lose it, because the renderer skips a field whose value says nothing.
-fn read_pair(line: &str, start: usize) -> (String, DataNode) {
-    let (key, at, value) = match line.find('=') {
+fn read_pair(line: &str, start: usize) -> (String, Option<Range<usize>>, DataNode) {
+    let (key, key_span, at, value) = match line.find('=') {
         Some(split) => {
+            let raw_key = &line[..split];
+            let key = raw_key.trim();
+            let key_at = start + (raw_key.len() - raw_key.trim_start().len());
             let raw = &line[split + 1..];
             let value = raw.trim();
             let at = start + split + 1 + (raw.len() - raw.trim_start().len());
-            (line[..split].trim().to_string(), at, value)
+            (
+                key.to_string(),
+                (!key.is_empty()).then(|| key_at..key_at + key.len()),
+                at,
+                value,
+            )
         }
         None => {
             let value = line.trim();
             let at = start + (line.len() - line.trim_start().len());
-            (String::new(), at, value)
+            (String::new(), None, at, value)
         }
     };
     // An empty value has no bytes to show and none to replace, so it carries no range — the same answer `data.rs` gives a bare `key:`.
     let span = (!value.is_empty()).then(|| at..at + value.len());
-    (key, DataNode::scalar(value.to_string(), span))
+    (key, key_span, DataNode::scalar(value.to_string(), span))
 }
 
 /// Render an INI string to `(title, html, blocks)`, through the renderer JSON and YAML already share. The keys keep their own spelling: the shared helper would draw `url` as "Link" and `id` as "ID", which are three wrong words on a page whose whole point is the file as written.

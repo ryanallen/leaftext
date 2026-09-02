@@ -115,6 +115,20 @@ export function run() {
     }
   });
 
+  // The corner message a failed open draws is composed here, not by the host: the host hands over the path and a reason with this file's name already taken off it, so the page owes exactly one naming of the file, at the front, with the reason following it untouched. Driven rather than read, because what is held is the sentence a reader meets.
+  check('a failed-open growl names the file once before its path-free reason', () => {
+    const context = runShell(source);
+    const said = [];
+    context.window.leafShowError = (message) => said.push(message);
+    context.window.leafShowOpenError('C:\\notes\\broken.md', 'Access is denied. (os error 5)');
+    if (said.length !== 1) throw new Error(`expected one error, got ${said.length}`);
+    if (said[0] !== 'Failed to open C:\\notes\\broken.md: Access is denied. (os error 5)') {
+      throw new Error(`the page composed "${said[0]}"`);
+    }
+    const named = said[0].split('C:\\notes\\broken.md').length - 1;
+    if (named !== 1) throw new Error(`the file is named ${named} times: ${said[0]}`);
+  });
+
   // ---- 6a. a source view that will not open says so and gives the document back ----
   //
   // Both ways into the source view can give up, and each has to draw something: the editor's own load fails after the reader has already been emptied into its container, and the staged payload fails before that. Drawing nothing leaves the reader a blank page the app is calling the source view, or a press that did nothing. Driven rather than read, because what is being held is a growl on the surface and a command on the wire.
