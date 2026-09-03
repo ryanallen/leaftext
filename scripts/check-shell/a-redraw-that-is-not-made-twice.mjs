@@ -48,7 +48,7 @@ export function run() {
       await settle();
     };
     for (let stroke = 0; stroke < strokes; stroke += 1) {
-      // A character into the box's name, which is the gesture the whole ticket was watched on: every stroke is a chart the canvas has genuinely never drawn.
+      // A character into the box's name: every stroke is a chart the canvas has genuinely never drawn.
       booted.window.__typedName = mark + 'x'.repeat(stroke + 1);
       read('flowSession.text = window.__chartUnderTest.replace("a", window.__typedName);');
       booted.queueFlowDiagram();
@@ -148,7 +148,7 @@ export function run() {
       await typedAt(180, 7, 'slow');
       if (diagramDraws(calls) !== 1) throw new Error(`seven characters made ${diagramDraws(calls)} pictures rather than one`);
 
-      // The same hand against the wait this ticket replaced, which is what the fault looked like.
+      // The same hand against the floor alone, which is the pace a fixed wait cannot keep up with.
       calls.length = 0;
       read('flowLastDrawCost = 0;');
       await typedAt(180, 7, 'quick');
