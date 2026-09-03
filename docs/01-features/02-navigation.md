@@ -17,7 +17,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Live reload](#reload) | Reload a changed file without losing your place |
 | [Recent files](#recent-files) | Reopen a recently opened file from the home screen, showing the vault you are standing in |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
-| [Loading spinner](#loading) | A spinner appears over the reader while a slow document or view renders |
+| [Loading](#loading) | The reader holds the shape of the page that is coming — a heading bar and the paragraph bars under it — while a slow document or view renders |
 | [Export the page](#export-the-page) | Save the page you are reading as one continuous PDF, as a picture of the whole document, or as a web page with its stylesheet, its pictures and its [minimap](04-minimap.md#on-an-exported-page) in a folder beside it — every one of them in the theme on screen |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
@@ -225,12 +225,14 @@ Recent is a record of where you have been, and anything that fails to open drops
 
 ### Loading
 
-Opening a document hands it to the Rust side to parse and render before the view comes back, and building the page in the reading view can itself take a moment for a large file. For a big document either half of that is slow, so Leaftext shows a spinner over the reader while the work happens and clears it the instant the new view arrives.
+Opening a document hands it to the Rust side to parse and render before the view comes back, and building the page in the reading view can itself take a moment for a large file. For a big document either half of that is slow, so Leaftext holds the shape of the page that is arriving over the reader — a heading bar and the paragraph bars under it — and clears it the instant the new view arrives.
 
-- The spinner covers every path that loads a view: opening a file (from [recent files](#recent-files), the [library](03-library.md), a link, the Open dialog, or drag-and-drop), Back/Forward, switching tabs, and toggling the [code view](07-editing.md#code-view) in either direction.
+- The waiting page covers every path that loads a view: opening a file (from [recent files](#recent-files), the [library](03-library.md), a link, the Open dialog, or drag-and-drop), Back/Forward, switching tabs, and toggling the [code view](07-editing.md#code-view) in either direction.
 - It appears immediately when a load starts, so a quick load may show it briefly rather than not at all.
+- Its surface is opaque, so the document being replaced is not left showing through as though it were still the answer.
+- The bars pulse while you wait. Under [Reduce Motion](05-settings.md#reduce-motion) they hold still at their dim value rather than reading as text that has finished arriving.
 - It overlays the reader without disturbing the [library](03-library.md) pane or the app bar, and lets clicks pass through.
-- Re-clicking the tab you are already on does nothing on the host side, so no spinner appears there. Reading-view edits, such as ticking a checkbox, re-render in place without one.
+- Re-clicking the tab you are already on does nothing on the host side, so no waiting page appears there. Reading-view edits, such as ticking a checkbox, re-render in place without one.
 - The [minimap](04-minimap.md#how-it-works) rail carries a spinner of its own. Its thumbnail is a scaled clone of the finished page, so it can only be built once the document has been laid out — it arrives just after the page rather than with it.
 - A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
 
@@ -428,6 +430,7 @@ Key details:
 - A [Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files) states what every part inside it holds in a directory at its own end, so an event about one is answered by reading that end rather than the file: a save coming back never reopens the archive it came from. Every other format is its own text and has no cheaper answer, so it is read.
 - Leaftext hashes what it read to skip duplicate reloads, and skips a reload outright when the file already holds exactly what is on screen — the hash is unknown right after a document opens, and the whole folder is watched, so the first event to arrive is usually about something else.
 - Reload re-renders through the same pipeline the file opened with — [XML](01-rendering.md#xml) stays XML, [JSON and YAML](01-rendering.md#data-files-json-and-yaml) stay themselves, [email](01-rendering.md#email-eml) stays email, Markdown stays Markdown.
+- A reload while the [code view](07-editing.md#code-view) is open leaves you in the source you were reading, with the new text in it, rather than dropping back to the rendered document.
 - The parent directory is watched instead of only the file, so atomic-save editors still work.
 - Other Markdown files changed in that same folder are indexed live, so the [library](03-library.md#live-updates) pane stays current too.
 - A link card you have already opened keeps its words while Leaftext refreshes them after a watched change, so returning to a changed target never leaves the card showing its old opening.

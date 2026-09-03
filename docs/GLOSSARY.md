@@ -206,9 +206,9 @@ The right-click menu on a link in a document you are reading: Open, Open in new 
 
 Leaftext noticing a file changed on disk and re-rendering it without losing your place. It watches the folder rather than the file, so atomic-save editors work, and it recognizes its own [saves](GLOSSARY.md#save) so a save never bounces the view. A document with unsaved edits is never clobbered.
 
-## Loading spinner
+## Loading page
 
-The spinner shown over the reader while a document or a view is being built. It covers opening a file, Back and Forward, switching tabs, and toggling the [code view](GLOSSARY.md#code-view). A safety timeout lowers it even if a response never arrives.
+The shape of the page that is arriving, shown over the reader while a document or a view is being built — a heading bar and the paragraph bars under it, on an opaque surface, so the document being replaced is not left showing through as though it were still the answer. It covers opening a file, Back and Forward, switching tabs, and toggling the [code view](GLOSSARY.md#code-view). A safety timeout lowers it even if a response never arrives. The [minimap](GLOSSARY.md#minimap) rail keeps a spinner of its own.
 
 ## Math
 

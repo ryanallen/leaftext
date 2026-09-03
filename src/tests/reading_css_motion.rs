@@ -75,7 +75,7 @@ fn reduce_motion_is_answered_once_and_won_back_by_name() {
   }
 }",
     );
-    // The pager spends that recipe now, so its own copy is gone rather than left saying the same thing twice.
+    // The pager spends the shared recipe, so it carries no pulse of its own to drift from it.
     assert!(
         !css.contains("pager-skeleton-pulse"),
         "the pager takes the shared pulse, so its private one should be gone"

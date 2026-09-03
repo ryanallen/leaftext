@@ -226,7 +226,7 @@ Once you have typed, a cross at the field's right end clears the search and brin
 | Rows per file | Up to three, one per place the word is |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 | Folders left out | Named in the same line, with how many — "12 results · 1 folder of generated files not read". Rest on the line to see which. See [Skipped folders](#skipped-folders) |
-| While the vault is still being read | Rows arrive in batches, a turning ring sits in the count line, and the count says what it has so far |
+| While the vault is still being read | Rows arrive in batches, a turning ring sits in the count line, and the count says what it has so far. Before the first row arrives, three result-shaped rows stand in their place — a name with the two lines of matched words under it — and they go the moment one real row exists, whether it is this query's first batch or the query before it |
 
 Opening a result lands on the line the match is on. Documents whose source the pane cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
 
@@ -326,7 +326,7 @@ The second map is **smaller, not wrong**. A document only ever records what it l
 - Closing the last tab closes the map with it: the start screen is not one of a document's views.
 - Editing a document the map covers **redraws it in place**: every node keeps its position, your pan and zoom are kept, and the layout eases into what changed rather than laying itself out again. An edit that draws the same map — a word typed into a document that links nowhere new — changes nothing on screen at all.
 - Leaving the map puts the page back where you were reading. Press **Reading** and you are on the paragraph you left; press **Source** and it opens on the lines that were on screen rather than at line 1, and a source view you were already in comes back to the same scroll. That holds whichever view the map was opened from: open it from the source view and **Reading** lands on the paragraph those lines were, rather than at the top of the page.
-- Building the map shows the same spinner a slow document does — including the redraw after a node click, which builds a new map. Leaving the map shows it too: open a search hit or switch to the [source](07-editing.md#code-view) and the map holds until its replacement is ready rather than dropping to a half-drawn page, with the wait shown on top of it.
+- Building the map shows the same waiting page a slow document does — including the redraw after a node click, which builds a new map. Leaving the map shows it too: open a search hit or switch to the [source](07-editing.md#code-view) and the map holds until its replacement is ready rather than dropping to a half-drawn page, with the wait shown on top of it.
 
 ### How much it draws
 

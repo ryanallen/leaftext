@@ -575,7 +575,7 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 ///
 /// And the four data ones: a JSON, YAML or config page carried `data-block-id` and `data-block-kind` on every block, and neither said anything about the file — the id's number was read nowhere at all, and the kind is what the tag the block is drawn with already says, which is where the page reads it now (`dataBlockKindOf`). Same title, same blocks, same source ranges; a block with no range now carries no attribute at all, and a large config page loses about 30% of its bytes.
 ///
-/// And every fixture: the render now carries the waiting Previous and Next strip that the host fills after the document arrives. Same titles, blocks and tasks; one navigation block appended.
+/// And every fixture: the waiting Previous and Next bars wear the shared skeleton recipe, so the strip takes one themed fill, one pulse and one still reduced-motion state. Same titles, blocks and tasks; a class on four spans.
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
