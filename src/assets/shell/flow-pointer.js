@@ -77,7 +77,7 @@ function flowEdgeUnder(element) {
   return found ? found.id : null;
 }
 
-// What the pointer is over, without choosing it. Pointing at a line lights the line, which is the only sign there is that a line can be pointed at — its drawn ink is one pixel across, and until this there was nothing between empty canvas and a selection. Held as an id rather than an element, because the diagram is redrawn under the pointer and last draw's path is gone.
+// What the pointer is over, without choosing it. Pointing at a line lights the line, which is the only sign there is that a line can be pointed at — its drawn ink is one pixel across, so without it there is nothing between empty canvas and a selection. Held as an id rather than an element, because the diagram is redrawn under the pointer and last draw's path is gone.
 let flowHovered = null;
 
 function markFlowHover(target) {
@@ -231,7 +231,7 @@ if (flowCanvas) {
       selectFlow('edge', edge);
       return;
     }
-    // Empty space: nothing is selected any more and nothing is being added either, so the shape sheet goes whether it came up from a selection or from a double-click. Dropping the selection alone left it standing mid-add, which reads as a sheet that ignores a press outside it. The pointer then carries the view, which is how you get around a diagram bigger than the pane.
+    // Empty space: nothing is selected any more and nothing is being added either, so the shape sheet goes whether it came up from a selection or from a double-click. Dropping the selection alone leaves it standing mid-add, which reads as a sheet that ignores a press outside it. The pointer then carries the view, which is how you get around a diagram bigger than the pane.
     dismissFlowPicker();
     beginFlowPan(event);
   });

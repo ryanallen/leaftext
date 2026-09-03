@@ -383,7 +383,7 @@
   stroke-width: var(--lt-stroke-2);
   stroke-dasharray: 5 4;
 }
-/* The wide invisible copy of a line, drawn beside the real one purely to be hit. Painted with nothing and stroked this wide, so pointing at a line is intent rather than aim — the drawn ink is one pixel across, and a click either side of it used to land on empty canvas. It takes the pointer on its stroke alone: a line's curve encloses nothing, but a fill would still catch the whole bay between a bend and its chord. */
+/* The wide invisible copy of a line, drawn beside the real one purely to be hit. Painted with nothing and stroked this wide, so pointing at a line is intent rather than aim — the drawn ink is one pixel across, and a click either side of it lands on empty canvas. It takes the pointer on its stroke alone: a line's curve encloses nothing, but a fill would still catch the whole bay between a bend and its chord. */
 .flow-edge-hit {
   --flow-edge-hit-width: 14px;
   fill: none;
@@ -500,7 +500,7 @@
   /* Measured against the whole editor — the sheet is `position: fixed` — so it is centered on the modal rather than on the half of it left of the text. */
   position: absolute;
   z-index: 5;
-  /* A quarter of the editor, not the 62% it used to take: the sheet is judged by what it is over, and at 62% it covered two thirds of the canvas, so nothing you were about to change was on screen while you changed it. It is the one sheet the grab bar can pull taller, up to the ceiling every sheet shares, for anyone who wants the whole shape list at once. */
+  /* A quarter of the editor: the sheet is judged by what it is over, and at 62% it covers two thirds of the canvas, so nothing you are about to change is on screen while you change it. It is the one sheet the grab bar can pull taller, up to the ceiling every sheet shares, for anyone who wants the whole shape list at once. */
   --flow-picker-seat: 25%;
   max-height: min(calc(var(--flow-picker-seat) + var(--sheet-grow, 0px)), var(--sheet-ceiling));
   background-color: var(--lt-surface-elevated);

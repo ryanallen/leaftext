@@ -1172,7 +1172,7 @@ export function run() {
       if (buttons.size !== shapes) throw new Error(`the grid holds ${buttons.size} buttons against ${shapes} shapes`);
       if (grid.length !== shapes + 8) throw new Error(`the grid holds ${grid.length} elements, which is not eight headings and ${shapes} buttons`);
       if (marked() !== 'rect') throw new Error(`the first box is marked ${marked()}`);
-      // Every field the selection has is in the head, in one form, so the body under a selected box is the shapes and then Delete and nothing else. They used to be one field up there and three appended in front of the wrapper, which is how the link, the icon and the picture ended up unfindable below forty-seven shapes.
+      // Every field the selection has is in the head, in one form, so the body under a selected box is the shapes and then Delete and nothing else. One field up there and three appended in front of the wrapper leaves the link, the icon and the picture unfindable below forty-seven shapes.
       if (spot(wrap) !== 0) throw new Error(`the wrapper sits at ${spot(wrap)}, behind something the selection drew into the body`);
       const last = [...body.children].pop();
       if (!last.classList.contains('flow-delete')) throw new Error('delete is not the last thing in the body');
@@ -1364,7 +1364,7 @@ export function run() {
         throw new Error('the press outside the sheet is not asked in the capture phase, so choosing a box will dismiss the sheet');
       }
 
-      // The other half: the canvas's own empty-space press cancels an add as well as a selection, so the sheet goes whether it came up from a box or from a double-click. Clearing the selection alone left it standing mid-add.
+      // The other half: the canvas's own empty-space press cancels an add as well as a selection, so the sheet goes whether it came up from a box or from a double-click. Clearing the selection alone leaves it standing mid-add.
       const made = [];
       booted.openFlowAddPicker((id) => made.push(id));
       if (!read('flowPickerAdd')) throw new Error('the add path never put the sheet into adding');

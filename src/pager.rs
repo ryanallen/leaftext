@@ -175,7 +175,7 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
     an.cmp(&bn)
 }
 
-/// Turn an on-disk name into a display label (matches the web `label()`): drop a trailing page extension, collapse `-`/`_` runs to spaces, title-case each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
+/// Turn an on-disk name into a display label (matches the web `label()`): drop the extension of a name the pager lists, collapse `-`/`_` runs to spaces, title-case each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`. `is_listed_document_path` is the gate, the same one that decides which names the pager walks, so a source file or an unreadable ending keeps it in the label rather than being told apart twice.
 pub(crate) fn pager_label(raw: &str) -> String {
     let base = raw
         .rsplit_once('.')

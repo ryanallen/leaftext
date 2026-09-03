@@ -78,7 +78,7 @@ function drawFlowPicker(options) {
   // Pushed part-way down to see the diagram behind it, the sheet stays there while it is open — picking a second box does not shove it back up. It comes back flush only when it has been away and returns, which is the entrance the shared open runs.
   openSheet(flowPicker, flowPickerBackdrop, { keepParked: true });
 
-  // Every field the selection has, in one form at the top of the sheet: the name of the thing, then — for a box — where clicking it goes, the icon on it and the picture in it. They used to be one field up here and three buried in the scrolling shape list, which is why nobody found the last three.
+  // Every field the selection has, in one form at the top of the sheet: the name of the thing, then — for a box — where clicking it goes, the icon on it and the picture in it. One field up here and three buried in the scrolling shape list is why the last three went unfound.
   const form = document.createElement('div');
   form.className = 'flow-form';
   form.appendChild(
