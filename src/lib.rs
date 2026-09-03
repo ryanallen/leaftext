@@ -79,8 +79,9 @@ pub use query::{
 };
 mod vault_corpus;
 pub use vault_corpus::{
-    folder_holds_generated_files, path_holds_generated_files, CorpusDocument, CorpusSlice,
-    FilterHintField, FilterHints, VaultCorpus, CORPUS_SLICE_DOCUMENTS, MAX_CORPUS_DOCUMENTS,
+    folder_holds_generated_files, path_holds_generated_files, CorpusChange, CorpusDocument,
+    CorpusSlice, FilterHintField, FilterHints, VaultCorpus, CORPUS_SLICE_DOCUMENTS,
+    MAX_CORPUS_DOCUMENTS,
 };
 mod doc_graph;
 pub use doc_graph::document_graph;

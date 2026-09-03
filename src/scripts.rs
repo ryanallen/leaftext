@@ -675,7 +675,25 @@ pub fn open_error_state_script(path: &Path, reason: &str) -> String {
     format!("window.leafShowOpenError({path}, {reason});")
 }
 
+/// The code view's payload, borrowing the buffer's text rather than owning a copy of it.
+///
+/// The fields are alphabetical because that is the order the page is handed: an owned JSON tree is a `BTreeMap` without `preserve_order`, so it sorts by key. Reordering them to read better changes the bytes.
+///
+/// The host's half of a source-editor landing rides along as `scroll_fraction`: a returning tab or a launch carries a 0..1 fraction, `0` among them, since a saved place at the top is still a place. Omitted otherwise, which tells the page to use its own — the line the toggle was reading on a fresh entry, and the fraction off the editor it is replacing on an in-place rebuild.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CodeViewPayload<'a> {
+    dirty: bool,
+    display_name: &'a str,
+    language: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scroll_fraction: Option<f64>,
+    text: &'a str,
+}
+
 /// Swap to the raw-source code view: the buffer text, the language token and label the editor is opened on, and the dirty state. The editor colors its own text, so no markup travels with it.
+///
+/// Written straight into a buffer, never through an owned JSON tree: a tree copies the text into a `Value::String` and serializes that into a second whole string — two copies of a document on a press somebody is waiting on.
 pub fn code_view_payload(
     text: &str,
     language: &str,
@@ -683,17 +701,18 @@ pub fn code_view_payload(
     dirty: bool,
     scroll_fraction: Option<f64>,
 ) -> String {
-    let mut state = serde_json::json!({
-        "text": text,
-        "language": language,
-        "displayName": display_name,
-        "dirty": dirty,
-    });
-    // The host's half of a source-editor landing: a returning tab or a launch rides along as a 0..1 scroll fraction, `0` among them, since a saved place at the top is still a place. Omitted otherwise, which tells the page to use its own — the line the toggle was reading on a fresh entry, and the fraction off the editor it is replacing on an in-place rebuild.
-    if let Some(fraction) = scroll_fraction {
-        state["scrollFraction"] = serde_json::json!(fraction);
-    }
-    state.to_string()
+    let state = CodeViewPayload {
+        dirty,
+        display_name,
+        language,
+        scroll_fraction,
+        text,
+    };
+    // An eighth over the text, not the text's own length: JSON escaping grows ordinary prose by about 2.2% from the newlines alone, and a buffer that overflows is doubled, which is the whole-text move this is here to stop.
+    let capacity = text.len() + text.len() / 8 + language.len() + display_name.len() + 96;
+    let mut json = Vec::with_capacity(capacity);
+    serde_json::to_writer(&mut json, &state).expect("code view state serializes");
+    String::from_utf8(json).expect("JSON is UTF-8")
 }
 
 /// Point the page at a staged payload instead of carrying it. See `PENDING_SOURCE_PAYLOAD` for why the megabytes do not travel as script.

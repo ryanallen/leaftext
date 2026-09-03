@@ -540,7 +540,7 @@ fn only_a_document_that_moved_redraws_the_map() {
         "/vault/picture.png",
     ] {
         assert!(
-            !patch_vault_corpus(&mut state, Path::new(uninteresting)),
+            !patch_vault_corpus(&mut state, Path::new(uninteresting)).text,
             "{uninteresting} moved the vault's text"
         );
         assert!(
@@ -863,4 +863,54 @@ fn a_reload_whose_buffer_took_the_archive_leaves_the_tab_carrying_none() {
     );
 
     let _ = fs::remove_dir_all(path.parent().expect("the package sits in a folder"));
+}
+
+#[test]
+fn every_path_in_one_watcher_batch_is_patched_and_not_only_the_first_that_moved() {
+    let dir = scratch_dir("watcher-batch-patches-every-path");
+    let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
+    let root = plain_event_path(canonical);
+    let body = root.join("body.md");
+    let fields = root.join("fields.md");
+    fs::write(
+        &body,
+        "---\nstatus: open\n---\n\n# Body\n\nOriginal wording.\n",
+    )
+    .expect("fixture note written");
+    fs::write(&fields, "---\nowner: mai\n---\n\n# Fields\n").expect("fixture note written");
+
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    state.hints_owed = false;
+
+    // A `git pull` lands both at once: the first moved only prose, the second gained a field. Answered path by path and stopped at the first that moved, the second one is never re-read at all — the search would still be answering off its old text and the menu would never learn the name.
+    fs::write(
+        &body,
+        "---\nstatus: open\n---\n\n# Body\n\nRewritten wording.\n",
+    )
+    .expect("the body is rewritten");
+    fs::write(&fields, "---\nowner: mai\nproject: solo\n---\n\n# Fields\n")
+        .expect("the field is written");
+    corpus_changes_redraw(&mut state, &[body.clone(), fields.clone()], false);
+
+    let corpus = state.corpus.as_ref().expect("the vault's text is held");
+    assert!(
+        corpus.search("rewritten").hits.len() == 1,
+        "the first path of the batch was not patched"
+    );
+    assert!(
+        corpus
+            .filter_hints()
+            .fields
+            .iter()
+            .any(|field| field.name == "project"),
+        "a later path of the batch was never re-read"
+    );
+    assert!(
+        state.hints_owed,
+        "a frontmatter change behind another path in the same batch asked for no walk"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
 }

@@ -24,6 +24,10 @@ pub(crate) struct VaultState {
     pub(crate) corpus: Option<Arc<VaultCorpus>>,
     /// Bumped whenever that text changes — read, patched by the watcher, or dropped on a vault switch. It is what tells a kept answer it is still true.
     pub(crate) corpus_generation: u64,
+    /// A frontmatter block moved, so the completion menu's field names are owed a fresh walk of the vault. Set where the change is decided and spent where there is a worker to send it to, because the two are not the same place: a save made in this app patches the text from a call that holds no way to start one.
+    pub(crate) hints_owed: bool,
+    /// The corpus version the field names on screen were walked over. A walk started before this one finished answers for text that has since been re-walked, so it is dropped rather than drawn over the newer list.
+    pub(crate) hints_sent: u64,
     /// A read is in flight, so a second request waits rather than starting one.
     pub(crate) corpus_loading: bool,
     /// Which vault's read is wanted. Claimed when one starts and bumped when the vault is left, so the thread stops between documents instead of walking a folder nobody is in — its own counter rather than `corpus_generation`, which every slice bumps and would cancel the read that sent it.
@@ -73,6 +77,8 @@ impl VaultState {
             folder: String::new(),
             corpus: None,
             corpus_generation: 0,
+            hints_owed: false,
+            hints_sent: 0,
             corpus_loading: false,
             corpus_read: WorkGeneration::default(),
             corpus_partial: false,
@@ -108,6 +114,9 @@ impl VaultState {
     pub(crate) fn drop_corpus(&mut self) {
         self.corpus = None;
         self.corpus_generation += 1;
+        // The field names are about the vault just left, and so is any walk still running for it: moving this to the number the new vault's read starts from is what turns that answer away when it lands.
+        self.hints_owed = false;
+        self.hints_sent = self.corpus_generation;
         // Every caller is a vault move, so a path kept for the old root would be replayed into the new one's text.
         self.corpus_changes.clear();
         self.pending_graph = None;
@@ -534,8 +543,6 @@ pub(crate) struct AbsorbedSlice {
     pub(crate) parked: Option<TypedQuery>,
     /// A map somebody asked for while the read was running. Answered once, on the last slice: a picture redrawn every third of a second while the disk is read is a map nobody can look at.
     pub(crate) graph: Option<GraphRequest>,
-    /// The completion menu's field names, on the last slice only — they are the whole vault's, and a menu that grew as the disk was read would offer a different list each time. A frontmatter parse per document, under a millisecond over eight thousand of them, so it costs the window nothing here.
-    pub(crate) hints: Option<FilterHints>,
 }
 
 /// Grow the vault's text by one slice of the read, and say what that leaves to do. Split from [`deliver_corpus`] because everything here is a decision about state and nothing here touches a worker, which is the half worth testing.
@@ -587,8 +594,9 @@ pub(crate) fn absorb_corpus_slice(
     // Every slice is a change to the text, which is what makes a kept answer and the narrowing shortcut refuse themselves: both turn on this number, so neither can hand back a whole vault's answer that saw half of it.
     state.corpus_generation += 1;
     let corpus = Arc::clone(state.corpus.as_ref()?);
+    // On the last slice only — the names are the whole vault's, and a menu that grew as the disk was read would offer a different list each time. Whatever started the read, a finished one owes the menu its answer: the reader who has not searched yet is the one the empty menu is worst for.
+    state.hints_owed |= last;
     Some(AbsorbedSlice {
-        hints: last.then(|| corpus.filter_hints()),
         graph: last.then(|| state.pending_graph.take()).flatten(),
         // The parked query stays in its slot until the last slice, so every one of them answers it. Taken on the first, it would answer once and go quiet for the rest of the read — the silence this is here to end.
         parked: if last {
@@ -670,16 +678,16 @@ pub(crate) fn deliver_corpus(
     replaces: bool,
     last: bool,
     wanted: u64,
-) -> Option<FilterHints> {
+) {
     let absorbed = match delivered_slice_work(
         state, &root, documents, truncated, skipped, replaces, last, wanted,
     ) {
         SliceWork::Absorbed(absorbed) => absorbed,
         SliceWork::StartTheOwedRead => {
             read_corpus(state, proxy);
-            return None;
+            return;
         }
-        SliceWork::Nothing => return None,
+        SliceWork::Nothing => return,
     };
     if let Some(request) = absorbed.graph {
         build_vault_graph_off_thread(proxy, root, Arc::clone(&absorbed.corpus), request);
@@ -688,7 +696,31 @@ pub(crate) fn deliver_corpus(
         // Every slice grows the text, so there is nothing a shorter query's matches could narrow this to.
         run_search(state, proxy, absorbed.corpus, query, None);
     }
-    absorbed.hints
+}
+
+/// Start the whole-vault walk behind the completion menu, if a frontmatter block has moved since the last one. On a worker, the way the map is rebuilt: the walk parses every document's frontmatter, which is far too much for the thread that answers the window.
+///
+/// Called from the loop's own turn rather than from the door that patched the text, because the two doors into that patch do not both hold a way to start a worker — a save made in this app goes through a call that has none. One home for the walk, and one flag saying it is owed.
+pub(crate) fn start_owed_filter_hints(state: &mut VaultState, proxy: &EventLoopProxy<UserEvent>) {
+    let Some(corpus) = state.corpus.clone().filter(|_| state.hints_owed) else {
+        return;
+    };
+    state.hints_owed = false;
+    // What this walk will have seen. The answer carries it back so a walk overtaken by a later one is dropped rather than drawn over its list.
+    let walked = state.corpus_generation;
+    off_loop(proxy, move || UserEvent::FilterHintsReady {
+        hints: corpus.filter_hints(),
+        corpus: walked,
+    });
+}
+
+/// Whether a finished walk is still the newest answer to what this vault sets. A walk started while another was running lands second and is the one to keep; the one it overtook is thrown away, and so is anything walked over a vault that has since been left.
+pub(crate) fn filter_hints_are_current(state: &mut VaultState, corpus: u64) -> bool {
+    if corpus <= state.hints_sent {
+        return false;
+    }
+    state.hints_sent = corpus;
+    true
 }
 
 /// Patch every changed path in one batch, then rebuild the map at most once.
@@ -737,7 +769,14 @@ pub(crate) fn corpus_changes_redraw(
 ) -> GraphRedraw {
     let corpus_moved = changed
         .iter()
-        .any(|path| record_or_refresh_corpus_path(state, path));
+        .fold(CorpusChange::NOTHING, |moved, path| {
+            let patched = record_or_refresh_corpus_path(state, path);
+            CorpusChange {
+                text: moved.text || patched.text,
+                fields: moved.fields || patched.fields,
+            }
+        })
+        .text;
     if !graph_showing {
         return GraphRedraw::Nothing;
     }
@@ -771,12 +810,15 @@ pub(crate) fn corpus_changes_redraw(
 
 /// The one door every change to a document takes, whether it was saved here or written by something else: re-read it now against finished text, or keep it until the read filling that text has handed over its last slice.
 ///
-/// Nothing is patched into a partial vault, because the read still owns it — the slice that replaces the preview would throw the change away, and a slice arriving later reads the same file off the disk as it was before the save. Says whether the held text actually moved, which is false for every kept path: the map is redrawn off this answer, and the vault it would be drawn from is half a vault.
-pub(crate) fn record_or_refresh_corpus_path(state: &mut VaultState, changed: &Path) -> bool {
+/// Nothing is patched into a partial vault, because the read still owns it — the slice that replaces the preview would throw the change away, and a slice arriving later reads the same file off the disk as it was before the save. Says what actually moved, which is nothing for every kept path: the map is redrawn off one half of that answer and the completion menu's field names off the other, and the vault either would be built from is half a vault.
+pub(crate) fn record_or_refresh_corpus_path(
+    state: &mut VaultState,
+    changed: &Path,
+) -> CorpusChange {
     if state.corpus_loading {
         // A set, so a file saved five times during one read is one re-read at the end of it.
         state.corpus_changes.insert(changed.to_path_buf());
-        return false;
+        return CorpusChange::NOTHING;
     }
     patch_vault_corpus(state, changed)
 }
@@ -788,20 +830,23 @@ fn replay_corpus_changes(state: &mut VaultState) {
     }
 }
 
-/// Bring the vault's held text up to date for one changed path, and say whether that actually moved anything.
-pub(crate) fn patch_vault_corpus(state: &mut VaultState, changed: &Path) -> bool {
+/// Bring the vault's held text up to date for one changed path, and say what that actually moved.
+pub(crate) fn patch_vault_corpus(state: &mut VaultState, changed: &Path) -> CorpusChange {
     let Some(corpus) = state.corpus.as_mut() else {
-        return false;
+        return CorpusChange::NOTHING;
     };
     // Before the refresh: `Arc::make_mut` clones the whole vault's text when a worker is mid-build, and a path that is not a document must not cost that.
     if !corpus.covers(changed) {
-        return false;
+        return CorpusChange::NOTHING;
     }
     // Cheap unless a worker is mid-build against this exact corpus, in which case it clones rather than mutate out from under it.
     let moved = Arc::make_mut(corpus).refresh(changed);
-    if moved {
+    if moved.text {
         // A kept search answer describes text that has just changed.
         state.corpus_generation += 1;
+    }
+    if moved.fields {
+        state.hints_owed = true;
     }
     moved
 }

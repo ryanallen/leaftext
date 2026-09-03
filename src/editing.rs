@@ -3,8 +3,38 @@
 use crate::*;
 use std::ops::Range;
 
-/// Reading-view undo entries kept per document; each is a full buffer snapshot.
+/// Reading-view undo steps kept per document.
 const UNDO_STACK_CAP: usize = 200;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ReplacedRange {
+    at: Range<usize>,
+    text: String,
+}
+
+type UndoStep = Vec<ReplacedRange>;
+
+fn apply_step(text: &mut String, step: UndoStep) -> UndoStep {
+    let mut inverse = Vec::with_capacity(step.len());
+    let mut shift = 0isize;
+    // Capture inverse ranges against the fully restored text before the back-to-front walk moves any offsets.
+    for replaced in &step {
+        let start = replaced
+            .at
+            .start
+            .checked_add_signed(shift)
+            .expect("an undo range stays inside the document");
+        inverse.push(ReplacedRange {
+            at: start..start + replaced.text.len(),
+            text: text[replaced.at.clone()].to_string(),
+        });
+        shift += replaced.text.len() as isize - replaced.at.len() as isize;
+    }
+    for replaced in step.into_iter().rev() {
+        text.replace_range(replaced.at, &replaced.text);
+    }
+    inverse
+}
 
 /// What a file said about itself without being opened: how long it is and when it was last written.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -13,7 +43,7 @@ pub struct FileRecord {
     pub modified: std::time::SystemTime,
 }
 
-/// A document open for editing: Rust's authoritative copy of the source text. `text` is the live buffer; `saved` is the last-written text, so dirty is just `text != saved`. `version` increments on save so the file watcher can tell our own saves from external edits.
+/// A document open for editing: Rust's authoritative copy of the source text. `text` is the live buffer; `saved` is the last-written text, held only once the buffer differs from it, so dirty is `saved` being there and differing. `version` increments on save so the file watcher can tell our own saves from external edits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EditableDocument {
     pub path: PathBuf,
@@ -23,13 +53,14 @@ pub struct EditableDocument {
     /// True until this document has a file. It wears a name regardless, to be a tab; this is what stops a save from writing to that name.
     pub untitled: bool,
     text: String,
-    saved: String,
+    /// The last-written text, taken at the first edit rather than at the open: until something splices, `text` is already those bytes, so `None` means clean and holding a whole second copy of the document would buy nothing. On a Word file whose member is 7.9 MB that second copy is 7.9 MB per open tab.
+    saved: Option<String>,
     version: u64,
     file_record: Option<FileRecord>,
-    /// Buffer snapshots taken before each reading-view edit, newest last. The browser's native undo can't cross the re-render an edit triggers, so inline-edit undo lives here. Code-view typing is not snapshotted — the editor's own undo covers it.
-    undo_stack: Vec<String>,
-    /// What each undo displaced, newest last, so a press too many can be walked forward again. A fresh undoable edit drops it: the future those snapshots belonged to no longer exists.
-    redo_stack: Vec<String>,
+    /// What each reading-view edit replaced, newest last. The browser's native undo can't cross the re-render an edit triggers, so inline-edit undo lives here. Code-view typing records nothing — the editor's own undo covers it.
+    undo_stack: Vec<UndoStep>,
+    /// What each undo displaced, newest last, so a press too many can be walked forward again. A fresh undoable edit drops it: that future no longer exists.
+    redo_stack: Vec<UndoStep>,
     /// The archive this buffer's text came out of, where the document is a package rather than a file somebody typed. `None` for the nine text formats, which are their own file.
     package: Option<PackageBuffer>,
 }
@@ -44,7 +75,7 @@ pub struct PackageBuffer {
 }
 
 impl EditableDocument {
-    /// Start an editing session for `path` seeded with `contents`, which is both the live buffer and the saved baseline (so it opens clean). The spelling travels with the contents: it is a fact about the file, and the save spends it.
+    /// Start an editing session for `path` seeded with `contents`, which becomes the live buffer with no baseline beside it (so it opens clean). The spelling travels with the contents: it is a fact about the file, and the save spends it.
     pub fn new(path: PathBuf, contents: SourceText) -> Self {
         let format = DocumentFormat::from_path(&path);
         let SourceText { text, spelling } = contents;
@@ -53,7 +84,7 @@ impl EditableDocument {
             format,
             spelling,
             untitled: false,
-            saved: text.clone(),
+            saved: None,
             text,
             version: 0,
             file_record: None,
@@ -91,13 +122,18 @@ impl EditableDocument {
         self.untitled = false;
     }
 
-    /// Record `before` as an undo point if the buffer actually changed, keeping the stack bounded. A new edit ends whatever future the last undo left standing.
-    fn push_undo(&mut self, before: String) {
-        if before == self.text {
+    /// Record a step as an undo point if it changed the buffer, keeping the stack bounded. A new edit ends whatever future the last undo left standing.
+    fn push_undo(&mut self, mut step: UndoStep) {
+        step.retain(|replaced| {
+            self.text
+                .get(replaced.at.clone())
+                .is_some_and(|replacement| replacement != replaced.text)
+        });
+        if step.is_empty() {
             return;
         }
         self.redo_stack.clear();
-        self.undo_stack.push(before);
+        self.undo_stack.push(step);
         if self.undo_stack.len() > UNDO_STACK_CAP {
             self.undo_stack.remove(0);
         }
@@ -106,9 +142,9 @@ impl EditableDocument {
     /// Revert the most recent reading-view edit; returns whether anything was undone. A successful save clears the stack, so undo only covers edits made since the last saved baseline. What it displaces is kept, so the press can be walked forward again.
     pub fn undo(&mut self) -> bool {
         match self.undo_stack.pop() {
-            Some(previous) => {
-                let displaced = std::mem::replace(&mut self.text, previous);
-                self.redo_stack.push(displaced);
+            Some(step) => {
+                let inverse = apply_step(&mut self.text, step);
+                self.redo_stack.push(inverse);
                 true
             }
             None => false,
@@ -118,10 +154,10 @@ impl EditableDocument {
     /// Restore the version the last undo displaced; returns whether anything came back. The text it displaces in turn goes back on the undo stack, so the two walk one history in either direction.
     pub fn redo(&mut self) -> bool {
         match self.redo_stack.pop() {
-            Some(later) => {
-                let displaced = std::mem::replace(&mut self.text, later);
+            Some(step) => {
+                let inverse = apply_step(&mut self.text, step);
                 // No cap check: this only ever puts back an entry undo took off, so the stack cannot grow past where it already was.
-                self.undo_stack.push(displaced);
+                self.undo_stack.push(inverse);
                 true
             }
             None => false,
@@ -138,6 +174,16 @@ impl EditableDocument {
         !self.redo_stack.is_empty()
     }
 
+    #[cfg(test)]
+    pub(crate) fn history_text_bytes(&self) -> usize {
+        self.undo_stack
+            .iter()
+            .chain(&self.redo_stack)
+            .flatten()
+            .map(|replaced| replaced.text.capacity())
+            .sum()
+    }
+
     /// The live buffer contents.
     pub fn text(&self) -> &str {
         &self.text
@@ -146,18 +192,31 @@ impl EditableDocument {
     /// Replace the whole buffer — the code view's resync path, when a splice left the two copies disagreeing. Returns whether the dirty state changed.
     pub fn set_text(&mut self, text: String) -> bool {
         let was_dirty = self.is_dirty();
+        // Asked before the copy is taken: a resync that hands back what the buffer already says would otherwise hold a second whole document for nothing.
+        if text != self.text {
+            self.hold_baseline();
+        }
         self.text = text;
         was_dirty != self.is_dirty()
     }
 
+    /// Take the copy dirty is answered against, if this is the first thing to move the buffer since it was opened, saved or reloaded. Called by every door that writes `self.text`; `undo` and `redo` are not among them, since only a door that already ran can have put anything on those stacks.
+    fn hold_baseline(&mut self) {
+        if self.saved.is_none() {
+            self.saved = Some(self.text.clone());
+        }
+    }
+
     /// Whether the buffer differs from what was last written to disk.
     pub fn is_dirty(&self) -> bool {
-        self.text != self.saved
+        self.saved
+            .as_deref()
+            .is_some_and(|saved| saved != self.text)
     }
 
     /// The text as it was last written to disk. What the saved session carries beside an unsaved buffer, so the next launch can tell whether the file is still the one those edits were made against.
     pub fn saved_text(&self) -> &str {
-        &self.saved
+        self.saved.as_deref().unwrap_or(&self.text)
     }
 
     pub fn version(&self) -> u64 {
@@ -177,16 +236,16 @@ impl EditableDocument {
         self.file_record == Some(record)
     }
 
-    /// Record that the current buffer was written to disk: the buffer becomes the saved baseline (so dirty clears), reader-edit history resets in both directions, and the version advances.
+    /// Record that the current buffer was written to disk: the baseline is dropped, so dirty clears and the buffer stands for itself again, reader-edit history resets in both directions, and the version advances.
     pub fn mark_saved(&mut self) {
-        self.saved = self.text.clone();
+        self.saved = None;
         self.file_record = None;
         self.undo_stack.clear();
         self.redo_stack.clear();
         self.version += 1;
     }
 
-    /// Adopt `contents` as a fresh baseline without a save — used when live-reload accepts an external change into a clean buffer. The spelling comes along, since an outside edit may have re-spelled the file.
+    /// Adopt `contents` as the buffer without a save — used when live-reload accepts an external change into a clean buffer. The baseline is dropped, since the new text is what the file now says. The spelling comes along, since an outside edit may have re-spelled the file.
     ///
     /// The whole source rather than the text out of it, because a package's text is one member and the archive behind it is what a save copies. Taking the member alone would draw the new words against the old numbering, shared strings and pictures, and then write that archive back.
     pub fn adopt_external(&mut self, contents: impl Into<DocumentSource>) {
@@ -199,7 +258,7 @@ impl EditableDocument {
         self.spelling = spelling;
         self.package = package;
         self.file_record = None;
-        self.saved = text.clone();
+        self.saved = None;
         self.text = text;
         // Both histories are snapshots of a document this one has replaced, so stepping into either would put somebody else's file back.
         self.undo_stack.clear();
@@ -208,7 +267,7 @@ impl EditableDocument {
 
     /// Splice `replacement` into the buffer over byte range `[start, end)` — the core of source-anchored in-viewer editing. The range is clamped to the buffer and snapped outward to char boundaries so a bad offset can't panic or corrupt UTF-8; start past end is an insertion at `start`. Returns whether the dirty state changed.
     pub fn replace_range(&mut self, start: usize, end: usize, replacement: &str) -> bool {
-        self.splice(start, end, replacement, true)
+        self.splice(start, end, replacement, true, false)
     }
 
     /// Rewrite a sheet cell to say `text`, as one undoable edit over the cell's own element.
@@ -226,7 +285,7 @@ impl EditableDocument {
             return false;
         };
         // The answer is whether the cell was rewritten, never `splice`'s own: that one reports the dirty flag moving, which a buffer already dirty from an earlier edit never does — so a caller reading it splices its words over the cell this call just wrote.
-        self.splice(start, end, &rewritten, true);
+        self.splice(start, end, &rewritten, true, false);
         true
     }
 
@@ -237,7 +296,7 @@ impl EditableDocument {
         end: usize,
         replacement: &str,
     ) -> bool {
-        self.splice(start, end, replacement, false)
+        self.splice(start, end, replacement, false, true)
     }
 
     /// Replace several sorted, non-overlapping byte ranges in one pass and record one undo snapshot. Refuses the whole list when any range is invalid.
@@ -256,6 +315,24 @@ impl EditableDocument {
             previous_end = *end;
         }
 
+        let mut step = Vec::with_capacity(replacements.len());
+        let mut changed = false;
+        let mut shift = 0isize;
+        for (start, end, replacement) in replacements {
+            let replaced = &self.text[*start..*end];
+            changed |= replaced != *replacement;
+            let at = start
+                .checked_add_signed(shift)
+                .expect("an edit range stays inside the document");
+            step.push(ReplacedRange {
+                at: at..at + replacement.len(),
+                text: replaced.to_string(),
+            });
+            shift += replacement.len() as isize - (end - start) as isize;
+        }
+        if changed {
+            self.hold_baseline();
+        }
         let before = std::mem::take(&mut self.text);
         let mut rebuilt = String::with_capacity(before.len());
         let mut cursor = 0;
@@ -266,7 +343,7 @@ impl EditableDocument {
         }
         rebuilt.push_str(&before[cursor..]);
         self.text = rebuilt;
-        self.push_undo(before);
+        self.push_undo(step);
         true
     }
 
@@ -307,7 +384,14 @@ impl EditableDocument {
         true
     }
 
-    fn splice(&mut self, start: usize, end: usize, replacement: &str, record_undo: bool) -> bool {
+    fn splice(
+        &mut self,
+        start: usize,
+        end: usize,
+        replacement: &str,
+        record_undo: bool,
+        continue_undo: bool,
+    ) -> bool {
         let len = self.text.len();
         let mut start = start.min(len);
         let mut end = end.min(len);
@@ -321,10 +405,32 @@ impl EditableDocument {
             end += 1;
         }
         let was_dirty = self.is_dirty();
-        let before = record_undo.then(|| self.text.clone());
+        let replaced = &self.text[start..end];
+        let changed = replaced != replacement;
+        let step = record_undo.then(|| {
+            vec![ReplacedRange {
+                at: start..start + replacement.len(),
+                text: replaced.to_string(),
+            }]
+        });
+        // Later pauses replace the first pause's output, so the one undo range grows with the typing run.
+        if continue_undo && changed {
+            if let Some(previous) = self
+                .undo_stack
+                .last_mut()
+                .and_then(|step| <&mut [ReplacedRange; 1]>::try_from(step.as_mut_slice()).ok())
+                .map(|step| &mut step[0])
+                .filter(|previous| previous.at == (start..end))
+            {
+                previous.at.end = start + replacement.len();
+            }
+        }
+        if changed {
+            self.hold_baseline();
+        }
         self.text.replace_range(start..end, replacement);
-        if let Some(before) = before {
-            self.push_undo(before);
+        if let Some(step) = step {
+            self.push_undo(step);
         }
         was_dirty != self.is_dirty()
     }
@@ -339,7 +445,7 @@ impl EditableDocument {
         inserted: &str,
     ) -> bool {
         let (start_byte, end_byte) = self.byte_range_for_utf16(start, removed);
-        self.splice(start_byte, end_byte, inserted, false)
+        self.splice(start_byte, end_byte, inserted, false, false)
     }
 
     /// Byte offsets for `[start, start + removed)` counted in UTF-16 code units.
@@ -391,6 +497,7 @@ impl EditableDocument {
             offset + 1,
             if currently_checked { " " } else { "x" },
             record_undo,
+            false,
         )
     }
 
@@ -439,7 +546,13 @@ impl EditableDocument {
             return false;
         };
         let replacement = table_cell_replacement(existing, text);
-        self.splice(span.start, span.end, &replacement, record_undo);
+        self.splice(
+            span.start,
+            span.end,
+            &replacement,
+            record_undo,
+            !record_undo,
+        );
         true
     }
 

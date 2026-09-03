@@ -170,3 +170,84 @@ fn entering_the_code_view_stages_the_buffers_whole_text() {
 
     let _ = fs::remove_dir_all(&dir);
 }
+
+/// The payload as an owned JSON tree — the shape the page is owed, kept here so the two tests below hold the written bytes against a working implementation rather than against a literal somebody typed out.
+fn code_view_payload_as_a_tree(
+    text: &str,
+    language: &str,
+    display_name: &str,
+    dirty: bool,
+    scroll_fraction: Option<f64>,
+) -> String {
+    let mut state = serde_json::json!({
+        "text": text,
+        "language": language,
+        "displayName": display_name,
+        "dirty": dirty,
+    });
+    if let Some(fraction) = scroll_fraction {
+        state["scrollFraction"] = serde_json::json!(fraction);
+    }
+    state.to_string()
+}
+
+#[test]
+fn the_written_payload_is_byte_for_byte_the_tree_it_replaced() {
+    // An owned tree is a `BTreeMap`, so it sorts its keys, and the struct is declared in that order to match. A saved place at the top is a place, so `0.0` is a fraction and not an absence.
+    for fraction in [Some(0.42), Some(0.0), None] {
+        assert_eq!(
+            code_view_payload("hello", "markdown", "Markdown", false, fraction),
+            code_view_payload_as_a_tree("hello", "markdown", "Markdown", false, fraction),
+            "the payload changed for a scroll fraction of {fraction:?}"
+        );
+    }
+
+    assert_eq!(
+        code_view_payload("hello", "markdown", "Markdown", false, Some(0.42)),
+        "{\"dirty\":false,\"displayName\":\"Markdown\",\"language\":\"markdown\",\"scrollFraction\":0.42,\"text\":\"hello\"}"
+    );
+    assert_eq!(
+        code_view_payload("hello", "markdown", "Markdown", true, None),
+        "{\"dirty\":true,\"displayName\":\"Markdown\",\"language\":\"markdown\",\"text\":\"hello\"}",
+        "an absent fraction is omitted, not written as null"
+    );
+}
+
+#[test]
+fn the_written_payload_escapes_what_the_tree_escaped() {
+    let text = "a \"quote\", a \\ backslash,\na newline,\ta tab and </script>";
+
+    let payload = code_view_payload(text, "text", "Plain \"Text\"", true, Some(1.0));
+    assert_eq!(
+        payload,
+        code_view_payload_as_a_tree(text, "text", "Plain \"Text\"", true, Some(1.0))
+    );
+
+    // The characters the page would choke on, spelled out, so a change of escaper is visible here rather than in a blank editor.
+    assert!(payload.contains("a \\\"quote\\\", a \\\\ backslash,\\na newline,\\ta tab"));
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&payload).expect("payload is JSON")["text"],
+        text
+    );
+}
+
+#[test]
+fn the_written_payload_never_outgrows_what_was_reserved_for_it() {
+    // Short paragraphs with a blank line between them: 7.7% of the text is newlines against a reserve of an eighth, so a buffer reserved at the text's own length would overflow here and be moved. The eighth is sized for a document, not for a string of nothing but escapes — one that is more than an eighth newlines, tabs and quotes still overflows and is moved once, which beats the two copies an owned tree cost.
+    let text = "a paragraph nobody trims\n\n".repeat(4_000);
+    let (language, display_name) = ("markdown", "Markdown");
+    let reserved = text.len() + text.len() / 8 + language.len() + display_name.len() + 96;
+
+    let payload = code_view_payload(&text, language, display_name, false, Some(0.5));
+    assert!(
+        payload.len() <= reserved,
+        "the payload weighs {} against a reserve of {reserved}",
+        payload.len()
+    );
+    // A `Vec` that never had to grow keeps the capacity it was made with, and `String::from_utf8` takes that buffer rather than copying it — so an unchanged capacity is the proof no move happened.
+    assert_eq!(
+        payload.capacity(),
+        reserved,
+        "the buffer was moved, which is one more whole-text copy"
+    );
+}

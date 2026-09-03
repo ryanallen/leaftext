@@ -139,6 +139,8 @@ fn replace_range_splices_and_clamps_safely() {
         EditableDocument::new(PathBuf::from("c.md"), SourceText::utf8("café".to_string()));
     edit3.replace_range(3, 4, "e"); // 'é' is two bytes (3..5)
     assert_eq!(edit3.text(), "cafe");
+    assert!(edit3.undo());
+    assert_eq!(edit3.text(), "café");
 }
 
 #[test]
@@ -261,6 +263,38 @@ fn undo_and_redo_walk_one_reading_view_history_in_both_directions() {
     edit.adopt_external(SourceText::utf8("# Outside\n".to_string()));
     assert!(!edit.can_undo());
     assert!(!edit.can_redo());
+}
+
+#[test]
+fn undo_history_keeps_the_newest_two_hundred_edits() {
+    let mut edit = EditableDocument::new(PathBuf::from("doc.md"), SourceText::utf8(String::new()));
+    for _ in 0..201 {
+        let end = edit.text().len();
+        edit.replace_range(end, end, "x");
+    }
+
+    for remaining in (1..=200).rev() {
+        assert!(edit.undo());
+        assert_eq!(edit.text().len(), remaining);
+    }
+    assert!(
+        !edit.undo(),
+        "the oldest edit should have fallen off the stack"
+    );
+    assert_eq!(edit.text(), "x");
+}
+
+#[test]
+fn twenty_edits_hold_less_than_a_kilobyte_of_history() {
+    let mut edit = EditableDocument::new(
+        PathBuf::from("large.md"),
+        SourceText::utf8("a".repeat(100_000)),
+    );
+    for index in 0..20 {
+        edit.replace_range(50_000, 50_001, if index % 2 == 0 { "b" } else { "a" });
+    }
+
+    assert!(edit.history_text_bytes() < 1024);
 }
 
 #[test]
@@ -755,16 +789,26 @@ fn replace_ranges_writes_several_ranges_and_one_undo_takes_the_run_back() {
     let first = source.find("alpha one.").expect("the first block");
     let second = source.find("alpha two.").expect("the second block");
     assert!(edit.replace_ranges(&[
-        (first, first + "alpha one.".len(), "beta one."),
-        (second, second + "alpha two.".len(), "beta two."),
+        (first, first + "alpha one.".len(), "b."),
+        (
+            second,
+            second + "alpha two.".len(),
+            "a much longer replacement.",
+        ),
     ]));
     assert_eq!(
         edit.text(),
-        "# Notes\n\nbeta one.\n\nbetween café.\n\nbeta two.\n",
+        "# Notes\n\nb.\n\nbetween café.\n\na much longer replacement.\n",
         "the bytes between the replacements moved"
     );
     assert!(edit.undo(), "the replacement run recorded no undo step");
     assert_eq!(edit.text(), source);
+    assert!(edit.redo(), "the replacement run recorded no redo step");
+    assert_eq!(
+        edit.text(),
+        "# Notes\n\nb.\n\nbetween café.\n\na much longer replacement.\n"
+    );
+    assert!(edit.undo());
     assert!(
         !edit.undo(),
         "the replacement run recorded more than one undo step"
@@ -1334,4 +1378,160 @@ fn a_buffer_adopting_an_outside_change_takes_the_archive_with_it() {
         "the archive travels with the member it holds"
     );
     assert!(!doc.is_dirty(), "an adopted change is the saved baseline");
+}
+
+#[test]
+fn an_undone_reading_view_edit_reports_clean_again() {
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("# Hello\n".to_string()),
+    );
+    doc.replace_range(2, 7, "Hi");
+    assert!(
+        doc.is_dirty(),
+        "a reading-view edit leaves the buffer unsaved"
+    );
+
+    assert!(doc.undo(), "the edit recorded an undo step");
+    assert_eq!(doc.text(), "# Hello\n");
+    assert!(
+        !doc.is_dirty(),
+        "undoing back to the bytes the document opened on clears the dot"
+    );
+}
+
+#[test]
+fn a_code_view_splice_typed_back_reports_clean_again() {
+    // The code view records no undo, so this path reaches the dirty answer without ever taking an undo snapshot.
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("# Hello\n".to_string()),
+    );
+    assert!(
+        doc.splice_utf16_without_undo(7, 0, " there"),
+        "typing into a clean buffer reports the dirty state moving"
+    );
+    assert_eq!(doc.text(), "# Hello there\n");
+    assert!(doc.is_dirty());
+
+    assert!(
+        doc.splice_utf16_without_undo(7, 6, ""),
+        "typing the words back out reports the dirty state moving again"
+    );
+    assert_eq!(doc.text(), "# Hello\n");
+    assert!(
+        !doc.is_dirty(),
+        "a code-view buffer typed back to what it opened on is clean"
+    );
+}
+
+#[test]
+fn saved_text_on_an_untouched_buffer_is_what_it_opened_on() {
+    let doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("# Hello\n".to_string()),
+    );
+    assert_eq!(
+        doc.saved_text(),
+        "# Hello\n",
+        "a buffer nobody has typed in answers the text it was opened with"
+    );
+}
+
+#[test]
+fn a_multi_range_rewrite_moves_the_dirty_answer_both_ways() {
+    let source = "# Notes\n\nalpha one.\n\nbetween café.\n\nalpha two.\n";
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(source.to_string()),
+    );
+    let first = source
+        .find("alpha one")
+        .expect("the first run is in the source");
+    let second = source
+        .find("alpha two")
+        .expect("the second run is in the source");
+    assert!(doc.replace_ranges(&[
+        (first, first + "alpha".len(), "beta"),
+        (second, second + "alpha".len(), "beta"),
+    ]));
+    assert!(
+        doc.is_dirty(),
+        "a multi-range rewrite leaves the buffer unsaved"
+    );
+
+    let rewritten = doc.text().to_string();
+    let first = rewritten
+        .find("beta one")
+        .expect("the first run was rewritten");
+    let second = rewritten
+        .find("beta two")
+        .expect("the second run was rewritten");
+    assert!(doc.replace_ranges(&[
+        (first, first + "beta".len(), "alpha"),
+        (second, second + "beta".len(), "alpha"),
+    ]));
+    assert_eq!(doc.text(), source);
+    assert!(
+        !doc.is_dirty(),
+        "rewriting the ranges back to what they said clears the dot"
+    );
+}
+
+#[test]
+fn the_baseline_is_held_only_once_the_buffer_differs_from_it() {
+    // The field is private, so the buffer is asked instead: with no baseline `saved_text` hands back the live text itself, which is the same allocation. Two allocations means a second copy of the document is being held.
+    fn holds_a_baseline(doc: &EditableDocument) -> bool {
+        !std::ptr::eq(doc.saved_text().as_ptr(), doc.text().as_ptr())
+    }
+
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("# Hello\n".to_string()),
+    );
+    assert!(
+        !holds_a_baseline(&doc),
+        "a buffer nobody has typed in holds the document once"
+    );
+
+    doc.replace_range(2, 7, "Hi");
+    assert!(
+        holds_a_baseline(&doc),
+        "the first edit takes the copy dirty is answered against"
+    );
+    assert_eq!(
+        doc.saved_text(),
+        "# Hello\n",
+        "and that copy is what the document opened on"
+    );
+
+    doc.mark_saved();
+    assert!(
+        !holds_a_baseline(&doc),
+        "a save drops it: the buffer is what was written"
+    );
+
+    doc.replace_range(2, 4, "Hello");
+    assert!(holds_a_baseline(&doc));
+    doc.adopt_external(SourceText::utf8("changed on disk\n".to_string()));
+    assert!(
+        !holds_a_baseline(&doc),
+        "an adopted change drops it too, and leaves the tab clean"
+    );
+    assert!(!doc.is_dirty());
+}
+
+#[test]
+fn a_resync_that_changes_nothing_holds_no_second_copy() {
+    // The code view resyncs by handing the whole buffer back, and it is usually the same buffer. Taking a baseline there would hold a second whole document to record an edit nobody made.
+    let mut doc = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8("# Hello\n".to_string()),
+    );
+    assert!(!doc.set_text("# Hello\n".to_string()), "nothing moved");
+    assert!(!doc.is_dirty());
+    assert!(
+        std::ptr::eq(doc.saved_text().as_ptr(), doc.text().as_ptr()),
+        "the document is still held once"
+    );
 }

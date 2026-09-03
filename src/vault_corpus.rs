@@ -149,6 +149,28 @@ pub struct CorpusDocument {
     pub text: String,
 }
 
+/// What one changed file moved in the vault's held text. Two answers rather than one, because their readers want different things: the map is redrawn when the text moved at all, and the completion menu's field names are only worth walking the whole vault for when a frontmatter block did.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CorpusChange {
+    /// The held text is different afterwards.
+    pub text: bool,
+    /// A frontmatter block came, went, or reads differently, so the names the vault sets can have changed.
+    pub fields: bool,
+}
+
+impl CorpusChange {
+    /// The watcher's usual report: a path this vault does not hold, or a save whose bytes are the ones already held.
+    pub const NOTHING: Self = Self {
+        text: false,
+        fields: false,
+    };
+}
+
+/// One document's frontmatter block, lifted out without being parsed. Comparing the two blocks is what says whether a save touched the fields at all — the parse behind the menu costs a walk of the whole vault, and most saves are a line of somebody's prose.
+fn frontmatter_block(text: &str) -> Option<String> {
+    crate::store::extract_frontmatter(text).map(|block| block.body)
+}
+
 /// Every document under one vault root.
 #[derive(Debug, Clone)]
 pub struct VaultCorpus {
@@ -359,10 +381,10 @@ impl VaultCorpus {
 
     /// Bring one path up to date after the watcher reports a change: re-read it, add it if it is new, drop it if it is gone. Cheaper than re-reading the vault, and it is what keeps search and the graph live while you edit.
     ///
-    /// Returns whether the corpus is actually different afterwards. The watcher reports every write under the vault — `.git` bookkeeping, an image, a save whose bytes did not change — and the graph is redrawn off this answer, so "nothing changed" has to be sayable: unanswered, that churn tears the map down and rebuilds it over and over while someone is reading it.
-    pub fn refresh(&mut self, path: &Path) -> bool {
+    /// Returns what actually moved. The watcher reports every write under the vault — `.git` bookkeeping, an image, a save whose bytes did not change — and the graph is redrawn off this answer, so "nothing changed" has to be sayable: unanswered, that churn tears the map down and rebuilds it over and over while someone is reading it.
+    pub fn refresh(&mut self, path: &Path) -> CorpusChange {
         if !self.covers(path) {
-            return false;
+            return CorpusChange::NOTHING;
         }
         let key = path_to_string(path);
         let existing = self
@@ -372,25 +394,30 @@ impl VaultCorpus {
         match (read_document(path), existing) {
             (Some(fresh), Some(index)) => {
                 if self.documents[index] == fresh {
-                    return false;
+                    return CorpusChange::NOTHING;
                 }
+                let fields = frontmatter_block(&self.documents[index].text)
+                    != frontmatter_block(&fresh.text);
                 self.documents[index] = fresh;
-                true
+                CorpusChange { text: true, fields }
             }
             // A document that appears while the vault is open joins it under the same two limits the first read held to, or the corpus grows past them one save at a time.
             (Some(fresh), None)
                 if self.documents.len() < MAX_CORPUS_DOCUMENTS
                     && self.held_bytes() < MAX_CORPUS_BYTES =>
             {
+                // A document nothing held before brings whatever it sets, so any block at all is a name the menu may now owe.
+                let fields = frontmatter_block(&fresh.text).is_some();
                 self.documents.push(fresh);
-                true
+                CorpusChange { text: true, fields }
             }
-            (Some(_), None) => false,
+            (Some(_), None) => CorpusChange::NOTHING,
             (None, Some(index)) => {
+                let fields = frontmatter_block(&self.documents[index].text).is_some();
                 self.documents.remove(index);
-                true
+                CorpusChange { text: true, fields }
             }
-            (None, None) => false,
+            (None, None) => CorpusChange::NOTHING,
         }
     }
 

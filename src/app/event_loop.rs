@@ -378,7 +378,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 wanted,
             }) => {
                 // Answered only by the last slice of the read still being waited for, in the vault still on screen — `deliver_corpus` throws the rest away.
-                let hints = deliver_corpus(
+                deliver_corpus(
                     &mut vault_state,
                     &proxy,
                     root,
@@ -389,7 +389,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     last,
                     wanted,
                 );
-                if let Some(hints) = hints {
+            }
+            Event::UserEvent(UserEvent::FilterHintsReady { hints, corpus }) => {
+                if filter_hints_are_current(&mut vault_state, corpus) {
                     run_page_script(
                         reader.page(),
                         &filter_hints_script(&hints),
@@ -1197,6 +1199,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             },
             _ => {}
         }
+
+        // Whatever this turn did to the vault's text, the walk behind the completion menu starts here: the doors that move that text are not all places a worker can be started from.
+        start_owed_filter_hints(&mut vault_state, &proxy);
 
         if !anything_to_persist {
             return;

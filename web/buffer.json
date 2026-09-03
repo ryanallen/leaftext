@@ -170,11 +170,23 @@
           "what": "several block ranges replaced in one buffer edit",
           "kind": "blocks",
           "blocks": [
-            { "block": "alpha here.", "text_in": "beta here." },
-            { "block": "alpha there.", "text_in": "beta there." }
+            { "block": "alpha here.", "text_in": "b." },
+            { "block": "alpha there.", "text_in": "a much longer replacement." }
           ],
           "changed": true,
-          "text": "# Replace\n\nbeta here.\n\nmiddle untouched.\n\nbeta there.\n"
+          "text": "# Replace\n\nb.\n\nmiddle untouched.\n\na much longer replacement.\n"
+        },
+        {
+          "what": "one press of undo takes the whole multi-range rewrite back",
+          "kind": "undo",
+          "changed": true,
+          "text": "# Replace\n\nalpha here.\n\nmiddle untouched.\n\nalpha there.\n"
+        },
+        {
+          "what": "one press of redo puts the whole multi-range rewrite forward again",
+          "kind": "redo",
+          "changed": true,
+          "text": "# Replace\n\nb.\n\nmiddle untouched.\n\na much longer replacement.\n"
         }
       ]
     },

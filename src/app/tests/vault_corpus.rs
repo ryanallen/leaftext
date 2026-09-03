@@ -146,7 +146,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         "a vault still being read was called whole"
     );
     assert!(
-        first.hints.is_none(),
+        !state.hints_owed,
         "the completion menu was filled from part of a vault"
     );
     assert_eq!(state.corpus_generation, started + 1);
@@ -196,7 +196,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
         !state.corpus_loading,
         "a finished read left the vault looking unread"
     );
-    assert!(last.hints.is_some(), "the completion menu was never filled");
+    assert!(state.hints_owed, "the completion menu was never filled");
     assert_eq!(state.corpus_generation, started + 3);
 }
 
@@ -563,7 +563,7 @@ fn the_preview_starts_the_text_and_the_first_sorted_slice_throws_it_away() {
         "the preview did not answer the query that paid for the walk"
     );
     assert!(
-        preview.hints.is_none() && preview.graph.is_none(),
+        !state.hints_owed && preview.graph.is_none(),
         "the preview filled the completion menu or drew the map off one folder"
     );
 
@@ -626,7 +626,7 @@ fn the_preview_starts_the_text_and_the_first_sorted_slice_throws_it_away() {
         "a finished read still called its text partial"
     );
     assert!(
-        last.hints.is_some(),
+        state.hints_owed,
         "the completion menu was never filled from the whole vault"
     );
     assert!(
@@ -845,7 +845,7 @@ fn the_vaults_text_is_patched_for_every_format_the_watcher_reports() {
             continue;
         }
         assert!(
-            corpus.refresh(&changed),
+            corpus.refresh(&changed).text,
             "a new .{extension} under the vault must join the corpus"
         );
     }
@@ -888,7 +888,7 @@ fn a_change_made_during_a_read_lands_once_when_the_read_ends() {
     // Saved before the read had handed over anything at all.
     fs::write(&note, "the note says dharma").expect("the note is saved");
     assert!(
-        !record_or_refresh_corpus_path(&mut state, &note),
+        !record_or_refresh_corpus_path(&mut state, &note).text,
         "a change was patched into text the read still owns"
     );
 
@@ -906,7 +906,7 @@ fn a_change_made_during_a_read_lands_once_when_the_read_ends() {
 
     // Saved again between slices, this time to a document the read has not reached.
     fs::write(&sibling, "the sibling says dharma").expect("the sibling is saved");
-    assert!(!record_or_refresh_corpus_path(&mut state, &sibling));
+    assert!(!record_or_refresh_corpus_path(&mut state, &sibling).text);
 
     let last = absorb_corpus_slice(
         &mut state,
@@ -998,7 +998,7 @@ fn a_change_after_the_read_refreshes_the_held_text_at_once() {
 
     fs::write(&note, "the note says dharma").expect("the note is saved");
     assert!(
-        record_or_refresh_corpus_path(&mut state, &note),
+        record_or_refresh_corpus_path(&mut state, &note).text,
         "a save against a finished vault moved nothing"
     );
     let corpus = state.corpus.as_ref().expect("the vault's text is held");
@@ -1015,4 +1015,169 @@ fn a_change_after_the_read_refreshes_the_held_text_at_once() {
     );
 
     fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+/// The names the completion menu would be offered, walked over the vault as it stands.
+fn hint_names(state: &VaultState) -> Vec<String> {
+    state
+        .corpus
+        .as_ref()
+        .expect("the vault's text is held")
+        .filter_hints()
+        .fields
+        .into_iter()
+        .map(|field| field.name)
+        .collect()
+}
+
+/// A vault of two notes on disk, held as this state's text, with the read finished.
+fn vault_with_fields(label: &str) -> (PathBuf, PathBuf, VaultState) {
+    let dir = scratch_dir(label);
+    let canonical = fs::canonicalize(&dir).expect("fixture directory canonicalizes");
+    let root = plain_event_path(canonical);
+    fs::write(root.join("a.md"), "---\nstatus: open\n---\n\n# A\n").expect("fixture note written");
+    fs::write(root.join("b.md"), "---\nowner: mai\n---\n\n# B\n").expect("fixture note written");
+
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    state.corpus = Some(Arc::new(VaultCorpus::read(&root)));
+    // The read that filled it has handed over its last slice, so the menu is already owed one walk.
+    state.hints_owed = false;
+    (dir, root, state)
+}
+
+#[test]
+fn a_note_that_gains_a_field_puts_its_name_in_the_completion_menu() {
+    let (dir, root, mut state) = vault_with_fields("hints-gained");
+    assert!(!hint_names(&state).contains(&"project".to_string()));
+
+    fs::write(
+        root.join("a.md"),
+        "---\nstatus: open\nproject: solo\n---\n\n# A\n",
+    )
+    .expect("the field is written");
+    let moved = record_or_refresh_corpus_path(&mut state, &root.join("a.md"));
+
+    assert!(moved.fields, "the new field did not ask for a fresh walk");
+    assert!(
+        state.hints_owed,
+        "a field written into a note left the menu offering the vault's old names"
+    );
+    assert!(
+        hint_names(&state).contains(&"project".to_string()),
+        "the walk over the patched text still does not know the field"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn the_last_note_to_drop_a_field_takes_its_name_out_of_the_completion_menu() {
+    let (dir, root, mut state) = vault_with_fields("hints-dropped");
+    assert!(hint_names(&state).contains(&"owner".to_string()));
+
+    // The only note that set it, rewritten without it — the direction a menu that only ever grows can never answer.
+    fs::write(root.join("b.md"), "# B\n").expect("the field is removed");
+    let moved = record_or_refresh_corpus_path(&mut state, &root.join("b.md"));
+
+    assert!(
+        moved.fields,
+        "the dropped field did not ask for a fresh walk"
+    );
+    assert!(state.hints_owed);
+    assert!(
+        !hint_names(&state).contains(&"owner".to_string()),
+        "the menu still completes to a field nothing in the vault sets"
+    );
+
+    // And a save that leaves the frontmatter alone asks for nothing, so the page is not rewritten on every keystroke somebody saves.
+    state.hints_owed = false;
+    fs::write(
+        root.join("a.md"),
+        "---\nstatus: open\n---\n\n# A\n\nmore prose\n",
+    )
+    .expect("the body is written");
+    let body_only = record_or_refresh_corpus_path(&mut state, &root.join("a.md"));
+    assert!(body_only.text && !body_only.fields);
+    assert!(
+        !state.hints_owed,
+        "an edit to a note's prose asked for a walk of the whole vault"
+    );
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_walk_overtaken_by_a_later_one_never_reaches_the_page() {
+    let mut state = VaultState::load(None);
+    state.corpus_generation = 7;
+
+    // The newer walk lands first and is the answer.
+    assert!(filter_hints_are_current(&mut state, 7));
+    // The one it overtook saw older text, so it is dropped rather than drawn over the newer list.
+    assert!(!filter_hints_are_current(&mut state, 5));
+    // And the same answer arriving twice is not a second answer.
+    assert!(!filter_hints_are_current(&mut state, 7));
+
+    // Leaving the vault moves the number past every walk still running for it.
+    state.corpus = Some(Arc::new(corpus_of(&["/vault/note.md"])));
+    state.corpus_generation = 9;
+    state.drop_corpus();
+    assert!(
+        !filter_hints_are_current(&mut state, 9),
+        "a walk over the vault just left was drawn into the menu"
+    );
+    assert!(
+        !state.hints_owed,
+        "leaving a vault left a walk owed for the one before it"
+    );
+}
+
+#[test]
+fn a_change_to_a_file_the_vault_does_not_hold_asks_for_no_walk() {
+    let (dir, root, mut state) = vault_with_fields("hints-uncovered");
+
+    // A picture, git's own bookkeeping, and a document outside the vault: none of them is the corpus's business.
+    for path in [
+        root.join("diagram.png"),
+        root.join(".git").join("index"),
+        dir.join("outside.md"),
+    ] {
+        let moved = record_or_refresh_corpus_path(&mut state, &path);
+        assert_eq!(moved, CorpusChange::NOTHING);
+        assert!(
+            !state.hints_owed,
+            "{} asked the menu for a walk of the whole vault",
+            path.display()
+        );
+    }
+
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn a_read_no_search_asked_for_still_leaves_the_completion_menu_a_walk() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+    // Nothing is parked: this read was started by the map or the code view, which is the read the reader who has not searched yet gets.
+    assert!(state.pending_search.is_none());
+    let reading = state.corpus_read.claim();
+
+    absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("one")],
+        false,
+        Vec::new(),
+        true,
+        true,
+        reading,
+    )
+    .expect("the only slice is for the vault on screen");
+
+    assert!(
+        state.hints_owed,
+        "a read no search asked for left the completion menu empty"
+    );
 }

@@ -14,7 +14,7 @@ let librarySearchUnderstood = '';
 let librarySearchUnknownFields = [];
 // Folders under the vault the read did not go into because they hold generated files. The count line says how many and carries their names, because a vault that quietly read three quarters of itself is worse than one that read all of it slowly.
 let librarySearchSkipped = [];
-// The vault's field names and the values each holds, pushed once when its text is read. What the completion menu offers; empty until a vault is open.
+// The vault's field names and the values each holds, pushed when its text is read and again whenever a note's frontmatter moves. What the completion menu offers; empty until a vault is open.
 let filterHintFields = [];
 // What the completion menu is offering under the search box, and which row is picked.
 let filterMenuItems = [];
@@ -220,7 +220,7 @@ window.leafSetSearchResults = (payload) => {
   }
   renderLibrarySearch();
 };
-// What the box can offer as you type: the vault's own field names and the values each is known to hold, plus the three built-in names that are not frontmatter at all. Pushed once per vault read, so a keystroke costs nothing.
+// What the box can offer as you type: the vault's own field names and the values each is known to hold, plus the three built-in names that are not frontmatter at all. Walked on the host's worker and pushed whole, so a keystroke costs nothing and a field written a moment ago is already here.
 window.leafSetFilterHints = (payload) => {
   const data = payload || {};
   filterHintFields = Array.isArray(data.fields) ? data.fields : [];

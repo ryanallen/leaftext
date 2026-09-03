@@ -69,6 +69,8 @@ pub(crate) enum UserEvent {
         source: GraphSource,
         graph: DocumentGraph,
     },
+    /// The completion menu's field names, walked over the whole vault on a worker. `corpus` is the version of the vault's text it saw, so a walk overtaken by a later one is dropped rather than drawn over the newer list.
+    FilterHintsReady { hints: FilterHints, corpus: u64 },
     SearchReady {
         scope: Option<PathBuf>,
         query: String,

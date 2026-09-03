@@ -890,7 +890,7 @@ fn the_biggest_documents_are_what_a_full_vault_drops() {
     let held = corpus.documents.len();
     let fresh = root.join("written-just-now.md");
     write(&fresh, "# Fresh\n\nOn sitting still.\n");
-    assert!(!corpus.refresh(&fresh));
+    assert!(!corpus.refresh(&fresh).text);
     assert_eq!(corpus.documents.len(), held);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -1086,7 +1086,7 @@ fn a_longer_query_scans_only_what_the_shorter_one_matched() {
 
     // A document outside the set cannot be found, however well it matches — which is why the caller may only narrow while the vault's text has not moved. The app bumps a generation on every patch, and that is what refuses the narrowing.
     write(&root.join("four.md"), "# Four\n\nMore dharma still.\n");
-    assert!(corpus.refresh(&root.join("four.md")));
+    assert!(corpus.refresh(&root.join("four.md")).text);
     let stale = corpus
         .search_until(&plain("dharma"), Some(&wide.matched), &|| false)
         .expect("nothing overtook it");
@@ -1300,7 +1300,7 @@ fn an_alias_edited_on_disk_moves_the_link_without_a_restart() {
 
     // The alias is the only thing that changed, and it is in the value the watcher compares, so the link stops resolving without the vault being read again.
     write(&note, "# Long Name\n");
-    assert!(corpus.refresh(&note));
+    assert!(corpus.refresh(&note).text);
     assert!(corpus.graph(&GraphRequest::default()).edges.is_empty());
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -1320,19 +1320,19 @@ fn the_watcher_patches_one_file_rather_than_re_reading_the_vault() {
 
     // Edited: the new text is searchable, the old is not.
     write(&root.join("b.md"), "# B\n\nRewritten wording.\n");
-    assert!(corpus.refresh(&root.join("b.md")));
+    assert!(corpus.refresh(&root.join("b.md")).text);
     assert_eq!(corpus.documents.len(), 2);
     assert!(corpus.search("original").hits.is_empty());
     assert_eq!(titles(&corpus.search("rewritten")), vec!["b"]);
 
     // Added: a file that was not there at read time joins.
     write(&root.join("c.md"), "# C\n\nBrand new.\n");
-    assert!(corpus.refresh(&root.join("c.md")));
+    assert!(corpus.refresh(&root.join("c.md")).text);
     assert_eq!(titles(&corpus.search("brand")), vec!["c"]);
 
     // Deleted: gone from both, with nothing to prune and no stale node.
     fs::remove_file(root.join("b.md")).expect("file removed");
-    assert!(corpus.refresh(&root.join("b.md")));
+    assert!(corpus.refresh(&root.join("b.md")).text);
     assert_eq!(
         labels(&corpus.graph(&GraphRequest::default())),
         vec!["a", "c"]
@@ -1342,7 +1342,7 @@ fn the_watcher_patches_one_file_rather_than_re_reading_the_vault() {
 
     // Something outside the vault is not the vault's business.
     write(&dir.join("outside.md"), "# Outside\n");
-    assert!(!corpus.refresh(&dir.join("outside.md")));
+    assert!(!corpus.refresh(&dir.join("outside.md")).text);
     assert_eq!(corpus.documents.len(), 2);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -1358,14 +1358,14 @@ fn a_change_that_changed_nothing_says_so() {
 
     // The graph on screen is redrawn off this answer, so everything the watcher reports that cannot have moved a document has to answer no. A vault is a folder someone works in: most of what happens in it is not a document.
     write(&root.join(".git").join("index"), "not a document\n");
-    assert!(!corpus.refresh(&root.join(".git").join("index")));
+    assert!(!corpus.refresh(&root.join(".git").join("index")).text);
     write(&root.join("diagram.png"), "not a document either\n");
-    assert!(!corpus.refresh(&root.join("diagram.png")));
+    assert!(!corpus.refresh(&root.join("diagram.png")).text);
     // Nor is a document whose bytes came back the same -- a watcher fires more than once for one save, and a touch is not an edit.
     write(&root.join("a.md"), "# A\n\n[c](./c.md)\n");
-    assert!(!corpus.refresh(&root.join("a.md")));
+    assert!(!corpus.refresh(&root.join("a.md")).text);
     // A link to a file that is not there is not a node, so nothing changes when one that was never in the corpus is reported gone.
-    assert!(!corpus.refresh(&root.join("c.md")));
+    assert!(!corpus.refresh(&root.join("c.md")).text);
     assert_eq!(corpus.documents.len(), 1);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
@@ -1599,6 +1599,90 @@ fn a_query_with_syntax_in_it_is_never_narrowed_to_the_last_answers_matches() {
         assert!(!whole.hits.is_empty(), "{typed} finds something");
     }
     assert_eq!(filtered(&corpus, full), vec!["plan", "shipped"]);
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_note_whose_body_changed_moved_the_text_and_not_the_field_names() {
+    let dir = corpus_dir("fields-body-only");
+    let root = dir.join("vault");
+    let note = root.join("a.md");
+    write(
+        &note,
+        "---\nstatus: open\n---\n\n# A\n\nOriginal wording.\n",
+    );
+
+    let mut corpus = VaultCorpus::read(&root);
+
+    // The prose moved and the block above it did not, which is what most saves are: the menu's names cannot have changed, so the whole-vault walk behind them is skipped.
+    write(
+        &note,
+        "---\nstatus: open\n---\n\n# A\n\nRewritten wording.\n",
+    );
+    let moved = corpus.refresh(&note);
+    assert!(moved.text, "the body edit did not reach the held text");
+    assert!(
+        !moved.fields,
+        "an edit that left the frontmatter alone claimed the vault's field names had moved"
+    );
+
+    // A save that wrote the same bytes back moves neither.
+    write(
+        &note,
+        "---\nstatus: open\n---\n\n# A\n\nRewritten wording.\n",
+    );
+    assert_eq!(
+        corpus.refresh(&note),
+        crate::vault_corpus::CorpusChange::NOTHING
+    );
+
+    fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn a_field_gained_lost_appearing_or_deleted_moves_the_vaults_field_names() {
+    let dir = corpus_dir("fields-moved");
+    let root = dir.join("vault");
+    let note = root.join("a.md");
+    write(&note, "---\nstatus: open\n---\n\n# A\n");
+    write(&root.join("keeper.md"), "# Keeper\n");
+
+    let mut corpus = VaultCorpus::read(&root);
+
+    // Gains a field.
+    write(&note, "---\nstatus: open\nproject: solo\n---\n\n# A\n");
+    assert!(
+        corpus.refresh(&note).fields,
+        "a note that gained a field did not move the vault's field names"
+    );
+
+    // Loses its last one, which is the direction a menu that only ever grows can never answer.
+    write(&note, "# A\n");
+    assert!(
+        corpus.refresh(&note).fields,
+        "a note that dropped its last field did not move the vault's field names"
+    );
+
+    // Appears, carrying a block nothing held before.
+    let fresh = root.join("b.md");
+    write(&fresh, "---\nowner: mai\n---\n\n# B\n");
+    assert!(
+        corpus.refresh(&fresh).fields,
+        "a note that appeared with frontmatter did not move the vault's field names"
+    );
+
+    // Deleted, taking its names with it.
+    fs::remove_file(&fresh).expect("file removed");
+    assert!(
+        corpus.refresh(&fresh).fields,
+        "a deleted note's fields were left standing in the vault's field names"
+    );
+
+    // A note that never had a block leaves them alone on the way out.
+    fs::remove_file(root.join("keeper.md")).expect("file removed");
+    let gone = corpus.refresh(&root.join("keeper.md"));
+    assert!(gone.text && !gone.fields);
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
