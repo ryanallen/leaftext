@@ -99,8 +99,8 @@ fn carries_cache_tag(dir: &Path) -> bool {
     tag.read_exact(&mut head).is_ok() && head.as_slice() == CACHE_TAG_SIGNATURE
 }
 
-/// Cap on returned hits: past this, a query is one to narrow rather than scroll.
-const SEARCH_LIMIT: usize = 50;
+/// Cap on returned documents: past this, a query is one to narrow rather than scroll. Sent to the page with every answer, so a partial answer's merged list is held to the same ceiling one answer is rather than growing past it while the vault is read.
+pub(crate) const SEARCH_LIMIT: usize = 50;
 
 /// How many appearances of one term are worth counting. Past this the score is the same either way, so the walk stops rather than counting a whole document.
 const SCORE_COUNT_CAP: usize = 20;

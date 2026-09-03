@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// One ticket pays for the complete suite once, at the end of its build. This refuses every other automatic caller.
+// The complete suite is the owner's to start, and this refuses every pass that would start one behind them.
 //
 //   node scripts/check-suite-callers.mjs           the real skills (`just verify`)
 //   node scripts/check-suite-callers.mjs --check   the same, after the self-test on made-up skills
 //
 // Without it the calls come back one at a time, in whichever pass feels unproven that week, and nobody notices until the whole cost is back: a two-phase ticket once paid for a 54-second suite eight times — after each phase, at the end of the build, twice inside the release, once inside the release command itself, and twice more while the ticket was retired.
+//
+// The build is refused along with the rest, and that is the newer half of the rule. The suite is the whole checkout rather than one ticket, so two builds beside each other pay twice for one answer — and a suite red on a file the build never opened leaves that pass waiting on another session with nothing of its own left to do. One search ticket finished its phase and then sat twenty minutes on a generated file another build was still moving, while the owner watched a build that was already done.
 //
 // What every other pass runs instead is the narrow check about what it wrote: the format tests, the design checks, the front-end boot, the document checks, the Rust documentation build. Those are seconds and they prove the thing that moved. The suite recompiles the app and reruns the tests, and after a build nothing between it and the tag edits a line of either.
 
@@ -14,11 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// The two skills the complete gate belongs to. `check` is the gate written down, so every sentence in it is about running the suite; `dev` is the one pass that calls it without being asked, once, after its last phase.
-export const GATE_OWNERS = new Set(['check', 'dev']);
-
-/// How many automatic calls the build is allowed. One: after the last phase.
-export const BUILD_CALLS = 1;
+// The two skills the complete gate belongs to. `check` is the gate written down, so every sentence in it is about running the suite; `test` is the pass the owner says out loud, which reads the running order for the tickets a build has actually landed and points the gate at that batch. Every other skill, the build included, may name the suite and may not run it.
+export const GATE_OWNERS = new Set(['check', 'test']);
 
 // A directive is one sentence telling a reader to run the complete gate. Read as a sentence rather than a line, because a paragraph is one line in this tree and a line-wide match would read a whole argument as a call.
 //
@@ -44,30 +43,23 @@ export function gateDirectives(text) {
   return found;
 }
 
-/// Every skill that automatically runs the complete gate when it should not, and a build that runs it more than once.
+/// Every skill that runs the complete gate when it should not.
 export function ownershipFaults(skills) {
   const faults = [];
   for (const [name, text] of skills) {
-    const found = gateDirectives(text);
-    if (!found.length) continue;
-    if (name === 'check') continue;
-    if (!GATE_OWNERS.has(name)) {
-      for (const { line, sentence } of found) faults.push(`${name} runs the complete suite at line ${line}: ${sentence}`);
-      continue;
-    }
-    if (found.length > BUILD_CALLS) {
-      faults.push(`dev runs the complete suite ${found.length} times and owns ${BUILD_CALLS}: ${found.map((f) => `line ${f.line}`).join(', ')}`);
+    if (GATE_OWNERS.has(name)) continue;
+    for (const { line, sentence } of gateDirectives(text)) {
+      faults.push(`${name} runs the complete suite at line ${line}: ${sentence}`);
     }
   }
   return faults;
 }
 
-/// A build with no automatic call at all is the other way this rots: nothing would then prove a ticket before it ships.
-export function buildOwnsItsCall(skills) {
-  const dev = skills.find(([name]) => name === 'dev');
-  if (!dev) return 'there is no build skill to own the one check';
-  const found = gateDirectives(dev[1]);
-  if (!found.length) return 'the build skill no longer runs the complete suite at all, so nothing proves a ticket before it ships';
+/// The gate with nobody left to run it is the other way this rots: the owner's own pass has to still call it, or a ticket ships proved by nothing.
+export function someoneOwnsTheGate(skills) {
+  const owner = skills.find(([name]) => name === 'test');
+  if (!owner) return 'there is no /test skill for the owner to run the suite from';
+  if (!gateDirectives(owner[1]).length) return 'the /test skill no longer runs the complete suite at all, so nothing the owner asks for proves a ticket';
   return '';
 }
 
@@ -95,12 +87,13 @@ export function selfTest() {
   const fails = [];
   const one = (name, text) => ownershipFaults([[name, text]]);
 
-  // The build's one call passes, and a second one in the same file does not.
-  if (one('dev', 'Then run [`/check`](../check/SKILL.md), once.\n').length) fails.push("the build's one call was refused");
-  if (one('dev', 'Run `/check` after each phase.\nThen run `/check` again at the end.\n').length !== 1) fails.push('a build running the suite twice was let through');
+  // The build is refused now as well, its one call as much as a second: the gate is the owner's to start.
+  if (!one('dev', 'Then run [`/check`](../check/SKILL.md), once.\n').length) fails.push("the build's own call was let through");
+  if (one('dev', 'Run `/check` after each phase.\nThen run `/check` again at the end.\n').length !== 2) fails.push('a build running the suite twice was not refused both times');
 
-  // The gate skill itself is every sentence about running the suite, so it is never counted.
+  // The two gate skills are every sentence about running the suite, so neither is counted.
   if (one('check', 'Run `just verify` from the top, then run it again.\n').length) fails.push('the gate skill was held to its own rule');
+  if (one('test', 'Run `/sync-tests` across the batch, then run `just verify` once.\n').length) fails.push("the owner's gate pass was held to the rule it exists to run");
 
   // Every other pass is refused, whatever it calls itself.
   for (const name of ['git-release', 'done', 'ticket', 'design', 'pm', 'shell-fragment', 'add-format', 'design-tokens', 'code-comments', 'sync-docs', 'sync-tests']) {
@@ -111,8 +104,8 @@ export function selfTest() {
   // What is not a call: a consequence, a refusal, and a narrow recipe.
   if (one('pm', 'A cell that disagrees fails when `just verify` runs.\n').length) fails.push('a sentence saying the suite fails on something was read as a call to run it');
   if (one('sync-docs', 'A page written and left fails the build, because `just check-doc-images` runs inside `just verify`.\n').length) fails.push('a sentence explaining where a narrow check runs was read as a call');
-  if (one('add-format', 'Run the format tests, never the complete suite: `just verify` belongs to the build that called this.\n').length) fails.push('a sentence refusing the gate was read as a call to run it');
-  if (one('code-comments', 'Build Rust documentation, and do not run `/check` — the build that called this pays for it once.\n').length) fails.push('a refusal written the other way round was read as a call');
+  if (one('add-format', 'Run the format tests, never the complete suite: `just verify` belongs to the pass the owner starts.\n').length) fails.push('a sentence refusing the gate was read as a call to run it');
+  if (one('code-comments', 'Build Rust documentation, and do not run `/check` — the owner pays for the suite once.\n').length) fails.push('a refusal written the other way round was read as a call');
   if (one('design-tokens', 'Run `just check-tokens check-icons check-literals`.\n').length) fails.push('a narrow check was read as the complete gate');
   if (one('design-tokens', 'An edit there is lost on the next run, and `just verify` fails first.\n').length) fails.push('`run` as a noun was read as an instruction to run');
   if (one('sync-tests', 'A self-test at the top of its own run, and a line in `just verify`.\n').length) fails.push('a rule about where a new check belongs was read as a call');
@@ -122,10 +115,10 @@ export function selfTest() {
   const mixed = one('done', 'This pass runs no complete gate. Then run `/check` anyway.\n');
   if (mixed.length !== 1) fails.push(`a line carrying a refusal and a call answered ${mixed.length} faults rather than the one call`);
 
-  // The build losing its call is the other way this rots.
-  if (buildOwnsItsCall([['dev', 'Tick the box and stop.\n']]) === '') fails.push('a build that no longer runs the suite at all was let through');
-  if (buildOwnsItsCall([['check', 'Run `just verify`.\n']]) === '') fails.push('a tree with no build skill was let through');
-  if (buildOwnsItsCall([['dev', 'Then run [`/check`](../check/SKILL.md), once.\n']]) !== '') fails.push("the build's own call was not recognized");
+  // The gate with nobody left to run it is the other way this rots.
+  if (someoneOwnsTheGate([['test', 'Tick the box and stop.\n']]) === '') fails.push('an owner pass that no longer runs the suite at all was let through');
+  if (someoneOwnsTheGate([['dev', 'Run `just verify`.\n']]) === '') fails.push('a tree with no /test skill was let through');
+  if (someoneOwnsTheGate([['test', 'Then run [`/check`](../check/SKILL.md) over the batch.\n']]) !== '') fails.push("the owner pass's own call was not recognized");
 
   return fails;
 }
@@ -142,15 +135,15 @@ function main() {
 
   const skills = skillsInTree();
   const problems = ownershipFaults(skills);
-  const lost = buildOwnsItsCall(skills);
+  const lost = someoneOwnsTheGate(skills);
   if (lost) problems.push(lost);
   if (problems.length) {
-    console.error('a ticket pays for the complete suite once, at the end of its build, and something else is running it:');
+    console.error('the complete suite is the owner to start, and something else is starting one:');
     for (const problem of problems) console.error(`  ${problem}`);
     console.error('Run the narrow checks about what that pass writes instead — the format tests, the design checks, the front-end boot, the document checks, the Rust documentation build.');
     process.exit(1);
   }
-  console.log(`suite callers: ${skills.length} skills read, the build owns the one automatic run of the complete suite and still has it, and every other pass proves what it writes with the narrow checks about it`);
+  console.log(`suite callers: ${skills.length} skills read, the owner's own pass holds the one run of the complete suite, and every other pass proves what it writes with the narrow checks about it`);
 }
 
 if (process.argv[1] && process.argv[1].endsWith('check-suite-callers.mjs')) {

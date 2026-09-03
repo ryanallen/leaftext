@@ -1,6 +1,4 @@
-//! Reading what git prints, and deciding what to call things.
-//!
-//! Only the parts that take a string and give one back. Whether `git push` works is git's business and the machine's, and a test that shelled out to find out would be testing the machine.
+//! Reading what git prints and proving the local repository operations.
 
 use crate::git::{
     commit_message, count_changes, failure_cause, gitignore_addition, identity_value,
@@ -8,6 +6,36 @@ use crate::git::{
 };
 use crate::repo_name_for_vault;
 use crate::tests::scratch_dir;
+use std::path::Path;
+use std::process::Command;
+
+fn run_git(dir: &Path, args: &[&str]) {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(dir)
+        .output()
+        .expect("git starts");
+    assert!(
+        output.status.success(),
+        "git {} failed: {}",
+        args.join(" "),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+fn init_test_repo(dir: &Path) {
+    run_git(dir, &["init", "-b", "main"]);
+    run_git(dir, &["config", "user.name", "Leaftext Test"]);
+    run_git(dir, &["config", "user.email", "leaftext@example.invalid"]);
+}
+
+fn add_scratch_remote(repo: &Path, label: &str) -> std::path::PathBuf {
+    let remote = scratch_dir(label);
+    run_git(&remote, &["init", "--bare"]);
+    let remote_path = remote.to_string_lossy().into_owned();
+    run_git(repo, &["remote", "add", "origin", &remote_path]);
+    remote
+}
 
 #[test]
 fn ahead_and_behind_come_out_of_the_pair_git_prints() {
@@ -27,6 +55,89 @@ fn a_change_count_is_the_lines_of_porcelain() {
     assert_eq!(count_changes(""), 0);
     // A trailing newline is not a fourth file.
     assert_eq!(count_changes(" M one.md\n"), 1);
+}
+
+#[test]
+fn inner_repository_work_is_left_out_but_its_moved_commit_is_counted() {
+    let outer = scratch_dir("git-inner-status");
+    init_test_repo(&outer);
+    let inner = outer.join("inner");
+    std::fs::create_dir(&inner).expect("inner repository folder is created");
+    init_test_repo(&inner);
+    std::fs::write(inner.join("note.md"), "first\n").expect("inner note is written");
+    run_git(&inner, &["add", "note.md"]);
+    run_git(&inner, &["commit", "-m", "First inner note"]);
+    run_git(&outer, &["add", "inner"]);
+    run_git(&outer, &["commit", "-m", "Track inner repository"]);
+
+    std::fs::write(inner.join("note.md"), "changed\n").expect("inner note is changed");
+    assert_eq!(crate::inspect_vault_repo(&outer).changed, 0);
+
+    run_git(&inner, &["add", "note.md"]);
+    run_git(&inner, &["commit", "-m", "Change inner note"]);
+    assert_eq!(crate::inspect_vault_repo(&outer).changed, 1);
+
+    let _ = std::fs::remove_dir_all(&outer);
+}
+
+#[test]
+fn inner_repository_work_syncs_without_a_commit() {
+    let outer = scratch_dir("git-inner-sync");
+    init_test_repo(&outer);
+    let inner = outer.join("inner");
+    std::fs::create_dir(&inner).expect("inner repository folder is created");
+    init_test_repo(&inner);
+    std::fs::write(inner.join("note.md"), "first\n").expect("inner note is written");
+    run_git(&inner, &["add", "note.md"]);
+    run_git(&inner, &["commit", "-m", "First inner note"]);
+    run_git(&outer, &["add", "inner"]);
+    run_git(&outer, &["commit", "-m", "Track inner repository"]);
+    let remote = add_scratch_remote(&outer, "git-inner-sync-remote");
+    run_git(&outer, &["push", "-u", "origin", "main"]);
+
+    std::fs::write(inner.join("note.md"), "changed\n").expect("inner note is changed");
+    let report = crate::sync_vault_repo(&outer).expect("inner work does not stop a sync");
+    assert_eq!(report.committed, 0);
+    assert!(report.pulled);
+    assert!(report.pushed);
+
+    let _ = std::fs::remove_dir_all(&outer);
+    let _ = std::fs::remove_dir_all(&remote);
+}
+
+#[test]
+fn ordinary_work_still_commits_during_sync() {
+    let repo = scratch_dir("git-ordinary-sync");
+    init_test_repo(&repo);
+    std::fs::write(repo.join("note.md"), "first\n").expect("note is written");
+    run_git(&repo, &["add", "note.md"]);
+    run_git(&repo, &["commit", "-m", "First note"]);
+    let remote = add_scratch_remote(&repo, "git-ordinary-sync-remote");
+    run_git(&repo, &["push", "-u", "origin", "main"]);
+
+    std::fs::write(repo.join("note.md"), "changed\n").expect("note is changed");
+    let report = crate::sync_vault_repo(&repo).expect("ordinary work syncs");
+    assert_eq!(report.committed, 1);
+    assert_eq!(crate::inspect_vault_repo(&repo).changed, 0);
+
+    let _ = std::fs::remove_dir_all(&repo);
+    let _ = std::fs::remove_dir_all(&remote);
+}
+
+#[test]
+fn an_unborn_repository_still_makes_its_first_commit_during_sync() {
+    let repo = scratch_dir("git-first-sync");
+    init_test_repo(&repo);
+    let remote = add_scratch_remote(&repo, "git-first-sync-remote");
+    std::fs::write(repo.join("note.md"), "first\n").expect("note is written");
+
+    let report = crate::sync_vault_repo(&repo).expect("the first work syncs");
+    assert_eq!(report.committed, 1);
+    assert!(report.pushed);
+    assert_eq!(crate::inspect_vault_repo(&repo).changed, 0);
+
+    let _ = std::fs::remove_dir_all(&repo);
+    let _ = std::fs::remove_dir_all(&remote);
 }
 
 #[test]

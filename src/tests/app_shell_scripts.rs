@@ -601,3 +601,47 @@ fn the_host_and_the_page_agree_on_every_call() {
         "the page defines functions no host call reaches: {unused:?}"
     );
 }
+
+/// The page holds a partial answer's merged rows to the ceiling the host cut that answer at, so the number sent has to be the number the search really applies rather than the same limit written down a second time.
+#[test]
+fn a_search_payload_carries_the_document_ceiling_the_search_cut_it_at() {
+    let documents = (0..80)
+        .map(|index| CorpusDocument {
+            path: format!("/vault/note-{index}.md"),
+            label: format!("note-{index}"),
+            aliases: Vec::new(),
+            text: "A dharma talk, and a dharma talk again, and a dharma talk once more."
+                .to_string(),
+        })
+        .collect();
+    let corpus = VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents,
+        truncated: false,
+        skipped: Vec::new(),
+    };
+    let results = corpus.search("dharma");
+    assert!(results.truncated, "eighty matching documents should be cut");
+
+    let mut paths: Vec<&str> = results
+        .hits
+        .iter()
+        .map(|hit| hit.abs_path.as_str())
+        .collect();
+    paths.sort_unstable();
+    paths.dedup();
+
+    let script = search_results_script("dharma", &results, true);
+    let start = script.find('(').expect("the call opens") + 1;
+    let payload: serde_json::Value = serde_json::Deserializer::from_str(&script[start..])
+        .into_iter::<serde_json::Value>()
+        .next()
+        .expect("the payload is there")
+        .expect("JSON");
+
+    assert_eq!(
+        payload["fileLimit"].as_u64(),
+        Some(paths.len() as u64),
+        "the ceiling sent is not the one the answer was cut at: {script}"
+    );
+}

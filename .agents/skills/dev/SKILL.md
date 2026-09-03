@@ -1,6 +1,6 @@
 ---
 name: dev
-description: Build a ticket from its path under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Designs it when needed, works its phases in order, drives what it can reach, runs the one complete check the ticket pays for after the last phase, and always stops at the owner's box without retiring the ticket. Use when the user says "build this", "dev this", "work that ticket", or "do the plan".
+description: Build a ticket from its path under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Designs it when needed, works its phases in order, drives what it can reach, stops before the gate so the owner runs it with /test, and always stops at the owner's box without retiring the ticket. Use when the user says "build this", "dev this", "work that ticket", or "do the plan".
 argument-hint: "[path to the ticket]"
 user-invocable: true
 ---
@@ -61,16 +61,17 @@ Build the phase's test box with its code, and write the test's name on the box i
 
 Anything found while building that no phase in this ticket would have to build anyway is a second file, written in the same pass and never mentioned in the reply. The section below holds the rule and the sentences that break it.
 
-### 7. `/check` once, after the last phase
+### 7. Stop before the suite; the owner starts it
 
-**This pass owns the only automatic complete gate in the workflow, and it runs once — after the last phase, never after each one.** A phase is finished when its boxes are ticked and its test is written; the suite is what the whole ticket pays for at the end, not what every phase pays for on the way. Nothing downstream runs it again over the same code: the shipping pass lands the work, brings the published pages and the comments up to date and lands again, and none of that re-proves what this gate already proved.
+**This pass starts no complete gate, and the workflow has none that starts itself.** A phase is finished when its boxes are ticked and its test is written, and that is where the build ends. The suite is the whole checkout rather than this ticket, so a build that starts one holds the session for as long as the whole thing takes — and where it turns red on a file this ticket never opened, the pass is left waiting on another session with nothing of its own left to do. One search ticket finished its phase and then sat twenty minutes on a generated file another build was still moving, with the owner watching a build that was already done. That wait is what this step exists to stop.
 
-Run [`/check`](../check/SKILL.md). A red is fixed and the suite is re-run from the top. An owner asking for a check mid-build gets one; what this step forbids is a call nobody asked for.
+The owner runs [`/test`](../test/SKILL.md) when they want it run, over every built ticket at once, and one suite answers for all of them because every step of it reads the tree rather than a ticket.
 
+Run a single test by name while writing it, where that is how you get it right — `cargo test <name>`, `node scripts/check-shell.mjs`, the narrow `just check-*` about what this phase moved. What this step forbids is the whole suite, and the waiting and re-running that come with it. An owner asking for a gate mid-build still gets one.
 
 **<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** So the pair that column named is built here at once, and this pass keeps to its own ticket and the code — the other build is happening in the same folders, on the same screen, and is not this one's to touch.
 
-**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Where the gate is red only on such a ticket, wait, retry and finish after it clears; never name it in the hand-back.
+**<!-- shared-rule: another-sessions-work -->Another session's work is not this pass's, whatever state it is in.<!-- /shared-rule -->** A ticket this build was not pointed at — half built, fully ticked, mid-round, failing the gate — is left byte for byte where it sits: not retired, not repaired, not re-filed, and not written up as a ticket, because the session working it is already its record and a second hand on it writes over the first. Never name it in the hand-back.
 
 ### 8. Hand back at the owner's box
 

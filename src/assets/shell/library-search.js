@@ -238,11 +238,23 @@ function searchHitKey(hit) {
   return `${(hit && hit.absPath) || ''}:${(hit && hit.startLine) || 0}:${(hit && hit.snippet) || ''}`;
 }
 // A vault still being read answers the same query several times, each ranking everything it has read so far. Rows already drawn keep their place and their click target — a list that re-sorted under a reaching hand would be a worse fault than the silence this replaces — so a partial answer only adds what is new underneath. The one re-sort is the final answer, which is also when the ring goes.
-function mergeSearchHits(arriving, sameQuery) {
+function mergeSearchHits(arriving, sameQuery, fileLimit) {
   const drawn = sameQuery ? librarySearchHits || [] : [];
   if (!drawn.length) return arriving;
   const seen = new Set(drawn.map(searchHitKey));
-  return drawn.concat(arriving.filter((hit) => !seen.has(searchHitKey(hit))));
+  return holdToFileLimit(drawn.concat(arriving.filter((hit) => !seen.has(searchHitKey(hit)))), fileLimit);
+}
+// The merged list stops where one host answer stops. Each answer is already cut to this many documents, so adding them together drew a list no answer could hold — a watched search climbed to 507 rows before the finishing answer replaced them with 150. Rows are kept in the order they were drawn and a document that is in keeps every row it has, so nothing on screen moves and no later slice can add a fifty-first document. An answer that names no ceiling is merged whole, which is what a host that does not stream is asking for.
+function holdToFileLimit(hits, fileLimit) {
+  if (!(fileLimit > 0)) return hits;
+  const paths = new Set();
+  return hits.filter((hit) => {
+    const path = (hit && hit.absPath) || '';
+    if (paths.has(path)) return true;
+    if (paths.size >= fileLimit) return false;
+    paths.add(path);
+    return true;
+  });
 }
 window.leafSetSearchResults = (payload) => {
   const data = payload || {};
@@ -261,9 +273,11 @@ window.leafSetSearchResults = (payload) => {
     librarySearchHitsQuery = '';
   } else {
     const arriving = Array.isArray(data.hits) ? data.hits : [];
+    // The document ceiling this answer was cut at, which is what holds the merged list to one answer's worth while the vault is still being read. The final answer is the whole vault's and replaces the list, so it needs none.
+    const fileLimit = Number(data.fileLimit) || 0;
     librarySearchError = null;
     librarySearchHits = librarySearchPartial
-      ? mergeSearchHits(arriving, librarySearchHitsQuery === query)
+      ? mergeSearchHits(arriving, librarySearchHitsQuery === query, fileLimit)
       : arriving;
     librarySearchHitsQuery = query;
     librarySearchTruncated = !!data.truncated;

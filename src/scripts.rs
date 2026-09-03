@@ -138,10 +138,13 @@ pub fn graph_script(graph: &DocumentGraph) -> String {
 /// Ranked search results. The query is echoed so the page can drop an answer to a query the field has already moved on from. `truncated` is the list being cut at the hit cap — a different fact from the graph's, which is the vault walk hitting its document cap.
 ///
 /// `partial` says the vault was still being read, so more rows are coming for this same query: the pane keeps its ring, adds what is new under what is drawn, and re-sorts only on the answer that is not partial. Absent reads as finished, which is what a host that never streams — a published site, an older payload — is saying by not saying anything.
+///
+/// `fileLimit` is the document ceiling the search already cut this answer at, sent from the one constant that cuts it. Without it the page adds capped answers together and draws a list no single answer could hold; with it the merged list stops at the same number of documents.
 pub fn search_results_script(query: &str, results: &SearchResults, partial: bool) -> String {
     let payload = serde_json::json!({
         "query": query,
         "hits": results.hits,
+        "fileLimit": crate::vault_corpus::SEARCH_LIMIT,
         "truncated": results.truncated,
         "understood": results.understood,
         "unknownFields": results.unknown_fields,

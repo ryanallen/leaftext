@@ -21,6 +21,9 @@ const CLONE_TIMEOUT: Duration = Duration::from_secs(600);
 /// How deep below a vault to look for repositories that would end up inside a new one. Three is enough for `leaftext/app`, and for a nested clone one level further down; past that the scan costs more than the warning is worth.
 const NESTED_SCAN_DEPTH: usize = 3;
 
+// Inner work cannot be staged here; a moved recorded commit still can.
+const VAULT_STATUS_ARGS: &[&str] = &["status", "--porcelain", "--ignore-submodules=dirty"];
+
 /// Something git (or gh) was asked to do and would not.
 #[derive(Debug)]
 pub struct GitError {
@@ -215,6 +218,23 @@ fn git_ok(dir: &Path, args: &[&str]) -> bool {
     git(dir, args).is_ok()
 }
 
+/// Whether the index differs from HEAD, including the empty tree before a first commit.
+fn staged_index_has_changes(dir: &Path) -> Result<bool, GitError> {
+    match output("git", Some(dir), ["diff", "--cached", "--quiet"]) {
+        Ok(result) if result.status.code() == Some(0) => Ok(false),
+        Ok(result) if result.status.code() == Some(1) => Ok(true),
+        Ok(result) => {
+            let stderr = String::from_utf8_lossy(&result.stderr).trim().to_string();
+            let stdout = String::from_utf8_lossy(&result.stdout).trim().to_string();
+            Err(GitError::new(
+                "git diff",
+                if stderr.is_empty() { stdout } else { stderr },
+            ))
+        }
+        Err(error) => Err(GitError::new("git diff", error.to_string())),
+    }
+}
+
 // ---------------------------------------------------------------------------
 // What is installed
 // ---------------------------------------------------------------------------
@@ -289,7 +309,7 @@ pub fn inspect_vault_repo(root: &Path) -> VaultRepo {
         repo.branch = git(root, &["branch", "--show-current"])
             .ok()
             .filter(|branch| !branch.is_empty());
-        repo.changed = git(root, &["status", "--porcelain"])
+        repo.changed = git(root, VAULT_STATUS_ARGS)
             .map(|status| count_changes(&status))
             .unwrap_or(0);
         if let Ok(counts) = git(
@@ -507,11 +527,15 @@ pub fn sync_vault_repo(root: &Path) -> Result<SyncReport, GitError> {
         ));
     }
 
-    let status = git(root, &["status", "--porcelain"])?;
+    let status = git(root, VAULT_STATUS_ARGS)?;
     report.committed = count_changes(&status);
     if report.committed > 0 {
         git(root, &["add", "-A"])?;
-        git(root, &["commit", "-m", &commit_message(&status)])?;
+        if staged_index_has_changes(root)? {
+            git(root, &["commit", "-m", &commit_message(&status)])?;
+        } else {
+            report.committed = 0;
+        }
     }
 
     let tracking = git_ok(root, &["rev-parse", "--abbrev-ref", "@{upstream}"]);

@@ -498,6 +498,53 @@ export function run() {
     if (searchPane().innerHTML.includes('so far')) throw new Error('a finished search still said its count was partial');
   });
 
+  // ---- the drawn list stops where one answer stops --------------------------
+  //
+  // Every answer is already cut to the host's document ceiling, and the merge used to add those capped answers together: a watched search over a 987-file vault climbed to 507 rows before the finishing answer replaced them with 150. The ceiling rides with each answer, so the merged list holds the documents that were drawn first and no slice after them can make it longer than one answer.
+  const cappedAnswer = (tag, files) =>
+    Array.from({ length: files }, (_unused, file) =>
+      Array.from({ length: 3 }, (_row, row) => ({
+        absPath: `/vault/${tag}-${file}.md`,
+        title: `${tag}-${file}`,
+        snippet: 'the matched words',
+        startLine: row + 1,
+        anchor: '',
+      })),
+    ).flat();
+
+  check('two capped partial answers leave as many documents as one answer rather than both added together', () => {
+    showingLibrarySearch();
+    const rows = () => searchPane().querySelectorAll('.library-hit');
+    const drawnPaths = () => new Set(rows().map((row) => row.dataset.openPath));
+
+    booted.leafSetSearchResults({ query: 'draft', hits: cappedAnswer('first', 50), truncated: true, partial: true, fileLimit: 50 });
+    if (rows().length !== 150) throw new Error(`the first capped answer drew ${rows().length} rows rather than 150`);
+    const held = rows()[0];
+
+    // A second slice of the read, sharing no document with the first. Added together these are a hundred documents and 300 rows; one answer is fifty and 150.
+    booted.leafSetSearchResults({ query: 'draft', hits: cappedAnswer('second', 50), truncated: true, partial: true, fileLimit: 50 });
+    if (drawnPaths().size !== 50) throw new Error(`the merged answer drew ${drawnPaths().size} documents rather than fifty`);
+    if (rows().length !== 150) throw new Error(`the merged answer drew ${rows().length} rows rather than 150`);
+    if (rows()[0] !== held) throw new Error('the merge replaced a row that was already on top');
+    if (held.parentElement !== searchPane()) throw new Error('the merge took an unchanged row off the page');
+
+    // The final answer is the whole vault's ranking, and the ceiling never stands in its way.
+    booted.leafSetSearchResults({ query: 'draft', hits: cappedAnswer('final', 2), truncated: false });
+    if (rows().length !== 6) throw new Error(`the final answer left ${rows().length} rows rather than six`);
+    if (drawnPaths().size !== 2) throw new Error('the final answer could not replace the documents the merge had kept');
+  });
+
+  check('a partial answer under the ceiling still adds every document it found', () => {
+    showingLibrarySearch();
+    const rows = () => searchPane().querySelectorAll('.library-hit');
+
+    booted.leafSetSearchResults({ query: 'draft', hits: cappedAnswer('early', 3), truncated: false, partial: true, fileLimit: 50 });
+    booted.leafSetSearchResults({ query: 'draft', hits: cappedAnswer('late', 4), truncated: false, partial: true, fileLimit: 50 });
+    const paths = new Set(rows().map((row) => row.dataset.openPath));
+    if (paths.size !== 7) throw new Error(`two answers well under the ceiling drew ${paths.size} documents rather than seven`);
+    if (rows().length !== 21) throw new Error(`two answers well under the ceiling drew ${rows().length} rows rather than 21`);
+  });
+
   check('a kept row follows the match behind it when that match moves', () => {
     showingLibrarySearch();
     const match = (extra) => ({ ...searchHit('A note'), ...extra });

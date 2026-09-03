@@ -1,13 +1,13 @@
 ---
 name: check
-description: The one complete gate a ticket pays for, run once at the end of its build. Reads the change with /sync-tests so it has a test, then `just verify`; a failure is fixed and re-run, never explained past. Use when the user says "check it" or "verify", and when /dev has finished its last phase; nothing else calls it automatically.
+description: The complete gate, run when the owner asks for it. Reads the change with /sync-tests so it has a test, then `just verify`; a failure is fixed and re-run, never explained past. Use when the user says "check it" or "verify"; /test is the same gate over every built ticket at once, and nothing calls either automatically.
 argument-hint: ""
 user-invocable: true
 ---
 
 # Check
 
-The one complete gate a ticket pays for. [`/dev`](../dev/SKILL.md) runs it once, after its last phase is built; the owner runs it by asking. Nothing else calls it — not a phase, not a subject skill, not the shipping pass, not retirement, and not a pass that wrote no code at all.
+The complete gate, and the owner is who starts it. Nothing calls it automatically — not [`/dev`](../dev/SKILL.md), not a phase, not a subject skill, not the shipping pass, not retirement, and not a pass that wrote no code at all. [`/test`](../test/SKILL.md) is this same gate with the batch reading in front of it: it works out which built tickets are worth covering and runs the suite once for all of them, which is what the owner asks for after several builds. This skill is the plain run, for one.
 
 **Never run git** — a green check is not a license to commit. That needs a `/git-release` in the message.
 
@@ -58,7 +58,7 @@ The whole reply is the owner's message, word for word. The tree stays dirty; tha
 
 - `Justfile` — what `verify` runs, and each step on its own.
 - `/sync-tests` — step 1, the reading that names a missing test.
-- `/dev` — the one pass that calls this automatically, once, after its last phase is built.
+- `/dev` — builds the phases and stops before this, leaving the gate to the owner.
 - `/git-release` — ships what this proved rather than proving it again, and is the only thing that touches git.
 
 <!-- keycode: LEAF-5E64 -->

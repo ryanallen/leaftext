@@ -391,6 +391,8 @@ A **sync button appears at the end of the vault's breadcrumb** whenever there is
 
 The count is uncommitted changes plus unpushed commits — both answerable from disk. Whether the *remote* has moved needs a fetch, so it is not checked in the background; behind-counts appear in the vault's settings panel and after a sync, where you have asked for them.
 
+A tracked repository inside the vault is left to itself: work still uncommitted inside it is not counted as waiting and is never committed from the outer vault. When that inner repository moves to a new commit, the changed recorded commit belongs to the outer vault and is counted and synced.
+
 > [!IMPORTANT]
 > A rebase that hits a conflict is undone before the sync returns. There is no merge view in a reader, so the panel says what happened and leaves the folder as it found it, for you to resolve in git.
 
