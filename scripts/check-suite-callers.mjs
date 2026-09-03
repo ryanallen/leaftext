@@ -6,7 +6,7 @@
 //
 // Without it the calls come back one at a time, in whichever pass feels unproven that week, and nobody notices until the whole cost is back: a two-phase ticket once paid for a 54-second suite eight times — after each phase, at the end of the build, twice inside the release, once inside the release command itself, and twice more while the ticket was retired.
 //
-// The build is refused along with the rest, and that is the newer half of the rule. The suite is the whole checkout rather than one ticket, so two builds beside each other pay twice for one answer — and a suite red on a file the build never opened leaves that pass waiting on another session with nothing of its own left to do. One search ticket finished its phase and then sat twenty minutes on a generated file another build was still moving, while the owner watched a build that was already done.
+// The build is refused along with the rest. The suite is the whole checkout rather than one ticket, so two builds beside each other pay twice for one answer — and a suite red on a file the build never opened leaves that pass waiting on another session with nothing of its own left to do. One search ticket finished its phase and then sat twenty minutes on a generated file another build was still moving, while the owner watched a build that was already done.
 //
 // What every other pass runs instead is the narrow check about what it wrote: the format tests, the design checks, the front-end boot, the document checks, the Rust documentation build. Those are seconds and they prove the thing that moved. The suite recompiles the app and reruns the tests, and after a build nothing between it and the tag edits a line of either.
 

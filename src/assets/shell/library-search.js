@@ -244,7 +244,7 @@ function mergeSearchHits(arriving, sameQuery, fileLimit) {
   const seen = new Set(drawn.map(searchHitKey));
   return holdToFileLimit(drawn.concat(arriving.filter((hit) => !seen.has(searchHitKey(hit)))), fileLimit);
 }
-// The merged list stops where one host answer stops. Each answer is already cut to this many documents, so adding them together drew a list no answer could hold — a watched search climbed to 507 rows before the finishing answer replaced them with 150. Rows are kept in the order they were drawn and a document that is in keeps every row it has, so nothing on screen moves and no later slice can add a fifty-first document. An answer that names no ceiling is merged whole, which is what a host that does not stream is asking for.
+// The merged list stops where one host answer stops. Each answer is already cut to this many documents, and adding them together draws a list no answer could hold: a watched search climbed to 507 rows before the finishing answer replaced them with 150. Rows are kept in the order they were drawn and a document that is in keeps every row it has, so nothing on screen moves and no later slice can add a fifty-first document. An answer that names no ceiling is merged whole, which is what a host that does not stream is asking for.
 function holdToFileLimit(hits, fileLimit) {
   if (!(fileLimit > 0)) return hits;
   const paths = new Set();

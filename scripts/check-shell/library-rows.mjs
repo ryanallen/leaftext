@@ -500,7 +500,7 @@ export function run() {
 
   // ---- the drawn list stops where one answer stops --------------------------
   //
-  // Every answer is already cut to the host's document ceiling, and the merge used to add those capped answers together: a watched search over a 987-file vault climbed to 507 rows before the finishing answer replaced them with 150. The ceiling rides with each answer, so the merged list holds the documents that were drawn first and no slice after them can make it longer than one answer.
+  // Every answer is already cut to the host's document ceiling, and adding capped answers together draws a list no answer could hold: a watched search over a 987-file vault climbed to 507 rows before the finishing answer replaced them with 150. The ceiling rides with each answer, so the merged list holds the documents that were drawn first and no slice after them can make it longer than one answer.
   const cappedAnswer = (tag, files) =>
     Array.from({ length: files }, (_unused, file) =>
       Array.from({ length: 3 }, (_row, row) => ({
