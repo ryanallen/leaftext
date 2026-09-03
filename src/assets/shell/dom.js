@@ -154,8 +154,11 @@ const SHEET_DISMISS_FRACTION = 0.6;
 const SHEET_FLICK_FRACTION = 0.2;
 const SHEET_FLICK_PX_PER_MS = 0.9;
 
+// Both halves of where the hand left the sheet, cleared together. Only a fresh open and the end of a close run this: a redraw while the sheet is up asks for `keepParked` instead, so a sheet dragged down or dragged taller keeps that height for as long as it is open, whatever it redraws in the meantime.
 function resetSheetDrag(sheet) {
-  if (sheet) sheet.style.removeProperty('--sheet-drag');
+  if (!sheet) return;
+  sheet.style.removeProperty('--sheet-drag');
+  sheet.style.removeProperty('--sheet-grow');
 }
 // The choreography every bottom sheet shares. Opening lands with a rubber band: up from below the window, past its seat by the raise, then back down onto it. Closing by the X, the scrim or Escape pulls up to that same mark first and then leaves fast; a drag dismissal skips the pull, because the hand already made it. Each direction is one class and one animation the stylesheet draws end to end, so where the sheet turns is a percentage somebody wrote down rather than the length of a handoff.
 const SHEET_LAND_MS = 400;
@@ -198,7 +201,7 @@ function runSheetMotion(sheet, className, ms, done) {
   sheet.addEventListener('animationend', finish);
   timer = setTimeout(() => finish(null), ms + SHEET_LEG_SLACK_MS);
 }
-// `backdrop` is optional -- the shape picker inside the flowchart editor has none. `keepParked` is the picker's too: it redraws while it is open and stays where it was pushed to.
+// `backdrop` is optional. `keepParked` is the shape picker's: it redraws while it is open and stays where it was dragged to.
 function openSheet(sheet, backdrop, options) {
   if (!sheet) return;
   // Whatever the first-run bubble is pointing at, this sheet is about to stand over it. Asked for again while it is already up as well, because the count of what is standing is what decides when the bubble comes back.
@@ -245,8 +248,10 @@ function closeSheet(sheet, backdrop, options) {
     restoreHintAfterSheet(sheet);
   });
 }
-function makeSheetDraggable(sheet, grip, dismiss) {
+// `tallerOnPullUp` is the shape picker's alone: it opens a quarter of the editor tall over a diagram, so an upward drag has somewhere to go. Every other sheet opens at the shared ceiling already, and pulling one up past flush would lift it off the window's edge and show a gap under it.
+function makeSheetDraggable(sheet, grip, dismiss, options) {
   if (!sheet || !grip) return;
+  const grows = !!(options && options.tallerOnPullUp);
   let drag = null;
   grip.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
@@ -258,10 +263,12 @@ function makeSheetDraggable(sheet, grip, dismiss) {
     dropSheetMotion(sheet);
     // From wherever it is sitting, not from flush: a sheet parked half-way down has to be draggable back up, and a drag that always started at zero could only ever push it further away.
     const parked = parseFloat(sheet.style.getPropertyValue('--sheet-drag')) || 0;
+    // One signed number for both directions, so a sheet dragged taller shrinks back to its seat before it starts moving off the window.
+    const grown = parseFloat(sheet.style.getPropertyValue('--sheet-grow')) || 0;
     drag = {
       id: event.pointerId,
       startY: event.clientY,
-      from: parked,
+      from: parked - grown,
       dy: parked,
       lastY: event.clientY,
       lastT: event.timeStamp,
@@ -272,8 +279,10 @@ function makeSheetDraggable(sheet, grip, dismiss) {
   });
   grip.addEventListener('pointermove', (event) => {
     if (!drag || event.pointerId !== drag.id) return;
-    // Never above flush: dragging up past that would lift the sheet off the window's edge and show a gap under it.
-    drag.dy = Math.max(0, drag.from + (event.clientY - drag.startY));
+    // Never above flush: dragging up past that would lift the sheet off the window's edge and show a gap under it. A sheet that grows spends that same travel on its height instead, and its own rule holds it to the shared ceiling.
+    const moved = drag.from + (event.clientY - drag.startY);
+    drag.dy = Math.max(0, moved);
+    if (grows) sheet.style.setProperty('--sheet-grow', Math.max(0, -moved) + 'px');
     const dt = event.timeStamp - drag.lastT;
     if (dt > 0) drag.speed = (event.clientY - drag.lastY) / dt;
     drag.lastY = event.clientY;

@@ -340,11 +340,16 @@
        picker uses: one component, so adding a box and changing one read the same
        way. A child of the sheet rather than of the canvas pane, so it slides up
        centered on the whole editor and not on the half left of the text. -->
+  <!-- The picker's own scrim, a child of the editor rather than of the window:
+       it dims the diagram the sheet is standing over, and #flowBackdrop outside
+       is already dimming everything else. -->
+  <div id="flowPickerBackdrop" class="lt-backdrop" hidden></div>
   <aside class="leaf-sheet flow-picker" id="flowPicker" role="dialog" aria-label="Shapes" hidden>
     <div class="leaf-sheet-grip"></div>
     <button type="button" id="flowPickerClose" class="leaf-sheet-close" aria-label="Close"><span class="lt-icon lt-icon-close"></span></button>
-    <!-- The name stays put while the shapes scroll under it: it is the one field
-         in here, and losing it off the top mid-list is how a box ends up unnamed. -->
+    <!-- Every field the selection has stays put while the shapes scroll under it:
+         losing the name off the top mid-list is how a box ends up unnamed, and the
+         link, the icon and the picture were unfindable below forty-seven shapes. -->
     <div class="flow-picker-head" id="flowPickerHead"></div>
     <div class="flow-picker-body leaf-scroll" id="flowPickerBody"></div>
   </aside>

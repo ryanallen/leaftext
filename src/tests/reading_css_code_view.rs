@@ -381,9 +381,9 @@ fn the_shape_grid_collapses_out_of_the_flow_rather_than_leaving_the_page() {
     let wrapper = rule_body(&css, ".flow-shape-grid {");
     assert!(
         wrapper.contains("grid-column: 1 / -1;")
-            && wrapper.contains("grid-template-columns: repeat(2, minmax(0, 1fr));")
+            && wrapper.contains("grid-template-columns: repeat(auto-fill,")
             && wrapper.contains("gap: var(--lt-space-2);"),
-        "the shape grid's wrapper must repeat the picker body's two columns and its gap, or every button moves: {wrapper}"
+        "the shape grid's wrapper must take the picker body's whole width and its gap, or every button moves: {wrapper}"
     );
 
     let collapsed = rule_body(&css, ".flow-shape-grid.is-collapsed {");
@@ -396,6 +396,131 @@ fn the_shape_grid_collapses_out_of_the_flow_rather_than_leaving_the_page() {
     assert!(
         !collapsed.contains("display: none"),
         "hiding the shape grid throws away the layout boxes the collapse exists to keep: {collapsed}"
+    );
+}
+
+#[test]
+fn the_shape_picker_opens_short_over_a_scrim_and_the_grab_bar_pulls_it_up_to_the_shared_ceiling() {
+    // At 62% of the editor the sheet covered two thirds of the canvas, so the diagram somebody was about to change was not on screen while they changed it. It opens at a quarter instead, and the one thing that was lost with the height — seeing the whole shape list at once — is a drag away, up to the ceiling every sheet already has rather than a second number of its own.
+    let css = reading_mode_css();
+
+    // Two rules open `.leaf-sheet`; this is the one that lays the sheet out rather than the one that draws the grain on it.
+    let ceiling = rule_body(
+        &css,
+        ".leaf-sheet {
+  left: 0;",
+    );
+    assert!(
+        ceiling.contains("--sheet-ceiling: 78vh;") && ceiling.contains("max-height: var(--sheet-ceiling);"),
+        "the ceiling every sheet shares has to be named once, or a sheet that opens shorter has nothing to be dragged back up to: {ceiling}"
+    );
+
+    let picker = rule_body(&css, ".flow-picker {");
+    assert!(
+        picker.contains("--flow-picker-seat: 25%;"),
+        "the picker opens a quarter of the editor tall: {picker}"
+    );
+    assert_contains(
+        picker,
+        "max-height: min(calc(var(--flow-picker-seat) + var(--sheet-grow, 0px)), var(--sheet-ceiling));",
+    );
+    // The grain is the shared sheet's and the color is the picker's, so the color is named on its own rather than through a shorthand that would reset the lattice with it.
+    assert!(
+        picker.contains("background-color: var(--lt-surface-elevated);") && !picker.contains("background:"),
+        "the picker writes its color without wiping the grain `.leaf-sheet` draws under it: {picker}"
+    );
+
+    // How many shapes across is the sheet's width and nothing else, held by `the_pickers_fields_clear_the_close_cross_and_its_shapes_do_not_thin_out_as_the_sheet_is_pulled_open` below. It was tied to the grab bar here, so pulling the sheet open showed fewer of the forty-seven.
+
+    // Every field the selection has, in one form at the top of the sheet.
+    let form = rule_body(&css, ".flow-form {");
+    assert_contains(
+        form,
+        "grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));",
+    );
+    let row = rule_body(&css, ".flow-form-row {");
+    assert_contains(row, "grid-template-columns: max-content minmax(0, 1fr);");
+
+    // The scrim dims and takes nothing, and the whole shape of the dismissal rests on that: it lies over the canvas, so a scrim that took the pointer would take every press the diagram needs and a + handle drag would die at the press that starts it. The press that closes the sheet is read where it lands instead.
+    let scrim = rule_body(&css, "#flowPickerBackdrop {");
+    assert!(
+        scrim.contains("pointer-events: none;"),
+        "the picker's scrim has to take nothing, or the canvas is dead while the sheet is up: {scrim}"
+    );
+}
+
+#[test]
+fn the_pickers_fields_clear_the_close_cross_and_its_shapes_do_not_thin_out_as_the_sheet_is_pulled_open(
+) {
+    // The cross is pinned over the sheet rather than laid out in it, so the band of fields underneath ran 30px beneath it and the last field on the line was unreadable. And the shape list answered the sheet's height: nine across at the seat, five at the ceiling, so pulling it open to see more of the forty-seven showed fewer of them, each one a 327px box around a 143px name.
+    let css = reading_mode_css();
+
+    // The cross takes 42px off the sheet's right edge; the band keeps that much clear on its own right and its ordinary inset on the left.
+    let head = rule_body(&css, ".flow-picker-head {");
+    assert_contains(
+        head,
+        "padding: var(--lt-space-2) var(--lt-space-48) var(--lt-space-4) var(--lt-space-12);",
+    );
+
+    // A field stops at a width somebody can read a path in, and the cap is on the row rather than on the track above it — on the track it pushed the fourth field onto a line of its own, and with no cap at all the one field a new box gets stretched right across the sheet.
+    let form = rule_body(&css, ".flow-form {");
+    assert_contains(
+        form,
+        "grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));",
+    );
+    let row = rule_body(&css, ".flow-form-row {");
+    assert_contains(row, "max-width: 420px;");
+
+    // One floor, and the pull is nowhere in it: how many shapes across is the sheet's width and nothing else. 212px is what the longest of the forty-seven labels needs with its picture and padding — below that the name hangs out of its own button.
+    let grid = rule_body(&css, ".flow-shape-grid {");
+    assert_contains(
+        grid,
+        "grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));",
+    );
+    assert!(
+        !grid.contains("--sheet-grow"),
+        "the shape grid's width is tied to the grab bar again, so pulling the sheet open shows fewer shapes: {grid}"
+    );
+}
+
+#[test]
+fn a_line_is_hit_on_a_wide_copy_of_itself_and_lights_up_under_the_pointer() {
+    // The drawn line is one pixel of ink, so the copy beside it is what a pointer actually lands on — painted with nothing, hit on its stroke alone. And the line lights under the pointer, which is the only sign there is that it can be pointed at; hovered and selected at once has to read as selected, so the hover rule comes first and all three carry the same weight.
+    let css = reading_mode_css();
+
+    let hit = rule_body(&css, ".flow-edge-hit {");
+    assert!(
+        hit.contains("stroke: transparent;") && hit.contains("fill: none;"),
+        "the copy is a target, not a second line: {hit}"
+    );
+    assert_contains(hit, "stroke-width: var(--flow-edge-hit-width);");
+    assert_contains(hit, "pointer-events: stroke;");
+
+    let hover = rule_body(&css, ".flow-stage path[data-id].is-hover {");
+    let chosen = rule_body(&css, ".flow-stage path[data-id].is-selected {");
+    assert_ne!(
+        hover, chosen,
+        "the pointer and the selection say the same thing about a line"
+    );
+    // Mermaid paints its own stroke inline, so a state of ours that does not shout is a state nobody sees.
+    assert!(
+        hover.contains("stroke: var(--lt-border-strong) !important;"),
+        "the hovered line takes its color from a token and beats mermaid's own: {hover}"
+    );
+    assert!(
+        chosen.contains("stroke: var(--lt-link) !important;"),
+        "the selected line stays the link color: {chosen}"
+    );
+    // Later wins at equal weight, so the selected rule has to sit below the hovered one.
+    let at_hover = css
+        .find(".flow-stage path[data-id].is-hover {")
+        .expect("the hover rule is in the sheet");
+    let at_chosen = css
+        .find(".flow-stage path[data-id].is-selected {")
+        .expect("the selected rule is in the sheet");
+    assert!(
+        at_hover < at_chosen,
+        "the hover rule sits below the selected one, so a selected line reads as hovered while the pointer is on it"
     );
 }
 

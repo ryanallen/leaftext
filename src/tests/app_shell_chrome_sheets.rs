@@ -41,13 +41,19 @@ fn every_bottom_sheet_is_the_same_bottom_sheet() {
     assert_contains(&css, ".leaf-sheet-close {");
     assert_contains(&css, ".leaf-sheet-grip {");
     assert_contains(&css, ".leaf-sheet.open {");
-    // And one scrim behind all of them, rather than five identical ones — the four sheets plus the confirmation, which is not a sheet but dims the page the same way. The flowchart picker opens over the flow sheet, so only its layer differs.
-    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 5);
+    // And one scrim behind all of them, rather than six identical ones — the four sheets plus the confirmation, which is not a sheet but dims the page the same way, plus the shape picker's, which dims the diagram inside the flowchart editor rather than the window. Only their layers differ, and the picker's is measured against the editor it sits in rather than against the window.
+    assert_eq!(html.matches("class=\"lt-backdrop\"").count(), 6);
     assert_contains(&css, ".lt-backdrop {");
     assert_contains(
         rule_body(&css, "#flowBackdrop {"),
         "z-index: var(--lt-z-42);",
     );
+    let picker_scrim = rule_body(&css, "#flowPickerBackdrop {");
+    assert_contains(picker_scrim, "position: absolute;");
+    // Under the picker's own 5 and over the canvas. At the sheets' shared 40 it would paint over the sheet it belongs to.
+    assert_contains(picker_scrim, "z-index: 4;");
+    // The one scrim that dims and takes nothing: the sheet over it follows the selection and stays up while the canvas is worked, so a scrim that took the pointer would swallow the rest of every drag that opened it.
+    assert_contains(picker_scrim, "pointer-events: none;");
     for gone in [
         ".glossary-backdrop",
         ".theme-sheet-backdrop",

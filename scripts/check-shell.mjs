@@ -18,6 +18,7 @@ import { run as runABlockThatRefuses } from './check-shell/a-block-that-refuses.
 import { run as runFindBar } from './check-shell/find-bar.mjs';
 import { run as runCodeViewGrammar } from './check-shell/code-view-grammar.mjs';
 import { run as runDiagramSheet } from './check-shell/diagram-sheet.mjs';
+import { run as runDiagramCanvas } from './check-shell/diagram-canvas.mjs';
 import { run as runDrawingADiagram } from './check-shell/drawing-a-diagram.mjs';
 import { run as runDiagramExport } from './check-shell/diagram-export.mjs';
 import { run as runDiagramFullWindow } from './check-shell/diagram-full-window.mjs';
@@ -71,6 +72,7 @@ runABlockThatRefuses();
 runFindBar();
 runCodeViewGrammar();
 runDiagramSheet();
+runDiagramCanvas();
 runDrawingADiagram();
 runDiagramExport();
 runDiagramFullWindow();

@@ -10,7 +10,7 @@ Four files under `design/` are the source. Each is plain Markdown, so Leaftext o
 | `design/colors.md` | 82 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
 | `design/tokens.md` | 165 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 63 icons | `src/assets/icons.css`, one mask class each |
-| `design/components.md` | 73 components, and the markup each is drawn with | `src/assets/gallery.html` |
+| `design/components.md` | 74 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
@@ -62,7 +62,7 @@ Every drawing is a value the page root declares and the class reads, which is wh
 
 ## Components
 
-73 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
+74 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
 
 | Component | Class family |
 | --- | --- |
@@ -104,6 +104,7 @@ Every drawing is a value the page root declares and the class reads, which is wh
 | Copy button | `.code-copy` |
 | Graph | `.reader-graph` |
 | Flow canvas | `.flow` |
+| Shape picker form | `.flow-form` |
 | Theme card | `.theme-item` |
 | Update bell | `.update` |
 | Link preview | `.link-hover` |

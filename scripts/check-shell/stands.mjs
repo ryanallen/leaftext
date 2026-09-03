@@ -83,6 +83,16 @@ export const standInState = (path) => ({
 
 export const noopPost = () => {};
 
+// The flowchart sheet, every fragment of it. The two negative guards below read the lot rather than whichever file kept the name, or a later cut quietly takes lines out of their reach.
+export const SHEET_FRAGMENTS = [
+  'src/assets/shell/flow-canvas.js',
+  'src/assets/shell/flow-pointer.js',
+  'src/assets/shell/flow-menu.js',
+  'src/assets/shell/flow-rename.js',
+  'src/assets/shell/flow-picker.js',
+  'src/assets/shell/flow-export.js',
+];
+
 
 
 /** Let every promise the host started settle. A command is handed over and answered later, the way the page hands one over. */

@@ -362,6 +362,49 @@ export function run() {
     }
   });
 
+  // One sheet has room to grow and the others have none. The shape picker opens a quarter of the flowchart editor tall so the diagram stays readable, so pulling its grab bar up has somewhere to go; every other sheet opens at the ceiling they share, and pulling one of those up past flush would lift it off the window's edge and show a gap under it. So the growth is asked for by name, and the travel is one signed number: a sheet dragged taller shrinks back to its seat before it starts moving off the window.
+  check('only the sheet that asked for it grows when its grab bar is pulled up', () => {
+    const stand = (options) => {
+      const sheet = fakeElement('grownSheet');
+      const grip = fakeElement('grownGrip');
+      sheet.getBoundingClientRect = () => ({ top: 0, left: 0, right: 400, bottom: 300, width: 400, height: 300 });
+      sheet.classList.add('open');
+      booted.makeSheetDraggable(sheet, grip, () => {}, options);
+      return {
+        sheet,
+        press: grip.listeners.get('pointerdown')[0],
+        move: grip.listeners.get('pointermove')[0],
+        up: grip.listeners.get('pointerup')[0],
+      };
+    };
+    const at = (sheet, name) => parseFloat(sheet.style.getPropertyValue(name)) || 0;
+
+    // Pulled 80px up: taller by exactly that, and traveling nowhere.
+    const grows = stand({ tallerOnPullUp: true });
+    grows.press({ button: 0, pointerId: 1, clientY: 200, timeStamp: 0, preventDefault() {} });
+    grows.move({ pointerId: 1, clientY: 120, timeStamp: 20 });
+    if (at(grows.sheet, '--sheet-grow') !== 80) throw new Error(`a pull of 80px grew the sheet by ${at(grows.sheet, '--sheet-grow')}`);
+    if (at(grows.sheet, '--sheet-drag') !== 0) throw new Error('a sheet that grew also traveled down the window');
+    grows.up({ pointerId: 1, timeStamp: 40 });
+    // And the height the hand left it at outlives the hand.
+    if (at(grows.sheet, '--sheet-grow') !== 80) throw new Error('letting go took the height the drag gave it');
+
+    // Pushed back down 130px from there: the 80 it had gained goes first, and only the remaining 50 moves it.
+    grows.press({ button: 0, pointerId: 2, clientY: 200, timeStamp: 60, preventDefault() {} });
+    grows.move({ pointerId: 2, clientY: 330, timeStamp: 80 });
+    if (at(grows.sheet, '--sheet-grow') !== 0) throw new Error('a sheet pushed past its seat kept the height it had grown');
+    if (at(grows.sheet, '--sheet-drag') !== 50) throw new Error(`the push moved the sheet ${at(grows.sheet, '--sheet-drag')} rather than the 50 left after its height went`);
+    grows.up({ pointerId: 2, timeStamp: 100 });
+
+    // A sheet that did not ask goes nowhere at all: up past flush is the one direction the clamp has always refused.
+    const plain = stand();
+    plain.press({ button: 0, pointerId: 3, clientY: 200, timeStamp: 0, preventDefault() {} });
+    plain.move({ pointerId: 3, clientY: 120, timeStamp: 20 });
+    if (at(plain.sheet, '--sheet-grow') !== 0) throw new Error('a sheet that never asked to grow grew anyway');
+    if (at(plain.sheet, '--sheet-drag') !== 0) throw new Error('a sheet pulled up past flush lifted off the window edge');
+    plain.up({ pointerId: 3, timeStamp: 40 });
+  });
+
   // All four bottom sheets close through one helper, and the only thing they say about how is whether a hand did it. A drag has already supplied the wind-up, so repeating it would pull the sheet back up out from under the finger that just threw it away.
   check('a dragged sheet says so, and skips the wind-up the other dismissals make', () => {
     const sheet = fakeElement('draggedSheet');

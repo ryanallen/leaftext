@@ -25,57 +25,104 @@ function highlightSnippet(snippet) {
     .split('').join('<mark class="library-hit-mark">')
     .split('').join('</mark>');
 }
-function searchHitHtml(hit) {
+// The button for one match, built once and kept. The map below hands the same element back on every later answer, so the listener bound here, the focus ring resting on it and a press half-way through it all outlive the answers arriving underneath.
+function buildSearchHitRow(hit) {
+  const button = document.createElement('button');
+  button.setAttribute('type', 'button');
+  button.className = 'library-hit';
+  // On the press, through the same helper the file rows use: the row lives on now, but the two kinds sit in one list and a file row bound on the click beside a search row bound on the press is exactly how the swallowed click came back.
+  bindLibraryRowPress(button, () => {
+    const path = button.dataset.openPath;
+    const anchor = button.dataset.anchor || '';
+    const line = Number(button.dataset.line) || 0;
+    // Open (or focus) the file, then scroll to the match once it renders — to the line it is on, or the heading above it if the line cannot be placed.
+    pendingSearchJump = anchor || line ? { path, anchor, line } : null;
+    // A hit is a place in the text, so it is worth leaving the map for; the anchor it carries has nothing to scroll to on a canvas.
+    graphExitPending = true;
+    send({ command: 'openRecent', path });
+  });
+  updateSearchHitRow(button, hit);
+  return button;
+}
+// What a row says, rewritten only where the match behind it moved. The key pins the path, the line and the snippet, so a kept row can differ only in the name that matched and in where the jump lands.
+function updateSearchHitRow(button, hit) {
   const path = (hit && hit.absPath) || '';
   const anchor = (hit && hit.anchor) || '';
   // The line carries the row to the match itself; the anchor is the fallback.
   const line = (hit && hit.startLine) || 0;
   // Matched by one of the note's other names: the row still says the file, so the name that actually matched has to be on it or the row reads as a mystery.
   const alias = (hit && hit.alias) || '';
+  const snippet = (hit && hit.snippet) || '';
+  button.dataset.openPath = path;
+  button.dataset.anchor = anchor;
+  button.dataset.line = String(line);
+  const drawn = button.leafSearchRow;
+  if (drawn && drawn.path === path && drawn.alias === alias && drawn.snippet === snippet) return;
+  button.leafSearchRow = { path, alias, snippet };
+  button.setAttribute('title', path);
   const also = alias ? `<span class="library-hit-alias">${escapeText(alias)}</span>` : '';
-  return `<button type="button" class="library-hit" data-open-path="${escapeAttr(path)}" data-anchor="${escapeAttr(anchor)}" data-line="${escapeAttr(String(line))}" title="${escapeAttr(path)}"><span class="library-hit-title">${documentNameMarkup(path, also)}</span><span class="library-hit-snippet">${highlightSnippet(hit && hit.snippet)}</span></button>`;
+  button.innerHTML = `<span class="library-hit-title">${documentNameMarkup(path, also)}</span><span class="library-hit-snippet">${highlightSnippet(snippet)}</span>`;
 }
-function bindSearchHits() {
-  librarySearchResults.querySelectorAll('[data-open-path]').forEach((button) => {
-    // On the press, through the same helper the file rows use, and for the same reason: a vault still being read answers this query about three times a second, every answer rewrites these rows, and a rebuild landing between press and release replaces the button so the click never fires.
-    bindLibraryRowPress(button, () => {
-      const path = button.dataset.openPath;
-      const anchor = button.dataset.anchor || '';
-      const line = Number(button.dataset.line) || 0;
-      // Open (or focus) the file, then scroll to the match once it renders — to the line it is on, or the heading above it if the line cannot be placed.
-      pendingSearchJump = anchor || line ? { path, anchor, line } : null;
-      // A hit is a place in the text, so it is worth leaving the map for; the anchor it carries has nothing to scroll to on a canvas.
-      graphExitPending = true;
-      send({ command: 'openRecent', path });
-    });
-  });
+// Which element is drawn for which match, keyed the way `mergeSearchHits` decides two answers are describing the same one. A table this fragment owns rather than a key written back onto the element, which would be bytes re-parsed on every answer; this fragment is its only writer, so it stays out of state.js.
+let librarySearchRowElements = new Map();
+// Every write of the whole list drops the rows it had, so the map can never hand back an element that is no longer on the page. A cleared query, a vault left, a failure, a list with nothing drawn yet and an answer with no matches all come through here. A changed query does not: the pane keeps the last query's rows under the turning ring rather than covering them, so those elements never leave and handing them back is right.
+function writeSearchResults(html) {
+  librarySearchRowElements.clear();
+  librarySearchResults.innerHTML = html;
 }
 // Fill the results list, and let the pane decide which of its three lists is showing. A non-empty query shows the results (loading, error, no-results, or the ranked hits); an empty one puts back whatever was standing, exactly as it was.
 function renderLibrarySearch() {
   const active = !!librarySearchQuery;
   renderLibraryLists();
   if (!active) {
-    librarySearchResults.innerHTML = '';
+    writeSearchResults('');
     return;
   }
   if (librarySearchError) {
     const message = (librarySearchError && librarySearchError.message) || 'Search failed.';
-    librarySearchResults.innerHTML = `<p class="library-empty">${escapeText(message)}</p>`;
+    writeSearchResults(`<p class="library-empty">${escapeText(message)}</p>`);
     return;
   }
   const hits = librarySearchHits || [];
   // Nothing drawn yet: the count line and its ring, and under them the shape of the rows that are coming. Only here — the moment one real row exists, whether it is this query's first batch or the query before it, that row is the better answer and the branches below keep it.
   if (librarySearchLoading && !hits.length) {
-    librarySearchResults.innerHTML = searchCountHtml(hits) + searchWaitingRowsHtml();
+    writeSearchResults(searchCountHtml(hits) + searchWaitingRowsHtml());
     return;
   }
   const note = searchNoteHtml();
   if (!hits.length) {
-    librarySearchResults.innerHTML = note + `<p class="library-empty">No matches.</p>`;
+    writeSearchResults(note + `<p class="library-empty">No matches.</p>`);
     return;
   }
-  librarySearchResults.innerHTML = note + searchCountHtml(hits) + hits.map(searchHitHtml).join('');
-  bindSearchHits();
+  drawSearchRows(note + searchCountHtml(hits), hits);
+}
+// The rows drawn against the ones already standing. A vault still being read answers this query once per fifty documents and every answer carries the rows before it, so reassigning the list destroyed hundreds of rows that had not moved — each with its listener, and one of them possibly holding the focus ring or a press. The head above them is two short elements that nothing presses, so it goes on being written whole.
+function drawSearchRows(headHtml, hits) {
+  const list = librarySearchResults;
+  const drawn = librarySearchRowElements;
+  const next = new Map();
+  const rows = hits.map((hit) => {
+    const key = searchHitKey(hit);
+    const kept = drawn.get(key);
+    if (kept) updateSearchHitRow(kept, hit);
+    const row = kept || buildSearchHitRow(hit);
+    next.set(key, row);
+    return row;
+  });
+  librarySearchRowElements = next;
+  // Out goes everything this answer does not carry: the rows it dropped, and the note and count line, which are rewritten whole.
+  const keeping = new Set(rows);
+  for (const node of Array.from(list.childNodes)) {
+    if (!keeping.has(node)) node.remove();
+  }
+  // The head is built off the page and moved in, then each row is put where the answer wants it — and a row already standing there is left alone, because taking an element off the page and putting it back is what drops the focus ring resting on it.
+  const head = document.createElement('div');
+  head.innerHTML = headHtml;
+  const wanted = Array.from(head.childNodes).concat(rows);
+  wanted.forEach((node, at) => {
+    if (list.childNodes[at] === node) return;
+    list.insertBefore(node, list.childNodes[at] || null);
+  });
 }
 // Three rows' worth of the shape a result has — a name and the two lines of matched words under it — so the pane holds what is coming rather than one word. Decoration: it is not a target, and nothing reads it out.
 const SEARCH_WAITING_ROWS = 3;

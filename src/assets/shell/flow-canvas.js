@@ -25,6 +25,7 @@ const flowPicker = document.getElementById('flowPicker');
 const flowPickerHead = document.getElementById('flowPickerHead');
 const flowPickerBody = document.getElementById('flowPickerBody');
 const flowPickerClose = document.getElementById('flowPickerClose');
+const flowPickerBackdrop = document.getElementById('flowPickerBackdrop');
 const flowNotice = document.getElementById('flowNotice');
 const flowCode = document.getElementById('flowCode');
 
@@ -54,10 +55,12 @@ const FLOW_UNMODELED = 'The canvas can’t model this diagram yet.';
 const FLOW_AS_TEXT = ' Edit it as text below; the picture follows what you type.';
 const FLOW_LOST_BOXES = 'Drawn, but the canvas can’t find its boxes to put handles on — edit it as text below.';
 const FLOW_NOTHING_YET = 'Nothing here yet. Double-click anywhere to add the first box.';
+// Every gesture the canvas answers to, in one line — the + handles included, because dragging one is the gesture that actually builds a chart and it was the only one the canvas never mentioned.
 const FLOW_TIP_IDLE =
-  'Double-click empty space to add a box · double-click a box to rename it · right-click anything for more.';
+  'Double-click empty space to add a box · point at a box for the + handles that add the next one · double-click a box to rename it · right-click anything for more.';
+// Grouping is named here because a box's right-click menu is the whole of it — there is no gesture on the canvas that draws a group, so a sentence that leaves it out is why it reads as missing.
 const FLOW_TIP_NODE =
-  'Its + handles add the step before or after it · drag it onto a line to put it in that line · Delete removes it.';
+  'Its + handles add the step before or after it · drag it onto a line to put it in that line · right-click to put it in a group · Delete removes it.';
 // The first box is the one that decides which way the whole chart runs, so it is the only one offered all four handles. After that, Flow up top turns it.
 const FLOW_TIP_FIRST = 'Its four + handles start the chart running that way. After that, Flow up top turns it.';
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
@@ -372,14 +375,16 @@ function restoreFlowHint() {
     setFlowHint(FLOW_TIP_EDGE);
     return;
   }
-  const node = flowFindNode(graph, flowSelection.id);
+  setFlowHint(flowNodeTip(graph, flowSelection.id) || FLOW_TIP_IDLE);
+}
+
+// What the sentence says about one box: what its shape is for, then what can be done to it. Composed here rather than in either caller, because pointing at a box and choosing one say the same thing about it — the difference is only that one of them lasts.
+function flowNodeTip(graph, id) {
+  const node = flowFindNode(graph, id);
   const shape = node && flowShape(node.shape);
-  if (!shape) {
-    setFlowHint(FLOW_TIP_IDLE);
-    return;
-  }
+  if (!shape) return null;
   const tip = graph.nodes.length <= 1 ? FLOW_TIP_FIRST : FLOW_TIP_NODE;
-  setFlowHint(shape.label + ' — ' + shape.hint + ' ' + tip);
+  return shape.label + ' — ' + shape.hint + ' ' + tip;
 }
 
 // ---- the palette and the direction ----------------------------------------
@@ -652,6 +657,15 @@ function flowEdgeDomId(from, to, nth) {
   return 'L_' + from + '_' + to + '_' + nth;
 }
 
+// The path mermaid drew for one of our lines. A line between two boxes takes the `L_<from>_<to>_<n>` spelling above; a line from a box back to itself takes none of it — mermaid draws that as three paths spelled `<box>-cyclic-special-1`, `-mid` and `-2`, and the middle one is the arc over the box, so it is the one the line is measured and pointed at on. Without this a self-loop is drawn on screen and missing from the measurement entirely: unselectable, undeletable, and removable only through the text pane.
+function flowEdgePathIn(svg, edge, nth) {
+  const named = (name) =>
+    svg.querySelector('path[data-id="' + name + '"]') || svg.querySelector('path[id="' + name + '"]');
+  const straight = named(flowEdgeDomId(edge.from, edge.to, nth));
+  if (straight || edge.from !== edge.to) return straight;
+  return named(edge.from + '-cyclic-special-mid') || named(edge.from + '-cyclic-special-1');
+}
+
 // Mermaid writes a box's id as `flowchart-<the id you wrote>-<n>`, on `id` rather than `data-id`. Both spellings are read: which one it uses depends on the renderer it took, and matching neither leaves every box unclickable.
 function flowNodeIdFromDom(raw, known) {
   if (!raw) return null;
@@ -757,7 +771,20 @@ function sizeFlowStage() {
   stage.style.height = height + 'px';
 }
 
-// Where mermaid put everything, in the drawing's own coordinates. Read off the drawing rather than worked out, because nothing here knows what mermaid draws — and read only when a render has replaced the drawing, since that is the one event that moves anything in it.
+// Where mermaid put everything, in the drawing's own coordinates. Read off the drawing rather than worked out, because nothing here knows what mermaid draws — and read only when a render has replaced the drawing, since that is the one event that moves anything in it. A line's target is exactly the ink it is painted with — one pixel — so pointing at one is aim rather than intent. Each line gets a second copy of itself, drawn wide and painted with nothing, purely to be hit. It goes in `g.edgePaths` beside the real one, the single group mermaid draws every line into, which carries no transform at all, so a clone keeps the line's own coordinates and needs no math. The name goes on an attribute of ours rather than on `data-id`, because the measuring pass looks a line up by `data-id` and would otherwise be free to measure the copy instead of the line.
+function flowDrawEdgeTarget(path, id) {
+  const copy = path.cloneNode(false);
+  copy.removeAttribute('id');
+  copy.removeAttribute('data-id');
+  // Mermaid's own paint and its arrowhead, both dropped: the copy is a target, and a second arrowhead over the first is a thicker one.
+  copy.removeAttribute('style');
+  copy.removeAttribute('marker-end');
+  copy.removeAttribute('marker-start');
+  copy.setAttribute('class', 'flow-edge-hit');
+  copy.setAttribute('data-flow-hit', id);
+  if (path.parentElement) path.parentElement.appendChild(copy);
+}
+
 function measureFlowDiagram() {
   const graph = flowSession && flowSession.graph;
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
@@ -805,14 +832,15 @@ function measureFlowDiagram() {
   });
   const edges = [];
   const seen = new Map();
+  // Last pass's copies go before this pass's are laid: mermaid redraws the whole diagram on every change, but a copy of ours that outlived its line would be a target sitting where a line used to be, catching clicks meant for the canvas under it.
+  svg.querySelectorAll('path[data-flow-hit]').forEach((stale) => stale.remove());
   for (const edge of graph.edges) {
     const pair = edge.from + '_' + edge.to;
     const nth = seen.get(pair) || 0;
     seen.set(pair, nth + 1);
-    const name = flowEdgeDomId(edge.from, edge.to, nth);
-    const path =
-      svg.querySelector('path[data-id="' + name + '"]') || svg.querySelector('path[id="' + name + '"]');
+    const path = flowEdgePathIn(svg, edge, nth);
     if (!path || typeof path.getTotalLength !== 'function') continue;
+    flowDrawEdgeTarget(path, edge.id);
     const at = (length) => {
       const point = path.getPointAtLength(length).matrixTransform(path.getScreenCTM());
       return { x: (point.x - origin.left) / shown, y: (point.y - origin.top) / shown };
@@ -955,6 +983,7 @@ function placeFlowOverlay() {
     // Nested corners, in reverse: the inner radius is the outer minus the gap, so the outer is the inner plus it. A square shape still gets the gap's worth of round, which is what keeps the two outlines parallel.
     ring.style.borderRadius = Math.round(box.radius + FLOW_RING_GAP) + 'px';
   }
+  // The two end grips belong to the selected line and to no other. Pointing at a line lights it, and that is all pointing does: grips that grew on every line the pointer crossed would be a page of handles moving under the hand.
   const chosenEdge = flowSelection && flowSelection.kind === 'edge' ? flowSelection.id : null;
   for (const placed of flowPlaced.edges) {
     if (placed.id !== chosenEdge) continue;

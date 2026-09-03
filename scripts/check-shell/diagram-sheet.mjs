@@ -3,17 +3,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, checkSettled, fakeElement, readingCss, record, root, settle, source } from './shared.mjs';
+import { check, checkSettled, fakeElement, readingCss, record, root, settle, SHEET_FRAGMENTS, source } from './shared.mjs';
 
-// The flowchart sheet, every fragment of it. The two negative guards below read the lot rather than whichever file kept the name, or a later cut quietly takes lines out of their reach.
-const SHEET_FRAGMENTS = [
-  'src/assets/shell/flow-canvas.js',
-  'src/assets/shell/flow-pointer.js',
-  'src/assets/shell/flow-menu.js',
-  'src/assets/shell/flow-rename.js',
-  'src/assets/shell/flow-picker.js',
-  'src/assets/shell/flow-export.js',
-];
 
 export function run() {
   const booted = record.booted;
@@ -1147,281 +1138,6 @@ export function run() {
     if (!/user-select:\s*none/.test(rule)) throw new Error('.flow-canvas does not turn text selection off');
   });
 
-  // The ring around a selected box stands 8px off the shape and follows its corners — nested corners in reverse, so the outer radius is the inner plus the gap. Mermaid builds its shapes with rough.js, so there is no `rx` to read and the inner radius is measured: walk in along the corner's diagonal until the fill starts. Turning that distance back into a radius is the part that is easy to get wrong and invisible when it is.
-  check('a corner radius is recovered from how far in the fill starts', () => {
-    const { flowCornerRadiusFrom } = booted;
-    // A circular corner of radius r has its center at (r, r), so along the diagonal the fill begins at t = r(1 − 1/√2). Feed that t back in.
-    const insetFor = (radius) => radius * (1 - Math.SQRT1_2);
-    for (const radius of [0, 5, 20, 28, 30, 64]) {
-      const got = flowCornerRadiusFrom(insetFor(radius));
-      if (Math.abs(got - radius) > 0.001) {
-        throw new Error(`a corner of ${radius} came back as ${got.toFixed(2)}`);
-      }
-    }
-    // The wrong constant — the Euclidean gap r(√2 − 1) — is out by exactly √2, which reads as "the ring did nothing" rather than as a broken number.
-    const wrong = insetFor(28) / (Math.SQRT2 - 1);
-    if (Math.abs(wrong - 28) < 0.001) throw new Error('the two constants are indistinguishable');
-
-    // And a pill: its inner radius is half its height, so the ring around it — half its height plus the gap — is exactly half the ring's own height.
-    const gap = 8;
-    const height = 56;
-    const ring = flowCornerRadiusFrom(insetFor(height / 2)) + gap;
-    if (Math.abs(ring - (height + gap * 2) / 2) > 0.001) throw new Error('a pill does not stay a pill');
-  });
-
-  // The radius belongs to a drawing; zoom stays outside the cache.
-  check('a corner is probed once per drawing, and the held radius still follows the zoom', () => {
-    const read = (expression) => vm.runInContext(expression, booted);
-    const canvas = read('flowCanvas');
-    if (!canvas) throw new Error('the page has no flow canvas');
-    const names = ['A', 'B', 'C', 'D'];
-    const radii = [0, 5, 12, 28];
-    let probes = 0;
-    // Match Mermaid's node group, outline, and label plate.
-    const drawing = () => {
-      const stage = fakeElement('');
-      stage.classList.add('flow-stage');
-      const svg = fakeElement('');
-      svg.tagName = 'svg';
-      svg.createSVGPoint = () => ({ x: 0, y: 0 });
-      stage.appendChild(svg);
-      radii.forEach((radius, at) => {
-        const group = fakeElement('flowchart-' + names[at] + '-0');
-        group.tagName = 'g';
-        group.classList.add('node');
-        group.getBoundingClientRect = () => ({ top: 0, left: 0, right: 120, bottom: 56, width: 120, height: 56 });
-        const plate = fakeElement('');
-        plate.tagName = 'rect';
-        plate.getBBox = () => ({ x: 20, y: 16, width: 80, height: 24 });
-        const outline = fakeElement('');
-        outline.tagName = 'path';
-        outline.getBBox = () => ({ x: 0, y: 0, width: 120, height: 56 });
-        outline.ownerSVGElement = svg;
-        // A circular corner begins on the diagonal at the searched inset.
-        const inset = radius * (1 - Math.SQRT1_2);
-        outline.isPointInFill = (point) => {
-          probes += 1;
-          return point.x >= inset;
-        };
-        group.appendChild(plate);
-        group.appendChild(outline);
-        svg.appendChild(group);
-      });
-      return stage;
-    };
-    const graph = { nodes: names.map((id) => ({ id })), edges: [], groups: [] };
-    const first = drawing();
-    try {
-      read(`flowSession = { save: null, text: '', graph: ${JSON.stringify(graph)} };`);
-      read('flowZoom = 1;');
-      canvas.appendChild(first);
-      booted.measureFlowDiagram();
-      const cost = probes;
-      if (!cost) throw new Error('the first measurement asked the drawing nothing');
-      const drawn = read('flowPlaced').nodes.map((node) => node.radius);
-      radii.forEach((radius, at) => {
-        if (Math.abs(drawn[at] - radius) > 0.05) throw new Error(`a corner of ${radius} was measured as ${drawn[at].toFixed(3)}`);
-      });
-
-      // A drawing's cached radii answer again without probing.
-      probes = 0;
-      booted.measureFlowDiagram();
-      if (probes) throw new Error(`measuring the same drawing again went back for ${probes} fill tests`);
-      const again = read('flowPlaced').nodes.map((node) => node.radius);
-      if (again.join() !== drawn.join()) throw new Error(`the held radii came back as ${again.join(', ')} rather than ${drawn.join(', ')}`);
-
-      // Zoom and the pill clamp apply after the cached reading.
-      for (const zoom of [0.5, 1.5, 2.5]) {
-        probes = 0;
-        read(`flowZoom = ${zoom};`);
-        booted.measureFlowDiagram();
-        if (probes) throw new Error(`a zoom to ${zoom} went back for ${probes} fill tests`);
-        const scaled = read('flowPlaced').nodes.map((node) => node.radius);
-        radii.forEach((radius, at) => {
-          const want = Math.min(radius * zoom, 28);
-          if (Math.abs(scaled[at] - want) > 0.05) throw new Error(`at ${zoom} a corner of ${radius} read ${scaled[at].toFixed(3)} rather than ${want}`);
-        });
-      }
-
-      // Fresh groups need fresh probes.
-      read('flowZoom = 1;');
-      first.remove();
-      canvas.appendChild(drawing());
-      probes = 0;
-      booted.measureFlowDiagram();
-      if (probes !== cost) throw new Error(`a new drawing took ${probes} fill tests where the first took ${cost}`);
-    } finally {
-      read('flowSession = null;');
-      read('flowPlaced = null;');
-      read('flowZoom = 1;');
-      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
-    }
-  });
-
-  // A zoom step shows the same drawing bigger. Mermaid has not laid anything out again, so reading every box, group and line off the SVG a second time buys nothing and costs a layout pass per notch — and the notches arrive faster than the screen draws. The measurements are kept in mermaid's own coordinates and multiplied by the zoom, so a notch is arithmetic.
-  check('a wheel notch scales the measured drawing rather than reading it again', () => {
-    const read = (expression) => vm.runInContext(expression, booted);
-    const canvas = read('flowCanvas');
-    if (!canvas) throw new Error('the page has no flow canvas');
-    let rectReads = 0;
-    // One box, one group around it and one line: everything the measurement records.
-    const drawing = () => {
-      const stage = fakeElement('');
-      stage.classList.add('flow-stage');
-      const counted = (rect) => () => {
-        rectReads += 1;
-        return rect;
-      };
-      stage.getBoundingClientRect = counted({ top: 0, left: 0, right: 300, bottom: 200, width: 300, height: 200 });
-      const svg = fakeElement('');
-      svg.tagName = 'svg';
-      svg.setAttribute('viewBox', '0 0 300 200');
-      svg.createSVGPoint = () => ({ x: 0, y: 0 });
-      stage.appendChild(svg);
-
-      const group = fakeElement('flowchart-A-0');
-      group.tagName = 'g';
-      group.classList.add('node');
-      group.getBoundingClientRect = counted({ top: 40, left: 60, right: 180, bottom: 96, width: 120, height: 56 });
-      const outline = fakeElement('');
-      outline.tagName = 'path';
-      outline.getBBox = () => ({ x: 0, y: 0, width: 120, height: 56 });
-      outline.ownerSVGElement = svg;
-      const inset = 12 * (1 - Math.SQRT1_2);
-      outline.isPointInFill = (point) => point.x >= inset;
-      group.appendChild(outline);
-      svg.appendChild(group);
-
-      const cluster = fakeElement('box');
-      cluster.tagName = 'g';
-      cluster.classList.add('cluster');
-      cluster.getBoundingClientRect = counted({ top: 20, left: 40, right: 220, bottom: 130, width: 180, height: 110 });
-      svg.appendChild(cluster);
-
-      const line = fakeElement('');
-      line.tagName = 'path';
-      line.setAttribute('data-id', 'L_A_B_0');
-      line.getTotalLength = () => 100;
-      line.getScreenCTM = () => ({});
-      line.getPointAtLength = (length) => {
-        const at = { x: 10 + length, y: 70, matrixTransform: () => at };
-        return at;
-      };
-      svg.appendChild(line);
-
-      const overlay = fakeElement('');
-      overlay.classList.add('flow-overlay');
-      stage.appendChild(overlay);
-      return stage;
-    };
-    const graph = {
-      direction: 'LR',
-      nodes: [{ id: 'A', text: 'A' }, { id: 'B', text: 'B' }],
-      edges: [{ id: 'e1', from: 'A', to: 'B' }],
-      groups: [{ id: 'box', text: 'box' }],
-    };
-    const spin = (deltaY) => {
-      for (const handler of [...(canvas.listeners.get('wheel') || [])]) {
-        handler({ ctrlKey: true, deltaY, preventDefault() {} });
-      }
-    };
-    // Every number the overlay and the pointer read, flattened so two placements can be compared whole.
-    const placement = () => {
-      const placed = read('flowPlaced');
-      if (!placed) throw new Error('nothing was placed');
-      const node = placed.nodes[0];
-      const group = placed.groups[0];
-      const edge = placed.edges[0];
-      if (!node || !group || !edge) throw new Error('a box, a group or a line went missing');
-      return [
-        node.x, node.y, node.width, node.height, node.radius,
-        group.x, group.y, group.width, group.height,
-        edge.from.x, edge.from.y, edge.at.x, edge.at.y, edge.to.x, edge.to.y,
-      ];
-    };
-    const first = drawing();
-    try {
-      read(`flowSession = { save: null, text: '', graph: ${JSON.stringify(graph)} };`);
-      read('flowZoom = 1;');
-      canvas.appendChild(first);
-      booted.measureFlowDiagram();
-      if (!rectReads) throw new Error('the first measurement read nothing off the drawing');
-      read("flowSelection = { kind: 'edge', id: 'e1' };");
-      booted.drawFlowOverlay();
-      const overlay = first.querySelector('.flow-overlay');
-      if (!overlay) throw new Error('the drawing has no overlay');
-      const furniture = () => {
-        const all = [];
-        const visit = (element) => {
-          all.push(element);
-          for (const child of element.children) visit(child);
-        };
-        for (const child of overlay.children) visit(child);
-        return all;
-      };
-      const standing = furniture();
-      if (!standing.length) throw new Error('the first overlay built no furniture');
-      const life = placement();
-      // The box sits 60 across and 40 down from the stage, is 120 by 56, and its corners were probed at 12.
-      const want = [60, 40, 120, 56, 12, 40, 20, 180, 110, 10, 70, 60, 70, 110, 70];
-      want.forEach((number, at) => {
-        if (Math.abs(life[at] - number) > 0.05) throw new Error(`at life size the drawing measured ${life[at].toFixed(2)} where ${number} was drawn`);
-      });
-
-      // Two notches in, two back out — the path a hand on the wheel takes.
-      let zoom = 1;
-      for (const step of [1.1, 1.1, 1 / 1.1, 1 / 1.1, 1.1]) {
-        zoom *= step;
-        rectReads = 0;
-        spin(step > 1 ? -120 : 120);
-        if (rectReads) throw new Error(`a wheel notch went back to the drawing for ${rectReads} measurements`);
-        const at = read('flowZoom');
-        if (Math.abs(at - zoom) > 0.001) throw new Error(`the wheel reached ${at} rather than ${zoom}`);
-        const after = furniture();
-        if (after.length !== standing.length || after.some((element, spot) => element !== standing[spot])) {
-          throw new Error('a wheel notch rebuilt the overlay furniture');
-        }
-        const scaled = placement();
-        life.forEach((number, spot) => {
-          if (Math.abs(scaled[spot] - number * at) > 0.05) {
-            throw new Error(`at ${at.toFixed(3)} a measurement of ${number} was placed at ${scaled[spot].toFixed(2)} rather than ${(number * at).toFixed(2)}`);
-          }
-        });
-      }
-
-      // The line the overlay colors and the pointer matches on is the element mermaid drew, not a copy of it.
-      if (read('flowPlaced').edges[0].path !== read('flowNatural').edges[0].path) {
-        throw new Error('the placed line lost the path it was measured off');
-      }
-
-      // A fresh drawing is the one thing that does measure again.
-      first.remove();
-      canvas.appendChild(drawing());
-      rectReads = 0;
-      booted.measureFlowDiagram();
-      if (!rectReads) throw new Error('a fresh render measured nothing');
-      booted.drawFlowOverlay();
-      const redrawn = [...canvas.querySelectorAll('.flow-overlay')][0];
-      if (!redrawn || !redrawn.children.length || redrawn.children[0] === standing[0]) {
-        throw new Error('a redraw kept overlay furniture from the old drawing');
-      }
-
-      // And a canvas with no drawing on it drops the coordinates as well as the placement, or the next notch would put handles back over a diagram that has gone.
-      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
-      booted.measureFlowDiagram();
-      spin(-120);
-      if (read('flowPlaced') || read('flowNatural')) throw new Error('an empty canvas kept its measurements');
-    } finally {
-      read('flowSession = null;');
-      read('flowPlaced = null;');
-      read('flowNatural = null;');
-      read('flowSize = null;');
-      read('flowZoom = 1;');
-      read('flowSelection = null;');
-      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
-    }
-  });
-
   // Nothing in the shape grid is drawn from the selection: the table, the eight families and the little pictures are all fixed for the life of the app, so the same forty-seven buttons answer every draw and the one fact that moves is which of them is marked. Rebuilding them spent 13.2ms of a 16.7ms frame on a click from one box to the next; the same redraw with the grid left standing is 0.7. Nor does it leave the page under a line, because putting it back is a fresh layout of the lot — 8.0ms a click, against 1.3 once the wrapper merely collapses. The proof is identity — the same objects come back — because a grid rebuilt out of the same table would pass every count.
   check('the shape grid is built once, collapses rather than leaving, and a redraw moves only the mark', () => {
     const read = (expression) => vm.runInContext(expression, booted);
@@ -1456,10 +1172,20 @@ export function run() {
       if (buttons.size !== shapes) throw new Error(`the grid holds ${buttons.size} buttons against ${shapes} shapes`);
       if (grid.length !== shapes + 8) throw new Error(`the grid holds ${grid.length} elements, which is not eight headings and ${shapes} buttons`);
       if (marked() !== 'rect') throw new Error(`the first box is marked ${marked()}`);
-      // Everything drawn from the selection stands in front of the wrapper. Delete is the one thing past it.
-      if (spot(wrap) < 3) throw new Error(`the wrapper sits at ${spot(wrap)}, ahead of the fields the selection draws`);
+      // Every field the selection has is in the head, in one form, so the body under a selected box is the shapes and then Delete and nothing else. They used to be one field up there and three appended in front of the wrapper, which is how the link, the icon and the picture ended up unfindable below forty-seven shapes.
+      if (spot(wrap) !== 0) throw new Error(`the wrapper sits at ${spot(wrap)}, behind something the selection drew into the body`);
       const last = [...body.children].pop();
       if (!last.classList.contains('flow-delete')) throw new Error('delete is not the last thing in the body');
+      const head = read('flowPickerHead');
+      const form = head.querySelector('.flow-form');
+      if (!form) throw new Error('the head has no form in it');
+      const rows = [...form.children];
+      if (rows.length !== 4) throw new Error(`the form draws ${rows.length} fields for a box rather than its name, its link, its icon and its picture`);
+      for (const row of rows) {
+        if (!row.querySelector('.flow-form-label')) throw new Error('a field in the form has no word beside it');
+        if (!row.querySelector('.flow-field')) throw new Error('a row of the form has no field in it');
+      }
+      if (body.querySelector('.flow-field')) throw new Error('a field is back in the scrolling body');
       if (buttons.get('rect').innerHTML.includes('svg')) throw new Error('a button carried a picture before any was drawn');
 
       // The second box: the same buttons answer, and the mark has moved to the one it names.
@@ -1493,7 +1219,7 @@ export function run() {
       if (wrap.getAttribute('aria-hidden')) throw new Error('coming back to a box left the grid hidden from a reader');
       const shut = [...buttons.values()].filter((button) => button.tabIndex !== 0);
       if (shut.length) throw new Error(`${shut.length} shape buttons stayed out of the tab order under a box`);
-      if (spot(wrap) < 3) throw new Error('coming back to a box left the wrapper out of the body, or ahead of the fields');
+      if (spot(wrap) !== 0) throw new Error('coming back to a box left the wrapper out of the body, or behind something else drawn into it');
       if (marked() !== 'rect') throw new Error(`coming back to the first box marked ${marked()}`);
 
       // A press asks what it means now, rather than carrying what it meant when the button was built: a held closure would put the shape on the box selected two clicks ago.
@@ -1577,6 +1303,83 @@ export function run() {
     } finally {
       booted.window.mermaid = held;
       read(`flowSession = null; flowSelection = null; flowChipCache.clear(); flowChipsAsked = false; flowPickerBody.textContent = ''; flowPickerHead.textContent = '';`);
+      booted.forgetFlowShapeGrid();
+      booted.__frames.drain();
+    }
+  });
+
+  // The sheet stands over a dimmed editor, and in this app a dimmed anything says a press outside puts it away — every other scrim takes that press. This one cannot: it lies over the canvas, so a scrim that took the pointer would take every press the diagram needs and a + handle drag would die at the press that starts it. So the press is read where it lands, and the three things that own their own presses have to keep them.
+  check('a press outside the shape picker puts it away, and the canvas and the controls keep their own', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const canvas = read('flowCanvas');
+    const drawn = read("document.createElement('div')");
+    canvas.appendChild(drawn);
+    try {
+      read("flowSession = { save: null, text: '', graph: null };");
+      read('flowSession.graph = parseFlow(`flowchart TD\n  A["a"] --> B["b"]`);');
+      booted.readyFlowPicker();
+      const sheet = read('flowSheet');
+      const presses = [...(sheet.listeners.get('pointerdown') || [])];
+      if (!presses.length) throw new Error('nothing on the editor answers a press outside the sheet');
+      const press = (target) => presses.forEach((handler) => handler({ button: 0, target }));
+      const box = read('flowSession.graph.nodes')[0].id;
+      const open = () => {
+        read(`flowPickerAdd = null; flowSelection = { kind: 'node', id: ${JSON.stringify(box)} };`);
+        booted.drawFlowPicker();
+        if (!read("flowPicker.classList.contains('open')")) throw new Error('the sheet would not open to be pressed outside of');
+      };
+      const away = () => !read("flowPicker.classList.contains('open')") && !read('flowSelection') && !read('flowPickerAdd');
+
+      // The text pane is the biggest piece of dimmed editor there is, and pressing it left the sheet standing with the box still chosen.
+      open();
+      press(read('flowCode'));
+      if (!away()) throw new Error('a press on the text pane left the sheet standing');
+
+      // The sentence above the canvas sits in the same pane and is not the canvas, so it dismisses too.
+      open();
+      press(read('flowHint'));
+      if (!away()) throw new Error('a press on the sentence above the canvas left the sheet standing');
+
+      // The canvas decides for itself: a press on it is either the start of a gesture or the empty-space press below, and this listener must not reach either.
+      open();
+      press(drawn);
+      if (away()) throw new Error('the editor-wide press took a press the canvas owns');
+
+      // A control has a job to do with the sheet still up: zooming, undoing and widening the text pane are working the canvas rather than leaving it.
+      for (const id of ['flowSheetHead', 'flowUndo', 'flowZoomIn', 'flowSplit']) {
+        const control = read(`document.getElementById(${JSON.stringify(id)})`);
+        if (!control) throw new Error(`the editor has no ${id} to press`);
+        open();
+        press(control);
+        if (away()) throw new Error(`a press on ${id} put the sheet away`);
+      }
+
+      // And the sheet's own presses are its own, or picking a shape would dismiss the sheet the shape is being picked in.
+      open();
+      press(read('flowPickerHead'));
+      if (away()) throw new Error('a press inside the sheet put it away');
+
+      // Asked on the way down, and the phase is load-bearing: choosing a box redraws the overlay, so a press that has finished bubbling carries a ring that is off the page, which reads as a press on nothing and put the sheet away every time somebody chose a box. Read out of the fragment because the phase is the one thing about a listener a fake page cannot be asked.
+      if (!/flowSheet\.addEventListener\('pointerdown', pressOutsideFlowPicker, true\)/.test(source)) {
+        throw new Error('the press outside the sheet is not asked in the capture phase, so choosing a box will dismiss the sheet');
+      }
+
+      // The other half: the canvas's own empty-space press cancels an add as well as a selection, so the sheet goes whether it came up from a box or from a double-click. Clearing the selection alone left it standing mid-add.
+      const made = [];
+      booted.openFlowAddPicker((id) => made.push(id));
+      if (!read('flowPickerAdd')) throw new Error('the add path never put the sheet into adding');
+      const canvasPresses = [...(canvas.listeners.get('pointerdown') || [])];
+      if (!canvasPresses.length) throw new Error('the canvas answers no press');
+      for (const handler of canvasPresses) {
+        handler({ button: 0, target: drawn, clientX: 10, clientY: 10, pointerId: 1, timeStamp: 0 });
+      }
+      if (read('flowPickerAdd')) throw new Error('a press on empty canvas left the sheet still adding');
+      if (read("flowPicker.classList.contains('open')")) throw new Error('a press on empty canvas left the sheet standing');
+      if (made.length) throw new Error('a press on empty canvas made a box');
+    } finally {
+      drawn.remove();
+      read('flowSession = null; flowSelection = null; flowPickerAdd = null; flowDrag = null;');
+      read(`flowPickerName = ''; flowPickerBody.textContent = ''; flowPickerHead.textContent = '';`);
       booted.forgetFlowShapeGrid();
       booted.__frames.drain();
     }

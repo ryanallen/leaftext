@@ -6,16 +6,29 @@
 
 let flowPickerReady = false;
 
-// Pushed down and away by its grab bar, like every other sheet. Wired on the first open rather than at load: this fragment is served ahead of the inline script, so `makeSheetDraggable` is not there yet when it runs.
+// Pushed down and away by its grab bar like every other sheet, and pulled taller by it, which is this sheet's alone — it opens a quarter of the editor tall so the diagram stays readable, and the whole shape list is a drag away. Wired on the first open rather than at load: this fragment is served ahead of the inline script, so `makeSheetDraggable` is not there yet when it runs.
 function readyFlowPicker() {
   if (flowPickerReady || !flowPicker) return;
   flowPickerReady = true;
   const grip = flowPicker.querySelector('.leaf-sheet-grip');
   if (typeof makeSheetDraggable === 'function' && grip) {
-    makeSheetDraggable(flowPicker, grip, dismissFlowPicker);
+    makeSheetDraggable(flowPicker, grip, dismissFlowPicker, { tallerOnPullUp: true });
   }
   // Wrapped, not handed straight over: the dismissal reads how it was asked for off its one argument, and a listener would pass it the click.
   if (flowPickerClose) flowPickerClose.addEventListener('click', () => dismissFlowPicker());
+  // On the way down, before anything has moved. Choosing a box redraws the overlay, so by the time a press has finished bubbling the ring it landed on is off the page — and a press asked about a detached element looks like a press on nothing, which put the sheet away every time somebody chose a box.
+  if (flowSheet) flowSheet.addEventListener('pointerdown', pressOutsideFlowPicker, true);
+}
+
+// What keeps its own press while the sheet is up. The sheet itself, obviously. The canvas, because it already decides for itself — a press on empty space puts the sheet away and a press on a box or a + handle is the start of a gesture. And the top bar and the split bar, because zooming, undoing and widening the text pane are working the canvas with the sheet standing rather than leaving it.
+const FLOW_PICKER_KEEPS_ITS_PRESS = '#flowPicker, #flowCanvas, #flowSheetHead, #flowSplit';
+
+// A press on the dimmed editor outside the sheet puts it away, which is what every other scrim in the app promises. Read off the press rather than taken by the scrim: that scrim lies over the canvas, so one that took the pointer would take every press the diagram needs and a + handle drag would die at the press that starts it.
+function pressOutsideFlowPicker(event) {
+  if (!flowPicker || flowPicker.hidden || event.button !== 0) return;
+  const target = event.target;
+  if (target && target.closest && target.closest(FLOW_PICKER_KEEPS_ITS_PRESS)) return;
+  dismissFlowPicker();
 }
 
 function openFlowAddPicker(make) {
@@ -59,13 +72,23 @@ function drawFlowPicker(options) {
   const adding = !!flowPickerAdd && !!graph;
   if (!node && !edge && !adding) {
     // The shared close owns the wait: it hides the sheet only once the leg that takes it off screen has finished.
-    closeSheet(flowPicker, null, options);
+    closeSheet(flowPicker, flowPickerBackdrop, options);
     return;
   }
   // Pushed part-way down to see the diagram behind it, the sheet stays there while it is open — picking a second box does not shove it back up. It comes back flush only when it has been away and returns, which is the entrance the shared open runs.
-  openSheet(flowPicker, null, { keepParked: true });
+  openSheet(flowPicker, flowPickerBackdrop, { keepParked: true });
 
-  flowPickerHead.appendChild(adding ? flowPickerNameField() : flowPickerField(graph, node, edge));
+  // Every field the selection has, in one form at the top of the sheet: the name of the thing, then — for a box — where clicking it goes, the icon on it and the picture in it. They used to be one field up here and three buried in the scrolling shape list, which is why nobody found the last three.
+  const form = document.createElement('div');
+  form.className = 'flow-form';
+  form.appendChild(
+    flowPickerRow(
+      adding || node ? 'Name' : 'Label',
+      adding ? flowPickerNameField() : flowPickerField(graph, node, edge)
+    )
+  );
+  if (node) for (const extra of FLOW_NODE_EXTRAS) form.appendChild(flowPickerRow(extra.label, flowPickerExtraField(graph, node, extra)));
+  flowPickerHead.appendChild(form);
 
   // A box picks its shape; a line picks its style and what sits at its tips. Every group is generated from the table it belongs to.
   if (adding || node) {
@@ -82,7 +105,6 @@ function drawFlowPicker(options) {
           node.shape = id;
           flowGraphChanged();
         };
-    if (node) for (const extra of FLOW_NODE_EXTRAS) flowPickerExtraField(graph, node, extra);
     flowShapeGridStands();
     markFlowShape(node ? node.shape : null);
   } else {
@@ -156,9 +178,20 @@ const FLOW_NODE_EXTRAS = [
   { key: 'img', label: 'Picture', placeholder: 'A picture beside this document, or its address' },
 ];
 
+// One field and the word for it beside it. Every field in the sheet is one of these, so the four read as a form rather than as a box at the top and three under shouting captions further down.
+function flowPickerRow(label, field) {
+  const row = document.createElement('label');
+  row.className = 'flow-form-row';
+  const caption = document.createElement('span');
+  caption.className = 'flow-form-label';
+  caption.textContent = label;
+  row.appendChild(caption);
+  row.appendChild(field);
+  return row;
+}
+
 // Typed, not picked: a link and a picture are addresses, and an icon is one of fifty-seven names — none of them a short row of chips.
 function flowPickerExtraField(graph, node, extra) {
-  flowPickerPlace(flowPickerHeading(extra.label));
   const field = document.createElement('input');
   field.type = 'text';
   field.className = 'flow-field';
@@ -175,7 +208,7 @@ function flowPickerExtraField(graph, node, extra) {
     queueFlowDiagram();
   });
   field.addEventListener('change', () => flowGraphChanged());
-  flowPickerPlace(field);
+  return field;
 }
 
 // One heading and the run of choices under it, each drawn by `chip` and applied by `apply`. The same rows the right-click menu is built from, so a shape reads the same wherever it is offered. Only the line and its ends are drawn this way: their pictures come from the style the selected line carries, so they really do change with the selection.

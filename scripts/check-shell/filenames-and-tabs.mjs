@@ -13,7 +13,7 @@ import {
 export function run() {
   const booted = record.booted;
   if (!booted) return;
-  const { documentNameMarkup, documentNameParts, fileRowHtml, homeListsMarkup, renderProject, searchHitHtml } = booted;
+  const { buildSearchHitRow, documentNameMarkup, documentNameParts, fileRowHtml, homeListsMarkup, renderProject } = booted;
 
   // ---- 5. the rows on the start screen ----------------------------------------
 
@@ -54,7 +54,8 @@ export function run() {
     if (!file.includes('<span class="file-name-stem">library</span><span class="file-type-badge">YAML</span>')) {
       throw new Error(`the library file did not use the filename markup: ${file}`);
     }
-    const hit = searchHitHtml({ absPath: 'C:\\Notes\\search.json', title: 'search', alias: 'Other name' });
+    // A search row is an element rather than a string, because the pane keeps it across the answers a part-read vault sends; what it says is read back off the element it built.
+    const hit = buildSearchHitRow({ absPath: 'C:\\Notes\\search.json', title: 'search', alias: 'Other name' }).innerHTML;
     if (!hit.includes('<span class="file-name-stem">search<span class="library-hit-alias">Other name</span></span><span class="file-type-badge">JSON</span>')) {
       throw new Error(`the search hit did not take its name and type from its path: ${hit}`);
     }

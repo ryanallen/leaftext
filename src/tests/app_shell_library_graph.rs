@@ -477,8 +477,8 @@ fn leaving_the_map_for_a_document_shows_the_spinner() {
 
     // The gesture arms the exit before the request goes out.
     assert!(html.contains(
-        "      graphExitPending = true;
-      send({ command: 'openRecent', path });"
+        "    graphExitPending = true;
+    send({ command: 'openRecent', path });"
     ));
     assert!(html.contains("const READER_LOADING_COMMANDS = new Set(['openRecent']);"));
 

@@ -426,9 +426,9 @@ fn app_shell_includes_library_pane_settings_and_wording() {
     assert!(html.contains(r#"<span class="library-search-unknown">"#));
     assert!(html.contains("window.leafScrollToFragment('#' + jump.anchor);"));
 
-    // File-derived strings are escaped before reaching the DOM (tree + hits).
+    // File-derived strings are escaped before reaching the DOM. The tree composes its markup, so its path is escaped on the way in; a search row is built as an element and kept across a part-read vault's answers, so its path is set on the element and the DOM does the escaping.
     assert!(html.contains(r#"data-open-path="${escapeAttr(node.path)}""#));
-    assert!(html.contains(r#"data-open-path="${escapeAttr(path)}""#));
+    assert!(html.contains("button.dataset.openPath = path;"));
 
     // Every string the pane shows is present, so none of it renders blank. The vault menu carries that word too, so the pane's own label is named where it is decided.
     assert_in(&html, "function libraryRootLabel() {", "'Library'");
@@ -457,7 +457,7 @@ fn a_search_row_lands_on_the_match_not_the_heading_above_it() {
 
     // The row carries the line the match is on, and the jump uses it: without it a hit near the foot of a long section opens at the top of that section.
     for expected in [
-        r#"data-line="${escapeAttr(String(line))}""#,
+        "button.dataset.line = String(line);",
         "pendingSearchJump = anchor || line ? { path, anchor, line } : null;",
         "scrollReadingToSrcOffset(byteOffsetAtLineIndex(documentSourceBytes(), jump.line - 1));",
         // The heading is still there for a document whose source the page does not hold — only Markdown carries the block ranges the offset needs.

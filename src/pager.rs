@@ -175,16 +175,11 @@ pub(crate) fn by_pager_name(a: &PathBuf, b: &PathBuf) -> std::cmp::Ordering {
     an.cmp(&bn)
 }
 
-/// Extensions the pager walks as sequential pages: every format the reading view renders, so Prev/Next covers a folder rather than part of it. Asks the format table rather than restating it — a page the app can open but the pager can't see is invisible to Prev/Next and keeps its extension in the label.
-pub(crate) fn is_pager_page_extension(extension: &str) -> bool {
-    matches!(DocumentFormat::from_extension(extension), Some(format) if format != DocumentFormat::Code)
-}
-
 /// Turn an on-disk name into a display label (matches the web `label()`): drop a trailing page extension, collapse `-`/`_` runs to spaces, title-case each word. e.g. `book-1-words--kangyur` -> `Book 1 Words Kangyur`.
 pub(crate) fn pager_label(raw: &str) -> String {
     let base = raw
         .rsplit_once('.')
-        .filter(|(_, ext)| is_pager_page_extension(ext))
+        .filter(|_| is_listed_document_path(Path::new(raw)))
         .map(|(stem, _)| stem)
         .unwrap_or(raw);
     let mut spaced = String::with_capacity(base.len());

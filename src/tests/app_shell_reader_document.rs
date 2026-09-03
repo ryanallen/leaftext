@@ -56,7 +56,7 @@ fn every_way_of_opening_a_page_draws_one_fully_opaque_page_and_nothing_else() {
     );
     assert_in(
         &html,
-        "function bindSearchHits() {",
+        "function buildSearchHitRow(hit) {",
         "send({ command: 'openRecent', path });",
     );
     assert_contains(

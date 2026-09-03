@@ -383,6 +383,19 @@
   stroke-width: var(--lt-stroke-2);
   stroke-dasharray: 5 4;
 }
+/* The wide invisible copy of a line, drawn beside the real one purely to be hit. Painted with nothing and stroked this wide, so pointing at a line is intent rather than aim — the drawn ink is one pixel across, and a click either side of it used to land on empty canvas. It takes the pointer on its stroke alone: a line's curve encloses nothing, but a fill would still catch the whole bay between a bend and its chord. */
+.flow-edge-hit {
+  --flow-edge-hit-width: 14px;
+  fill: none;
+  stroke: transparent;
+  stroke-width: var(--flow-edge-hit-width);
+  pointer-events: stroke;
+}
+/* The line the pointer is over, which is what tells you it is a thing you can point at at all — the same job the ring does for a box. Ahead of the two rules below on purpose: all three are the same weight, so a line that is both hovered and selected reads as selected. */
+.flow-stage path[data-id].is-hover {
+  stroke: var(--lt-border-strong) !important;
+  stroke-width: var(--lt-stroke-2) !important;
+}
 /* Mermaid's own line, when it is the one selected or the one a box would drop into. Its drawing, our state. */
 .flow-stage path[data-id].is-selected {
   stroke: var(--lt-link) !important;
@@ -487,18 +500,42 @@
   /* Measured against the whole editor — the sheet is `position: fixed` — so it is centered on the modal rather than on the half of it left of the text. */
   position: absolute;
   z-index: 5;
-  max-height: 62%;
+  /* A quarter of the editor, not the 62% it used to take: the sheet is judged by what it is over, and at 62% it covered two thirds of the canvas, so nothing you were about to change was on screen while you changed it. It is the one sheet the grab bar can pull taller, up to the ceiling every sheet shares, for anyone who wants the whole shape list at once. */
+  --flow-picker-seat: 25%;
+  max-height: min(calc(var(--flow-picker-seat) + var(--sheet-grow, 0px)), var(--sheet-ceiling));
   background-color: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
 }
-/* The one field in the sheet, in a row of its own that does not scroll. */
+/* Every field the selection has, in a band of its own that does not scroll: losing the name off the top mid-list is how a box ends up unnamed, and the link, the icon and the picture were unfindable at the bottom of forty-seven shapes.
+
+   The right side keeps the close cross's box clear. That cross is pinned over the sheet rather than laid out in it — see .leaf-sheet-close in sheets.css — so it hangs over whatever this band draws under it, and the last field on the line went 30px underneath it. The cross takes 42px off the sheet's edge; the widest gap in the app clears it with room. */
 .flow-picker-head {
   flex: none;
-  padding: var(--lt-space-2) var(--lt-space-12) var(--lt-space-4);
+  padding: var(--lt-space-2) var(--lt-space-48) var(--lt-space-4) var(--lt-space-12);
+}
+/* As many fields across as fit: a box has four and the sheet opens short, so one per line would spend the whole sheet on the form and leave no shapes under it. */
+.flow-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--lt-space-4) var(--lt-space-12);
+}
+/* The word beside the box rather than shouting over it: at the muted weight every other caption in the sheet takes, and only as wide as the longest of the four so the boxes line up.
+
+   The cap is on the row and not on the grid track above it, so a box's four fields still share one line while the one field a new box gets stops at a width somebody can read a path in. Capping the track instead pushed the fourth field onto a line of its own, and stretching to the track made that lone field a 1610px band across a 1676px sheet. */
+.flow-form-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--lt-space-8);
+  max-width: 420px;
+}
+.flow-form-label {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
 }
 .flow-picker-head .flow-field {
-  width: min(360px, 100%);
+  width: 100%;
 }
 .flow-picker-body {
   overflow-y: auto;
@@ -507,11 +544,15 @@
   gap: var(--lt-space-2);
   padding: var(--lt-space-4) var(--lt-space-10) var(--lt-space-12);
 }
-/* The forty-seven shape buttons never leave the page, so this wrapper stands in the body whatever is selected. It spans both of the body's columns and repeats them, with the same gap, so every button keeps the x, the width and the row it had when the fifty-five elements sat loose in the body. */
+/* The forty-seven shape buttons never leave the page, so this wrapper stands in the body whatever is selected, across the whole width of it.
+
+   How many across answers how wide the sheet is and nothing else. The width used to be tied to `--sheet-grow`, so every pixel the grab bar added widened each button and the count came down — nine across at the seat, six a fifth of the way up, five at the ceiling. Pulling a sheet open to see more of a list and being shown less of it is the opposite of what the grab bar is for.
+
+   212px is what the longest of the forty-seven needs, measured off the drawn button rather than worked out from the font: "Comment, both sides" and "Direct access storage" both draw 152px, the widest picture is 34, the gap between them is 6 and the button holds 10 each side. It was 168, and a label is `nowrap` with nothing clipping it, so those names hung 12px out of their own button and over the one beside it. */
 .flow-shape-grid {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(212px, 1fr));
   gap: var(--lt-space-2);
 }
 /* A line has no shapes, so the wrapper collapses to nothing rather than emptying. A height of zero keeps the buttons laid out where `display: none` would throw their boxes away exactly the way removing them does — 1.3ms coming back against 4.9 for a hidden wrapper and 5.6 for hidden buttons. Out of the flow as well as flat, or a wrapper no taller than nothing still takes a row of the body's grid and one of its gaps, which pushed Delete 2px down the sheet every time a line was picked. Measured: it costs nothing, and the buttons come back at the pixel they left. */

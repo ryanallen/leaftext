@@ -67,13 +67,41 @@ function flowPointIn(event) {
   return flowPointAt(event.clientX, event.clientY);
 }
 
-// Which of our lines a mermaid element belongs to. Mermaid names its paths from the two ends, so the answer comes from the measurement rather than a search.
+// Which of our lines a mermaid element belongs to. Mermaid names its paths from the two ends, so the answer comes from the measurement rather than a search. The wide invisible copy the measurement lays beside each line answers first and answers directly: it carries the line's own name, which is why it is spelled on an attribute of ours rather than on the `data-id` the measurement reads. Either one is the same line, so a click, a hover and a drop all land indifferently.
 function flowEdgeUnder(element) {
   if (!flowPlaced || !element) return null;
-  const path = element.closest ? element.closest('path[data-id], g[data-id]') : null;
+  const path = element.closest ? element.closest('path[data-flow-hit], path[data-id], g[data-id]') : null;
   if (!path) return null;
+  if (path.dataset.flowHit) return path.dataset.flowHit;
   const found = flowPlaced.edges.find((edge) => edge.path === path || edge.path.dataset.id === path.dataset.id);
   return found ? found.id : null;
+}
+
+// What the pointer is over, without choosing it. Pointing at a line lights the line, which is the only sign there is that a line can be pointed at — its drawn ink is one pixel across, and until this there was nothing between empty canvas and a selection. Held as an id rather than an element, because the diagram is redrawn under the pointer and last draw's path is gone.
+let flowHovered = null;
+
+function markFlowHover(target) {
+  const over = target && (target.kind === 'node' || target.kind === 'edge') ? target : null;
+  // One key for both halves, because a box and a line can share an id and moving between them has to count as a move.
+  const key = over ? over.kind + ':' + over.id : null;
+  if (flowHovered === key) return;
+  flowHovered = key;
+  if (!flowCanvas) return;
+  flowCanvas.querySelectorAll('.is-hover').forEach((found) => found.classList.remove('is-hover'));
+  // Off everything, the sentence goes back to whatever the selection says — which is the idle one when nothing is selected.
+  if (!over) {
+    restoreFlowHint();
+    return;
+  }
+  if (over.kind === 'edge') {
+    const placed = flowPlaced ? flowPlaced.edges.find((edge) => edge.id === over.id) : null;
+    if (placed) placed.path.classList.add('is-hover');
+    setFlowHint(FLOW_TIP_EDGE);
+    return;
+  }
+  // A box already draws its own ring and handles on hover, so the pointer owes it nothing but the words.
+  const graph = flowSession && flowSession.graph;
+  setFlowHint((graph && flowNodeTip(graph, over.id)) || FLOW_TIP_IDLE);
 }
 
 // A box's handles, which is what a drag carries and what a drop lights up.
@@ -118,7 +146,7 @@ function clearFlowRubber() {
   if (band) band.remove();
 }
 
-// What the pointer is over, lit up so a drop is never a guess. Takes what flowTargetAt hands back, or an id, or nothing.
+// What the pointer is over, lit up so a drop is never a guess. Takes what flowTargetAt hands back, or an id, or nothing. The box a line is being dragged from is lit like any other: letting go on it makes a line from that box back to itself, so it has to look like a box that will take the drop.
 function markFlowDropTarget(target) {
   if (!flowCanvas) return;
   flowCanvas.querySelectorAll('.is-drop').forEach((found) => found.classList.remove('is-drop'));
@@ -203,13 +231,16 @@ if (flowCanvas) {
       selectFlow('edge', edge);
       return;
     }
-    // Empty space: nothing is selected any more, and the pointer now carries the view — which is how you get around a diagram bigger than the pane.
-    selectFlow(null, null);
+    // Empty space: nothing is selected any more and nothing is being added either, so the shape sheet goes whether it came up from a selection or from a double-click. Dropping the selection alone left it standing mid-add, which reads as a sheet that ignores a press outside it. The pointer then carries the view, which is how you get around a diagram bigger than the pane.
+    dismissFlowPicker();
     beginFlowPan(event);
   });
 
   flowCanvas.addEventListener('pointermove', (event) => {
-    if (!flowDrag) return;
+    if (!flowDrag) {
+      markFlowHover(flowTargetAt(event.clientX, event.clientY));
+      return;
+    }
     if (flowDrag.kind === 'pan') {
       flowDrag.moved = true;
       setFlowPan(
@@ -247,6 +278,9 @@ if (flowCanvas) {
     markFlowDropTarget(flowNodeAt(event.clientX, event.clientY));
   });
 
+  // The pointer off the canvas fires no move, so the light would stay on the last line it crossed.
+  flowCanvas.addEventListener('pointerleave', () => markFlowHover(null));
+
   flowCanvas.addEventListener('pointerup', (event) => {
     const drag = flowDrag;
     flowDrag = null;
@@ -281,8 +315,8 @@ if (flowCanvas) {
       return;
     }
     if (drag.kind === 'bud') {
-      // Let go on a box to join the two; let go on the surface for a new one, near where the pointer stopped.
-      if (over && over !== drag.from) {
+      // Let go on a box to join the two; let go on the surface for a new one, near where the pointer stopped. The box let go on may be the one dragged from, which is a step that loops back on itself — a retry, a poll, a loop — and mermaid draws it as an arc over the box.
+      if (over) {
         const edge =
           flowBudIntent(graph.direction, drag.side).step === 'previous'
             ? flowConnect(graph, over, drag.from)

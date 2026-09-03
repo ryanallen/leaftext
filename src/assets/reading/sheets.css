@@ -1,7 +1,7 @@
 /* ---- Glossary bottom sheet ---------------------------------------------
    A glossary link opens the term here, sliding up over the reading view; the document keeps its place underneath. The body reuses .document-body so the entry is styled like ordinary Markdown. See window.leafShowGlossary. */
 /* ---- the bottom sheet, once ------------------------------------------------
-   Three things slide up from the bottom edge: the glossary, the theme picker, and the flowchart editor's own. They differ in what they are anchored to and what they are filled with, and in nothing else — so that is all their own classes say, and everything below is shared. `makeSheetDraggable` is the matching half in dom.js: --sheet-drag is how far the pointer has carried the sheet, and the transition is off for the length of the drag so it tracks the pointer exactly. */
+   Three things slide up from the bottom edge: the glossary, the theme picker, and the flowchart editor's own. They differ in what they are anchored to and what they are filled with, and in nothing else — so that is all their own classes say, and everything below is shared. `makeSheetDraggable` is the matching half in dom.js: --sheet-drag is how far the pointer has carried the sheet down, --sheet-grow how far it has pulled the one sheet with room to grow up past flush, and the transition is off for the length of the drag so it tracks the pointer exactly. */
 /* The scrim behind a sheet: one definition, three sheets. It dims the page and takes the click that closes what is over it. */
 .lt-backdrop[hidden] {
   display: none;
@@ -25,9 +25,17 @@
   opacity: 1;
   transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
 }
-/* The flowchart editor is a full-window view rather than a sheet over the page, so the scrim it opens with — the press that closes the editor — takes the layer above those views: at the sheets' own 40 it would paint under them. The shape picker inside throws none. */
+/* The flowchart editor is a full-window view rather than a sheet over the page, so the scrim it opens with — the press that closes the editor — takes the layer above those views: at the sheets' own 40 it would paint under them. The shape picker inside throws one of its own, against the editor rather than the window. */
 #flowBackdrop {
   z-index: var(--lt-z-42);
+}
+/* The shape picker is inside that editor rather than over the window, so its scrim is too: absolute against the editor's own box, dimming the whole of it — the diagram, the top bar and the text pane — and nothing beyond it, on the layer just under the picker's own 5. At the sheets' 40 it would paint over the sheet it belongs to.
+
+   It dims and takes nothing, which is the one way it differs from every other scrim. That sheet is not a question standing in your way: it follows whatever is selected and stays up while the canvas is worked, and pressing a box or one of its + handles chooses that box, which brings the sheet up mid-gesture. A scrim that took the pointer would swallow the rest of that drag, so a line drawn from a handle would always land on empty space. So the press that closes it is read where it lands instead — `pressOutsideFlowPicker` in flow-picker.js — along with the X, Escape and clearing the selection. */
+#flowPickerBackdrop {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
 }
 /* A term rises over the full-window table, which is itself a sheet, so its scrim takes the layer above: at the sheets' own 40 it paints under the table and the press outside the term lands on the table instead. */
 #glossaryBackdrop {
@@ -103,7 +111,9 @@
   padding-bottom: var(--sheet-raise);
   display: flex;
   flex-direction: column;
-  max-height: 78vh;
+  /* As tall as a sheet is ever allowed to be, named once so a sheet that opens shorter can be dragged back up to it and stop there. */
+  --sheet-ceiling: 78vh;
+  max-height: var(--sheet-ceiling);
   border-top-left-radius: var(--lt-radius-2xl);
   border-top-right-radius: var(--lt-radius-2xl);
   transform: translateY(100%);

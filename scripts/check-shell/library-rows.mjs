@@ -414,23 +414,172 @@ export function run() {
   });
 
   check('a search row opens on the press too, because a vault being read rewrites them as fast as the tree', () => {
-    const pane = booted.document.getElementById('librarySearchResults');
-    const { button, listeners } = rowStandingIn({ openPath: 'C:\\Vaults\\Work\\GLOSSARY.md', anchor: '', line: '3' });
-    const wasQuery = pane.querySelectorAll;
-    pane.querySelectorAll = () => [button];
-    try {
-      vm.runInContext('bindSearchHits()', booted);
-    } finally {
-      pane.querySelectorAll = wasQuery;
-    }
-    if (!listeners.pointerdown) throw new Error('a search row does not listen for a press at all');
+    const button = booted.buildSearchHitRow({ absPath: 'C:\\Vaults\\Work\\GLOSSARY.md', anchor: '', startLine: 3 });
+    const press = (button.listeners.get('pointerdown') || [])[0];
+    const click = (button.listeners.get('click') || [])[0];
+    if (!press) throw new Error('a search row does not listen for a press at all');
     const sent = sentDuring(() => {
-      listeners.pointerdown({ pointerType: 'mouse', button: 0 });
-      listeners.click({});
+      press({ pointerType: 'mouse', button: 0 });
+      click({});
     });
     const opened = sent.filter((message) => message.command === 'openRecent');
     if (opened.length !== 1) throw new Error(`a pressed search row sent ${opened.length} opens rather than one`);
     if (opened[0].path !== 'C:\\Vaults\\Work\\GLOSSARY.md') throw new Error(`a search row opened ${opened[0].path}`);
+  });
+
+  // ---- a part-read vault's answers are drawn against the rows already there ----
+  //
+  // A vault the app has not read this session answers the same query once per fifty documents, and every answer carries the rows before it. Reassigning the list destroyed all of them and built them again: on a 987-file vault, thirteen answers replaced the row on screen twelve times out of twelve, and keyboard focus resting on a result fell to the page body while the row it was on was still a match. So the rows are drawn against the ones standing — kept by the key the merge already agrees on — and only the note and the count line above them are written whole.
+
+  check('a part-read vault leaves an unchanged row the element it was, and still draws what arrives', () => {
+    showingLibrarySearch();
+    const rowsOnScreen = () => searchPane().querySelectorAll('.library-hit');
+    const rowFor = (title) => rowsOnScreen().find((row) => String(row.textContent).includes(title)) || null;
+
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('First')], truncated: false, partial: true });
+    const held = rowFor('First');
+    if (!held) throw new Error('the first slice drew no row at all');
+
+    // The next slice of fifty documents: the row above it has not moved, so it must be the same element — its listener, its focus ring and any press half-way through it all live on it.
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('First'), searchHit('Second')],
+      truncated: false,
+      partial: true,
+    });
+    if (rowFor('First') !== held) throw new Error('a partial answer replaced a row that had not moved');
+    if (held.parentElement !== searchPane()) throw new Error('a partial answer took an unchanged row off the page');
+    if (rowsOnScreen().length !== 2) throw new Error(`the arriving slice drew ${rowsOnScreen().length} rows rather than two`);
+    if (!rowFor('Second')) throw new Error('the row the arriving slice found was never drawn');
+
+    // The line above them is rewritten whole every answer, and there is exactly one of it.
+    const counts = searchPane().querySelectorAll('.library-results-count');
+    if (counts.length !== 1) throw new Error(`the answers left ${counts.length} count lines above the rows`);
+    if (!searchPane().innerHTML.includes('2 results so far')) throw new Error('the count line did not follow the arriving rows');
+  });
+
+  check('keyboard focus resting on a result stays on the row it was put on', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('First')], truncated: false, partial: true });
+    const held = searchPane().querySelectorAll('.library-hit')[0];
+    // Where Tab leaves somebody who reached into the list while the vault was still being read. A browser drops focus the moment the element holding it leaves the page, so the row staying connected is the whole of what keeps the ring on it.
+    booted.document.activeElement = held;
+
+    for (const title of ['Second', 'Third', 'Fourth']) {
+      booted.leafSetSearchResults({
+        query: 'draft',
+        hits: [searchHit('First'), searchHit(title)],
+        truncated: false,
+        partial: true,
+      });
+      if (held.parentElement !== searchPane()) throw new Error(`the answer carrying ${title} took the focused row off the page`);
+      if (booted.document.activeElement !== held) throw new Error(`the answer carrying ${title} moved the focus off the row`);
+    }
+    booted.document.activeElement = null;
+  });
+
+  check('the final answer drops the rows it no longer has and keeps the elements of the ones it does', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('Kept'), searchHit('Dropped')],
+      truncated: false,
+      partial: true,
+    });
+    const rows = () => searchPane().querySelectorAll('.library-hit');
+    const [kept, dropped] = rows();
+    if (!kept || !dropped) throw new Error('the partial answer drew fewer than its two rows');
+
+    // The last answer ranks the whole vault, and it is a different, smaller set rather than a re-sort: the watched run replaced 507 rows with 150. The ones it drops go; the ones it keeps stay the elements they were.
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('Kept')], truncated: false });
+    if (rows().length !== 1) throw new Error(`the final answer left ${rows().length} rows rather than one`);
+    if (rows()[0] !== kept) throw new Error('the final answer replaced a row it had kept');
+    if (dropped.parentElement) throw new Error('the final answer left a row it dropped on the page');
+    if (searchPane().innerHTML.includes('so far')) throw new Error('a finished search still said its count was partial');
+  });
+
+  check('a kept row follows the match behind it when that match moves', () => {
+    showingLibrarySearch();
+    const match = (extra) => ({ ...searchHit('A note'), ...extra });
+    booted.leafSetSearchResults({ query: 'draft', hits: [match({ anchor: 'first', alias: '' })], truncated: false, partial: true });
+    const row = searchPane().querySelectorAll('.library-hit')[0];
+    if (row.dataset.anchor !== 'first') throw new Error(`the first answer drew the anchor as ${row.dataset.anchor}`);
+
+    // A partial answer cannot move it: the merge appends, so a match already drawn keeps the hit it was drawn from. The final answer is the whole vault's and replaces the list, and there a kept row can still differ in where the jump lands and in the other name that matched — both live on the element rather than in a string, so both have to be written onto the one that was kept.
+    booted.leafSetSearchResults({ query: 'draft', hits: [match({ anchor: 'second', alias: 'Other name' })], truncated: false });
+    if (searchPane().querySelectorAll('.library-hit')[0] !== row) throw new Error('the row was rebuilt rather than put right');
+    if (row.dataset.anchor !== 'second') throw new Error(`the kept row still jumps to ${row.dataset.anchor}`);
+    if (!row.innerHTML.includes('Other name')) throw new Error('the kept row does not say the name that matched');
+  });
+
+  check('a re-sorted answer puts the rows in its own order without rebuilding them', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('Alpha'), searchHit('Beta'), searchHit('Gamma')],
+      truncated: false,
+      partial: true,
+    });
+    const rows = () => searchPane().querySelectorAll('.library-hit');
+    const [alpha, beta, gamma] = rows();
+
+    booted.leafSetSearchResults({
+      query: 'draft',
+      hits: [searchHit('Gamma'), searchHit('Alpha'), searchHit('Beta')],
+      truncated: false,
+    });
+    const after = rows();
+    if (after.length !== 3) throw new Error(`the re-sort left ${after.length} rows rather than three`);
+    if (after[0] !== gamma || after[1] !== alpha || after[2] !== beta) throw new Error('the re-sort rebuilt the rows instead of moving them');
+  });
+
+  check('a write of the whole list leaves no row of the last answer to be handed back', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false, partial: true });
+    const drawn = searchPane().querySelectorAll('.library-hit')[0];
+
+    // A failure replaces the list with its message, so the element is off the page: handing it back on the next answer would draw a row nothing is holding.
+    booted.leafSetSearchResults({ query: 'draft', error: { message: 'Search failed.' } });
+    if (searchPane().querySelectorAll('.library-hit').length) throw new Error('a failed search left rows behind');
+    if (drawn.parentElement) throw new Error('a failed search left its rows attached');
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    const after = searchPane().querySelectorAll('.library-hit')[0];
+    if (!after) throw new Error('the answer after a failure drew no row');
+    if (after === drawn) throw new Error('a row from before the failure was handed back onto the page');
+    if (after.parentElement !== searchPane()) throw new Error('the answer after a failure drew a row that is not on the page');
+
+    // And clearing the query takes the list with it, so nothing survives into the next search either.
+    vm.runInContext("runLibrarySearch('')", booted);
+    if (searchPane().querySelectorAll('.library-hit').length) throw new Error('clearing the query left rows behind');
+    if (after.parentElement) throw new Error('clearing the query left its rows attached');
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    if (searchPane().querySelectorAll('.library-hit')[0] === after) throw new Error('a row from before the query was cleared was handed back onto the page');
+  });
+
+  check('a row bound once is not bound again by the answers that keep it', () => {
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false, partial: true });
+    const row = searchPane().querySelectorAll('.library-hit')[0];
+    const presses = () => (row.listeners.get('pointerdown') || []).length;
+    const bound = presses();
+    if (bound !== 1) throw new Error(`a new row was bound ${bound} times rather than once`);
+
+    for (const title of ['Second', 'Third']) {
+      booted.leafSetSearchResults({
+        query: 'draft',
+        hits: [searchHit('A note'), searchHit(title)],
+        truncated: false,
+        partial: true,
+      });
+    }
+    if (presses() !== bound) throw new Error(`answers keeping a row bound it ${presses()} times`);
+
+    // One press, one open: a row bound twice would send the command twice.
+    const sent = sentDuring(() => (row.listeners.get('pointerdown') || [])[0]({ pointerType: 'mouse', button: 0 }));
+    const opened = sent.filter((message) => message.command === 'openRecent');
+    if (opened.length !== 1) throw new Error(`a kept row sent ${opened.length} opens on one press`);
+    vm.runInContext("runLibrarySearch('')", booted);
   });
 
   check('an unchanged folder read does not replace the rows', () => {

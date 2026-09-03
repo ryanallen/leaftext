@@ -2,7 +2,7 @@
 
 use super::*;
 
-use crate::pager::{is_pager_page_extension, pager_label};
+use crate::pager::pager_label;
 use crate::remote::vault_mirror_dir;
 
 #[test]
@@ -1058,8 +1058,8 @@ fn a_cursor_rule_reads_as_markdown_wherever_an_extension_is_asked_about() {
     );
 
     // A rule sits in a folder of rules, so Prev/Next has to walk to the one beside it.
-    assert!(is_pager_page_extension("mdc"));
-    assert!(is_pager_page_extension("MDC"));
+    assert!(is_listed_document_path(Path::new("rule.mdc")));
+    assert!(is_listed_document_path(Path::new("rule.MDC")));
     assert_eq!(pager_label("code-style.mdc"), "Code Style");
 
     // Double-clicking one has to reach the app, which is three separate claims in three files that cannot read `format.rs` at install time.
@@ -1425,26 +1425,29 @@ fn direct_open_and_listed_document_gates_keep_source_files_out_of_the_pager() {
         .into_iter()
         .filter(|extension| !source_extensions().contains(extension))
     {
+        let name = format!("file.{extension}");
         assert!(
-            is_pager_page_extension(extension),
+            is_listed_document_path(Path::new(&name)),
             ".{extension} opens but Prev/Next skips it"
         );
+        assert_eq!(pager_label(&name), "File");
+
+        let uppercase_name = format!("file.{}", extension.to_ascii_uppercase());
         assert!(
-            is_pager_page_extension(&extension.to_ascii_uppercase()),
+            is_listed_document_path(Path::new(&uppercase_name)),
             ".{extension} uppercase should page too"
         );
+        assert_eq!(pager_label(&uppercase_name), "File");
     }
     for extension in source_extensions() {
-        assert!(is_supported_document_path(Path::new(&format!(
-            "file.{extension}"
-        ))));
-        assert!(!is_pager_page_extension(extension));
+        let name = format!("file.{extension}");
+        assert!(is_supported_document_path(Path::new(&name)));
+        assert!(!is_listed_document_path(Path::new(&name)));
+        assert_eq!(pager_label(&name), format!("File.{extension}"));
     }
-    // `.markdown` and `.mdown` open like any other page, so they must also page and lose their extension in the label.
-    assert!(is_pager_page_extension("markdown"));
-    assert!(is_pager_page_extension("mdown"));
-    assert_eq!(pager_label("getting-started.markdown"), "Getting Started");
-    assert!(!is_pager_page_extension("png"));
+
+    assert!(!is_listed_document_path(Path::new("file.png")));
+    assert_eq!(pager_label("file.png"), "File.png");
 }
 
 #[test]
