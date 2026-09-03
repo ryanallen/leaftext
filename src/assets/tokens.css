@@ -9,6 +9,8 @@
   --lt-radius-2xl: 14px;
   --lt-radius-pill: 999px;
   --lt-radius-full: 50%;
+  --lt-radius-window: 20px;
+  --lt-radius-window-inner: 12px;
   /* Document type */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-measure-body: 75ch;

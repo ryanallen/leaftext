@@ -15,6 +15,68 @@ fn content_hash_distinguishes_changed_documents() {
     );
 }
 
+fn rust_code_view_buffer() -> EditableDocument {
+    EditableDocument::new(
+        PathBuf::from("reload.rs"),
+        SourceText::utf8("fn main() {}\n".to_string()),
+    )
+}
+
+#[test]
+fn a_code_view_reload_payload_carries_the_current_rust_buffer() {
+    let edit = rust_code_view_buffer();
+    let payload = code_view_refresh_payload(true, &edit).expect("the code view asks for a payload");
+    let json: serde_json::Value = serde_json::from_slice(&payload).expect("payload is JSON");
+
+    assert_eq!(json["text"], "fn main() {}\n");
+    assert_eq!(json["language"], "rust");
+    assert_eq!(json["displayName"], "Rust");
+    assert_eq!(json["dirty"], false);
+    assert!(
+        json.get("scrollFraction").is_none(),
+        "a refresh leaves the page's own scroll in place"
+    );
+}
+
+#[test]
+fn a_reading_view_reload_stages_no_code_view_payload() {
+    let edit = rust_code_view_buffer();
+    assert!(code_view_refresh_payload(false, &edit).is_none());
+}
+
+#[test]
+fn the_press_and_reload_share_the_code_view_payload_definition() {
+    let edit = rust_code_view_buffer();
+    let mut pressed: serde_json::Value =
+        serde_json::from_slice(&code_view_source_payload(&edit, true, Some(0.42)))
+            .expect("the press payload is JSON");
+    let mut reloaded: serde_json::Value = serde_json::from_slice(
+        &code_view_refresh_payload(true, &edit).expect("the reload asks for a payload"),
+    )
+    .expect("the reload payload is JSON");
+
+    assert_eq!(pressed["language"], reloaded["language"]);
+    assert_eq!(pressed["displayName"], reloaded["displayName"]);
+    assert_eq!(pressed["dirty"], true);
+    assert_eq!(reloaded["dirty"], false);
+    assert_eq!(pressed["scrollFraction"], 0.42);
+    assert!(reloaded.get("scrollFraction").is_none());
+
+    pressed
+        .as_object_mut()
+        .expect("payload is an object")
+        .remove("dirty");
+    pressed
+        .as_object_mut()
+        .expect("payload is an object")
+        .remove("scrollFraction");
+    reloaded
+        .as_object_mut()
+        .expect("payload is an object")
+        .remove("dirty");
+    assert_eq!(pressed, reloaded);
+}
+
 #[test]
 fn watch_dir_for_uses_the_documents_parent_directory() {
     let dir = std::env::temp_dir().join(format!("leaf-watch-dir-fixture-{}", std::process::id()));

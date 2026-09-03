@@ -574,54 +574,56 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
 /// And the markdown one again: every body cell of a table now carries its column's heading, which is what lets a narrowed table draw its rows as labeled cards on all three hosts. Same title, same blocks, an attribute on each cell.
 ///
 /// And the four data ones: a JSON, YAML or config page carried `data-block-id` and `data-block-kind` on every block, and neither said anything about the file — the id's number was read nowhere at all, and the kind is what the tag the block is drawn with already says, which is where the page reads it now (`dataBlockKindOf`). Same title, same blocks, same source ranges; a block with no range now carries no attribute at all, and a large config page loses about 30% of its bytes.
+///
+/// And every fixture: the render now carries the waiting Previous and Next strip that the host fills after the document arrives. Same titles, blocks and tasks; one navigation block appended.
 const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     (
         "markdown",
-        "fd446abfa5be716de89c4d49257927a85a433d30bf7ed390fde5fc52893a9003",
+        "dfa8643b728a817b65d18e68a028627470f11a42d29f6c1fdea2af349e30fe13",
     ),
     (
         "mermaid",
-        "b5c44c856f6577ddc70c645d393f6f25093a70a24f52127d6879dacaae06346b",
+        "b6ea63c812787527eda44011c9a6b2e4e03be8f30ae786ae9350758b00ad20f4",
     ),
     (
         "math",
-        "5e30232a0113744e95fe1609f7286a0dc9caca25b16777b6fb2d8f358e8f0e0f",
+        "f91c56424200cbda779a4d2732fa59658b65831883d548894eeb68b4b38a9203",
     ),
     (
         "source-edits",
-        "27cf111f37698ccbee098746437232845ff08b95964be6ba8eae850ca7f7b88e",
+        "564a32a9e37a415078acf83599dfc65cfa1cbca2a708e54fc8b5719cea61e2bb",
     ),
     (
         "xml",
-        "cd26a8726ec3128133adfa09566f42c6e0ce5042936a46d50a42029356ceac28",
+        "be7895a611b6f026a620a7d0eb872c30ec5792530e2f8c74299f0a1487be0155",
     ),
     (
         "json",
-        "dbcc21989572cf833c2eaba548fe8f8703aa1027939323b67f93c7879243ee91",
+        "da10e7f8f9102b2c012935b11b4a45b4592e6ea749625536df11bf128f63834e",
     ),
     (
         "scholar-rich-document",
-        "2b39ba906f40290e4e05e2a6e74b2f93a161c78888ef4e9508abf638da241e93",
+        "a40c90148be52793002051c1ef7c33c1ac292bf65759384666c459c271138816",
     ),
     (
         "yaml",
-        "581bba078286a14c8fb499369cb0d8e0c1eb44fe4a2a164f3693e6e0430b0995",
+        "5eb422d16077f1e38a957f308a89e27f604de342fe668056aa3b9b020b76dcf5",
     ),
     (
         "eml",
-        "508de6aae4b4b251f66c1de14e102a04780c64af1ec4b442294f1adb2bca1936",
+        "b9c668f33cfbfd5a82b04676752b03d0c77505362d6754fda9d093c759324724",
     ),
     (
         "html",
-        "d1d04a3bf08f6f6dd95accc91b794e4ee110929092aaa8562bb20d977f77bbdd",
+        "0188116ace3f436bdbfdf4ada04315e2ae763a5318c772a78831f1b88d74da30",
     ),
     (
         "text",
-        "f0dbd24b6ddc3457449306de7b6fb98e39cd0dbf45c9585a3da049aefb929d29",
+        "a81c579cf465bac3ef844989557300d810bc43030a0f8f584a6f31966554e8ea",
     ),
     (
         "ini",
-        "817a45bba1d5dbe70d57a30138c6b63d21be7eef259de54c91eacb08cd3e60ae",
+        "e1705325fef1a250f183d6050765236ad4f03b2c30674dc9f158d8afb4d46916",
     ),
 ];
 

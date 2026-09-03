@@ -205,6 +205,21 @@ pub(crate) fn front_document_name(workspace: &Workspace) -> String {
         .unwrap_or_else(|| "the document".to_string())
 }
 
+pub(crate) fn code_view_source_payload(
+    edit: &EditableDocument,
+    dirty: bool,
+    scroll_fraction: Option<f64>,
+) -> Vec<u8> {
+    let source_definition = leaftext::source_definition(&edit.path);
+    let language = source_definition
+        .map(|definition| definition.language_token)
+        .unwrap_or(edit.format.language_token());
+    let display = source_definition
+        .map(|definition| definition.display_name)
+        .unwrap_or(edit.format.display_name());
+    code_view_payload(edit.text(), language, display, dirty, scroll_fraction)
+}
+
 /// Swap the active document to the code view. Seeds the edit buffer from disk the first time, then hands the webview the highlighted source, buffer text, language, and dirty state.
 ///
 /// Answers the sentence saying why the source could not be shown, so the caller says it where the reader is looking rather than opening nothing at all.
@@ -216,25 +231,10 @@ pub(crate) fn enter_code_view(
     let (index, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     // Building the editor on a big source takes a while; the code-view script clears the spinner once it is on screen.
     begin_reader_loading(webview);
-    let source_definition = leaftext::source_definition(&edit.path);
-    let language = source_definition
-        .map(|definition| definition.language_token)
-        .unwrap_or(edit.format.language_token())
-        .to_string();
-    let display = source_definition
-        .map(|definition| definition.display_name)
-        .unwrap_or(edit.format.display_name())
-        .to_string();
     let dirty = edit.is_dirty();
 
     // The buffer's own text, never a copy of it: on a package member the copy was a whole inflated member taken and dropped inside one press, and `code_view_payload` only borrows.
-    let url = stage_page_payload(code_view_payload(
-        edit.text(),
-        &language,
-        &display,
-        dirty,
-        scroll_fraction,
-    ));
+    let url = stage_page_payload(code_view_source_payload(edit, dirty, scroll_fraction));
     run_page_script(
         webview,
         &code_view_fetch_script(&url),

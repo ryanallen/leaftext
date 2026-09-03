@@ -185,6 +185,12 @@ fn opened_document_starts_with_async_pager_placeholder() {
 
     assert_contains(&document.html, "docs-pager-loading");
     assert_contains(&document.html, "docs-pager-skeleton");
+    // Both sides wear the shared class, so the bars take one themed fill, one pulse and one still reduced-motion state rather than a recipe of the pager's own.
+    assert_eq!(
+        document.html.matches("lt-skeleton docs-pager-").count(),
+        4,
+        "each side carries a label bar and a title bar on the shared recipe"
+    );
     assert!(
         !document.html.contains("Next Page"),
         "document render should not synchronously scan pager neighbors"

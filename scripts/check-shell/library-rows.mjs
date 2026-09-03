@@ -195,6 +195,42 @@ export function run() {
     if (!searchPane().innerHTML.includes('1 result')) throw new Error('the answer did not count its rows');
   });
 
+  check('a search with no row yet holds the shape of the rows that are coming, and gives it up to the first real one', () => {
+    const waitingRows = () => (searchPane().innerHTML.match(/library-hit-waiting"/g) || []).length;
+
+    // Nothing has answered, so the pane holds three result-shaped rows under the count line rather than one word on its own.
+    showingLibrarySearch();
+    if (waitingRows() !== 3) throw new Error(`a search with nothing drawn held ${waitingRows()} waiting rows`);
+    if (waitingMarks() !== 1) throw new Error('the shape of the rows replaced the waiting mark in the count line');
+
+    // The first batch of a vault still being read is a real row, so the shapes go at once and never come back over it.
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false, partial: true });
+    if (waitingRows() !== 0) throw new Error('the first real row arrived and the shapes stayed over it');
+    if (!searchPane().innerHTML.includes('library-hit"')) throw new Error('the first real row was not drawn');
+    if (waitingMarks() !== 1) throw new Error('a vault still being read stopped saying so');
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note'), searchHit('Another')], truncated: false });
+    if (waitingRows() !== 0) throw new Error('the final answer put the shapes back');
+
+    // An answer with nothing in it says so in words, not in shapes.
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [], truncated: false });
+    if (waitingRows() !== 0) throw new Error('an empty answer left the shapes standing');
+    if (!searchPane().innerHTML.includes('No matches.')) throw new Error('an empty answer did not say so');
+
+    // So does a failed one.
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', error: { message: 'Search failed.' } });
+    if (waitingRows() !== 0) throw new Error('a failed search left the shapes standing');
+
+    // And a re-search over rows that already answer something keeps them: a shape is never drawn over a row somebody can read.
+    showingLibrarySearch();
+    booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });
+    librarySearchField.value = 'drafts';
+    vm.runInContext("runLibrarySearch('drafts')", booted);
+    if (waitingRows() !== 0) throw new Error('a re-search covered the rows it already had with shapes');
+    if (!searchPane().innerHTML.includes('library-hit"')) throw new Error('a re-search threw away the rows it had');
+  });
+
   check('a search run over an older query’s rows marks them instead of leaving them silent', () => {
     showingLibrarySearch();
     booted.leafSetSearchResults({ query: 'draft', hits: [searchHit('A note')], truncated: false });

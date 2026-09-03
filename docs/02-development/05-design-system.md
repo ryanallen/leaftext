@@ -1,16 +1,16 @@
 <!-- Generated from design/ by `just bundle-design-docs`. Do not edit. -->
 # Design system
 
-> Every value in Leaftext's interface comes from a token. 82 of them are colors, which each theme sets for itself; 163 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
+> Every value in Leaftext's interface comes from a token. 82 of them are colors, which each theme sets for itself; 165 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
 
 Four files under `design/` are the source. Each is plain Markdown, so Leaftext opens them.
 
 | File | Holds | Compiles to |
 | --- | --- | --- |
 | `design/colors.md` | 82 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
-| `design/tokens.md` | 163 values that do not change with the theme | `src/assets/tokens.css` |
+| `design/tokens.md` | 165 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 63 icons | `src/assets/icons.css`, one mask class each |
-| `design/components.md` | 72 components, and the markup each is drawn with | `src/assets/gallery.html` |
+| `design/components.md` | 73 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
@@ -33,7 +33,7 @@ One value each, whatever theme is on.
 
 | Group | Tokens |
 | --- | --- |
-| Corners | 8 |
+| Corners | 10 |
 | Document type | 27 |
 | Interface text | 13 |
 | Interface weight | 5 |
@@ -62,7 +62,7 @@ Every drawing is a value the page root declares and the class reads, which is wh
 
 ## Components
 
-72 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
+73 components. Each row names its class family, what builds it, and the markup the gallery draws it with — so a component that loses its styling, or gains a class nobody listed, fails the build.
 
 | Component | Class family |
 | --- | --- |
@@ -113,6 +113,7 @@ Every drawing is a value the page root declares and the class reads, which is wh
 | Sheet scrim | `.lt-backdrop` |
 | Confirmation | `.confirm-dialog` |
 | Spinner | `.lt-spinner` |
+| Skeleton | `.lt-skeleton` |
 | Icon | `.lt-icon` |
 | Dropdown | `.leaf-select` |
 | Scroll area | `.leaf-scroll` |

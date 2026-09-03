@@ -1,13 +1,13 @@
 .reader-shell {
   background: var(--lt-markdown-background);
-  /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px library column when the .reader-loading overlay (which claims column 2, row 1) is unhidden — the document then reflows at zero width and every scroll computation made while the spinner is up lands wrong. */
+  /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px library column when the .reader-loading overlay (which claims column 2, row 1) is unhidden — the document then reflows at zero width and every scroll computation made while the wait is up lands wrong. */
   grid-column: 2;
   grid-row: 1;
   box-sizing: border-box;
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   border-right: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   overflow: auto;
   /* The reader pins its own scroll anchor across re-renders; the browser's native scroll anchoring fights that and causes transient jumps. */
   overflow-anchor: none;
@@ -56,7 +56,7 @@
   /* The right side clears the scrollbar: the browser draws it inside the scroller where an overlay on the cell can't get under it, and the thumb starts at the same edge the top band does, so the wash would bury it. */
   margin-right: var(--reader-scrollbar);
   /* The card's own corner: an inner curve is the outer one less the border, and this border is snapped the same way the card's is. */
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   overflow: hidden;
 }
 .library-shell.library-closed .reader-edge-fade {
@@ -129,31 +129,43 @@
   margin-top: var(--app-bar-height);
 }
 .reader-loading {
-  /* Overlays the reader cell so a spinner can show over the current document during a slow load. Pointer events pass through; sits below the app bar. */
+  /* Overlays the reader cell so the shape of the arriving page can show during a slow load. Pointer events pass through; sits below the app bar. */
   grid-column: 2;
   grid-row: 1;
   align-self: stretch;
   justify-self: stretch;
-  /* Same rounding as the card it covers (the gutter tracks inset it already), so the wash doesn't spill past the page's corners. */
+  /* Same rounding as the card it covers (the gutter tracks inset it already), so nothing spills past the page's corners. */
   box-sizing: border-box;
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   display: flex;
-  align-items: center;
   justify-content: center;
   padding-top: var(--app-bar-height);
   pointer-events: none;
-  background: color-mix(in srgb, var(--lt-markdown-background) 62%, transparent);
+  /* Opaque rather than a wash: the document underneath has already been replaced, and letting it show through says the page somebody is reading is still the answer. */
+  background: var(--lt-markdown-background);
   z-index: 6;
 }
 .reader-loading[hidden] {
   display: none;
 }
-.reader-loading-spinner {
-  width: 34px;
-  height: 34px;
-  border-width: var(--lt-stroke-3);
-  border-color: color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
-  border-top-color: var(--lt-accent);
+/* The document's own measure and padding, so a bar stands where the text it holds a place for will stand. */
+.reader-loading-page {
+  width: min(var(--type-measure-body), 100%);
+  padding: var(--reader-content-pad);
+  overflow: hidden;
+}
+.reader-loading-heading {
+  width: 55%;
+  height: 1.7rem;
+  margin-bottom: var(--lt-space-24);
+}
+.reader-loading-line {
+  height: 0.85rem;
+  margin-bottom: var(--lt-space-12);
+}
+.reader-loading-line-short {
+  width: 72%;
+  margin-bottom: var(--lt-space-24);
 }
 .reader-layout {
   --reader-layout-padding-inline: var(--reader-content-pad);

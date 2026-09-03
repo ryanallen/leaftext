@@ -38,13 +38,6 @@
   border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
   border-radius: var(--lt-radius-lg);
 }
-.docs-pager-label-skeleton,
-.docs-pager-title-skeleton {
-  display: block;
-  border-radius: var(--lt-radius-pill);
-  background: var(--lt-markdown-rule);
-  animation: pager-skeleton-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite;
-}
 .docs-pager-label-skeleton {
   width: 72px;
   height: 0.74rem;
@@ -57,23 +50,6 @@
 .docs-pager-next .docs-pager-label-skeleton,
 .docs-pager-next .docs-pager-title-skeleton {
   margin-left: auto;
-}
-@keyframes pager-skeleton-pulse {
-  0%,
-  100% {
-    opacity: var(--lt-opacity-38);
-  }
-  50% {
-    opacity: var(--lt-opacity-78);
-  }
-}
-/* Its own block, because the blanket rule carries no opacity and the bars have none of their own: a skeleton stopped at full strength reads as loaded content. The shorthand here takes the name away too, so the pulse is off rather than parked on whichever keyframe it ended at. */
-@media (prefers-reduced-motion: reduce) {
-  .docs-pager-label-skeleton,
-  .docs-pager-title-skeleton {
-    animation: none;
-    opacity: var(--lt-opacity-55);
-  }
 }
 /* The same fill the chrome buttons take, so the biggest target on the page answers the pointer the way the smallest ones do. Never a dot lattice: the app spends that everywhere else on saying a thing is quiet, and over a card this wide it reads as switched off. What keeps the fill from being a slab is the halftone `panels.css` throws around it. */
 .document-body .docs-pager a:hover,

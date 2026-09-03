@@ -11,9 +11,11 @@
 //
 // **What it can be certain about is the pin.** The page keeps its own copy of the diagram export list to draw the menu a Mac gets, and nothing held the two together — `scripts/check-shell.mjs` compares the drawn menu to a third hand-kept string, which is a rendering claim rather than a list-equality one and stays where it is. Here the page's endings must be the host's endings, in the same order, because the Mac menu is drawn from one and the save window from the other. Labels are deliberately not compared: the save window says "PNG image" where the menu says "PNG".
 //
-// **What holds the reading list itself, and what a green run does not say.** Every path recorded here is held to a file that exists, so a file renamed or deleted out from under the list fails rather than being printed as a name with nothing behind it. Beyond that, every `.rs` and `.js` under `src/` whose comment line names two or more of a list's rows — `src/assets/vendor/` skipped as compiled output, and each list's own source skipped because the check already reads that one as the table — is either in that list's `prose` or in its `looked` with a one-line reason the format words are there for something else. A file that gains such a comment fails with the two answers offered.
+// **What holds the reading list itself, and what a green run does not say.** Every path recorded here is held to a file that exists, so a file renamed or deleted out from under the list fails rather than being printed as a name with nothing behind it. Beyond that, every `.rs` and `.js` under `src/` whose comment line names two or more of a list's rows — `src/assets/vendor/` skipped as compiled output, and each list's own source skipped because the check already reads that one as the table — is either in that list's `prose` or in its `looked` with a one-line reason the format words are there for something else. A file that gains such prose fails with the two answers offered.
 //
 // **That catches an addition and never an omission.** A comment whose prose names one row or none is invisible to it, and the standing example is `src/main.rs:605` — "the window carries every row the table holds" is real prose about the diagram export table and names no format word at all, so it lives in the hand-typed list and nothing but a person could have put it there. `src/tests/app_shell_chrome_icons.rs` is the same shape: two paragraphs about that table naming Markdown and nothing else. So a green run means the recorded paths are all real and nothing has quietly gained a comment about the list; it does not mean the list is every file that describes it.
+//
+// **The document formats sweep the pages too, and only that list does.** The README beside `src/` and every Markdown page under `docs/` are where somebody deciding whether to install reads which endings Leaftext opens, and they were held to nothing: three spellings taken out of two of them left every check in the tree green. A page has no code around its words, so every line of one is prose. The export tables stay in `src/`, because a docs page naming `png` beside `pdf` is saying what a picture may be written as rather than describing that table. This half is the honest half of the guard: it fires when the table moves, and a page quietly losing an ending on its own is invisible to it. What catches that is `every_page_that_lists_what_leaftext_opens_names_every_extension` in `src/tests/settings_paths.rs`, over the four pages that exist to list every ending — the other pages here name a few formats on purpose, and no rule over the words can tell such a sentence from one written for the old, smaller list.
 //
 // The rules are proved on made-up lists before the real tree is opened, so a parser that quietly stops finding rows fails the build instead of passing everything.
 
@@ -150,6 +152,17 @@ const LISTS = [
       'src/office/odf.rs',
       'src/office/testing.rs',
       'src/tests/office.rs',
+      'README.md',
+      'docs/README.md',
+      'docs/01-introduction.md',
+      'docs/02-installation.md',
+      'docs/03-quickstart.md',
+      'docs/GLOSSARY.md',
+      'docs/01-features/01-rendering.md',
+      'docs/01-features/02-navigation.md',
+      'docs/01-features/03-library.md',
+      'docs/01-features/07-editing.md',
+      'docs/02-development/08-security.md',
     ],
     looked: [
       ['src/state.rs', 'JSON names the app-owned config files and source names the saved editor state, not the formats the app admits'],
@@ -176,7 +189,15 @@ const LISTS = [
       ['src/tests/editing.rs', 'why a data block edits as source rather than as rendered words — the word is what the Markdown path would write'],
       ['src/tests/markdown_code.rs', 'what a paragraph inside a highlighted document must arrive as — the word is an unstyled run, not a format'],
       ['src/app/tests/watch.rs', 'what a live reload draws a package as — the words are the archive member a Word file is read through and the markup inside it, not the formats the app admits'],
+      ['docs/01-features/04-minimap.md', 'the side rail is drawn for every format the app opens, so the words are examples of what it stands beside rather than a list of what may be opened'],
+      ['docs/01-features/05-settings.md', 'the bold-lead reading rule, whose example of an acronym bolded whole happens to be a format word'],
+      ['docs/01-features/06-themes.md', 'a palette is a Markdown table compiled to CSS — the words are the files a theme is written in, not the formats the app admits'],
+      ['docs/02-development/01-architecture.md', 'the crate list and the file map — the words are which parser reads a format and what a module is called, and `just check-doc-modules` is what holds that page to `src/`'],
+      ['docs/02-development/02-building.md', 'the gate\'s own steps, including this check — the words are recipe and script names'],
+      ['docs/02-development/04-theming.md', 'the token contract and where the values are compiled from — the words are the Markdown the palettes are written in and the CSS they become'],
+      ['docs/02-development/06-screenshots.md', 'the shot list — the word is the file one documentation picture was taken of'],
     ],
+    pages: true,
     read: (formatSource) => documentRows(formatSource),
   },
 ];
@@ -336,14 +357,20 @@ export function namesTwoRows(text, words) {
   return false;
 }
 
-/// Every file whose comments name two or more of a list's rows on one line — the candidates to read, never the reading list itself. `files` is `[path, source]` pairs; the list's own `source` file is dropped, because the check already reads that one as the table and a row moving there is what makes it fail in the first place.
+/// The prose of one file, as `[line, text]`. A source file's prose is its comments, with the code and the strings taken out. A Markdown page has no code around the words, so every line of one is prose — which is the whole difference between sweeping `src/` and sweeping the pages a reader is handed.
+export function proseLines(text, path) {
+  if (path.endsWith('.md')) {
+    return text.split('\n').map((line, i) => [i + 1, line]).filter(([, line]) => line.trim());
+  }
+  return commentLines(text, path.endsWith('.rs') ? '.rs' : '.js');
+}
+
+/// Every file whose prose names two or more of a list's rows on one line — the candidates to read, never the reading list itself. `files` is `[path, source]` pairs; the list's own `source` file is dropped, because the check already reads that one as the table and a row moving there is what makes it fail in the first place.
 export function sweep(files, rows, source) {
   const words = rowWords(rows);
   return files
     .filter(([path]) => path !== source)
-    .filter(([path, text]) =>
-      commentLines(text, path.endsWith('.rs') ? '.rs' : '.js').some(([, comment]) => namesTwoRows(comment, words))
-    )
+    .filter(([path, text]) => proseLines(text, path).some(([, line]) => namesTwoRows(line, words)))
     .map(([path]) => path);
 }
 
@@ -364,13 +391,27 @@ function sourceFiles() {
   return files;
 }
 
+/// The README beside `src/` and every Markdown page under `docs/` — what a person deciding whether to install actually reads. Only the document formats sweep these: an export table's endings are named on a docs page as what a picture is written as, which is a different subject wearing the same words.
+function pageFiles() {
+  const files = ['README.md'];
+  const walk = (dir) => {
+    for (const entry of readdirSync(join(root, dir), { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path);
+      else if (path.endsWith('.md')) files.push(path);
+    }
+  };
+  walk('docs');
+  return files.map((path) => [path, read(path)]);
+}
+
 /// How a row reads in a message.
 const spell = ([label, endings]) => `${label} (${endings.join(', ')})`;
 
 /// The reading list, which is the whole point of the failure: the message is what hands somebody the files rather than leaving them to guess which comments were written for the old shape.
 function readThese(list) {
   return [
-    `  Read the comments in these before recording the new rows in scripts/check-format-prose.mjs:`,
+    `  Read the prose in these before recording the new rows in scripts/check-format-prose.mjs — a source file's comments, a page all the way down:`,
     ...list.prose.map((path) => `    ${path}`),
   ];
 }
@@ -383,7 +424,7 @@ export function problems(readings) {
       found.push(`${list.source} — the reading list for ${list.name} names ${path}, and there is no such file. A recorded path that has been renamed or deleted hands the next reader a name and nothing to open`);
     }
     for (const path of unaccounted || []) {
-      found.push(`${path} — a comment there names two or more of ${list.name}, and scripts/check-format-prose.mjs neither lists it nor writes it off. Read it once: if it describes the list, it belongs in that list's \`prose\`; if the format words are there for another reason, it belongs in \`looked\` with the one-line reason`);
+      found.push(`${path} — the prose there names two or more of ${list.name} on one line, and scripts/check-format-prose.mjs neither lists it nor writes it off. Read it once: if it describes the list, it belongs in that list's \`prose\`; if the format words are there for another reason, it belongs in \`looked\` with the one-line reason`);
     }
     if (!actual) {
       found.push(`${list.source} — ${list.what} could not be read at all, so nothing was held${why ? `: ${why}` : ''}. The parser that reads it has stopped matching the table it was written for`);
@@ -426,7 +467,7 @@ const FIXTURE = {
     ['PNG image', ['png']],
   ],
   prose: ['b.rs'],
-  looked: [['f.rs', 'a made-up reason']],
+  looked: [['f.rs', 'a made-up reason'], ['q.md', 'a made-up reason a page carries the words for something else']],
   pageSource: 'a.js',
 };
 
@@ -501,6 +542,10 @@ const CASES = [
     [{ list: FIXTURE, unaccounted: unaccountedFor(FIXTURE, ['b.rs', 'f.rs', 'g.rs']), actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 1],
   ['two sweep hits in neither array, on a list with nothing written off',
     [{ list: SECOND, unaccounted: unaccountedFor(SECOND, ['d.rs', 'g.rs', 'h.rs']), actual: [['Json', ['json']], ['Yaml', ['yaml', 'yml']]] }], 2],
+  ['a page the sweep hits and neither array names',
+    [{ list: FIXTURE, unaccounted: unaccountedFor(FIXTURE, ['p.md']), actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 1],
+  ['a page the sweep hits that is written off with a reason',
+    [{ list: FIXTURE, unaccounted: unaccountedFor(FIXTURE, ['q.md']), actual: [['Markdown', ['md', 'markdown']], ['PNG image', ['png']]] }], 0],
 ];
 
 /// The rows the sweep is proved against — the document formats, whose row names are the words themselves.
@@ -526,6 +571,9 @@ const SWEEP_CASES = [
   ['two spellings of one row are one row', 'k.rs', '// Both yaml and yml land on the same reader.', false],
   ['a comment after a pattern holding a backtick', 'l.js', 'const fence = /^(`{3,})/.exec(s);\n// Markdown and XML both come through here.', true],
   ['a comment after a division sign', 'm.js', 'const half = width / 2;\n// Markdown and XML both come through here.', true],
+  ['a page whose sentence names two rows', 'p.md', 'Open a Markdown or JSON file and it draws as a page.', true],
+  ['a page naming one row per line', 'q.md', 'Markdown draws as a page.\n\nJSON draws as one too.', false],
+  ['a page whose two rows sit inside a fenced code block', 'r.md', '```\nmarkdown and json\n```', true],
 ];
 
 const testFails = [];
@@ -549,10 +597,11 @@ if (testFails.length) {
 const formatSource = read('src/format.rs');
 const onDisk = (path) => existsSync(join(root, path));
 const tree = sourceFiles();
+const pages = pageFiles();
 const readings = LISTS.map((list) => ({
   list,
   missing: missingProse(list, onDisk),
-  unaccounted: unaccountedFor(list, sweep(tree, list.rows, list.source)),
+  unaccounted: unaccountedFor(list, sweep(list.pages ? [...tree, ...pages] : tree, list.rows, list.source)),
   ...list.read(formatSource),
 }));
 
@@ -566,4 +615,4 @@ if (found.length) {
 
 const rows = readings.reduce((n, { actual }) => n + (actual ? actual.length : 0), 0);
 const listed = LISTS.reduce((n, list) => n + list.prose.length + (list.looked || []).length, 0);
-console.log(`format prose: ok (${LISTS.length} lists, ${rows} rows recorded, the page's copy is the host's, and ${listed} files across ${tree.length} swept either carry the prose or say why they do not — a comment naming one row or none is still nobody's to find)`);
+console.log(`format prose: ok (${LISTS.length} lists, ${rows} rows recorded, the page's copy is the host's, and ${listed} files across ${tree.length} under src/ plus ${pages.length} pages either carry the prose or say why they do not — prose naming one row or none is still nobody's to find)`);

@@ -427,6 +427,13 @@ pub(crate) fn cache_reloaded_render(
     });
 }
 
+pub(crate) fn code_view_refresh_payload(
+    in_code_view: bool,
+    edit: &EditableDocument,
+) -> Option<Vec<u8>> {
+    in_code_view.then(|| code_view_source_payload(edit, false, None))
+}
+
 /// Re-render the active document from disk, preserving scroll position. A package that has not moved is answered off its own directory without being opened; anything else is read once and hash-gated, so a spurious event with unchanged contents re-renders nothing.
 pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileWatch) {
     let workspace = &mut reader.workspace;
@@ -502,25 +509,8 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
             package: source.package.take(),
             document: None,
         });
-        if in_code_view {
-            let source_definition = leaftext::source_definition(&edit.path);
-            let language = source_definition
-                .map(|definition| definition.language_token)
-                .unwrap_or(edit.format.language_token())
-                .to_string();
-            let display = source_definition
-                .map(|definition| definition.display_name)
-                .unwrap_or(edit.format.display_name())
-                .to_string();
-            // The buffer's own text, borrowed: the payload reads it and keeps none of it.
-            let url = stage_page_payload(code_view_payload(
-                edit.text(),
-                &language,
-                &display,
-                false,
-                // Live reload refreshes in place; the page keeps its scroll.
-                None,
-            ));
+        if let Some(payload) = code_view_refresh_payload(in_code_view, edit) {
+            let url = stage_page_payload(payload);
             run_page_script(
                 reader.webview.as_ref(),
                 &code_view_fetch_script(&url),

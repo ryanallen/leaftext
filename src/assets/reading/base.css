@@ -87,14 +87,23 @@ body.frameless.is-fullscreen {
   /* The page color and the app's own edge, both the app's to draw: with the client area running out to the window's own edge there is no frame left for the platform to draw a line in. */
   background: var(--lt-background);
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The window's corner, decided here and nowhere else: the rule below and the Mac rule below that set this rather than writing a corner of their own, so there is one place to read the number from in every state the window has. 8px is Windows' own figure for a top-level app window and what a browser starts from. */
+  --app-window-radius: var(--lt-radius-lg);
+  /* The reading card's two bottom corners, likewise decided here rather than in the six rules that draw them. It travels down to them as a variable because the card's corner and the window's have to move together — a card left at 6px inside a deeper window pinches the band between the two arcs. */
+  --reader-card-radius: var(--lt-radius-md);
+  border-radius: var(--app-window-radius);
 }
-/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. */
+/* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. Above the flush rule below so a browser, which ties this on specificity, still wins. */
+body.mac-frame .app-surface {
+  --app-window-radius: var(--lt-radius-window);
+  --reader-card-radius: var(--lt-radius-window-inner);
+}
+/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. The corner goes by setting the variable the surface reads, not by writing a `border-radius` here, so the window's number stays decided in one place. */
 body:not(.frameless) .app-surface,
 body.frameless:not(.mac-frame).is-maximized .app-surface,
 body.frameless.is-fullscreen .app-surface {
   border: 0;
-  border-radius: 0;
+  --app-window-radius: 0px;
 }
 /* The window's own shadow, thrown by the app rather than by the platform: the same 2px dot lattice every floating surface inside the app throws, in shadow ink, over the strip of page the app is held off the window by. Four edge gradients intersected — alpha nothing at the window's edge, full where the app surface starts — so each corner is the product of two and falls off the way a corner should. No punch layer: this is a sibling of the app surface rather than a child of it, and the surface is opaque and paints over the middle. Zero-sized when the inset is zero, which is what takes it off a maximized window and out of a browser. */
 body::before {

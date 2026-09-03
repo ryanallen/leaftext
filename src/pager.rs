@@ -21,7 +21,7 @@ pub fn pager_loaded_script(path: impl AsRef<Path>, html: &str) -> String {
 /// The waiting state under a document, for a host that can find its neighbors and mean it.
 pub fn pager_loading_html() -> Option<&'static str> {
     Some(
-        r#"<nav class="docs-pager docs-pager-loading" aria-label="Document navigation" aria-busy="true"><span class="docs-pager-skeleton"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span><span class="docs-pager-skeleton docs-pager-next"><span class="docs-pager-label-skeleton"></span><span class="docs-pager-title-skeleton"></span></span></nav>"#,
+        r#"<nav class="docs-pager docs-pager-loading" aria-label="Document navigation" aria-busy="true"><span class="docs-pager-skeleton"><span class="lt-skeleton docs-pager-label-skeleton"></span><span class="lt-skeleton docs-pager-title-skeleton"></span></span><span class="docs-pager-skeleton docs-pager-next"><span class="lt-skeleton docs-pager-label-skeleton"></span><span class="lt-skeleton docs-pager-title-skeleton"></span></span></nav>"#,
     )
 }
 

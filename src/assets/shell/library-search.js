@@ -64,9 +64,9 @@ function renderLibrarySearch() {
     return;
   }
   const hits = librarySearchHits || [];
-  // Nothing drawn yet: the count line is the whole answer, and the ring in it is the only thing saying a vault is being read.
+  // Nothing drawn yet: the count line and its ring, and under them the shape of the rows that are coming. Only here — the moment one real row exists, whether it is this query's first batch or the query before it, that row is the better answer and the branches below keep it.
   if (librarySearchLoading && !hits.length) {
-    librarySearchResults.innerHTML = searchCountHtml(hits);
+    librarySearchResults.innerHTML = searchCountHtml(hits) + searchWaitingRowsHtml();
     return;
   }
   const note = searchNoteHtml();
@@ -76,6 +76,12 @@ function renderLibrarySearch() {
   }
   librarySearchResults.innerHTML = note + searchCountHtml(hits) + hits.map(searchHitHtml).join('');
   bindSearchHits();
+}
+// Three rows' worth of the shape a result has — a name and the two lines of matched words under it — so the pane holds what is coming rather than one word. Decoration: it is not a target, and nothing reads it out.
+const SEARCH_WAITING_ROWS = 3;
+function searchWaitingRowsHtml() {
+  const row = '<span class="library-hit library-hit-waiting"><span class="lt-skeleton library-hit-waiting-title"></span><span class="lt-skeleton library-hit-waiting-line"></span><span class="lt-skeleton library-hit-waiting-line library-hit-waiting-line-short"></span></span>';
+  return `<span aria-hidden="true">${row.repeat(SEARCH_WAITING_ROWS)}</span>`;
 }
 // The line above the rows: what is drawn, and whether more is coming. One waiting mark for the whole pane — rows from a query the field has moved on from sit under a turning ring rather than under nothing.
 function searchCountHtml(hits) {

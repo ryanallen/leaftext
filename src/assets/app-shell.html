@@ -238,8 +238,19 @@
      that column with :has(.document-minimap), which a hidden host would still
      match. -->
 <div id="readerMinimap" class="reader-minimap" aria-hidden="true"></div>
+<!-- The shape of the page that is arriving: a heading bar and the paragraph bars
+     under it, on an opaque surface, so the document being replaced is not left
+     showing through as though it were still the answer. The label is what a
+     screen reader hears; the bars are decoration and say nothing. -->
 <div id="readerLoading" class="reader-loading" role="status" aria-live="polite" aria-label="Loading document…" hidden>
-  <div class="lt-spinner reader-loading-spinner" aria-hidden="true"></div>
+  <div class="reader-loading-page" aria-hidden="true">
+    <span class="lt-skeleton reader-loading-heading"></span>
+    <span class="lt-skeleton reader-loading-line"></span>
+    <span class="lt-skeleton reader-loading-line"></span>
+    <span class="lt-skeleton reader-loading-line reader-loading-line-short"></span>
+    <span class="lt-skeleton reader-loading-line"></span>
+    <span class="lt-skeleton reader-loading-line reader-loading-line-short"></span>
+  </div>
 </div>
 </div>
 <div id="glossaryBackdrop" class="lt-backdrop" hidden></div>

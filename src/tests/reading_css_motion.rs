@@ -53,13 +53,33 @@ fn reduce_motion_is_answered_once_and_won_back_by_name() {
         ".table-lane::before,\n  .table-lane::after {\n    animation-duration: auto !important;\n  }",
     );
 
-    // The pager skeleton keeps its own block: the blanket rule carries no opacity and the bars have none, so bars stopped at full strength read as loaded content.
-    let skeleton = rule_body(
-        css,
-        "  .docs-pager-label-skeleton,\n  .docs-pager-title-skeleton {",
-    );
+    // Every skeleton keeps its own block, on the shared class: the blanket rule carries no opacity and the bars have none, so bars stopped at full strength read as loaded content.
+    let skeleton = rule_body(css, "  .lt-skeleton {");
     assert_contains(skeleton, "animation: none;");
     assert_contains(skeleton, "opacity: var(--lt-opacity-55);");
+    // The pulse is the shared recipe's, spent from tokens, so a second waiting shape cannot grow a duration or an opacity of its own.
+    assert_contains(
+        css,
+        "  animation: lt-skeleton-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite;",
+    );
+    // Both stops named together, because `rule_body` stops at the first brace and a keyframe block has one per stop.
+    assert_contains(
+        css,
+        "@keyframes lt-skeleton-pulse {
+  0%,
+  100% {
+    opacity: var(--lt-opacity-38);
+  }
+  50% {
+    opacity: var(--lt-opacity-78);
+  }
+}",
+    );
+    // The pager spends that recipe now, so its own copy is gone rather than left saying the same thing twice.
+    assert!(
+        !css.contains("pager-skeleton-pulse"),
+        "the pager takes the shared pulse, so its private one should be gone"
+    );
 
     // The blocks the blanket rule replaced are gone rather than left to say the same thing twice.
     for gone in [

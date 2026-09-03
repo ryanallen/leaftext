@@ -18,8 +18,8 @@
   inset: 0 calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)) 0 0;
   background: var(--lt-syntax-background);
   /* The two corners the card rounds itself, so the fill can't poke outside ::after's curve. The top two are the arc elements' business — each paints chrome over its corner and masks the page's disc back out, hiding the square corner under it. */
-  border-bottom-left-radius: var(--lt-radius-md);
-  border-bottom-right-radius: var(--lt-radius-md);
+  border-bottom-left-radius: var(--reader-card-radius);
+  border-bottom-right-radius: var(--reader-card-radius);
   pointer-events: none;
 }
 /* The page frame for the text area: left, right and bottom edges, with both bottom corners rounded. The right edge sits at the minimap's left stroke (--cv-minimap-width from the shell's right, plus --cv-minimap-standoff), so this one border both frames the page and is the divider walling off the minimap rail — no separate minimap stroke. The top edge is the app bar's divider; the two top corners are the arc elements (reader-corner-tl and -tr), which sit at z-index 11 above Monaco — a shell pseudo can't, since ::before paints behind the editor (which is exactly why the page fill lives there). So this box starts a radius below the divider and leaves its own top corners square. Kept inside the padding box so the shell's overflow:hidden doesn't clip it; pointer-events:none so Monaco still takes the clicks. */
@@ -33,8 +33,8 @@
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   border-right: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-bottom-left-radius: var(--lt-radius-md);
-  border-bottom-right-radius: var(--lt-radius-md);
+  border-bottom-left-radius: var(--reader-card-radius);
+  border-bottom-right-radius: var(--reader-card-radius);
   /* Above the reader-edge-fade wash (z-index 4). The fade dissolves the top and bottom ~36px of the card to the page color; in the reading view it is inset inside the card's borders, but this frame's right border and bottom corners sit deeper in the shell, so the wash would fade the border out near the top and flatten the bottom corners. Below the loading wash (6), which should still cover the frame. The top corners (reader-corner-tl/-tr) already clear it at 11. */
   z-index: 5;
   pointer-events: none;

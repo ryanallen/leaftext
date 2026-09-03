@@ -1955,6 +1955,8 @@
   --lt-radius-2xl: 14px;
   --lt-radius-pill: 999px;
   --lt-radius-full: 50%;
+  --lt-radius-window: 20px;
+  --lt-radius-window-inner: 12px;
   /* Document type */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
   --type-measure-body: 75ch;
@@ -2932,14 +2934,23 @@ body.frameless.is-fullscreen {
   /* The page color and the app's own edge, both the app's to draw: with the client area running out to the window's own edge there is no frame left for the platform to draw a line in. */
   background: var(--lt-background);
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The window's corner, decided here and nowhere else: the rule below and the Mac rule below that set this rather than writing a corner of their own, so there is one place to read the number from in every state the window has. 8px is Windows' own figure for a top-level app window and what a browser starts from. */
+  --app-window-radius: var(--lt-radius-lg);
+  /* The reading card's two bottom corners, likewise decided here rather than in the six rules that draw them. It travels down to them as a variable because the card's corner and the window's have to move together — a card left at 6px inside a deeper window pinches the band between the two arcs. */
+  --reader-card-radius: var(--lt-radius-md);
+  border-radius: var(--app-window-radius);
 }
-/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. */
+/* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. Above the flush rule below so a browser, which ties this on specificity, still wins. */
+body.mac-frame .app-surface {
+  --app-window-radius: var(--lt-radius-window);
+  --reader-card-radius: var(--lt-radius-window-inner);
+}
+/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. The corner goes by setting the variable the surface reads, not by writing a `border-radius` here, so the window's number stays decided in one place. */
 body:not(.frameless) .app-surface,
 body.frameless:not(.mac-frame).is-maximized .app-surface,
 body.frameless.is-fullscreen .app-surface {
   border: 0;
-  border-radius: 0;
+  --app-window-radius: 0px;
 }
 /* The window's own shadow, thrown by the app rather than by the platform: the same 2px dot lattice every floating surface inside the app throws, in shadow ink, over the strip of page the app is held off the window by. Four edge gradients intersected — alpha nothing at the window's edge, full where the app surface starts — so each corner is the product of two and falls off the way a corner should. No punch layer: this is a sibling of the app surface rather than a child of it, and the surface is opaque and paints over the middle. Zero-sized when the inset is zero, which is what takes it off a maximized window and out of a browser. */
 body::before {
@@ -3955,6 +3966,29 @@ body.is-maximized #winMaximize .wc-restore {
     animation-duration: var(--lt-duration-1600) !important;
   }
 }
+/* Every skeleton in the app: a bar the color of a quiet hairline, breathing, standing where a line of real content is about to land. The fill, the rounded ends and the pulse are here; a site keeps only its own geometry, because that is what differs — a 72px kicker under the pager, a heading bar over the reader, a result row in the library. */
+.lt-skeleton {
+  display: block;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border);
+  animation: lt-skeleton-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite;
+}
+@keyframes lt-skeleton-pulse {
+  0%,
+  100% {
+    opacity: var(--lt-opacity-38);
+  }
+  50% {
+    opacity: var(--lt-opacity-78);
+  }
+}
+/* Stopped under Reduce Motion, and parked at an opacity of its own: the bars carry none otherwise, so a skeleton stopped at full strength reads as content that has already arrived. The shorthand takes the name away too, rather than leaving the pulse parked on whichever keyframe it ended at. */
+@media (prefers-reduced-motion: reduce) {
+  .lt-skeleton {
+    animation: none;
+    opacity: var(--lt-opacity-55);
+  }
+}
 button {
   /* The hand, on the element rather than on each control's own rule, so a button added later says it can be pressed without anybody remembering to write it. Weak on purpose: a single-class rule still wins, which is what leaves a control whose gesture is a drag or a draw wearing its own shape. */
   cursor: pointer;
@@ -4536,6 +4570,24 @@ body.library-resizing button {
   line-height: var(--lt-leading-1-4);
   color: var(--lt-muted-foreground);
 }
+/* The shape a result has, standing in the row it will take: a name, and the two clamped lines of matched words under it. Its own padding, because the row it stands for is a button and this is not one. */
+.library-hit-waiting {
+  display: block;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  margin: 0 0 var(--lt-space-2);
+}
+.library-hit-waiting-title {
+  width: 62%;
+  height: var(--lt-text-13);
+  margin-bottom: var(--lt-space-4);
+}
+.library-hit-waiting-line {
+  height: var(--lt-text-11);
+  margin-top: var(--lt-space-2);
+}
+.library-hit-waiting-line-short {
+  width: 78%;
+}
 .library-hit-mark {
   background: color-mix(in srgb, var(--lt-primary) 40%, transparent);
   color: inherit;
@@ -5016,7 +5068,7 @@ body.library-resizing button {
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   border-right: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   /* Clear the app bar the page tucks under. */
   padding-top: var(--app-bar-height);
 }
@@ -5466,14 +5518,14 @@ body:has(#readerToolbar:not([hidden])) {
 }
 .reader-shell {
   background: var(--lt-markdown-background);
-  /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px library column when the .reader-loading overlay (which claims column 2, row 1) is unhidden — the document then reflows at zero width and every scroll computation made while the spinner is up lands wrong. */
+  /* Pin the reader to its grid cell. Auto-placed, it gets evicted into the 0px library column when the .reader-loading overlay (which claims column 2, row 1) is unhidden — the document then reflows at zero width and every scroll computation made while the wait is up lands wrong. */
   grid-column: 2;
   grid-row: 1;
   box-sizing: border-box;
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   border-right: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   overflow: auto;
   /* The reader pins its own scroll anchor across re-renders; the browser's native scroll anchoring fights that and causes transient jumps. */
   overflow-anchor: none;
@@ -5522,7 +5574,7 @@ body:has(#readerToolbar:not([hidden])) {
   /* The right side clears the scrollbar: the browser draws it inside the scroller where an overlay on the cell can't get under it, and the thumb starts at the same edge the top band does, so the wash would bury it. */
   margin-right: var(--reader-scrollbar);
   /* The card's own corner: an inner curve is the outer one less the border, and this border is snapped the same way the card's is. */
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   overflow: hidden;
 }
 .library-shell.library-closed .reader-edge-fade {
@@ -5595,31 +5647,43 @@ body:has(#readerToolbar:not([hidden])) {
   margin-top: var(--app-bar-height);
 }
 .reader-loading {
-  /* Overlays the reader cell so a spinner can show over the current document during a slow load. Pointer events pass through; sits below the app bar. */
+  /* Overlays the reader cell so the shape of the arriving page can show during a slow load. Pointer events pass through; sits below the app bar. */
   grid-column: 2;
   grid-row: 1;
   align-self: stretch;
   justify-self: stretch;
-  /* Same rounding as the card it covers (the gutter tracks inset it already), so the wash doesn't spill past the page's corners. */
+  /* Same rounding as the card it covers (the gutter tracks inset it already), so nothing spills past the page's corners. */
   box-sizing: border-box;
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   display: flex;
-  align-items: center;
   justify-content: center;
   padding-top: var(--app-bar-height);
   pointer-events: none;
-  background: color-mix(in srgb, var(--lt-markdown-background) 62%, transparent);
+  /* Opaque rather than a wash: the document underneath has already been replaced, and letting it show through says the page somebody is reading is still the answer. */
+  background: var(--lt-markdown-background);
   z-index: 6;
 }
 .reader-loading[hidden] {
   display: none;
 }
-.reader-loading-spinner {
-  width: 34px;
-  height: 34px;
-  border-width: var(--lt-stroke-3);
-  border-color: color-mix(in srgb, var(--lt-markdown-foreground) 22%, transparent);
-  border-top-color: var(--lt-accent);
+/* The document's own measure and padding, so a bar stands where the text it holds a place for will stand. */
+.reader-loading-page {
+  width: min(var(--type-measure-body), 100%);
+  padding: var(--reader-content-pad);
+  overflow: hidden;
+}
+.reader-loading-heading {
+  width: 55%;
+  height: 1.7rem;
+  margin-bottom: var(--lt-space-24);
+}
+.reader-loading-line {
+  height: 0.85rem;
+  margin-bottom: var(--lt-space-12);
+}
+.reader-loading-line-short {
+  width: 72%;
+  margin-bottom: var(--lt-space-24);
 }
 .reader-layout {
   --reader-layout-padding-inline: var(--reader-content-pad);
@@ -5798,13 +5862,6 @@ body:has(#readerToolbar:not([hidden])) {
   border: var(--lt-stroke-1) solid var(--lt-markdown-rule);
   border-radius: var(--lt-radius-lg);
 }
-.docs-pager-label-skeleton,
-.docs-pager-title-skeleton {
-  display: block;
-  border-radius: var(--lt-radius-pill);
-  background: var(--lt-markdown-rule);
-  animation: pager-skeleton-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite;
-}
 .docs-pager-label-skeleton {
   width: 72px;
   height: 0.74rem;
@@ -5817,23 +5874,6 @@ body:has(#readerToolbar:not([hidden])) {
 .docs-pager-next .docs-pager-label-skeleton,
 .docs-pager-next .docs-pager-title-skeleton {
   margin-left: auto;
-}
-@keyframes pager-skeleton-pulse {
-  0%,
-  100% {
-    opacity: var(--lt-opacity-38);
-  }
-  50% {
-    opacity: var(--lt-opacity-78);
-  }
-}
-/* Its own block, because the blanket rule carries no opacity and the bars have none of their own: a skeleton stopped at full strength reads as loaded content. The shorthand here takes the name away too, so the pulse is off rather than parked on whichever keyframe it ended at. */
-@media (prefers-reduced-motion: reduce) {
-  .docs-pager-label-skeleton,
-  .docs-pager-title-skeleton {
-    animation: none;
-    opacity: var(--lt-opacity-55);
-  }
 }
 /* The same fill the chrome buttons take, so the biggest target on the page answers the pointer the way the smallest ones do. Never a dot lattice: the app spends that everywhere else on saying a thing is quiet, and over a card this wide it reads as switched off. What keeps the fill from being a slab is the halftone `panels.css` throws around it. */
 .document-body .docs-pager a:hover,
@@ -7073,8 +7113,8 @@ body.is-block-dragging .document-body [data-src-start] {
   inset: 0 calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)) 0 0;
   background: var(--lt-syntax-background);
   /* The two corners the card rounds itself, so the fill can't poke outside ::after's curve. The top two are the arc elements' business — each paints chrome over its corner and masks the page's disc back out, hiding the square corner under it. */
-  border-bottom-left-radius: var(--lt-radius-md);
-  border-bottom-right-radius: var(--lt-radius-md);
+  border-bottom-left-radius: var(--reader-card-radius);
+  border-bottom-right-radius: var(--reader-card-radius);
   pointer-events: none;
 }
 /* The page frame for the text area: left, right and bottom edges, with both bottom corners rounded. The right edge sits at the minimap's left stroke (--cv-minimap-width from the shell's right, plus --cv-minimap-standoff), so this one border both frames the page and is the divider walling off the minimap rail — no separate minimap stroke. The top edge is the app bar's divider; the two top corners are the arc elements (reader-corner-tl and -tr), which sit at z-index 11 above Monaco — a shell pseudo can't, since ::before paints behind the editor (which is exactly why the page fill lives there). So this box starts a radius below the divider and leaves its own top corners square. Kept inside the padding box so the shell's overflow:hidden doesn't clip it; pointer-events:none so Monaco still takes the clicks. */
@@ -7088,8 +7128,8 @@ body.is-block-dragging .document-body [data-src-start] {
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   border-right: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-bottom-left-radius: var(--lt-radius-md);
-  border-bottom-right-radius: var(--lt-radius-md);
+  border-bottom-left-radius: var(--reader-card-radius);
+  border-bottom-right-radius: var(--reader-card-radius);
   /* Above the reader-edge-fade wash (z-index 4). The fade dissolves the top and bottom ~36px of the card to the page color; in the reading view it is inset inside the card's borders, but this frame's right border and bottom corners sit deeper in the shell, so the wash would fade the border out near the top and flatten the bottom corners. Below the loading wash (6), which should still cover the frame. The top corners (reader-corner-tl/-tr) already clear it at 11. */
   z-index: 5;
   pointer-events: none;
@@ -10475,7 +10515,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 163 values that do not change with the theme, all 63 icons, and all 72 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 165 values that do not change with the theme, all 63 icons, and all 73 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -10495,9 +10535,9 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>163</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>165</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>63</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>72</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>73</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -10598,7 +10638,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">163 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">165 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -10608,6 +10648,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-radius-2xl</code><i class="demo tile" style="border-radius:var(--lt-radius-2xl)"></i><code>14px</code></div>
 <div class="value"><code>lt-radius-pill</code><i class="demo tile" style="border-radius:var(--lt-radius-pill)"></i><code>999px</code></div>
 <div class="value"><code>lt-radius-full</code><i class="demo tile" style="border-radius:var(--lt-radius-full)"></i><code>50%</code></div>
+<div class="value"><code>lt-radius-window</code><i class="demo tile" style="border-radius:var(--lt-radius-window)"></i><code>20px</code></div>
+<div class="value"><code>lt-radius-window-inner</code><i class="demo tile" style="border-radius:var(--lt-radius-window-inner)"></i><code>12px</code></div>
 </div>
 <h3>Document type</h3><div class="wall wide">
 <div class="value"><code>type-base</code><code>max(0.875rem, calc(1rem + (100vw - 1280px) / 140))</code></div>
@@ -10867,7 +10909,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">72 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">73 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -11054,7 +11096,11 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Spinner</h3><code class="built">.lt-spinner</code><span class="built">app-shell.html, glossary.js, minimap.js, lib.rs</span></header>
-<div class="stage"><div class="reader-loading" style="position:static"><div class="lt-spinner reader-loading-spinner"></div></div><div class="glossary-sheet-waiting"><div class="lt-spinner glossary-sheet-spinner"></div></div></div>
+<div class="stage"><div class="startup-card" style="position:static;height:64px"><span class="lt-spinner startup-card-spinner"></span></div><div class="glossary-sheet-waiting"><div class="lt-spinner glossary-sheet-spinner"></div></div></div>
+</section>
+<section class="part">
+<header><h3>Skeleton</h3><code class="built">.lt-skeleton</code><span class="built">pager.rs, app-shell.html, library-search.js</span></header>
+<div class="stage"><div style="display:flex;gap:16px"><span class="docs-pager-skeleton"><span class="lt-skeleton docs-pager-label-skeleton"></span><span class="lt-skeleton docs-pager-title-skeleton"></span></span><div class="reader-loading-page" style="flex:1 1 0;padding:0"><span class="lt-skeleton reader-loading-heading"></span><span class="lt-skeleton reader-loading-line"></span><span class="lt-skeleton reader-loading-line reader-loading-line-short"></span></div><span class="library-hit-waiting" style="flex:1 1 0;padding:0"><span class="lt-skeleton library-hit-waiting-title"></span><span class="lt-skeleton library-hit-waiting-line"></span><span class="lt-skeleton library-hit-waiting-line library-hit-waiting-line-short"></span></span></div></div>
 </section>
 <section class="part">
 <header><h3>Icon</h3><code class="built">.lt-icon</code><span class="built">everything, drawn by icons.css</span></header>

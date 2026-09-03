@@ -461,6 +461,24 @@ body.library-resizing button {
   line-height: var(--lt-leading-1-4);
   color: var(--lt-muted-foreground);
 }
+/* The shape a result has, standing in the row it will take: a name, and the two clamped lines of matched words under it. Its own padding, because the row it stands for is a button and this is not one. */
+.library-hit-waiting {
+  display: block;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  margin: 0 0 var(--lt-space-2);
+}
+.library-hit-waiting-title {
+  width: 62%;
+  height: var(--lt-text-13);
+  margin-bottom: var(--lt-space-4);
+}
+.library-hit-waiting-line {
+  height: var(--lt-text-11);
+  margin-top: var(--lt-space-2);
+}
+.library-hit-waiting-line-short {
+  width: 78%;
+}
 .library-hit-mark {
   background: color-mix(in srgb, var(--lt-primary) 40%, transparent);
   color: inherit;

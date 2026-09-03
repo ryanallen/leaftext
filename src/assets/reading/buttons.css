@@ -17,6 +17,29 @@
     animation-duration: var(--lt-duration-1600) !important;
   }
 }
+/* Every skeleton in the app: a bar the color of a quiet hairline, breathing, standing where a line of real content is about to land. The fill, the rounded ends and the pulse are here; a site keeps only its own geometry, because that is what differs — a 72px kicker under the pager, a heading bar over the reader, a result row in the library. */
+.lt-skeleton {
+  display: block;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border);
+  animation: lt-skeleton-pulse var(--lt-duration-1250) var(--lt-ease-in-out) infinite;
+}
+@keyframes lt-skeleton-pulse {
+  0%,
+  100% {
+    opacity: var(--lt-opacity-38);
+  }
+  50% {
+    opacity: var(--lt-opacity-78);
+  }
+}
+/* Stopped under Reduce Motion, and parked at an opacity of its own: the bars carry none otherwise, so a skeleton stopped at full strength reads as content that has already arrived. The shorthand takes the name away too, rather than leaving the pulse parked on whichever keyframe it ended at. */
+@media (prefers-reduced-motion: reduce) {
+  .lt-skeleton {
+    animation: none;
+    opacity: var(--lt-opacity-55);
+  }
+}
 button {
   /* The hand, on the element rather than on each control's own rule, so a button added later says it can be pressed without anybody remembering to write it. Weak on purpose: a single-class rule still wins, which is what leaves a control whose gesture is a drag or a draw wearing its own shape. */
   cursor: pointer;

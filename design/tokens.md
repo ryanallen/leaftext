@@ -22,6 +22,8 @@ One scale every surface pulls from, so rounding swaps in a single place. The siz
 | lt-radius-2xl | 14px | The largest curve in the app: the reader frame's top corners, and the selected tab's flare into the page. |
 | lt-radius-pill | 999px | A fully rounded end, whatever the height. |
 | lt-radius-full | 50% | A circle. |
+| lt-radius-window | 20px | The Mac window's own corner, not a step on the scale above: macOS rounds a window far harder than Windows does, and this is macOS 27's figure. Windows keeps `lt-radius-lg`. |
+| lt-radius-window-inner | 12px | The reading card's bottom corners inside that window, and again not a step on the scale: it is `lt-radius-window` less the 8px `reader-gutter` between the two, which is what strikes both arcs from one center so the band between them holds its width the whole way round. Move one of these two and move the other. |
 
 ## Document type
 

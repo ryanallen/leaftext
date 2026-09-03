@@ -963,7 +963,9 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
         surface,
         "border: var(--lt-stroke-1) solid var(--lt-border);",
     );
-    assert_contains(surface, "border-radius: var(--lt-radius-lg);");
+    // The corner is read from a variable rather than written here, so the four states that change it all set one number. Windows' own figure for a top-level app window is the default it starts from.
+    assert_contains(surface, "--app-window-radius: var(--lt-radius-lg);");
+    assert_contains(surface, "border-radius: var(--app-window-radius);");
     assert_contains(
         surface,
         "inset: var(--app-shadow-top) var(--app-shadow-side) var(--app-shadow-bottom);",
@@ -979,7 +981,46 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
         "body:not(.frameless) .app-surface,\nbody.frameless:not(.mac-frame).is-maximized .app-surface,",
     );
     assert_contains(flush, "border: 0;");
-    assert_contains(flush, "border-radius: 0;");
+    // Taken by setting the variable the surface reads, not by writing a corner here: a `border-radius` in this block would put the window's number in four places again.
+    assert_contains(flush, "--app-window-radius: 0px;");
+    assert!(
+        !flush.contains("border-radius:"),
+        "the flush state writes a corner of its own, so the window's number is decided in two places"
+    );
+}
+
+#[test]
+fn a_mac_window_takes_the_macs_corner_and_a_windows_one_keeps_windows() {
+    // macOS rounds a window far harder than Windows does, and on a Mac the app draws the only corner there is: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints.
+    let css = reading_mode_css();
+    let mac = rule_body(css, "body.mac-frame .app-surface {");
+    assert_contains(mac, "--app-window-radius: var(--lt-radius-window);");
+    // Windows and a browser are the default the surface itself declares, untouched by this rule.
+    let surface = rule_body(css, ".app-surface {");
+    assert_contains(surface, "--app-window-radius: var(--lt-radius-lg);");
+    assert!(
+        !mac.contains("--lt-radius-lg"),
+        "the Mac rule names the Windows corner, so one platform's number moves the other's"
+    );
+
+    // A browser ties this rule on specificity, so order is what decides between them: a page with no window still draws no corner.
+    let flush_at = css
+        .find("body:not(.frameless) .app-surface,")
+        .expect("the flush rule should be in the sheet");
+    let mac_at = css
+        .find("body.mac-frame .app-surface {")
+        .expect("the Mac rule should be in the sheet");
+    assert!(
+        mac_at < flush_at,
+        "the Mac rule sits after the flush rule it ties, so a browser page draws a Mac's corner"
+    );
+
+    // A Mac's maximize is a zoom that still floats over what is behind it, so it keeps its corner — which is the whole reason that selector says `:not(.mac-frame)`.
+    assert!(
+        !css.contains("body.frameless.is-maximized .app-surface")
+            && !css.contains("body.is-maximized .app-surface"),
+        "a zoomed Mac window is flattened to a square corner, where it is still a floating window"
+    );
 }
 
 #[test]

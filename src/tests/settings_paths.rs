@@ -998,19 +998,39 @@ fn an_ini_file_is_offered_by_its_one_spelling_and_never_imposed() {
     assert_eq!(claiming, 1, "two macOS entries claim .ini");
 }
 
-/// The installation page's list of registered extensions is a promise to somebody deciding whether to install, and it is written by hand — so it goes stale the moment a format lands and nobody thinks of it. Every ending a named format reads has to appear there. The source-file endings are the one exception, and deliberately: that page names them as a class rather than listing thirty of them, and [the rendering page](../../docs/01-features/01-rendering.md#source-files) lists the languages.
+/// These four pages exist to list what Leaftext opens — the installation page's associations, the rendering page's pipelines, the library pane's file types, the code view's formats — so every ending a named format reads has to appear on each of them. They are written by hand and go stale the moment a format lands and nobody thinks of it. The other six pages naming endings are not here on purpose: a glossary entry, a link-type row, an introduction bullet and a quickstart line each name a few formats correctly, and no rule over the words can tell such a sentence from one written for the old, smaller list — those six take the reading list `scripts/check-format-prose.mjs` prints when the table moves. The source-file endings are the one exception here, and deliberately: every one of these pages names them as a class rather than listing thirty of them, and [the rendering page](../../docs/01-features/01-rendering.md#source-files) lists the languages.
 #[test]
-fn the_installation_page_names_every_extension_the_app_registers() {
-    let page = include_str!("../../docs/02-installation.md");
-    for format in DocumentFormat::ALL {
-        if format == DocumentFormat::Code {
-            continue;
-        }
-        for extension in format.extensions() {
-            assert!(
-                page.contains(&format!("`.{extension}`")),
-                "docs/02-installation.md does not name .{extension}, which the installers register"
-            );
+fn every_page_that_lists_what_leaftext_opens_names_every_extension() {
+    let pages = [
+        (
+            "docs/02-installation.md",
+            include_str!("../../docs/02-installation.md"),
+        ),
+        (
+            "docs/01-features/01-rendering.md",
+            include_str!("../../docs/01-features/01-rendering.md"),
+        ),
+        (
+            "docs/01-features/03-library.md",
+            include_str!("../../docs/01-features/03-library.md"),
+        ),
+        (
+            "docs/01-features/07-editing.md",
+            include_str!("../../docs/01-features/07-editing.md"),
+        ),
+    ];
+
+    for (name, page) in pages {
+        for format in DocumentFormat::ALL {
+            if format == DocumentFormat::Code {
+                continue;
+            }
+            for extension in format.extensions() {
+                assert!(
+                    page.contains(&format!("`.{extension}`")),
+                    "{name} does not name .{extension}, which the app reads"
+                );
+            }
         }
     }
 }

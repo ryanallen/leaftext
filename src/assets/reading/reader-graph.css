@@ -13,7 +13,7 @@
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   border-right: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);
+  border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   /* Clear the app bar the page tucks under. */
   padding-top: var(--app-bar-height);
 }

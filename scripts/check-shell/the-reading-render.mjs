@@ -5,6 +5,7 @@ import {
   bootReading,
   check,
   checkSettled,
+  pageMarkup,
   record,
   renderReadingDocument,
   runShell,
@@ -244,5 +245,43 @@ export function run() {
     renderReadingDocument(context, { path: 'C:\Notes\third.md', blocks: [{ srcStart: 0 }, { srcStart: 40 }] });
     const live = oneLayerOnly(app, 'a second open landing on the first');
     if (live.querySelector('.document-body').children.length !== 2) throw new Error('the page left standing is not the one opened last');
+  });
+  check('a reader wait stands as the shape of the page that is arriving, and nothing leaves it standing', () => {
+    const { context } = bootReading({ path: 'C:\Notes\waited.md', blocks: [{ srcStart: 0 }] });
+    const wait = context.document.getElementById('readerLoading');
+    if (!wait.hidden) throw new Error('the reader was already waiting before anything asked it to');
+
+    vm.runInContext('beginReaderLoading()', context);
+    if (wait.hidden) throw new Error('the page was asked to wait and drew nothing');
+    // A page, not a ring: one heading bar and the paragraph bars under it, every one of them on the shared recipe.
+    const bars = wait.querySelectorAll('.lt-skeleton');
+    if (bars.length < 4) throw new Error(`the wait drew ${bars.length} bars, which is not the shape of a page`);
+    if (!wait.querySelector('.reader-loading-heading')) throw new Error('the wait drew no heading bar, so it holds no page shape');
+    if (wait.querySelector('.lt-spinner')) throw new Error('the ring is still there beside the shape');
+    // What a screen reader hears is unchanged, read off the page itself: the fake page keeps ids and classes, not the words. The bars are decoration and say nothing of their own.
+    const markup = pageMarkup();
+    const holder = markup.slice(markup.indexOf('id="readerLoading"'));
+    const spoken = holder.slice(0, holder.indexOf('</div>'));
+    if (!spoken.includes('role="status"')) throw new Error('the wait no longer speaks as a status');
+    if (!spoken.includes('aria-label="Loading document')) throw new Error('the wait lost the words it says while it stands');
+    if (!spoken.includes('class="reader-loading-page" aria-hidden="true"')) throw new Error('the bars are read out as though they were the document');
+
+    // The document that arrives takes it down.
+    vm.runInContext('clearReaderLoading()', context);
+    if (!wait.hidden) throw new Error('the document arrived and the shape stayed over it');
+
+    // Nothing answers: the safety timer takes it down on its own, and it is the thirty seconds the reader has always had.
+    vm.runInContext('beginReaderLoading()', context);
+    const safety = context.__timers.armed().find((one) => one.delay === 30000);
+    if (!safety) throw new Error(`no thirty-second safety timer was armed: ${JSON.stringify(context.__timers.armed())}`);
+    context.__timers.run(safety.id);
+    if (!wait.hidden) throw new Error('the safety timer ran and the shape stayed up');
+
+    // The map's own wait is not the document's, either way round, so neither can leave the other standing.
+    vm.runInContext("beginReaderLoading('graph')", context);
+    vm.runInContext('clearReaderLoading()', context);
+    if (wait.hidden) throw new Error("the document's answer pulled down the map's own wait");
+    vm.runInContext("clearReaderLoading('graph')", context);
+    if (!wait.hidden) throw new Error('the map cleared its own wait and the shape stayed up');
   });
 }

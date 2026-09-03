@@ -248,7 +248,7 @@ fn reading_mode_css_softens_the_readers_top_and_bottom_edges() {
     // The inner corner is the outer one less the border, worked out from a border snapped the way the card's is — so no hand-written correction.
     assert_contains(
         rule,
-        "border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);",
+        "border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);",
     );
     // With no rail to sit against the card is held off the left frame, and that margin is the gutter alone for the same reason.
     let closed = rule_body(css, ".library-shell.library-closed .reader-edge-fade {");
@@ -306,7 +306,7 @@ fn the_pages_two_bottom_corners_keep_their_stroke() {
         "border-width: 0 var(--lt-stroke-1) var(--lt-stroke-1);",
     );
     // And the curve being reserved has to be the card's own, or the clip is cut to a shape nothing draws.
-    let radius = "border-radius: 0 0 var(--lt-radius-md) var(--lt-radius-md);";
+    let radius = "border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);";
     let card = rule_body(css, ".reader-shell {");
     assert_contains(
         card,
@@ -314,6 +314,75 @@ fn the_pages_two_bottom_corners_keep_their_stroke() {
     );
     assert_contains(card, radius);
     assert_contains(rule, radius);
+}
+
+/// Every declaration in the sheet that rounds a bottom corner at anything but zero, as its own line.
+fn bottom_corner_declarations(css: &str) -> Vec<&str> {
+    css.lines()
+        .map(str::trim)
+        .filter(|line| {
+            line.starts_with("border-bottom-left-radius:")
+                || line.starts_with("border-bottom-right-radius:")
+                || line.starts_with("border-radius: 0 0 ")
+        })
+        .filter(|line| !line.ends_with("radius: 0;"))
+        .collect()
+}
+
+#[test]
+fn the_card_rounds_its_two_bottom_corners_from_one_place() {
+    // The fault this holds: six rules draw those two corners — the card's fill and hairline, the wash that dissolves the last lines of the page, the loading veil, the graph that stands in for the page, and the code view's faked frame — and the one a reader actually sees is the wash painting over the card's own. Growing any one of them alone was photographed and moved the corner not at all, so a seventh added later without the variable is a corner that silently does not follow the window.
+    let css = reading_mode_css();
+    let rounded = bottom_corner_declarations(css);
+    assert!(
+        rounded.len() >= 6,
+        "the sheet rounds {} bottom corners, so this test has stopped reading the rules it is holding",
+        rounded.len()
+    );
+    for line in &rounded {
+        assert!(
+            line.contains("var(--reader-card-radius)"),
+            "`{line}` rounds a bottom corner past the card's one variable, so it cannot follow the window"
+        );
+    }
+    // The number itself lives on the surface, where the window's does, and the two are set together.
+    let surface = rule_body(css, ".app-surface {");
+    assert_contains(surface, "--reader-card-radius: var(--lt-radius-md);");
+}
+
+#[test]
+fn the_macs_card_follows_the_macs_window_in_by_the_gutter_between_them() {
+    // A rounded box inside a rounded box holds the band between them when the inner corner is the outer one less the gap: 12 inside 20, which is the same as saying both arcs are struck from one point. Measured off the app's own pixels, a 20px window keeping the 6px card pinches that band to 0.71 of its straight width, against 1.01 with the card following.
+    let css = reading_mode_css();
+    let mac = rule_body(css, "body.mac-frame .app-surface {");
+    assert_contains(mac, "--reader-card-radius: var(--lt-radius-window-inner);");
+    // Windows and a browser keep the corner they draw today.
+    assert_contains(
+        rule_body(css, ".app-surface {"),
+        "--reader-card-radius: var(--lt-radius-md);",
+    );
+
+    // And the two Mac numbers are one gutter apart, or the band pinches at the diagonal again.
+    let px = |token: &str| -> f32 {
+        let declaration = format!("{token}: ");
+        let at = css
+            .find(&declaration)
+            .unwrap_or_else(|| panic!("{token} should be declared in the sheet"));
+        let value = &css[at + declaration.len()..];
+        value[..value.find("px;").expect("this is written in pixels")]
+            .parse()
+            .expect("this is a number")
+    };
+    let window = px("--lt-radius-window");
+    let inner = px("--lt-radius-window-inner");
+    let gutter = px("--reader-gutter");
+    assert_eq!(window, 20.0);
+    assert_eq!(inner, 12.0);
+    assert_eq!(
+        inner,
+        window - gutter,
+        "the Mac's card is not the Mac's window less the gutter, so the two arcs no longer share a center"
+    );
 }
 
 #[test]
