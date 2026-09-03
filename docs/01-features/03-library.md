@@ -457,6 +457,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Vault text | Held in memory for the active vault only; dropped when the folder you are in changes, and on quit |
 | Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, smallest documents first |
 | Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
+| Repositories inside a vault | Found up to three folders deep, stopping at the first one on each branch. See [Repositories inside repositories](#repositories-inside-repositories) |
 | Search results | Top 50 |
 | Folder listing | One directory per click |
 | First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again. A [sheet](#the-bubble-on-your-first-launch) takes it down, unmet, until the last one closes |

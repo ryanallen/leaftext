@@ -106,7 +106,7 @@ fn inner_repository_work_is_left_out_but_its_moved_commit_is_counted() {
     let _ = std::fs::remove_dir_all(&outer);
 }
 
-/// The whole of what was wrong: the walk ran only on the arm where the vault was not a repository yet, so a vault that was its own repository always answered that it held none.
+/// The fault this guards: with the walk on one arm only, a vault that is its own repository answers that it holds none.
 #[test]
 fn a_vault_that_is_its_own_repository_is_told_what_it_holds() {
     let vault = scratch_dir("git-root-vault-holds");
