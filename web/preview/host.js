@@ -112,6 +112,7 @@ export const COMMANDS = {
   setThemeMode: [ANSWERED],
   setThemeRandomBag: [ANSWERED],
   setHintState: [REFUSED, 'a first-run bubble is a once-per-install promise, and a reader landing on a page of a site has installed nothing — so a site draws none and nothing counts a launch'],
+  frontEndReady: [REFUSED, 'it releases the files a native launch was asked for, and a browser tab is opened at an address rather than launched with a file list. The word is still sent, because the page says it once whatever is under it and never waits for the answer'],
   startupReady: [REFUSED, 'a browser tab has no native Leaftext window to grow out of the small one a launch puts up, and no startup card in the page to take off. The word is still sent, because the page says it once whatever is under it and never waits for the answer'],
   windowDrag: [REFUSED, 'a browser tab has no window frame to drag'],
   windowMinimize: [REFUSED, 'a browser tab has no window to minimize'],

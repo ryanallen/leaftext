@@ -10,7 +10,8 @@ pub(crate) struct AppCtx {
     pub(crate) reader: Reader,
     pub(crate) settings: Settings,
     pub(crate) settings_path: Option<PathBuf>,
-    pub(crate) pending_open_path: Option<PathBuf>,
+    /// Every document the launch was asked for, until the page says it can draw one.
+    pub(crate) launch_open: LaunchOpenQueue,
     pub(crate) proxy: EventLoopProxy<UserEvent>,
     pub(crate) file_watch: FileWatch,
     pub(crate) vault_state: VaultState,
@@ -101,14 +102,90 @@ pub(crate) fn restore_front_tab_intent(workspace: &Workspace) -> Option<ScrollIn
         })
 }
 
-/// A command-line document replaces the saved front tab; otherwise the saved front tab loads through the ordinary restore path.
+/// A document the launch was asked for replaces the saved front tab; otherwise the saved front tab loads through the ordinary restore path.
 pub(crate) fn startup_restore_intent(
     workspace: &Workspace,
-    has_pending_path: bool,
+    opened_a_delivery: bool,
 ) -> Option<ScrollIntent> {
-    (!has_pending_path)
+    (!opened_a_delivery)
         .then(|| restore_front_tab_intent(workspace))
         .flatten()
+}
+
+/// Where every launch's file requests wait for a page that can receive one.
+///
+/// Every route into the app that opens a document hands its whole delivery here: a file on the command line, one Finder Apple Event, a second launch forwarding its file, the picker, a recent-file press and a drop. Before the front end has said every fragment has run, a delivery is only collected — opening it would change the tabs and then call a render hook the deliberately delayed script has not defined yet, which leaves the file's own name on a tab standing over the home screen. After that word, a delivery is taken at once.
+///
+/// The waiting list is ordered and keeps every path, because one Apple Event carries as many files as were selected and a drop always can.
+///
+/// A value the loop owns rather than a pair of loop locals, so waiting, releasing and taking a later delivery can each be read without a window to build.
+#[derive(Default)]
+pub(crate) struct LaunchOpenQueue {
+    /// Set by the page's own boot word and never unset: a page that has booted stays booted for the life of the window.
+    front_end_ready: bool,
+    /// What was delivered before that word, in the order it arrived.
+    waiting: Vec<PathBuf>,
+}
+
+/// What the loop should do with a delivery now.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum LaunchOpen {
+    /// Nothing to do: the paths are held until the page has booted, or there were none to release.
+    Nothing,
+    /// Open these in this order, draw the last one, and bring the window forward.
+    Open(Vec<PathBuf>),
+}
+
+impl LaunchOpenQueue {
+    /// A launch carrying a document on the command line. It waits exactly as a Finder batch does, because the same delayed script is under both.
+    pub(crate) fn with_launch_path(path: Option<PathBuf>) -> Self {
+        Self {
+            front_end_ready: false,
+            waiting: path.into_iter().collect(),
+        }
+    }
+
+    /// One delivery, in the order it was handed over.
+    pub(crate) fn deliver(&mut self, paths: Vec<PathBuf>) -> LaunchOpen {
+        if self.front_end_ready {
+            return LaunchOpen::release(paths);
+        }
+        self.waiting.extend(paths);
+        LaunchOpen::Nothing
+    }
+
+    /// The page has said every fragment has run. Whatever waited is released once and only once: the list is taken, not read.
+    pub(crate) fn front_end_ready(&mut self) -> LaunchOpen {
+        self.front_end_ready = true;
+        LaunchOpen::release(std::mem::take(&mut self.waiting))
+    }
+}
+
+impl LaunchOpen {
+    /// An empty release is nothing to do, so the one arm below never opens no documents and renders anyway.
+    fn release(paths: Vec<PathBuf>) -> Self {
+        if paths.is_empty() {
+            Self::Nothing
+        } else {
+            Self::Open(paths)
+        }
+    }
+}
+
+/// Open a released delivery: every path becomes a tab in delivery order, the last one is drawn once, and the window comes forward once. Answers whether anything was opened, which is what says the saved front tab is no longer what the launch should land on.
+///
+/// One render for the batch: a ten-file drop used to send ten events and draw ten documents to arrive at the tenth.
+fn open_delivered(reader: &mut Reader, release: LaunchOpen) -> bool {
+    let LaunchOpen::Open(paths) = release else {
+        return false;
+    };
+    for path in paths {
+        reader.workspace.open_path(path);
+    }
+    reader.render(ScrollIntent::Reset);
+    // A forwarded open from a second launch should surface the window — and so should the document a build's own copy was launched with, which arrives down this same arm, so the call is the one that leaves a window nobody can see alone.
+    surface_window(&reader.window);
+    true
 }
 
 /// Whether an arm below could have answered this event, which is what says whether the tail after the match has anything left to do. A skip list rather than a list of what counts, so an event this does not recognize still runs the tail and nothing new is quietly dropped.
@@ -145,7 +222,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
         mut reader,
         mut settings,
         settings_path,
-        mut pending_open_path,
+        mut launch_open,
         proxy,
         mut file_watch,
         mut vault_state,
@@ -226,30 +303,15 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     "Failed to sync the window focus",
                 );
             }
-            // macOS delivers a double-clicked document as an Apple Event, not an argument, so file associations there are inert without this. Before the page is up the path waits with the command-line one.
+            // macOS delivers a double-clicked document as an Apple Event, not an argument, so file associations there are inert without this. One event carries every file that was selected, and they go on together as one delivery.
             Event::Opened { urls } => {
-                for path in urls.iter().filter_map(|url| url.to_file_path().ok()) {
-                    if reader.webview.is_some() && pending_open_path.is_none() {
-                        let _ = proxy.send_event(UserEvent::OpenPath(path));
-                    } else {
-                        pending_open_path = Some(path);
-                    }
+                let paths: Vec<PathBuf> = urls
+                    .iter()
+                    .filter_map(|url| url.to_file_path().ok())
+                    .collect();
+                if !paths.is_empty() {
+                    let _ = proxy.send_event(UserEvent::OpenPaths(paths));
                 }
-            }
-            Event::UserEvent(UserEvent::WebviewReady) => {
-                if let Some(path) = pending_open_path.take() {
-                    let _ = proxy.send_event(UserEvent::OpenPath(path));
-                } else if let Some(scroll) = startup_restore_intent(&reader.workspace, false) {
-                    reader.render(scroll);
-                }
-                // A window can come up behind another app, and the focus event only fires on a change — so without this the page would read as whatever the last event said, and at a launch nothing has said anything. Which window is in front is asked of the platform rather than of `is_focused`, whose answer is false while the web view holds the keyboard inside a window the reader is looking straight at.
-                run_page_script(
-                    reader.page(),
-                    &window_active_line(window_is_frontmost(&reader.window)),
-                    "Failed to sync the window focus",
-                );
-                // Once there is a page to tell: any cloud folder on this machine becomes a vault, and the page learns which folders they are. Off the loop, so a slow disk never delays the first paint.
-                request_cloud_folders(&proxy);
             }
             Event::UserEvent(UserEvent::StartupGrowDue) => {
                 if window_cmds::finish_startup(&reader, &mut startup) {
@@ -260,11 +322,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::FocusWindow) => {
                 surface_window(&reader.window);
             }
-            Event::UserEvent(UserEvent::OpenPath(path)) => {
-                reader.workspace.open_path(path);
-                reader.render(ScrollIntent::Reset);
-                // A forwarded open from a second launch should surface the window — and so should the document a build's own copy was launched with, which arrives down this same arm, so the call is the one that leaves a window nobody can see alone.
-                surface_window(&reader.window);
+            Event::UserEvent(UserEvent::OpenPaths(paths)) => {
+                let release = launch_open.deliver(paths);
+                open_delivered(&mut reader, release);
             }
             Event::UserEvent(UserEvent::RemoteRefreshDue) => {
                 refresh_due_vaults(&vault_state, &mut refresh_book, &proxy, reader.page());
@@ -549,7 +609,7 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 gesture_ask::step(reader.page(), &params, done)
             }
             Event::UserEvent(UserEvent::FromPage(command)) => match command {
-                IpcCommand::Open => file_cmds::open(&mut reader),
+                IpcCommand::Open => file_cmds::open(&proxy),
                 IpcCommand::NewDocument => file_cmds::new_document(&mut reader),
                 IpcCommand::OpenRecent { path } => file_cmds::open_recent(&proxy, path),
                 IpcCommand::PasteFile {
@@ -1027,6 +1087,23 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     if apply_setting_command(&mut settings, command) {
                         persist_settings(&settings, settings_path.as_ref());
                     }
+                }
+                IpcCommand::FrontEndReady => {
+                    // The launch's documents are released here and nowhere earlier: this is the first moment the page has a hook to draw one into.
+                    let release = launch_open.front_end_ready();
+                    let opened = open_delivered(&mut reader, release);
+                    // The saved front tab is what a launch lands on when nothing was asked for. A launch that was asked for a document has just drawn it.
+                    if let Some(scroll) = startup_restore_intent(&reader.workspace, opened) {
+                        reader.render(scroll);
+                    }
+                    // A window can come up behind another app, and the focus event only fires on a change — so without this the page would read as whatever the last event said, and at a launch nothing has said anything. Which window is in front is asked of the platform rather than of `is_focused`, whose answer is false while the web view holds the keyboard inside a window the reader is looking straight at.
+                    run_page_script(
+                        reader.page(),
+                        &window_active_line(window_is_frontmost(&reader.window)),
+                        "Failed to sync the window focus",
+                    );
+                    // Once there is a page to tell: any cloud folder on this machine becomes a vault, and the page learns which folders they are. Off the loop, so a slow disk never delays the first paint.
+                    request_cloud_folders(&proxy);
                 }
                 IpcCommand::StartupReady => {
                     if window_cmds::finish_startup(&reader, &mut startup) {

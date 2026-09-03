@@ -112,6 +112,8 @@ function openFlowSheet({ title, text, save }) {
   flowSession = { save, text: typeof text === 'string' ? text : '', graph: null };
   flowSelection = null;
   flowDrawn = null;
+  // The wait is a guess at what this diagram's next draw will cost, and a sheet that has drawn nothing has no evidence about its own. Left standing, an eighty-line chart's 576 ms sits in front of a five-line one whose own draw is 42, so the canvas is empty for over half a second on a chart that draws in a twentieth of it.
+  flowLastDrawCost = 0;
   flowZoom = 1;
   if (flowSheetTitle) flowSheetTitle.textContent = title || 'Flowchart';
   readyFlowPicker();

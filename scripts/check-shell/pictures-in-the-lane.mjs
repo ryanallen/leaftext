@@ -8,6 +8,10 @@ import { check, checkSettled, fakeElement, readingCss, record, root } from './sh
 export function run() {
   const booted = record.booted;
   if (!booted) return;
+  const clickApp = (target) => {
+    const app = booted.document.getElementById('app');
+    for (const handler of app.listeners.get('click') || []) handler({ target, preventDefault() {}, stopPropagation() {} });
+  };
 
   // The picture half of the same lane, and the one thing about it that cannot be read off the stylesheet: which paragraphs get the mark. CSS counts elements and never text, so the shapes below are exactly what a `:has(> img:only-child)` selector would have got wrong.
   check('only a paragraph holding one picture and no words is widened to the lane', () => {
@@ -315,6 +319,58 @@ export function run() {
     }
   });
 
+  check('a press on a picture corner stays with its button while a press on the picture reaches its block', () => {
+    const app = booted.document.getElementById('app');
+    const corner = fakeElement('picture-corner');
+    corner.className = 'image-lane-corner';
+    const button = fakeElement('picture-export');
+    button.className = 'image-export-open';
+    corner.appendChild(button);
+    const picture = fakeElement('picture');
+    picture.tagName = 'IMG';
+    const stoppedBy = (target) => {
+      let stopped = 0;
+      for (const handler of app.listeners.get('pointerdown') || []) {
+        handler({ button: 0, target, stopPropagation: () => { stopped += 1; } });
+      }
+      return stopped;
+    };
+    if (!stoppedBy(button)) throw new Error('a press on the picture corner reached the source block underneath');
+    if (stoppedBy(picture)) throw new Error('a press on the picture itself was kept from its source block');
+  });
+
+  check('a picture corner restored from markup still exports and opens the picture', () => {
+    const app = booted.document.getElementById('app');
+    const lane = fakeElement('restored-picture-lane');
+    lane.tagName = 'P';
+    const picture = Object.assign(fakeElement('restored-picture'), { tagName: 'IMG', alt: 'Restored picture', currentSrc: 'leaf-image://local/imgs/restored.png' });
+    picture.setAttribute('src', 'leaf-image://local/imgs/restored.png');
+    const corner = fakeElement('restored-picture-corner');
+    corner.className = 'image-lane-corner';
+    const opener = fakeElement('restored-picture-opener');
+    opener.tagName = 'BUTTON';
+    opener.className = 'image-sheet-open';
+    const exportButton = fakeElement('restored-picture-export');
+    exportButton.tagName = 'BUTTON';
+    exportButton.className = 'image-export-open';
+    corner.append(opener, exportButton);
+    lane.append(picture, corner);
+    const sent = [];
+    const wasSend = booted.ipc.postMessage;
+    booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
+    try {
+      clickApp(exportButton);
+      const ask = sent.find((one) => one.command === 'pickPicturePath');
+      if (!ask) throw new Error('the restored Export button asked nowhere for a path');
+      booted.window.leafPicturePathPicked(ask.token, null);
+      clickApp(opener);
+      if (!app.querySelector('.image-sheet-overlay')) throw new Error('the restored opener did not open the picture');
+    } finally {
+      booted.closeImageSheet();
+      booted.ipc.postMessage = wasSend;
+    }
+  });
+
   // The sheet a picture is printed on. The shipped paper class does the opposite of what this needs on its own — it grows the surface to the whole document — so a print under it alone would be the note with the picture somewhere in it. The cascade decides this and the stand-in page has none, so the rules are read off the stylesheet the way the other CSS checks here are.
   check('a printed picture is the only thing left on the sheet', () => {
     if (!booted.document.getElementById('picturePrint')) throw new Error('the page has no container to print a picture in');
@@ -353,7 +409,7 @@ export function run() {
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     booted.window.leafHoldAppearance = (on) => held.push(on);
     booted.leafToast = (words) => said.push(words);
-    const press = () => (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const press = () => clickApp(button);
     const answer = (path) => {
       const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
       if (!ask) throw new Error('pressing Export asked nowhere for a path');
@@ -478,7 +534,7 @@ export function run() {
     let drawn = { width: 40, height: 30 };
     let answers = (type) => 'data:' + type + ';base64,QUJD';
     booted.pictureCanvas = async () => ({ width: drawn.width, height: drawn.height, toDataURL: (type) => answers(type) });
-    const press = () => (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const press = () => clickApp(button);
     const answer = (path) => {
       const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
       if (!ask) throw new Error('pressing Export asked nowhere for a path');
@@ -570,7 +626,7 @@ export function run() {
         return 'data:' + type + ';base64,QUJD';
       },
     });
-    const press = () => (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    const press = () => clickApp(button);
     const answer = (path) => {
       const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
       if (!ask) throw new Error('pressing Export asked nowhere for a path');
@@ -694,7 +750,7 @@ export function run() {
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     booted.leafToast = (words) => said.push(words);
     // A PNG asked for as a JPEG, so the row converts rather than asking the host to copy the file: the load is the first thing it does.
-    (button.listeners.get('click') || []).forEach((run) => run({ preventDefault() {}, stopPropagation() {} }));
+    clickApp(button);
     const ask = sent.filter((one) => one.command === 'pickPicturePath').pop();
     if (!ask) throw new Error('pressing Export asked nowhere for a path');
     booted.window.leafPicturePathPicked(ask.token, '/out/nowhere.jpg');

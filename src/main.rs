@@ -92,7 +92,7 @@ use tao::{
 };
 use wry::{
     http::{Request, Response},
-    DragDropEvent, PageLoadEvent, WebContext, WebView, WebViewBuilder,
+    DragDropEvent, WebContext, WebView, WebViewBuilder,
 };
 
 use app::*;
@@ -375,7 +375,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         let proxy = proxy.clone();
         move |maybe_path| {
             let _ = proxy.send_event(match maybe_path {
-                Some(path) => UserEvent::OpenPath(path),
+                Some(path) => UserEvent::OpenPaths(vec![path]),
                 None => UserEvent::FocusWindow,
             });
         }
@@ -401,7 +401,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
     // The kept paths ride in the same file, so one read answers both.
     let favorites = config_path.as_ref().map(load_favorites).unwrap_or_default();
 
-    // The strip can paint from this without reading a document. The front document waits for WebviewReady below, just like a file passed on the command line.
+    // The strip can paint from this without reading a document. The front document waits for the page's own boot word, just like a file passed on the command line.
     let workspace = Workspace::from_session(&settings.session);
     if workspace.session() != settings.session {
         settings.session = workspace.session();
@@ -465,15 +465,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             source_payload_protocol_handler(),
         )
         .with_ipc_handler(handler)
-        .with_drag_drop_handler(drag_drop_handler)
-        .with_on_page_load_handler({
-            let proxy = proxy.clone();
-            move |event, _url| {
-                if matches!(event, PageLoadEvent::Finished) {
-                    let _ = proxy.send_event(UserEvent::WebviewReady);
-                }
-            }
-        });
+        .with_drag_drop_handler(drag_drop_handler);
 
     // Trim WebView2's footprint for a single-window offline reader. This replaces wry's default arg string, so its defaults (msWebOOUI/msPdfOOUI/SmartScreen off, autoplay policy) are folded back in. Site isolation is off (Leaf has no cross-origin content), GPU stays on for smooth scroll, and the renderer is un-backgrounded so it stays responsive when occluded.
     #[cfg(windows)]
@@ -505,8 +497,8 @@ fn run_app() -> Result<(), Box<dyn Error>> {
 
     update_active_navigation(Some(&webview), &workspace);
 
-    // A command-line file waits here until the webview reports its first page load; rendering it before the page's JS hooks exist would silently land on the home screen. WebviewReady flushes it once the page is ready.
-    let pending_open_path = arg_path;
+    // A command-line file waits here until the page says every front-end fragment has run; rendering it before the page's hooks exist lands silently on the home screen. The page's `frontEndReady` releases it, and every other route into a document waits in the same queue.
+    let launch_open = LaunchOpenQueue::with_launch_path(arg_path);
 
     let webview = Some(webview);
     let _web_context = web_context;
@@ -533,7 +525,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
         },
         settings,
         settings_path,
-        pending_open_path,
+        launch_open,
         proxy,
         file_watch,
         vault_state,
@@ -722,10 +714,13 @@ fn pick_clone_parent_folder() -> Option<PathBuf> {
 fn drag_drop_handler(proxy: EventLoopProxy<UserEvent>) -> impl Fn(DragDropEvent) -> bool {
     move |event| {
         if let DragDropEvent::Drop { paths, .. } = event {
-            for path in paths {
-                if is_supported_document_path(&path) {
-                    let _ = proxy.send_event(UserEvent::OpenPath(path));
-                }
+            // One delivery for the whole drop, so twenty files dropped together are drawn once rather than twenty times on the way to the last of them.
+            let paths: Vec<PathBuf> = paths
+                .into_iter()
+                .filter(|path| is_supported_document_path(path))
+                .collect();
+            if !paths.is_empty() {
+                let _ = proxy.send_event(UserEvent::OpenPaths(paths));
             }
         }
         true

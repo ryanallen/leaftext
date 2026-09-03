@@ -1321,6 +1321,8 @@ function undoLastDelete() {
 runSettlePass();
 // Every fragment is loaded, so a render from here on is a page somebody could use — which is what the startup card is waiting to be replaced by.
 window.__leafBooted = true;
+// And the host is told, before the initial state is drawn: this is the first moment a render sent from outside would land on hooks that exist, and the files a launch was asked for are waiting on it. The page-load-finished callback the host used to wait on fires while this script has not been appended yet, which is how a double-clicked file ended up naming a tab over the home screen.
+send({ command: 'frontEndReady' });
 window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 // The three launch facts, said one after the other through the queueing door rather than through the replacing one: they share the single growl slot, and a fact that is only true at launch has nowhere else to go. The order below is the reading order, chosen rather than inherited.

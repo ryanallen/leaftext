@@ -911,13 +911,13 @@ function mermaidDiagramFor(target) {
   return diagram;
 }
 
-// Delegated, not per-button: a diagram restored from its own rendered HTML (an abandoned source edit does exactly that) brings the markup back without the listeners. The capture pass keeps a press on a control off the block underneath, whose gutter and selection handling would otherwise answer first.
+// Delegated so controls restored from rendered HTML still work; capture keeps their press off the editable block underneath.
 let mermaidPan = null;
 if (app) {
   app.addEventListener(
     'pointerdown',
     (event) => {
-      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button, .mermaid-export, .diagram-close') : null;
+      const control = event.target && event.target.closest ? event.target.closest('.mermaid-tool, .mermaid-zoom button, .mermaid-export, .diagram-close, .image-lane-corner, .code-copy') : null;
       if (control) event.stopPropagation();
     },
     true,
@@ -978,6 +978,14 @@ if (app) {
   );
   app.addEventListener('click', (event) => {
     if (!event.target || !event.target.closest) return;
+    const codeButton = event.target.closest('.code-copy');
+    if (codeButton) {
+      event.preventDefault();
+      const block = codeButton.closest('pre');
+      const code = block && block.querySelector('code');
+      if (code) copyCodeBlock(codeButton, code.textContent || '');
+      return;
+    }
     const zoomButton = event.target.closest('.mermaid-zoom button');
     if (zoomButton) {
       event.preventDefault();
@@ -1237,7 +1245,6 @@ function decorateCodeBlocks() {
     button.className = 'code-copy';
     button.innerHTML = CODE_COPY_ICON;
     setCodeCopyLabel(button, 'Copy code');
-    button.addEventListener('click', () => copyCodeBlock(button, code.textContent || ''));
     pre.appendChild(button);
   });
 }

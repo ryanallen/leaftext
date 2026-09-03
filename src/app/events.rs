@@ -9,10 +9,8 @@ use super::*;
 pub(crate) enum UserEvent {
     /// A command the page sent over IPC, forwarded unopened.
     FromPage(IpcCommand),
-    /// Open a document: a second launch's forwarded file, a macOS Apple Event, a drag-and-drop, or the page's `openRecent` re-sent as this. Also surfaces the window, which a forwarded open should do.
-    OpenPath(PathBuf),
-    /// The webview finished its first page load, so its render hooks now exist. Sent once on boot to flush a file passed on the command line, whose render would otherwise race the load.
-    WebviewReady,
+    /// One delivery of documents to open, in the order they were handed over: a second launch's forwarded file, one macOS Apple Event's whole list, a drop's whole list, the picker's choice, or the page's `openRecent` re-sent as this. A batch rather than one path because an Apple Event and a drop each carry several, and one event per file draws the page once per file. Every one goes through `LaunchOpenQueue`, which holds it until the front end has said it can receive a document; the release surfaces the window, which a forwarded open should do.
+    OpenPaths(Vec<PathBuf>),
     /// The launch window has waited long enough for the page and grows now whether or not it ever speaks. A page that threw while it loaded sends no `startupReady`, and there is nothing in a 256-pixel window for a reader to press.
     StartupGrowDue,
     /// A second launch of the app forwarded a request to this (primary) instance but carried no file — bring the existing window to the front.
@@ -316,9 +314,16 @@ pub(crate) enum IpcCommand {
         #[serde(rename = "lastLaunch")]
         last_launch: u32,
     },
+    /// Every front-end fragment has run, so the page can now receive a document from the host. Said once, immediately after the last fragment sets `window.__leafBooted`, and before the initial state is drawn.
+    ///
+    /// This is the only true answer to "can the page be sent a render". The web view's own page-load-finished callback is not: the desktop appends the joined script two painted frames after the document is parsed, so that callback fires while the page still has no hooks — a render sent then changes the tabs and lands nowhere, which is the file that opens as the home screen under its own name.
+    ///
+    /// It is also not `StartupReady`, which is a later and different promise: that one says a screen a reader could use has been *drawn*, and a launch opening a file withholds it until the document arrives. Waiting for it to release that document would wait for itself.
+    #[serde(rename = "frontEndReady")]
+    FrontEndReady,
     /// The page has drawn the first document, or the home screen where the launch opens none. The window is put up small and holding the startup card, and this is what grows it into the one the reader left.
     ///
-    /// `WebviewReady` cannot do it: that is sent when the page finishes loading, and the loop renders the first document inside that very arm — so a window grown there is a full-size window with an empty reader in it, which is the half of the complaint about stuff still loading.
+    /// `FrontEndReady` cannot do it: that is said before the initial state is drawn, and the loop releases the launch's documents inside that very arm — so a window grown there is a full-size window with an empty reader in it, which is the half of the complaint about stuff still loading.
     #[serde(rename = "startupReady")]
     StartupReady,
     /// Custom title-bar controls (the app bar is the title bar on frameless Windows).

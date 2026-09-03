@@ -290,11 +290,6 @@ function bindImageSheet(root = app) {
     opener.title = 'Open picture on the whole window';
     opener.setAttribute('aria-label', 'Open picture on the whole window');
     opener.innerHTML = `<span class="lt-icon lt-icon-expand"></span>`;
-    opener.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      openImageSheet(picture, opener);
-    });
     corner.appendChild(opener);
     // Only a picture on this disk gets one: every row needs the file, and a control that always failed on a picture served from the web would read as a broken app rather than as a picture that is not here.
     if (isLocalImageSrc(picture.getAttribute('src') || '')) {
@@ -304,14 +299,25 @@ function bindImageSheet(root = app) {
       save.title = 'Export this picture';
       save.setAttribute('aria-label', 'Export this picture');
       save.innerHTML = `<span class="lt-icon lt-icon-export"></span>`;
-      save.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        beginPictureExport(picture, save);
-      });
       corner.appendChild(save);
     }
     block.appendChild(corner);
+  });
+}
+
+if (app) {
+  app.addEventListener('click', (event) => {
+    if (!event.target || !event.target.closest) return;
+    const control = event.target.closest('.image-sheet-open, .image-export-open');
+    if (!control) return;
+    const corner = control.closest('.image-lane-corner');
+    const block = corner && corner.parentElement;
+    const picture = block && block.querySelector(':scope > img');
+    if (!picture) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (control.classList.contains('image-export-open')) beginPictureExport(picture, control);
+    else openImageSheet(picture, control);
   });
 }
 

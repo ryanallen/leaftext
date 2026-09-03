@@ -1,4 +1,4 @@
-// The small window a launch puts up: the card the page comes up holding, and the word that lets the host grow the window into the one the reader left.
+// The small window a launch puts up: the card the page comes up holding, the word that says the page can be sent a document, and the word that lets the host grow the window into the one the reader left.
 
 import { check, pageMarkup, record, runShell, source, standInState } from './shared.mjs';
 
@@ -18,6 +18,9 @@ export function run() {
     return {
       context,
       said: () => sent.filter((message) => message.command === 'startupReady').length,
+      booted: () => sent.filter((message) => message.command === 'frontEndReady').length,
+      // Every command in the order it went out, which is how one launch word is placed against the other.
+      words: () => sent.map((message) => message.command),
       card: () => context.document.getElementById('startupCard'),
       render: (state) => context.window.leafSetState(state),
     };
@@ -52,6 +55,40 @@ export function run() {
     if (boot.said() !== 0) throw new Error('the window was grown on the home screen a launch draws before its document arrives');
     boot.render(standInState('C:/Notes/one.md'));
     if (boot.said() !== 1) throw new Error(`the document arrived and the page said it had drawn ${boot.said()} times rather than once`);
+  });
+
+  check('the page says it can be sent a document, once, before it draws anything', () => {
+    // The two launch words are different promises and the order is the whole point. This one says every fragment has run, so a render arriving from the host lands on hooks that exist; the other says a screen a reader could use has been drawn. A launch opening a file withholds the second until that file arrives, so releasing the file on it would wait for itself.
+    const boot = launch(homeState);
+    if (boot.booted() !== 1) throw new Error(`the page said it had booted ${boot.booted()} times rather than once`);
+    const words = boot.words();
+    if (words.indexOf('startupReady') < words.indexOf('frontEndReady')) throw new Error('the page said it had drawn before it said it had booted, so the host would grow the window around a page it still could not send a document to');
+    // Said on a second render? The host releases the launch's files on it, and a second release would reopen files the reader may have closed.
+    boot.render(homeState);
+    if (boot.booted() !== 1) throw new Error('a second render said it again, so the files a launch was asked for would be opened twice');
+  });
+
+  check('a launch opening a document says it can be sent one before the document arrives', () => {
+    // The host is holding that document until this word: it is what the whole race was about. A page that only said it once the document was on screen could never be sent one.
+    const opening = { recent: [], favorites: [], tabs: [{ title: 'one', path: 'C:\\Notes\\one.md' }], active: 0, document: null };
+    const boot = launch(opening);
+    if (boot.booted() !== 1) throw new Error('a launch opening a document never said it could be sent one, so the host would hold that document for ever');
+    if (boot.said() !== 0) throw new Error('the window was grown on the home screen a launch draws before its document arrives');
+  });
+
+  check('the word goes out after the boot mark and before the state is drawn', () => {
+    // The order inside one statement run, which no value the page hands back can carry: the mark is what every fragment's own guard reads, and the state drawn after it is the first render of the launch.
+    const mark = source.indexOf('window.__leafBooted = true;');
+    const word = source.indexOf("send({ command: 'frontEndReady' })");
+    const drawn = source.indexOf('window.leafSetState(window.__leafInitialState');
+    if (mark < 0 || word < 0 || drawn < 0) throw new Error('the boot mark, the word or the first render is no longer where the launch is written');
+    if (!(mark < word && word < drawn)) throw new Error('the word is not between the boot mark and the first render, so the host is told either too early to draw into or too late to be the first screen');
+  });
+
+  check('a browser says it too, because the page says it once whatever is under it', () => {
+    // Both browser hosts refuse the word — neither owns a native launch with a file list — and the page never waits on the answer. It is still said, because one page cannot carry two boots.
+    const boot = launch(homeState, { desktop: false });
+    if (boot.booted() !== 1) throw new Error('a browser never said it had booted, so the page has two boots in it');
   });
 
   check('the host takes the card off, and the page never takes it off by itself', () => {

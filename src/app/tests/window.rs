@@ -417,7 +417,7 @@ fn only_an_event_an_arm_could_answer_reaches_the_tail_of_the_loop() {
     }
 
     for event in [
-        Event::UserEvent(UserEvent::WebviewReady),
+        Event::UserEvent(UserEvent::FocusWindow),
         Event::Suspended,
         Event::Resumed,
         Event::LoopDestroyed,
@@ -638,5 +638,141 @@ fn only_the_word_the_launcher_writes_asks_for_the_measured_front_end() {
     assert_eq!(
         front_end_asset_for(Some("1")),
         leaftext::APP_SHELL_EVALUATION_SCRIPT_ASSET
+    );
+}
+
+/// The page's own boot word is its own command, and not the one the window grows on. They are two different promises made at two different moments — every fragment has run, and a screen a reader could use has been drawn — and a launch opening a file withholds the second until that file arrives, so a host that released the file on it would be waiting for itself.
+#[test]
+fn the_page_says_it_has_booted_and_says_it_has_drawn_with_two_different_words() {
+    let booted: IpcCommand = serde_json::from_str(r#"{"command":"frontEndReady"}"#)
+        .expect("the page's boot word parses");
+    assert!(
+        matches!(booted, IpcCommand::FrontEndReady),
+        "the boot word parsed as something else, so the launch's files are released by whatever that is"
+    );
+
+    let drawn: IpcCommand =
+        serde_json::from_str(r#"{"command":"startupReady"}"#).expect("the drawn word still parses");
+    assert!(
+        matches!(drawn, IpcCommand::StartupReady),
+        "the drawn word has been taken over by the boot word, so the window grows on the wrong one"
+    );
+}
+
+/// A file the launch was asked for waits for that word and is then handed over exactly once. Twice would reopen a document the reader may have closed in between.
+#[test]
+fn a_file_the_launch_was_asked_for_waits_for_the_page_and_is_handed_over_once() {
+    let mut queue = LaunchOpenQueue::with_launch_path(Some(PathBuf::from("/docs/one.md")));
+
+    assert_eq!(
+        queue.front_end_ready(),
+        LaunchOpen::Open(vec![PathBuf::from("/docs/one.md")]),
+        "the launch's file was not released when the page said it could take one"
+    );
+    assert_eq!(
+        queue.front_end_ready(),
+        LaunchOpen::Nothing,
+        "a second boot word opened the file again, over whatever the reader had done with that tab"
+    );
+}
+
+/// A Finder double-click before the page has booted. Nothing may touch the tabs yet: opening one there changes the tab strip and then calls a render hook the delayed script has not defined, which is the file whose name sits on a tab over the home screen.
+#[test]
+fn a_finder_file_arriving_before_the_page_has_booted_opens_nothing_until_it_has() {
+    let mut queue = LaunchOpenQueue::default();
+
+    assert_eq!(
+        queue.deliver(vec![PathBuf::from("/docs/one.md")]),
+        LaunchOpen::Nothing,
+        "the file was opened into a page with no hooks to draw it, which is the whole fault"
+    );
+    assert_eq!(
+        queue.front_end_ready(),
+        LaunchOpen::Open(vec![PathBuf::from("/docs/one.md")]),
+        "the page said it could take a document and the file that was waiting never arrived"
+    );
+}
+
+/// One Apple Event carries every file that was selected, and a drop always can. They are released together, in the order they were handed over, so the strip is filled once and the last one is what the reader lands on.
+#[test]
+fn a_batch_delivered_before_the_boot_word_comes_back_whole_and_in_order() {
+    let mut queue = LaunchOpenQueue::default();
+    let delivered = vec![
+        PathBuf::from("/docs/one.md"),
+        PathBuf::from("/docs/two.md"),
+        PathBuf::from("/docs/three.md"),
+    ];
+
+    assert_eq!(queue.deliver(delivered.clone()), LaunchOpen::Nothing);
+    assert_eq!(
+        queue.front_end_ready(),
+        LaunchOpen::Open(delivered.clone()),
+        "the batch came back short or out of order, so a three-file selection opens as one file or as the wrong one"
+    );
+
+    // What the loop then does with it: one tab each, and the last delivered is the one in front — which is what makes the single render at the end the document the reader asked for.
+    let mut workspace = Workspace::default();
+    for path in delivered {
+        workspace.open_path(path);
+    }
+    assert_eq!(
+        workspace.tabs.len(),
+        3,
+        "three files were delivered and the strip does not hold three"
+    );
+    assert_eq!(
+        workspace.active,
+        Some(2),
+        "the reader lands on something other than the last file of the batch"
+    );
+}
+
+/// After the boot word every route is immediate, and every route waits before it. The Windows handoff is the one that has never been reported: its forwarding server starts before the web view is built, so a second launch during startup can reach the same race a Finder double-click does.
+#[test]
+fn after_the_boot_word_a_file_opens_at_once_and_before_it_every_route_waits() {
+    let mut queue = LaunchOpenQueue::default();
+    queue.front_end_ready();
+
+    assert_eq!(
+        queue.deliver(vec![PathBuf::from("/docs/later.md")]),
+        LaunchOpen::Open(vec![PathBuf::from("/docs/later.md")]),
+        "a file opened once the page is up was held, so the app went quiet on a double-click"
+    );
+    assert_eq!(
+        queue.deliver(Vec::new()),
+        LaunchOpen::Nothing,
+        "an empty delivery asked for a render of nothing"
+    );
+    // The same file delivered again is still a release, because a double-click on a file already open is a reader asking to be taken to it. What the workspace then does is bring that tab forward rather than open a second one, and the release renders either way.
+    let mut workspace = Workspace::default();
+    workspace.open_path(PathBuf::from("/docs/later.md"));
+    workspace.open_path(PathBuf::from("/docs/other.md"));
+    assert_eq!(
+        queue.deliver(vec![PathBuf::from("/docs/later.md")]),
+        LaunchOpen::Open(vec![PathBuf::from("/docs/later.md")]),
+        "a file already open was swallowed, so double-clicking it in Finder does nothing at all"
+    );
+    workspace.open_path(PathBuf::from("/docs/later.md"));
+    assert_eq!(workspace.tabs.len(), 2, "the same file opened a second tab");
+    assert_eq!(
+        workspace.active,
+        Some(0),
+        "the tab already showing that file was not brought forward"
+    );
+
+    // The same value, reached the other way round: a second launch forwarding its file during startup is held exactly as a Finder batch is.
+    let mut starting = LaunchOpenQueue::with_launch_path(Some(PathBuf::from("/docs/first.md")));
+    assert_eq!(
+        starting.deliver(vec![PathBuf::from("/docs/forwarded.md")]),
+        LaunchOpen::Nothing,
+        "a second launch's file rendered into a page that had not booted"
+    );
+    assert_eq!(
+        starting.front_end_ready(),
+        LaunchOpen::Open(vec![
+            PathBuf::from("/docs/first.md"),
+            PathBuf::from("/docs/forwarded.md"),
+        ]),
+        "the command line's file and the forwarded one were not released together, in that order"
     );
 }

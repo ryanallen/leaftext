@@ -136,6 +136,51 @@ export function run() {
     }
   });
 
+  check('a sheet opening forgets what the last one drew, so its first picture waits only the floor', () => {
+    const held = booted.window.mermaid;
+    booted.window.mermaid = { initialize: () => {}, render: () => Promise.resolve({ svg: '<svg></svg>' }) };
+    try {
+      // An eighty-line chart has just been closed, and its 576 ms is what the page is still holding.
+      read('flowLastDrawCost = 576;');
+      // Through the open rather than through `sheetOpenOnAChart`, which writes the session straight in and would never reach the reset.
+      booted.openFlowSheet({ title: 'Flowchart', text: CHART, save: () => true });
+      if (armedWait() !== 120) {
+        throw new Error(`a five-line chart opened after a 576 ms draw waited ${armedWait()} for its first picture rather than the 120 ms floor`);
+      }
+    } finally {
+      booted.window.mermaid = held;
+      booted.closeFlowSheet();
+      booted.__frames.drain();
+      booted.__timers.drain();
+      read('flowLastDrawCost = 0; flowSession = null; flowSelection = null; flowDiagramThemeVersion = 0; flowChipThemeVersion = 0;');
+      read('flowChipCache.clear(); flowChipsAsked = false; flowDrawingStore.clear(); flowDrawingStoreHeld = 0;');
+      read('flowCanvas.innerHTML = ""; flowPlaced = null; flowNatural = null; flowSize = null; flowDrawError = "";');
+      booted.forgetFlowShapeGrid();
+    }
+  });
+
+  checkSettled('a draw inside one sheet still says how long the next wait in that same sheet is', async () => {
+    const clock = booted.performance;
+    // The two readings the draw takes either side of mermaid, so the one it records is 576.
+    const readings = [0, 576];
+    booted.performance = { now: () => (readings.length > 1 ? readings.shift() : readings[0]) };
+    const close = sheetOpenOnAChart(() => Promise.resolve({ svg: '<svg></svg>' }));
+    try {
+      read('flowLastDrawCost = 0;');
+      booted.drawFlowDiagram();
+      await settle();
+      booted.queueFlowDiagram();
+      if (armedWait() !== 576) {
+        throw new Error(`a 576 ms draw inside an open sheet queued the next redraw at ${armedWait()} rather than at 576, so the reset took the property away`);
+      }
+    } finally {
+      booted.__timers.run(Number(read('flowDrawTimer')));
+      booted.performance = clock;
+      read('flowLastDrawCost = 0;');
+      close();
+    }
+  });
+
   checkSettled('typing faster than the last draw took makes one picture rather than one a keystroke', async () => {
     const calls = [];
     const close = sheetOpenOnAChart((id) => {

@@ -14,6 +14,47 @@ export function run() {
   if (!booted) return;
   const { sourceSpliceSince, rangesAfterCommit } = booted;
 
+  check('a press on a code block Copy button stays with it while a press on the code reaches its block', () => {
+    const app = booted.document.getElementById('app');
+    const button = fakeElement('code-copy');
+    button.className = 'code-copy';
+    const code = fakeElement('code');
+    code.tagName = 'CODE';
+    const stoppedBy = (target) => {
+      let stopped = 0;
+      for (const handler of app.listeners.get('pointerdown') || []) {
+        handler({ button: 0, target, stopPropagation: () => { stopped += 1; } });
+      }
+      return stopped;
+    };
+    if (!stoppedBy(button)) throw new Error('a press on Copy reached the source block underneath');
+    if (stoppedBy(code)) throw new Error('a press on the code was kept from its source block');
+  });
+
+  check('a code block Copy button restored from markup still copies its code', () => {
+    const app = booted.document.getElementById('app');
+    const block = fakeElement('restored-code-block');
+    block.tagName = 'PRE';
+    const code = fakeElement('restored-code');
+    code.tagName = 'CODE';
+    code.textContent = 'const answer = 42;';
+    const button = fakeElement('restored-code-copy');
+    button.tagName = 'BUTTON';
+    button.className = 'code-copy';
+    block.append(code, button);
+    const copied = [];
+    const wasClipboard = booted.navigator.clipboard;
+    booted.navigator.clipboard = { writeText: (text) => { copied.push(text); return Promise.resolve(); } };
+    try {
+      for (const handler of app.listeners.get('click') || []) {
+        handler({ target: button, preventDefault() {}, stopPropagation() {} });
+      }
+      if (String(copied) !== 'const answer = 42;') throw new Error(`the restored Copy button copied ${JSON.stringify(copied)}`);
+    } finally {
+      booted.navigator.clipboard = wasClipboard;
+    }
+  });
+
   // Half a message opens and half of it does not, and nothing on the page said which — the same fault the padlock had. A press on a shut part says why; a press on one that opens says nothing, because it is about to open.
   check('a part of a message that cannot open says why when it is pressed', () => {
     const { wireEmailClosedParts } = booted;

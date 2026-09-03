@@ -6,11 +6,10 @@
 
 use super::*;
 
-/// The file picker, and whatever comes back opened in the tab in front.
-pub(crate) fn open(reader: &mut Reader) {
+/// The file picker, and whatever comes back opened in the tab in front. Round the same way as every other opened document, so there is one seam where a path waits for a page that can draw it.
+pub(crate) fn open(proxy: &EventLoopProxy<UserEvent>) {
     if let Some(path) = pick_document_file() {
-        reader.workspace.open_path(path);
-        reader.render(ScrollIntent::Reset);
+        let _ = proxy.send_event(UserEvent::OpenPaths(vec![path]));
     }
 }
 
@@ -27,7 +26,7 @@ pub(crate) fn new_document(reader: &mut Reader) {
 
 /// A row of the recents list. The page opening a file is the same act as a forwarded open, so it goes round the same way.
 pub(crate) fn open_recent(proxy: &EventLoopProxy<UserEvent>, path: PathBuf) {
-    let _ = proxy.send_event(UserEvent::OpenPath(path));
+    let _ = proxy.send_event(UserEvent::OpenPaths(vec![path]));
 }
 
 /// A file dropped or pasted into a folder of the library pane, moved when it was cut and copied when it was not.
