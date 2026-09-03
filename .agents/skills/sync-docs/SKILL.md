@@ -40,6 +40,7 @@ Pages carry an ordering prefix (`docs/01-features/03-library.md`); the prefix is
 |:--|:--|
 | Render pipeline, GFM/CommonMark coverage, syntax languages, emoji, alerts, math, footnotes, local images, sanitizer allowlist (`src/markdown/`, `src/xml.rs`, `src/tei.rs`, `src/data.rs`, `src/eml.rs`) | `docs/01-features/01-rendering.md` |
 | A new readable format — one arm in `src/format.rs`, plus its extensions | `docs/01-features/01-rendering.md`, `docs/01-features/03-library.md#file-types`, `docs/02-installation.md#file-associations`, and the format lists in `README.md` |
+| A new readable format — its structural limits and the guarantees its reader keeps | `docs/02-development/08-security.md#what-the-formats-permit` and `docs/02-development/08-security.md#how-the-current-readers-compare`; this prose is the keeper because no check compares its format names with `src/format.rs` |
 | Tabs, document/scroll history, `ScrollAnchor`, live reload, recent files, shortcuts (`src/app/workspace.rs`, `src/app/history.rs`, `src/app/watch.rs`, `src/assets/shell/theme.js`) | `docs/01-features/02-navigation.md` |
 | Library pane, vaults, the in-memory corpus, search, the graph, GitHub sync (`src/folder_tree.rs`, `src/vault_corpus.rs`, `src/doc_graph.rs`, `src/store/vaults.rs`, `src/git.rs`, `src/app/vaults.rs`, `src/app/vault_git.rs`) | `docs/01-features/03-library.md` |
 | Minimap model and behavior (`src/minimap.rs`, `src/assets/shell/minimap.js`) | `docs/01-features/04-minimap.md` |

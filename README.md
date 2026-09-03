@@ -300,7 +300,7 @@ The pages are plain Markdown under [`docs/`](docs/) — the same format the app 
 
 ## Development
 
-See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), [Theming](docs/02-development/04-theming.md), [Design system](docs/02-development/05-design-system.md), [Releasing](docs/02-development/03-releasing.md), and [Workflow](docs/02-development/07-workflow.md) for the full developer docs.
+See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), [Security](docs/02-development/08-security.md), [Theming](docs/02-development/04-theming.md), [Design system](docs/02-development/05-design-system.md), [Releasing](docs/02-development/03-releasing.md), and [Workflow](docs/02-development/07-workflow.md) for the full developer docs.
 
 Every theme is drawn on one page at **[leaftext.com/gallery.html](https://leaftext.com/gallery.html)** — all 82 colors, every icon and every part of the interface, in light and dark.
 

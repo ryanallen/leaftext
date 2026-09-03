@@ -30,10 +30,6 @@ pub(crate) fn stage_page_payload(json: Vec<u8>) -> String {
     source_payload_url(SOURCE_PAYLOAD_PROTOCOL, id)
 }
 
-pub(crate) fn stage_source_payload(json: String) -> String {
-    stage_page_payload(json.into_bytes())
-}
-
 /// Hand a document-bearing workspace update to the page without putting its bytes in a page command.
 pub(crate) fn run_workspace_payload(
     webview: Option<&WebView>,
@@ -229,7 +225,7 @@ pub(crate) fn enter_code_view(
     let dirty = edit.is_dirty();
 
     // The buffer's own text, never a copy of it: on a package member the copy was a whole inflated member taken and dropped inside one press, and `code_view_payload` only borrows.
-    let url = stage_source_payload(code_view_payload(
+    let url = stage_page_payload(code_view_payload(
         edit.text(),
         &language,
         &display,

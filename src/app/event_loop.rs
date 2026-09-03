@@ -1033,6 +1033,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         // The page has just been told which window it has, so the next resize diffs against that rather than against the launch window's answer.
                         last_maximized = startup.maximized;
                     }
+                    // The first screen is drawn, so the vault restored at launch can be read now: its field names are what the first search completes from, and nothing else would ask for them until that search is already typed.
+                    read_active_vault(&mut vault_state, &proxy, reader.page(), false);
                 }
                 IpcCommand::WindowDrag => window_cmds::drag(&reader),
                 IpcCommand::WindowResizeDrag {

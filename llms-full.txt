@@ -82,6 +82,11 @@
 - Markdown: https://leaftext.com/docs/02-development/07-workflow.md
 - Summary: Work here starts as a written plan and ends as a released version, and the same path is followed by a person or an agent. The steps are kept as skills — one folder each under .agents/skills/, read ...
 
+## Hostile documents
+- Page: https://leaftext.com/docs/02-development/08-security.md
+- Markdown: https://leaftext.com/docs/02-development/08-security.md
+- Summary: A readable extension says which parser should inspect a file. It says nothing about whether the file is honest. Every reader therefore treats all document bytes, structure, names, counts, lengths, ...
+
 ## Installation
 - Page: https://leaftext.com/docs/02-installation.md
 - Markdown: https://leaftext.com/docs/02-installation.md

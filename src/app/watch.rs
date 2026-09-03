@@ -513,7 +513,7 @@ pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileW
                 .unwrap_or(edit.format.display_name())
                 .to_string();
             // The buffer's own text, borrowed: the payload reads it and keeps none of it.
-            let url = stage_source_payload(code_view_payload(
+            let url = stage_page_payload(code_view_payload(
                 edit.text(),
                 &language,
                 &display,

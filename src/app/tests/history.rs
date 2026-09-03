@@ -174,13 +174,20 @@ fn a_back_into_the_code_view_asks_for_the_top_of_the_source() {
 #[test]
 fn the_source_payload_carries_a_saved_place_and_says_nothing_when_there_is_none() {
     // The field's absence is the page's instruction to use its own answer instead, so a fraction of zero has to arrive as a zero rather than as nothing: a tab saved at the top of its source is still a tab with a saved place.
-    let saved = code_view_payload("# Title", "markdown", "Markdown", false, Some(0.42));
+    let payload = |fraction| {
+        String::from_utf8(code_view_payload(
+            "# Title", "markdown", "Markdown", false, fraction,
+        ))
+        .expect("the payload is text")
+    };
+
+    let saved = payload(Some(0.42));
     assert!(saved.contains("\"scrollFraction\":0.42"), "{saved}");
 
-    let top = code_view_payload("# Title", "markdown", "Markdown", false, Some(0.0));
+    let top = payload(Some(0.0));
     assert!(top.contains("\"scrollFraction\":0.0"), "{top}");
 
-    let none = code_view_payload("# Title", "markdown", "Markdown", false, None);
+    let none = payload(None);
     assert!(!none.contains("scrollFraction"), "{none}");
 }
 

@@ -18,7 +18,7 @@ pub(crate) struct VaultState {
     pub(crate) root: Option<PathBuf>,
     /// The folder the pane is showing, so a change on disk under it can be noticed and a stale read discarded.
     pub(crate) folder: String,
-    /// The active vault's text. Read once, on first use, then patched a file at a time by the watcher. Both the graph and search read it, so the vault is opened once and serves both.
+    /// The active vault's text. Read once the reader arrives in the vault, then patched a file at a time by the watcher. Both the graph and search read it, so the vault is opened once and serves both — and so does the completion menu, which is why the read starts on arrival rather than waiting for the first question.
     ///
     /// Behind an `Arc` because neither of those runs here: walking every document to build a graph or scan for a query is far too much work for the thread that answers the window, so each goes to a worker holding a cheap clone of this.
     pub(crate) corpus: Option<Arc<VaultCorpus>>,
@@ -248,8 +248,9 @@ pub(crate) fn change_vault_folder(
     }
     if state.active == id {
         // Accepting the folder the vault already shows is the same slip as picking it again from scratch, so it is the same rule.
-        point_at_vault(state, id, Some(folder.to_path_buf()));
+        let moved = point_at_vault(state, id, Some(folder.to_path_buf()));
         request_folder(state, proxy, String::new());
+        read_active_vault(state, proxy, webview, moved);
     }
     push_vaults(webview, state);
 }
@@ -276,6 +277,7 @@ pub(crate) fn remove_vault_row(id: i64, state: &mut VaultState, webview: Option<
         state.active = 0;
         state.root = None;
         state.drop_corpus();
+        clear_filter_hints(webview);
     }
     push_vaults(webview, state);
 }
@@ -307,9 +309,10 @@ fn apply_active_vault(
         .map(|vault| PathBuf::from(vault.root_path));
     // An id we cannot find a folder for is no vault at all. Keeping the two in step matters because the page is told the id and decides what to offer from it, while search and the graph need the folder — set one without the other and the interface offers a vault nothing can read.
     let active = if root.is_some() { id } else { 0 };
-    point_at_vault(state, active, root);
+    let moved = point_at_vault(state, active, root);
     push_vaults(webview, state);
     request_folder(state, proxy, String::new());
+    read_active_vault(state, proxy, webview, moved);
 }
 
 /// Show a document in the pane: switch to the vault that owns it when that is not the one on screen, then open the folder holding it.
@@ -340,6 +343,7 @@ pub(crate) fn reveal_in_library(
         // A different root: what was read under the old one is about somewhere else, and the graph with it.
         state.drop_corpus();
         push_vaults(webview, state);
+        read_active_vault(state, proxy, webview, true);
     }
     let folder = file
         .parent()
@@ -494,7 +498,8 @@ pub(crate) struct CorpusRead {
 
 /// The read the open vault would start now, or nothing.
 pub(crate) fn corpus_read_to_start(state: &mut VaultState) -> Option<CorpusRead> {
-    if state.corpus_loading {
+    // Text already held is this vault's own, and arriving in a vault asks for a read without knowing whether one is owed: without this, re-picking the vault on screen would read it again from the top.
+    if state.corpus_loading || state.corpus.is_some() {
         return None;
     }
     let root = state.root.clone()?;
@@ -534,6 +539,32 @@ pub(crate) fn read_corpus(state: &mut VaultState, proxy: &EventLoopProxy<UserEve
             });
         });
     });
+}
+
+/// Read the vault the reader has just arrived in, before anything asks a question of it. The completion menu under the search box offers the vault's own field names, and those come from this read — so a first search made against an unread vault is typed at a menu holding only the three built-in names.
+///
+/// `left_a_vault` says the root actually moved, which is what makes the names on the page about somewhere else: they are cleared through the same payload the read answers with, so the list stays owned by the page fragment that draws it.
+///
+/// Behind the same one-read guard as every other door into it, so arriving where the text is already held, or where its read is still running, starts nothing.
+pub(crate) fn read_active_vault(
+    state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    webview: Option<&WebView>,
+    left_a_vault: bool,
+) {
+    if left_a_vault {
+        clear_filter_hints(webview);
+    }
+    read_corpus(state, proxy);
+}
+
+/// Take the field names off the page. What is drawn there is the vault just left, and the read starting now answers by the same door.
+pub(crate) fn clear_filter_hints(webview: Option<&WebView>) {
+    run_page_script(
+        webview,
+        &filter_hints_script(&FilterHints::default()),
+        "Failed to clear the filter hints",
+    );
 }
 
 /// What one slice of a read leaves to be done, once the vault's held text has grown by it.

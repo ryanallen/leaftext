@@ -1,0 +1,109 @@
+# Hostile documents
+
+> The rules every Leaftext reader keeps when the file it opens may be deliberately corrupt.
+
+A readable extension says which parser should inspect a file. It says nothing about whether the file is honest. Every reader therefore treats all document bytes, structure, names, counts, lengths, offsets, compressed sizes, links, and embedded content as untrusted input.
+
+## What established readers learned
+
+Microsoft's first broad answer to hostile Office files was not another parser check. The Microsoft Office Isolated Conversion Environment converted legacy binary files to Office Open XML in an isolated, low-rights process; conversion could fail, produce a safe file, or crash without giving the original document to the full Office application. File Block could refuse formats that did not go through that path. The later Office File Validation compared a file's structure with its format schema before opening it, and Office 2010 sent failures to Protected View rather than normal editing. The durable rules are to validate before use, keep risky conversion outside the privileged reader, fail closed when a format has no safe path, and make trust an explicit user decision rather than an inference from the file name. [Microsoft's 2007 security advisory](https://learn.microsoft.com/en-us/security-updates/securityadvisories/2007/937696) and [Office File Validation advisory](https://learn.microsoft.com/en-us/security-updates/securityadvisories/2011/2501584) describe that progression.
+
+Current readers keep the same boundary in different forms. Acrobat opens untrusted PDFs read-only in a sandbox, disables active features, and waits for an explicit trust gesture before enabling them. Chromium gives a renderer process no direct disk, network, or device access and isolates sites so a compromised renderer is still bounded by the browser process. A current office suite validates structure and uses a restricted view for a file that fails. These controls contain a parser or renderer after it has already failed; they do not make malformed input safe. [Acrobat Protected View](https://helpx.adobe.com/acrobat/desktop/protect-documents/use-protected-view/protect-view-mode.html) and [Chromium's Site Isolation design](https://www.chromium.org/developers/design-documents/site-isolation/) describe the boundaries.
+
+Leaftext can take the validation, bounded-work, inactive-content, least-authority, and explicit-error rules. It cannot claim the containment those products get from a sandbox: the desktop renderer and its parsers are part of one application process, and the browser build depends on its host's process model. A parser fault must therefore be prevented or returned as an error here; process isolation is a separate defense this architecture does not provide.
+
+## What the parsers already bound
+
+The limits below describe the exact parser paths used by this tree. A library limit is useful only when Leaftext leaves it enabled and it covers the resource the document controls.
+
+| Reader | Refuses by default | Leaftext must supply |
+| --- | --- | --- |
+| `pulldown-cmark` | Bounds nested parentheses in link destinations and the total expansion of reference links; both protections were added for adversarial Markdown | No document-size, event-count, rendered-output, or elapsed-work ceiling comes from the parser |
+| `roxmltree` | Stops nested entity references at depth 10 and limits references inside a nested expansion to 255 | Its node limit defaults to `u32::MAX`; Leaftext currently uses that default, so a reader still owes a practical node or input budget |
+| Leaftext's JSON reader | Refuses nesting past 128 and returns a parse error | Arrays, objects, strings, and total input remain limited only by the bytes supplied; the format deliberately leaves implementation limits to the reader |
+| `yaml-rust2` with Leaftext's event builder | Scanner arithmetic is checked; Leaftext refuses collection nesting at 128 | The library has no useful document-size, collection-count, or alias-expansion budget for this use; Leaftext's builder copies an anchored value for every alias |
+| `mail-parser` | Decodes nested message bodies only three levels deep and fixes header names to a small stack buffer | Multipart depth and count, decoded total, and input size have no application budget |
+| `syntect` | The desktop regular-expression engine has its own match retry limit; parsing proceeds one line at a time | Source size, line length, line count, total tokens, and elapsed highlighting work have no application budget |
+| Leaftext's archive reader | Reads only stored and deflated members, validates offsets against the bytes, refuses an inflated member past 256 MiB from both its claim and its delivered stream, and uses the classic ZIP counts and 32-bit sizes | The archive's total size, total expanded work across requested members, and relationships between package parts still need format-specific review |
+
+The dependency source is the authority for these defaults: [`pulldown-cmark` 0.13.4](https://github.com/raphlinus/pulldown-cmark/blob/38e4d08f14ec4bd9783270e9623db7681ebed968/pulldown-cmark/src/parse.rs), [`roxmltree` 0.20.0](https://github.com/RazrFalcon/roxmltree/blob/6dffb22cb4113a168928ca9a2eec3c2961820a98/src/parse.rs), [`yaml-rust2` 0.11.0](https://github.com/Ethiraric/yaml-rust2/blob/635ffd17f2bf3c095c8881b53441a7c3d968775f/src/scanner.rs), [`mail-parser` 0.11.5](https://github.com/stalwartlabs/mail-parser/blob/67a53e3ded665d68d9fc66cb41d89b3ded559d0e/src/parsers/message.rs), and [`syntect` 5.3.0](https://github.com/trishume/syntect/blob/e4670846ecf16d8832db6c43d531bec466214e27/src/parsing/regex.rs). `serde_json`, used for app messages and state rather than document JSON, also keeps its default recursion budget of 128 unless a caller explicitly disables it; [its deserializer source](https://github.com/serde-rs/json/blob/v1.0.150/src/de.rs) makes that switch visible.
+
+## The web view is not a trust boundary
+
+A Markdown preview combines two independently hostile things: work chosen by Markdown syntax and markup interpreted by a browser engine. Visual Studio Code's preview defaults to a strict mode that disables scripts, accepts only trusted content, and blocks insecure image loads. The `marked` parser tells callers to cap input and run parsing in a worker that can be stopped because small documents with many constructs can still exhaust time or memory. The rules are to sanitize the parser's output, keep script execution disabled for document markup, restrict resource loading, bound work as well as bytes, and move stoppable parsing away from the privileged interface thread. [VS Code's Markdown preview security](https://code.visualstudio.com/docs/languages/markdown#_markdown-preview-security) and [`marked`'s worker guidance](https://github.com/markedjs/marked/blob/master/docs/USING_ADVANCED.md#workers) state those defenses.
+
+Leaftext sanitizes raw HTML before it reaches the page and does not turn document markup into application commands. Its page policy still permits the application's own inline script, and a document may cause an HTTPS image request when it is drawn. The sanitizer is therefore the active-content boundary, while network silence is not a property the current reader can claim. Neither the web view nor a content policy replaces a parser budget: syntactically valid input can consume memory or time before any HTML exists.
+
+## Rules for a reader
+
+### Bound every claim before spending it
+
+A length, count, offset, repeat, dimension, nesting level, compressed size, and relationship target belongs to the attacker until it has been checked. Never use one directly as a capacity, loop bound, multiplication input, slice boundary, or recursion step. Check arithmetic, check the claim against the bytes that exist, and enforce a separate ceiling on what is actually produced. This stops tiny files that claim huge buffers, compression bombs whose stream outgrows the directory, repeated cells that multiply into billions, and deep structures that exhaust the stack.
+
+The ceiling belongs to the work, not to a guessed normal document. A reader records why the number is safe: a limit in the format, a measured corpus plus a deliberate refusal, or a fixed interface budget. Where the format permits more than the app can safely draw, the reader refuses with a sentence that names the limit; it does not allocate first and report later.
+
+### A corrupt file returns an error, never a panic
+
+Malformed or truncated input is an ordinary parser result. Every index, conversion, decompression, decoding step, and dependency call reachable from document bytes must return an error the reading view can show. No reader relies on an unwind being caught: Leaftext has no application boundary that catches one, so a panic closes the process. Tests include truncation at structural boundaries, values just below and above every ceiling, extreme nesting, extreme counts, and a delivered stream that disagrees with its declared size.
+
+### Parsing receives bytes and authority separately
+
+A format parser receives the document and explicit answers from `LeafHost`; it does not open paths, follow package member names onto disk, spawn a process, execute embedded content, or fetch a resource. Package names are identifiers inside the package, never paths. HTML from any document is sanitized before insertion into the page, and document markup cannot create an application command. This limits what a parser bug can reach even though the desktop app has no parser sandbox.
+
+### Put expensive work where it can be stopped
+
+An input-size limit alone does not stop a small file that triggers disproportionate parsing, matching, alias copying, decompression, layout, or rendering. A reader needs a budget for total produced nodes or bytes and for repeated work. Work that can still take long enough to freeze the window belongs off the event loop with a cancellation or deadline the caller can enforce.
+
+### Keep passive reading passive
+
+Opening a document must not execute its scripts, macros, formulas, embedded programs, or launch actions. External resource loads are separate capabilities: the reader either blocks them or makes their current policy explicit and keeps their bytes out of the parser's trust decision. A file name, extension, MIME label, package relationship, or remote origin never grants trust by itself.
+
+### Preserve the safe path when a feature is added
+
+Each new format names its structural limits and parser budgets in the table below. Each new active feature names the authority it gains and the gesture that grants it. A fallback must be safer than the path that failed: corrupt package bytes are not reinterpreted as Markdown or HTML, and a failed validation does not silently reopen through a more permissive parser.
+
+## What the formats permit
+
+Most document formats do not supply a useful safety ceiling. “No format limit” below means the reader must choose and document an application limit; it does not mean unbounded work is safe.
+
+| Format | Honest structural limit relevant to this reader |
+| --- | --- |
+| Markdown | CommonMark sets syntax and requires support for at least three nested parentheses in a link destination, not a maximum document size, block count, or nesting budget. [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/#link-destination) |
+| XML | XML 1.0 sets well-formedness rules and forbids recursive entity declarations, but sets no general document, element-depth, node-count, attribute-count, or text-length ceiling. It explicitly allows a non-validating browser not to fetch an external entity. [XML 1.0](https://www.w3.org/TR/REC-xml/#sec-external-ent) |
+| JSON | JSON sets no fixed size, nesting, string-length, or member-count maximum and explicitly permits implementations to impose all four. [RFC 8259, section 9](https://www.rfc-editor.org/rfc/rfc8259.html#section-9) |
+| YAML | YAML permits graphs, anchors, aliases, nested collections, and multiple documents without a portable size, depth, node-count, or alias-count maximum. An alias may refer to an entire earlier node, so input length alone is not an output bound. [YAML 1.2.2](https://yaml.org/spec/1.2.2/#71-alias-nodes) |
+| Email | An Internet Message Format physical line is at most 998 characters excluding its line ending; an unfolded header has no length restriction. MIME adds nested parts without a document-wide size or part-count ceiling. [RFC 5322, sections 2.1.1 and 2.2.3](https://www.rfc-editor.org/rfc/rfc5322.html#section-2.1.1) |
+| HTML | The HTML living standard defines parsing and limits a few individual tokens, not total source bytes, tree depth, node count, or rendered output. [HTML parsing](https://html.spec.whatwg.org/multipage/parsing.html) |
+| Text | Plain text has no shared structural specification and therefore no format-level size, line-length, or line-count ceiling. The file size is the only natural bound on decoded content. |
+| INI | INI has no common standard. Leaftext uses the EditorConfig dialect for line shape, comments, sections, and pairs; that specification does not provide a document-size, section-count, or value-length ceiling. [EditorConfig specification](https://spec.editorconfig.org/) |
+| Word document | Office Open XML defines the package and WordprocessingML vocabulary, but no single document-size, paragraph-count, nesting, or part-size ceiling that can serve as a reader budget. Counts and coordinates in individual elements still have their own schema types. [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/) |
+| Excel workbook | A worksheet is at most 1,048,576 rows by 16,384 columns, a column is at most 255 characters wide, and a cell holds at most 32,767 characters. Package and shared-table sizes still have no useful workbook-wide safety ceiling. [Excel specifications and limits](https://support.microsoft.com/en-us/office/excel-specifications-and-limits-1672b34d-7043-467e-8e27-269d656771c3) |
+| PowerPoint presentation | PresentationML and the package schema set types for individual values, but no practical presentation-size, slide-count, shape-count, nesting, or part-size ceiling for a reader. [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/) |
+| OpenDocument text | OpenDocument sets vocabulary and data types, not a useful document-size, paragraph-count, nesting, or expanded-repeat ceiling. Repetition attributes are positive integers rather than application budgets. [OpenDocument 1.3](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part3-schema/OpenDocument-v1.3-os-part3-schema.html) |
+| OpenDocument spreadsheet | Row and column repetition attributes are positive integers, with no portable sheet grid maximum. A reader must cap the expanded grid even when the repeated value is valid. [OpenDocument 1.3 schema](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part3-schema/OpenDocument-v1.3-os-part3-schema.html#attribute-table_number-columns-repeated) |
+| OpenDocument presentation | OpenDocument sets types for pages, shapes, coordinates, and repeated content but no practical presentation-size, page-count, shape-count, or expanded-output ceiling. [OpenDocument 1.3](https://docs.oasis-open.org/office/OpenDocument/v1.3/os/part3-schema/OpenDocument-v1.3-os-part3-schema.html) |
+| Source code | This arm combines several programming languages and has no shared format specification. Language grammars may constrain individual tokens or nesting, but none supplies a common file-size, line-length, line-count, or highlighting-work ceiling. |
+
+## How the current readers compare
+
+“Kept” means the path already enforces that part of the rules. “Not guaranteed” is the standard for the reader audit, not permission to fix it in a neighboring change.
+
+| Format | Kept now | Not guaranteed now |
+| --- | --- | --- |
+| Markdown | Link parsing has adversarial-work bounds; raw HTML is allowlisted; document markup cannot issue app commands; the parser has no disk or process authority | Total input, event count, rendered output, highlighting work, diagram work, and elapsed time are unbounded; HTTPS images can be fetched while drawing; the parser path is not isolated or stoppable |
+| XML | Malformed input returns a visible parse error; entity expansion has dependency limits; the renderer stops section recursion after 24 levels; external entities are not fetched | Input and node count are unbounded because the optional `roxmltree` node limit is not set; parsing is not isolated or stoppable |
+| JSON | Malformed input returns a visible error; parse depth is capped at 128; strings and numbers are read from bytes rather than trusted length fields; no active content runs | Input, member count, string length, produced nodes, and elapsed work are limited only by the source bytes; parsing is not isolated or stoppable |
+| YAML | Scanner failures return a visible error; Leaftext caps collection depth at 128; no active content runs | Input, collection count, scalar length, alias count, and total data copied through aliases have no separate budget; parsing is not isolated or stoppable |
+| Email | A failed parse becomes a visible sentence; nested encoded messages stop after three levels; body HTML is sanitized; embedded content-id images resolve only from message parts; nothing in the reader fetches or executes content | Input, multipart depth and count, decoded total, attachment count, and elapsed work have no application budget; parsing is not isolated or stoppable |
+| HTML | All markup crosses the same sanitizer as raw HTML in Markdown; document markup cannot issue app commands or run its own scripts | Input, parsed tree, sanitized output, and elapsed work have no application budget; permitted HTTPS images can be fetched while drawing; parsing is not isolated or stoppable |
+| Text | The reader performs no structural recursion, declared-size allocation, active-content execution, or external access | Input, line count, rendered output, and elapsed work are limited only by the file; rendering is not isolated or stoppable |
+| INI | Parsing is a linear pass over actual lines; it trusts no declared sizes, runs no content, and uses byte-checked ranges for editing | Input, section count, pair count, value length, rendered output, and elapsed work have no application budget; parsing is not isolated or stoppable |
+| Word document | Archive offsets are checked; a requested member is capped at 256 MiB by both claim and delivered stream; malformed archive or XML becomes an error; macros and embedded programs are neither read nor run; package names never reach the disk | Archive size, member count, XML node count, relationships, produced blocks, and elapsed work have no total budget; parsing is not isolated or stoppable |
+| Excel workbook | Word document protections apply; cell-reference arithmetic is checked and columns beyond the 16,384-column grid are refused; formulas are displayed rather than executed | Archive size, member count, XML node count, sheet count, row count, shared-string count and size, produced cells, and elapsed work have no total budget; parsing is not isolated or stoppable |
+| PowerPoint presentation | Word document protections apply; only named presentation parts are read; active content is not executed | Archive size, member count, XML node count, slide count, shape count, relationships, produced blocks, and elapsed work have no total budget; parsing is not isolated or stoppable |
+| OpenDocument text | Word document archive protections apply; malformed XML becomes an error; active content is not executed | Archive size, member count, XML node count, repeated structures outside spreadsheet rows, produced blocks, and elapsed work have no total budget; parsing is not isolated or stoppable |
+| OpenDocument spreadsheet | Word document archive protections apply; each expanded row is capped at 16,384 cells across all repeat claims; active content is not executed | Archive size, member count, XML node count, row count, sheet count, produced cells, and elapsed work have no total budget; parsing is not isolated or stoppable |
+| OpenDocument presentation | Word document archive protections apply; only named presentation parts are read; active content is not executed | Archive size, member count, XML node count, page count, shape count, repeated structures, produced blocks, and elapsed work have no total budget; parsing is not isolated or stoppable |
+| Source code | The highlighter works line by line, escapes its HTML, and runs no source code; the document parser has no disk, process, or network authority | Input, line length, line count, token count, output, and elapsed regular-expression work have no application budget; highlighting is not isolated or stoppable |
+
+This table is kept by the documentation workflow because no check compares prose format names with `DocumentFormat::ALL`. Adding a readable format makes this page false until its format limit and reader row are added.

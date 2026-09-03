@@ -463,6 +463,45 @@ fn giving_up_a_stale_slice_starts_the_read_the_open_vault_is_owed() {
     ));
 }
 
+/// Arriving in a vault asks for its text whether or not anything is waiting on it, so the guard is what stops that unconditional ask reading one vault twice. A vault whose text is held refuses it, and so does one whose read is still running.
+#[test]
+fn arriving_in_a_vault_reads_it_once_and_a_held_or_running_read_starts_nothing() {
+    let root = PathBuf::from("/vault");
+    let mut state = VaultState::load(None);
+    state.root = Some(root.clone());
+
+    // The reader arrives with nothing read and nothing asked: exactly one read is eligible.
+    let started = corpus_read_to_start(&mut state).expect("an unread vault is read on arrival");
+    assert_eq!(started.root, root);
+    assert!(
+        corpus_read_to_start(&mut state).is_none(),
+        "arriving again while the read runs started a second one"
+    );
+
+    // Its one slice lands whole, so the read is over and the vault's text is held.
+    absorb_corpus_slice(
+        &mut state,
+        &root,
+        vec![slice_document("note")],
+        false,
+        Vec::new(),
+        true,
+        true,
+        started.wanted,
+    )
+    .expect("the slice is for the vault on screen");
+    assert!(!state.corpus_loading);
+    assert!(
+        corpus_read_to_start(&mut state).is_none(),
+        "re-picking the vault on screen read it again from the top"
+    );
+
+    // Leaving it is what makes a read owed again: the text just held is about somewhere else.
+    state.drop_corpus();
+    state.root = Some(PathBuf::from("/another-vault"));
+    corpus_read_to_start(&mut state).expect("the vault arrived at is read");
+}
+
 #[test]
 fn every_slice_of_a_read_carries_the_one_number_that_read_claimed() {
     let mut state = VaultState::load(None);

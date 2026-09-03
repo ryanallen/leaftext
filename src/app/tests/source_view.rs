@@ -36,7 +36,7 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
     let _slot = SOURCE_PAYLOAD_SLOT
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    let url = stage_source_payload("{\"html\":\"x\"}".to_string());
+    let url = stage_page_payload(b"{\"html\":\"x\"}".to_vec());
 
     let served = source_payload_response(&url);
     assert_eq!(served.status, 200);
@@ -48,7 +48,7 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
     assert!(served.content_type.starts_with("application/json"));
 
     // Staging again supersedes it, so only one payload is ever held.
-    let next = stage_source_payload("{\"html\":\"y\"}".to_string());
+    let next = stage_page_payload(b"{\"html\":\"y\"}".to_vec());
     assert_ne!(url, next, "each entry gets its own URL");
     assert_eq!(source_payload_response(&next).body, b"{\"html\":\"y\"}");
     assert_eq!(
@@ -71,7 +71,7 @@ fn the_code_view_script_carries_a_url_and_not_the_source() {
         .lock()
         .unwrap_or_else(|e| e.into_inner());
     let payload = code_view_payload("huge text", "markdown", "Markdown", false, None);
-    let script = code_view_fetch_script(&stage_source_payload(payload));
+    let script = code_view_fetch_script(&stage_page_payload(payload));
 
     assert!(script.contains("leafLoadCodeView"), "{script}");
     assert!(
@@ -145,7 +145,7 @@ fn entering_the_code_view_stages_the_buffers_whole_text() {
     fs::write(&path, &source).expect("the document is written");
 
     // The slot's next id is one past the one this marker took, and the serial itself is private to the command.
-    let marker = stage_source_payload("{}".to_string());
+    let marker = stage_page_payload(b"{}".to_vec());
     let staged = marker
         .rsplit('/')
         .next()
@@ -197,18 +197,19 @@ fn the_written_payload_is_byte_for_byte_the_tree_it_replaced() {
     for fraction in [Some(0.42), Some(0.0), None] {
         assert_eq!(
             code_view_payload("hello", "markdown", "Markdown", false, fraction),
-            code_view_payload_as_a_tree("hello", "markdown", "Markdown", false, fraction),
+            code_view_payload_as_a_tree("hello", "markdown", "Markdown", false, fraction)
+                .as_bytes(),
             "the payload changed for a scroll fraction of {fraction:?}"
         );
     }
 
     assert_eq!(
         code_view_payload("hello", "markdown", "Markdown", false, Some(0.42)),
-        "{\"dirty\":false,\"displayName\":\"Markdown\",\"language\":\"markdown\",\"scrollFraction\":0.42,\"text\":\"hello\"}"
+        b"{\"dirty\":false,\"displayName\":\"Markdown\",\"language\":\"markdown\",\"scrollFraction\":0.42,\"text\":\"hello\"}"
     );
     assert_eq!(
         code_view_payload("hello", "markdown", "Markdown", true, None),
-        "{\"dirty\":true,\"displayName\":\"Markdown\",\"language\":\"markdown\",\"text\":\"hello\"}",
+        b"{\"dirty\":true,\"displayName\":\"Markdown\",\"language\":\"markdown\",\"text\":\"hello\"}",
         "an absent fraction is omitted, not written as null"
     );
 }
@@ -220,15 +221,39 @@ fn the_written_payload_escapes_what_the_tree_escaped() {
     let payload = code_view_payload(text, "text", "Plain \"Text\"", true, Some(1.0));
     assert_eq!(
         payload,
-        code_view_payload_as_a_tree(text, "text", "Plain \"Text\"", true, Some(1.0))
+        code_view_payload_as_a_tree(text, "text", "Plain \"Text\"", true, Some(1.0)).as_bytes()
     );
 
     // The characters the page would choke on, spelled out, so a change of escaper is visible here rather than in a blank editor.
-    assert!(payload.contains("a \\\"quote\\\", a \\\\ backslash,\\na newline,\\ta tab"));
+    let spelled = std::str::from_utf8(&payload).expect("the payload is text");
+    assert!(spelled.contains("a \\\"quote\\\", a \\\\ backslash,\\na newline,\\ta tab"));
     assert_eq!(
-        serde_json::from_str::<serde_json::Value>(&payload).expect("payload is JSON")["text"],
+        serde_json::from_slice::<serde_json::Value>(&payload).expect("payload is JSON")["text"],
         text
     );
+}
+
+#[test]
+fn a_payload_of_multi_byte_text_is_served_spelled_the_way_it_went_in() {
+    // The staged bytes are never proved to be text on the way, so the characters that would have been the validator's work are the ones to read back: accented Latin, CJK, and an emoji the page reads as a pair.
+    let _slot = SOURCE_PAYLOAD_SLOT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let text = "café naïve\n漢字とかな\n🌱 🧮\n";
+
+    let url = stage_page_payload(code_view_payload(
+        text,
+        "markdown",
+        "Markdown",
+        false,
+        Some(0.5),
+    ));
+    let served = source_payload_response(&url);
+
+    assert_eq!(served.status, 200);
+    let json: serde_json::Value = serde_json::from_slice(&served.body).expect("payload is JSON");
+    assert_eq!(json["text"], text, "the page is owed what the buffer held");
+    assert_eq!(json["displayName"], "Markdown");
 }
 
 #[test]
@@ -244,7 +269,7 @@ fn the_written_payload_never_outgrows_what_was_reserved_for_it() {
         "the payload weighs {} against a reserve of {reserved}",
         payload.len()
     );
-    // A `Vec` that never had to grow keeps the capacity it was made with, and `String::from_utf8` takes that buffer rather than copying it — so an unchanged capacity is the proof no move happened.
+    // A `Vec` that never had to grow keeps the capacity it was made with, and this is that same buffer — so an unchanged capacity is the proof no move happened.
     assert_eq!(
         payload.capacity(),
         reserved,

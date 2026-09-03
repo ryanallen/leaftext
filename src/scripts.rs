@@ -152,7 +152,7 @@ pub fn search_results_script(query: &str, results: &SearchResults, partial: bool
     format!("window.leafSetSearchResults({payload});")
 }
 
-/// The field names and values the search box completes from. Pushed once when a vault's text is read, so typing costs no round trip. Every string is file-derived and untrusted; the page escapes them before the DOM.
+/// The field names and values the search box completes from. Pushed when a vault's text is read, and empty as one is left, so typing costs no round trip and no menu offers the vault before it. Every string is file-derived and untrusted; the page escapes them before the DOM.
 pub fn filter_hints_script(hints: &FilterHints) -> String {
     let payload = serde_json::to_string(hints).unwrap_or_else(|_| "null".to_string());
     format!("window.leafSetFilterHints({payload});")
@@ -694,13 +694,15 @@ struct CodeViewPayload<'a> {
 /// Swap to the raw-source code view: the buffer text, the language token and label the editor is opened on, and the dirty state. The editor colors its own text, so no markup travels with it.
 ///
 /// Written straight into a buffer, never through an owned JSON tree: a tree copies the text into a `Value::String` and serializes that into a second whole string — two copies of a document on a press somebody is waiting on.
+///
+/// Handed back as the bytes it was written into, because the staging call takes bytes: a `String` in between is a scan over the whole document to answer a question nobody asks.
 pub fn code_view_payload(
     text: &str,
     language: &str,
     display_name: &str,
     dirty: bool,
     scroll_fraction: Option<f64>,
-) -> String {
+) -> Vec<u8> {
     let state = CodeViewPayload {
         dirty,
         display_name,
@@ -712,7 +714,7 @@ pub fn code_view_payload(
     let capacity = text.len() + text.len() / 8 + language.len() + display_name.len() + 96;
     let mut json = Vec::with_capacity(capacity);
     serde_json::to_writer(&mut json, &state).expect("code view state serializes");
-    String::from_utf8(json).expect("JSON is UTF-8")
+    json
 }
 
 /// Point the page at a staged payload instead of carrying it. See `PENDING_SOURCE_PAYLOAD` for why the megabytes do not travel as script.

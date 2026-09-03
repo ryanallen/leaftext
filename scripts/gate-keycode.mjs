@@ -10,7 +10,10 @@
 // A wrong or missing code is refused by the Stop hook, which is the only thing here that can actually stop a turn. gate-checklist.mjs sets the demand at the start of each message and clears the record; gate-voice.mjs holds the turn to it.
 //
 // The record lives in the OS temp folder and is deleted every message, so it never grows and never reaches a context window.
+//
+// **A file is owed once per session per version of itself, not once per message.** Beside the turn's record sits a ledger of what this session has already read, keyed on the file's own bytes, and it outlives the turn. Reading `AGENTS.md` a second time forty seconds later proves nothing the first read did not — the gate is proof the rules were read rather than remembered, and the bytes are what says whether they still are. Edit a rule file and every session owes it again on its very next message, because the hash it was reported at no longer matches. Without this the demand landed on every message including the ones whose whole reply is a hand-back echoed word for word, where there is nothing to say and the tool call is the only thing in the turn — so the gate spent its refusals on turns that had already read the file rather than on turns that had not.
 
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -25,6 +28,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 export function recordPath(session) {
   const tag = sessionTag(session ?? sessionOf(''));
   return join(tmpdir(), tag ? `leaftext-keycode-${tag}.json` : 'leaftext-keycode.json');
+}
+
+/// What this session has already read, and at which bytes. Outlives the turn record on purpose: the turn's demand is per message, this is per session, and the difference is what stops the same unchanged file being asked for on every sentence the owner types.
+export function ledgerPath(session) {
+  const tag = sessionTag(session ?? sessionOf(''));
+  return join(tmpdir(), tag ? `leaftext-keycode-read-${tag}.json` : 'leaftext-keycode-read.json');
 }
 
 /// The rule file, required on every message that is not a host command.
@@ -54,6 +63,40 @@ function codeOf(file) {
   }
 }
 
+/// The file's own bytes, short. What makes a remembered read expire: change one word of a rule file and nothing that read the old one counts any more.
+export function hashOf(file) {
+  try {
+    return createHash('sha256').update(readFileSync(join(root, file))).digest('hex').slice(0, 16);
+  } catch {
+    return null;
+  }
+}
+
+export function readLedger(session) {
+  try {
+    return JSON.parse(readFileSync(ledgerPath(session), 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+/// Write down that this session has read this file at these bytes. Called on a correct report and nowhere else, so a wrong code never earns a remembered read.
+export function remember(file, code, session) {
+  const ledger = readLedger(session);
+  ledger[file] = { code, hash: hashOf(file) };
+  mkdirSync(dirname(ledgerPath(session)), { recursive: true });
+  writeFileSync(ledgerPath(session), JSON.stringify(ledger) + '\n');
+  sweep(tmpdir(), 'leaftext-keycode-read-');
+}
+
+/// Whether this session has already read this file as it stands right now. Both halves have to match: the code the file carries today, and the bytes it carried when it was reported.
+export function alreadyRead(file, session) {
+  const seen = readLedger(session)[file];
+  if (!seen) return false;
+  const code = codeOf(file);
+  return Boolean(code) && seen.code === code && seen.hash === hashOf(file);
+}
+
 /// What a message has to have read: the rule file always, plus any skill it calls for by name. A host command (`/clear`) requires nothing.
 export function requiredFor(prompt) {
   const required = [ALWAYS];
@@ -70,7 +113,8 @@ export function requiredFor(prompt) {
 export function open(required, session, startedAt = Date.now()) {
   const record = recordPath(session);
   mkdirSync(dirname(record), { recursive: true });
-  writeFileSync(record, JSON.stringify({ required, reported: {}, startedAt }) + '\n');
+  // The session travels in the record so `outstanding` can find this session's ledger with the record alone: gate-voice.mjs weighs a record it was handed, and threading a second argument through every caller is how the two would come apart.
+  writeFileSync(record, JSON.stringify({ required, reported: {}, startedAt, session: sessionTag(session ?? sessionOf('')) }) + '\n');
   sweep(tmpdir(), 'leaftext-keycode-');
 }
 
@@ -94,11 +138,17 @@ export function read(session) {
   }
 }
 
+/// Throw away what a session remembers reading. Nothing in the flow calls it — the sweep is what retires a real one — and it is here so the self-test can clean up after itself rather than leaving a file per run in the temp folder.
+export function forget(session) {
+  rmSync(ledgerPath(session), { force: true });
+}
+
+/// End the turn. The ledger is deliberately left standing: it belongs to the session rather than to the turn, and deleting it here is what made every message ask again for a file nothing had touched.
 export function close(session) {
   rmSync(recordPath(session), { force: true });
 }
 
-/// Every file still owed, and every one reported with the wrong code.
+/// Every file still owed, and every one reported with the wrong code. A file this session has already read at its current bytes is not owed — see the ledger above.
 export function outstanding(record) {
   if (!record) return [];
   const problems = [];
@@ -106,8 +156,12 @@ export function outstanding(record) {
     const want = codeOf(file);
     if (!want) continue; // A file with no keycode cannot be owed one.
     const got = record.reported?.[file];
-    if (!got) problems.push(`${file} — read it and report its keycode`);
-    else if (got !== want) problems.push(`${file} — reported ${got}, which is not its keycode`);
+    if (got) {
+      if (got !== want) problems.push(`${file} — reported ${got}, which is not its keycode`);
+      continue;
+    }
+    if (alreadyRead(file, record.session)) continue;
+    problems.push(`${file} — read it and report its keycode`);
   }
   return problems;
 }
@@ -129,6 +183,7 @@ function report(file, code) {
   }
   record.reported = { ...record.reported, [file]: code };
   writeFileSync(recordPath(), JSON.stringify(record) + '\n');
+  remember(file, code, record.session);
   const left = outstanding(record);
   console.log(left.length ? `${file}: ok. Still owed: ${left.length}` : `${file}: ok. Nothing owed.`);
 }
@@ -237,6 +292,47 @@ function selfTest() {
   } finally {
     close(MID);
   }
+  // Read once per session per version of the file, not once per message. This is the half that stops the gate refusing a turn whose whole reply is a hand-back echoed word for word — there is nothing to say in one, so the keycode call is the only thing in it, and asking again for a file nothing has touched spends the refusal on a turn that had already read it.
+  const KEPT = `selftest-${process.pid}-kept`;
+  const OTHER = `selftest-${process.pid}-other`;
+  try {
+    forget(KEPT);
+    forget(OTHER);
+    open([ALWAYS], KEPT);
+    if (alreadyRead(ALWAYS, KEPT)) fails.push('ledger: a session that has read nothing remembered reading the rule file');
+    remember(ALWAYS, codeOf(ALWAYS), KEPT);
+    if (!alreadyRead(ALWAYS, KEPT)) fails.push('ledger: a reported code was not remembered');
+
+    close(KEPT);
+    open([ALWAYS], KEPT);
+    if (outstanding(read(KEPT)).length) fails.push('ledger: the next message asked again for a file this session had read');
+
+    // A rule file that has changed is owed again on the very next message, in every session, which is the whole reason the bytes are what the ledger is keyed on.
+    const moved = readLedger(KEPT);
+    moved[ALWAYS] = { code: codeOf(ALWAYS), hash: 'notthebyteswehave' };
+    writeFileSync(ledgerPath(KEPT), JSON.stringify(moved) + '\n');
+    if (alreadyRead(ALWAYS, KEPT)) fails.push('ledger: a file whose bytes moved still counted as read');
+    if (outstanding(read(KEPT)).length !== 1) fails.push('ledger: an edited rule file was not owed again');
+
+    // A code that does not match the file never earns a remembered read, so a wrong report cannot buy silence for the rest of the session.
+    const wrong = readLedger(KEPT);
+    wrong[ALWAYS] = { code: 'LEAF-WRONG', hash: hashOf(ALWAYS) };
+    writeFileSync(ledgerPath(KEPT), JSON.stringify(wrong) + '\n');
+    if (alreadyRead(ALWAYS, KEPT)) fails.push('ledger: a wrong code counted as a read');
+
+    // One agent's reading is not the other's: two build this checkout at once, and remembering across them is the collision every per-session record here exists to avoid.
+    remember(ALWAYS, codeOf(ALWAYS), KEPT);
+    if (ledgerPath(KEPT) === ledgerPath(OTHER)) fails.push('ledger: two sessions share one ledger file');
+    if (alreadyRead(ALWAYS, OTHER)) fails.push("ledger: one session's read counted for another");
+
+    // A record carrying no session falls back to the one ledger the way the turn record falls back to the one file, rather than throwing.
+    if (!ledgerPath('').endsWith('leaftext-keycode-read.json')) fails.push('ledger: no session id did not fall back to the one file');
+  } finally {
+    close(KEPT);
+    forget(KEPT);
+    forget(OTHER);
+  }
+
   if (fails.length) {
     console.error('gate-keycode: failed');
     for (const f of fails) console.error(`  ${f}`);

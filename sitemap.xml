@@ -18,7 +18,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/03-library.md</loc>
-    <lastmod>2026-09-01</lastmod>
+    <lastmod>2026-09-02</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/04-minimap.md</loc>
@@ -67,6 +67,9 @@
   <url>
     <loc>https://leaftext.com/docs/02-development/07-workflow.md</loc>
     <lastmod>2026-09-01</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/02-development/08-security.md</loc>
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-installation.md</loc>

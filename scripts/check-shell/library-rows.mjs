@@ -122,6 +122,49 @@ export function run() {
     if (!vm.runInContext('librarySearchQuery', booted)) throw new Error('the completion menu Escape cleared the library filter');
   });
 
+  // ---- the vault's field names arriving after the first search was typed ----
+  //
+  // The vault is read once the first screen is drawn, so its field names can land while somebody is already typing at the box. The menu is drawn on input alone, so an answer arriving under a typed token left the reader with the three built-in names until another keystroke happened to reopen it — which is exactly the first search of a session, the one the menu exists for.
+  const filterMenuLabels = () => vm.runInContext('filterMenuItems.map((item) => item.label)', booted);
+  const typedInSearch = (text, focused) => {
+    booted.document.activeElement = focused ? librarySearchField : null;
+    librarySearchField.value = text;
+    librarySearchField.selectionStart = text.length;
+    vm.runInContext('closeFilterMenu()', booted);
+  };
+
+  check('the vault field names arriving redraw the token already typed', () => {
+    typedInSearch('arg', true);
+    // Nothing to offer yet: the vault is still being read, and no built-in name starts this way.
+    if (filterMenuLabels().length) throw new Error('the menu offered something before the vault had been read');
+
+    booted.leafSetFilterHints({ fields: [{ name: 'argument-hint', values: [] }] });
+    if (!filterMenuLabels().includes('argument-hint:')) throw new Error('the vault field the read found was not offered without another keystroke');
+    if (booted.document.getElementById('filterMenu').hidden) throw new Error('the menu stayed closed under the token it has a match for');
+  });
+
+  check('a late answer opens nothing under an unfocused or empty search box', () => {
+    typedInSearch('arg', false);
+    booted.leafSetFilterHints({ fields: [{ name: 'argument-hint', values: [] }] });
+    if (filterMenuLabels().length) throw new Error('the vault read opened a menu under a box nobody was typing in');
+    if (!booted.document.getElementById('filterMenu').hidden) throw new Error('the menu was drawn over a box nobody was typing in');
+
+    typedInSearch('', true);
+    booted.leafSetFilterHints({ fields: [{ name: 'argument-hint', values: [] }] });
+    if (filterMenuLabels().length) throw new Error('the vault read opened a menu under an empty box');
+  });
+
+  check('the field names cleared for a vault switch leave the menu offering the new vault', () => {
+    typedInSearch('arg', true);
+    booted.leafSetFilterHints({ fields: [{ name: 'argument-hint', values: [] }] });
+    if (!filterMenuLabels().includes('argument-hint:')) throw new Error('the vault left behind never offered its field');
+
+    // What the host sends as the reader arrives in another vault, before its own read starts.
+    booted.leafSetFilterHints({ fields: [] });
+    if (filterMenuLabels().includes('argument-hint:')) throw new Error('the vault left behind is still offering its field names');
+    booted.document.activeElement = null;
+  });
+
   check('Escape without a library filter stays available', () => {
     vm.runInContext("runLibrarySearch('')", booted);
     const key = escapeEvent();

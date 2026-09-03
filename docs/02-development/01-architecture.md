@@ -34,6 +34,8 @@ Features are trimmed for the same reason. `syntect` is taken with `default-featu
 
 The regex engine behind the highlighter is chosen by feature rather than pinned: the desktop takes `regex-onig`, which is oniguruma, a C library; a browser module takes syntect's pure-Rust `regex-fancy`, because oniguruma has no `wasm32` build. Both read the same syntax dumps, and a test pins the markup they have to agree on.
 
+Every parser in this table is held to [Hostile documents](08-security.md): the format limits, application budgets, error boundary, authority boundary, and passive-content rule a reader owes before it accepts untrusted bytes.
+
 ## Source files
 
 Leaftext's Rust source is split by concern. Where a concern grew past one file it became a directory whose `mod.rs` holds the shared vocabulary and the pipeline that orders the stages, with one sibling file per stage. Both crate roots live in `src/` — `lib.rs` for the library, `main.rs` for the binary — so the binary's modules sit under `src/app/` to keep the two namespaces apart.
