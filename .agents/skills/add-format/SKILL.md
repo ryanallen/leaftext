@@ -25,7 +25,11 @@ Compile and work every place the new enum arm makes incomplete.
 
 Use an existing render shape where it fits, add a module only for a genuinely new one, and update the published format lists.
 
-### 4. Test it
+### 4. Give the browser a document to draw
+
+Add one fixture per new spelling to `scripts/web-fixtures.mjs`, so the published sites are proved to open it too.
+
+### 5. Test it
 
 Add the format-table and rendering coverage. Run the format's own tests, not the complete suite: the build that called this pays for that once, at its end.
 
@@ -37,6 +41,7 @@ Add the format-table and rendering coverage. Run the format's own tests, not the
 4. **Source ranges, if the reading view is to edit it.** A block gets `data-src-*` only where its range is *proved*, never guessed: the reading view splices that range verbatim, so a wrong end corrupts the file. If the ranges cover a value rather than its key — as they do for JSON and YAML — the block gutter must stay off for it, because moving a block would leave its key behind.
 5. **A test per claim**, in `src/tests/`: it opens, it renders, and its ranges are right. `/sync-tests` names what is missing.
 6. **`/sync-docs`.** Four published pages carry the format list: the rendering page, the library's file types, the installation page's file associations, and the README.
+7. **A fixture in `scripts/web-fixtures.mjs`**, one per new spelling. The browser modules are proved by rendering one document of every format the app reads, and `just build-web` refuses to finish without one — but that recipe needs the wasm32 target, so it never runs in `just verify` and only speaks at publish time. Three spellings once went in with no fixture, and both published sites stopped deploying for a day with every gate green. `just check-web-fixtures` now names the missing one here instead.
 
 ## What the two questions mean
 

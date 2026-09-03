@@ -279,6 +279,15 @@ check-growl-words:
 check-app-formats:
     node scripts/app-formats.mjs --check
 
+# Every spelling src/format.rs names has a document the browser modules can be proved on.
+# `build-web` asks the honest version of this through a real module and cannot join `verify`
+# — it needs the wasm32 target — so it only ever ran at publish time, and three spellings
+# were added with no fixture beside them: both published sites went a day and twenty-two
+# pushes without deploying while every gate stayed green. This reads the two tables against
+# each other in Node, both directions, with no target and no build.
+check-web-fixtures:
+    node scripts/check-web-fixtures.mjs
+
 # Fail on a format list that moved without the prose describing it being read, and on the
 # page's copy of the diagram export list drifting from the host's. It reads no comments —
 # nothing can — so it holds a written-down copy of the rows and, when they change, names
@@ -603,7 +612,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-web-fixtures check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting
