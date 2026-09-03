@@ -174,7 +174,7 @@ impl LaunchOpen {
 
 /// Open a released delivery: every path becomes a tab in delivery order, the last one is drawn once, and the window comes forward once. Answers whether anything was opened, which is what says the saved front tab is no longer what the launch should land on.
 ///
-/// One render for the batch: a ten-file drop used to send ten events and draw ten documents to arrive at the tenth.
+/// One render for the batch: one event per file makes a ten-file drop draw ten documents to arrive at the tenth.
 fn open_delivered(reader: &mut Reader, release: LaunchOpen) -> bool {
     let LaunchOpen::Open(paths) = release else {
         return false;
