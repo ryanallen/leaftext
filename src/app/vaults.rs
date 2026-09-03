@@ -639,13 +639,11 @@ pub(crate) fn absorb_corpus_slice(
     })
 }
 
-/// Whether the open vault is owed a read: nothing is running, there is a vault, and a search or a map is waiting on text that will never arrive on its own. True after a slice of the vault somebody left clears the one-at-a-time guard, which is the moment an ask made in the vault they switched *to* stops being refused and starts being forgotten.
+/// Whether the open vault is owed a read: nothing is running, there is a vault, and it has no text. True after a slice of the vault somebody left clears the one-at-a-time guard, which is the moment the unconditional arrival read stops being refused.
 ///
 /// Keyed on the guard rather than on the slice being the last one, so which slice frees a read stays written in the one place that owns it. State alone and no worker, which is what lets a test ask it.
 pub(crate) fn read_is_owed(state: &VaultState) -> bool {
-    !state.corpus_loading
-        && state.root.is_some()
-        && (state.pending_search.is_some() || state.pending_graph.is_some())
+    !state.corpus_loading && state.root.is_some() && state.corpus.is_none()
 }
 
 /// Point the pane at a vault and say whether that left the folder it was in. Both ways of pointing at one — picking it from the menu, and moving the one on screen to another folder — ask this same question, and both must ask it before the root is overwritten, since the answer is about what is held against what is arriving.
@@ -671,13 +669,13 @@ pub(crate) fn pointing_here_is_a_move(state: &VaultState, id: i64, root: Option<
 pub(crate) enum SliceWork {
     /// The slice grew the vault's text, and this is what that leaves to do.
     Absorbed(AbsorbedSlice),
-    /// The slice belonged to a vault nobody is in any more, and letting go of it freed the one read that anything asked since has been turned away by.
+    /// The slice belonged to a vault nobody is in any more, and letting go of it freed the unread open vault's arrival read.
     StartTheOwedRead,
-    /// A slice nobody is waiting on, with nobody waiting on the open vault either.
+    /// A slice nobody is waiting on, with no unread open vault left to read.
     Nothing,
 }
 
-/// Grow the vault's text by one slice and say what that leaves to do — including the case the slice itself is worthless for: giving it up is what frees the read anything asked since the reader switched vaults has been sitting behind. State alone and no worker, which is what lets a test ask it.
+/// Grow the vault's text by one slice and say what that leaves to do — including the case the slice itself is worthless for: giving it up is what frees the arrival read refused when the reader switched vaults. State alone and no worker, which is what lets a test ask it.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn delivered_slice_work(
     state: &mut VaultState,

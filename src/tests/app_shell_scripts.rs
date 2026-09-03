@@ -243,6 +243,59 @@ fn a_workspace_payload_escapes_every_document_string() {
     assert_eq!(staged["document"]["source"], special);
 }
 
+/// The buffer is reserved once and written straight into, so a reserve that comes up short doubles the `Vec` and moves every byte already written — on the press somebody is waiting for their document on.
+fn reserve_holds(payload: &WorkspacePayload<'_>, what: &str) {
+    let written = serde_json::to_vec(payload).expect("workspace payload serializes");
+    let reserved = payload.payload_capacity();
+    assert!(
+        written.len() <= reserved,
+        "{what}: {} bytes written into a {reserved}-byte reserve",
+        written.len()
+    );
+}
+
+#[test]
+fn a_workspace_payloads_reserve_holds_the_json_it_writes() {
+    // The block map and the task list are one entry a block and a checkbox, and neither had any term in the sum: on a 20,000-block document they were two thirds of the payload, so density is what proves the reserve rather than length.
+    let dense: String = (0..2_000)
+        .map(|index| format!("Paragraph {index}\n\n- [ ] task {index}\n\n"))
+        .collect();
+    let dense = opened_document_from_source(&dense, "dense.md");
+    assert!(!dense.blocks.is_empty() && !dense.tasks.is_empty());
+    reserve_holds(
+        &workspace_payload(&[], &Favorites::default(), &[], None, Some(&dense), None),
+        "a block-dense document",
+    );
+
+    // Quotes, backslashes and control characters are what JSON escaping grows, and a Windows recent doubles every separator it carries.
+    let awkward = "\"quoted\", a \\ slash and a \u{7} bell\n\n".repeat(2_000);
+    let awkward = opened_document_from_source(&awkward, "awkward.md");
+    let recent = [PathBuf::from(
+        "C:\\Users\\reader\\Documents\\a \"quoted\" note.md",
+    )];
+    let favorites = Favorites {
+        entries: vec![Favorite {
+            vault_id: Some(3),
+            path: PathBuf::from(r"C:\Users\reader\Documents\notes.md"),
+            kind: FavoriteKind::Document,
+        }],
+    };
+    let tabs = [strip_tab(
+        "A \"quoted\" tab",
+        r"C:\Users\reader\Documents\tab.md",
+    )];
+    reserve_holds(
+        &workspace_payload(&recent, &favorites, &tabs, Some(0), Some(&awkward), None),
+        "a quote-heavy and backslash-heavy document",
+    );
+
+    // The home screen carries no document at all, so the fixed allowance is on its own.
+    reserve_holds(
+        &workspace_payload(&recent, &favorites, &[], None, None, None),
+        "the home screen",
+    );
+}
+
 #[test]
 fn workspace_switch_script_restores_target_tab_anchor_without_reset() {
     let tabs = [strip_tab("Guide", "guide.md")];

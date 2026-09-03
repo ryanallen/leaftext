@@ -92,14 +92,17 @@ fn post_workspace_shared_buffer(
     }
 }
 
-/// Resolve a payload request. Kept rather than taken, so a retried fetch still finds it; the next code-view entry replaces it.
+/// Resolve a payload request. The matching request takes the body rather than copying it, so the address answers once — the page fetches once, and a failed fetch leaves source view, where the next press stages a fresh address.
 pub(crate) fn source_payload_response(uri: &str) -> SourcePayload {
     let wanted = uri.rsplit('/').next().and_then(|id| id.parse::<u64>().ok());
     let body = match (wanted, PENDING_SOURCE_PAYLOAD.lock()) {
-        (Some(wanted), Ok(slot)) => match slot.as_ref() {
-            Some((id, body)) if *id == wanted => Some(body.clone()),
-            _ => None,
-        },
+        (Some(wanted), Ok(mut slot)) => {
+            if matches!(slot.as_ref(), Some((id, _)) if *id == wanted) {
+                slot.take().map(|(_, body)| body)
+            } else {
+                None
+            }
+        }
         _ => None,
     };
     match body {

@@ -38,6 +38,12 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
         .unwrap_or_else(|e| e.into_inner());
     let url = stage_page_payload(b"{\"html\":\"x\"}".to_vec());
 
+    // A URL naming no payload we hold is a 404, not a panic or a stale body — and it must leave the staged body for the request it belongs to.
+    assert_eq!(
+        source_payload_response("http://leaf-source.local/payload/nonsense").status,
+        404
+    );
+
     let served = source_payload_response(&url);
     assert_eq!(served.status, 200);
     assert_eq!(served.body, b"{\"html\":\"x\"}");
@@ -47,21 +53,23 @@ fn a_staged_source_payload_is_served_with_the_headers_the_fetch_needs() {
     );
     assert!(served.content_type.starts_with("application/json"));
 
-    // Staging again supersedes it, so only one payload is ever held.
-    let next = stage_page_payload(b"{\"html\":\"y\"}".to_vec());
-    assert_ne!(url, next, "each entry gets its own URL");
-    assert_eq!(source_payload_response(&next).body, b"{\"html\":\"y\"}");
+    // The address is one-use: the body goes to the request that matched rather than being copied for a retry the page never makes.
     assert_eq!(
         source_payload_response(&url).status,
         404,
-        "a superseded payload must not still be served"
+        "a served payload must not still be held for a second request"
     );
 
-    // A URL naming no payload we hold is a 404, not a panic or a stale body.
+    // Staging again supersedes an unserved body, so only one payload is ever held — and asking for the superseded address must not take the one that replaced it.
+    let superseded = stage_page_payload(b"{\"html\":\"y\"}".to_vec());
+    let current = stage_page_payload(b"{\"html\":\"z\"}".to_vec());
+    assert_ne!(superseded, current, "each entry gets its own URL");
     assert_eq!(
-        source_payload_response("http://leaf-source.local/payload/nonsense").status,
-        404
+        source_payload_response(&superseded).status,
+        404,
+        "a superseded payload must not still be served"
     );
+    assert_eq!(source_payload_response(&current).body, b"{\"html\":\"z\"}");
 }
 
 #[test]

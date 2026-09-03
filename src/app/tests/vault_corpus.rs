@@ -420,34 +420,55 @@ fn nothing_is_owed_while_a_read_is_still_running() {
 }
 
 #[test]
-fn nothing_is_owed_with_nobody_waiting() {
+fn an_unread_open_vault_is_owed_after_the_guard_frees() {
     let mut state = VaultState::load(None);
     state.root = Some(PathBuf::from("/vault"));
     assert!(
-        !read_is_owed(&state),
-        "a vault nobody has asked anything of was read anyway"
+        read_is_owed(&state),
+        "the unread vault's refused arrival read was never taken up"
     );
 
-    // And with no vault at all there is nothing to read, whoever is waiting.
-    state.root = None;
+    // The one-read guard stays the boundary even when somebody is waiting.
     state.pending_search = Some(typed("dharma"));
+    state.corpus_loading = true;
+    assert!(
+        !read_is_owed(&state),
+        "a second vault read started beside the first"
+    );
+
+    // Text already held needs no replacement read, whoever is waiting.
+    state.corpus_loading = false;
+    state.corpus = Some(Arc::new(corpus_of(&["/vault/note.md"])));
+    assert!(
+        !read_is_owed(&state),
+        "held text was read again from the top"
+    );
+
+    // A parked search and a parked map each remain enough to take up a freed read of an unread vault.
+    state.corpus = None;
+    assert!(read_is_owed(&state), "a parked search lost its owed read");
+    state.pending_search = None;
+    state.pending_graph = Some(GraphRequest::default());
+    assert!(read_is_owed(&state), "a parked map lost its owed read");
+
+    // With no vault at all there is nothing to read, whoever is waiting.
+    state.root = None;
     assert!(!read_is_owed(&state), "a read started with no vault open");
 }
 
 #[test]
-fn giving_up_a_stale_slice_starts_the_read_the_open_vault_is_owed() {
+fn giving_up_an_abandoned_last_slice_starts_the_unread_open_vaults_owed_read() {
     let left = PathBuf::from("/vault");
     let mut state = VaultState::load(None);
     state.root = Some(left.clone());
     state.corpus_loading = true;
     let reading = state.corpus_read.claim();
 
-    // The reader switches vaults and types straight away, so the query is parked behind the read they left.
+    // The reader switches vaults while the search box is empty, so nothing is parked behind the read they left.
     state.drop_corpus();
     state.root = Some(PathBuf::from("/another-vault"));
-    state.pending_search = Some(typed("dharma"));
 
-    // The abandoned read's last slice is worthless, and giving it up is what frees the one read — so the vault on screen gets its own here or waits for ever.
+    // The abandoned read's last slice is worthless, and giving it up is what frees the one read — so the unread vault on screen gets its refused arrival read here or waits for ever.
     assert!(matches!(
         delivered_slice_work(
             &mut state,

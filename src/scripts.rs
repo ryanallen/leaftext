@@ -248,7 +248,7 @@ pub fn document_state_script(document: &OpenedDocument, recent: &[PathBuf]) -> S
 /// The payload every workspace script carries: recents, the favorites, tabs, active index and document (`null` on the home screen). One builder so the four senders agree — a screen left out of it is a screen that never hears about a change.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-struct WorkspacePayload<'a> {
+pub(crate) struct WorkspacePayload<'a> {
     active: Option<usize>,
     document: Option<&'a OpenedDocument>,
     favorites: Vec<WorkspaceFavorite<'a>>,
@@ -276,12 +276,23 @@ struct WorkspaceTab<'a> {
 }
 
 impl WorkspacePayload<'_> {
-    fn payload_capacity(&self) -> usize {
+    /// What the written JSON will weigh, so the buffer is reserved once instead of doubling and moving every megabyte it had already written.
+    ///
+    /// Every list the payload carries needs a term: the block map is about 98 bytes an entry and 128 is past its 117-byte ceiling, and a task is one offset and a comma. The eighth over the two strings is escaping headroom, measured at 0.17% on prose and 1.39% on markup.
+    pub(crate) fn payload_capacity(&self) -> usize {
         let document = self
             .document
-            .map(|document| document.source.len() + document.html.len())
+            .map(|document| {
+                let strings = document.source.len() + document.html.len();
+                strings + strings / 8 + document.blocks.len() * 128 + document.tasks.len() * 24
+            })
             .unwrap_or_default();
-        let recent = self.recent.iter().map(String::len).sum::<usize>();
+        // A recent crosses as a JSON string, so it owes its two quotes, its comma and every Windows separator doubled.
+        let recent = self
+            .recent
+            .iter()
+            .map(|path| path.len() + path.len() / 8 + 8)
+            .sum::<usize>();
         let favorites = self
             .favorites
             .iter()
@@ -296,7 +307,7 @@ impl WorkspacePayload<'_> {
     }
 }
 
-fn workspace_payload<'a>(
+pub(crate) fn workspace_payload<'a>(
     recent: &[PathBuf],
     favorites: &'a Favorites,
     tabs: &'a [TabSummary],
