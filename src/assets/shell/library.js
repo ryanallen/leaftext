@@ -1,3 +1,45 @@
+// Markdown files are badged with the app's own leaf mark. The host inlines the same glyph the header uses, so the row tints it via stroke/fill currentColor rather than shipping a fixed color.
+const LEAF_FILE_ICON = `<span class="lt-icon lt-icon-leaf"></span>`;
+// Sending a vault to GitHub. Inlined the same way the rest are.
+const SYNC_ICON_SVG = `<span class="lt-icon lt-icon-sync"></span>`;
+// What the host last said about each vault's repository, by id. Kept so reopening the panel shows what it knew rather than blanking while git is asked again.
+const vaultGitByVault = new Map();
+
+// A vault's glyph, inlined from the same files the host stamps into the switcher's button, so the button and its menu can never drift apart. Open is the vault you are in; closed is one you are not.
+const CLOUD_ICON_SVG = `<span class="lt-icon lt-icon-cloud"></span>`;
+const PACKAGE_OPEN_ICON_SVG = `<span class="lt-icon lt-icon-package-open"></span>`;
+const PACKAGE_ICON_SVG = `<span class="lt-icon lt-icon-package"></span>`;
+// The whole library is not a vault at all — it is everything on this machine, so it wears the machine rather than a box.
+const COMPUTER_ICON_SVG = `<span class="lt-icon lt-icon-computer"></span>`;
+// And the plain folder, for the things that really are folders.
+const FOLDER_ICON_SVG = `<span class="lt-icon lt-icon-folder"></span>`;
+// The tick on the switcher's active row, and the mark on New vault…. Inline like the folder glyph so both take the row's color from currentColor, and so every row carries one and the labels line up.
+const MENU_CHECK_SVG = '<span class="lt-icon crumb-menu-check lt-icon-check"></span>';
+const MENU_PLUS_SVG = '<span class="lt-icon library-action-icon lt-icon-new"></span>';
+// The button on a vault row that opens everything you can do to it — the same sliders the app's own Settings wears, because that panel is this vault's settings. Visible on the row, not behind a right-click: a menu you have to guess at is a menu nobody finds.
+const MENU_SETTINGS_SVG = `<span class="lt-icon lt-icon-settings"></span>`;
+const MENU_TRASH_SVG = '<span class="lt-icon library-action-icon lt-icon-trash"></span>';
+const BACK_ARROW_SVG = '<span class="lt-icon library-action-icon lt-icon-back"></span>';
+// Vaults. A vault is a folder the app treats as a library root; nothing is written into it, the app just remembers the choice. The host owns the list and seeds it before the first paint. Rows are keyed on id, never on name.
+const LEAF_VAULTS = (window.__leafVaults && typeof window.__leafVaults === 'object') ? window.__leafVaults : {};
+leafVaults = Array.isArray(LEAF_VAULTS.vaults) ? LEAF_VAULTS.vaults : [];
+activeVaultId = Number.isFinite(LEAF_VAULTS.active) ? LEAF_VAULTS.active : 0;
+function activeVault() {
+  if (!activeVaultId) return null;
+  return leafVaults.find((vault) => vault && vault.id === activeVaultId) || null;
+}
+// What the leftmost crumb reads: the vault's name, the name the host gave the root, or the whole library's label. A vault wins because on the desktop the root is the vault you are standing in.
+function libraryRootLabel() {
+  const vault = activeVault();
+  return (vault && vault.name) || libraryRootName || 'Library';
+}
+// The folder the pane is inside ('' is the root); the breadcrumb is this path.
+libraryProjectPath = typeof LEAF_SETTINGS.libraryProjectPath === 'string' ? LEAF_SETTINGS.libraryProjectPath : '';
+const SNAP_SHUT = 40;           // drag narrower than this and the pane closes
+const DEFAULT_PANE_WIDTH = 240; // first-run fallback only
+const MIN_READER_WIDTH = 360;   // keep the document column usable as the pane grows
+// Full-text search over the library. A non-empty query replaces the tree with ranked results; clearing it restores the tree. The backend echoes the query so a slow response for an old one is dropped.
+const SEARCH_DEBOUNCE_MS = 150;
 // Said by both sync buttons and the count chip, so it is written once.
 const SYNC_WORKING = 'Working…';
 // Library pane open/close + resize. The closed preference and last open width are host-persisted (window.__leafSettings + setLibraryLayout), like the other settings.

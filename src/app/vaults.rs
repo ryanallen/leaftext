@@ -1148,14 +1148,8 @@ pub(crate) fn remove_vault_everywhere(
 /// The link map at the size the page asked for. Focus keeps the seed neighborhood; the rest cap the densest documents, up to XL, which caps nothing.
 ///
 /// Off the vault's own text when the vault holds the document on screen — read once and shared with search — and off that document itself otherwise, so a file in no vault still has a map of what it links to.
-pub(crate) fn request_graph_for(
-    reader: &Reader,
-    vault_state: &mut VaultState,
-    proxy: &EventLoopProxy<UserEvent>,
-    scope: &str,
-    seeds: Vec<String>,
-) {
-    let request = match GraphScope::from_client(scope).unwrap_or_default() {
+pub(crate) fn graph_request(scope: &str, seeds: Vec<String>) -> GraphRequest {
+    match GraphScope::from_client(scope).unwrap_or_default() {
         GraphScope::Small => GraphRequest {
             focus: Some(seeds),
             limit: None,
@@ -1172,7 +1166,17 @@ pub(crate) fn request_graph_for(
             focus: None,
             limit: None,
         },
-    };
+    }
+}
+
+pub(crate) fn request_graph_for(
+    reader: &Reader,
+    vault_state: &mut VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    scope: &str,
+    seeds: Vec<String>,
+) {
+    let request = graph_request(scope, seeds);
     let document = reader.workspace.active_path().map(Path::to_path_buf);
     request_link_graph(
         vault_state,

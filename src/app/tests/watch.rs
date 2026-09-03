@@ -23,6 +23,27 @@ fn rust_code_view_buffer() -> EditableDocument {
 }
 
 #[test]
+fn a_tab_answers_whether_it_still_shows_the_file_after_the_picker_waited() {
+    let dir = scratch_dir("picker-file-move-answer");
+    let path = dir.join("note.md");
+    fs::write(&path, "# First\n").expect("the note is written");
+    let tab = Tab {
+        edit: Some(EditableDocument::new(
+            path.clone(),
+            SourceText::utf8("# First\n".to_string()),
+        )),
+        ..Tab::default()
+    };
+
+    assert_eq!(file_move_answer(&tab, &path), FileMoveAnswer::StillShown);
+    fs::write(&path, "# Second\n").expect("the note is changed");
+    assert_eq!(file_move_answer(&tab, &path), FileMoveAnswer::Moved);
+    fs::remove_file(&path).expect("the note is removed");
+    assert_eq!(file_move_answer(&tab, &path), FileMoveAnswer::Unreadable);
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn a_code_view_reload_payload_carries_the_current_rust_buffer() {
     let edit = rust_code_view_buffer();
     let payload = code_view_refresh_payload(true, &edit).expect("the code view asks for a payload");

@@ -124,6 +124,30 @@ fn moving_a_favorite_row_needs_more_than_the_strip() {
 }
 
 #[test]
+fn toggling_a_favorite_answers_whether_it_was_marked_or_unmarked() {
+    let path = PathBuf::from("/docs/plan.md");
+    let mut favorites = Favorites::default();
+    assert_eq!(
+        toggle_favorite_state(
+            &mut favorites,
+            path.clone(),
+            FavoriteKind::Document,
+            Some(4),
+        ),
+        FavoriteToggle::Marked
+    );
+    assert_eq!(favorites.entries.len(), 1);
+    assert_eq!(favorites.entries[0].path, path);
+    assert_eq!(favorites.entries[0].vault_id, Some(4));
+
+    assert_eq!(
+        toggle_favorite_state(&mut favorites, path, FavoriteKind::Document, Some(4),),
+        FavoriteToggle::Unmarked
+    );
+    assert!(favorites.entries.is_empty());
+}
+
+#[test]
 fn closing_a_tab_to_the_right_of_the_one_being_read_changes_only_the_strip() {
     // The whole reported fault: the document on screen did not change, so nothing about it may be drawn again.
     let mut workspace = Workspace::default();

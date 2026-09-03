@@ -28,6 +28,29 @@ fn a_document_opened_while_reading_source_opens_in_source() {
     assert!(workspace.tabs[0].code_view);
 }
 
+#[test]
+fn code_view_splices_and_full_updates_change_the_held_buffer() {
+    let path = PathBuf::from("notes/source.md");
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    workspace.tabs[0].edit = Some(EditableDocument::new(
+        path,
+        SourceText::utf8("one 🌱 three\n".to_string()),
+    ));
+
+    splice_source_buffer(None, &mut workspace, 4, 2, "leaf", 15);
+    assert_eq!(
+        workspace.active_edit().expect("the buffer is held").text(),
+        "one leaf three\n"
+    );
+
+    update_source_buffer(None, &mut workspace, "the whole source\n".to_string());
+    assert_eq!(
+        workspace.active_edit().expect("the buffer is held").text(),
+        "the whole source\n"
+    );
+}
+
 /// One code-view payload is held at a time on purpose, so a test that stages one takes this until it is done with the slot — on the harness's threads another test's staging supersedes it and the read is a 404. Poison is shrugged off so one broken test is one failure.
 static SOURCE_PAYLOAD_SLOT: std::sync::Mutex<()> = std::sync::Mutex::new(());
 

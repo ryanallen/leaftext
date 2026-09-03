@@ -111,6 +111,7 @@ function openFlowSheet({ title, text, save }) {
   flowLastFocus = document.activeElement;
   flowSession = { save, text: typeof text === 'string' ? text : '', graph: null };
   flowSelection = null;
+  flowDrawn = null;
   flowZoom = 1;
   if (flowSheetTitle) flowSheetTitle.textContent = title || 'Flowchart';
   readyFlowPicker();
@@ -140,6 +141,7 @@ function closeFlowSheet() {
   closeFlowLabelBox(false);
   flowSession = null;
   flowSelection = null;
+  flowDrawn = null;
   flowDrag = null;
   // The picker goes with it, and without its slide: the whole editor is leaving.
   flowPickerAdd = null;
@@ -675,6 +677,47 @@ function flowNodeIdFromDom(raw, known) {
 }
 
 let flowRenderSeq = 0;
+// A drawn SVG holds its colors as literal values, exactly as the shape pictures do, so a theme change is the one thing that makes the picture on the canvas wrong. The number is bumped where theirs is, and a draw already in flight is measured against it — otherwise a render started before the switch lands afterwards in the colors nobody chose.
+let flowDiagramThemeVersion = 0;
+// What the last draw cost, and the shortest wait in front of the next one. A fixed wait shorter than the draw it starts is one a typist outruns every time: at 120 ms on a forty-line chart, seven characters entered at a comfortable pace started seven draws and took 3.4 seconds to land where the hand took 1.3. Waiting as long as the last draw took holds the editor to at most half its time drawing, so the thread always comes back to the hand, and the picture arrives once at the first real pause instead of once a keystroke. No ceiling on purpose: a cap gives that property away on exactly the charts that need it.
+const FLOW_DRAW_FLOOR = 120;
+let flowLastDrawCost = 0;
+// The text and the theme the picture on the canvas was drawn from. Leaving a picker field after typing in it fires a whole redraw on text byte-for-byte identical to the one already drawn — 387 ms spent making the picture look exactly as it does — so where both match there is nothing to ask for. Emptied wherever the canvas is, since a match against a canvas holding nothing would skip the one draw that matters.
+let flowDrawn = null;
+// The last few drawings, keyed on the text and the theme they were made in. An undo, a redo and a backspace over what was just typed all land on text drawn moments ago, and putting that drawing back costs 60 ms where laying it out again costs 448. Bounded by how much drawing is held rather than by how many steps: the sheet's history runs to a hundred and one drawing of a forty-line chart is 90,607 bytes, so a drawing a step would be nine megabytes on that chart alone and unbounded on a bigger one.
+const FLOW_DRAWING_STORE_CAP = 4 * 1024 * 1024;
+const flowDrawingStore = new Map();
+let flowDrawingStoreHeld = 0;
+
+const flowDrawingKey = (text, themeVersion) => themeVersion + '\n' + text;
+
+function keepFlowDrawing(text, themeVersion, svg) {
+  const key = flowDrawingKey(text, themeVersion);
+  // A chart whose one drawing is bigger than the whole bound is drawn and shown like any other; it is simply never kept, since keeping it would empty the store to hold nothing else.
+  if (flowDrawingStore.has(key) || svg.length > FLOW_DRAWING_STORE_CAP) return;
+  flowDrawingStore.set(key, svg);
+  flowDrawingStoreHeld += svg.length;
+  // A Map walks in the order things went in, so the front of it is the oldest.
+  while (flowDrawingStoreHeld > FLOW_DRAWING_STORE_CAP) {
+    const [oldest, drawing] = flowDrawingStore.entries().next().value;
+    flowDrawingStore.delete(oldest);
+    flowDrawingStoreHeld -= drawing.length;
+  }
+}
+
+// Putting a drawing on the canvas, wherever it came from. The scroll is taken and put back because replacing what the canvas holds loses it, and the reader is looking at the same picture in the same place.
+function paintFlowDrawing(svg, text, themeVersion) {
+  const left = flowCanvas.scrollLeft;
+  const top = flowCanvas.scrollTop;
+  flowCanvas.innerHTML = '<div class="flow-stage">' + svg + '<div class="flow-overlay"></div></div>';
+  flowDrawn = { text, themeVersion };
+  sizeFlowStage();
+  measureFlowDiagram();
+  drawFlowOverlay();
+  flowCanvas.scrollLeft = left;
+  flowCanvas.scrollTop = top;
+  drawFlowNotice();
+}
 
 function redrawFlowSheet() {
   drawFlowNotice();
@@ -706,10 +749,10 @@ function drawFlowNotice() {
   restoreFlowHint();
 }
 
-// Drawing is a round trip through mermaid, so it is debounced and the answer is stamped: a render that finishes after a newer one started is dropped rather than painted over it.
+// Drawing is a round trip through mermaid, so it waits — for as long as the last one took, which is what the floor above is about — and the answer is stamped: a render that finishes after a newer one started, or after a theme change, is dropped rather than painted over the picture that replaced it.
 function queueFlowDiagram() {
   window.clearTimeout(flowDrawTimer);
-  flowDrawTimer = window.setTimeout(drawFlowDiagram, 120);
+  flowDrawTimer = window.setTimeout(drawFlowDiagram, Math.max(FLOW_DRAW_FLOOR, flowLastDrawCost));
 }
 
 function drawFlowDiagram() {
@@ -717,9 +760,11 @@ function drawFlowDiagram() {
   const graph = flowSession.graph;
   const text = flowSession.text;
   const attempt = (flowRenderSeq += 1);
+  const themeVersion = flowDiagramThemeVersion;
   // A diagram the canvas cannot model is still drawn, from its text — a pie chart, a gantt, a flowchart using something we don't read yet. It gets no handles, but a live picture is most of what an editor is for, and the code pane is the only way to edit these. Only an empty graph draws nothing.
   if ((graph && !graph.nodes.length) || !text.trim()) {
     flowCanvas.innerHTML = '';
+    flowDrawn = null;
     flowPlaced = null;
     flowNatural = null;
     flowSize = null;
@@ -727,24 +772,28 @@ function drawFlowDiagram() {
     drawFlowNotice();
     return;
   }
+  // Nothing to ask for: the picture this would make is the one on the canvas. The notice and the overlay are `redrawFlowSheet`'s either side of this, and the geometry the overlay reads is still true because the drawing has not moved.
+  if (flowDrawn && flowDrawn.text === text && flowDrawn.themeVersion === themeVersion) return;
+  const kept = flowDrawingStore.get(flowDrawingKey(text, themeVersion));
+  if (kept) {
+    flowDrawError = '';
+    paintFlowDrawing(kept, text, themeVersion);
+    return;
+  }
   loadMermaid()
     .then(async (mermaid) => {
       mermaid.initialize(mermaidRuntimeConfig());
+      const started = performance.now();
       const { svg } = await mermaid.render('leafFlowDraw' + attempt, text);
-      if (!flowSession || attempt !== flowRenderSeq) return;
+      // Recorded before the guard below: a draw nobody will paint still took the thread, so it still says how long the next wait should be.
+      flowLastDrawCost = performance.now() - started;
+      if (!flowSession || attempt !== flowRenderSeq || themeVersion !== flowDiagramThemeVersion) return;
       flowDrawError = '';
-      const left = flowCanvas.scrollLeft;
-      const top = flowCanvas.scrollTop;
-      flowCanvas.innerHTML = '<div class="flow-stage">' + svg + '<div class="flow-overlay"></div></div>';
-      sizeFlowStage();
-      measureFlowDiagram();
-      drawFlowOverlay();
-      flowCanvas.scrollLeft = left;
-      flowCanvas.scrollTop = top;
-      drawFlowNotice();
+      keepFlowDrawing(text, themeVersion, svg);
+      paintFlowDrawing(svg, text, themeVersion);
     })
     .catch((error) => {
-      if (!flowSession || attempt !== flowRenderSeq) return;
+      if (!flowSession || attempt !== flowRenderSeq || themeVersion !== flowDiagramThemeVersion) return;
       // Mermaid leaves the element it was drawing into behind when it throws.
       const orphan = document.getElementById('dleafFlowDraw' + attempt);
       if (orphan && orphan.remove) orphan.remove();
@@ -1087,13 +1136,18 @@ function loadFlowChips() {
     .catch(() => {});
 }
 
-// A drawn SVG holds its colors as literal values, so a theme change is the one thing that makes a kept picture wrong. The version number is what a draw already in flight is measured against, since it would otherwise land forty-seven pictures of the old theme into the cleared store. A sheet that is open draws again here; a shut one draws at its next open.
+// A drawn SVG holds its colors as literal values, so a theme change is the one thing that makes a kept picture wrong. The version number is what a draw already in flight is measured against, since it would otherwise land forty-seven pictures of the old theme into the cleared store. A sheet that is open draws again here; a shut one draws at its next open. The diagram itself is the same picture with the same problem, so it is bumped and redrawn alongside them.
 function refreshFlowChipsForTheme() {
   flowChipThemeVersion += 1;
+  flowDiagramThemeVersion += 1;
   flowChipCache.clear();
   flowChipsAsked = false;
+  flowDrawingStore.clear();
+  flowDrawingStoreHeld = 0;
   forgetFlowShapeGrid();
-  if (flowSession) loadFlowChips();
+  if (!flowSession) return;
+  loadFlowChips();
+  drawFlowDiagram();
 }
 
 // ---- the two ways in -------------------------------------------------------

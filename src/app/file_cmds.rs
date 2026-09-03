@@ -93,27 +93,43 @@ pub(crate) fn toggle_favorite(
 /// Which favorites are no longer on the disk, marked on the rows already drawn.
 ///
 /// A metadata read per favorite, and only while the start screen is up: the list is short and the user marked every path in it, so this is not a crawl. Never stored, because a stored answer is wrong the moment a file moves with the app shut.
-pub(crate) fn check_favorites(reader: &Reader, vault_state: &VaultState) {
-    let missing: Vec<String> = reader
-        .favorites
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct MissingFavorites {
+    pub paths: Vec<String>,
+    pub vaults: Vec<i64>,
+}
+
+pub(crate) fn missing_favorites(
+    favorites: &Favorites,
+    vaults: impl IntoIterator<Item = (i64, String)>,
+) -> MissingFavorites {
+    let paths = favorites
         .entries
         .iter()
         .filter(|one| !one.path.exists())
         .map(|one| one.path.display().to_string())
         .collect();
+    let vaults = vaults
+        .into_iter()
+        .filter(|(_, root)| !Path::new(root).is_dir())
+        .map(|(id, _)| id)
+        .collect();
+    MissingFavorites { paths, vaults }
+}
+
+pub(crate) fn check_favorites(reader: &Reader, vault_state: &VaultState) {
     // A vault whose own folder has gone is one fact, not one per row inside it: repointing a file inside a folder that is not there is not the fix.
-    let gone_vaults: Vec<i64> = vault_state
+    let vaults = vault_state
         .conn
         .as_ref()
         .and_then(|conn| list_vaults(conn).ok())
         .unwrap_or_default()
         .into_iter()
-        .filter(|vault| !Path::new(&vault.root_path).is_dir())
-        .map(|vault| vault.id)
-        .collect();
+        .map(|vault| (vault.id, vault.root_path));
+    let missing = missing_favorites(&reader.favorites, vaults);
     run_page_script(
         reader.page(),
-        &favorites_missing_script(&missing, &gone_vaults),
+        &favorites_missing_script(&missing.paths, &missing.vaults),
         "Failed to mark the favorites that have gone",
     );
 }
@@ -186,16 +202,23 @@ pub(crate) fn delete(
 }
 
 /// The last delete undone — and only the delete the record is actually about: the page's offer expires with its message, and the two must not be able to drift apart.
+pub(crate) fn delete_to_restore(
+    last_delete: &mut Option<(PathBuf, Option<PathBuf>)>,
+    path: &Path,
+) -> Option<(PathBuf, Option<PathBuf>)> {
+    match last_delete.take() {
+        Some((original, landed)) if original == path => Some((original, landed)),
+        _ => None,
+    }
+}
+
 pub(crate) fn undo_delete(
     reader: &Reader,
     last_delete: &mut Option<(PathBuf, Option<PathBuf>)>,
     path: &Path,
 ) {
-    let restoring = match last_delete.take() {
-        Some((original, landed)) if original == path => Some((original, landed)),
-        // Not ours to undo, and putting the record back would leave a spent offer live.
-        _ => None,
-    };
+    // Not ours to undo, and putting the record back would leave a spent offer live.
+    let restoring = delete_to_restore(last_delete, path);
     match restoring {
         Some((original, landed)) => match restore_from_trash(&original, landed.as_deref()) {
             Ok(()) => refresh_library_folder(reader.page()),

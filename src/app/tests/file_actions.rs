@@ -386,3 +386,52 @@ fn a_pictures_own_file_is_resolved_against_the_document_it_is_drawn_in() {
         None,
     );
 }
+
+#[test]
+fn missing_favorites_and_the_delete_offer_are_plain_state_answers() {
+    let dir = scratch_dir("missing-favorites-and-delete-offer");
+    let present = dir.join("present.md");
+    let present_vault = dir.join("vault");
+    fs::create_dir_all(&present_vault).expect("the vault is created");
+    fs::write(&present, "# Present\n").expect("the note is written");
+    let gone = dir.join("gone.md");
+    let favorites = Favorites {
+        entries: vec![
+            Favorite {
+                vault_id: None,
+                path: present,
+                kind: FavoriteKind::Document,
+            },
+            Favorite {
+                vault_id: None,
+                path: gone.clone(),
+                kind: FavoriteKind::Document,
+            },
+        ],
+    };
+    let missing = file_cmds::missing_favorites(
+        &favorites,
+        [
+            (3, present_vault.display().to_string()),
+            (7, dir.join("gone-vault").display().to_string()),
+        ],
+    );
+    assert_eq!(missing.paths, vec![gone.display().to_string()]);
+    assert_eq!(missing.vaults, vec![7]);
+
+    let original = dir.join("deleted.md");
+    let landed = dir.join("trash").join("deleted.md");
+    let mut matching = Some((original.clone(), Some(landed.clone())));
+    assert_eq!(
+        file_cmds::delete_to_restore(&mut matching, &original),
+        Some((original.clone(), Some(landed)))
+    );
+    assert!(matching.is_none());
+    let mut stale = Some((original, None));
+    assert_eq!(
+        file_cmds::delete_to_restore(&mut stale, Path::new("another.md")),
+        None
+    );
+    assert!(stale.is_none());
+    let _ = fs::remove_dir_all(&dir);
+}

@@ -26,6 +26,7 @@ let activeVaultId;
 let libraryProjectPath;
 let libraryChain = [];
 let librarySearchQuery = '';
+// A heading anchor to scroll to once a clicked result's document has rendered.
 let pendingSearchJump = null;
 // The two editable views keep separate saved padlocks, while the graph is one window-wide view.
 let readingUnlocked;

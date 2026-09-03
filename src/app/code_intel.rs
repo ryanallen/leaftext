@@ -10,6 +10,29 @@ pub(crate) enum IntelSource {
     Folder(PathBuf),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum IntelSourceChoice {
+    Corpus,
+    ReadCorpus,
+    Folder,
+}
+
+pub(crate) fn intel_source_choice(
+    root: Option<&Path>,
+    has_corpus: bool,
+    document: &Path,
+) -> IntelSourceChoice {
+    if root.is_some_and(|root| vault_holds(root, document)) {
+        if has_corpus {
+            IntelSourceChoice::Corpus
+        } else {
+            IntelSourceChoice::ReadCorpus
+        }
+    } else {
+        IntelSourceChoice::Folder
+    }
+}
+
 /// The source for the active document's asks. Kicks off the one corpus read when the vault holds the document but its text is not in memory yet — that ask is answered from the folder, the next from the corpus.
 fn intel_source(
     state: &mut VaultState,
@@ -17,17 +40,18 @@ fn intel_source(
     document: Option<&Path>,
 ) -> Option<IntelSource> {
     let document = document?;
-    if let Some(root) = state.root.clone() {
-        if vault_holds(&root, document) {
-            if let Some(corpus) = state.corpus.clone() {
-                return Some(IntelSource::Corpus(corpus));
-            }
+    match intel_source_choice(state.root.as_deref(), state.corpus.is_some(), document) {
+        IntelSourceChoice::Corpus => state.corpus.clone().map(IntelSource::Corpus),
+        IntelSourceChoice::ReadCorpus => {
             read_corpus(state, proxy);
+            document
+                .parent()
+                .map(|folder| IntelSource::Folder(folder.to_path_buf()))
         }
+        IntelSourceChoice::Folder => document
+            .parent()
+            .map(|folder| IntelSource::Folder(folder.to_path_buf())),
     }
-    document
-        .parent()
-        .map(|folder| IntelSource::Folder(folder.to_path_buf()))
 }
 
 /// The note a `[[name]]` points at, read through the source. IO on the folder arm, so callers run this on the worker.

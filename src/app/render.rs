@@ -242,13 +242,7 @@ impl Reader {
         kind: FavoriteKind,
         vault_id: Option<i64>,
     ) {
-        if !self.favorites.remove(&path) {
-            self.favorites.add(Favorite {
-                vault_id,
-                path,
-                kind,
-            });
-        }
+        toggle_favorite_state(&mut self.favorites, path, kind, vault_id);
         self.persist_favorites();
         self.refresh_tab_strip();
     }
@@ -295,7 +289,7 @@ impl Reader {
 
     /// The document for `path`: the tab's cached render where the file still answers the same, a fresh render (cached on the tab) where it does not. The render is what the cache saves, and the one read here is what the render is drawn from — a package's archive travels with its text, so nothing reads the file again to unpack it.
     ///
-    /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all — which is why the file's own record is asked first.
+    /// A package states what every member's bytes are in its own directory, written at the end of the file, so a tab switched back to is gated on a small read from the tail and the document is opened only where that misses. Every other format is its own text and has to be read before it can be hashed at all — which is why the file's own record is asked first. The earlier edit-buffer package build records why this wrapper cannot be reached; its cache entry is built directly in the tab tests instead.
     fn document_for(&mut self, index: usize, path: &Path) -> io::Result<RenderedDocument> {
         // Taken at the top, before anything opens the file, so the entry written below stands on a reading of the file as it was when this render was drawn from it. One call serves that entry and the gate that reads it back.
         let record = settled_file_record(path);
@@ -568,6 +562,30 @@ impl Reader {
         }
         update_active_navigation(self.page(), &self.workspace);
         Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum FavoriteToggle {
+    Marked,
+    Unmarked,
+}
+
+pub(crate) fn toggle_favorite_state(
+    favorites: &mut Favorites,
+    path: PathBuf,
+    kind: FavoriteKind,
+    vault_id: Option<i64>,
+) -> FavoriteToggle {
+    if favorites.remove(&path) {
+        FavoriteToggle::Unmarked
+    } else {
+        favorites.add(Favorite {
+            vault_id,
+            path,
+            kind,
+        });
+        FavoriteToggle::Marked
     }
 }
 

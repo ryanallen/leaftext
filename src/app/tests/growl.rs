@@ -38,3 +38,15 @@ fn the_message_after_a_file_is_written_carries_the_path_it_can_open() {
         "{script}"
     );
 }
+
+#[test]
+fn edit_failure_words_name_the_document_and_the_reason() {
+    assert_eq!(
+        edit_refused_words("plan.md", "the file moved"),
+        "plan.md was not changed: the file moved."
+    );
+    assert_eq!(
+        edit_unsaved_words("plan.md", "the disk is full"),
+        "plan.md was changed and not saved: the disk is full."
+    );
+}

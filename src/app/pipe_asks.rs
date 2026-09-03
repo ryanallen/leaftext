@@ -18,6 +18,20 @@ pub(crate) fn doc(reader: &mut Reader, path: &Path, reply: &PipeReply) {
     let _ = reply.try_send(document_answer(reader, path));
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum DocumentReadStep {
+    Answer,
+    Redraw,
+}
+
+pub(crate) fn document_read_step(took_disk: bool) -> DocumentReadStep {
+    if took_disk {
+        DocumentReadStep::Redraw
+    } else {
+        DocumentReadStep::Answer
+    }
+}
+
 fn document_answer(reader: &mut Reader, path: &Path) -> Result<serde_json::Value, String> {
     if pipe_bring_to_front(&mut reader.workspace, path)? {
         // Arriving at a document renders, and the render is where a buffer takes the file.
@@ -25,9 +39,12 @@ fn document_answer(reader: &mut Reader, path: &Path) -> Result<serde_json::Value
         return pipe_document_answer_after_render(&mut reader.workspace, rendered);
     }
     let (took_disk, answer) = pipe_document_read(&mut reader.workspace)?;
-    if took_disk {
+    match document_read_step(took_disk) {
+        DocumentReadStep::Answer => {}
         // The page is drawn from words the buffer has just replaced. Redraw in place, the way the live reload does.
-        reader.render_for_pipe(ScrollIntent::Preserve { code: None })?;
+        DocumentReadStep::Redraw => {
+            reader.render_for_pipe(ScrollIntent::Preserve { code: None })?;
+        }
     }
     Ok(answer)
 }

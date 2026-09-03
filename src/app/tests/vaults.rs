@@ -3,6 +3,43 @@
 use super::*;
 
 #[test]
+fn a_graph_scope_answers_the_request_it_means() {
+    let focus = graph_request("small", vec!["notes/one.md".to_string()]);
+    assert_eq!(focus.focus, Some(vec!["notes/one.md".to_string()]));
+    assert_eq!(focus.limit, None);
+
+    for (scope, limit) in [("medium", Some(2000)), ("large", Some(5000)), ("xl", None)] {
+        let request = graph_request(scope, vec!["ignored.md".to_string()]);
+        assert_eq!(request.focus, None, "{scope}");
+        assert_eq!(request.limit, limit, "{scope}");
+    }
+    let fallback = graph_request("unknown", vec!["notes/fallback.md".to_string()]);
+    assert_eq!(fallback.focus, Some(vec!["notes/fallback.md".to_string()]));
+}
+
+#[test]
+fn typing_help_chooses_the_vault_or_the_documents_folder() {
+    let root = Path::new(r"C:\notes");
+    let document = Path::new(r"C:\notes\folder\plan.md");
+    assert_eq!(
+        intel_source_choice(Some(root), true, document),
+        IntelSourceChoice::Corpus
+    );
+    assert_eq!(
+        intel_source_choice(Some(root), false, document),
+        IntelSourceChoice::ReadCorpus
+    );
+    assert_eq!(
+        intel_source_choice(Some(root), true, Path::new(r"C:\elsewhere\plan.md")),
+        IntelSourceChoice::Folder
+    );
+    assert_eq!(
+        intel_source_choice(None, false, document),
+        IntelSourceChoice::Folder
+    );
+}
+
+#[test]
 fn reading_a_vaults_git_state_is_itself_a_change_the_watcher_would_report() {
     // The loop's closing edge, as a claim rather than a paragraph: the app is its own event source. Never `git_tooling()` as the gate — that one runs `gh auth status`, which goes to the network.
     let git_answers = std::process::Command::new("git")

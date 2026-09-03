@@ -376,6 +376,31 @@ pub(crate) fn page_shows_file(tab: &Tab, path: &Path, contents: Option<&str>) ->
 /// The question comes before the read: a package answers off the identity at the end of its file, and only a text document is opened whole — which for a big Word file, spreadsheet or deck is every byte of it and one member inflated out of the archive, spent to produce words nothing then looks at.
 ///
 /// When the file moved, the reload redraws, and the redraw is what clears the page's pending writer — so the answer that follows has nothing to write with and is dropped. When it did not, nothing is redrawn.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum FileMoveAnswer {
+    StillShown,
+    Moved,
+    Unreadable,
+}
+
+pub(crate) fn file_move_answer(tab: &Tab, path: &Path) -> FileMoveAnswer {
+    let still_shown = match page_shows_file(tab, path, None) {
+        Some(shown) => shown,
+        // Only this document's own words can settle it. Unreadable mid-save or briefly gone: leave the page as it is rather than dropping the answer over a read that would have settled.
+        None => {
+            let Ok(source) = read_document_source(path) else {
+                return FileMoveAnswer::Unreadable;
+            };
+            page_shows_file(tab, path, Some(&source.text)).unwrap_or(false)
+        }
+    };
+    if still_shown {
+        FileMoveAnswer::StillShown
+    } else {
+        FileMoveAnswer::Moved
+    }
+}
+
 pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWatch) {
     let Some(index) = reader.workspace.active else {
         return;
@@ -386,18 +411,9 @@ pub(crate) fn reload_if_file_moved(reader: &mut Reader, file_watch: &mut FileWat
     let Some(path) = tab.history.current().cloned() else {
         return;
     };
-    let still_shown = match page_shows_file(tab, &path, None) {
-        Some(shown) => shown,
-        // Only this document's own words can settle it. Unreadable mid-save or briefly gone: leave the page as it is rather than dropping the answer over a read that would have settled.
-        None => {
-            let Ok(source) = read_document_source(&path) else {
-                return;
-            };
-            page_shows_file(tab, &path, Some(&source.text)).unwrap_or(false)
-        }
-    };
-    if still_shown {
-        return;
+    match file_move_answer(tab, &path) {
+        FileMoveAnswer::StillShown | FileMoveAnswer::Unreadable => return,
+        FileMoveAnswer::Moved => {}
     }
     // The page has been established stale, so the reload's own hash gate must not be allowed to wave it through: that hash records the last reload, not what is on the page.
     file_watch.active_hash = None;
@@ -434,7 +450,7 @@ pub(crate) fn code_view_refresh_payload(
     in_code_view.then(|| code_view_source_payload(edit, false, None))
 }
 
-/// Re-render the active document from disk, preserving scroll position. A package that has not moved is answered off its own directory without being opened; anything else is read once and hash-gated, so a spurious event with unchanged contents re-renders nothing.
+/// Re-render the active document from disk, preserving scroll position. A package that has not moved is answered off its own directory without being opened; anything else is read once and hash-gated, so a spurious event with unchanged contents re-renders nothing. The earlier edit-buffer package build records why this wrapper cannot be reached; `cache_reloaded_render` is tested directly instead.
 pub(crate) fn reload_active_document(reader: &mut Reader, file_watch: &mut FileWatch) {
     let workspace = &mut reader.workspace;
     let Some(index) = workspace.active else {

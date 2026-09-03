@@ -38,6 +38,17 @@ fn linked(graph: &DocumentGraph, a: &str, b: &str) -> bool {
 }
 
 #[test]
+fn graph_scope_accepts_only_the_four_words_the_page_sends() {
+    assert_eq!(GraphScope::from_client("small"), Some(GraphScope::Small));
+    assert_eq!(GraphScope::from_client("medium"), Some(GraphScope::Medium));
+    assert_eq!(GraphScope::from_client("large"), Some(GraphScope::Large));
+    assert_eq!(GraphScope::from_client("xl"), Some(GraphScope::Xl));
+    for other in ["", "focus", "XL", "everything"] {
+        assert_eq!(GraphScope::from_client(other), None, "{other}");
+    }
+}
+
+#[test]
 fn a_document_in_no_vault_still_has_a_map_of_what_it_links_to() {
     let dir = graph_dir("loose");
     // No vault anywhere near this: just a folder with documents in it, which still has to draw a map.

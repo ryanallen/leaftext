@@ -1,7 +1,9 @@
 //! Every ask the pipe answers, and the sentences it refuses with.
 
 use super::*;
-use crate::app::pipe_asks::pipe_document_answer_after_render;
+use crate::app::pipe_asks::{
+    document_read_step, pipe_document_answer_after_render, DocumentReadStep,
+};
 
 /// An address only this test uses, so a running copy of the app is never the thing answering — a named pipe on Windows, a socket file elsewhere.
 fn test_pipe_address(name: &str) -> String {
@@ -129,6 +131,12 @@ fn a_render_refusal_carries_the_file_and_the_reason_the_reader_sees() {
         pipe_document_answer_after_render(&mut Workspace::default(), Err(refusal.clone())),
         Err(refusal)
     );
+}
+
+#[test]
+fn a_document_read_says_when_the_page_needs_drawing_again() {
+    assert_eq!(document_read_step(false), DocumentReadStep::Answer);
+    assert_eq!(document_read_step(true), DocumentReadStep::Redraw);
 }
 
 #[test]

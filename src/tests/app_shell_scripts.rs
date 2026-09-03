@@ -41,6 +41,21 @@ fn initial_state_script_returns_reader_to_no_file_state_with_both_lists() {
 }
 
 #[test]
+fn missing_favorites_script_carries_only_what_has_gone() {
+    assert_eq!(
+        favorites_missing_script(
+            &["notes/gone.md".to_string(), "notes/lost.md".to_string()],
+            &[3, 7]
+        ),
+        r#"window.leafSetFavoritesMissing({"paths":["notes/gone.md","notes/lost.md"],"vaults":[3,7]});"#
+    );
+    assert_eq!(
+        favorites_missing_script(&[], &[]),
+        r#"window.leafSetFavoritesMissing({"paths":[],"vaults":[]});"#
+    );
+}
+
+#[test]
 fn initial_state_script_carries_restored_tab_labels_without_a_document() {
     let tabs = [strip_tab("Guide", "guide.md")];
     let script = initial_state_script(&[], &Favorites::default(), &tabs, Some(0));

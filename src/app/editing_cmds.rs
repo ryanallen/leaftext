@@ -487,6 +487,42 @@ pub(crate) enum BlockEditOutcome {
     Refused(String),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum BlockEditStep {
+    Autosave,
+    Render,
+    Resync,
+    SayHeld,
+    Clear,
+    SayRefused(String),
+}
+
+pub(crate) fn edit_block_steps(outcome: BlockEditOutcome) -> [Option<BlockEditStep>; 4] {
+    match outcome {
+        BlockEditOutcome::Spliced { autosave, render } => {
+            let mut steps = [None, None, None, None];
+            let mut next = 0;
+            if autosave {
+                steps[next] = Some(BlockEditStep::Autosave);
+                next += 1;
+            }
+            if render {
+                steps[next] = Some(BlockEditStep::Render);
+                next += 1;
+            }
+            steps[next] = Some(BlockEditStep::Resync);
+            steps[next + 1] = Some(BlockEditStep::SayHeld);
+            steps
+        }
+        BlockEditOutcome::Refused(why) => [
+            Some(BlockEditStep::Clear),
+            Some(BlockEditStep::SayRefused(why)),
+            None,
+            None,
+        ],
+    }
+}
+
 /// Splice one reading-view edit, and say what the loop should then spend on its `Reader`.
 ///
 /// A live splice leaves the page standing: the reader is still typing in it, and a render would take the words out from under the caret. A refusal is the state the page cannot see for itself, because it raised the dirty mark and the Undo button before the command ever left it.
@@ -693,7 +729,7 @@ impl From<String> for EditRefused {
 
 /// What one edit owes the page: the answer to whoever is waiting on it, or the growl where nobody is.
 ///
-/// `held` says the buffer kept the change. A sender waiting on a token says the sentence in its own corner beside whatever it is holding open, so the host stays quiet there — both would be one refusal said twice.
+/// `held` says the buffer kept the change. A sender waiting on a token says the sentence in its own corner beside whatever it is holding open, so the host stays quiet there — both would be one refusal said twice. This is the draw itself, with no state decision under it to prove.
 pub(crate) fn say_edit_outcome(
     webview: Option<&WebView>,
     token: Option<u64>,
@@ -990,7 +1026,7 @@ pub(crate) fn pipe_save_document(
     }))
 }
 
-/// Push the buffer's editing state (task offsets, dirty, whether the history has a step in either direction) back to the reading view. The source is omitted since the caller's re-render already delivered it.
+/// Push the buffer's editing state (task offsets, dirty, whether the history has a step in either direction) back to the reading view. The source is omitted since the caller's re-render already delivered it. This is the draw itself, with no state decision under it to prove.
 pub(crate) fn resync_editing_state(webview: Option<&WebView>, workspace: &Workspace) {
     let Some(edit) = workspace.active_edit() else {
         return;
@@ -1015,7 +1051,7 @@ pub(crate) fn editing_state_script(edit: &EditableDocument) -> String {
 
 /// Tell the page nothing is held for the document at the front: no dirty mark, nothing to undo, nothing to redo.
 ///
-/// `resync_editing_state` cannot say this. It answers off `workspace.active_edit()`, and a refused seed returns before the tab's buffer is ever made, so the call reads nothing and the raised buttons stand. Where the tab does hold a buffer it is worse than nothing: a tab that followed a link away from the document it was editing still holds that other file's buffer, and the script names no path, so the page would stamp that document's state onto the one on screen.
+/// `resync_editing_state` cannot say this. It answers off `workspace.active_edit()`, and a refused seed returns before the tab's buffer is ever made, so the call reads nothing and the raised buttons stand. Where the tab does hold a buffer it is worse than nothing: a tab that followed a link away from the document it was editing still holds that other file's buffer, and the script names no path, so the page would stamp that document's state onto the one on screen. This is the draw itself, with no state decision under it to prove.
 pub(crate) fn cleared_editing_state(webview: Option<&WebView>) {
     run_page_script(
         webview,
@@ -1139,6 +1175,10 @@ pub(crate) fn lint_source(
 }
 
 /// Save, with the naming window in front of it only for a document that has never had a file.
+pub(crate) fn save_needs_fresh_document(ready: &SaveReady) -> bool {
+    matches!(ready, SaveReady::Named)
+}
+
 pub(crate) fn save_document(
     reader: &mut Reader,
     file_watch: &mut FileWatch,
@@ -1158,7 +1198,7 @@ pub(crate) fn save_document(
                 refresh_book,
             );
             // The tab, the title and the image folder still say Untitled. A plain save changes none of them.
-            if matches!(ready, SaveReady::Named) {
+            if save_needs_fresh_document(&ready) {
                 reader.render(ScrollIntent::Preserve { code: None });
             }
         }
@@ -1196,36 +1236,39 @@ pub(crate) fn edit_block(
     asked: &BlockEdit,
     token: Option<u64>,
 ) {
-    match edit_block_outcome(&mut reader.workspace, asked) {
-        BlockEditOutcome::Spliced { autosave, render } => {
-            let unwritten = if autosave {
+    let mut unwritten = None;
+    for step in edit_block_steps(edit_block_outcome(&mut reader.workspace, asked))
+        .into_iter()
+        .flatten()
+    {
+        match step {
+            BlockEditStep::Autosave => {
                 let webview = reader.webview.as_ref();
-                autosave_active_buffer(
+                unwritten = autosave_active_buffer(
                     &mut reader.workspace,
                     file_watch,
                     vault_state,
                     refresh_book,
                     webview,
                 )
-                .err()
-            } else {
-                None
-            };
-            if render {
-                reader.render(ScrollIntent::Preserve { code: None });
+                .err();
             }
+            BlockEditStep::Render => reader.render(ScrollIntent::Preserve { code: None }),
             // Host decides the Save/Undo buttons from the real dirty and undo state, not the frontend's guess. A failed auto-save leaves the buffer dirty, so this is what lights Save over the tick.
-            resync_editing_state(reader.page(), &reader.workspace);
+            BlockEditStep::Resync => resync_editing_state(reader.page(), &reader.workspace),
             // The buffer holds it either way - the splice landed. Where the write behind it did not, that is said rather than swallowed into the log: a box inside a table sends this command, so the log is nowhere its reader looks.
-            let said = unwritten
-                .map(|why| edit_unsaved_words(&front_document_name(&reader.workspace), &why));
-            say_edit_outcome(reader.page(), token, true, said.as_deref());
-        }
-        // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and whoever is waiting is told the buffer holds nothing.
-        BlockEditOutcome::Refused(why) => {
-            let said = edit_refused_words(&front_document_name(&reader.workspace), &why);
-            cleared_editing_state(reader.page());
-            say_edit_outcome(reader.page(), token, false, Some(&said));
+            BlockEditStep::SayHeld => {
+                let said = unwritten
+                    .as_deref()
+                    .map(|why| edit_unsaved_words(&front_document_name(&reader.workspace), why));
+                say_edit_outcome(reader.page(), token, true, said.as_deref());
+            }
+            // Nothing was written, so the dirty mark and the Undo button the page raised on its own come back down, and whoever is waiting is told the buffer holds nothing.
+            BlockEditStep::Clear => cleared_editing_state(reader.page()),
+            BlockEditStep::SayRefused(why) => {
+                let said = edit_refused_words(&front_document_name(&reader.workspace), &why);
+                say_edit_outcome(reader.page(), token, false, Some(&said));
+            }
         }
     }
 }
@@ -1239,14 +1282,31 @@ pub(crate) fn edit_blocks(reader: &mut Reader, blocks: &[BlockReplacement]) {
 /// What every frontmatter and block change ends with: the document drawn again where something moved, the chrome put back in step, and a refusal said in the reader's words.
 ///
 /// Drawn again rather than patched in place: a field other things read has to change everywhere it is shown, not only in the cell it was typed into.
-fn after_source_change(reader: &mut Reader, changed: Result<bool, String>) {
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum SourceChangeEnding {
+    Draw,
+    Nothing,
+    Refused(String),
+}
+
+pub(crate) fn source_change_ending(changed: Result<bool, String>) -> SourceChangeEnding {
     match changed {
-        Ok(true) => {
+        Ok(true) => SourceChangeEnding::Draw,
+        Ok(false) => SourceChangeEnding::Nothing,
+        Err(why) => SourceChangeEnding::Refused(why),
+    }
+}
+
+fn after_source_change(reader: &mut Reader, changed: Result<bool, String>) {
+    match source_change_ending(changed) {
+        SourceChangeEnding::Draw => {
             reader.render(ScrollIntent::Preserve { code: None });
             resync_editing_state(reader.page(), &reader.workspace);
         }
-        Ok(false) => {}
-        Err(why) => say_edit_refused(reader.page(), &reader.workspace, &why),
+        SourceChangeEnding::Nothing => {}
+        SourceChangeEnding::Refused(why) => {
+            say_edit_refused(reader.page(), &reader.workspace, &why)
+        }
     }
 }
 
@@ -1283,6 +1343,29 @@ pub(crate) fn move_source_block(
     after_source_change(reader, changed);
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct PickerWords {
+    pub destination: String,
+    pub alt: String,
+}
+
+pub(crate) fn picker_words(
+    file: &Path,
+    document: Option<&Path>,
+    fallback: &str,
+    suffix: &str,
+) -> PickerWords {
+    let alt = file
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .filter(|stem| !stem.is_empty())
+        .unwrap_or_else(|| fallback.to_string());
+    let destination = document
+        .map(|document| markdown_image_insert_destination(file, document))
+        .unwrap_or_else(|| format!("{alt}{suffix}"));
+    PickerWords { destination, alt }
+}
+
 /// The picture picker for the reading view's insert box. The window blocks this thread, like Open's does. What comes back is a destination for the document to hold, not a file to copy: the picture stays where the user keeps it.
 pub(crate) fn pick_image(reader: &mut Reader, file_watch: &mut FileWatch, token: u64) {
     let Some(image) = pick_image_file() else {
@@ -1290,33 +1373,26 @@ pub(crate) fn pick_image(reader: &mut Reader, file_watch: &mut FileWatch, token:
     };
     // The window stood open while the loop was blocked, so the file may have moved under it. The answer below carries offsets the page read before that, so the view is brought back in step first: a moved file redraws, and the redraw clears the page's pending writer, so the picture is dropped instead of spliced into text nobody has seen.
     reload_if_file_moved(reader, file_watch);
-    let source = reader
-        .workspace
-        .active_path()
-        .map(Path::to_path_buf)
-        .unwrap_or_default();
-    let destination = markdown_image_insert_destination(&image, &source);
-    let alt = image
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .unwrap_or_default();
+    let words = picker_words(&image, reader.workspace.active_path(), "", "");
     run_page_script(
         reader.page(),
-        &image_picked_script(token, &destination, &alt),
+        &image_picked_script(token, &words.destination, &words.alt),
         "Failed to hand the page the picked image",
     );
 }
 
 /// Where a diagram goes, asked before anything is drawn. The window blocks this thread, like Open's does. The document in front only names the file it suggests; nothing about it is read or written.
 pub(crate) fn pick_diagram(reader: &Reader, token: u64, format: Option<&str>) {
-    let stem = reader
-        .workspace
-        .active_path()
-        .and_then(Path::file_stem)
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .filter(|stem| !stem.is_empty())
-        .unwrap_or_else(|| "diagram".to_string());
-    if let Some(target) = pick_diagram_path(&format!("{stem}-diagram"), format) {
+    let words = picker_words(
+        reader
+            .workspace
+            .active_path()
+            .unwrap_or_else(|| Path::new("")),
+        None,
+        "diagram",
+        "-diagram",
+    );
+    if let Some(target) = pick_diagram_path(&words.destination, format) {
         run_page_script(
             reader.page(),
             &diagram_path_picked_script(token, &target.display().to_string()),
@@ -1347,12 +1423,8 @@ pub(crate) fn pick_picture(reader: &Reader, token: u64, source: &str, format: Op
     let Some(file) = file_cmds::picture_source_path(reader, source) else {
         return;
     };
-    let stem = file
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .filter(|stem| !stem.is_empty())
-        .unwrap_or_else(|| "picture".to_string());
-    if let Some(target) = pick_picture_path(&stem, format) {
+    let words = picker_words(&file, None, "picture", "");
+    if let Some(target) = pick_picture_path(&words.destination, format) {
         run_page_script(
             reader.page(),
             &picture_path_picked_script(token, &target.display().to_string()),

@@ -235,7 +235,7 @@ fn keeps_explicit_image_title_over_alt_text() {
     );
 }
 
-/// The Insert image window and the reading view read one table, so a picture that can be picked can be drawn and a picture that can be drawn can be picked. They used to keep separate lists and disagreed on two endings.
+/// The Insert image window and the reading view read one table, so every picture that can be picked can be drawn.
 #[test]
 fn the_insert_image_window_offers_exactly_what_the_reading_view_draws() {
     assert_eq!(
@@ -250,7 +250,7 @@ fn the_insert_image_window_offers_exactly_what_the_reading_view_draws() {
         );
     }
 
-    // A JPEG under the name Windows used to give it, which is the whole reason this table gained an ending.
+    // The Windows spelling of JPEG belongs in the same table.
     assert_eq!(
         local_image_mime_type(Path::new("scan.jfif")),
         local_image_mime_type(Path::new("scan.jpg"))
@@ -779,6 +779,26 @@ fn local_image_protocol_loads_absolute_paths_outside_the_document_tree() {
     );
     assert_eq!(response.status, 200, "an absolute path must load");
     assert_eq!(response.body, png);
+}
+
+#[test]
+fn an_inserted_picture_is_addressed_from_the_notes_folder() {
+    let root = scratch_dir("inserted-picture-destination");
+    let note = root.join("notes").join("note.md");
+
+    assert_eq!(
+        markdown_image_insert_destination(&root.join("notes").join("pic.png"), &note),
+        "pic.png"
+    );
+    assert_eq!(
+        markdown_image_insert_destination(&root.join("notes").join("imgs").join("pic.png"), &note),
+        "imgs/pic.png"
+    );
+    let above = root.join("pic.png");
+    assert_eq!(
+        markdown_image_insert_destination(&above, &note),
+        above.display().to_string()
+    );
 }
 
 /// A published site's page sits at the top and its documents sit under a folder, so every picture a document names is reached through that folder joined with the document's own — at any depth, through a raw HTML tag as well as a Markdown one, and folding a `..` the way a browser folds one so a tree keeping one shared pictures folder above its documents still finds them. Nothing may address a file outside the folder the site was built from: a climb that would go above it stops there, and so does an address written from a root.

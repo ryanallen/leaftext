@@ -353,6 +353,125 @@ fn every_command_sharing_the_seed_answers_why_rather_than_nothing_when_the_file_
     let _ = fs::remove_dir_all(&dir);
 }
 
+#[test]
+fn toggling_a_task_marker_moves_only_the_marker_it_names() {
+    let dir = scratch_dir("toggling_a_task_marker_moves_only_the_marker_it_names");
+    let note = dir.join("tasks.md");
+    let source = "- [ ] one\n- [ ] two\n- [x] three\n";
+    fs::write(&note, source).expect("the note is written");
+    let mut workspace = Workspace::default();
+    workspace.open_path(note.clone());
+    let mut watch = FileWatch::default();
+    let mut vaults = VaultState::load(None);
+
+    toggle_task_marker(
+        None,
+        &mut workspace,
+        &mut watch,
+        &mut vaults,
+        &mut RefreshBook::default(),
+        1,
+        None,
+    );
+
+    let expected = "- [ ] one\n- [x] two\n- [x] three\n";
+    assert_eq!(
+        workspace.active_edit().expect("the buffer is held").text(),
+        expected
+    );
+    assert_eq!(
+        fs::read_to_string(&note).expect("the note is read"),
+        expected
+    );
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_source_change_answers_which_ending_it_earns() {
+    assert_eq!(source_change_ending(Ok(true)), SourceChangeEnding::Draw);
+    assert_eq!(source_change_ending(Ok(false)), SourceChangeEnding::Nothing);
+    assert_eq!(
+        source_change_ending(Err("the field moved".to_string())),
+        SourceChangeEnding::Refused("the field moved".to_string())
+    );
+}
+
+#[test]
+fn only_naming_a_document_makes_the_saved_page_stale() {
+    assert!(!save_needs_fresh_document(&SaveReady::Canceled));
+    assert!(!save_needs_fresh_document(&SaveReady::Ready));
+    assert!(save_needs_fresh_document(&SaveReady::Named));
+}
+
+#[test]
+fn a_block_edit_answers_the_steps_the_window_performs() {
+    assert_eq!(
+        edit_block_steps(BlockEditOutcome::Spliced {
+            autosave: true,
+            render: true,
+        })
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>(),
+        vec![
+            BlockEditStep::Autosave,
+            BlockEditStep::Render,
+            BlockEditStep::Resync,
+            BlockEditStep::SayHeld,
+        ]
+    );
+    assert_eq!(
+        edit_block_steps(BlockEditOutcome::Spliced {
+            autosave: false,
+            render: false,
+        })
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>(),
+        vec![BlockEditStep::Resync, BlockEditStep::SayHeld]
+    );
+    assert_eq!(
+        edit_block_steps(BlockEditOutcome::Refused("the range moved".to_string()))
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>(),
+        vec![
+            BlockEditStep::Clear,
+            BlockEditStep::SayRefused("the range moved".to_string()),
+        ]
+    );
+}
+
+#[test]
+fn picker_words_follow_the_file_and_the_document_paths() {
+    assert_eq!(
+        picker_words(
+            Path::new("notes/pictures/fern.png"),
+            Some(Path::new("notes/plan.md")),
+            "image",
+            "",
+        ),
+        PickerWords {
+            destination: "pictures/fern.png".to_string(),
+            alt: "fern".to_string(),
+        }
+    );
+    assert_eq!(
+        picker_words(Path::new("notes/plan.md"), None, "diagram", "-diagram"),
+        PickerWords {
+            destination: "plan-diagram".to_string(),
+            alt: "plan".to_string(),
+        }
+    );
+    assert_eq!(
+        picker_words(Path::new("notes/photo.webp"), None, "picture", ""),
+        PickerWords {
+            destination: "photo".to_string(),
+            alt: "photo".to_string(),
+        }
+    );
+}
+
 /// Pressing Save after a refused edit was silent in its own right: the routine answered before it composed a single line for the page, so the one control a reader reaches for after the silence was silent too.
 #[test]
 fn a_save_of_a_document_the_app_holds_no_buffer_for_says_so_rather_than_answering_nobody() {
