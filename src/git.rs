@@ -73,8 +73,12 @@ pub struct VaultRepo {
     pub at_root: bool,
     /// The repository this vault sits inside, when it is not its own. Worth naming: creating a repo here is legal and common, but it should not be a surprise afterwards.
     pub outer: Option<String>,
-    /// Repositories below this folder, as paths relative to it. These are what a new repository at the root would swallow.
+    /// Repositories below this folder, as paths relative to it. These are what a new repository at the root would swallow, and what the sync's `add -A` swallows in a vault that already is one. Empty where the read was told not to walk the folder, which is not the same as a vault holding none — see [`NestedScan`].
     pub nested: Vec<String>,
+    /// Which of `nested` this repository already tracks, as a pointer or with its files listed one by one. Named in the panel and left out of the offer: an ignore line for a tracked path does nothing at all.
+    pub tracked: Vec<String>,
+    /// Which of `nested` nothing is holding back — neither tracked nor already named by the vault's own `.gitignore`. These are the ones the next `add -A` would swallow, and the only ones the offer is about.
+    pub unhandled: Vec<String>,
     /// `owner/name` where the remote is recognizable, else the raw URL.
     pub remote: Option<String>,
     /// The address exactly as git holds it, for showing before a change and for putting back if the change was a mistake. The label above is for reading; this is the thing you would paste.
@@ -291,7 +295,14 @@ pub(crate) fn identity_value<'a>(what: &str, value: &'a str) -> Result<&'a str, 
 // Reading a vault's situation
 // ---------------------------------------------------------------------------
 
-pub fn inspect_vault_repo(root: &Path) -> VaultRepo {
+/// Whether a reading walks the vault folder for the repositories inside it. The panel's read does, for either kind of vault; the per-save status read does not, because it is deliberately the cheap one and a three-deep directory walk on every save is the cost it exists to avoid.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NestedScan {
+    Walk,
+    Skip,
+}
+
+pub fn inspect_vault_repo(root: &Path, scan: NestedScan) -> VaultRepo {
     let mut repo = VaultRepo::default();
     match git(root, &["rev-parse", "--show-toplevel"]) {
         Ok(top) if same_folder(&top, root) => repo.at_root = true,
@@ -321,11 +332,59 @@ pub fn inspect_vault_repo(root: &Path) -> VaultRepo {
             repo.behind = behind;
             repo.ahead = ahead;
         }
-    } else {
-        // Only worth scanning when a new repository here is on the table.
-        repo.nested = nested_repos(root);
+    }
+    // Either kind of vault: a new repository at the root would swallow these, and one that is already a repository swallows them on its next sync.
+    repo.nested = nested_repos_scanned(root, scan);
+    if repo.at_root && !repo.nested.is_empty() {
+        // One call for the whole list rather than one each, and only where there is an index to ask. A vault that is not a repository yet tracks nothing by definition.
+        let mut args = vec!["ls-files", "-s", "--"];
+        args.extend(repo.nested.iter().map(String::as_str));
+        let listing = git(root, &args).unwrap_or_default();
+        repo.tracked = tracked_nested(&listing, &repo.nested);
+        let ignores = std::fs::read_to_string(root.join(".gitignore")).unwrap_or_default();
+        repo.unhandled = unhandled_nested(&repo.nested, &repo.tracked, &ignores);
     }
     repo
+}
+
+/// Which of `nested` the index already holds, read off `git ls-files -s`. A tracked repository is either one `160000` pointer line naming the folder, or every file under it listed on its own; both say the same thing here, so a path is tracked the moment any listed file falls inside it.
+pub(crate) fn tracked_nested(listing: &str, nested: &[String]) -> Vec<String> {
+    let listed: Vec<&str> = listing
+        .lines()
+        .filter_map(|line| line.split_once('\t'))
+        .map(|(_, path)| path.trim())
+        .collect();
+    nested
+        .iter()
+        .filter(|path| {
+            listed
+                .iter()
+                .any(|one| *one == path.as_str() || one.starts_with(&format!("{path}/")))
+        })
+        .cloned()
+        .collect()
+}
+
+/// The repositories nothing is holding back: not in the index, and not already named by the vault's own `.gitignore`. Read off the same file the offer would write into, so the button appears exactly when pressing it would put a line in it.
+pub(crate) fn unhandled_nested(
+    nested: &[String],
+    tracked: &[String],
+    ignores: &str,
+) -> Vec<String> {
+    nested
+        .iter()
+        .filter(|path| !tracked.contains(path))
+        .filter(|path| !gitignore_addition(ignores, std::slice::from_ref(path)).is_empty())
+        .cloned()
+        .collect()
+}
+
+/// The repositories inside `root`, or nothing where this read is not walking the folder. Kept out of the git call so the choice can be proved without a repository on disk.
+pub(crate) fn nested_repos_scanned(root: &Path, scan: NestedScan) -> Vec<String> {
+    match scan {
+        NestedScan::Walk => nested_repos(root),
+        NestedScan::Skip => Vec::new(),
+    }
 }
 
 /// Repositories below `root`, relative to it, deepest-first order not promised. Stops descending as soon as it finds one: a repo inside a repo inside a vault is that repo's business.
@@ -383,7 +442,7 @@ pub fn init_vault_repo(root: &Path, nested: &[String]) -> Result<(), GitError> {
 }
 
 /// Append the nested repositories to `.gitignore`, keeping whatever is already there. Each one has its own remote and its own history; tracking it from out here would record a pointer nobody can follow.
-fn write_gitignore(root: &Path, nested: &[String]) -> Result<(), GitError> {
+pub fn write_gitignore(root: &Path, nested: &[String]) -> Result<(), GitError> {
     let path = root.join(".gitignore");
     let existing = std::fs::read_to_string(&path).unwrap_or_default();
     let addition = gitignore_addition(&existing, nested);

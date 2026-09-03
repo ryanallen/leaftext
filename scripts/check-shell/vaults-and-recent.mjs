@@ -263,6 +263,107 @@ export function run() {
     }
   });
 
+  // Ids nothing else in the suite uses: the panel's state is a map keyed on the vault, and a row left behind here would change what a later check draws.
+  const GIT_VAULT = { id: 91, name: 'Work' };
+  const PLAIN_VAULT = { id: 92, name: 'Plain' };
+  const gitState = (vault, repo) => ({
+    id: vault.id,
+    suggested: vault.name.toLowerCase(),
+    tooling: { git: true, gh: false, credentialHelper: true, identity: true },
+    repo: Object.assign({ atRoot: true, remote: 'me/work', changed: 0, tracking: true }, repo),
+    busy: false,
+    message: null,
+    error: false,
+  });
+  const panelItems = (vault) =>
+    vm.runInContext(`vaultGitItems({ id: ${vault.id}, name: ${JSON.stringify(vault.name)} })`, booted);
+  const panelNotes = (vault) => panelItems(vault).filter((one) => one && one.note).map((one) => one.note);
+  const ignoreButton = (vault) => panelItems(vault).find((one) => one && one.label === 'Ignore them');
+
+  check('a vault that is its own repository is told which repositories it holds', () => {
+    booted.leafSetVaultGit(gitState(GIT_VAULT, { nested: ['godaddy', 'dharma/emptyguru'] }));
+    const named = panelNotes(GIT_VAULT).find((note) => note.includes('godaddy'));
+    if (!named) {
+      throw new Error(`the panel said nothing about the repositories inside the vault: ${JSON.stringify(panelNotes(GIT_VAULT))}`);
+    }
+    if (!named.includes('dharma/emptyguru')) throw new Error(`the note named one and dropped the other: ${named}`);
+
+    // A vault holding none draws no row at all, or every vault carries a line saying nothing.
+    booted.leafSetVaultGit(gitState(PLAIN_VAULT, { nested: [] }));
+    if (panelNotes(PLAIN_VAULT).some((note) => note.includes('Repositories inside this vault'))) {
+      throw new Error(`a vault holding no repositories drew the row anyway: ${JSON.stringify(panelNotes(PLAIN_VAULT))}`);
+    }
+  });
+
+  check('a save landing while the panel is open does not blank what the folder holds', () => {
+    booted.leafSetVaultGit(gitState(GIT_VAULT, { nested: ['godaddy'] }));
+    // The per-save read walks no folder, so its payload carries no `nested` — and it replaces the panel's whole repo.
+    booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, nested: [], remote: 'me/work', changed: 5, tracking: true });
+    const notes = panelNotes(GIT_VAULT);
+    if (!notes.some((note) => note.includes('godaddy'))) {
+      throw new Error(`a status update blanked the note the panel had just drawn: ${JSON.stringify(notes)}`);
+    }
+    // What the cheap read does answer still lands.
+    if (!notes.some((note) => note.includes('5 changed'))) {
+      throw new Error(`the status update's own count did not reach the panel: ${JSON.stringify(notes)}`);
+    }
+  });
+
+  check('only the repositories nothing is holding back are offered, and one press ignores them', () => {
+    const sent = [];
+    const watching = booted.window.ipc;
+    booted.window.ipc = { postMessage: (raw) => sent.push(JSON.parse(raw)) };
+    try {
+      booted.leafSetVaultGit(
+        gitState(GIT_VAULT, {
+          nested: ['godaddy', 'dharma/emptyguru', 'leaftext/app'],
+          tracked: ['godaddy'],
+          unhandled: ['leaftext/app'],
+        }),
+      );
+      const warning = panelNotes(GIT_VAULT).find((note) => note.includes('swallow'));
+      if (!warning) throw new Error(`nothing warned about the repository the sync would swallow: ${JSON.stringify(panelNotes(GIT_VAULT))}`);
+      if (!warning.includes('leaftext/app')) throw new Error(`the warning does not name it: ${warning}`);
+      // The one the vault already tracks is named above and kept out of the offer: an ignore line for it does nothing.
+      if (warning.includes('godaddy')) throw new Error(`a repository the vault already tracks was offered up: ${warning}`);
+
+      const button = ignoreButton(GIT_VAULT);
+      if (!button) throw new Error('the warning came with no way to act on it');
+      button.run();
+      const asked = sent.find((one) => one.command === 'ignoreVaultRepos');
+      if (!asked) throw new Error(`the press sent nothing: ${JSON.stringify(sent)}`);
+      if (asked.id !== GIT_VAULT.id) throw new Error(`the press named the wrong vault: ${JSON.stringify(asked)}`);
+      // The host decided which, so the page sends back exactly what it was handed.
+      if (JSON.stringify(asked.paths) !== JSON.stringify(['leaftext/app'])) {
+        throw new Error(`the press asked for the wrong paths: ${JSON.stringify(asked)}`);
+      }
+
+      // The owner's own vault: everything found is already tracked or already ignored, so the note stands alone.
+      booted.leafSetVaultGit(
+        gitState(PLAIN_VAULT, { nested: ['godaddy'], tracked: ['godaddy'], unhandled: [] }),
+      );
+      if (ignoreButton(PLAIN_VAULT)) throw new Error('a vault with nothing to ignore was offered the button anyway');
+      if (panelNotes(PLAIN_VAULT).some((note) => note.includes('swallow'))) {
+        throw new Error('a vault with nothing to ignore was warned anyway');
+      }
+    } finally {
+      booted.window.ipc = watching;
+    }
+  });
+
+  check('an ignore that landed says so in the reader’s own words', () => {
+    // The host answers with a tag; a tag on screen is the panel saying "ignored" at somebody reading it.
+    const settled = { nested: ['leaftext/app'], tracked: ['leaftext/app'], unhandled: [] };
+    booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, settled), { message: 'ignored' }));
+    const notes = panelNotes(GIT_VAULT);
+    if (notes.some((note) => note === 'ignored')) {
+      throw new Error('the panel put the host’s tag on screen rather than a sentence');
+    }
+    if (!notes.some((note) => note.includes('.gitignore'))) {
+      throw new Error(`nothing said where the lines went: ${JSON.stringify(notes)}`);
+    }
+  });
+
   check('the home vault switcher keeps the regular marks and leaves room before its name', () => {
     const css = readingCss();
     const switcher = (css.split('\n.library-vault-switch {\n')[1] || '').split('}')[0];

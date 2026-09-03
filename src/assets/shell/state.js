@@ -242,3 +242,5 @@ function holdShellWidth(width) {
 function releaseShellWidth() {
   settledShellWidth = null;
 }
+// Whether the pane is following the open document rather than the folder it sits in. Set when a document opens, cleared by the outline's own back row -- the one way back to the files. Shared because the pane sets it and the outline clears it, from two fragments.
+let libraryOutlineOpen = false;

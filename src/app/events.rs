@@ -372,6 +372,9 @@ pub(crate) enum IpcCommand {
     LinkVaultRemote { id: i64, url: String },
     #[serde(rename = "syncVault")]
     SyncVault { id: i64 },
+    /// Put the repositories inside this vault that nothing is holding back into its own `.gitignore`, with the reason beside them. Which ones came from the panel's own read, so nothing here is decided by the page.
+    #[serde(rename = "ignoreVaultRepos")]
+    IgnoreVaultRepos { id: i64, paths: Vec<String> },
     /// Set `user.name` and `user.email` for this machine, from the panel that said git does not know who you are. The id names the panel to redraw, not whose settings are written — the note is read machine-wide, so the write has to be.
     #[serde(rename = "setGitIdentity")]
     SetGitIdentity {

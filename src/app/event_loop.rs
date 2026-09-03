@@ -1078,6 +1078,9 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 IpcCommand::SyncVault { id } => {
                     sync_vault(&vault_state, &proxy, reader.page(), id);
                 }
+                IpcCommand::IgnoreVaultRepos { id, paths } => {
+                    ignore_vault_repos(&vault_state, &proxy, reader.page(), id, paths);
+                }
                 IpcCommand::SetGitIdentity { id, name, email } => {
                     set_vault_git_identity(&vault_state, &proxy, reader.page(), id, name, email);
                 }

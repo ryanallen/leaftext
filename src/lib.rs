@@ -70,7 +70,7 @@ mod git;
 pub use git::{
     clone_into_vault, create_repo_on_github, failure_message, git_tooling, init_vault_repo,
     inspect_vault_repo, link_vault_remote, repo_name_for_vault, set_git_identity, sync_vault_repo,
-    GitError, GitTooling, SyncReport, VaultRepo,
+    write_gitignore, GitError, GitTooling, NestedScan, SyncReport, VaultRepo,
 };
 mod query;
 pub use query::{
@@ -173,6 +173,8 @@ pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     "assets/shell/settings.js",
     "assets/shell/speed-reader.js",
     "assets/shell/library.js",
+    // The pane's other list: the open document's headings. After the pane it draws into, and after every element and helper it reaches for.
+    "assets/shell/library-outline.js",
     "assets/shell/graph.js",
     "assets/shell/graph-scene.js",
     "assets/shell/library-search.js",

@@ -398,7 +398,11 @@ A tracked repository inside the vault is left to itself: work still uncommitted 
 
 ### Repositories inside repositories
 
-A vault whose folder already holds a repository somewhere below it — a project vault with the code in `app/` — has that named in the panel. Creating a repository at the vault root adds those nested ones to a new `.gitignore`, with the reason written beside them: each has its own remote, and tracking one from outside records a pointer nobody else can resolve.
+A vault whose folder already holds a repository somewhere below it — a project vault with the code in `app/` — has that named in the panel, whether or not the vault is a repository itself. Creating a repository at the vault root adds those nested ones to a new `.gitignore`, with the reason written beside them: each has its own remote, and tracking one from outside records a pointer nobody else can resolve.
+
+A vault that already **is** a repository gets the same warning and one press to act on it. Where one of the repositories inside it is neither tracked by the vault nor already named in the vault's own `.gitignore` — a project you cloned in yesterday — the panel says the next sync would swallow it as a pointer nobody else can resolve, and **Ignore them** writes those folders into the `.gitignore` with the same reason beside them. Pressing it a second time adds nothing, because a path the file already names is skipped.
+
+The offer names only the ones nothing is holding back. A repository the vault already tracks is left exactly as it is: it is named in the panel, kept out of the offer — an ignore line for a tracked path does nothing — and its moved commit is still committed and pushed the way [syncing](#syncing) describes.
 
 A vault sitting *inside* someone else's repository is told so too. Creating a repository there is legal and common, but it should not be a surprise afterwards.
 

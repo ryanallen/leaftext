@@ -46,13 +46,33 @@ fn reading_a_vaults_git_state_is_itself_a_change_the_watcher_would_report() {
     };
     let before = modified();
     // Exactly what a filesystem event under an active vault must not run.
-    inspect_vault_repo(&dir);
+    read_vault_status(&dir);
     assert!(
         modified() > before,
         "reading a vault's git state modifies its own .git folder, so a recursive watch reports it straight back"
     );
 
     make_writable(&dir);
+    fs::remove_dir_all(&dir).expect("fixture directory is removed");
+}
+
+#[test]
+fn the_per_save_status_read_never_walks_the_folder() {
+    // What the folder holds is the panel's question. A save happens every few seconds, and this read is the cheap one on purpose.
+    let dir = std::env::temp_dir().join(format!("leaf-status-no-walk-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.join("inner").join(".git")).expect("an inner repository is created");
+
+    assert!(
+        read_vault_status(&dir).nested.is_empty(),
+        "the per-save read walked the folder and found the repository inside it"
+    );
+    // The same folder, read the way the panel reads it, does find it — so the empty answer above is the choice rather than a walk that cannot see.
+    assert_eq!(
+        inspect_vault_repo(&dir, NestedScan::Walk).nested,
+        vec![String::from("inner")]
+    );
+
     fs::remove_dir_all(&dir).expect("fixture directory is removed");
 }
 

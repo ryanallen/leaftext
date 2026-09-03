@@ -2,10 +2,12 @@
 
 use crate::git::{
     commit_message, count_changes, failure_cause, gitignore_addition, identity_value,
-    parse_ahead_behind, remote_label, repo_folder_name_for_url,
+    nested_repos_scanned, parse_ahead_behind, remote_label, repo_folder_name_for_url,
+    tracked_nested, unhandled_nested,
 };
 use crate::repo_name_for_vault;
 use crate::tests::scratch_dir;
+use crate::NestedScan;
 use std::path::Path;
 use std::process::Command;
 
@@ -49,6 +51,24 @@ fn ahead_and_behind_come_out_of_the_pair_git_prints() {
 }
 
 #[test]
+fn the_walk_finds_a_repository_inside_the_folder_and_stops_there() {
+    // A bare `.git` directory is the whole of what the walk looks for, so nothing here spawns git.
+    let vault = scratch_dir("git-nested-walk");
+    let inner = vault.join("notes").join("inner");
+    std::fs::create_dir_all(inner.join(".git")).expect("the inner repository is created");
+    std::fs::create_dir_all(inner.join("deeper").join(".git"))
+        .expect("a repository inside that one is created");
+
+    let found = nested_repos_scanned(&vault, NestedScan::Walk);
+    // Relative to the vault, and the one below it is that repository's business rather than the vault's.
+    assert_eq!(found, vec![String::from("notes/inner")]);
+    // Told not to walk, it answers nothing rather than answering what the folder holds.
+    assert!(nested_repos_scanned(&vault, NestedScan::Skip).is_empty());
+
+    let _ = std::fs::remove_dir_all(&vault);
+}
+
+#[test]
 fn a_change_count_is_the_lines_of_porcelain() {
     let status = " M docs/README.md\n?? notes/new.md\n D old.md\n";
     assert_eq!(count_changes(status), 3);
@@ -71,13 +91,62 @@ fn inner_repository_work_is_left_out_but_its_moved_commit_is_counted() {
     run_git(&outer, &["commit", "-m", "Track inner repository"]);
 
     std::fs::write(inner.join("note.md"), "changed\n").expect("inner note is changed");
-    assert_eq!(crate::inspect_vault_repo(&outer).changed, 0);
+    assert_eq!(
+        crate::inspect_vault_repo(&outer, NestedScan::Skip).changed,
+        0
+    );
 
     run_git(&inner, &["add", "note.md"]);
     run_git(&inner, &["commit", "-m", "Change inner note"]);
-    assert_eq!(crate::inspect_vault_repo(&outer).changed, 1);
+    assert_eq!(
+        crate::inspect_vault_repo(&outer, NestedScan::Skip).changed,
+        1
+    );
 
     let _ = std::fs::remove_dir_all(&outer);
+}
+
+/// The whole of what was wrong: the walk ran only on the arm where the vault was not a repository yet, so a vault that was its own repository always answered that it held none.
+#[test]
+fn a_vault_that_is_its_own_repository_is_told_what_it_holds() {
+    let vault = scratch_dir("git-root-vault-holds");
+    init_test_repo(&vault);
+
+    // One the vault swallowed as a pointer, one the owner ignored by hand, and one nothing is holding back.
+    let swallowed = vault.join("godaddy");
+    std::fs::create_dir(&swallowed).expect("the swallowed repository's folder is created");
+    init_test_repo(&swallowed);
+    std::fs::write(swallowed.join("note.md"), "first\n").expect("its note is written");
+    run_git(&swallowed, &["add", "note.md"]);
+    run_git(&swallowed, &["commit", "-m", "First note"]);
+    run_git(&vault, &["add", "godaddy"]);
+    run_git(&vault, &["commit", "-m", "Track godaddy"]);
+
+    let ignored = vault.join("dharma").join("emptyguru");
+    std::fs::create_dir_all(ignored.join(".git")).expect("the ignored repository is created");
+    std::fs::write(vault.join(".gitignore"), "dharma/emptyguru/\n")
+        .expect("the hand-written ignore line is written");
+
+    let loose = vault.join("leaftext").join("app");
+    std::fs::create_dir_all(loose.join(".git")).expect("the loose repository is created");
+
+    let repo = crate::inspect_vault_repo(&vault, NestedScan::Walk);
+    assert!(repo.at_root);
+    // All three are named to the reader, whichever of the three states they are in.
+    assert_eq!(
+        repo.nested,
+        vec![
+            String::from("dharma/emptyguru"),
+            String::from("godaddy"),
+            String::from("leaftext/app"),
+        ]
+    );
+    // The pointer is named and left alone: an ignore line for a tracked path does nothing.
+    assert_eq!(repo.tracked, vec![String::from("godaddy")]);
+    // The offer is about the one nothing is holding back, and about nothing else.
+    assert_eq!(repo.unhandled, vec![String::from("leaftext/app")]);
+
+    let _ = std::fs::remove_dir_all(&vault);
 }
 
 #[test]
@@ -118,7 +187,10 @@ fn ordinary_work_still_commits_during_sync() {
     std::fs::write(repo.join("note.md"), "changed\n").expect("note is changed");
     let report = crate::sync_vault_repo(&repo).expect("ordinary work syncs");
     assert_eq!(report.committed, 1);
-    assert_eq!(crate::inspect_vault_repo(&repo).changed, 0);
+    assert_eq!(
+        crate::inspect_vault_repo(&repo, NestedScan::Skip).changed,
+        0
+    );
 
     let _ = std::fs::remove_dir_all(&repo);
     let _ = std::fs::remove_dir_all(&remote);
@@ -134,7 +206,10 @@ fn an_unborn_repository_still_makes_its_first_commit_during_sync() {
     let report = crate::sync_vault_repo(&repo).expect("the first work syncs");
     assert_eq!(report.committed, 1);
     assert!(report.pushed);
-    assert_eq!(crate::inspect_vault_repo(&repo).changed, 0);
+    assert_eq!(
+        crate::inspect_vault_repo(&repo, NestedScan::Skip).changed,
+        0
+    );
 
     let _ = std::fs::remove_dir_all(&repo);
     let _ = std::fs::remove_dir_all(&remote);
@@ -219,6 +294,69 @@ fn nested_repositories_are_ignored_once_and_the_reason_goes_with_them() {
     // Nothing to add is nothing written, not a stray comment block.
     assert_eq!(gitignore_addition("app/\nsite/theme\n", &nested), "");
     assert_eq!(gitignore_addition("", &[]), "");
+}
+
+#[test]
+fn the_index_says_which_repositories_inside_the_vault_it_already_holds() {
+    let nested = vec![
+        "godaddy".to_string(),
+        "dharma/emptyguru".to_string(),
+        "leaftext/app".to_string(),
+    ];
+    // A pointer the vault swallowed, and a repository whose files it listed one by one. Both mean the same thing to the offer: an ignore line for either does nothing.
+    let listing = concat!(
+        "160000 9f1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	godaddy
+",
+        "100644 aa1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	dharma/emptyguru/README.md
+",
+        "100644 bb1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	dharma/emptyguru/site/index.html
+",
+    );
+    assert_eq!(
+        tracked_nested(listing, &nested),
+        vec!["godaddy".to_string(), "dharma/emptyguru".to_string()]
+    );
+    // Nothing listed is nothing tracked, and a lookalike sibling is not the folder.
+    assert!(tracked_nested("", &nested).is_empty());
+    assert!(tracked_nested(
+        "100644 cc 0	godaddy-old/note.md
+",
+        &nested
+    )
+    .is_empty());
+
+    // What is left over is what the offer is about: not in the index, and not already named by the file the offer writes into.
+    let tracked = tracked_nested(listing, &nested);
+    assert_eq!(
+        unhandled_nested(&nested, &tracked, ""),
+        vec!["leaftext/app".to_string()]
+    );
+    // The owner's own vault: everything is either tracked or ignored by hand, so there is nothing to offer.
+    assert!(unhandled_nested(
+        &nested,
+        &tracked,
+        "leaftext/app/
+"
+    )
+    .is_empty());
+}
+
+#[test]
+fn ignoring_the_same_repositories_twice_writes_the_reason_once() {
+    let vault = scratch_dir("git-ignore-twice");
+    let nested = vec!["godaddy".to_string(), "dharma/emptyguru".to_string()];
+
+    crate::write_gitignore(&vault, &nested).expect("the ignore lines are written");
+    let once = std::fs::read_to_string(vault.join(".gitignore")).expect("the file is there");
+    // Pressed again with the same paths, which is what a reader who cannot see the file will do.
+    crate::write_gitignore(&vault, &nested).expect("the second press writes nothing");
+    let twice = std::fs::read_to_string(vault.join(".gitignore")).expect("the file is still there");
+
+    assert_eq!(once, twice);
+    assert_eq!(twice.matches("own remotes").count(), 1);
+    assert_eq!(twice.matches("godaddy/").count(), 1);
+
+    let _ = std::fs::remove_dir_all(&vault);
 }
 
 /// The folder a clone lands in comes from the address, and only ever as a plain name: the parent is the folder the user picked, and a name is the one thing that cannot reach outside it.

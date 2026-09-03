@@ -70,7 +70,7 @@ fn off_thread<F>(
             id,
             repo_name_for_vault(&name),
             git_tooling(),
-            inspect_vault_repo(&root),
+            inspect_vault_repo(&root, NestedScan::Walk),
         );
         next.message = message;
         next.error = error;
@@ -144,10 +144,15 @@ pub(crate) fn status_read_after_delivery(state: &mut VaultState, id: i64) -> Opt
     status_read_to_start(state, id)
 }
 
+/// The per-save reading, which walks nothing: what the folder holds is the panel's question, and a three-deep directory walk on every save is what this read is cheap in order to avoid.
+pub(crate) fn read_vault_status(root: &Path) -> VaultRepo {
+    inspect_vault_repo(root, NestedScan::Skip)
+}
+
 /// Walk the folder on a worker and post what git says back to the loop.
 fn read_vault_status_off_loop(proxy: &EventLoopProxy<UserEvent>, id: i64, root: PathBuf) {
     off_loop(proxy, move || {
-        let repo = inspect_vault_repo(&root);
+        let repo = read_vault_status(&root);
         UserEvent::VaultStatusReady {
             id,
             json: serde_json::to_string(&repo).unwrap_or_else(|_| "null".to_string()),
@@ -193,7 +198,7 @@ pub(crate) fn create_vault_repo(
     id: i64,
 ) {
     off_thread(state, proxy, webview, id, |root, name| {
-        let existing = inspect_vault_repo(root);
+        let existing = inspect_vault_repo(root, NestedScan::Walk);
         if !existing.at_root {
             if let Err(error) = init_vault_repo(root, &existing.nested) {
                 return (Some(failure_message(&error)), true);
@@ -218,7 +223,7 @@ pub(crate) fn link_vault_repo(
     url: String,
 ) {
     off_thread(state, proxy, webview, id, move |root, _name| {
-        let existing = inspect_vault_repo(root);
+        let existing = inspect_vault_repo(root, NestedScan::Walk);
         if !existing.at_root {
             if let Err(error) = init_vault_repo(root, &existing.nested) {
                 return (Some(failure_message(&error)), true);
@@ -226,6 +231,27 @@ pub(crate) fn link_vault_repo(
         }
         match link_vault_remote(root, &url) {
             Ok(()) => (Some(String::from("linked")), false),
+            Err(error) => (Some(failure_message(&error)), true),
+        }
+    });
+}
+
+/// Put the repositories nothing is holding back into the vault's own `.gitignore`, through the same helper and with the same reason `init_vault_repo` writes when it makes a repository. Rides the panel's helper like the rest, so the panel is read back afterwards and the warning going is the proof it landed.
+///
+/// A path the file already names is skipped by the helper, so a second press writes nothing rather than a second copy of the block.
+pub(crate) fn ignore_vault_repos(
+    state: &VaultState,
+    proxy: &EventLoopProxy<UserEvent>,
+    webview: Option<&WebView>,
+    id: i64,
+    paths: Vec<String>,
+) {
+    off_thread(state, proxy, webview, id, move |root, _name| {
+        if paths.is_empty() {
+            return (None, false);
+        }
+        match write_gitignore(root, &paths) {
+            Ok(()) => (Some(String::from("ignored")), false),
             Err(error) => (Some(failure_message(&error)), true),
         }
     });
