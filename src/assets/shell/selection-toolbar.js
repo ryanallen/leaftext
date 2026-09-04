@@ -54,8 +54,6 @@ let selectionToolbarButtons = new Map();
 // The block the current selection lives in, and the range itself — held because the link box takes the focus, and a selection nobody remembers is one the URL has nothing to attach to.
 let selectionToolbarBlock = null;
 let selectionToolbarRange = null;
-// The place a click landed on with nothing selected, which is where a note's marker goes. Held while it stands, because the bar shows only Annotate then and there is no selection for the press to read back.
-let selectionToolbarPoint = null;
 
 // True while the link box is open, so the block underneath is allowed to keep its pending edits: committing it there would re-render the page out from under the selection the URL is for.
 function selectionToolbarHoldsFocus(node) {
@@ -65,7 +63,6 @@ function selectionToolbarHoldsFocus(node) {
 function hideSelectionToolbar() {
   selectionToolbarBlock = null;
   selectionToolbarRange = null;
-  selectionToolbarPoint = null;
   if (!selectionToolbar) return;
   selectionToolbar.hidden = true;
   closeSelectionInputBox();
@@ -132,7 +129,6 @@ function syncSelectionToolbar() {
   }
   selectionToolbarBlock = block;
   selectionToolbarRange = range.cloneRange();
-  selectionToolbarPoint = null;
   markSelectionToolbarState();
   selectionToolbar.hidden = false;
   positionSelectionToolbar(range);
@@ -142,19 +138,14 @@ function syncSelectionToolbar() {
 function markSelectionToolbarState() {
   const kind = selectionToolbarBlock.dataset.blockKind;
   const editing = readerEditingAllowed();
-  // A click on a place rather than a passage: there is nothing to copy and nothing to mark up, so Annotate stands there on its own.
-  const atPoint = !!selectionToolbarPoint;
-  const blockable = editing && !atPoint && BLOCK_FORMAT_KINDS.has(kind);
+  const blockable = editing && BLOCK_FORMAT_KINDS.has(kind);
   const level = kind === 'heading' ? blockHeadingLevel(selectionToolbarBlock) : 0;
   for (const [id, button] of selectionToolbarButtons) {
-    if (READING_FORMATS.some((item) => item.id === id)) {
-      button.hidden = atPoint && id !== 'annotate';
-      continue;
-    }
+    if (READING_FORMATS.some((item) => item.id === id)) continue;
     const format = INLINE_FORMATS.find((item) => item.id === id);
     if (format) {
-      button.hidden = !editing || atPoint;
-      button.classList.toggle('is-active', editing && !atPoint && selectionFormatActive(format));
+      button.hidden = !editing;
+      button.classList.toggle('is-active', editing && selectionFormatActive(format));
       continue;
     }
     button.hidden = !blockable;
@@ -394,13 +385,12 @@ function blockTextOffsetOf(block, node) {
   return before.cloneContents().textContent.length;
 }
 
-// The marker this press is on, or null. A marker sits just after the words it belongs to, so re-selecting that passage ends exactly where the marker begins — that boundary is being on it, and so is a caret anywhere in the marker itself. Nothing looser: a selection of the whole paragraph is a note about the paragraph, not a press on a marker inside it.
+// The marker this press is on, or null. A marker sits just after the words it belongs to, so re-selecting that passage ends exactly where the marker begins — that boundary is being on it. Nothing looser: a selection of the whole paragraph is a note about the paragraph, not a press on a marker inside it.
 function footnoteReferenceAt(block, span) {
   const marks = [...block.querySelectorAll('sup.footnote-reference')];
   for (const mark of marks) {
     const at = blockTextOffsetOf(block, mark);
     if (span.end === at) return mark;
-    if (span.start === span.end && span.start >= at && span.start <= at + mark.textContent.length) return mark;
   }
   return null;
 }
@@ -420,49 +410,11 @@ function insertIntoCloneAt(clone, offset, node) {
   return true;
 }
 
-// Where a note's marker lands and what the bar is pointing at, for a press with nothing selected. A click answers a place in the text through `caretRangeFromPoint`, which is the standard question and the one that does not rest on how a collapsed selection behaves in text nobody can type in.
-function caretRangeAtPoint(x, y) {
-  if (typeof document.caretRangeFromPoint === 'function') {
-    return document.caretRangeFromPoint(x, y) || null;
-  }
-  // The same question under the name the other engine ships it as, so the feature does not rest on which one is under the window.
-  if (typeof document.caretPositionFromPoint === 'function') {
-    const at = document.caretPositionFromPoint(x, y);
-    if (!at || !at.offsetNode) return null;
-    const range = document.createRange();
-    range.setStart(at.offsetNode, at.offset);
-    range.setEnd(at.offsetNode, at.offset);
-    return range;
-  }
-  return null;
-}
-
-// A click in the document with nothing selected: Annotate on its own, over the place that was pressed. Locked only — unlocked, that click is opening the block for typing, and a lone button standing over the caret would be in the way of it.
-function offerAnnotateAtPoint(event) {
-  if (!selectionToolbar || readerEditingAllowed()) return;
-  if (currentDocumentFormat !== 'markdown') return;
-  if (selectionToolbarInputOpen() || selectionToolbarHoldsFocus(event.target)) return;
-  const selection = window.getSelection();
-  if (selection && selection.rangeCount && !selection.getRangeAt(0).collapsed && String(selection).trim()) return;
-  const caret = caretRangeAtPoint(event.clientX, event.clientY);
-  const block = caret && selectionEditableBlock(caret.startContainer);
-  if (!block) {
-    hideSelectionToolbar();
-    return;
-  }
-  selectionToolbarBlock = block;
-  selectionToolbarRange = null;
-  selectionToolbarPoint = caret;
-  markSelectionToolbarState();
-  selectionToolbar.hidden = false;
-  positionSelectionToolbar(caret);
-}
-
-// Both ends of the press as character offsets in the block: the caret point where the press was a click on a place, the remembered selection otherwise.
+// Both ends of the highlighted passage as character offsets in the block.
 //
 // The bar's own remembered range, never the live selection. The note box takes the focus and the selection goes with it, so by the time Enter lands there is nothing left in the document to read back — which is the same reason the bar holds a copy of the range at all, and why the link box puts it back before it writes.
 function selectionToolbarSpan(block) {
-  const range = selectionToolbarPoint || selectionToolbarRange;
+  const range = selectionToolbarRange;
   if (!range || !block.contains(range.startContainer) || !block.contains(range.endContainer)) return null;
   const upTo = (container, offset) => {
     const before = document.createRange();
@@ -689,7 +641,6 @@ function bindSelectionToolbar() {
   selectionToolbarButtons = new Map();
   selectionToolbarBlock = null;
   selectionToolbarRange = null;
-  selectionToolbarPoint = null;
   const layout = app.querySelector('.reader-layout');
   if (!layout) return;
   if (currentDocumentFormat !== 'markdown') return;
@@ -750,10 +701,6 @@ function bindSelectionToolbar() {
 document.addEventListener('selectionchange', () => {
   if (!selectionToolbar) return;
   syncSelectionToolbar();
-});
-// A click on a place rather than a passage. Listened for on the way back up, so a click that highlighted something has already been through selectionchange and put the bar on those words instead.
-document.addEventListener('click', (event) => {
-  offerAnnotateAtPoint(event);
 });
 // Bold, italic and a link where the hands already are. The browser would do the first two on its own inside a contenteditable, but not through the normalizing the serializer needs, and not with the bar keeping up.
 window.addEventListener('keydown', (event) => {

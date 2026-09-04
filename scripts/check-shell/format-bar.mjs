@@ -357,7 +357,7 @@ export function run() {
         booted.ipc = wasIpc;
         booted.openWysiwygBlock = wasOpen;
         vm.runInContext('readingUnlocked = ' + (wasUnlocked ? 'true' : 'false') + '; currentDocumentFormat = ' + JSON.stringify(wasFormat) + ';', booted);
-        vm.runInContext('selectionToolbar = null; selectionToolbarRow = null; selectionToolbarLinkInput = null; selectionToolbarButtons = new Map(); selectionToolbarBlock = null; selectionToolbarRange = null; selectionToolbarPoint = null;', booted);
+        vm.runInContext('selectionToolbar = null; selectionToolbarRow = null; selectionToolbarLinkInput = null; selectionToolbarButtons = new Map(); selectionToolbarBlock = null; selectionToolbarRange = null;', booted);
         booted.window.leafBlocksResynced({ source: '' });
       },
     };
@@ -505,7 +505,7 @@ export function run() {
     }
   });
 
-  check('a click with nothing selected offers the note alone, at the place that was pressed', () => {
+  check('a click with nothing selected leaves the bar away', () => {
     const source = 'A passage worth a note.\n';
     const readingApp = booted.document.getElementById('app');
     const { body, block } = lockedBlock('point', 'A passage worth a note.', source, 1);
@@ -516,7 +516,7 @@ export function run() {
     try {
       booted.window.leafBlocksResynced({ source });
       booted.bindSelectionToolbar();
-      // Nothing selected, and the place under the pointer answered the standard way.
+      // Nothing selected, and the place under the pointer answerable the standard way — so a bar that came up came up from the click alone.
       booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
       const asked = [];
       booted.document.caretRangeFromPoint = (x, y) => {
@@ -526,20 +526,10 @@ export function run() {
       const buttons = vm.runInContext('selectionToolbarButtons', booted);
       for (const handler of [...(booted.document.listeners.get('click') || [])]) handler({ target: block, clientX: 120, clientY: 300 });
       const bar = vm.runInContext('selectionToolbar', booted);
-      if (bar.hidden) throw new Error('a click on a place left the bar away');
-      const showing = [...buttons].filter(([, button]) => !button.hidden).map(([id]) => id);
-      if (showing.join(',') !== 'annotate') throw new Error('a click on a place offered ' + JSON.stringify(showing));
-      if (!asked.length || asked[0][0] !== 120 || asked[0][1] !== 300) throw new Error('the place under the pointer was asked for as ' + JSON.stringify(asked));
-      // And the marker lands where the click did, not at the end of the block.
-      press(buttons, 'annotate');
-      const input = vm.runInContext('selectionToolbarLinkInput', booted);
-      // The box took the focus, so the place under the pointer is only the caret the bar is holding.
-      booted.document.caretRangeFromPoint = () => null;
-      input.value = 'Here.';
-      for (const handler of [...(input.listeners.get('keydown') || [])]) handler({ key: 'Enter', preventDefault() {} });
-      const edit = posted.find((message) => message.command === 'editBlocks');
-      if (!edit) throw new Error('a note from a click sent ' + JSON.stringify(posted));
-      if (edit.blocks[0].text !== 'A passage[^note-1] worth a note.') throw new Error('the marker landed as ' + JSON.stringify(edit.blocks[0].text));
+      if (!bar.hidden) throw new Error('a click on a place raised the bar, showing ' + JSON.stringify([...buttons].filter(([, button]) => !button.hidden).map(([id]) => id)));
+      // Nothing asked where the pointer was, so no caret is being held to splice at either.
+      if (asked.length) throw new Error('a click still asked for the place under the pointer, as ' + JSON.stringify(asked));
+      if (posted.length) throw new Error('a click sent ' + JSON.stringify(posted));
     } finally {
       held.restore();
       booted.document.caretRangeFromPoint = wasCaret;
