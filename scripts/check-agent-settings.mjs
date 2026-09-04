@@ -47,7 +47,7 @@ function hookProblems(settingsText, hasScript) {
   return found;
 }
 
-// The other direction, which nothing held: a hook is the only code here that runs without anything calling it, so a gate script reached by no hook row is a rule that is simply off — still on disk, still passing its own --check, and inert. Reached means a hook row names it, or a reached gate script imports it: gate-keycode.mjs has no row on purpose — three rowed gates import it and the agent runs it by hand — so a bare no-row rule would fail a tree that is right.
+// The other direction, which nothing held: a hook is the only code here that runs without anything calling it, so a gate script reached by no hook row is a rule that is simply off — still on disk, still passing its own --check, and inert. Reached means a hook row names it, or a reached gate script imports it: a gate whose whole job is read out of another gate has no row of its own, so a bare no-row rule would fail a tree that is right.
 const IMPORTS_GATE = /^import\b[^\n]*?['"][^'"]*?(gate-[A-Za-z0-9._-]+\.mjs)['"]/gm;
 
 function reachProblems(settingsText, sources) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Stop hook. Measures the reply against Rule 1 and refuses to end the turn when it breaks. Printing a rule does not enforce it: this is the check.
 //
-// It enforces the half of Rule 1 that names its own words: the sycophancy openers, the four connectives that walk a bare answer back, the five phrases that hand a filing back to the owner, and this turn's keycodes (gate-keycode.mjs). The rest of Rule 1 is a judgment call and stays a reminder.
+// It enforces the half of Rule 1 that names its own words: the sycophancy openers, the four connectives that walk a bare answer back, and the five phrases that hand a filing back to the owner. The rest of Rule 1 is a judgment call and stays a reminder.
 //
 // Finished work is handed back as the owner's own message repeated word for word, so a block they typed is measured against nothing: a message asking whether something is out of scope would otherwise refuse its own echo.
 //
@@ -25,8 +25,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { clear, heldBy, listPath, pending } from './gate-checklist.mjs';
 import { buildRecord, buildingPath, forget } from './gate-design.mjs';
-import { ALWAYS, close, extend, outstanding, read } from './gate-keycode.mjs';
-import { keep, sessionOf } from './hook-payload.mjs';
+import { closeTurn, keep, openTurn, readTurn, sessionOf, stampTurn } from './hook-payload.mjs';
 import { dirtyPaths } from './plan-tree.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -394,14 +393,14 @@ function selfTest() {
     // The stamp this reads comes off the record, and a sentence typed into a running pass must leave it alone. Written over, the ticket the pass filed a moment ago lands behind its own start and the reply naming it is refused.
     const mid = `gate-voice-mid-${process.pid}`;
     try {
-      extend([ALWAYS], mid, Date.now() - 1000);
-      const began = read(mid)?.startedAt;
+      openTurn(mid, Date.now() - 1000);
+      const began = readTurn(mid)?.startedAt;
       writeFileSync(join(tree, 'refactor', 'workflow', 'filed-this-turn.md'), 'a plan\n');
-      extend([ALWAYS], mid);
-      if (read(mid)?.startedAt !== began) fails.push('filedSince: a bare sentence mid-turn moved the stamp its filings are measured against');
-      if (!filedSince(read(mid)?.startedAt, tree)) fails.push('filedSince: a bare sentence mid-turn hid a plan file the pass had already filed');
+      stampTurn(mid);
+      if (readTurn(mid)?.startedAt !== began) fails.push('filedSince: a bare sentence mid-turn moved the stamp its filings are measured against');
+      if (!filedSince(readTurn(mid)?.startedAt, tree)) fails.push('filedSince: a bare sentence mid-turn hid a plan file the pass had already filed');
     } finally {
-      close(mid);
+      closeTurn(mid);
     }
   } catch (error) {
     fails.push(`filedSince: ${error.message}`);
@@ -438,7 +437,7 @@ function selfTest() {
   if (offenses(['/git-release one.md and two.md', '/done one.md and two.md'], true, sent).length) fails.push('typedPrompt: a two-command message came back refused for being two blocks');
   // The argument alone is still part of the message and nothing else, so it is refused for being cut rather than passed for being inside it.
   if (offenses(['one.md and two.md'], true, sent).length !== 1) fails.push('typedPrompt: the argument alone should be refused as part of the message');
-  // The hold spells the hand-back out. A turn gets one block, so a turn held for a keycode or a step has already spent it, and the reply after that one is written with no rule left to catch a message that came back missing the skill call at the front of it.
+  // The hold spells the hand-back out. A turn gets one block, so a turn held for a step has already spent it, and the reply after that one is written with no rule left to catch a message that came back missing the skill call at the front of it.
   if (!handBack(sent).includes(sent)) fails.push('handBack: the hold did not carry the whole message');
   if (!handBack(sent).includes('/git-release')) fails.push('handBack: the hold dropped the skill call');
   if (handBack('does it work on mac')) fails.push('handBack: a question was told to echo itself');
@@ -515,7 +514,7 @@ function selfTest() {
     rmSync(namedPath, { force: true });
   }
 
-  // A finished hand-back can still owe a keycode. The hold names that debt and does not ask the owner to read the hand-back twice.
+  // A finished hand-back can still be held — here for a step nobody struck. The hold names what is left and does not ask the owner to read the hand-back twice.
   const delivered = `${mine}-delivered`;
   const deliveredPath = join(tmpdir(), `${delivered}.jsonl`);
   writeFileSync(deliveredPath, [
@@ -523,17 +522,18 @@ function selfTest() {
     JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: '/pm rank them' }] } }),
   ].join('\n') + '\n');
   try {
-    extend([ALWAYS], delivered);
+    writeFileSync(listPath(delivered), '- 1. Read the running order\n');
     const held = JSON.parse(execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
       input: JSON.stringify({ stop_hook_active: false, transcript_path: deliveredPath, session_id: delivered }),
       encoding: 'utf8',
     }) || '{}');
-    if (!held.reason?.includes('Not read yet')) fails.push('entry point: a delivered hand-back was not held for its keycode');
+    if (!held.reason?.includes('1. Read the running order')) fails.push('entry point: a delivered hand-back was not held for its un-struck step');
     if (/The reply that ends this turn/.test(held.reason || '')) fails.push('entry point: a delivered hand-back was demanded a second time');
   } catch (error) {
     fails.push(`entry point delivered: ${error.message}`);
   } finally {
-    close(delivered);
+    closeTurn(delivered);
+    clear(delivered);
     rmSync(deliveredPath, { force: true });
   }
 
@@ -621,12 +621,12 @@ function selfTest() {
     writeFileSync(listPath(mine), '- ~~1. Tests first~~ — N/A; a hook with its own self-test\n');
     if (stop().trim() !== '') fails.push('checklist: a fully struck list still held the turn');
     writeFileSync(listPath(mine), '- 1. Tests first\n');
-    extend([ALWAYS], mine);
+    openTurn(mine);
     if (stop({ stop_hook_active: true }).trim() !== '') fails.push('checklist: held again while a stop hook was already running');
     // That second Stop is the end of the turn, so its list goes with it. Nothing else sweeps one now that a message naming no skill leaves the standing list alone.
     if (existsSync(listPath(mine))) fails.push('checklist: a turn ending on the already-held path left its list behind');
-    // And its keycode record with it, or the next message reads a turn that is over as one still running and folds into its dead stamp.
-    if (read(mine)) fails.push('keycode: a turn ending on the already-held path left its record behind');
+    // And its stamp with it, or the next message reads a turn that is over as one still running and folds into its dead stamp.
+    if (readTurn(mine)) fails.push('stamp: a turn ending on the already-held path left its stamp behind');
 
     // The build record through the real entry point: the wiring, not only the reading. The reading does not open the ticket — every count it needs is in the samples — so the path here only has to name one.
     const ticket = join(tmpdir(), `gate-voice-ticket-${process.pid}.md`);
@@ -668,7 +668,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-voice: ok (${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, unfinished holds carrying the message the hand-back owes, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half — keycodes)`);
+  console.log(`gate-voice: ok (${SYCOPHANCY.length} opener patterns, the walk-back, ${FILING.length} filing phrases, the owner's own message measured against nothing, unfinished holds carrying the message the hand-back owes, code moving without its ticket, a build whose boxes did not go in one at a time — every rise one box and no two rises touching, read edit by edit so a phase boundary is no place to cross either half)`);
 }
 
 // Only act when run directly: anything importing this for a function would otherwise read a stream nobody is writing, and the importer hangs with no message.
@@ -683,11 +683,11 @@ if (!args) {
   if (!input) process.exit(0);
   const { raw, payload, session } = input;
   keep('Stop', raw);
-  // Already blocked once this turn. Blocking again is how a stop hook spins. The host allows one hold a turn, so this is the end of the turn whatever the steps still say, and both of this session's records go here the way they go on the path a turn that stands takes: the list because nothing else sweeps it now that a message naming no skill leaves it alone, and the keycode record because a record left standing reads as a turn still running — the next message would fold into this dead turn instead of stamping its own.
+  // Already blocked once this turn. Blocking again is how a stop hook spins. The host allows one hold a turn, so this is the end of the turn whatever the steps still say, and both of this session's records go here the way they go on the path a turn that stands takes: the list because nothing else sweeps it now that a message naming no skill leaves it alone, and the turn stamp because one left standing reads as a turn still running — the next message would fold into this dead turn instead of stamping its own.
   if (payload.stop_hook_active) {
     const ended = sessionOf(raw);
     clear(ended);
-    close(ended);
+    closeTurn(ended);
     process.exit(0);
   }
   let blocks = [];
@@ -701,8 +701,8 @@ if (!args) {
     clear(session);
     process.exit(0);
   }
-  // This session's record, not the other agent's: it owes its own codes and holds its own turn.
-  const record = read(session);
+  // This session's stamp, not the other agent's: each turn is measured against its own start.
+  const record = readTurn(session);
   const filed = filedSince(record?.startedAt);
   const found = offenses(blocks, filed, echo);
   // The boxes did not go in one at a time while the code was landing. Held whatever the reply says, because the reply is not where a box is ticked, and read off the run of samples rather than off the ticket — a phase swept at the end leaves a file identical to one filled in as the work finished, so only the order can tell them apart.
@@ -710,15 +710,11 @@ if (!args) {
   const swept = held ? sweptPhase(held) : null;
   // The same fault where no build prompt named a ticket: the code moved and nothing under the plan tree did. This is the whole of what a turn outside a build is still held on.
   const moved = held || filed ? null : movedSince(record?.startedAt);
-  const owed = blocks.length ? outstanding(record) : [];
-  // The turn checklist's other half. One Stop hook holds all three, because a second one would spend the same single block the host allows.
+  // The turn checklist's other half. One Stop hook holds all of them, because a second one would spend the same single block the host allows.
   const left = pending(session);
-  if (found.length || owed.length || left.length || moved || swept) {
+  if (found.length || left.length || moved || swept) {
     const parts = [];
     if (found.length) parts.push(`Rule 1, from CLAUDE.md:\n${found.map((f) => `- ${f}`).join('\n')}`);
-    if (owed.length) {
-      parts.push(`Not read yet — report each keycode with \`node scripts/gate-keycode.mjs <file> <code>\`:\n${owed.map((o) => `- ${o}`).join('\n')}`);
-    }
     if (left.length) parts.push(heldBy(left, session));
     if (moved) {
       parts.push(`${moved} changed and nothing under the plan tree did. Tick the box in the same edit as its code: open the ticket, tick what this turn built, and say on the box what the file now does where it came out different from the plan. A phase whose boxes are still open is one nobody can read the build against.`);
@@ -726,7 +722,7 @@ if (!args) {
     if (swept) {
       parts.push(`${held.ticket}\n"${swept.phase}" — ${swept.fault}, across ${swept.edits} edits this turn. A box goes from empty to ticked in the same edit as the code and test that finish it, and at no other moment, so every rise is one box and no two rises touch. The ticket is where the owner watches a build happen: a box filled in ahead of its work, or once its work has stopped moving, says nothing was happening while it was.`);
     }
-    // Only a reply that broke a rule is written again. A turn held for a step or a keycode says nothing new.
+    // Only a reply that broke a rule is written again. A turn held for a step says nothing new.
     if (found.length) parts.push('Say it again, shorter. No note about this correction — just the answer.');
     const back = handBack(echo);
 
@@ -737,8 +733,8 @@ if (!args) {
     process.stdout.write(JSON.stringify({ decision: 'block', reason: parts.join('\n\n') }));
     process.exit(0);
   }
-  // The turn stands. Forget what it owed rather than leave a file behind.
-  close(session);
+  // The turn stands. Take its stamp down rather than leave a file behind.
+  closeTurn(session);
   clear(session);
   forget(session);
   process.exit(0);

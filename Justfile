@@ -355,12 +355,10 @@ check-identity:
 
 # Self-test the hooks in .claude/settings.json: that a git write is refused without
 # a license, that a reply over Rule 1's ceiling, or opening with praise, is refused,
-# that every keyed file has a keycode of its own, and that a skill's own steps are
-# readable.
+# and that a skill's own steps are readable.
 check-hooks:
     node scripts/gate-git.mjs --check
     node scripts/gate-voice.mjs --check
-    node scripts/gate-keycode.mjs --check
     node scripts/gate-checklist.mjs --check
     node scripts/gate-sample.mjs --check
     node scripts/gate-design.mjs --check

@@ -70,5 +70,3 @@ Say what it costs and what it replaces, and stop. Adding it is the owner's call,
 - `AGENTS.md`, Dependencies — the standing policy.
 - `src/platform.rs` — the native code that exists instead of crates.
 - `docs/02-development/01-architecture.md` — the crate table, with one line on why each is there.
-
-<!-- keycode: LEAF-3B71 -->

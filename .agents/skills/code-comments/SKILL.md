@@ -126,5 +126,3 @@ So, per rewrite: grep every identifier the replacement names and confirm it is r
 - `../../../docs/done/repo/code-comments.md` — the completed 2026-08-01 sweep: 8,789 comment lines over 136 files, one verdict per file, and what it found (twelve dead references to a deleted indexer, four doc comments attached to the wrong item, five dead intra-doc links). Read it before a large pass; it is where the judgment calls are already settled.
 - `AGENTS.md` — Rule 1, and *Rules each paid for in version numbers*.
 - `/check` — the tests-and-verify gate. This pass is about prose, that one about proof.
-
-<!-- keycode: LEAF-A17C -->

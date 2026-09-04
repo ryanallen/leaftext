@@ -78,5 +78,3 @@ The page is handed to the web view as one string with a ~2 MB ceiling; past it t
 - `src/lib.rs` — `APP_SHELL_SCRIPT_PARTS`, the order.
 - `scripts/check-shell/` — the checks, one file per subject; `scripts/check-shell.mjs` beside them runs them in order.
 - `docs/02-development/01-architecture.md` — what each fragment is for.
-
-<!-- keycode: LEAF-16D8 -->

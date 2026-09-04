@@ -351,5 +351,3 @@ That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks ea
 - `../docs/features/editing/highlight-annotate.md` — measured table, phases, a phase 0.
 - `../docs/done/repo/inline-link.md` — short, and shows the shipped note.
 - `../docs/done/app/update-system.md` — how several tickets share a phase order.
-
-<!-- keycode: LEAF-6C9B -->

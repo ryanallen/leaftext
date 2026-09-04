@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // UserPromptSubmit hook. Writes this turn's checklist before the message is read: the numbered steps of the skill the message names with its host's sign, one bullet each, so the order is on disk instead of in a memory that drops whichever step came last.
 //
-// It also holds the two records the rest of the gate reads off a message, because a hook that fires on the prompt is the only place either can be written: the git license, granted only when the message starts with `/git-release` or `$git-release` and read by scripts/gate-git.mjs, which never sees a prompt of its own; and this turn's keycode record, which scripts/gate-voice.mjs holds the turn to.
+// It also holds the two records the rest of the gate reads off a message, because a hook that fires on the prompt is the only place either can be written: the git license, granted only when the message starts with `/git-release` or `$git-release` and read by scripts/gate-git.mjs, which never sees a prompt of its own; and the turn stamp, which scripts/gate-voice.mjs measures a filed ticket and a moved file against.
 //
 // **A bullet is never work.** It is one step of one skill and it dies with the message; work is the ticket's boxes, which outlive the session. A find that turns up while a bullet is being worked belongs in a ticket, not in a bullet.
 //
@@ -10,19 +10,18 @@
 //
 // gate-voice.mjs is the other half: it holds the turn while a bullet is un-struck. Never blocks: any failure exits 0, because a hook that can wedge a session is worse than no hook.
 //
-// The list is one file per session in the OS temp folder, rewritten at the start of every message the way the keycode record is, so it never grows and never reaches a context window.
+// The list is one file per session in the OS temp folder, rewritten at the start of every message the way the turn stamp is, so it never grows and never reaches a context window.
 
 import { execFileSync } from 'node:child_process';
 import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, readSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ALWAYS, close, codeIn, extend, forget, keyedFiles, outstanding, read, recordPath, remember, requiredFor } from './gate-keycode.mjs';
-import { KEEP, LICENSE_DIR, RING, TURN_MS, keep, licensePath, ringLines, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
+import { KEEP, LICENSE_DIR, RING, TURN_MS, closeTurn, keep, licensePath, openTurn, readTurn, ringLines, sessionOf, sessionTag, stampTurn, sweep, turnPath } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Messages that are host commands rather than work. They owe no keycode, but they still revoke the git license — otherwise a `/clear` after a release keeps it.
+// Messages that are host commands rather than work. They start no turn, but they still revoke the git license — otherwise a `/clear` after a release keeps it.
 const META = ['/clear', '/help', '/config', '/cost', '/compact', '/init', '/skills',
   '/agents', '/permissions', '/status', '/release-notes', '/upgrade', '/mcp',
   '/login', '/logout', '/exit', '/quit'];
@@ -65,6 +64,16 @@ export function listPath(session) {
   return join(tmpdir(), tag ? `leaftext-checklist-${tag}.md` : 'leaftext-checklist.md');
 }
 
+/// Every skill the flow invokes. A message names one with its host's sign — a slash in Claude, a dollar in Codex — and this is the one place a skill is named, so a new skill joins the flow here and nowhere else.
+export function skillFiles() {
+  const skills = [
+    'add-dependency', 'add-format', 'check', 'code-comments', 'dev',
+    'design-tokens', 'git-release', 'done', 'pm', 'design', 'shell-fragment',
+    'sync-docs', 'sync-tests', 'ticket',
+  ];
+  return skills.map((name) => `.agents/skills/${name}/SKILL.md`);
+}
+
 /// The numbered step headings a skill writes for itself — `### 1. Tests first`. The skill file stays the only copy, so there is no second list to drift; a skill with no numbered headings has no order worth holding and writes no list.
 export function stepsIn(markdown) {
   const steps = [];
@@ -75,10 +84,10 @@ export function stepsIn(markdown) {
   return steps;
 }
 
-/// The skill this message names with its host's sign, and the steps it writes. The name is matched off the one table of keyed skills, so a skill is named in one place. A message naming two — "/git-release then /done" — takes the one it leads with, which is the one being run now.
+/// The skill this message names with its host's sign, and the steps it writes. The name is matched off the one table of skills above, so a skill is named in one place. A message naming two — "/git-release then /done" — takes the one it leads with, which is the one being run now.
 export function skillFor(prompt, read = (file) => readFileSync(join(root, file), 'utf8')) {
   const named = [];
-  for (const file of keyedFiles()) {
+  for (const file of skillFiles()) {
     const name = file.match(/skills\/(.*?)\//)?.[1];
     const at = name ? prompt.search(new RegExp(`(^|\\s)[$/]${name}(?=\\s|$)`, 'i')) : -1;
     if (at >= 0) named.push({ name, file, at });
@@ -197,28 +206,14 @@ export function heldBy(left, session) {
   ].join('\n');
 }
 
-/// What the turn still has to read, taken from the record the hook just wrote so both ends of the turn use one answer.
-export function keycodeContext(record) {
-  const owed = outstanding(record);
-  if (!owed.length) return '';
+/// The opening note for this message: the checklist the skill it names supplies, and nothing at all where it names none.
+export function additionalContext(found, session) {
+  if (!found) return '';
   return [
-    'Before any work, read and report each keycode with `node scripts/gate-keycode.mjs <file> <code>`:',
-    ...owed.map((file) => `- ${file}`),
+    `This turn's checklist is \`${listPath(session)}\` — the ${found.steps.length} steps of /${found.name}, in its order.`,
+    'Work them in order and strike each one in the same edit as the work it names. A step that does not apply is struck with its reason. The turn cannot end while one is un-struck.',
+    'They are steps, not work: anything found while working one is a ticket.',
   ].join('\n');
-}
-
-/// The opening note for this message. A keycode demand stands on its own when no skill supplied a checklist.
-export function additionalContext(found, keycodes, session) {
-  const lines = [];
-  if (found) {
-    lines.push(
-      `This turn's checklist is \`${listPath(session)}\` — the ${found.steps.length} steps of /${found.name}, in its order.`,
-      'Work them in order and strike each one in the same edit as the work it names. A step that does not apply is struck with its reason. The turn cannot end while one is un-struck.',
-      'They are steps, not work: anything found while working one is a ticket.',
-    );
-  }
-  if (keycodes) lines.push(keycodes);
-  return lines.join('\n');
 }
 
 function selfTest() {
@@ -263,58 +258,39 @@ function selfTest() {
   const afterRing = existsSync(RING) ? readFileSync(RING, 'utf8') : null;
   if (afterRing !== beforeRing) fails.push('ring: an empty payload still wrote a line');
 
-  // The keycode record and the license, through the real entry point. A record still standing is a turn still running, and this is the one place that decision is wired: swapping the fold back to `open` passes every test that reaches the record directly, so it is proved here by firing the hook twice.
+  // The turn stamp and the license, through the real entry point. A stamp still standing is a turn still running, and this is the one place that decision is wired: swapping the fold back to `openTurn` passes every test that reaches the stamp directly, so it is proved here by firing the hook twice.
   const MID = `gate-checklist-record-${process.pid}`;
   const PLAIN = `gate-checklist-plain-${process.pid}`;
-  const READ = `gate-checklist-read-${process.pid}`;
-  const DEV = '.agents/skills/dev/SKILL.md';
   const fire = (prompt, session = MID) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
     input: JSON.stringify({ session_id: session, prompt }),
     encoding: 'utf8',
   });
   try {
     const opening = JSON.parse(fire('/dev the ticket') || '{}').hookSpecificOutput?.additionalContext ?? '';
-    const opened = read(MID);
-    if (!opened?.required?.includes(DEV)) fails.push('hook: a skill-named message did not owe that skill');
-    const demand = keycodeContext(opened);
-    if (!demand.includes(ALWAYS) || !demand.includes(DEV)) fails.push('hook: the opening context did not name every keycode the record owed');
-    if (!opening.includes(ALWAYS) || !opening.includes(DEV)) fails.push('hook: a skill-named message was not told it owed the rule and skill files');
-    const plain = JSON.parse(fire('check the footer wording', PLAIN) || '{}').hookSpecificOutput?.additionalContext ?? '';
-    if (!plain.includes(ALWAYS)) fails.push('hook: a message naming no skill was not told it owed the rule file');
-    if (/checklist/i.test(plain)) fails.push('hook: a message naming no skill invented a checklist');
-    const devCode = codeIn(readFileSync(join(root, DEV), 'utf8'));
-    const ruleCode = codeIn(readFileSync(join(root, ALWAYS), 'utf8'));
-    remember(DEV, devCode, READ);
-    const partlyRead = JSON.parse(fire('/dev the ticket', READ) || '{}').hookSpecificOutput?.additionalContext ?? '';
-    if (partlyRead.includes(`${DEV} —`)) fails.push('hook: a file already read at its current bytes was still named as owed');
-    remember(ALWAYS, ruleCode, READ);
-    if (fire('check the footer wording', READ).trim()) fails.push('hook: a message owing nothing still printed a keycode line');
+    const opened = readTurn(MID);
+    if (typeof opened?.startedAt !== 'number') fails.push('hook: a message started no turn');
+    if (!opening.includes('steps of /dev')) fails.push('hook: a skill-named message was not pointed at that skill step list');
+    if (/keycode/i.test(opening)) fails.push('hook: the opening note still asks for a keycode');
+    if (fire('check the footer wording', PLAIN).trim()) fails.push('hook: a message naming no skill was given a note of its own');
     if (!existsSync(licensePath(MID))) fails.push('hook: no license was written for the message');
     else if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'denied') fails.push('hook: a message with no release command was licensed');
     fire('/git-release 1.2.3');
     if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'granted') fails.push('hook: a release command was not licensed');
-    if (fire('/clear').trim()) fails.push('hook: a host command printed a keycode line');
+    if (fire('/clear').trim()) fails.push('hook: a host command printed a note');
     if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'denied') fails.push('hook: a host command after a release kept the license');
-    opened.reported = { [ALWAYS]: 'LEAF-REPORTED' };
-    writeFileSync(recordPath(MID), JSON.stringify(opened) + '\n');
+    if (!readTurn(MID)) fails.push('hook: a host command threw away the stamp of the turn still running');
     fire('also check the footer wording');
-    const sentence = read(MID);
-    if (sentence?.reported?.[ALWAYS] !== 'LEAF-REPORTED') fails.push('hook: a sentence typed mid-turn wiped a code already reported');
+    const sentence = readTurn(MID);
     if (sentence?.startedAt !== opened.startedAt) fails.push('hook: a sentence typed mid-turn moved the stamp the turn began at');
-    if (!sentence?.required?.includes(DEV)) fails.push('hook: a sentence typed mid-turn dropped the skill the pass is running');
   } catch (error) {
     fails.push(`hook: ${error.message}`);
   } finally {
-    close(MID);
+    closeTurn(MID);
     clear(MID);
     rmSync(licensePath(MID), { force: true });
-    close(PLAIN);
+    closeTurn(PLAIN);
     clear(PLAIN);
     rmSync(licensePath(PLAIN), { force: true });
-    close(READ);
-    clear(READ);
-    forget(READ);
-    rmSync(licensePath(READ), { force: true });
   }
 
   const skill = ['---', 'name: check', '---', '', '# Check', '', 'Prose.', '', '## Process', '', '### 1. Tests first', '', 'Run it.', '', '### 2. `just verify`', '', '## Reference', '', '- a link'].join('\n');
@@ -324,9 +300,8 @@ function selfTest() {
   if (steps[1] !== '2. `just verify`') fails.push('stepsIn: a step written in code did not survive');
   if (stepsIn('# A skill\n\n## A section\n\nProse.').length) fails.push('stepsIn: invented steps for a skill with no numbered headings');
 
-  // Every invocable skill owns an ordered pass. Each is read out of its own file, which is the whole point: there is no second copy to drift.
-  const skillFiles = keyedFiles().filter((file) => /skills\/[^/]+\/SKILL\.md$/.test(file));
-  for (const file of skillFiles) {
+  // Every skill in the table owns an ordered pass. Each is read out of its own file, which is the whole point: there is no second copy to drift.
+  for (const file of skillFiles()) {
     const name = file.match(/skills\/(.*?)\//)?.[1];
     const source = readFileSync(join(root, file), 'utf8');
     const found = skillFor(`/${name} the ticket`);
@@ -360,9 +335,8 @@ function selfTest() {
   const drawn = render('check', ['1. Tests first', '2. `just verify`']);
   if (!drawn.includes('- 1. Tests first')) fails.push('render: a step did not become a bullet');
   if (!/not work/i.test(drawn)) fails.push('render: the list does not say it is not a work list');
-  if (additionalContext(null, 'the rule file is owed', MID) !== 'the rule file is owed') fails.push('context: a message naming no skill lost its keycode demand');
-  if (keycodeContext({ required: [], reported: {}, session: MID }) !== '') fails.push('context: a turn owing nothing still got a keycode line');
-  if (additionalContext(null, '', MID) !== '') fails.push('context: a message with no checklist or keycodes still printed a note');
+  if (additionalContext(null, MID) !== '') fails.push('context: a message naming no skill still printed a note');
+  if (!additionalContext({ name: 'check', steps: ['1. Tests first'] }, MID).includes('steps of /check')) fails.push('context: a message naming a skill was not pointed at its list');
 
   // The whole cycle, under two session ids, because a second agent starting a message must not take the list the first is halfway through — the fault two-agents-at-once already paid for.
   //
@@ -373,6 +347,31 @@ function selfTest() {
   for (const session of [ONE, TWO]) {
     if (!listPath(session).includes(String(process.pid))) fails.push(`${session} names a list two check runs would share`);
   }
+  // The stamp is keyed the same way the list is, and for the same reason: one file for both agents is rewritten by whichever starts a message while the other is halfway through its turn. Read-only on the fallback, because with no session id production writes one file for the whole machine and a check that wrote there would be the collision it is looking for.
+  if (turnPath(ONE) === turnPath(TWO)) fails.push('two sessions share one turn stamp');
+  if (!turnPath('').endsWith('leaftext-turn.json')) fails.push('no session id did not fall back to the one stamp file');
+  try {
+    openTurn(ONE, Date.now() - 1000);
+    const began = readTurn(ONE)?.startedAt;
+    openTurn(TWO);
+    if (readTurn(ONE)?.startedAt !== began) fails.push("a message in one session moved the other's stamp");
+    stampTurn(ONE);
+    if (readTurn(ONE)?.startedAt !== began) fails.push('a message arriving while a turn stands moved its stamp');
+    stampTurn(ONE, Date.now() + TURN_MS + 1000);
+    if (readTurn(ONE)?.startedAt === began) fails.push('a stamp past the hour a turn is allowed was kept');
+    closeTurn(TWO);
+    if (!readTurn(ONE)) fails.push("one session ending its turn took the other's stamp");
+    closeTurn(ONE);
+    if (readTurn(ONE)) fails.push('a turn that ended left its stamp behind');
+    stampTurn(ONE);
+    if (typeof readTurn(ONE)?.startedAt !== 'number') fails.push('a message with nothing standing started no turn');
+  } catch (error) {
+    fails.push(`stamp: ${error.message}`);
+  } finally {
+    closeTurn(ONE);
+    closeTurn(TWO);
+  }
+
   try {
     if (!write('/check it', ONE)) fails.push('write: a message naming a skill wrote no list');
     const left = pending(ONE);
@@ -487,7 +486,7 @@ function selfTest() {
     for (const f of fails) console.error(`  ${f}`);
     process.exit(1);
   }
-  console.log(`gate-checklist: ok (${keyedFiles().length - 1} skills read for their own steps)`);
+  console.log(`gate-checklist: ok (${skillFiles().length} skills read for their own steps)`);
 }
 
 // Only act when run directly: gate-voice.mjs imports this for its functions, and an import that read stdin and exited would take the Stop hook's own payload out from under it.
@@ -516,11 +515,11 @@ if (!args) {
   const session = sessionOf(raw);
   writeLicense(hasReleaseLicense(prompt), prompt, session);
   if (prompt && !isMeta(prompt)) {
-    // What this message owes, folded into this session's record. A record still standing is a turn still running, because the reply gate deletes it when one ends — so a sentence typed into a running pass adds to what is owed and leaves the codes it has given and the moment it began where they are.
+    // When this turn began, which the reply gate measures a filed ticket and a moved file against. A stamp still standing is a turn still running, because the reply gate deletes it when one ends — so a sentence typed into a running pass leaves the moment it began where it is.
     try {
-      extend(requiredFor(prompt), session);
+      stampTurn(session);
     } catch {
-      // A record that cannot be written owes nothing, which is the safe way round: a broken hook must never stop a turn.
+      // A stamp that cannot be written measures nothing, which is the safe way round: a broken hook must never stop a turn.
     }
   }
   try {
@@ -535,8 +534,7 @@ if (!args) {
     // A list that cannot be written holds nobody, which is the safe way round.
     process.exit(0);
   }
-  const keycodes = prompt && !isMeta(prompt) ? keycodeContext(read(session)) : '';
-  const context = additionalContext(found, keycodes, session);
+  const context = additionalContext(found, session);
   if (context) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {

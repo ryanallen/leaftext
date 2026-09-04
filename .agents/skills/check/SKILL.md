@@ -60,5 +60,3 @@ The whole reply is the owner's message, word for word. The tree stays dirty; tha
 - `/sync-tests` — step 1, the reading that names a missing test.
 - `/dev` — builds the phases and stops before this, leaving the gate to the owner.
 - `/git-release` — ships what this proved rather than proving it again, and is the only thing that touches git.
-
-<!-- keycode: LEAF-5E64 -->

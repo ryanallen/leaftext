@@ -110,5 +110,3 @@ Leave the tests uncommitted. The whole reply is the owner's message, word for wo
 - `scripts/check-shell.mjs` — what runs them, in order, and prints the report.
 - `/check` — runs this, then `just verify`.
 - `/git-release` — the only thing that touches git.
-
-<!-- keycode: LEAF-D3A6 -->

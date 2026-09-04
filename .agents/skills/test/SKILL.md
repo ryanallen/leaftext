@@ -67,5 +67,3 @@ The whole reply is the owner's message, word for word. The tree stays dirty; tha
 - [`/sync-tests`](../sync-tests/SKILL.md) — step 2, the reading that names a missing test.
 - [`/dev`](../dev/SKILL.md) — builds a ticket and stops before this.
 - [`/git-release`](../git-release/SKILL.md) — ships what this proved rather than proving it again, and is the only thing that touches git.
-
-<!-- keycode: LEAF-B740 -->

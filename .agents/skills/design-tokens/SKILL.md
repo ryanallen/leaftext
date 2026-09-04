@@ -97,5 +97,3 @@ Edit the row, run the bundler, run the design checks. That is all — nothing el
 - `design/colors.md`, `design/tokens.md`, `design/icons.md`, `design/components.md` — the four sources. Plain Markdown, so Leaftext opens them.
 - `docs/02-development/04-theming.md` — how a theme is written and checked.
 - `docs/02-development/05-design-system.md` — the published page, generated from the same four files.
-
-<!-- keycode: LEAF-72FD -->

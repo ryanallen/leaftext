@@ -244,5 +244,3 @@ The whole reply is the owner's message, word for word. Which rows moved and why,
 - `../docs/README.md` — every ticket, one line each. Read first.
 - `../docs/GLOSSARY.md` — the words the ranking is written in.
 - `/ticket` writes them, `/design` fixes one this finds wrong, `/dev` builds the top row, `/git-release` ships it, `/done` retires its row.
-
-<!-- keycode: LEAF-7A15 -->

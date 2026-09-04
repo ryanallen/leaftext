@@ -293,5 +293,3 @@ Four things have to be on the file when this ends: the dated line at the top, a 
 - `/design-tokens` — where a value lives, for anything the ticket styles.
 - `/add-dependency` — what a ticket owes before it names a crate.
 - `../docs/done/repo/conformance-suites.md` — a designed ticket, with the record section at the bottom.
-
-<!-- keycode: LEAF-BE23 -->

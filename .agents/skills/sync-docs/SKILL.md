@@ -258,5 +258,3 @@ Leave the changes uncommitted. The whole reply is the owner's message, word for 
 - `README.md` — the **Documentation** section with relative `docs/<route>.md` links.
 - [Building](../../../docs/02-development/02-building.md#documentation-screenshots) — the published account of how a picture gets taken.
 - `/git-release` — the separate skill that commits and pushes (site-only changes don't bump the version).
-
-<!-- keycode: LEAF-8F50 -->
