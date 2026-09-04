@@ -301,6 +301,21 @@ impl EditableDocument {
 
     /// Replace several sorted, non-overlapping byte ranges in one pass and record one undo snapshot. Refuses the whole list when any range is invalid.
     pub fn replace_ranges(&mut self, replacements: &[(usize, usize, &str)]) -> bool {
+        self.replace_ranges_recording(replacements, false)
+    }
+
+    /// Like `replace_range_without_undo` over a list: the send that ends a typing run grows the step the run is standing on rather than pushing a second one, so however many times the typing paused — and whatever the last splice carried with it, such as the note a deleted marker orphaned — one press of undo takes the whole run back.
+    ///
+    /// Falls back to a step of its own where nothing on the stack starts where this write does. A run that is not standing there cannot be grown, and a silent no-undo would lose the edit from the history altogether.
+    pub fn replace_ranges_continuing(&mut self, replacements: &[(usize, usize, &str)]) -> bool {
+        self.replace_ranges_recording(replacements, true)
+    }
+
+    fn replace_ranges_recording(
+        &mut self,
+        replacements: &[(usize, usize, &str)],
+        continue_undo: bool,
+    ) -> bool {
         if replacements.is_empty() {
             return false;
         }
@@ -315,6 +330,7 @@ impl EditableDocument {
             previous_end = *end;
         }
 
+        let grown = continue_undo && self.grow_standing_undo(replacements);
         let mut step = Vec::with_capacity(replacements.len());
         let mut changed = false;
         let mut shift = 0isize;
@@ -343,7 +359,47 @@ impl EditableDocument {
         }
         rebuilt.push_str(&before[cursor..]);
         self.text = rebuilt;
-        self.push_undo(step);
+        if !grown {
+            self.push_undo(step);
+        }
+        true
+    }
+
+    /// Grow the undo step a typing run is standing on so it covers everything `replacements` is about to write, and say whether it did.
+    ///
+    /// The step holds the bytes the run started from and the range they occupy now. This list starts where that range does and can reach past its end — the note's own line at the foot of the file is behind the block that stopped pointing at it — so the buffer's own bytes between the two go on the end of the step verbatim, and the step's range becomes the whole span as the write leaves it.
+    fn grow_standing_undo(&mut self, replacements: &[(usize, usize, &str)]) -> bool {
+        let span_start = replacements[0].0;
+        let span_end = replacements[replacements.len() - 1].1;
+        let Some([standing]) = self
+            .undo_stack
+            .last()
+            .map(Vec::as_slice)
+            .and_then(|step| <&[ReplacedRange; 1]>::try_from(step).ok())
+        else {
+            return false;
+        };
+        if standing.at.start != span_start || standing.at.end > span_end {
+            return false;
+        }
+        let tail = self.text[standing.at.end..span_end].to_string();
+        // What the span reads as once every replacement has landed: each gap the list steps over, plus each replacement.
+        let mut written = 0;
+        let mut cursor = span_start;
+        for (start, end, replacement) in replacements {
+            written += (start - cursor) + replacement.len();
+            cursor = *end;
+        }
+        let Some([standing]) = self
+            .undo_stack
+            .last_mut()
+            .map(Vec::as_mut_slice)
+            .and_then(|step| <&mut [ReplacedRange; 1]>::try_from(step).ok())
+        else {
+            return false;
+        };
+        standing.text.push_str(&tail);
+        standing.at.end = span_start + written;
         true
     }
 

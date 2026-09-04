@@ -780,6 +780,129 @@ fn a_dropped_block_really_does_reach_the_page_as_nothing() {
 }
 
 #[test]
+fn a_run_whose_last_splice_carries_a_second_range_is_still_one_undo() {
+    // Backspacing over a footnote marker mid-typing: the pauses splice the block, and the commit that ends the run carries the note's own line away with it. Two steps here would put the note back against a block that still has no marker in it — the orphan again, with a redraw in front of it.
+    let source = "A sentence with a note.[^one]
+
+[^one]: What I thought.
+";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(source.to_string()),
+    );
+    let block = "A sentence with a note.[^one]";
+    // The run's first pause records the step, and its second grows it, the way a typing run already does.
+    assert!(edit.replace_range(0, block.len(), "A sentence with a note.[^one] and"));
+    // Answers whether the dirty flag moved, which a buffer the first pause already dirtied never does.
+    edit.replace_range_without_undo(
+        0,
+        "A sentence with a note.[^one] and".len(),
+        "A sentence with a note.[^one] and more",
+    );
+    // The commit: the marker is gone from the block, and the note's own line goes with it — the blank line in front of it and the newline behind, which is what the page composes.
+    let note_gone = "A sentence with a note. and more";
+    assert!(edit.replace_ranges_continuing(&[
+        (0, "A sentence with a note.[^one] and more".len(), note_gone),
+        (
+            "A sentence with a note.[^one] and more".len(),
+            edit.text().len(),
+            "",
+        ),
+    ]));
+    assert_eq!(
+        edit.text(),
+        note_gone,
+        "the note was left at the foot of the file"
+    );
+    assert!(edit.undo(), "the run recorded no undo step");
+    assert_eq!(
+        edit.text(),
+        source,
+        "one press did not take the whole run and both halves of the note back"
+    );
+    assert!(!edit.undo(), "the run left a second step behind it");
+}
+
+#[test]
+fn a_list_claiming_a_run_that_is_not_standing_records_its_own_step() {
+    // The flag is the page's claim about history. Where nothing on the stack starts where this write does, honoring it would drop the edit out of the history altogether, so it records a step of its own instead.
+    let source = "alpha.
+
+beta.
+";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(source.to_string()),
+    );
+    assert!(edit.replace_ranges_continuing(&[(0, "alpha.".len(), "ALPHA.")]));
+    assert_eq!(
+        edit.text(),
+        "ALPHA.
+
+beta.
+"
+    );
+    assert!(
+        edit.undo(),
+        "a list with no run behind it recorded no undo step"
+    );
+    assert_eq!(edit.text(), source);
+}
+
+#[test]
+fn a_grown_step_takes_back_the_bytes_a_continuing_list_stepped_over() {
+    // The note's own line sits at the foot of the file with whatever else the reader wrote in between, so the list that ends the run has a gap in the middle of it. The step the run is standing on grows over that gap as well as over the two ranges, or one press puts the block back and leaves the middle of the document as the note's delete left it.
+    let source = "A sentence with a note.[^one]\n\nMiddle paragraph.\n\n[^one]: What I thought.\n";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(source.to_string()),
+    );
+    let block = "A sentence with a note.[^one]";
+    let typed = "A sentence with a note.[^one] and";
+    assert!(edit.replace_range(0, block.len(), typed));
+
+    // The colon is what tells the note's own line from the marker in the sentence above it.
+    let note_at = edit
+        .text()
+        .find("[^one]:")
+        .expect("the note is at the foot");
+    let end = edit.text().len();
+    assert!(edit.replace_ranges_continuing(&[
+        (0, typed.len(), "A sentence with a note. and"),
+        (note_at, end, ""),
+    ]));
+    assert_eq!(
+        edit.text(),
+        "A sentence with a note. and\n\nMiddle paragraph.\n\n",
+        "the paragraph the list stepped over did not survive the write"
+    );
+    assert!(edit.undo(), "the run recorded no undo step");
+    assert_eq!(
+        edit.text(),
+        source,
+        "one press left the middle of the document where the note's delete put it"
+    );
+    assert!(!edit.undo(), "the run left a second step behind it");
+}
+
+#[test]
+fn a_continuing_list_narrower_than_the_standing_step_records_its_own() {
+    // The flag is the page's claim about history, and a list stopping short of where the standing step ends cannot be that step's ending. Growing it would leave the step holding bytes for a stretch of document it no longer covers, and the press after would write them back over whatever is there — so the claim is refused and the write records a step of its own.
+    let source = "alpha beta.\n";
+    let mut edit = EditableDocument::new(
+        PathBuf::from("notes.md"),
+        SourceText::utf8(source.to_string()),
+    );
+    assert!(edit.replace_range(0, "alpha beta.".len(), "ALPHA BETA GAMMA."));
+    assert!(edit.replace_ranges_continuing(&[(0, "ALPHA".len(), "alpha")]));
+    assert_eq!(edit.text(), "alpha BETA GAMMA.\n");
+    assert!(edit.undo(), "the list recorded no step of its own");
+    assert_eq!(edit.text(), "ALPHA BETA GAMMA.\n");
+    assert!(edit.undo(), "the splice in front of it lost its step");
+    assert_eq!(edit.text(), source);
+}
+
+#[test]
 fn replace_ranges_writes_several_ranges_and_one_undo_takes_the_run_back() {
     let source = "# Notes\n\nalpha one.\n\nbetween café.\n\nalpha two.\n";
     let mut edit = EditableDocument::new(

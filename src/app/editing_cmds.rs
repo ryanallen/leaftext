@@ -450,13 +450,19 @@ pub(crate) fn apply_block_edit(
 pub(crate) fn apply_block_replacements(
     workspace: &mut Workspace,
     blocks: &[BlockReplacement],
+    continuing: bool,
 ) -> Result<(), String> {
     let (_, edit) = seeded_active_edit(workspace).map_err(reading_view_refusal)?;
     let replacements: Vec<(usize, usize, &str)> = blocks
         .iter()
         .map(|block| (block.start, block.end, block.text.as_str()))
         .collect();
-    if edit.replace_ranges(&replacements) {
+    let written = if continuing {
+        edit.replace_ranges_continuing(&replacements)
+    } else {
+        edit.replace_ranges(&replacements)
+    };
+    if written {
         Ok(())
     } else {
         Err(String::from(
@@ -1274,8 +1280,9 @@ pub(crate) fn edit_block(
 }
 
 /// Several reading-view blocks rewritten in one buffer pass and one undo step.
-pub(crate) fn edit_blocks(reader: &mut Reader, blocks: &[BlockReplacement]) {
-    let changed = apply_block_replacements(&mut reader.workspace, blocks).map(|()| true);
+pub(crate) fn edit_blocks(reader: &mut Reader, blocks: &[BlockReplacement], continuing: bool) {
+    let changed =
+        apply_block_replacements(&mut reader.workspace, blocks, continuing).map(|()| true);
     after_source_change(reader, changed);
 }
 

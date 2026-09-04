@@ -6,12 +6,25 @@ use super::*;
 fn a_block_replacement_run_arrives_under_the_names_the_page_sends() {
     let sent = r#"{"command":"editBlocks","blocks":[{"start":2,"end":7,"text":"first"},{"start":20,"end":24,"text":"last"}]}"#;
     match serde_json::from_str::<IpcCommand>(sent) {
-        Ok(IpcCommand::EditBlocks { blocks }) => {
+        Ok(IpcCommand::EditBlocks { blocks, continuing }) => {
             assert_eq!(blocks.len(), 2);
             assert_eq!((blocks[0].start, blocks[0].end), (2, 7));
             assert_eq!(blocks[1].text, "last");
+            // A list the page sent without the flag is a settled edit, and settled is what an absent flag has to mean: the page leaves it off every send but the one that ends a typing run.
+            assert!(
+                !continuing,
+                "a list with no flag on it claimed a standing run"
+            );
         }
         other => panic!("the block replacement run did not arrive: {other:?}"),
+    }
+
+    let ending_a_run = r#"{"command":"editBlocks","blocks":[{"start":2,"end":7,"text":"first"}],"continuing":true}"#;
+    match serde_json::from_str::<IpcCommand>(ending_a_run) {
+        Ok(IpcCommand::EditBlocks { continuing, .. }) => {
+            assert!(continuing, "the flag the page sent did not arrive");
+        }
+        other => panic!("a list ending a typing run did not arrive: {other:?}"),
     }
 }
 

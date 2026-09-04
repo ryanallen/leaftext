@@ -208,7 +208,8 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
       say();
       return done;
     },
-    editBlocks: (command) => apply({ edit: 'blocks', blocks: command.blocks }),
+    // `continuing` is the same flag `editBlock` carries: this list ends a typing run, so the run's standing undo step grows rather than a second one being pushed. A commit that lost a footnote marker carries the note's own line with it, and one press has to take the run and both halves of the note back together.
+    editBlocks: (command) => apply({ edit: 'blocks', blocks: command.blocks, continuing: !!command.continuing }),
     // A tick the buffer would not take — no task at that number, a document with no tasks in it — leaves the page a box it drew ticked over nothing, so the answer says nothing is held and the box comes back up. A product that refuses the save is the other case: the buffer holds the tick and the document is dirty, so the box is right to stay ticked and the reason is on screen.
     toggleTask: async (command) => {
       const took = !!apply({ edit: 'task', index: command.index })?.changed;

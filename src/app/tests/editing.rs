@@ -120,7 +120,11 @@ fn a_block_replacement_list_is_taken_whole_or_refused_whole() {
     let mut valid = Workspace::default();
     valid.open_path(path.clone());
     assert_eq!(
-        apply_block_replacements(&mut valid, &[block(0, 5, "FIRST"), block(13, 17, "LAST")],),
+        apply_block_replacements(
+            &mut valid,
+            &[block(0, 5, "FIRST"), block(13, 17, "LAST")],
+            false
+        ),
         Ok(())
     );
     assert_eq!(
@@ -135,13 +139,60 @@ fn a_block_replacement_list_is_taken_whole_or_refused_whole() {
     ] {
         let mut refused = Workspace::default();
         refused.open_path(path.clone());
-        assert!(apply_block_replacements(&mut refused, &replacements).is_err());
+        assert!(apply_block_replacements(&mut refused, &replacements, false).is_err());
         assert_eq!(
             refused.active_edit().expect("the buffer was seeded").text(),
             source,
             "a refused list wrote part of the document"
         );
     }
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_block_replacement_list_ending_a_typing_run_grows_the_step_it_stands_on() {
+    // A commit that carries away the line of a note whose last marker it just took reaches the buffer as a list. Two undo steps here would put the note back against a block that still has no marker in it, so the flag the page sends has to reach `replace_ranges_continuing` rather than the door beside it.
+    let dir = scratch_dir("a_block_replacement_list_ending_a_typing_run_grows_the_step");
+    let path = dir.join("note.md");
+    let source = "A sentence.[^one]\n\n[^one]: What I thought.\n";
+    fs::write(&path, source).expect("the document is written");
+    let block = |start, end, text: &str| BlockReplacement {
+        start,
+        end,
+        text: text.to_string(),
+    };
+
+    let mut workspace = Workspace::default();
+    workspace.open_path(path.clone());
+    // The run's first pause, which is the undo point the commit grows.
+    assert_eq!(
+        apply_block_replacements(
+            &mut workspace,
+            &[block(0, 17, "A sentence.[^one] and")],
+            false
+        ),
+        Ok(())
+    );
+    // The commit that ends it: the marker goes from the block, and the note's own line goes with it.
+    assert_eq!(
+        apply_block_replacements(
+            &mut workspace,
+            &[block(0, 21, "A sentence. and"), block(23, 47, "")],
+            true
+        ),
+        Ok(())
+    );
+
+    let edit = workspace.active_edit_mut().expect("the buffer was seeded");
+    assert_eq!(edit.text(), "A sentence. and\n\n");
+    assert!(edit.undo(), "the run recorded no undo step");
+    assert_eq!(
+        edit.text(),
+        source,
+        "one press did not take the run and both halves of the note back together"
+    );
+    assert!(!edit.undo(), "the run left a second step behind it");
 
     let _ = fs::remove_dir_all(&dir);
 }

@@ -531,7 +531,12 @@ pub(crate) enum IpcCommand {
     },
     /// Rewrite several reading-view blocks as one undoable edit.
     #[serde(rename = "editBlocks")]
-    EditBlocks { blocks: Vec<BlockReplacement> },
+    EditBlocks {
+        blocks: Vec<BlockReplacement>,
+        /// Set when this list ends a typing run, the same as [`IpcCommand::EditBlock`]'s own flag: the run's standing undo step grows to cover it rather than a second one being pushed. A commit that lost a footnote marker carries the note's own line with it, and one press of undo has to bring the run and both halves of the note back together.
+        #[serde(default)]
+        continuing: bool,
+    },
     /// Write one frontmatter field on the active buffer, or remove it when `value` is absent. The host works out the splice: where the field's bytes are, and whether a quote goes back on, is the parser's to know, and a second reader of the block in the page would be a second answer.
     #[serde(rename = "setField")]
     SetField {

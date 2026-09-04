@@ -749,7 +749,12 @@ fn apply_pinned_buffer_edit(edit: &mut EditableDocument, step: &serde_json::Valu
                     (start, end, block["text_in"].as_str().unwrap_or_default())
                 })
                 .collect();
-            edit.replace_ranges(&replacements);
+            // A list marked `continuing` ends a typing run: it grows the step the run is standing on rather than pushing a second one, so one press takes the run and whatever its last splice carried with it back together.
+            if step["continuing"].as_bool().unwrap_or(false) {
+                edit.replace_ranges_continuing(&replacements);
+            } else {
+                edit.replace_ranges(&replacements);
+            }
         }
         // A workbook's cell is named by its own element rather than by a block, because the buffer here is a sheet member and the blocks over it are rows, not cells.
         Some("sheet_cell") => {

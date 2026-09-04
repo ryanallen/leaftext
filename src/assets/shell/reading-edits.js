@@ -58,7 +58,10 @@ function typingSurfaceHasFocus() {
 window.addEventListener('focusout', endTypingSession);
 
 // Send a buffer-mutating reading-view command. Each lands one host undo snapshot, and this raises the dirty state (Save button + tab dot) optimistically.
+//
+// Every write the reading view makes comes through here, which is why the note sweep is here too: an edit that takes the last marker pointing at a note away carries that note's own line in the same send, so one undo brings both back. `orphan-notes.js` holds it.
 function sendEditCommand(message) {
+  const outgoing = withOrphanedNotesRemoved(message);
   const path = activeDocumentPath();
   if (path) {
     // The session has written something, so the raise is no longer a promise to take back.
@@ -72,7 +75,7 @@ function sendEditCommand(message) {
     // Undo just became available and Redo just went, which setDirtyState only reflects when the dirty flag itself changed — on the second and later edits it has not.
     updateEditingChrome();
   }
-  send(message);
+  send(outgoing);
 }
 
 function visibleTextLength(el) {

@@ -641,7 +641,17 @@ fn apply_buffer_edit(edit: &mut EditableDocument, asked: &serde_json::Value) -> 
             let Some(replacements) = replacements else {
                 return false;
             };
-            if !edit.replace_ranges(&replacements) {
+            // The same flag the block arm reads, over a list: a commit that ends a typing run and carries an orphaned note's own line with it grows the run's standing undo step rather than pushing a second one.
+            let continuing = asked
+                .get("continuing")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false);
+            let written = if continuing {
+                edit.replace_ranges_continuing(&replacements)
+            } else {
+                edit.replace_ranges(&replacements)
+            };
+            if !written {
                 return false;
             }
         }

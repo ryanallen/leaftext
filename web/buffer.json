@@ -170,8 +170,14 @@
           "what": "several block ranges replaced in one buffer edit",
           "kind": "blocks",
           "blocks": [
-            { "block": "alpha here.", "text_in": "b." },
-            { "block": "alpha there.", "text_in": "a much longer replacement." }
+            {
+              "block": "alpha here.",
+              "text_in": "b."
+            },
+            {
+              "block": "alpha there.",
+              "text_in": "a much longer replacement."
+            }
           ],
           "changed": true,
           "text": "# Replace\n\nb.\n\nmiddle untouched.\n\na much longer replacement.\n"
@@ -210,6 +216,53 @@
           "text_in": "",
           "changed": true,
           "text": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\n  <sheetData>\n    <row r=\"1\"><c r=\"A1\" t=\"s\"><v>0</v></c><c r=\"B1\"/></row>\n    <row r=\"2\"><c r=\"A2\" s=\"1\" t=\"inlineStr\"><is><t xml:space=\"preserve\">North</t></is></c><c r=\"B2\" t=\"s\"><v>2</v></c></row>\n  </sheetData>\n</worksheet>\n"
+        }
+      ]
+    },
+    {
+      "why": "A typing run that backspaces over a footnote marker: the pauses splice the block, and the commit that ends the run carries the note's own line away in the same list. One press of undo has to bring the run and both halves of the note back together, or the first press puts the note back against a block with no marker in it.",
+      "path": "note-run.md",
+      "source": "# Notes\n\nA sentence with a note.[^one]\n\n[^one]: What I thought.\n",
+      "steps": [
+        {
+          "what": "the run's first pause, which is the undo point the rest of it grows",
+          "kind": "block",
+          "block": "A sentence with a note.",
+          "text_in": "A sentence with a note.[^one] and",
+          "changed": true,
+          "text": "# Notes\n\nA sentence with a note.[^one] and\n\n[^one]: What I thought.\n"
+        },
+        {
+          "what": "a second pause in the same run, recording nothing of its own",
+          "kind": "block",
+          "block": "A sentence with a note.",
+          "continuing": true,
+          "text_in": "A sentence with a note.[^one] and more",
+          "changed": true,
+          "text": "# Notes\n\nA sentence with a note.[^one] and more\n\n[^one]: What I thought.\n"
+        },
+        {
+          "what": "the commit that ends the run: the marker is gone from the block, and the note's own line goes up in the same list. The line's own range is what the source map gives, so the blank lines the page would take with it stay here — what is being walked is which call an edit reaches, not how the page composes one.",
+          "kind": "blocks",
+          "continuing": true,
+          "blocks": [
+            {
+              "block": "A sentence with a note.",
+              "text_in": "A sentence with a note. and more"
+            },
+            {
+              "block": "[^one]: What I thought.",
+              "text_in": ""
+            }
+          ],
+          "changed": true,
+          "text": "# Notes\n\nA sentence with a note. and more\n\n\n"
+        },
+        {
+          "what": "one press of undo takes the whole run back, both halves of the note with it",
+          "kind": "undo",
+          "changed": true,
+          "text": "# Notes\n\nA sentence with a note.[^one]\n\n[^one]: What I thought.\n"
         }
       ]
     }

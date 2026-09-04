@@ -211,6 +211,8 @@ function pinnedEdit(step, text, blocks) {
           const span = blockHolding(text, blocks, block.block);
           return { start: span.start, end: span.end, text: block.text_in };
         }),
+        // A list marked `continuing` ends a typing run and grows the step that run is standing on, rather than pushing a second one — which is what a commit that carries an orphaned note's own line away with it needs.
+        continuing: !!step.continuing,
       };
     // A workbook's cell is named by its own element rather than by a block, and its offsets are counted in bytes the way every block range is.
     case 'sheet_cell': {

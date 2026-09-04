@@ -187,6 +187,8 @@ pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     "assets/shell/reading-blocks.js",
     "assets/shell/dom-to-markdown.js",
     "assets/shell/reading-edits.js",
+    // The sweep that takes a note's own line with the last marker pointing at it, in the edit door's own file next door. Not in that file because it is 1,692 lines against the 1,734 a hand-written file is held to, which is what `xml-table-heading.js` below was cut out of it for.
+    "assets/shell/orphan-notes.js",
     // The one part of a table that is in no part of the file: its column heading. Here because the same ranges the cells above are wired from are what decide it.
     "assets/shell/xml-table-heading.js",
     // The field block at the top of a note, beside the reading view's other edit path: it needs the padlock and `send`, and reading-edits.js calls into it once a document has rendered.
