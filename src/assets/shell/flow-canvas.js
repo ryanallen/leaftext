@@ -693,6 +693,11 @@ let flowDrawingStoreHeld = 0;
 
 const flowDrawingKey = (text, themeVersion) => themeVersion + '\n' + text;
 
+// Whether the timer about to be armed has a real draw behind it. Where the canvas already shows this text and theme, or the store still holds a drawing of them, the picture is already made and the wait in front of it is guarding nothing — an undo on an eighty-line chart waited 433 ms for a paint of 43. The draw asks this same store what to paint; this asks it how long to wait.
+const flowDrawIsComing = (text, themeVersion) =>
+  !(flowDrawn && flowDrawn.text === text && flowDrawn.themeVersion === themeVersion)
+  && !flowDrawingStore.has(flowDrawingKey(text, themeVersion));
+
 function keepFlowDrawing(text, themeVersion, svg) {
   const key = flowDrawingKey(text, themeVersion);
   // A chart whose one drawing is bigger than the whole bound is drawn and shown like any other; it is simply never kept, since keeping it would empty the store to hold nothing else.
@@ -754,7 +759,9 @@ function drawFlowNotice() {
 // Drawing is a round trip through mermaid, so it waits — for as long as the last one took, which is what the floor above is about — and the answer is stamped: a render that finishes after a newer one started, or after a theme change, is dropped rather than painted over the picture that replaced it.
 function queueFlowDiagram() {
   window.clearTimeout(flowDrawTimer);
-  flowDrawTimer = window.setTimeout(drawFlowDiagram, Math.max(FLOW_DRAW_FLOOR, flowLastDrawCost));
+  // With no draw coming there is no typist to keep ahead of, so the wait drops to the floor. The floor rather than nothing: the paint stays behind the one timer every queue clears, so a held key still makes one picture at the pause instead of one a keystroke.
+  const coming = !flowSession || flowDrawIsComing(flowSession.text, flowDiagramThemeVersion);
+  flowDrawTimer = window.setTimeout(drawFlowDiagram, coming ? Math.max(FLOW_DRAW_FLOOR, flowLastDrawCost) : FLOW_DRAW_FLOOR);
 }
 
 function drawFlowDiagram() {

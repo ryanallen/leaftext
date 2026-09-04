@@ -107,6 +107,8 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | back | back.svg | heroicons | regular | — | back | arrow-left | arrow-left | arrow-left | arrow-left | arrow-left | arrow-left | The menu row that goes up a folder. A full head on the same shaft, which is the ordinary back arrow. |
 | trash | trash.svg | heroicons | regular | — | trash | trash-2 | trash-2 | trash | delete-bin | trash | trash | Remove vault, in the vault settings menu. |
 | copy | copy.svg | heroicons | regular | — | copy | copy | copy | copy | file-copy | copy | square2-stack | Copy a code block. |
+| highlighter | highlighter.svg | lucide | regular | — | highlighter | leaftext | leaftext | leaftext | leaftext | leaftext | leaftext | Highlight, in the selection bar. |
+| footnote | asterisk.svg | lucide | regular | — | footnote | leaftext | leaftext | leaftext | leaftext | leaftext | leaftext | Annotate, in the selection bar and on its own at a click point. An asterisk rather than a speech bubble, so the bubble the block gutter already wears keeps meaning an HTML comment. |
 | leaf | leaf.svg | leaftext | — | — | logo | leaftext | leaftext | leaftext | leaftext | leaftext | leaftext | The header logomark, and a Markdown file's badge in the pane. |
 | windows | windows.svg | leaftext | — | — | windows | leaftext | leaftext | leaftext | leaftext | leaftext | leaftext | The Windows mark on the landing page's Download for Windows button — a document names it in the button's braces. Four squares, so it is composed here. |
 | apple | apple.svg | simpleicons | — | — | apple | leaftext | leaftext | leaftext | leaftext | leaftext | leaftext | The Apple mark on the Download for macOS button beside it. |

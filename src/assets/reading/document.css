@@ -257,6 +257,11 @@
 .document-body strong {
   font-weight: var(--lt-weight-600);
 }
+/* A highlight, washed the way a search match is washed in find.css — the warning role, which is the yellow-amber every family carries in both modes, so it lands beside a search hit (the accent) and an action (the primary) without being either. Left alone the browser paints a fixed yellow with black ink over it, which reads as a foreign object in every dark family. The words keep the body's own ink, so nothing has to be picked per family for them to stay readable. */
+.document-body mark {
+  background-color: color-mix(in srgb, var(--lt-warning) 45%, transparent);
+  color: inherit;
+}
 /* Outline: a collapsed <details> built from the headings, dropped in under the title. The published sites' — `site/outline.js` builds it, and this stylesheet is what they are served. The app draws its own headings in the library pane instead. */
 .document-body .document-outline {
   margin: 1.5em 0;

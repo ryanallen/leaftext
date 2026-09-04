@@ -136,12 +136,49 @@ export function run() {
     }
   });
 
+  check('a wait in front of a picture already made is the floor rather than the last draw’s cost', () => {
+    const close = sheetOpenOnAChart(() => Promise.resolve({ svg: '<svg></svg>' }));
+    try {
+      // An eighty-line chart's draw is what the wait would otherwise be, and it was watched costing an undo 433 ms in front of a 43 ms paint.
+      read('flowLastDrawCost = 576;');
+      // The undo: the store still holds the drawing of the text the session has just come back to.
+      booted.keepFlowDrawing(CHART, 0, '<svg></svg>');
+      booted.queueFlowDiagram();
+      if (armedWait() !== 120) {
+        throw new Error(`an undo onto a drawing the store already holds waited ${armedWait()} rather than the 120 ms floor`);
+      }
+      // The picture already on the canvas: the same question, answered by what was drawn rather than by the store.
+      read('flowDrawingStore.clear(); flowDrawingStoreHeld = 0;');
+      read('flowDrawn = { text: flowSession.text, themeVersion: flowDiagramThemeVersion };');
+      booted.queueFlowDiagram();
+      if (armedWait() !== 120) {
+        throw new Error(`a redraw of the picture already on the canvas waited ${armedWait()} rather than the 120 ms floor`);
+      }
+      // Text neither of them has seen is a real draw, and the wait in front of that is still the last draw's cost.
+      read('flowDrawn = null;');
+      booted.window.__typedName = 'never drawn';
+      read('flowSession.text = window.__chartUnderTest.replace("a", window.__typedName);');
+      booted.queueFlowDiagram();
+      if (armedWait() !== 576) {
+        throw new Error(`a picture the page has never made waited ${armedWait()} rather than the 576 the last draw set`);
+      }
+    } finally {
+      booted.__timers.run(Number(read('flowDrawTimer')));
+      read('flowLastDrawCost = 0; flowDrawn = null;');
+      close();
+    }
+  });
+
   check('a sheet opening forgets what the last one drew, so its first picture waits only the floor', () => {
     const held = booted.window.mermaid;
     booted.window.mermaid = { initialize: () => {}, render: () => Promise.resolve({ svg: '<svg></svg>' }) };
     try {
       // An eighty-line chart has just been closed, and its 576 ms is what the page is still holding.
       read('flowLastDrawCost = 576;');
+      // With a drawing of this chart in hand the floor is what the shortcut gives anyway, so the reset would be read as working whether it ran or not.
+      if (read('flowDrawingStore.size') !== 0) {
+        throw new Error('the store already held a drawing, so the floor below says nothing about the reset the open makes');
+      }
       // Through the open rather than through `sheetOpenOnAChart`, which writes the session straight in and would never reach the reset.
       booted.openFlowSheet({ title: 'Flowchart', text: CHART, save: () => true });
       if (armedWait() !== 120) {
@@ -169,6 +206,9 @@ export function run() {
       read('flowLastDrawCost = 0;');
       booted.drawFlowDiagram();
       await settle();
+      // Queued over text that draw did not make, so what is read is the wait in front of a real draw rather than the floor a picture already in hand gets.
+      booted.window.__typedName = 'not what was drawn';
+      read('flowSession.text = window.__chartUnderTest.replace("a", window.__typedName);');
       booted.queueFlowDiagram();
       if (armedWait() !== 576) {
         throw new Error(`a 576 ms draw inside an open sheet queued the next redraw at ${armedWait()} rather than at 576, so the reset took the property away`);

@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import {
   check,
   fakeElement,
+  readingCss,
   record,
   source,
   typingStand,
@@ -14,6 +15,662 @@ export function run() {
   if (!booted) return;
   const { fencedCodeInnerSpan } = booted;
   const { withPageTimers, raiseWindowEvent, pressWindowKey, saveKeyPress, typedBlock, openTyping, restTyping } = typingStand(booted);
+
+  // ---- the bar over a locked page ------------------------------------------
+  //
+  // The bar is built for every Markdown render now, not only an unlocked one, and the padlock is held on its buttons instead. Held here because a locked page that quietly gained Bold looks exactly like one that did not until somebody presses it.
+
+  // What the bar offers a locked page, read off the page's own list. The nine below are spelled out, because losing one of those is the failure these checks exist to catch; the reading formats grow phase by phase and are pinned by the checks that press them.
+  const readingFormats = () => vm.runInContext('READING_FORMATS.map((one) => one.id)', booted);
+  const EDITING_FORMATS = ['bold', 'italic', 'strike', 'code', 'link', 'text', 'bigger', 'smaller', 'quote'];
+
+  /** Float the bar over a selection inside one block of a page that is locked or unlocked, hand the reading to `body` while it is still standing, and answer whatever `body` answered. */
+  const barOverSelection = ({ unlocked, kind = 'paragraph', words = 'the words' }, body = (bar) => bar) => {
+    const readingApp = booted.document.getElementById('app');
+    const layout = fakeElement('bar-reader-layout');
+    layout.className = 'reader-layout';
+    layout.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+    const block = fakeElement('bar-block');
+    block.tagName = 'P';
+    block.className = unlocked ? 'leaf-editable' : '';
+    block.dataset.srcStart = '10';
+    block.dataset.srcEnd = String(10 + words.length);
+    block.dataset.blockKind = kind;
+    block.textContent = words;
+    const range = {
+      startContainer: block,
+      endContainer: block,
+      toString: () => words,
+      cloneRange() {
+        return this;
+      },
+      getClientRects: () => [{ left: 100, top: 200, width: 60, height: 20 }],
+      getBoundingClientRect: () => ({ left: 100, top: 200, right: 160, bottom: 220, width: 60, height: 20 }),
+    };
+    const wasQuery = readingApp.querySelector;
+    const wasContains = readingApp.contains;
+    const wasSelection = booted.getSelection;
+    const wasFormat = vm.runInContext('currentDocumentFormat', booted);
+    const wasUnlocked = vm.runInContext('readingUnlocked', booted);
+    try {
+      readingApp.querySelector = (selector) => (String(selector) === '.reader-layout' ? layout : wasQuery.call(readingApp, selector));
+      readingApp.contains = (node) => node === block;
+      booted.getSelection = () => ({ rangeCount: 1, isCollapsed: false, getRangeAt: () => range });
+      vm.runInContext("currentDocumentFormat = 'markdown'; readingUnlocked = " + (unlocked ? 'true' : 'false') + ';', booted);
+      booted.bindSelectionToolbar();
+      const bar = vm.runInContext('selectionToolbar', booted);
+      if (!bar) return body({ bar: null, showing: [], press: () => {} });
+      const buttons = vm.runInContext('selectionToolbarButtons', booted);
+      booted.syncSelectionToolbar();
+      const showing = [...buttons].filter(([, button]) => !button.hidden).map(([id]) => id);
+      const press = (id) => {
+        const button = buttons.get(id);
+        if (!button) throw new Error('the bar carries no ' + id + ' button');
+        for (const handler of [...(button.listeners.get('click') || [])]) handler({ preventDefault() {} });
+      };
+      return body({ bar, hidden: bar.hidden, showing, block, press, divider: bar.classList.contains('has-block-formats') });
+    } finally {
+      readingApp.querySelector = wasQuery;
+      readingApp.contains = wasContains;
+      booted.getSelection = wasSelection;
+      vm.runInContext('currentDocumentFormat = ' + JSON.stringify(wasFormat) + '; readingUnlocked = ' + (wasUnlocked ? 'true' : 'false') + ';', booted);
+      vm.runInContext('selectionToolbar = null; selectionToolbarRow = null; selectionToolbarLinkInput = null; selectionToolbarButtons = new Map(); selectionToolbarBlock = null; selectionToolbarRange = null;', booted);
+    }
+  };
+
+  check('a locked page gets the bar, carrying the reading formats and nothing that writes', () => {
+    const locked = barOverSelection({ unlocked: false });
+    if (!locked.bar) throw new Error('the bar was never built on a locked page');
+    if (locked.hidden) throw new Error('the bar stayed hidden over a selection on a locked page');
+    if (locked.showing.join(',') !== readingFormats().join(',')) throw new Error('a locked page was offered ' + JSON.stringify(locked.showing) + ' rather than ' + JSON.stringify(readingFormats()));
+    // The divider belongs to the block row, so it goes when that row does — a locked bar of three buttons must not carry a rule down the middle of nothing.
+    if (locked.divider) throw new Error('the locked bar kept the block row\'s divider');
+    // And the class the unlock branch adds is not what the locked bar resolves a selection with: it is never on the page at all there.
+    if (String(locked.block.className).includes('leaf-editable')) throw new Error('the locked block was wired for typing');
+  });
+
+  check('a locked press writes nothing and opens no editor, and copy takes the words as they read', () => {
+    const written = [];
+    const posted = [];
+    const wasClipboard = booted.navigator.clipboard;
+    const wasIpc = booted.ipc;
+    const wasOpen = booted.openWysiwygBlock;
+    let opened = 0;
+    try {
+      booted.navigator.clipboard = { writeText: (text) => { written.push(text); return Promise.resolve(); } };
+      booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+      booted.openWysiwygBlock = () => { opened += 1; };
+      barOverSelection({ unlocked: false, words: 'a marked passage' }, (locked) => {
+        locked.press('copy');
+        if (written.length !== 1 || written[0] !== 'a marked passage') throw new Error('copy put ' + JSON.stringify(written) + ' on the clipboard');
+        if (posted.length) throw new Error('a locked press sent ' + JSON.stringify(posted));
+        if (opened) throw new Error('a locked press opened an editing host');
+        // The one door onto a host is shut by the padlock itself, so a press arriving another way — a shortcut, a stale handler — cannot get through it either.
+        if (booted.restoreSelectionForEdit() !== false) throw new Error('a locked page was handed an editing host');
+        if (opened) throw new Error('a locked page opened an editing host past its own buttons');
+      });
+    } finally {
+      booted.navigator.clipboard = wasClipboard;
+      booted.ipc = wasIpc;
+      booted.openWysiwygBlock = wasOpen;
+    }
+  });
+
+  check('unlocked, the bar still carries every button it carried before, with the reading formats after them', () => {
+    const unlocked = barOverSelection({ unlocked: true });
+    if (!unlocked.bar) throw new Error('the bar was not built on an unlocked page');
+    // The nine it has always carried, in their order, and the reading formats at the end rather than in among them.
+    if (unlocked.showing.join(',') !== [...EDITING_FORMATS, ...readingFormats()].join(',')) {
+      throw new Error('the unlocked bar showed ' + JSON.stringify(unlocked.showing));
+    }
+    if (!unlocked.divider) throw new Error('the unlocked bar over a paragraph lost its block row');
+    // A block the block row cannot rewrite still keeps the inline formats and the reading formats — only the block row goes.
+    const inList = barOverSelection({ unlocked: true, kind: 'list_item' });
+    const withoutTheBlockRow = [...EDITING_FORMATS.filter((id) => !['text', 'bigger', 'smaller', 'quote'].includes(id)), ...readingFormats()];
+    if (inList.showing.join(',') !== withoutTheBlockRow.join(',')) {
+      throw new Error('the bar over a list item showed ' + JSON.stringify(inList.showing));
+    }
+  });
+
+  // The bar is 402px wide with the reading formats on it and the reading column can be squeezed to 360, so the row wraps at the column's width rather than the script clamping the bar to a left edge whose right edge then hangs past the words. One number does both, and a stylesheet that stopped naming it would let the bar hang again with nothing failing.
+  check('the bar is capped at the column, less the margin the script clamps to', () => {
+    const css = readingCss('selection-toolbar.css');
+    const bar = css.match(/\.selection-toolbar \{([\s\S]*?)\}/);
+    if (!bar) throw new Error('the stylesheet no longer holds a .selection-toolbar rule');
+    const cap = bar[1].match(/max-width:\s*calc\(100% - (\d+)px\)/);
+    if (!cap) throw new Error('the bar is not capped at the width of the column it floats in');
+    const margin = Number(source.match(/const SELECTION_TOOLBAR_MARGIN = (\d+);/)[1]);
+    if (Number(cap[1]) !== margin * 2) {
+      throw new Error('the bar is capped ' + cap[1] + 'px inside the column while the script clamps it to ' + margin + 'px either side');
+    }
+    const row = css.match(/\.selection-format-row \{([\s\S]*?)\}/);
+    if (!row || !/flex-wrap:\s*wrap/.test(row[1])) throw new Error('the format row does not wrap, so a capped bar clips its own buttons');
+  });
+
+  // ---- marking a locked page up ---------------------------------------------
+  //
+  // Highlight and Annotate both write, and neither of them touches the page: the tag goes on a detached copy of the block, the copy is serialized, and the block's own source range is spliced. Held here because a highlight or a marker written into the page instead would look identical in the window and would need an editing host on a document nobody unlocked. A note's care is elsewhere: two writes in two places that have to go up as one, because two sends give the reader two undos and move the second range's offsets out from under it.
+
+  const topOfPage = (node) => {
+    let held = node;
+    while (held && held.parentElement) held = held.parentElement;
+    return held;
+  };
+
+  const press = (buttons, id) => {
+    const button = buttons.get(id);
+    if (!button) throw new Error('the bar carries no ' + id + ' button');
+    for (const handler of [...(button.listeners.get('click') || [])]) handler({ preventDefault() {} });
+  };
+
+  /** Enough of a DOM under one block for the marking-up path: places named by how many characters come before them, and a range whose two ends can be put anywhere in any tree the page hands it — the live block for the span, its detached copy for the wrap. */
+  const domStand = (block) => {
+    const runsOf = (root) => {
+      const found = [];
+      const walk = (node) => {
+        if (node.nodeType === 3) found.push(node);
+        else for (const child of node.childNodes || []) walk(child);
+      };
+      walk(root);
+      return found;
+    };
+    const holderIndex = (node) => node.parentElement.childNodes.indexOf(node);
+    const nodeAfter = (node) => node.parentElement.childNodes[holderIndex(node) + 1] || null;
+    // The node that begins at `offset` inside `node`, splitting the run where the offset falls inside it. Null where the offset is the end of the holder's last child.
+    const splitAt = (node, offset) => {
+      if (offset <= 0) return node;
+      if (offset >= node.nodeValue.length) return nodeAfter(node);
+      const tail = booted.document.createTextNode(node.nodeValue.slice(offset));
+      node.nodeValue = node.nodeValue.slice(0, offset);
+      node.textContent = node.nodeValue;
+      node.parentElement.insertBefore(tail, nodeAfter(node));
+      return tail;
+    };
+    // Taking the words out is written for two ends that land in one holder, which is what the blocks below give it; anything wider throws rather than answering something a browser would not.
+    const makeRange = () => {
+      let root = null;
+      const countTo = (container, offset) => {
+        let count = 0;
+        let done = false;
+        const walk = (node) => {
+          if (done) return;
+          if (node === container) {
+            if (node.nodeType === 3) count += Math.min(offset, node.nodeValue.length);
+            else for (const child of (node.childNodes || []).slice(0, offset)) count += child.textContent.length;
+            done = true;
+            return;
+          }
+          if (node.nodeType === 3) {
+            count += node.nodeValue.length;
+            return;
+          }
+          for (const child of node.childNodes || []) walk(child);
+        };
+        walk(root || container);
+        return count;
+      };
+      const range = {
+        collapsed: false,
+        startContainer: null,
+        startOffset: 0,
+        endContainer: null,
+        endOffset: 0,
+        selectNodeContents(node) {
+          root = node;
+          range.startContainer = node;
+          range.startOffset = 0;
+          range.endContainer = node;
+          range.endOffset = (node.childNodes || []).length;
+        },
+        setStart(container, offset) {
+          if (!root) root = topOfPage(container);
+          range.startContainer = container;
+          range.startOffset = offset;
+        },
+        setEnd(container, offset) {
+          if (!root) root = topOfPage(container);
+          range.endContainer = container;
+          range.endOffset = offset;
+        },
+        cloneContents: () => ({ textContent: root.textContent.slice(countTo(range.startContainer, range.startOffset), countTo(range.endContainer, range.endOffset)) }),
+        extractContents() {
+          const last = splitAt(range.endContainer, range.endOffset);
+          const first = splitAt(range.startContainer, range.startOffset);
+          const holder = first && first.parentElement;
+          if (!holder) throw new Error('the words taken out belong to no holder');
+          const from = holder.childNodes.indexOf(first);
+          const to = last ? holder.childNodes.indexOf(last) : holder.childNodes.length;
+          if (from < 0 || to < from) throw new Error('the stand takes words out of one holder, and these two ends are not in one');
+          const fragment = booted.document.createDocumentFragment();
+          for (const node of holder.childNodes.slice(from, to)) fragment.appendChild(node);
+          range.startContainer = holder;
+          range.startOffset = from;
+          return fragment;
+        },
+        insertNode(node) {
+          const holder = range.startContainer;
+          holder.insertBefore(node, holder.childNodes[range.startOffset] || null);
+        },
+      };
+      return range;
+    };
+    // A place in the block's words, named by how many of them come before it.
+    const place = (offset, preferNext) => {
+      const runs = runsOf(block);
+      let left = offset;
+      for (const run of runs) {
+        if (left < run.nodeValue.length || (!preferNext && left === run.nodeValue.length)) return { node: run, offset: left };
+        left -= run.nodeValue.length;
+      }
+      const last = runs[runs.length - 1];
+      return { node: last, offset: last.nodeValue.length };
+    };
+    const rangeOver = (span, words) => {
+      const from = place(span.start, true);
+      const to = place(span.end, false);
+      const range = makeRange();
+      range.selectNodeContents(block);
+      range.setStart(from.node, from.offset);
+      range.setEnd(to.node, to.offset);
+      range.collapsed = span.start === span.end;
+      range.toString = () => words;
+      range.getClientRects = () => [{ left: 100, top: 200, width: 60, height: 20 }];
+      range.cloneRange = () => range;
+      return range;
+    };
+    return {
+      runsOf,
+      makeRange,
+      // The words under the bar, both ends inside the block, the way the page hands one over.
+      selectWords(span, words) {
+        const live = rangeOver(span, words);
+        booted.getSelection = () => ({ rangeCount: 1, isCollapsed: false, getRangeAt: () => live, toString: () => words });
+        return live;
+      },
+      // A place in the block with nothing selected, which is what a click answers with.
+      caretAt: (offset) => rangeOver({ start: offset, end: offset }, ''),
+    };
+  };
+
+  /** Stand the page in around one block of a locked Markdown document, and answer how to put every borrowed name back. */
+  const standIn = (readingApp, body, block, stand, posted) => {
+    const wasQuery = readingApp.querySelector;
+    const wasContains = readingApp.contains;
+    const wasSelection = booted.getSelection;
+    const wasRange = booted.document.createRange;
+    const wasWalker = booted.document.createTreeWalker;
+    const wasFragment = booted.document.createDocumentFragment;
+    const wasCreate = booted.document.createElement;
+    const wasIpc = booted.ipc;
+    const wasOpen = booted.openWysiwygBlock;
+    const wasUnlocked = vm.runInContext('readingUnlocked', booted);
+    const wasFormat = vm.runInContext('currentDocumentFormat', booted);
+    const layout = fakeElement('stand-layout');
+    layout.className = 'reader-layout';
+    layout.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+    const opened = { count: 0 };
+    readingApp.querySelector = (selector) => {
+      const want = String(selector);
+      if (want === '.reader-layout') return layout;
+      if (want === '.document-body') return body;
+      return wasQuery.call(readingApp, want);
+    };
+    readingApp.contains = (node) => topOfPage(node) === topOfPage(block);
+    block.contains = (node) => topOfPage(node) === topOfPage(block);
+    booted.document.createRange = stand.makeRange;
+    booted.document.createTreeWalker = (root) => {
+      const runs = stand.runsOf(root);
+      let index = 0;
+      return { nextNode: () => runs[index++] || null };
+    };
+    booted.document.createDocumentFragment = () => {
+      const made = wasFragment.call(booted.document);
+      made.__isFragment = true;
+      return made;
+    };
+    booted.document.createElement = (tag) => {
+      const made = wasCreate.call(booted.document, tag);
+      const append = made.appendChild.bind(made);
+      // A browser empties a fragment into the holder rather than putting the fragment in it, and the wrap is written the way a browser takes it.
+      made.appendChild = (node) => {
+        if (node && node.__isFragment) {
+          for (const child of [...node.childNodes]) append(child);
+          return node;
+        }
+        return append(node);
+      };
+      return made;
+    };
+    booted.ipc = { postMessage: (text) => posted.push(JSON.parse(text)) };
+    booted.openWysiwygBlock = () => { opened.count += 1; };
+    vm.runInContext("currentDocumentFormat = 'markdown'; readingUnlocked = false;", booted);
+    return {
+      opened,
+      restore() {
+        readingApp.querySelector = wasQuery;
+        readingApp.contains = wasContains;
+        booted.getSelection = wasSelection;
+        booted.document.createRange = wasRange;
+        booted.document.createTreeWalker = wasWalker;
+        booted.document.createDocumentFragment = wasFragment;
+        booted.document.createElement = wasCreate;
+        booted.ipc = wasIpc;
+        booted.openWysiwygBlock = wasOpen;
+        vm.runInContext('readingUnlocked = ' + (wasUnlocked ? 'true' : 'false') + '; currentDocumentFormat = ' + JSON.stringify(wasFormat) + ';', booted);
+        vm.runInContext('selectionToolbar = null; selectionToolbarRow = null; selectionToolbarLinkInput = null; selectionToolbarButtons = new Map(); selectionToolbarBlock = null; selectionToolbarRange = null; selectionToolbarPoint = null;', booted);
+        booted.window.leafBlocksResynced({ source: '' });
+      },
+    };
+  };
+
+  /** One block of a locked document, drawn from `markup` and holding `source`. `tail` is how much of the source comes after the block. */
+  const lockedBlock = (name, markup, source, tail = 0) => {
+    const body = fakeElement(name + '-body');
+    body.className = 'document-body';
+    const block = fakeElement(name + '-block');
+    block.tagName = 'P';
+    block.innerHTML = markup;
+    block.dataset.srcStart = '0';
+    block.dataset.srcEnd = String(source.length - tail);
+    block.dataset.blockKind = 'paragraph';
+    body.appendChild(block);
+    return { body, block };
+  };
+
+  /** Press Highlight over `words` inside a locked block drawn from `markup`, and answer what reached the buffer. */
+  const pressHighlightOn = (markup, source, words) => {
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock('highlight', markup, source);
+    const at = block.textContent.indexOf(words);
+    if (at < 0) throw new Error('the block does not hold ' + JSON.stringify(words));
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    try {
+      booted.window.leafBlocksResynced({ source });
+      booted.bindSelectionToolbar();
+      stand.selectWords({ start: at, end: at + words.length }, words);
+      booted.syncSelectionToolbar();
+      press(vm.runInContext('selectionToolbarButtons', booted), 'highlight');
+      return { edit: posted.find((message) => message.command === 'editBlock'), opened: held.opened.count, page: block.innerHTML, posted };
+    } finally {
+      held.restore();
+    }
+  };
+
+  check('highlighting a locked block splices its own range and never touches the page', () => {
+    const source = 'A marked passage here.';
+    const result = pressHighlightOn('A marked passage here.', source, 'marked passage');
+    if (!result.edit) throw new Error('highlighting sent ' + JSON.stringify(result.posted));
+    if (result.opened) throw new Error('highlighting opened an editing host on a locked page');
+    if (result.edit.start !== 0 || result.edit.end !== source.length) {
+      throw new Error('highlighting spliced [' + result.edit.start + ',' + result.edit.end + ') rather than the block');
+    }
+    if (result.edit.text !== 'A <mark>marked passage</mark> here.') throw new Error('highlighting wrote ' + JSON.stringify(result.edit.text));
+    // The buffer is what changed. The block on the page is left exactly as the render drew it, because the tag went on a copy.
+    if (result.page !== 'A marked passage here.') throw new Error('the page itself became ' + JSON.stringify(result.page));
+    // An ordinary edit: dirty, undoable, written when the reader says so. Not the checkbox bargain, which writes the file itself.
+    if (result.edit.autosave) throw new Error('a highlight wrote the file without being asked to save');
+  });
+
+  check('highlighting keeps the formats around it, and pressing it again takes the highlight off', () => {
+    // Words carrying a format of their own come back through the serializer with it, so a highlight over a bold phrase is not a bold phrase lost. The tag lands inside the one the words already wear, because both ends of the selection are inside it — which is where a browser puts it too, and the serializer writes both.
+    const bold = pressHighlightOn('A <strong>bold</strong> word.', 'A **bold** word.', 'bold');
+    if (!bold.edit) throw new Error('highlighting a bold phrase sent nothing');
+    if (bold.edit.text !== 'A **<mark>bold</mark>** word.') throw new Error('highlighting a bold phrase wrote ' + JSON.stringify(bold.edit.text));
+
+    // And the way back off: pressing it on words already highlighted unwraps that one tag and leaves everything beside it standing.
+    const off = pressHighlightOn('A <mark>marked passage</mark> here.', 'A <mark>marked passage</mark> here.', 'marked passage');
+    if (!off.edit) throw new Error('taking a highlight off sent nothing');
+    if (off.edit.text !== 'A marked passage here.') throw new Error('taking a highlight off wrote ' + JSON.stringify(off.edit.text));
+    if (off.opened) throw new Error('taking a highlight off opened an editing host');
+  });
+
+  /** Press Annotate over `words`, type `note` and press Enter, on a locked page holding `source`. */
+  const writeNoteOn = (markup, source, words, note, tail) => {
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock('note', markup, source, tail);
+    const at = block.textContent.indexOf(words);
+    if (at < 0) throw new Error('the block does not hold ' + JSON.stringify(words));
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    try {
+      booted.window.leafBlocksResynced({ source });
+      booted.bindSelectionToolbar();
+      stand.selectWords({ start: at, end: at + words.length }, words);
+      booted.syncSelectionToolbar();
+      press(vm.runInContext('selectionToolbarButtons', booted), 'annotate');
+      const input = vm.runInContext('selectionToolbarLinkInput', booted);
+      const noting = vm.runInContext('selectionToolbar', booted).classList.contains('is-noting');
+      // The box has the focus now, and a real input's focus takes the page's selection with it — so there is nothing in the document left to read the words back off, and the commit has to work from the range the bar remembered.
+      booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
+      input.value = note;
+      let prevented = 0;
+      for (const handler of [...(input.listeners.get('keydown') || [])]) {
+        handler({ key: 'Enter', preventDefault() { prevented += 1; } });
+      }
+      return { noting, prevented, edit: posted.find((message) => message.command === 'editBlocks'), posted, page: block.innerHTML };
+    } finally {
+      held.restore();
+    }
+  };
+
+  // What the host does with a list of replacements: back to front, so the offsets in front of each one are still the ones it was written against.
+  const bufferAfter = (source, blocks) => {
+    let written = source;
+    for (const one of [...blocks].reverse()) written = written.slice(0, one.start) + one.text + written.slice(one.end);
+    return written;
+  };
+  // Ascending and never overlapping, which is the whole of what the host will take.
+  const holdsTogether = (blocks, what) => {
+    for (let at = 1; at < blocks.length; at += 1) {
+      if (blocks[at].start < blocks[at - 1].end) throw new Error(what + ' sent ranges the host refuses: ' + JSON.stringify(blocks));
+    }
+  };
+
+  check('a note writes its marker and its own line as one undoable edit', () => {
+    const source = 'A passage worth a note.\n';
+    const result = writeNoteOn('A passage worth a note.', source, 'A passage worth a note.', 'What I thought of it.', 1);
+    if (!result.noting) throw new Error('pressing Annotate did not open the note box');
+    if (!result.prevented) throw new Error('Enter in the note box was left to the web view');
+    if (!result.edit) throw new Error('writing a note sent ' + JSON.stringify(result.posted));
+    // One send, so one undo takes the whole note back.
+    const edits = result.posted.filter((message) => String(message.command).startsWith('edit'));
+    if (edits.length !== 1) throw new Error('a note went up as ' + edits.length + ' edits');
+    const blocks = result.edit.blocks;
+    if (blocks.length !== 2) throw new Error('a note sent ' + blocks.length + ' ranges rather than the block and the tail');
+    holdsTogether(blocks, 'a note');
+    if (blocks[0].start !== 0 || blocks[0].end !== source.length - 1) throw new Error('the marker was spliced over ' + JSON.stringify(blocks[0]));
+    if (blocks[1].start !== source.length || blocks[1].end !== source.length) throw new Error('the note was not written onto the end of the source');
+    // The page is untouched: the marker went on a copy of the block, and the render is what puts it on screen.
+    if (result.page !== 'A passage worth a note.') throw new Error('the page itself became ' + JSON.stringify(result.page));
+    // Written when the reader says so, like every other edit.
+    if (result.edit.autosave) throw new Error('a note wrote the file without being asked to save');
+    if (bufferAfter(source, blocks) !== 'A passage worth a note.[^note-1]\n\n[^note-1]: What I thought of it.') {
+      throw new Error('the buffer became ' + JSON.stringify(bufferAfter(source, blocks)));
+    }
+  });
+
+  check('a block sitting at the very end of the source writes one range rather than two that meet', () => {
+    // The block's range runs to the last byte, so the tail insert begins exactly where it ends. Two replacements that meet are one replacement written twice.
+    const source = 'The last line.';
+    const result = writeNoteOn('The last line.', source, 'The last line.', 'A note.', 0);
+    if (!result.edit) throw new Error('writing a note at the end of the source sent nothing');
+    const blocks = result.edit.blocks;
+    if (blocks.length !== 1) throw new Error('the two ranges that meet were sent as ' + blocks.length);
+    if (blocks[0].start !== 0 || blocks[0].end !== source.length) throw new Error('the folded range is ' + JSON.stringify(blocks[0]));
+    if (bufferAfter(source, blocks) !== 'The last line.[^note-1]\n\n[^note-1]: A note.') {
+      throw new Error('the buffer became ' + JSON.stringify(bufferAfter(source, blocks)));
+    }
+  });
+
+  check('a click with nothing selected offers the note alone, at the place that was pressed', () => {
+    const source = 'A passage worth a note.\n';
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock('point', 'A passage worth a note.', source, 1);
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    const wasCaret = booted.document.caretRangeFromPoint;
+    try {
+      booted.window.leafBlocksResynced({ source });
+      booted.bindSelectionToolbar();
+      // Nothing selected, and the place under the pointer answered the standard way.
+      booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
+      const asked = [];
+      booted.document.caretRangeFromPoint = (x, y) => {
+        asked.push([x, y]);
+        return stand.caretAt(9);
+      };
+      const buttons = vm.runInContext('selectionToolbarButtons', booted);
+      for (const handler of [...(booted.document.listeners.get('click') || [])]) handler({ target: block, clientX: 120, clientY: 300 });
+      const bar = vm.runInContext('selectionToolbar', booted);
+      if (bar.hidden) throw new Error('a click on a place left the bar away');
+      const showing = [...buttons].filter(([, button]) => !button.hidden).map(([id]) => id);
+      if (showing.join(',') !== 'annotate') throw new Error('a click on a place offered ' + JSON.stringify(showing));
+      if (!asked.length || asked[0][0] !== 120 || asked[0][1] !== 300) throw new Error('the place under the pointer was asked for as ' + JSON.stringify(asked));
+      // And the marker lands where the click did, not at the end of the block.
+      press(buttons, 'annotate');
+      const input = vm.runInContext('selectionToolbarLinkInput', booted);
+      // The box took the focus, so the place under the pointer is only the caret the bar is holding.
+      booted.document.caretRangeFromPoint = () => null;
+      input.value = 'Here.';
+      for (const handler of [...(input.listeners.get('keydown') || [])]) handler({ key: 'Enter', preventDefault() {} });
+      const edit = posted.find((message) => message.command === 'editBlocks');
+      if (!edit) throw new Error('a note from a click sent ' + JSON.stringify(posted));
+      if (edit.blocks[0].text !== 'A passage[^note-1] worth a note.') throw new Error('the marker landed as ' + JSON.stringify(edit.blocks[0].text));
+    } finally {
+      held.restore();
+      booted.document.caretRangeFromPoint = wasCaret;
+    }
+  });
+
+  check('a second note takes a label the document is not already wearing', () => {
+    // A document already carrying a note is where the label matters: two definitions under one label is a file whose markers point at the wrong words, and nothing in the window says so.
+    const doc = 'A passage worth a note.[^note-1] And more here.\n\n[^note-1]: What I thought of it.\n';
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock('second-note', 'A passage worth a note.<sup class="footnote-reference" id="fnref-note-1">1</sup> And more here.', doc, doc.length - 47);
+    const definition = fakeElement('second-note-definition');
+    definition.className = 'footnote-definition';
+    definition.setAttribute('id', 'note-1');
+    definition.dataset.srcStart = '49';
+    definition.dataset.srcEnd = String(doc.length - 1);
+    definition.dataset.blockKind = 'footnote_definition';
+    body.appendChild(definition);
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    try {
+      booted.window.leafBlocksResynced({ source: doc });
+      booted.bindSelectionToolbar();
+      // Words away from the marker, so this is a new note rather than a press on the one already standing there.
+      const at = block.textContent.indexOf('more');
+      stand.selectWords({ start: at, end: at + 'more'.length }, 'more');
+      booted.syncSelectionToolbar();
+      press(vm.runInContext('selectionToolbarButtons', booted), 'annotate');
+      const input = vm.runInContext('selectionToolbarLinkInput', booted);
+      booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
+      input.value = 'A second note.';
+      for (const handler of [...(input.listeners.get('keydown') || [])]) handler({ key: 'Enter', preventDefault() {} });
+      const edit = posted.find((message) => message.command === 'editBlocks');
+      if (!edit) throw new Error('a second note sent ' + JSON.stringify(posted));
+      holdsTogether(edit.blocks, 'a second note');
+      const written = bufferAfter(doc, edit.blocks);
+      if (written !== 'A passage worth a note.[^note-1] And more[^note-2] here.\n\n[^note-1]: What I thought of it.\n\n[^note-2]: A second note.') {
+        throw new Error('the buffer became ' + JSON.stringify(written));
+      }
+    } finally {
+      held.restore();
+    }
+  });
+
+  check('Escape leaves the note box with nothing written and hands the input back to the link', () => {
+    const doc = 'A passage worth a note.\n';
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock('note-escape', 'A passage worth a note.', doc, 1);
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    try {
+      booted.window.leafBlocksResynced({ source: doc });
+      booted.bindSelectionToolbar();
+      stand.selectWords({ start: 0, end: 23 }, 'A passage worth a note.');
+      booted.syncSelectionToolbar();
+      press(vm.runInContext('selectionToolbarButtons', booted), 'annotate');
+      const input = vm.runInContext('selectionToolbarLinkInput', booted);
+      input.value = 'Half a thought.';
+      for (const handler of [...(input.listeners.get('keydown') || [])]) handler({ key: 'Escape', preventDefault() {} });
+      const bar = vm.runInContext('selectionToolbar', booted);
+      if (!bar.hidden) throw new Error('Escape left the bar standing over the words');
+      if (bar.classList.contains('is-noting')) throw new Error('Escape left the bar wearing its note mode');
+      if (posted.some((message) => String(message.command).startsWith('edit'))) throw new Error('Escape wrote ' + JSON.stringify(posted));
+      // Escape out of the link box asks for the editing host back, and a locked page has none to be handed.
+      if (held.opened.count) throw new Error('Escape out of a note opened an editing host on a locked page');
+      if (input.value !== '') throw new Error('the abandoned note was left in the box as ' + JSON.stringify(input.value));
+      // One input, two hats: a note abandoned without handing the words back leaves the link box asking for a note.
+      const asking = vm.runInContext('SELECTION_LINK_PLACEHOLDER', booted);
+      if (input.placeholder !== asking) throw new Error('the input was left asking for ' + JSON.stringify(input.placeholder) + ' rather than ' + JSON.stringify(asking));
+      // And the markup the bar is built from writes those same words, so the two spellings of the one question cannot drift apart.
+      if (!source.includes('placeholder="' + asking + '"')) throw new Error('the bar is built asking for something other than ' + JSON.stringify(asking));
+    } finally {
+      held.restore();
+    }
+  });
+
+  check('the note box puts the buttons away and the input up, exactly as the link box does', () => {
+    const css = readingCss('selection-toolbar.css');
+    // The mode is the class and nothing else — the script adds it and the stylesheet is the whole of what it does — so a selector that stopped naming it would leave a note being typed into a box standing behind the row of buttons it replaces.
+    for (const [row, shown] of [['.selection-format-row', 'display: none;'], ['.selection-link-row', 'display: block;']]) {
+      const at = css.indexOf('.selection-toolbar.is-linking ' + row);
+      if (at < 0) throw new Error('the stylesheet no longer says what the link box does to ' + row);
+      const rule = css.slice(at, css.indexOf('}', at));
+      if (!rule.includes('.selection-toolbar.is-noting ' + row)) throw new Error('the note box does not do to ' + row + ' what the link box does');
+      if (!rule.includes(shown)) throw new Error(row + ' is no longer ' + JSON.stringify(shown) + ' while the box is open');
+    }
+  });
+
+  check('pressing Annotate on a passage that already carries a marker takes the note away with it', () => {
+    const source = 'A passage worth a note.[^note-1]\n\n[^note-1]: What I thought of it.\n';
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock('unnote', 'A passage worth a note.<sup class="footnote-reference" id="fnref-note-1">1</sup>', source, source.length - 32);
+    // The note at the foot of the page, carrying its own range the way the renderer stamps it.
+    const definition = fakeElement('unnote-definition');
+    definition.className = 'footnote-definition';
+    definition.setAttribute('id', 'note-1');
+    definition.dataset.srcStart = '34';
+    definition.dataset.srcEnd = String(source.length - 1);
+    definition.dataset.blockKind = 'footnote_definition';
+    body.appendChild(definition);
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    try {
+      booted.window.leafBlocksResynced({ source });
+      booted.bindSelectionToolbar();
+      // The passage selected again: it ends exactly where the marker begins, which is the press being on it.
+      stand.selectWords({ start: 0, end: 23 }, 'A passage worth a note.');
+      booted.syncSelectionToolbar();
+      const buttons = vm.runInContext('selectionToolbarButtons', booted);
+      press(buttons, 'annotate');
+      if (vm.runInContext('selectionToolbar', booted).classList.contains('is-noting')) {
+        throw new Error('a press on a marker opened the note box rather than taking the note off');
+      }
+      const edit = posted.find((message) => message.command === 'editBlocks');
+      if (!edit) throw new Error('taking a note off sent ' + JSON.stringify(posted));
+      const blocks = edit.blocks;
+      holdsTogether(blocks, 'taking a note off');
+      // The definition's delete takes the blank line in front of it and, being the last line in the file, the run of blank lines before that — the same answer the tree already gives for deleting the last block of a document. So the two ranges run together and the pair arrives as one replacement. What matters is the file it leaves, not how many pieces it was written in.
+      if (bufferAfter(source, blocks) !== 'A passage worth a note.') {
+        throw new Error('the buffer became ' + JSON.stringify(bufferAfter(source, blocks)));
+      }
+      // One send either way, so one undo takes both halves back.
+      const edits = posted.filter((message) => String(message.command).startsWith('edit'));
+      if (edits.length !== 1) throw new Error('taking a note off went up as ' + edits.length + ' edits');
+    } finally {
+      held.restore();
+    }
+  });
 
   check('the format bar steps heading levels and stops at both ends', () => {
     const { steppedHeadingLevel, blockFormatChanges } = booted;
@@ -763,7 +1420,10 @@ export function run() {
     const wasWalker = booted.document.createTreeWalker;
     const posted = [];
     const wasIpc = booted.ipc;
+    // Code is an unlocked gesture, and the padlock stands in front of the call that opens the editing host it needs.
+    const wasUnlocked = vm.runInContext('readingUnlocked', booted);
     try {
+      vm.runInContext('readingUnlocked = true;', booted);
       block.contains = (node) => contains(block, node);
       booted.getSelection = () => selection;
       booted.document.createRange = makeRange;
@@ -787,6 +1447,7 @@ export function run() {
       booted.ipc = wasIpc;
       delete booted.__codeFormatBlock;
       delete booted.__codeFormatRange;
+      vm.runInContext('readingUnlocked = ' + (wasUnlocked ? 'true' : 'false') + ';', booted);
       vm.runInContext('selectionToolbarBlock = null; selectionToolbarRange = null;', booted);
     }
   };

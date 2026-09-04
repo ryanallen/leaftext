@@ -10,6 +10,8 @@
   z-index: 6;
   display: flex;
   align-items: center;
+  /* Never wider than the column, less the 8px either side the script clamps to — SELECTION_TOOLBAR_MARGIN in selection-toolbar.js. Unlocked the row is 402px wide and the reading column can be squeezed to 360, so the row wraps to a second line here rather than the bar being pinned to a left edge whose right edge hangs past the words. */
+  max-width: calc(100% - 16px);
   padding: var(--lt-space-4);
   /* Transparent, not gone: the border holds the box's size while ::after paints the visible face — the same arrangement the reader's bottom toolbar uses, and for the same reason. A negative-z child paints over its parent's own background, so the only way the dot shadow (::before) gets behind an opaque face is for the face to be a later negative-z child itself. */
   border: var(--lt-stroke-1) solid transparent;
@@ -62,17 +64,22 @@
 }
 .selection-format-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--lt-space-2);
 }
-.selection-toolbar.is-linking .selection-format-row {
+/* The one input in the bar wears two hats — a link, and a note — and either of them puts the buttons away while it is being typed into. Two classes rather than one and a flag, because the class is what says which of the two Enter is finishing. */
+.selection-toolbar.is-linking .selection-format-row,
+.selection-toolbar.is-noting .selection-format-row {
   display: none;
 }
 .selection-link-row {
   display: none;
   padding: 0 var(--lt-space-4);
 }
-.selection-toolbar.is-linking .selection-link-row {
+.selection-toolbar.is-linking .selection-link-row,
+.selection-toolbar.is-noting .selection-link-row {
   display: block;
 }
 .selection-link-input {

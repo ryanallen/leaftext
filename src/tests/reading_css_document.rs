@@ -235,6 +235,20 @@ fn reading_mode_css_uses_web_reader_document_rhythm() {
 }
 
 #[test]
+fn a_highlight_is_washed_in_the_theme_rather_than_the_browser_yellow() {
+    let css = reading_mode_css();
+    let mark = rule_body(&css, ".document-body mark {");
+
+    // Left alone a browser paints `<mark>` a fixed yellow and forces black ink over it, which is a foreign object in every dark family. The wash is the warning role, the same shape find.css gives a search match, so a highlight lands beside a hit (the accent) and an action (the primary) without being taken for either.
+    assert_contains(
+        mark,
+        "background-color: color-mix(in srgb, var(--lt-warning) 45%, transparent);",
+    );
+    // The words keep the body's own ink, so nothing has to be chosen per family for a highlight to stay readable.
+    assert_contains(mark, "color: inherit;");
+}
+
+#[test]
 fn a_wrapped_run_of_document_buttons_does_not_touch() {
     let css = reading_mode_css();
     let button = rule_body(&css, ".document-body a.leaf-md-button {");
