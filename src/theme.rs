@@ -119,6 +119,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-markdown-badge-foreground",
     "--lt-markdown-table-border",
     "--lt-markdown-table-header-background",
+    "--lt-markdown-table-row-background",
     "--lt-markdown-thematic-break",
     "--lt-markdown-math-inline-background",
     "--lt-markdown-keyboard-background",
@@ -161,6 +162,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
 #[rustfmt::skip]
 pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[
     ("--lt-hover-tint", "--lt-muted-foreground"),
+    ("--lt-markdown-table-row-background", "--lt-surface-sunken"),
 ];
 // END GENERATED
 

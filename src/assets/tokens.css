@@ -175,7 +175,6 @@
   /* Fixed tints */
   --lt-tint-recess: rgba(0, 0, 0, 0.16);
   --lt-tint-backdrop: rgba(0, 0, 0, 0.45);
-  --lt-tint-row: rgba(110, 118, 129, 0.08);
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   /* The hover wash */
   --lt-wash-hover: color-mix(in srgb, var(--lt-hover-tint) 16%, transparent);

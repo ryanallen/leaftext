@@ -836,3 +836,38 @@ fn an_exported_sheet_carries_the_one_pack_its_theme_wears() {
         "{plain} lost the drawings it wears"
     );
 }
+
+#[test]
+fn the_alternating_table_row_resolves_on_every_family_and_copies_the_recess() {
+    // The stripe a reader follows one row along, across to its last column. It is one of the two colors a family may leave out, so what a silent family lands on is its own recess against its own page — not the one gray for everybody that left a dark table with no bands in it at all.
+    assert!(
+        LEAF_SEMANTIC_TOKEN_DEFAULTS
+            .iter()
+            .any(|(name, from)| *name == "--lt-markdown-table-row-background"
+                && *from == "--lt-surface-sunken"),
+        "the alternating row copies the recess when a family says nothing"
+    );
+
+    let sources = theme_sources();
+    assert_eq!(sources.len(), 22, "eleven families in two appearances");
+
+    for source in sources {
+        let stripe = theme_source_token_value(source, "--lt-markdown-table-row-background")
+            .unwrap_or_else(|| panic!("{} resolves the alternating row", source.id));
+        let recess = theme_source_token_value(source, "--lt-surface-sunken")
+            .unwrap_or_else(|| panic!("{} resolves the recess", source.id));
+
+        let set = source
+            .tokens
+            .iter()
+            .chain(source.overrides.iter())
+            .any(|(name, _)| *name == "--lt-markdown-table-row-background");
+        if !set {
+            assert_eq!(
+                stripe, recess,
+                "expected {} to stripe with its own recess",
+                source.id
+            );
+        }
+    }
+}

@@ -1125,3 +1125,51 @@ fn nothing_lifts_or_changes_shape_when_a_pointer_lands_on_it() {
         );
     }
 }
+
+/// The `background:` declaration of the rule a selector opens that sets a fill. The alternating-row selector opens two rules — the fill and the grain lattice over it — and only one of them carries the shorthand.
+fn alternating_row_fill(css: &str, selector: &str) -> String {
+    rule_bodies(css, selector)
+        .into_iter()
+        .find_map(|body| {
+            body.lines()
+                .map(str::trim)
+                .find(|line| line.starts_with("background:"))
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| panic!("expected a fill for {selector}"))
+}
+
+#[test]
+fn the_alternating_row_is_filled_from_one_name_on_the_page_and_in_the_sheet() {
+    // The table in the document and the table opened on the whole window are the same stripe to a reader, so they draw from one name. Written twice they are free to drift, and a stripe that is right in one place and gone in the other reads as the app losing the row rather than as two rules.
+    let css = reading_mode_css();
+
+    let page = alternating_row_fill(&css, ".document-body tr:nth-child(2n) td {");
+    let sheet = alternating_row_fill(&css, ".table-sheet-grid tr:nth-child(2n) td {");
+
+    assert_eq!(
+        page, "background: var(--lt-markdown-table-row-background);",
+        "the page's alternating row takes the themed fill"
+    );
+    assert_eq!(
+        page, sheet,
+        "the page's table and the sheet's grid fill the alternating row from one name"
+    );
+}
+
+#[test]
+fn the_alternating_rows_fill_is_a_name_a_family_answers_rather_than_one_color() {
+    // One gray for eleven families in two appearances is the fault this replaced: it lightened the row the grain was darkening, so a dark page banded at 0.2 lightness while a light page banded at 6.6. The fill has to be a name each family resolves against its own page, and a color written here is that fault coming back.
+    let css = reading_mode_css();
+
+    for selector in [
+        ".document-body tr:nth-child(2n) td {",
+        ".table-sheet-grid tr:nth-child(2n) td {",
+    ] {
+        let fill = alternating_row_fill(&css, selector);
+        assert!(
+            fill.starts_with("background: var(--lt-") && fill.ends_with(");"),
+            "expected {selector} to fill from a token, found {fill}"
+        );
+    }
+}

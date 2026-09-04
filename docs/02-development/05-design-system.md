@@ -1,25 +1,25 @@
 <!-- Generated from design/ by `just bundle-design-docs`. Do not edit. -->
 # Design system
 
-> Every value in Leaftext's interface comes from a token. 82 of them are colors, which each theme sets for itself; 165 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
+> Every value in Leaftext's interface comes from a token. 83 of them are colors, which each theme sets for itself; 164 are everything else, one value for the whole app. Nothing is written by hand, and a check fails the build when something is.
 
 Four files under `design/` are the source. Each is plain Markdown, so Leaftext opens them.
 
 | File | Holds | Compiles to |
 | --- | --- | --- |
-| `design/colors.md` | 82 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
-| `design/tokens.md` | 165 values that do not change with the theme | `src/assets/tokens.css` |
+| `design/colors.md` | 83 color names and what each is for — no values, because a color's value belongs to a theme | the token contract in `src/theme.rs` |
+| `design/tokens.md` | 164 values that do not change with the theme | `src/assets/tokens.css` |
 | `design/icons.md` | 65 icons | `src/assets/icons.css`, one mask class each |
 | `design/components.md` | 75 components, and the markup each is drawn with | `src/assets/gallery.html` |
 
 ## Colors
 
-Grouped by what they dress. Every one of the 11 theme families gives 81 of them a value, in light and in dark, and the app refuses to start if one is missing. The last is optional: leave it out and the compiler copies the value of the color named beside it, so a family only says what it wants to differ.
+Grouped by what they dress. Every one of the 11 theme families gives 81 of them a value, in light and in dark, and the app refuses to start if one is missing. The other 2 are optional: leave it out and the compiler copies the value of the color named beside it, so a family only says what it wants to differ.
 
 | Group | Colors |
 | --- | --- |
 | Core | 25 |
-| Document | 25 |
+| Document | 26 |
 | Code | 7 |
 | Syntax | 17 |
 | Navigation | 6 |
@@ -48,7 +48,7 @@ One value each, whatever theme is on.
 | Strokes, rings and one recess | 6 |
 | Grain | 6 |
 | Fixed colors | 5 |
-| Fixed tints | 4 |
+| Fixed tints | 3 |
 | The hover wash | 1 |
 | Inset edges | 3 |
 

@@ -232,7 +232,7 @@
   font-weight: var(--lt-weight-600);
 }
 .document-body tr:nth-child(2n) td {
-  background: var(--lt-tint-row);
+  background: var(--lt-markdown-table-row-background);
 }
 /* The chrome's grain over the reading view's tinted surfaces, so a code block or table header reads as a dithered cell rather than a flat wash. Must stay after the rules that set those fills: each uses the `background:` shorthand, which at equal specificity would blank the image. The frontmatter table drops it on its own — it clears the fill at higher specificity, taking the grain with it; a rendered diagram outranks this rule too and so restates it. Cells only — the code view is a whole page, so graining it dithers the editor. */
 .document-body .document-outline,

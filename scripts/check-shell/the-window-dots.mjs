@@ -188,6 +188,7 @@ export function run() {
     // Every paper, fill and tint the miniature is drawn on, left exactly where the family put it: moving one of those is moving a background, which is the thing this whole state is written not to do. The selection pairs stay for the same reason selected text stays selected.
     const kept = [
       'markdown-background', 'markdown-badge-background', 'markdown-table-header-background',
+      'markdown-table-row-background',
       'markdown-math-inline-background', 'markdown-keyboard-background',
       'editor-inline-code-background', 'editor-code-background',
       'editor-code-selection-background', 'editor-code-selection-foreground',

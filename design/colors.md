@@ -1,12 +1,12 @@
 # Colors
 
-> The 82 color names a theme is drawn from. This file is the list; the values live in `themes/`, one file per family.
+> The 83 color names a theme is drawn from. This file is the list; the values live in `themes/`, one file per family.
 
 A color is **themed**: 11 families each give it a value in light and in dark, so this file names them and says what each is for and never holds a value. Everything that is one value for the whole app — radii, the type scale, shadows — is in [tokens.md](tokens.md) instead.
 
 `just bundle-tokens` compiles this into `LEAF_SEMANTIC_TOKEN_CONTRACT` in `src/theme.rs`, and `just check-tokens` fails when the two drift. The names here are written bare; the compiler adds the `--lt-` prefix, exactly as the theme files do.
 
-**`Default` empty means the row is required.** 81 of the 82 are, and a family that misses one is refused at startup. A filled cell names another row here whose value the compiler copies when a family says nothing, so the row is one a family may set and usually does not — the copied value is written into the family's compiled block as its own hex, never as a pointer.
+**`Default` empty means the row is required.** 81 of the 83 are, and a family that misses one is refused at startup. A filled cell names another row here whose value the compiler copies when a family says nothing, so the row is one a family may set and usually does not — the copied value is written into the family's compiled block as its own hex, never as a pointer.
 
 **A row here is the only way a color exists.** `theme.rs` emits a custom property for any row it finds in a theme file, so a key no longer listed here would become dead CSS in every theme — `check-tokens` fails on that instead. Adding a color means adding a row here *and* a row in all 11 theme files; the startup check refuses a family that misses one.
 
@@ -69,6 +69,7 @@ The rendered page: its paper, its ink, and the parts of Markdown that carry thei
 | markdown-badge-foreground |  | What prints on it. |
 | markdown-table-border |  | A table cell's hairline. |
 | markdown-table-header-background |  | The header row's fill. |
+| markdown-table-row-background | surface-sunken | Every second body row of a table, so a reader can follow one row across to its last column. Set it to part the stripe from the header where a family draws both at the same value; leave it out and the recess is copied in. |
 | markdown-thematic-break |  | A `---` rule. |
 | markdown-math-inline-background |  | The tint behind inline math, so a formula reads as set apart from the sentence. |
 | markdown-keyboard-background |  | A `<kbd>` key's face. |

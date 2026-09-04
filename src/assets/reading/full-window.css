@@ -88,7 +88,7 @@
   font-weight: var(--lt-weight-600);
 }
 .table-sheet-grid tr:nth-child(2n) td {
-  background: var(--lt-tint-row);
+  background: var(--lt-markdown-table-row-background);
 }
 .table-sheet-grid th,
 .table-sheet-grid tr:nth-child(2n) td {

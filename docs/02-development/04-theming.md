@@ -1,8 +1,8 @@
 # Theming
 
-> Leaftext enforces a semantic token contract of 82 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
+> Leaftext enforces a semantic token contract of 83 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
-Leaftext's theme system is built around a semantic token contract — 82 `--lt-*` CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+Leaftext's theme system is built around a semantic token contract — 83 `--lt-*` CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
 
 **One property is optional, and it is the only one.** `--lt-hover-tint` is the ink every fill under the pointer is mixed from. A family that names it runs its hovers in that hue; a family that says nothing gets its own `--lt-muted-foreground` **copied in as a value**, not aliased to it, so the compiled block stays a flat list of colors. Which properties may be left out is generated alongside the contract, from the `Default` column of `design/colors.md`, as `LEAF_SEMANTIC_TOKEN_DEFAULTS` in `src/theme.rs`.
 

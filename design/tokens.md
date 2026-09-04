@@ -278,7 +278,6 @@ Black or gray at an alpha, where a mix toward a theme color would go the wrong w
 | --- | --- | --- |
 | lt-tint-recess | `rgba(0, 0, 0, 0.16)` | A recess pressed into the chrome. Black at an alpha, never a mix toward the foreground — that lightens on a dark theme, which reads as lit from inside. |
 | lt-tint-backdrop | `rgba(0, 0, 0, 0.45)` | The scrim behind a sheet, so the page under it reads as dimmed rather than tinted. |
-| lt-tint-row | `rgba(110, 118, 129, 0.08)` | A table's alternating row: a neutral gray so the stripe never picks up a theme's hue. |
 | lt-grain-dot-strong | `rgba(0, 0, 0, 0.55)` | The grain under the tab strip's fade, which has to show through a mask. |
 
 ## The hover wash

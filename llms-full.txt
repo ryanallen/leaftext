@@ -65,7 +65,7 @@
 ## Theming
 - Page: https://leaftext.com/docs/02-development/04-theming.md
 - Markdown: https://leaftext.com/docs/02-development/04-theming.md
-- Summary: Leaftext's theme system is built around a semantic token contract — 82 --lt- CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is che...
+- Summary: Leaftext's theme system is built around a semantic token contract — 83 --lt- CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is che...
 
 ## Design system
 - Page: https://leaftext.com/docs/02-development/05-design-system.md
