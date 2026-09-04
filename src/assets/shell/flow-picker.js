@@ -211,7 +211,7 @@ function flowPickerExtraField(graph, node, extra) {
   return field;
 }
 
-// One heading and the run of choices under it, each drawn by `chip` and applied by `apply`. The same rows the right-click menu is built from, so a shape reads the same wherever it is offered. Only the line and its ends are drawn this way: their pictures come from the style the selected line carries, so they really do change with the selection.
+// One heading and the run of choices under it, each drawn by `chip` and applied by `apply`. A choice wears the right-click menu's own row class so it reads like one, and that is all the two share: the menu builds its own rows and never carries a shape. Only the line and its ends are drawn this way: their pictures come from the style the selected line carries, so they really do change with the selection.
 function flowPickerChoices(caption, options, current, chip, apply) {
   if (!options.length) return;
   flowPickerPlace(flowPickerHeading(caption));

@@ -1468,13 +1468,23 @@ export function run() {
         if (!/max-width:\s*none/.test(drawing)) throw new Error(`${shape.id} kept the width mermaid caps a drawing at, which the sheet's stylesheet no longer reaches inside to lift`);
       }
 
-      // The right-click menu reads the same store, so it holds pictures for the same reason and without a second path.
-      booted.openFlowMenuWith(10, 10, [{ label: 'Barrel', chip: 'cyl', run: () => {} }], read('flowSheet'));
-      const item = [...read('flowMenu').children].find((child) => child.classList.contains('flow-menu-item'));
-      if (!item) throw new Error('the right-click menu drew no shape');
-      if (drawings(item).length) throw new Error('the right-click menu still holds a drawing in the page');
-      if (![...item.children].some((child) => child.tagName === 'IMG')) throw new Error('the right-click menu drew no picture');
-      booted.closeFlowMenu();
+      // The right-click menu is not a second consumer of the store: it builds its own rows and never offers a shape, so a row handed one by hand arrives as its label alone and the store is not asked at all. That is what keeps a second drawing path from growing back beside the picker's.
+      const shapeChip = read('flowShapeChip');
+      booted.__chipAsked = [];
+      read('flowShapeChip = (id) => { __chipAsked.push(id); return ""; };');
+      try {
+        booted.openFlowMenuWith(10, 10, [{ label: 'Barrel', chip: 'cyl', run: () => {} }], read('flowSheet'));
+        const item = [...read('flowMenu').children].find((child) => child.classList.contains('flow-menu-item'));
+        if (!item) throw new Error('the right-click menu drew no row');
+        if (booted.__chipAsked.length) throw new Error('the right-click menu asked the shape store for a picture');
+        if (item.textContent !== 'Barrel') throw new Error(`the right-click menu drew ${JSON.stringify(item.textContent)} rather than its label alone`);
+        if ([...item.children].some((child) => child.tagName === 'IMG')) throw new Error('the right-click menu drew a shape picture');
+        if (drawings(item).length) throw new Error('the right-click menu drew a shape into the page');
+        booted.closeFlowMenu();
+      } finally {
+        booted.flowShapeChip = shapeChip;
+        delete booted.__chipAsked;
+      }
     } finally {
       booted.window.mermaid = held;
       read('flowSession = null; flowSelection = null; flowChipCache.clear(); flowChipsAsked = false; flowPickerBody.textContent = ""; flowPickerHead.textContent = "";');

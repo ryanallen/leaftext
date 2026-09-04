@@ -796,7 +796,7 @@ function vaultGitItems(vault) {
         icon: SYNC_ICON_SVG,
         disabled: busy,
         keepOpen: true,
-        run: () => startVaultSync(vault.id, 'manual', null),
+        run: () => startVaultSync(vault.id),
       });
       items.push({
         label: 'Sync automatically',
@@ -858,6 +858,9 @@ function vaultGitItems(vault) {
   }
   const outcome = syncOutcomeText(state);
   if (outcome) items.push({ note: outcome, danger: Boolean(state.error) });
+  if (vault.gitAutoSync && state.error && !busy) {
+    items.push({ note: 'Automatic sync stopped. Press Sync to start it again.' });
+  }
   return items;
 }
 // The repositories nothing is holding back, and the one press that puts them out of the sync's reach. Only these: one the vault already tracks is named in the row above and left alone, because an ignore line for a tracked path does nothing at all. The host decided which — the page never works it out from a path.
@@ -999,8 +1002,6 @@ let syncSpinTimer = 0;
 let syncFadeTimer = 0;
 // Held from the click until the host reports how it went. Without it the turn stops the moment anything else redraws the button -- a watcher tick mid-push is enough -- and a spinner that pauses reads as a failure, which is the one thing it must not say while the push is still running.
 let syncInFlight = false;
-const automaticSyncAttemptByVault = new Map();
-const automaticSyncFailedGenerationByVault = new Map();
 function renderVaultSyncButton() {
   if (!librarySyncButton) return;
   const state = vaultGitByVault.get(activeVaultId);
@@ -1040,15 +1041,9 @@ function renderVaultSyncButton() {
   librarySyncButton.title = label;
   librarySyncButton.setAttribute('aria-label', label);
 }
-function startVaultSync(id, source, generation) {
+function startVaultSync(id) {
   const state = vaultGitByVault.get(id);
   if (!id || syncInFlight || Boolean(state && state.busy)) return;
-  if (source === 'automatic') {
-    automaticSyncAttemptByVault.set(id, generation);
-  } else {
-    automaticSyncAttemptByVault.delete(id);
-    automaticSyncFailedGenerationByVault.delete(id);
-  }
   syncInFlight = true;
   syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;
   renderVaultSyncButton();
@@ -1058,7 +1053,7 @@ function startVaultSync(id, source, generation) {
 if (librarySyncButton) {
   librarySyncButton.addEventListener('click', () => {
     if (!activeVaultId) return;
-    startVaultSync(activeVaultId, 'manual', null);
+    startVaultSync(activeVaultId);
   });
 }
 // The header's own reading: the folder's state without what-is-installed, which is the expensive half. Merged into whatever the panel already knew. Where the active vault's repository stands. Called from both ways the page learns which vault is active, because they share no path: a switch arrives through `leafSetVaults`, but a cold launch reads `__leafVaults` off the window and never calls it. Hooked to the callback alone, this would only ever fire when you changed vaults.
@@ -1082,9 +1077,9 @@ window.leafSetVaultStatus = (id, repo, generation = 0) => {
   vaultGitByVault.set(id, Object.assign({}, previous || { id, tooling: {} }, { repo: merged }));
   const vault = id === activeVaultId ? leafVaults.find((entry) => entry && entry.id === id) : null;
   const waiting = (merged.changed || 0) + (merged.ahead || 0);
-  const failedGeneration = automaticSyncFailedGenerationByVault.get(id);
-  if (vault && vault.gitAutoSync && merged.atRoot && merged.remote && waiting > 0 && failedGeneration !== generation) {
-    startVaultSync(id, 'automatic', generation);
+  const lastJobFailed = Boolean(previous && previous.error);
+  if (vault && vault.gitAutoSync && merged.atRoot && merged.remote && waiting > 0 && !lastJobFailed) {
+    startVaultSync(id);
   }
   renderVaultSyncButton();
   renderLibraryVaultSwitch();
@@ -1096,14 +1091,6 @@ window.leafSetVaultGit = (state) => {
   // A whole state with nothing running is the end of whatever was: this is the only thing that stops the turn.
   if (!state.busy) {
     syncInFlight = false;
-    if (automaticSyncAttemptByVault.has(state.id)) {
-      const generation = automaticSyncAttemptByVault.get(state.id);
-      if (state.error) automaticSyncFailedGenerationByVault.set(state.id, generation);
-      else automaticSyncFailedGenerationByVault.delete(state.id);
-      automaticSyncAttemptByVault.delete(state.id);
-    } else if (!state.error) {
-      automaticSyncFailedGenerationByVault.delete(state.id);
-    }
   }
   vaultGitByVault.set(state.id, state);
   renderVaultSyncButton();

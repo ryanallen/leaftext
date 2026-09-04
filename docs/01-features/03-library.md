@@ -387,7 +387,7 @@ Setting or changing the address only points the vault — it never pushes on its
 
 **Sync** commits everything changed, pulls with a rebase, and pushes. Commit messages describe the change — `Update README.md`, or `Update 4 files` — and carry no mention of the app.
 
-GitHub sync starts manually unless this vault's settings has **Sync automatically** turned on. The switch belongs to one vault and starts off, so private notes can wait for a press while another vault sends each local change. Automatic sync uses the same Sync turn, count and result growl as the button. A failure waits instead of repeating for the same change; another local change or a manual Sync can try again.
+GitHub sync starts manually unless this vault's settings has **Sync automatically** turned on. The switch belongs to one vault and starts off, so private notes can wait for a press while another vault sends each local change. Automatic sync uses the same Sync turn, count and result growl as the button. After a failure, later saves leave the header's Sync button waiting instead of trying again, the switch stays on, and the panel says **Automatic sync stopped. Press Sync to start it again.** Pressing Sync or completing another GitHub action allows automatic sync to start again.
 
 A **sync button appears at the end of the vault's breadcrumb** whenever there is work that has not reached GitHub, carrying the count. It spins while it works and fades out still spinning — more slowly under [Reduce Motion](05-settings.md#reduce-motion), which slows every spinner rather than stopping it — and a growl in the corner says where the push landed. It is absent when there is nothing to send.
 

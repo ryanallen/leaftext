@@ -35,7 +35,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
     assert!(html.contains(r#"id="librarySyncButton" class="library-sync""#));
     assert!(html.contains("function renderVaultSyncButton()"));
     assert!(html.contains("if (!activeVaultId || (!waiting && !spinning)) {"));
-    assert!(html.contains("startVaultSync(activeVaultId, 'manual', null);"));
+    assert!(html.contains("startVaultSync(activeVaultId);"));
     assert!(css.contains(".library-sync {"));
     assert!(css.contains(".library-sync[hidden] {"));
     // A count, not a dot: "3" is a reason to press it.
@@ -68,7 +68,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 
     // Once it turns it does not stop until the answer is in. Anything else redrawing the button mid-push -- a watcher tick is enough -- ends the turn, and a spinner that pauses reads as a failure at the one moment it must not. Only a finished job releases it.
     assert!(html.contains("let syncInFlight = false;"));
-    assert!(html.contains("function startVaultSync(id, source, generation) {"));
+    assert!(html.contains("function startVaultSync(id) {"));
     assert!(html.contains("  syncInFlight = true;"));
     assert!(
         html.contains("const spinning = syncInFlight || Boolean(state && state.busy) || held > 0;")
@@ -187,7 +187,7 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
     // Opening the panel reads the folder; everything after that is a button.
     assert!(html.contains("window.leafSetVaultGit = (state) => {"));
     assert!(html.contains("window.leafVaultGitBusy = (id) => {"));
-    assert!(html.contains("startVaultSync(vault.id, 'manual', null),"));
+    assert!(html.contains("startVaultSync(vault.id),"));
     assert!(html.contains("send({ command: 'createVaultRepo', id: vault.id }),"));
     assert_in(
         &html,

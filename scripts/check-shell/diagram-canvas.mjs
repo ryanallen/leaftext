@@ -382,6 +382,120 @@ export function run() {
     }
   });
 
+  // A browser answers a geometry question against a drawing it has laid out, so a target appended in between the reads forces the layout it just dirtied — once a line rather than once for the diagram, which on a forty-line chart is 84.5 ms against 4.6. Nothing on the page says which of those two loops it is running, so the check watches the order the drawing is asked and written in, and the tree it is left holding.
+  check('every line is read before any target is laid, and each line’s matrix is read once', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const canvas = read('flowCanvas');
+    const names = ['L_A_B_0', 'L_B_C_0', 'L_C_D_0'];
+    const ids = ['e1', 'e2', 'e3'];
+    // What the drawing was asked and what was written into it, in the order it happened.
+    const story = [];
+    let holder = null;
+    const drawing = () => {
+      const stage = fakeElement('');
+      stage.classList.add('flow-stage');
+      stage.getBoundingClientRect = () => ({ top: 0, left: 0, right: 300, bottom: 200, width: 300, height: 200 });
+      const svg = fakeElement('');
+      svg.tagName = 'svg';
+      stage.appendChild(svg);
+      holder = fakeElement('');
+      holder.tagName = 'g';
+      holder.classList.add('edgePaths');
+      const put = holder.appendChild.bind(holder);
+      holder.appendChild = (child) => {
+        if (child.getAttribute && child.getAttribute('data-flow-hit')) story.push('append');
+        return put(child);
+      };
+      svg.appendChild(holder);
+      for (const name of names) {
+        const line = fakeElement('');
+        line.tagName = 'path';
+        line.setAttribute('data-id', name);
+        line.setAttribute('style', 'stroke: #333');
+        line.setAttribute('marker-end', 'url(#arrow)');
+        line.getTotalLength = () => {
+          story.push('length');
+          return 100;
+        };
+        line.getScreenCTM = () => {
+          story.push('matrix');
+          return {};
+        };
+        line.getPointAtLength = (length) => {
+          story.push('point');
+          const at = { x: 10 + length, y: 70, matrixTransform: () => at };
+          return at;
+        };
+        holder.appendChild(line);
+      }
+      const overlay = fakeElement('');
+      overlay.classList.add('flow-overlay');
+      stage.appendChild(overlay);
+      return stage;
+    };
+    const graph = {
+      direction: 'TD',
+      nodes: [{ id: 'A', text: 'a' }, { id: 'B', text: 'b' }, { id: 'C', text: 'c' }, { id: 'D', text: 'd' }],
+      edges: [
+        { id: 'e1', from: 'A', to: 'B' },
+        { id: 'e2', from: 'B', to: 'C' },
+        { id: 'e3', from: 'C', to: 'D' },
+      ],
+      groups: [],
+    };
+    try {
+      read(`flowSession = { save: null, text: '', graph: ${JSON.stringify(graph)} };`);
+      read('flowZoom = 1;');
+      const stage = drawing();
+      canvas.appendChild(stage);
+      story.length = 0;
+      booted.measureFlowDiagram();
+
+      const firstAppend = story.indexOf('append');
+      if (firstAppend < 0) throw new Error('no target was laid at all');
+      if (story.lastIndexOf('append') !== story.length - 1) throw new Error('the drawing was read again after a target was laid');
+      const reads = story.slice(0, firstAppend);
+      if (story.slice(firstAppend).some((step) => step !== 'append')) {
+        throw new Error(`the drawing was read after a target was laid: ${story.join(', ')}`);
+      }
+      if (reads.length !== story.length - names.length) throw new Error('a read and an append are still interleaved');
+
+      // One matrix a line, not one a point: nothing between the three points writes to the drawing.
+      const matrices = reads.filter((step) => step === 'matrix').length;
+      if (matrices !== names.length) throw new Error(`${matrices} matrix reads were made for ${names.length} lines`);
+      const points = reads.filter((step) => step === 'point').length;
+      if (points !== names.length * 3) throw new Error(`${points} points were read for ${names.length} lines`);
+
+      // And the tree it is left holding is the one laying them one at a time leaves: every copy in the line's own group, in line order, wearing what it has always worn.
+      const copies = holder.children.filter((child) => child.getAttribute('data-flow-hit'));
+      if (copies.length !== names.length) throw new Error(`${copies.length} copies were laid for ${names.length} lines`);
+      copies.forEach((copy, at) => {
+        if (copy.getAttribute('data-flow-hit') !== ids[at]) throw new Error(`the copies were laid in the order ${copies.map((one) => one.getAttribute('data-flow-hit')).join(',')}`);
+        if (copy.parentElement !== holder) throw new Error('a copy was laid somewhere other than its line’s own group');
+        if (!copy.classList.contains('flow-edge-hit')) throw new Error('a copy is not wearing the rule that paints it with nothing');
+        for (const attribute of ['data-id', 'style', 'marker-end', 'marker-start']) {
+          if (copy.getAttribute(attribute)) throw new Error(`a copy kept ${attribute}`);
+        }
+        if (copy.id) throw new Error('a copy kept the line’s id');
+      });
+      // Each copy sits after every line, which is where appending to the end of the group puts it either way.
+      if (holder.children.slice(0, names.length).some((child) => child.getAttribute('data-flow-hit'))) {
+        throw new Error('a copy was laid in among the lines');
+      }
+      // Every line was still measured off mermaid's own path rather than off a copy.
+      for (const edge of read('flowNatural').edges) {
+        if (edge.path.getAttribute('data-flow-hit')) throw new Error('a copy was measured in place of its line');
+      }
+    } finally {
+      read('flowSession = null;');
+      read('flowPlaced = null;');
+      read('flowNatural = null;');
+      read('flowSize = null;');
+      read('flowZoom = 1;');
+      for (const stage of [...canvas.querySelectorAll('.flow-stage')]) stage.remove();
+    }
+  });
+
   // Until this, the line above the canvas only ever answered a selection, so the one gesture that actually builds a chart — the + handles a box grows when you point at it — was the one the canvas never mentioned. Pointing now says what the thing under the pointer is and what can be done to it, and says it without choosing anything: a hover that selected would move the picker's sheet under the hand.
   check('pointing at a box or a line says what it is, and every sentence the canvas can show is reachable', () => {
     const read = (expression) => vm.runInContext(expression, booted);

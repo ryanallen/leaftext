@@ -126,7 +126,6 @@ function openFlowMenuWith(x, y, items, host) {
     button.className = 'flow-menu-item';
     button.setAttribute('role', 'menuitem');
     if (item.hint) button.title = item.hint;
-    if (item.chip) button.innerHTML = flowShapeChip(item.chip);
     const text = document.createElement('span');
     text.textContent = item.label;
     button.appendChild(text);

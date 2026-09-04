@@ -266,6 +266,7 @@ export function run() {
   // Ids nothing else in the suite uses: the panel's state is a map keyed on the vault, and a row left behind here would change what a later check draws.
   const GIT_VAULT = { id: 91, name: 'Work', gitAutoSync: true };
   const PLAIN_VAULT = { id: 92, name: 'Plain', gitAutoSync: false };
+  const SECOND_GIT_VAULT = { id: 93, name: 'Notes', gitAutoSync: true };
   const gitState = (vault, repo) => ({
     id: vault.id,
     suggested: vault.name.toLowerCase(),
@@ -317,13 +318,13 @@ export function run() {
     }
   });
 
-  check('automatic sync starts once per local generation and a new change retries after failure', () => {
+  check('automatic sync starts, stops after failure, and manual success starts it again', () => {
     const sent = [];
     const watching = booted.window.ipc;
     booted.window.ipc = { postMessage: (raw) => sent.push(JSON.parse(raw)) };
     try {
       booted.__testVaults = [GIT_VAULT, PLAIN_VAULT];
-      vm.runInContext('leafVaults = __testVaults; activeVaultId = 91; syncInFlight = false; automaticSyncAttemptByVault.clear(); automaticSyncFailedGenerationByVault.clear();', booted);
+      vm.runInContext('leafVaults = __testVaults; activeVaultId = 91; syncInFlight = false;', booted);
       booted.leafSetVaultGit(gitState(GIT_VAULT, { changed: 1 }));
 
       booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
@@ -333,21 +334,27 @@ export function run() {
       }
 
       booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
+      if (!GIT_VAULT.gitAutoSync) throw new Error('a failure turned the vault choice off');
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 2);
       if (sent.filter((one) => one.command === 'syncVault').length !== 1) {
-        throw new Error('the failed generation tried again without another local change');
+        throw new Error('a later save tried automatic sync again after the last job failed');
       }
 
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 2);
-      if (sent.filter((one) => one.command === 'syncVault').length !== 2) {
-        throw new Error('a new local generation did not retry the unchanged count');
+      const manual = panelItems(GIT_VAULT).find((one) => one && one.label === 'Sync');
+      if (!manual) throw new Error('a stopped vault left no manual Sync press');
+      manual.run();
+      booted.leafVaultGitBusy(GIT_VAULT.id);
+      booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 0 }), { message: 'synced:1' }));
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 3);
+      if (sent.filter((one) => one.command === 'syncVault').length !== 3) {
+        throw new Error(`manual Sync and its success did not start automatic sync again: ${JSON.stringify(sent)}`);
       }
 
       booted.leafSetVaultGit(gitState(GIT_VAULT, { changed: 1 }));
       booted.__testVaults = [Object.assign({}, GIT_VAULT, { gitAutoSync: false }), PLAIN_VAULT];
       vm.runInContext('leafVaults = __testVaults; syncSpinUntil = 0; if (syncSpinTimer) clearTimeout(syncSpinTimer); syncSpinTimer = 0;', booted);
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 3);
-      if (sent.filter((one) => one.command === 'syncVault').length !== 2) {
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 4);
+      if (sent.filter((one) => one.command === 'syncVault').length !== 3) {
         throw new Error('automatic sync started while the vault choice was off');
       }
       const button = booted.document.getElementById('librarySyncButton');
@@ -356,8 +363,68 @@ export function run() {
       }
     } finally {
       delete booted.__testVaults;
-      vm.runInContext('leafVaults = []; activeVaultId = 0; syncInFlight = false; automaticSyncAttemptByVault.clear(); automaticSyncFailedGenerationByVault.clear();', booted);
+      vm.runInContext('leafVaults = []; activeVaultId = 0; syncInFlight = false;', booted);
       booted.window.ipc = watching;
+    }
+  });
+
+  check('one vault stopping automatic sync does not stop another vault', () => {
+    const sent = [];
+    const watching = booted.window.ipc;
+    booted.window.ipc = { postMessage: (raw) => sent.push(JSON.parse(raw)) };
+    try {
+      booted.__testVaults = [GIT_VAULT, SECOND_GIT_VAULT];
+      vm.runInContext('leafVaults = __testVaults; activeVaultId = 91; syncInFlight = false;', booted);
+      booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 2);
+      vm.runInContext('activeVaultId = 93;', booted);
+      booted.leafSetVaultGit(gitState(SECOND_GIT_VAULT, { changed: 1 }));
+      booted.leafSetVaultStatus(SECOND_GIT_VAULT.id, { atRoot: true, remote: 'me/notes', changed: 1, ahead: 0 }, 1);
+      const starts = sent.filter((one) => one.command === 'syncVault');
+      if (starts.length !== 1 || starts[0].id !== SECOND_GIT_VAULT.id) {
+        throw new Error(`one vault's failure stopped another vault: ${JSON.stringify(sent)}`);
+      }
+    } finally {
+      delete booted.__testVaults;
+      vm.runInContext('leafVaults = []; activeVaultId = 0; syncInFlight = false;', booted);
+      booted.window.ipc = watching;
+    }
+  });
+
+  check('the stopped note follows the failed outcome only while automatic sync is stopped', () => {
+    const stopped = 'Automatic sync stopped. Press Sync to start it again.';
+    booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
+    const items = panelItems(GIT_VAULT);
+    const outcomeIndex = items.findIndex((one) => one && one.note === 'network failed');
+    const stoppedIndex = items.findIndex((one) => one && one.note === stopped);
+    if (outcomeIndex < 0 || stoppedIndex !== outcomeIndex + 1) {
+      throw new Error(`the stopped note did not follow the failed outcome: ${JSON.stringify(items)}`);
+    }
+    if (items[stoppedIndex].danger) throw new Error('the stopped note repeated the failed outcome’s danger state');
+
+    const switchedOff = Object.assign({}, GIT_VAULT, { gitAutoSync: false });
+    if (panelNotes(switchedOff).includes(stopped)) throw new Error('the note remained after automatic sync was switched off');
+
+    booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, {}), { message: 'synced:1' }));
+    if (panelNotes(GIT_VAULT).includes(stopped)) throw new Error('the note remained after a successful sync');
+
+    booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, {}), { busy: true, message: 'network failed', error: true }));
+    if (panelNotes(GIT_VAULT).includes(stopped)) throw new Error('the note appeared while a new job was running');
+    booted.leafSetVaultGit(gitState(GIT_VAULT, {}));
+  });
+
+  check('an automatic-sync failure keeps the stopped note out of the growl', () => {
+    const said = [];
+    const watching = booted.leafToast;
+    booted.leafToast = (message) => said.push(message);
+    try {
+      booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
+      if (said.length !== 1 || said[0] !== 'network failed') {
+        throw new Error(`the failure growl repeated the stopped note: ${JSON.stringify(said)}`);
+      }
+    } finally {
+      booted.leafToast = watching;
+      booted.leafSetVaultGit(gitState(GIT_VAULT, {}));
     }
   });
 
