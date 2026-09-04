@@ -2,15 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://leaftext.com/</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/README.md</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/01-rendering.md</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/02-navigation.md</loc>
@@ -42,7 +42,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-development/01-architecture.md</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-development/02-building.md</loc>
@@ -58,7 +58,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-development/05-design-system.md</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-development/06-screenshots.md</loc>
@@ -70,7 +70,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-development/08-security.md</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-installation.md</loc>
@@ -94,6 +94,6 @@
   </url>
   <url>
     <loc>https://leaftext.com/gallery.html</loc>
-    <lastmod>2026-09-03</lastmod>
+    <lastmod>2026-09-04</lastmod>
   </url>
 </urlset>

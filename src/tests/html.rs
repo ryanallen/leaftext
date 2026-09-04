@@ -88,7 +88,7 @@ fn complete_html_page_is_drawn_as_its_own_page() {
 fn nothing_of_leaftexts_is_drawn_around_the_page() {
     let document = opened_document_from_source(COMPLETE_PAGE, "saved-report.html");
 
-    // The Previous/Next strip is the one thing that used to sit under the frame, and with it went a divider, a band of Leaftext's own spacing and two of Leaftext's own buttons inside somebody else's page.
+    // A Previous/Next strip under the frame puts a divider, a band of Leaftext's own spacing and two of Leaftext's own buttons inside somebody else's page.
     assert!(
         !document.html.contains("docs-pager"),
         "a Previous/Next strip was drawn under the page: {}",
