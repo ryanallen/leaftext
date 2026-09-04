@@ -28,9 +28,9 @@ use serde::Serialize;
 
 use crate::DocumentFormat;
 
-/// Latest applied schema migration, checked against what a freshly opened database actually recorded. 1–4 were the crawl's: files, headings, chunks, full-text search, frontmatter and links, all of them a manifest of the whole computer. They are gone; 5 is the vaults, 6 dropped the crawl, and 7 gave a vault a kind and a remote vault somewhere to record what it copied down.
+/// Latest applied schema migration, checked against what a freshly opened database actually recorded. 1–4 were the crawl's: files, headings, chunks, full-text search, frontmatter and links, all of them a manifest of the whole computer. They are gone; 5 is the vaults, 6 dropped the crawl, 7 gave a vault a kind and a remote vault somewhere to record what it copied down, and 8 records its automatic GitHub sync choice.
 #[cfg(feature = "desktop")]
-pub(super) const SCHEMA_VERSION: i64 = 7;
+pub(super) const SCHEMA_VERSION: i64 = 8;
 
 // ---------------------------------------------------------------------------
 // Public data shapes

@@ -122,26 +122,32 @@ pub(crate) fn refresh_vault_status(
     proxy: &EventLoopProxy<UserEvent>,
     id: i64,
 ) {
-    let Some(root) = status_read_to_start(state, id) else {
+    let generation = state.change_generation;
+    let Some((root, generation)) = status_read_to_start(state, id, generation) else {
         return;
     };
-    read_vault_status_off_loop(proxy, id, root);
+    read_vault_status_off_loop(proxy, id, generation, root);
 }
 
 /// The folder a status read would walk, or nothing where there is no such vault or one is already running for it. State alone and no worker, which is what lets a test ask it.
 ///
 /// One read per vault at a time — each is a thread and five git processes, so a burst of saves must not start one each.
-pub(crate) fn status_read_to_start(state: &mut VaultState, id: i64) -> Option<PathBuf> {
+pub(crate) fn status_read_to_start(
+    state: &mut VaultState,
+    id: i64,
+    generation: u64,
+) -> Option<(PathBuf, u64)> {
     let (_name, root) = vault_root(state, id)?;
-    state.may_read_status(id).then_some(root)
+    state.may_read_status(id, generation).then_some((root, generation))
 }
 
 /// The folder the one repeat is owed against, once a status answer has reached the page — or nothing where nobody asked while the read was running.
-pub(crate) fn status_read_after_delivery(state: &mut VaultState, id: i64) -> Option<PathBuf> {
-    if !state.status_read_settled(id) {
-        return None;
-    }
-    status_read_to_start(state, id)
+pub(crate) fn status_read_after_delivery(
+    state: &mut VaultState,
+    id: i64,
+) -> Option<(PathBuf, u64)> {
+    let generation = state.status_read_settled(id)?;
+    status_read_to_start(state, id, generation)
 }
 
 /// The per-save reading, which walks nothing: what the folder holds is the panel's question, and a three-deep directory walk on every save is what this read is cheap in order to avoid.
@@ -150,11 +156,17 @@ pub(crate) fn read_vault_status(root: &Path) -> VaultRepo {
 }
 
 /// Walk the folder on a worker and post what git says back to the loop.
-fn read_vault_status_off_loop(proxy: &EventLoopProxy<UserEvent>, id: i64, root: PathBuf) {
+pub(crate) fn read_vault_status_off_loop(
+    proxy: &EventLoopProxy<UserEvent>,
+    id: i64,
+    generation: u64,
+    root: PathBuf,
+) {
     off_loop(proxy, move || {
         let repo = read_vault_status(&root);
         UserEvent::VaultStatusReady {
             id,
+            generation,
             json: serde_json::to_string(&repo).unwrap_or_else(|_| "null".to_string()),
         }
     });
@@ -168,15 +180,16 @@ pub(crate) fn deliver_vault_status(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
     id: i64,
+    generation: u64,
     json: &str,
 ) {
     run_page_script(
         webview,
-        &format!("window.leafSetVaultStatus({id}, {json});"),
+        &format!("window.leafSetVaultStatus({id}, {json}, {generation});"),
         "Failed to update the vault status",
     );
-    if let Some(root) = status_read_after_delivery(state, id) {
-        read_vault_status_off_loop(proxy, id, root);
+    if let Some((root, generation)) = status_read_after_delivery(state, id) {
+        read_vault_status_off_loop(proxy, id, generation, root);
     }
 }
 

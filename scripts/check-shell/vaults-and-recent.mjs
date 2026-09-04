@@ -264,8 +264,8 @@ export function run() {
   });
 
   // Ids nothing else in the suite uses: the panel's state is a map keyed on the vault, and a row left behind here would change what a later check draws.
-  const GIT_VAULT = { id: 91, name: 'Work' };
-  const PLAIN_VAULT = { id: 92, name: 'Plain' };
+  const GIT_VAULT = { id: 91, name: 'Work', gitAutoSync: true };
+  const PLAIN_VAULT = { id: 92, name: 'Plain', gitAutoSync: false };
   const gitState = (vault, repo) => ({
     id: vault.id,
     suggested: vault.name.toLowerCase(),
@@ -276,9 +276,90 @@ export function run() {
     error: false,
   });
   const panelItems = (vault) =>
-    vm.runInContext(`vaultGitItems({ id: ${vault.id}, name: ${JSON.stringify(vault.name)} })`, booted);
+    vm.runInContext(`vaultGitItems(${JSON.stringify(vault)})`, booted);
   const panelNotes = (vault) => panelItems(vault).filter((one) => one && one.note).map((one) => one.note);
   const ignoreButton = (vault) => panelItems(vault).find((one) => one && one.label === 'Ignore them');
+
+  check('automatic sync is a switch only on a GitHub-ready vault and sends the opposite choice', () => {
+    const sent = [];
+    const watching = booted.window.ipc;
+    booted.window.ipc = { postMessage: (raw) => sent.push(JSON.parse(raw)) };
+    try {
+      booted.leafSetVaultGit(gitState(GIT_VAULT, {}));
+      const owner = fakeElement('vaultGitOwner');
+      booted.__testVault = GIT_VAULT;
+      booted.__testVaultOwner = owner;
+      vm.runInContext('showCrumbMenu(__testVaultOwner, vaultGitItems(__testVault))', booted);
+      const menu = vm.runInContext('crumbMenu', booted);
+      const row = menu.querySelectorAll('.crumb-menu-item').find((item) => item.getAttribute('role') === 'switch');
+      if (!row) throw new Error('the GitHub-ready vault drew no automatic-sync switch');
+      if (row.getAttribute('aria-checked') !== 'true') throw new Error('the switch did not expose the saved on state');
+      const press = row.listeners.get('pointerdown')[0];
+      press({ button: 0, stopPropagation() {}, preventDefault() {} });
+      const asked = sent.find((one) => one.command === 'setVaultGitAutoSync');
+      if (!asked || asked.id !== GIT_VAULT.id || asked.enabled !== false) {
+        throw new Error(`the switch did not send the opposite choice for its vault: ${JSON.stringify(sent)}`);
+      }
+      if (menu.hidden) throw new Error('the switch closed the panel it belongs to');
+
+      booted.leafSetVaultGit(gitState(PLAIN_VAULT, { remote: null }));
+      if (panelItems(PLAIN_VAULT).some((one) => one && one.switch)) {
+        throw new Error('a vault with nowhere to push drew an automatic-sync switch');
+      }
+      booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, {}), { busy: true }));
+      const busySwitch = panelItems(GIT_VAULT).find((one) => one && one.switch);
+      if (!busySwitch || !busySwitch.disabled) throw new Error('the switch stayed enabled while GitHub was busy');
+    } finally {
+      delete booted.__testVault;
+      delete booted.__testVaultOwner;
+      vm.runInContext('hideCrumbMenu()', booted);
+      booted.window.ipc = watching;
+    }
+  });
+
+  check('automatic sync starts once per local generation and a new change retries after failure', () => {
+    const sent = [];
+    const watching = booted.window.ipc;
+    booted.window.ipc = { postMessage: (raw) => sent.push(JSON.parse(raw)) };
+    try {
+      booted.__testVaults = [GIT_VAULT, PLAIN_VAULT];
+      vm.runInContext('leafVaults = __testVaults; activeVaultId = 91; syncInFlight = false; automaticSyncAttemptByVault.clear(); automaticSyncFailedGenerationByVault.clear();', booted);
+      booted.leafSetVaultGit(gitState(GIT_VAULT, { changed: 1 }));
+
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
+      if (sent.filter((one) => one.command === 'syncVault').length !== 1) {
+        throw new Error(`one local generation started more than one sync: ${JSON.stringify(sent)}`);
+      }
+
+      booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
+      if (sent.filter((one) => one.command === 'syncVault').length !== 1) {
+        throw new Error('the failed generation tried again without another local change');
+      }
+
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 2);
+      if (sent.filter((one) => one.command === 'syncVault').length !== 2) {
+        throw new Error('a new local generation did not retry the unchanged count');
+      }
+
+      booted.leafSetVaultGit(gitState(GIT_VAULT, { changed: 1 }));
+      booted.__testVaults = [Object.assign({}, GIT_VAULT, { gitAutoSync: false }), PLAIN_VAULT];
+      vm.runInContext('leafVaults = __testVaults; syncSpinUntil = 0; if (syncSpinTimer) clearTimeout(syncSpinTimer); syncSpinTimer = 0;', booted);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 3);
+      if (sent.filter((one) => one.command === 'syncVault').length !== 2) {
+        throw new Error('automatic sync started while the vault choice was off');
+      }
+      const button = booted.document.getElementById('librarySyncButton');
+      if (button.hidden || button.title !== 'Sync 1 to GitHub') {
+        throw new Error('Off stopped the existing header button from waiting for a press');
+      }
+    } finally {
+      delete booted.__testVaults;
+      vm.runInContext('leafVaults = []; activeVaultId = 0; syncInFlight = false; automaticSyncAttemptByVault.clear(); automaticSyncFailedGenerationByVault.clear();', booted);
+      booted.window.ipc = watching;
+    }
+  });
 
   check('a vault that is its own repository is told which repositories it holds', () => {
     booted.leafSetVaultGit(gitState(GIT_VAULT, { nested: ['godaddy', 'dharma/emptyguru'] }));

@@ -137,20 +137,20 @@ fn a_burst_of_saves_reads_a_vaults_git_state_once() {
     let mut state = VaultState::load(None);
 
     // The first save starts the read; the next ten find it running and leave one repeat between them, not ten.
-    assert!(state.may_read_status(7));
-    for _ in 0..10 {
-        assert!(!state.may_read_status(7));
+    assert!(state.may_read_status(7, 1));
+    for generation in 2..=11 {
+        assert!(!state.may_read_status(7, generation));
     }
 
     // The answer lands: the repeat is owed, and it is the only one.
-    assert!(state.status_read_settled(7));
-    assert!(state.may_read_status(7));
-    assert!(!state.status_read_settled(7));
+    assert_eq!(state.status_read_settled(7), Some(11));
+    assert!(state.may_read_status(7, 11));
+    assert_eq!(state.status_read_settled(7), None);
 
     // And the guard is what the refresh actually asks, rather than a bookkeeping pair nothing consults. With no registry behind this state there is no vault to find a folder for, so every answer here is nothing — which is the refresh reaching the guard and stopping, and it does that whether the guard says yes or no.
     let mut state = VaultState::load(None);
-    assert!(state.may_read_status(7));
-    assert_eq!(status_read_to_start(&mut state, 7), None);
+    assert!(state.may_read_status(7, 1));
+    assert_eq!(status_read_to_start(&mut state, 7, 2), None);
     assert_eq!(status_read_after_delivery(&mut state, 7), None);
 }
 
@@ -170,10 +170,10 @@ fn a_vault_whose_folder_is_known_reads_it_once_per_burst() {
     .id;
 
     // The first save starts the read against the vault's own folder; the next ten find it running.
-    let first = status_read_to_start(&mut state, id).expect("the first save starts the read");
-    for _ in 0..10 {
+    let first = status_read_to_start(&mut state, id, 1).expect("the first save starts the read");
+    for generation in 2..=11 {
         assert_eq!(
-            status_read_to_start(&mut state, id),
+            status_read_to_start(&mut state, id, generation),
             None,
             "a burst of saves started a git read each"
         );
@@ -182,7 +182,7 @@ fn a_vault_whose_folder_is_known_reads_it_once_per_burst() {
     // The answer lands, and the one repeat everything waiting is owed reads the same folder.
     assert_eq!(
         status_read_after_delivery(&mut state, id),
-        Some(first),
+        Some((first.0.clone(), 11)),
         "the repeat everything waiting is owed never started"
     );
     assert_eq!(
@@ -199,12 +199,12 @@ fn a_vault_whose_folder_is_known_reads_it_once_per_burst() {
 fn a_second_vault_is_not_made_to_wait_behind_the_first() {
     // The page asks for every vault it knows at once, so a single flag would answer one of them and drop the rest.
     let mut state = VaultState::load(None);
-    assert!(state.may_read_status(1));
-    assert!(state.may_read_status(2));
-    assert!(!state.may_read_status(1));
+    assert!(state.may_read_status(1, 1));
+    assert!(state.may_read_status(2, 1));
+    assert!(!state.may_read_status(1, 2));
 
-    assert!(state.status_read_settled(1));
-    assert!(!state.status_read_settled(2));
+    assert_eq!(state.status_read_settled(1), Some(2));
+    assert_eq!(state.status_read_settled(2), None);
 }
 
 /// Take the read-only flag off everything under `dir`. Git marks every object file it writes read-only, and a removal on Windows is refused by one.
@@ -264,9 +264,12 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
     state.active = 3;
 
     assert_eq!(
-        watched_change_steps(&state, Path::new("/vault/notes.md"), true),
+        watched_change_steps(&state, Path::new("/vault/notes.md"), true, 4),
         vec![
-            WatchedChangeStep::RereadVaultStatus(3),
+            WatchedChangeStep::RereadVaultStatus {
+                id: 3,
+                generation: 4,
+            },
             WatchedChangeStep::AgeLinkPreviews,
             WatchedChangeStep::ReloadActiveDocument,
         ],
@@ -275,15 +278,18 @@ fn saving_the_document_you_are_reading_still_updates_the_sync_count() {
 
     // And nothing between the event and the read. A containment check here discards every event: the watcher reports paths under what it watched, and that is canonicalised — a `\\?\` verbatim prefix on Windows, which does not share a component with the plain `C:\…` the vault registry holds. One `git status` off the loop is cheaper than being wrong.
     assert_eq!(
-        watched_change_steps(&state, Path::new("/nowhere/near/it.md"), false).first(),
-        Some(&WatchedChangeStep::RereadVaultStatus(3)),
+        watched_change_steps(&state, Path::new("/nowhere/near/it.md"), false, 4).first(),
+        Some(&WatchedChangeStep::RereadVaultStatus {
+            id: 3,
+            generation: 4,
+        }),
         "a path that looks like it is outside the vault still moves the count"
     );
 
     // With no vault there is no count to move.
     state.active = 0;
     assert_eq!(
-        watched_change_steps(&state, Path::new("/vault/notes.md"), true),
+        watched_change_steps(&state, Path::new("/vault/notes.md"), true, 4),
         vec![
             WatchedChangeStep::AgeLinkPreviews,
             WatchedChangeStep::ReloadActiveDocument,
@@ -299,12 +305,12 @@ fn a_change_on_disk_ages_the_link_cards_whichever_side_of_the_split_it_falls() {
     state.active = 0;
 
     assert!(
-        watched_change_steps(&state, Path::new("/vault/notes.md"), true)
+        watched_change_steps(&state, Path::new("/vault/notes.md"), true, 4)
             .contains(&WatchedChangeStep::AgeLinkPreviews),
         "a change to the open document left every card that links to it saying what the file used to say"
     );
     assert!(
-        watched_change_steps(&state, Path::new("/vault/beside-it.md"), false)
+        watched_change_steps(&state, Path::new("/vault/beside-it.md"), false, 4)
             .contains(&WatchedChangeStep::AgeLinkPreviews),
         "a change beside the open document left the card over its link saying what that file used to say"
     );
@@ -315,6 +321,8 @@ fn a_watcher_batch_raises_shared_steps_once_and_carries_every_corpus_path() {
     let mut state = VaultState::load(None);
     state.active = 3;
     state.folder = "/vault".to_owned();
+    let generation = state.note_watched_batch();
+    assert_eq!(generation, 1, "one watcher batch advances once");
 
     assert_eq!(
         watched_batch_steps(
@@ -324,9 +332,13 @@ fn a_watcher_batch_raises_shared_steps_once_and_carries_every_corpus_path() {
                 (PathBuf::from("/vault/other.md"), false),
                 (PathBuf::from("/vault/cover.png"), false),
             ],
+            generation,
         ),
         vec![
-            WatchedChangeStep::RereadVaultStatus(3),
+            WatchedChangeStep::RereadVaultStatus {
+                id: 3,
+                generation: 1,
+            },
             WatchedChangeStep::AgeLinkPreviews,
             WatchedChangeStep::ReloadActiveDocument,
             WatchedChangeStep::RereadPaneFolder("/vault".to_owned()),
@@ -347,7 +359,11 @@ fn a_watcher_batch_without_pane_or_image_changes_does_not_raise_them() {
     let state = VaultState::load(None);
 
     assert_eq!(
-        watched_batch_steps(&state, [(PathBuf::from("/elsewhere/notes.md"), false)],),
+        watched_batch_steps(
+            &state,
+            [(PathBuf::from("/elsewhere/notes.md"), false)],
+            0,
+        ),
         vec![
             WatchedChangeStep::AgeLinkPreviews,
             WatchedChangeStep::PatchCorpus {

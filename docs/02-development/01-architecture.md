@@ -208,6 +208,7 @@ Every command the page can send, one row each — the whole list, held to `IpcCo
 | `createVaultRepo`      | **Create a private repo**: `git init`, commit, then `gh repo create --push` |
 | `linkVaultRemote`      | The pasted repository address: point `origin` at it and push |
 | `syncVault`            | **Sync**: commit, pull with a rebase, push |
+| `setVaultGitAutoSync`  | Save whether one vault starts the same Sync turn when a local change appears |
 | `ignoreVaultRepos`     | **Ignore them**: write the repositories inside this vault that nothing is holding back into its own `.gitignore`, with the reason beside them, so the next sync cannot swallow one as a pointer nobody else can resolve. Which ones came from the panel’s own read, so nothing here is decided by the page |
 | `setGitIdentity`       | The name and address typed into the [GitHub panel](../01-features/03-library.md#github-sync) when git does not know who you are: written for this machine, since that is where git reads them. The vault id names the panel to redraw, not whose settings are written |
 | `refreshVault`         | **Refresh** in a vault whose files live on a service: ask the source what has moved, now, and wake a vault the timer had stopped asking |

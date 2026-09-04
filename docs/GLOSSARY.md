@@ -136,7 +136,7 @@ GitHub Flavored Markdown — the tables, [task lists](GLOSSARY.md#task-list), st
 
 ## GitHub sync
 
-Pointing a [vault](GLOSSARY.md#vault) at a GitHub repository and pushing to it. Leaftext never holds a token — it runs the `git` already on your machine. [Sync](GLOSSARY.md#sync-button) commits, pulls with a rebase, and pushes. See [Library](01-features/03-library.md#github-sync).
+Pointing a [vault](GLOSSARY.md#vault) at a GitHub repository and pushing to it. Leaftext never holds a token — it runs the `git` already on your machine. [Sync](GLOSSARY.md#sync-button) commits, pulls with a rebase, and pushes; it starts on a press unless that vault has automatic sync turned on. See [Library](01-features/03-library.md#github-sync).
 
 ## Glossary
 

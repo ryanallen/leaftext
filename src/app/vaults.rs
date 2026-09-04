@@ -43,7 +43,9 @@ pub(crate) struct VaultState {
     ///
     /// Keyed by id rather than a single flag: the page asks for every vault it knows at once, and a second vault must not be made to wait behind the first.
     pub(crate) status_loading: HashSet<i64>,
-    pub(crate) status_pending: HashSet<i64>,
+    pub(crate) status_pending: HashMap<i64, u64>,
+    /// The newest local-change batch seen while a vault was active.
+    pub(crate) change_generation: u64,
     /// The search thread and its query counter — see `vault_search.rs`.
     pub(crate) search: VaultSearch,
     /// The last graph asked for, so an edit on disk can redraw it.
@@ -86,7 +88,8 @@ impl VaultState {
             pending_graph: None,
             pending_search: None,
             status_loading: HashSet::new(),
-            status_pending: HashSet::new(),
+            status_pending: HashMap::new(),
+            change_generation: 0,
             search: VaultSearch::default(),
             last_graph: None,
             graph_open: false,
@@ -94,18 +97,29 @@ impl VaultState {
     }
 
     /// Whether a git-state read may start for this vault now. A no remembers that it was asked, so the read already running leaves exactly one repeat behind it — a request that arrived mid-read describes a folder the running read predates, so it cannot be served by that answer.
-    pub(crate) fn may_read_status(&mut self, id: i64) -> bool {
+    pub(crate) fn may_read_status(&mut self, id: i64, generation: u64) -> bool {
         if self.status_loading.insert(id) {
             return true;
         }
-        self.status_pending.insert(id);
+        self.status_pending
+            .entry(id)
+            .and_modify(|pending| *pending = (*pending).max(generation))
+            .or_insert(generation);
         false
     }
 
-    /// A read has landed: let the next one start, and say whether one was asked for while it ran.
-    pub(crate) fn status_read_settled(&mut self, id: i64) -> bool {
+    /// A read has landed: let the next one start, and return the newest generation asked for while it ran.
+    pub(crate) fn status_read_settled(&mut self, id: i64) -> Option<u64> {
         self.status_loading.remove(&id);
         self.status_pending.remove(&id)
+    }
+
+    /// Mark one watcher batch while a vault is active.
+    pub(crate) fn note_watched_batch(&mut self) -> u64 {
+        if self.active != 0 {
+            self.change_generation = self.change_generation.saturating_add(1);
+        }
+        self.change_generation
     }
 
     /// Forget the vault's text and anything waiting on it. Called whenever the root moves: what was read is about somewhere else now.
@@ -915,7 +929,7 @@ pub(crate) fn vault_to_reread(state: &VaultState) -> Option<i64> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum WatchedChangeStep {
     /// Read this vault's git state again, so the header's count moves.
-    RereadVaultStatus(i64),
+    RereadVaultStatus { id: i64, generation: u64 },
     /// The document on screen changed under the reader, so it is loaded again.
     ReloadActiveDocument,
     /// The pane lists this one folder off the disk, and the change is in it.
@@ -936,10 +950,11 @@ pub(crate) fn watched_change_steps(
     state: &VaultState,
     changed: &Path,
     is_active_document: bool,
+    generation: u64,
 ) -> Vec<WatchedChangeStep> {
     let mut steps = Vec::new();
     if let Some(id) = vault_to_reread(state) {
-        steps.push(WatchedChangeStep::RereadVaultStatus(id));
+        steps.push(WatchedChangeStep::RereadVaultStatus { id, generation });
     }
     // The active-document branch returns before later steps.
     steps.push(WatchedChangeStep::AgeLinkPreviews);
@@ -964,6 +979,7 @@ pub(crate) fn watched_change_steps(
 pub(crate) fn watched_batch_steps(
     state: &VaultState,
     changed: impl IntoIterator<Item = (PathBuf, bool)>,
+    generation: u64,
 ) -> Vec<WatchedChangeStep> {
     let mut status = None;
     let mut age_link_previews = false;
@@ -973,9 +989,11 @@ pub(crate) fn watched_batch_steps(
     let mut refresh_images = false;
 
     for (path, is_active_document) in changed {
-        for step in watched_change_steps(state, &path, is_active_document) {
+        for step in watched_change_steps(state, &path, is_active_document, generation) {
             match step {
-                WatchedChangeStep::RereadVaultStatus(id) => status = Some(id),
+                WatchedChangeStep::RereadVaultStatus { id, generation } => {
+                    status = Some((id, generation))
+                }
                 WatchedChangeStep::AgeLinkPreviews => age_link_previews = true,
                 WatchedChangeStep::ReloadActiveDocument => reload_active_document = true,
                 WatchedChangeStep::RereadPaneFolder(folder) => reread_pane_folder = Some(folder),
@@ -986,8 +1004,8 @@ pub(crate) fn watched_batch_steps(
     }
 
     let mut steps = Vec::new();
-    if let Some(id) = status {
-        steps.push(WatchedChangeStep::RereadVaultStatus(id));
+    if let Some((id, generation)) = status {
+        steps.push(WatchedChangeStep::RereadVaultStatus { id, generation });
     }
     if age_link_previews {
         steps.push(WatchedChangeStep::AgeLinkPreviews);

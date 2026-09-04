@@ -796,7 +796,15 @@ function vaultGitItems(vault) {
         icon: SYNC_ICON_SVG,
         disabled: busy,
         keepOpen: true,
-      run: () => send({ command: 'syncVault', id: vault.id }),
+        run: () => startVaultSync(vault.id, 'manual', null),
+      });
+      items.push({
+        label: 'Sync automatically',
+        switch: true,
+        checked: Boolean(vault.gitAutoSync),
+        disabled: busy,
+        keepOpen: true,
+        run: () => send({ command: 'setVaultGitAutoSync', id: vault.id, enabled: !vault.gitAutoSync }),
       });
       // Re-pointing stays folded behind a button so the everyday panel is just "Sync" and a change takes a deliberate press, not a fat-finger.
       if (!changeRepoRevealed) {
@@ -991,6 +999,8 @@ let syncSpinTimer = 0;
 let syncFadeTimer = 0;
 // Held from the click until the host reports how it went. Without it the turn stops the moment anything else redraws the button -- a watcher tick mid-push is enough -- and a spinner that pauses reads as a failure, which is the one thing it must not say while the push is still running.
 let syncInFlight = false;
+const automaticSyncAttemptByVault = new Map();
+const automaticSyncFailedGenerationByVault = new Map();
 function renderVaultSyncButton() {
   if (!librarySyncButton) return;
   const state = vaultGitByVault.get(activeVaultId);
@@ -1030,13 +1040,25 @@ function renderVaultSyncButton() {
   librarySyncButton.title = label;
   librarySyncButton.setAttribute('aria-label', label);
 }
+function startVaultSync(id, source, generation) {
+  const state = vaultGitByVault.get(id);
+  if (!id || syncInFlight || Boolean(state && state.busy)) return;
+  if (source === 'automatic') {
+    automaticSyncAttemptByVault.set(id, generation);
+  } else {
+    automaticSyncAttemptByVault.delete(id);
+    automaticSyncFailedGenerationByVault.delete(id);
+  }
+  syncInFlight = true;
+  syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;
+  renderVaultSyncButton();
+  refreshVaultGitPanel(id);
+  send({ command: 'syncVault', id });
+}
 if (librarySyncButton) {
   librarySyncButton.addEventListener('click', () => {
     if (!activeVaultId) return;
-    syncInFlight = true;
-    syncSpinUntil = performance.now() + SYNC_MIN_SPIN_MS;
-    renderVaultSyncButton();
-    send({ command: 'syncVault', id: activeVaultId });
+    startVaultSync(activeVaultId, 'manual', null);
   });
 }
 // The header's own reading: the folder's state without what-is-installed, which is the expensive half. Merged into whatever the panel already knew. Where the active vault's repository stands. Called from both ways the page learns which vault is active, because they share no path: a switch arrives through `leafSetVaults`, but a cold launch reads `__leafVaults` off the window and never calls it. Hooked to the callback alone, this would only ever fire when you changed vaults.
@@ -1044,7 +1066,7 @@ function requestActiveVaultStatus() {
   renderVaultSyncButton();
   if (activeVaultId) send({ command: 'getVaultStatus', id: activeVaultId });
 }
-window.leafSetVaultStatus = (id, repo) => {
+window.leafSetVaultStatus = (id, repo, generation = 0) => {
   if (typeof id !== 'number' || !repo) return;
   const previous = vaultGitByVault.get(id);
   // The cheap read does not walk the folder, so it says nothing about what the folder holds: keep what the panel's own read found rather than blanking its note on the next save.
@@ -1058,6 +1080,12 @@ window.leafSetVaultStatus = (id, repo) => {
     : repo;
   // Only the folder's state. Saying `busy: false` here would end the spin from a watcher tick that happened to land mid-push, stuttering the turn -- a job is over when the job says so, not when a file moves.
   vaultGitByVault.set(id, Object.assign({}, previous || { id, tooling: {} }, { repo: merged }));
+  const vault = id === activeVaultId ? leafVaults.find((entry) => entry && entry.id === id) : null;
+  const waiting = (merged.changed || 0) + (merged.ahead || 0);
+  const failedGeneration = automaticSyncFailedGenerationByVault.get(id);
+  if (vault && vault.gitAutoSync && merged.atRoot && merged.remote && waiting > 0 && failedGeneration !== generation) {
+    startVaultSync(id, 'automatic', generation);
+  }
   renderVaultSyncButton();
   renderLibraryVaultSwitch();
   refreshSwitcherGlyphs();
@@ -1066,7 +1094,17 @@ window.leafSetVaultStatus = (id, repo) => {
 window.leafSetVaultGit = (state) => {
   if (!state || typeof state.id !== 'number') return;
   // A whole state with nothing running is the end of whatever was: this is the only thing that stops the turn.
-  if (!state.busy) syncInFlight = false;
+  if (!state.busy) {
+    syncInFlight = false;
+    if (automaticSyncAttemptByVault.has(state.id)) {
+      const generation = automaticSyncAttemptByVault.get(state.id);
+      if (state.error) automaticSyncFailedGenerationByVault.set(state.id, generation);
+      else automaticSyncFailedGenerationByVault.delete(state.id);
+      automaticSyncAttemptByVault.delete(state.id);
+    } else if (!state.error) {
+      automaticSyncFailedGenerationByVault.delete(state.id);
+    }
+  }
   vaultGitByVault.set(state.id, state);
   renderVaultSyncButton();
   refreshVaultGitPanel(state.id);
@@ -1389,10 +1427,11 @@ function showCrumbMenu(button, items) {
     item.className = 'context-menu-item crumb-menu-item'
       + (entry.selected ? ' is-selected' : '')
       + (entry.danger ? ' is-danger' : '');
-    item.setAttribute('role', 'menuitem');
+    item.setAttribute('role', entry.switch ? 'switch' : 'menuitem');
+    if (entry.switch) item.setAttribute('aria-checked', String(Boolean(entry.checked)));
     if (entry.title) item.title = entry.title;
     // The icon and the tick are ours; only the label is user text, so it goes in as text rather than markup.
-    item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${entry.selected ? MENU_CHECK_SVG : ''}`;
+    item.innerHTML = `${entry.icon || ''}<span class="crumb-menu-label"></span>${entry.switch ? '<span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span>' : (entry.selected ? MENU_CHECK_SVG : '')}`;
     item.querySelector('.crumb-menu-label').textContent = entry.label;
     if (entry.vaultId !== undefined) item.dataset.vaultId = String(entry.vaultId);
     if (entry.disabled) item.disabled = true;

@@ -162,7 +162,7 @@ The [graph view](docs/01-features/03-library.md#graph) maps the links between yo
 
 ![A vault's settings panel showing the connected GitHub repository, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](imgs/github-sync.png)
 
-A vault can be a git repository that pushes to GitHub. Leaftext never holds a token — it runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
+A vault can be a git repository that pushes to GitHub. Leaftext never holds a token — it runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub, and one vault can turn on automatic sync for each local change. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
 
 ## Move around
 
@@ -214,7 +214,7 @@ Three things, and none of them carries a word you wrote:
 - **The update download** — when one does, it fetches that installer.
 - **A theme's font** — from Google Fonts, the first time you pick that theme.
 
-The one exception is the one you ask for: [GitHub sync](docs/01-features/03-library.md#github-sync) pushes a vault to your own repository, using the `git` already on your machine. Nothing syncs unless you set it up and press the button.
+The one exception is the one you set up: [GitHub sync](docs/01-features/03-library.md#github-sync) pushes a vault to your own repository, using the `git` already on your machine. It starts on a press unless you turn on automatic sync for that vault.
 
 ### Your files stay your files
 

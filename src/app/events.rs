@@ -20,7 +20,11 @@ pub(crate) enum UserEvent {
     /// The git panel's next whole state, already serialized on the worker thread.
     VaultGitReady { json: String },
     /// Just the folder's own git state, for the header's sync button.
-    VaultStatusReady { id: i64, json: String },
+    VaultStatusReady {
+        id: i64,
+        generation: u64,
+        json: String,
+    },
     /// The clock says it is time to ask the remote vaults what has moved. The loop decides which, if any, are worth asking — it is the only place that knows what is busy and what is resting.
     RemoteRefreshDue,
     /// A refresh pass finished. `ran_under` is the mirror it ran against, so a pass that outlived its vault is thrown away rather than delivered.
@@ -377,6 +381,9 @@ pub(crate) enum IpcCommand {
     LinkVaultRemote { id: i64, url: String },
     #[serde(rename = "syncVault")]
     SyncVault { id: i64 },
+    /// Save whether this vault starts GitHub sync when local work appears.
+    #[serde(rename = "setVaultGitAutoSync")]
+    SetVaultGitAutoSync { id: i64, enabled: bool },
     /// Put the repositories inside this vault that nothing is holding back into its own `.gitignore`, with the reason beside them. Which ones came from the panel's own read, so nothing here is decided by the page.
     #[serde(rename = "ignoreVaultRepos")]
     IgnoreVaultRepos { id: i64, paths: Vec<String> },

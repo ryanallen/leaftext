@@ -35,7 +35,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
     assert!(html.contains(r#"id="librarySyncButton" class="library-sync""#));
     assert!(html.contains("function renderVaultSyncButton()"));
     assert!(html.contains("if (!activeVaultId || (!waiting && !spinning)) {"));
-    assert!(html.contains("send({ command: 'syncVault', id: activeVaultId });"));
+    assert!(html.contains("startVaultSync(activeVaultId, 'manual', null);"));
     assert!(css.contains(".library-sync {"));
     assert!(css.contains(".library-sync[hidden] {"));
     // A count, not a dot: "3" is a reason to press it.
@@ -44,7 +44,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 
     // The count is read off disk, on a path that never asks the network. The panel's reading is the one that runs `gh auth status`; doing that on every save would put a token check behind Ctrl+S.
     assert!(html.contains("send({ command: 'getVaultStatus', id: activeVaultId });"));
-    assert!(html.contains("window.leafSetVaultStatus = (id, repo) => {"));
+    assert!(html.contains("window.leafSetVaultStatus = (id, repo, generation = 0) => {"));
 
     // There are two ways the page learns which vault is active and they share no path: a switch mid-session comes through `leafSetVaults`, but a cold launch never calls that -- the list is already on the window as `__leafVaults` and read straight out of it. Asking from only one of them is a button that works all session and is missing every time the app starts.
     assert!(html.contains("function requestActiveVaultStatus() {"));
@@ -68,11 +68,12 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 
     // Once it turns it does not stop until the answer is in. Anything else redrawing the button mid-push -- a watcher tick is enough -- ends the turn, and a spinner that pauses reads as a failure at the one moment it must not. Only a finished job releases it.
     assert!(html.contains("let syncInFlight = false;"));
-    assert!(html.contains("    syncInFlight = true;"));
+    assert!(html.contains("function startVaultSync(id, source, generation) {"));
+    assert!(html.contains("  syncInFlight = true;"));
     assert!(
         html.contains("const spinning = syncInFlight || Boolean(state && state.busy) || held > 0;")
     );
-    assert!(html.contains("  if (!state.busy) syncInFlight = false;"));
+    assert!(html.contains("    syncInFlight = false;"));
     // A watcher tick carries the folder's state and nothing about the job, so it must not claim the job is over.
     assert!(!html.contains("{ repo, busy: false }"));
     // And it leaves still turning, rather than blinking out mid-thought.
@@ -186,7 +187,7 @@ fn a_vault_can_be_put_on_github_from_its_own_settings() {
     // Opening the panel reads the folder; everything after that is a button.
     assert!(html.contains("window.leafSetVaultGit = (state) => {"));
     assert!(html.contains("window.leafVaultGitBusy = (id) => {"));
-    assert!(html.contains("send({ command: 'syncVault', id: vault.id }),"));
+    assert!(html.contains("startVaultSync(vault.id, 'manual', null),"));
     assert!(html.contains("send({ command: 'createVaultRepo', id: vault.id }),"));
     assert_in(
         &html,

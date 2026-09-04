@@ -155,6 +155,7 @@ fn a_vault_registered_before_the_kind_column_reads_as_a_folder() {
             "{} is not a folder",
             vault.name
         );
+        assert!(!vault.git_auto_sync, "{} starts automatic sync on", vault.name);
     }
     // And the order they were added in survives the migration, since that is what the switcher lists them in.
     assert_eq!(vaults[0].name, "Dharma");
@@ -168,15 +169,70 @@ fn a_vault_registered_before_the_kind_column_reads_as_a_folder() {
     std::fs::create_dir_all(&cloned).expect("folder created");
     let vault = add_vault(&conn, &cloned, "Cloned", VaultKind::Git).expect("added");
     assert_eq!(vault.kind, VaultKind::Git);
+    assert!(!vault.git_auto_sync);
     assert_eq!(
         find_vault(&conn, vault.id).expect("found").map(|v| v.kind),
         Some(VaultKind::Git)
+    );
+    assert_eq!(
+        find_vault(&conn, vault.id)
+            .expect("found")
+            .map(|v| v.git_auto_sync),
+        Some(false)
     );
 
     // Reopening applies nothing a second time, which is the check the version constant now makes for every migration after this one.
     drop(conn);
     let conn = open_db(&dir).expect("db reopens");
     assert_eq!(list_vaults(&conn).expect("listed").len(), 3);
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_migration_7_database_loads_every_vault_with_automatic_sync_off() {
+    let dir = unique_dir("migrate-8");
+    {
+        let conn = Connection::open(manifest_path(&dir)).expect("db created");
+        conn.execute_batch(
+            "CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
+             CREATE TABLE vaults (id INTEGER PRIMARY KEY, name TEXT NOT NULL, root_path TEXT NOT NULL UNIQUE, added_at INTEGER NOT NULL, kind TEXT NOT NULL DEFAULT 'folder', remote_id TEXT, account TEXT);
+             CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             INSERT INTO vaults (name, root_path, added_at, kind) VALUES ('Notes', 'C:\\Notes', 10, 'folder'), ('Site', 'C:\\Site', 20, 'git');
+             INSERT INTO schema_migrations (version, applied_at) VALUES (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0);",
+        )
+        .expect("migration 7 schema created");
+    }
+
+    let conn = open_db(&dir).expect("db opens and migrates");
+    let vaults = list_vaults(&conn).expect("listed");
+    assert_eq!(vaults.len(), 2);
+    assert!(vaults.iter().all(|vault| !vault.git_auto_sync));
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn changing_one_vaults_automatic_sync_leaves_the_other_off_and_names_the_page_field() {
+    let dir = unique_dir("vault-auto-sync");
+    let first_root = dir.join("first");
+    let second_root = dir.join("second");
+    std::fs::create_dir_all(&first_root).expect("first folder created");
+    std::fs::create_dir_all(&second_root).expect("second folder created");
+    let conn = open_db(&dir).expect("db opens");
+    let first = add_vault(&conn, &first_root, "First", VaultKind::Git).expect("first added");
+    let second = add_vault(&conn, &second_root, "Second", VaultKind::Git).expect("second added");
+
+    set_vault_git_auto_sync(&conn, first.id, true).expect("choice changed");
+    assert_eq!(find_vault(&conn, first.id).expect("found"), Some(Vault { git_auto_sync: true, ..first }));
+    assert_eq!(find_vault(&conn, second.id).expect("found"), Some(second));
+
+    let vaults = list_vaults(&conn).expect("listed");
+    let script = crate::vaults_script(&vaults, first.id);
+    assert!(script.contains("\"gitAutoSync\":true"));
+    assert!(script.contains("\"gitAutoSync\":false"));
 
     drop(conn);
     let _ = std::fs::remove_dir_all(&dir);

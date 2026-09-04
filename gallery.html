@@ -4945,6 +4945,31 @@ body.library-resizing button {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.crumb-menu-switch {
+  flex: none;
+  width: 28px;
+  height: 16px;
+  margin-left: auto;
+  padding: var(--lt-space-2);
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--lt-border);
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.crumb-menu-switch-thumb {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--lt-surface);
+  transition: transform var(--lt-duration-120) var(--lt-ease);
+}
+.crumb-menu-item[role="switch"][aria-checked="true"] .crumb-menu-switch {
+  background: var(--lt-accent);
+}
+.crumb-menu-item[role="switch"][aria-checked="true"] .crumb-menu-switch-thumb {
+  transform: translateX(12px);
+}
 .library-crumb-sep {
   flex: none;
   color: color-mix(in srgb, var(--lt-muted-foreground) 60%, transparent);
@@ -11063,7 +11088,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js</span></header>
-<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
+<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>

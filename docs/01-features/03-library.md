@@ -22,7 +22,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
-| [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, with a sync button in its own header — and a repository can be [cloned](#clone-a-repository) into a new vault |
+| [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, manually from its header or automatically after local changes when that vault opts in — and a repository can be [cloned](#clone-a-repository) into a new vault |
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
@@ -381,11 +381,13 @@ Again there is no sign-in of Leaftext's own. A public repository just works; a p
 
 The settings panel names the address the vault points at now. **Change repo…** opens a field for a new one, with **Save** and **Cancel**: nothing changes until you press Save, and the address it replaces is offered back with one press in case the change was a mistake.
 
-Setting or changing the address only points the vault — it never pushes on its own. Sending your files is always a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaftext also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
+Setting or changing the address only points the vault — it never pushes on its own. Sending your files starts with a separate, deliberate [Sync](#syncing), so naming a repository can never overwrite what is already in it. Leaftext also refuses to act on a repository the vault folder merely sits *inside*; it works only on a repository the folder is the root of.
 
 ### Syncing
 
 **Sync** commits everything changed, pulls with a rebase, and pushes. Commit messages describe the change — `Update README.md`, or `Update 4 files` — and carry no mention of the app.
+
+GitHub sync starts manually unless this vault's settings has **Sync automatically** turned on. The switch belongs to one vault and starts off, so private notes can wait for a press while another vault sends each local change. Automatic sync uses the same Sync turn, count and result growl as the button. A failure waits instead of repeating for the same change; another local change or a manual Sync can try again.
 
 A **sync button appears at the end of the vault's breadcrumb** whenever there is work that has not reached GitHub, carrying the count. It spins while it works and fades out still spinning — more slowly under [Reduce Motion](05-settings.md#reduce-motion), which slows every spinner rather than stopping it — and a growl in the corner says where the push landed. It is absent when there is nothing to send.
 

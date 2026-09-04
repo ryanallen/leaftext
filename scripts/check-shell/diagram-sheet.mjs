@@ -6,6 +6,14 @@ import vm from 'node:vm';
 import { check, checkSettled, fakeElement, readingCss, record, root, settle, SHEET_FRAGMENTS, source } from './shared.mjs';
 
 
+
+// What a cached chip is a picture of. The store holds a data image rather than the drawing itself, so a check about the drawing has to open the picture first.
+function chipDrawing(chip) {
+  const at = String(chip).indexOf('base64,');
+  if (at < 0) return '';
+  return Buffer.from(String(chip).slice(at + 'base64,'.length).replace(/".*$/, ''), 'base64').toString('utf8');
+}
+
 export function run() {
   const booted = record.booted;
   if (!booted) return;
@@ -1143,7 +1151,7 @@ export function run() {
     const read = (expression) => vm.runInContext(expression, booted);
     const body = read('flowPickerBody');
     if (!body) throw new Error('the page has no picker body');
-    const chip = '<svg class="flow-chip"></svg>';
+    const chip = '<img class="flow-chip" alt="" src="data:image/svg+xml;base64,PHN2Zy8+">';
     const spot = (element) => [...body.children].indexOf(element);
     const wearing = (button) => [...button.children].some((child) => child.classList && child.classList.contains('flow-chip'));
     const press = (button) => {
@@ -1286,7 +1294,7 @@ export function run() {
       if (!grid) throw new Error('the pictures landed and no grid was prepared');
       const buttons = read('flowShapeButtons');
       if (buttons.size !== shapes) throw new Error(`the prepared grid holds ${buttons.size} buttons against ${shapes} shapes`);
-      if (!buttons.get('rect').innerHTML.includes('svg')) throw new Error('the prepared buttons came without their pictures');
+      if (!buttons.get('rect').innerHTML.includes('data:image/svg+xml;base64,')) throw new Error('the prepared buttons came without their pictures');
       if (placed()) throw new Error('the prepared grid was placed in a shut sheet');
       // The first click on a box only places what is already standing.
       read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text); flowSelection = { kind: 'node', id: flowSession.graph.nodes[0].id };`);
@@ -1401,17 +1409,75 @@ export function run() {
       booted.refreshFlowChipsForTheme();
       await settle();
       if (read('flowShapeGrid') === lightGrid) throw new Error('the theme change kept the old shape grid');
-      if ([...read('flowChipCache.values()')].some((svg) => !svg.includes('data-theme="dark"'))) throw new Error('the theme change kept a light picture');
+      if ([...read('flowChipCache.values()')].some((chip) => !chipDrawing(chip).includes('data-theme="dark"'))) throw new Error('the theme change kept a light picture');
       read('flowSession = null;');
       booted.refreshFlowChipsForTheme();
       if (read('flowChipCache.size') || read('flowChipsAsked') || read('flowShapeGrid')) throw new Error('a shut sheet kept its old themed pictures');
       read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text);`);
       booted.loadFlowChips();
       await settle();
-      if ([...read('flowChipCache.values()')].some((svg) => !svg.includes('data-theme="dark"'))) throw new Error('a reopened sheet did not draw the current theme');
+      if ([...read('flowChipCache.values()')].some((chip) => !chipDrawing(chip).includes('data-theme="dark"'))) throw new Error('a reopened sheet did not draw the current theme');
     } finally {
       booted.window.mermaid = held;
       read('flowSession = null; flowSelection = null; flowChipCache.clear(); flowChipsAsked = false; flowChipThemeVersion = 0; flowPickerBody.textContent = ""; flowPickerHead.textContent = "";');
+      booted.forgetFlowShapeGrid();
+      booted.__frames.drain();
+    }
+  });
+
+  // A selected box is exactly the state that leaves the shape grid visible, so the forty-seven drawings stay and become pictures rather than leaving. The proof is the shape of the document rather than a time, which a machine under load can always argue with: one image per pictured choice, and nothing of the drawing left in the page for the next redraw to measure.
+  checkSettled('every shape picture is one image with no drawing left in the page', async () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const held = booted.window.mermaid;
+    const shapes = read('flowShapeCatalog()');
+    const drawings = (button) => [...button.children].filter((child) => child.tagName === 'SVG' || (child.contents || []).some((deep) => deep.tagName === 'SVG'));
+    try {
+      // One shape mermaid refuses, so the button that falls back to its written name alone is covered beside the forty-six that draw.
+      const refused = shapes[shapes.length - 1].id;
+      booted.window.mermaid = {
+        initialize: () => {},
+        render: (id) => (id.endsWith(refused)
+          ? Promise.reject(new Error('this copy cannot draw it'))
+          : Promise.resolve({ svg: '<svg viewBox="0 0 46 28" style="max-width: 46px;"><g><rect width="46" height="28"></rect></g></svg>' })),
+      };
+      read(`flowSession = { save: null, text: 'flowchart TD\\n  A["a"]', graph: null }; flowSession.graph = parseFlow(flowSession.text); flowSelection = { kind: 'node', id: flowSession.graph.nodes[0].id }; flowChipCache.clear(); flowChipsAsked = false;`);
+      booted.forgetFlowShapeGrid();
+      booted.loadFlowChips();
+      await settle();
+      booted.drawFlowPicker();
+
+      const buttons = read('flowShapeButtons');
+      if (buttons.size !== shapes.length) throw new Error(`the grid holds ${buttons.size} buttons against ${shapes.length} shapes`);
+      for (const shape of shapes) {
+        const button = buttons.get(shape.id);
+        const pictures = [...button.children].filter((child) => child.tagName === 'IMG');
+        const left = drawings(button);
+        if (left.length) throw new Error(`${shape.id} still holds a drawing in the page`);
+        if (shape.id === refused) {
+          if (pictures.length) throw new Error('a shape mermaid refused came back with a picture');
+          if (!button.textContent.includes(shape.label)) throw new Error('a shape mermaid refused lost its written name');
+          continue;
+        }
+        if (pictures.length !== 1) throw new Error(`${shape.id} reached the picker as ${pictures.length} pictures`);
+        if (!pictures[0].classList.contains('flow-chip')) throw new Error(`${shape.id} lost the class its size comes from`);
+        if (pictures[0].getAttribute('alt') !== '') throw new Error(`${shape.id} names itself twice, in its picture as well as beside it`);
+        if (!button.textContent.includes(shape.label)) throw new Error(`${shape.id} came without its written name`);
+        const drawing = chipDrawing(read('flowShapeChip(' + JSON.stringify(shape.id) + ')'));
+        if (!drawing.includes('<rect')) throw new Error(`${shape.id} is a picture of nothing`);
+        if (!drawing.includes('preserveAspectRatio="xMidYMid meet"')) throw new Error(`${shape.id} would stretch inside its picture`);
+        if (!/max-width:\s*none/.test(drawing)) throw new Error(`${shape.id} kept the width mermaid caps a drawing at, which the sheet's stylesheet no longer reaches inside to lift`);
+      }
+
+      // The right-click menu reads the same store, so it holds pictures for the same reason and without a second path.
+      booted.openFlowMenuWith(10, 10, [{ label: 'Barrel', chip: 'cyl', run: () => {} }], read('flowSheet'));
+      const item = [...read('flowMenu').children].find((child) => child.classList.contains('flow-menu-item'));
+      if (!item) throw new Error('the right-click menu drew no shape');
+      if (drawings(item).length) throw new Error('the right-click menu still holds a drawing in the page');
+      if (![...item.children].some((child) => child.tagName === 'IMG')) throw new Error('the right-click menu drew no picture');
+      booted.closeFlowMenu();
+    } finally {
+      booted.window.mermaid = held;
+      read('flowSession = null; flowSelection = null; flowChipCache.clear(); flowChipsAsked = false; flowPickerBody.textContent = ""; flowPickerHead.textContent = "";');
       booted.forgetFlowShapeGrid();
       booted.__frames.drain();
     }

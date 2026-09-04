@@ -363,10 +363,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                         (path, is_active_document)
                     })
                     .collect();
-                for step in watched_batch_steps(&vault_state, changed) {
+                let generation = vault_state.note_watched_batch();
+                for step in watched_batch_steps(&vault_state, changed, generation) {
                     match step {
-                        WatchedChangeStep::RereadVaultStatus(id) => {
-                            refresh_vault_status(&mut vault_state, &proxy, id)
+                        WatchedChangeStep::RereadVaultStatus { id, generation } => {
+                            let Some((root, generation)) =
+                                status_read_to_start(&mut vault_state, id, generation)
+                            else {
+                                continue;
+                            };
+                            read_vault_status_off_loop(&proxy, id, generation, root);
                         }
                         WatchedChangeStep::ReloadActiveDocument => {
                             reload_active_document(&mut reader, &mut file_watch)
@@ -394,8 +400,19 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::VaultGitReady { json }) => {
                 deliver_vault_git(reader.page(), &json);
             }
-            Event::UserEvent(UserEvent::VaultStatusReady { id, json }) => {
-                deliver_vault_status(reader.page(), &mut vault_state, &proxy, id, &json);
+            Event::UserEvent(UserEvent::VaultStatusReady {
+                id,
+                generation,
+                json,
+            }) => {
+                deliver_vault_status(
+                    reader.page(),
+                    &mut vault_state,
+                    &proxy,
+                    id,
+                    generation,
+                    &json,
+                );
             }
             Event::UserEvent(UserEvent::CloudFoldersReady { folders }) => {
                 deliver_cloud_folders(&vault_state, reader.page(), &folders);
@@ -1154,6 +1171,16 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::SyncVault { id } => {
                     sync_vault(&vault_state, &proxy, reader.page(), id);
+                }
+                IpcCommand::SetVaultGitAutoSync { id, enabled } => {
+                    if let Some(conn) = vault_state.conn.as_ref() {
+                        if let Err(error) = leaftext::store::set_vault_git_auto_sync(conn, id, enabled)
+                        {
+                            eprintln!("Could not change automatic sync for that vault: {error}");
+                        } else {
+                            push_vaults(reader.page(), &vault_state);
+                        }
+                    }
                 }
                 IpcCommand::IgnoreVaultRepos { id, paths } => {
                     ignore_vault_repos(&vault_state, &proxy, reader.page(), id, paths);

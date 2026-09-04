@@ -168,3 +168,16 @@ fn a_copied_picture_arrives_under_the_name_the_page_sends() {
         other => panic!("the picture copy did not arrive: {other:?}"),
     }
 }
+
+#[test]
+fn automatic_vault_sync_reads_the_vault_and_the_new_choice() {
+    match serde_json::from_str::<IpcCommand>(
+        r#"{"command":"setVaultGitAutoSync","id":17,"enabled":true}"#,
+    ) {
+        Ok(IpcCommand::SetVaultGitAutoSync { id, enabled }) => {
+            assert_eq!(id, 17);
+            assert!(enabled);
+        }
+        other => panic!("the automatic-sync choice did not arrive: {other:?}"),
+    }
+}

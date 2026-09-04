@@ -62,6 +62,11 @@ CREATE TABLE remote_files (
 CREATE INDEX remote_files_by_path ON remote_files (vault_id, local_path);
 "#;
 
+/// Migration 8: automatic GitHub sync is a choice on one vault and starts off.
+#[cfg(feature = "desktop")]
+const MIGRATION_8_SQL: &str =
+    "ALTER TABLE vaults ADD COLUMN git_auto_sync INTEGER NOT NULL DEFAULT 0;";
+
 /// Open (creating if needed) the database, apply PRAGMAs, and migrate.
 #[cfg(feature = "desktop")]
 pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
@@ -137,6 +142,17 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         tx.execute_batch(MIGRATION_7_SQL).map_err(to_err)?;
         tx.execute(
             "INSERT INTO schema_migrations (version, applied_at) VALUES (7, ?1)",
+            params![now_secs()],
+        )
+        .map_err(to_err)?;
+        tx.commit().map_err(to_err)?;
+    }
+
+    if current < 8 {
+        let tx = conn.transaction().map_err(to_err)?;
+        tx.execute_batch(MIGRATION_8_SQL).map_err(to_err)?;
+        tx.execute(
+            "INSERT INTO schema_migrations (version, applied_at) VALUES (8, ?1)",
             params![now_secs()],
         )
         .map_err(to_err)?;

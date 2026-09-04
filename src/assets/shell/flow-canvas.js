@@ -1115,6 +1115,17 @@ function flowShapeChip(id) {
   return flowChipCache.get(id) || '';
 }
 
+// One picture per shape rather than the tree mermaid handed back. Mermaid sizes a box by putting its label in the document and asking the browser how big it came out, so everything standing anywhere on the page is laid out again on every redraw: the forty-seven live chips carried about 1,900 of the page's 3,463 elements, and a 40-line chart drew in 619.5ms with them against 381.4ms with these. A picture keeps the baked colors and the grid the reader is looking at, with nothing inside it left to measure. Its own max-width is lifted here because the sheet's stylesheet does not reach inside a picture, and the labels are a blank space, so an image never drawing a foreignObject costs nothing.
+function flowChipPicture(svg) {
+  const holder = document.createElement('div');
+  holder.innerHTML = svg;
+  const root = holder.firstElementChild;
+  if (!root) return '';
+  root.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  root.style.maxWidth = 'none';
+  return '<img class="flow-chip" alt="" src="data:image/svg+xml;base64,' + diagramBase64(root.outerHTML) + '">';
+}
+
 function loadFlowChips() {
   if (flowChipsAsked) return;
   flowChipsAsked = true;
@@ -1128,7 +1139,7 @@ function loadFlowChips() {
         try {
           const { svg } = await mermaid.render('leafFlowChip-' + shape.id, 'flowchart LR\n  c' + body);
           if (themeVersion !== flowChipThemeVersion) return;
-          flowChipCache.set(shape.id, svg.replace(/<svg /, '<svg class="flow-chip" preserveAspectRatio="xMidYMid meet" '));
+          flowChipCache.set(shape.id, flowChipPicture(svg));
         } catch (error) {
           if (themeVersion !== flowChipThemeVersion) return;
           // A shape this copy of mermaid will not draw simply has no picture.

@@ -54,6 +54,7 @@ pub struct Vault {
     pub name: String,
     pub root_path: String,
     pub kind: VaultKind,
+    pub git_auto_sync: bool,
     /// Who this vault is signed in as, when it is signed in as anybody. A name, not a secret — the token is in the machine's own credential store and never in this database or any other file the app writes. The panel shows this, which is why it is here rather than fetched.
     pub account: Option<String>,
 }
@@ -62,11 +63,12 @@ pub struct Vault {
 impl Serialize for Vault {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let mut row = serializer.serialize_struct("Vault", 6)?;
+        let mut row = serializer.serialize_struct("Vault", 7)?;
         row.serialize_field("id", &self.id)?;
         row.serialize_field("name", &self.name)?;
         row.serialize_field("rootPath", &self.root_path)?;
         row.serialize_field("kind", self.kind.as_stored())?;
+        row.serialize_field("gitAutoSync", &self.git_auto_sync)?;
         row.serialize_field("account", &self.account)?;
         row.serialize_field("signsIn", &self.kind.signs_in())?;
         row.end()
@@ -75,7 +77,7 @@ impl Serialize for Vault {
 
 /// The columns every query here selects, in the order [`read_vault`] reads them. One string so the four cannot drift apart.
 #[cfg(feature = "desktop")]
-const VAULT_COLUMNS: &str = "id, name, root_path, kind, account";
+const VAULT_COLUMNS: &str = "id, name, root_path, kind, git_auto_sync, account";
 
 #[cfg(feature = "desktop")]
 fn read_vault(row: &rusqlite::Row) -> rusqlite::Result<Vault> {
@@ -84,7 +86,8 @@ fn read_vault(row: &rusqlite::Row) -> rusqlite::Result<Vault> {
         name: row.get(1)?,
         root_path: row.get(2)?,
         kind: VaultKind::from_stored(&row.get::<_, String>(3)?),
-        account: row.get(4)?,
+        git_auto_sync: row.get(4)?,
+        account: row.get(5)?,
     })
 }
 
@@ -168,6 +171,17 @@ pub fn set_vault_account(conn: &Connection, id: i64, account: Option<&str>) -> D
     conn.execute(
         "UPDATE vaults SET account = ?2 WHERE id = ?1",
         params![id, account],
+    )
+    .map_err(to_err)?;
+    Ok(())
+}
+
+/// Turn automatic GitHub sync on or off for one vault.
+#[cfg(feature = "desktop")]
+pub fn set_vault_git_auto_sync(conn: &Connection, id: i64, enabled: bool) -> DbResult<()> {
+    conn.execute(
+        "UPDATE vaults SET git_auto_sync = ?2 WHERE id = ?1",
+        params![id, enabled],
     )
     .map_err(to_err)?;
     Ok(())

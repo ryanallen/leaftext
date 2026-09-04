@@ -826,6 +826,31 @@ body.library-resizing button {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.crumb-menu-switch {
+  flex: none;
+  width: 28px;
+  height: 16px;
+  margin-left: auto;
+  padding: var(--lt-space-2);
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--lt-border);
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.crumb-menu-switch-thumb {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--lt-surface);
+  transition: transform var(--lt-duration-120) var(--lt-ease);
+}
+.crumb-menu-item[role="switch"][aria-checked="true"] .crumb-menu-switch {
+  background: var(--lt-accent);
+}
+.crumb-menu-item[role="switch"][aria-checked="true"] .crumb-menu-switch-thumb {
+  transform: translateX(12px);
+}
 .library-crumb-sep {
   flex: none;
   color: color-mix(in srgb, var(--lt-muted-foreground) 60%, transparent);
