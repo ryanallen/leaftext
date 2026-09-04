@@ -14,7 +14,7 @@
 //
 // Every command the release runs goes through one runner, so the self-test can hand it a fixture and read back the order: what must not happen after a refusal is proved by the commands that were never reached.
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,11 +40,52 @@ type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost; paths?: string[
 const versionPattern = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
 const RELEASE_PATHS_ENV = "LEAFTEXT_RELEASE_PATHS";
 
+// The studio's own credential helper, which reads a token out of a gitignored file outside every checkout and answers git's credential protocol with it. Named here rather than reimplemented: the token, the file it is kept in and the account it belongs to are one answer for this machine, and a second copy of that answer in this repository is a second place for it to go stale.
+const STUDIO_CREDENTIAL_HELPER = "/Users/rallen1/studio/gddy/.agents/hooks/github-token.sh";
+
+// Whether that helper is on this machine. One that keeps its credential somewhere else — the Windows one does, in its keychain — has no such file, and there every push goes out exactly as it did before rather than stopping.
+let helperHere: boolean | null = null;
+function studioCredentialHelper(): string {
+  if (helperHere === null) {
+    try {
+      helperHere = statSync(STUDIO_CREDENTIAL_HELPER).isFile();
+    } catch {
+      helperHere = false;
+    }
+  }
+  return helperHere ? STUDIO_CREDENTIAL_HELPER : "";
+}
+
+// The credential reaches git and `gh` through the environment, never through a command line: an argument is readable by every process on the machine for as long as the call lasts. The helper goes in **front of** the machine's own rather than beside it, which is what the empty value first does — helpers are asked in turn and the keychain answers first, so a push came back refused under whichever account that held while a working token sat in the studio's file the whole time. `gh` reads no credential helper at all, so it takes the token from the environment, asked for through the helper's own `token` mode so nothing here learns where the token is kept.
+function withGithubCredential(command: string, options: RunOptions): RunOptions {
+  const helper = studioCredentialHelper();
+  if (!helper || (command !== "git" && command !== "gh")) {
+    return options;
+  }
+  const env: Record<string, string | undefined> = { ...(options.env ?? process.env) };
+  if (command === "git") {
+    env.GIT_CONFIG_COUNT = "2";
+    env.GIT_CONFIG_KEY_0 = "credential.helper";
+    env.GIT_CONFIG_VALUE_0 = "";
+    env.GIT_CONFIG_KEY_1 = "credential.helper";
+    env.GIT_CONFIG_VALUE_1 = helper;
+    return { ...options, env };
+  }
+  // Captured rather than printed: the helper's own header says this mode's output must never reach a transcript.
+  const asked = spawnSync(helper, ["token"], { encoding: "utf8" });
+  if (asked.status !== 0 || typeof asked.stdout !== "string" || !asked.stdout.trim()) {
+    return options;
+  }
+  env.GH_TOKEN = asked.stdout.trim();
+  return { ...options, env };
+}
+
 function liveRun(command: string, args: string[], options: RunOptions = {}): CommandResult {
+  const carrying = withGithubCredential(command, options);
   const result = spawnSync(command, args, {
     encoding: "utf8",
-    stdio: options.capture ? "pipe" : "inherit",
-    env: options.env ?? process.env,
+    stdio: carrying.capture ? "pipe" : "inherit",
+    env: carrying.env ?? process.env,
   });
   if (result.error) {
     throw result.error;
