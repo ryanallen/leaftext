@@ -237,6 +237,8 @@ A colon in the divider row sets a column's alignment — `:---` left, `:---:` ce
 | :--- | :----: | ----: |
 | a    | b      | c     |
 
+Every second body row is filled a shade back from the page, so a reader can follow one row across to its last column. The fill is the [theme](06-themes.md) family’s own recess rather than one gray for every family, which is what lets the band read on a dark page as well as a light one.
+
 A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — renders as a checkbox, so a table can carry a status column:
 
 | Step            | Done  |

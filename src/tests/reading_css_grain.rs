@@ -1159,7 +1159,7 @@ fn the_alternating_row_is_filled_from_one_name_on_the_page_and_in_the_sheet() {
 
 #[test]
 fn the_alternating_rows_fill_is_a_name_a_family_answers_rather_than_one_color() {
-    // One gray for eleven families in two appearances is the fault this replaced: it lightened the row the grain was darkening, so a dark page banded at 0.2 lightness while a light page banded at 6.6. The fill has to be a name each family resolves against its own page, and a color written here is that fault coming back.
+    // One gray for eleven families in two appearances bands a dark page at 0.2 lightness against a light one at 6.6, because the gray lightens the row the grain darkens. The fill has to be a name each family resolves against its own page, and a color written here is that fault coming back.
     let css = reading_mode_css();
 
     for selector in [

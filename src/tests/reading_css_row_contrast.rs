@@ -142,7 +142,7 @@ fn shipped_fill(source: &ThemeSource) -> &'static str {
 
 #[test]
 fn every_family_draws_two_table_rows_a_reader_can_tell_apart() {
-    // The check nothing had. One gray for eleven families in two appearances shipped a dark table with no bands in it at all — the gray lightened the row while the grain darkened it and the lift raised the row beside it, and the three canceled — and every test in the tree went on passing, because they all asked whether the lattice was there rather than whether a reader could see the row.
+    // One gray for eleven families in two appearances shipped a dark table with no bands in it at all — the gray lightens the row while the grain darkens it and the lift raises the row beside it, and the three cancel — and every test in the tree passed, because they all ask whether the lattice is there rather than whether a reader can see the row.
     let css = reading_mode_css();
 
     for source in theme_sources() {
