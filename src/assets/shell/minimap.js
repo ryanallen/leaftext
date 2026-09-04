@@ -30,7 +30,7 @@ var minimapWidenTimer;
 var minimapScrollMetrics;
 // The last position the column's scroll wrote onto the reader. The two mirror each other, so without it the reader's answering event would carry the column straight back — and a plain flag cannot do the job: a scroll event lands a frame after the write that caused it, by which time the gliding column has moved again and would spend the flag on its own real move. A value is the whole of what has to be recognized.
 var minimapMirroredScrollTop;
-// The last position the reader's scroll wrote onto the column, and the same lag the other way round: while the page glides, the column's answering event lands a frame later carrying the position the page held then, and writing that back would drag the page to the previous frame and cancel the animation drawing it. A flag is no better here than it is there — the gliding page writes the column again before the column's event arrives, so the flag is spent on the newer write and the older one is carried back anyway. Both directions of the mirror recognize a value.
+// The same, the other way round: the last position the reader's scroll wrote onto the column. Without it a page mid-glide is dragged back a frame by the column's answering event, which cancels the animation drawing it — a trackpad's stream keeps the position moving frame after frame, so that happens ten or eleven times a second of scrolling. A value and not a flag for the reason above.
 var minimapMirroredColumnScrollTop;
 var minimapSpacerFrame;
 var readerLayoutFrame;
@@ -272,7 +272,7 @@ function scheduleMinimapSpacerResize() {
     resizeMinimapSpacer();
   });
 }
-// Everything that moves the reader without touching the column — a click on the rail, a drag on the box, the keyboard, a tab switch, a reflow re-pin — leaves the column behind, and the next notch there would jump the page back. Never a write while the two already agree: writing a position a scroller has already reached cancels an animation it has in flight, which is the glide this whole path exists for. What is written is recorded, because the column answers with a scroll event of its own a frame later and the handler there has to tell the mirror's echo from a hand on the rail — the same reason the column's direction records, and the reason neither can be a flag.
+// Everything that moves the reader without touching the column — a click on the rail, a drag on the box, the keyboard, a tab switch, a reflow re-pin — leaves the column behind, and the next notch there would jump the page back. Never a write while the two already agree: writing a position a scroller has already reached cancels an animation it has in flight, which is the glide this whole path exists for. What is written is recorded, because the column answers a frame later and the handler there has to tell this echo from a hand on the rail.
 function syncMinimapColumnToReader() {
   const reader = readerScrollElement();
   if (!readerMinimap || Math.round(readerMinimap.scrollTop) === Math.round(reader.scrollTop)) {

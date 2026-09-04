@@ -5,7 +5,7 @@
 //! It carries the app inside it, deflated, so the one file a person downloads is everything it installs.
 
 #![cfg_attr(windows, windows_subsystem = "windows")]
-// Off Windows the whole install — the writes, the registry, the shortcut, the window — is compiled out, and what is left is the plan and the words. Every item of that is then unreachable by construction rather than by mistake, so the dead-code warning has nothing to tell anyone here; the Windows build, which is the one that ships, still refuses one.
+// Off Windows the install itself is compiled out and only the plan and the words are left, so every item of them is unreachable by construction rather than by mistake. The Windows build, which is the one that ships, still refuses a warning.
 #![cfg_attr(not(windows), allow(dead_code))]
 
 mod args;

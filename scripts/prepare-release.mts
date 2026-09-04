@@ -40,7 +40,7 @@ type ReleaseOptions = { signCommit: boolean; host?: ReleaseHost; paths?: string[
 const versionPattern = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/;
 const RELEASE_PATHS_ENV = "LEAFTEXT_RELEASE_PATHS";
 
-// The studio's own credential helper, which reads a token out of a gitignored file outside every checkout and answers git's credential protocol with it. Named here rather than reimplemented: the token, the file it is kept in and the account it belongs to are one answer for this machine, and a second copy of that answer in this repository is a second place for it to go stale.
+// The studio's own credential helper, which reads a token out of a gitignored file outside every checkout. Named rather than reimplemented: which token, which file and which account are one answer for this machine, and a second copy of it in here is a second place for it to go stale.
 const STUDIO_CREDENTIAL_HELPER = "/Users/rallen1/studio/gddy/.agents/hooks/github-token.sh";
 
 // Whether that helper is on this machine. One that keeps its credential somewhere else — the Windows one does, in its keychain — has no such file, and there every push goes out exactly as it did before rather than stopping.
@@ -56,7 +56,7 @@ function studioCredentialHelper(): string {
   return helperHere ? STUDIO_CREDENTIAL_HELPER : "";
 }
 
-// The credential reaches git and `gh` through the environment, never through a command line: an argument is readable by every process on the machine for as long as the call lasts. The helper goes in **front of** the machine's own rather than beside it, which is what the empty value first does — helpers are asked in turn and the keychain answers first, so a push came back refused under whichever account that held while a working token sat in the studio's file the whole time. `gh` reads no credential helper at all, so it takes the token from the environment, asked for through the helper's own `token` mode so nothing here learns where the token is kept.
+// Through the environment, never a command line: an argument is readable by every process on the machine for as long as the call lasts. The empty value first is what puts this helper in front of the machine's own rather than beside it — helpers are asked in turn, so the keychain answered first and a push came back refused under whichever account it held. `gh` reads no helper at all, so it takes the token from the environment, asked for through the helper's own mode for it.
 function withGithubCredential(command: string, options: RunOptions): RunOptions {
   const helper = studioCredentialHelper();
   if (!helper || (command !== "git" && command !== "gh")) {
