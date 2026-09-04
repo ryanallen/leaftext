@@ -359,11 +359,7 @@ fn a_watcher_batch_without_pane_or_image_changes_does_not_raise_them() {
     let state = VaultState::load(None);
 
     assert_eq!(
-        watched_batch_steps(
-            &state,
-            [(PathBuf::from("/elsewhere/notes.md"), false)],
-            0,
-        ),
+        watched_batch_steps(&state, [(PathBuf::from("/elsewhere/notes.md"), false)], 0,),
         vec![
             WatchedChangeStep::AgeLinkPreviews,
             WatchedChangeStep::PatchCorpus {

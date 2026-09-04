@@ -155,7 +155,11 @@ fn a_vault_registered_before_the_kind_column_reads_as_a_folder() {
             "{} is not a folder",
             vault.name
         );
-        assert!(!vault.git_auto_sync, "{} starts automatic sync on", vault.name);
+        assert!(
+            !vault.git_auto_sync,
+            "{} starts automatic sync on",
+            vault.name
+        );
     }
     // And the order they were added in survives the migration, since that is what the switcher lists them in.
     assert_eq!(vaults[0].name, "Dharma");
@@ -226,7 +230,13 @@ fn changing_one_vaults_automatic_sync_leaves_the_other_off_and_names_the_page_fi
     let second = add_vault(&conn, &second_root, "Second", VaultKind::Git).expect("second added");
 
     set_vault_git_auto_sync(&conn, first.id, true).expect("choice changed");
-    assert_eq!(find_vault(&conn, first.id).expect("found"), Some(Vault { git_auto_sync: true, ..first }));
+    assert_eq!(
+        find_vault(&conn, first.id).expect("found"),
+        Some(Vault {
+            git_auto_sync: true,
+            ..first
+        })
+    );
     assert_eq!(find_vault(&conn, second.id).expect("found"), Some(second));
 
     let vaults = list_vaults(&conn).expect("listed");

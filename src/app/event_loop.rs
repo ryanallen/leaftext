@@ -1174,7 +1174,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 }
                 IpcCommand::SetVaultGitAutoSync { id, enabled } => {
                     if let Some(conn) = vault_state.conn.as_ref() {
-                        if let Err(error) = leaftext::store::set_vault_git_auto_sync(conn, id, enabled)
+                        if let Err(error) =
+                            leaftext::store::set_vault_git_auto_sync(conn, id, enabled)
                         {
                             eprintln!("Could not change automatic sync for that vault: {error}");
                         } else {

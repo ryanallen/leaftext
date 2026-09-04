@@ -138,7 +138,9 @@ pub(crate) fn status_read_to_start(
     generation: u64,
 ) -> Option<(PathBuf, u64)> {
     let (_name, root) = vault_root(state, id)?;
-    state.may_read_status(id, generation).then_some((root, generation))
+    state
+        .may_read_status(id, generation)
+        .then_some((root, generation))
 }
 
 /// The folder the one repeat is owed against, once a status answer has reached the page — or nothing where nobody asked while the read was running.
