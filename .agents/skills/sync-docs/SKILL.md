@@ -1,6 +1,6 @@
 ---
 name: sync-docs
-description: Update the docs under docs/ (and the site nav) so they match the current app — edit the right pages, take missing screenshots, lint the set for faults that live between pages, sweep every Markdown file in the repo and the plan tree next door off the disk, then regenerate the SEO/AIO/LLM discovery files. Run before a release or whenever app behavior changes. Use when the user says "sync the docs", "update the docs", "lint the docs", "update the sitemap/llms.txt", or "make the docs match the code".
+description: Update the docs under docs/ (and the site nav) so they match the current app — edit the right pages, take missing screenshots, lint the whole writing set as a wiki for reachability, links, backlinks, canonical names, indexes, glossary ownership and checkable citations, sweep every Markdown file in the repo and the plan tree next door off the disk, then regenerate the SEO/AIO/LLM discovery files. Run before a release or whenever app behavior changes. Use when the user says "sync the docs", "update the docs", "lint the docs", "update the sitemap/llms.txt", or "make the docs match the code".
 argument-hint: "[topic | since-ref]"
 user-invocable: true
 ---
@@ -142,7 +142,21 @@ Steps 2 and 3 keep a page truthful. This step keeps the *set* coherent — the f
 - **A concept with no home.** A word the docs use across several pages as though it were defined somewhere, and it is not — no section, no glossary row. Either it gets a `docs/GLOSSARY.md` row or the page that owns the subject gets a section, and the other mentions link there. This is what stops a term meaning something slightly different on each page. **The same fault has a second home:** a word the *tickets, rankings and skills* lean on with no row in `../docs/GLOSSARY.md` drifts the same way, and step 7 is where that is swept.
 - **What was learned and never written down.** If this session derived something real about how the app behaves — a limit, an order of operations, a reason a thing works the way it does — and no page says it, that belongs on a page now. Otherwise the next person re-derives it. This is the most common way the docs fall behind while every individual edit was correct.
 
-Say what the lint found in the hand-back, including anything left unfixed and why.
+Put every defect and repair in the ticket that caused the pass. If the pass has no ticket, file each defect before hand-back; the hand-back stays the owner's message word for word.
+
+**A clean path check is the start of the wiki audit, never its result.** `check-docs` proves that a relative Markdown target is a file; until the held anchor check ships it does not prove the section exists, and neither check proves that a page can be found, that a named thing is linked, or that a real relationship can be walked backwards. A pass that stops at zero dead targets has not run this step.
+
+Audit these seven rules over the authored graph every time this step runs:
+
+1. **Every authored page is reachable from an index.** Read the nodes from disk and walk from the root README, the published docs indexes and generated nav, the planning README and plan, the workflow page's skill table, and each owned giveaway index. A ticket reached only from another ticket is still an orphan. `.claude/` and `.codex/` symlink aliases, generated output, license notices, borrowed sources and documents whose content is a test fixture are not separate wiki nodes. Exact byte copies are audited at their source and their relative links are read in that source's context; every link authored for its present folder still has to land there.
+2. **The first meaningful name is a link.** On each authored page, the first mention of a ticket, skill, page, section, prototype, picture, source file or defined concept links its canonical home. A file name in backticks is not a link. Ordinary English that happens to equal a short ticket slug is not a finding; resolve names from index rows and explicit paths rather than substring matching.
+3. **A real relationship walks both ways.** Parent and child, dependency and dependent, replacement and replaced decision, brief and ticket, round and artifact each link back. A citation does not owe a backlink, and neither does a broad related-reading link. For tickets, the README and plan are the parent indexes; their existing one-row-per-ticket checks prove the forward edge, and the ticket links its track, predecessor, replacement or decision chain wherever that reverse edge carries information a reader needs.
+4. **Every citation is checkable at the state it claims.** An outside source is a link to the original, pinned to an immutable revision where the host supports one. A live planning claim about this checkout names a source path and line that exists now; the citation audit is owned by [the held source-citation ticket](../../../../docs/on-hold/workflow/a-live-plan-cites-a-source-file-that-is-gone.md), so this pass opens each citation it touches and never treats a moving line number as proof. Historical tickets keep citations to the state their dated record describes rather than being silently rewritten to today's code.
+5. **One canonical display name names one thing.** The title, index row, plan row and cross-links use the same name. A short label is allowed only as prose after the canonical linked name has appeared. Two names for one thing are reconciled at the indexes before any page copies either one.
+6. **A folder name lands on its index.** Where a folder has a `README.md`, a link whose text names the folder targets that README, not a convenient child. Where this tree deliberately uses one central index instead of per-folder README files, the link targets the owning section of that central index. Bare backticked folder names are for literal paths, not navigation.
+7. **Every shared word is defined once.** App words live in the published glossary; planning words live in the planning glossary. A local section may explain behavior without redefining the shared noun. The first use links the one definition, and two glossary rows for the same idea are merged rather than cross-referenced as aliases.
+
+For each rule, write down the files examined and the defects repaired in the ticket that caused the pass. If no ticket caused it, file the finding before hand-back. The proof is the graph after the repair: zero unreachable authored pages, zero unresolved file or heading targets, zero unlinked canonical names, zero missing reverse edges among the relationships above, zero folder links bypassing their index, and one glossary home per shared word. Counts from a heuristic are leads to open, not proof to paste into a ticket.
 
 ### 7. Every Markdown file, not just the published pages
 
@@ -213,6 +227,7 @@ Page list, titles, summaries and dates are all derived from the current files, a
 - Re-run `node scripts/seo-gen.mjs` and confirm it leaves the discovery files unchanged (a dirty tree here means step 8 was skipped or a doc changed after it ran).
 - Every enumeration on a touched page matches the source one-for-one — no stale, missing or extra rows.
 - Every internal link resolves to a real `.md` / route, each `#anchor` matches a real heading slug on the target page, and step 3's linking pass has actually been made over the touched pages and the README intro.
+- Re-run step 6's seven-rule graph audit after the last edit. Report each rule separately to yourself; “all links pass” is not evidence for reachability, backlinks, canonical names, folder indexes, glossary ownership or citations.
 - Optional but preferred: serve and click through.
 
   ```bash

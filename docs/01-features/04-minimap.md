@@ -14,7 +14,7 @@
 | [Whether it appears](#whether-the-rail-appears) | Skipped entirely for an empty document; shown for every format, including XML, JSON and YAML |
 | [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
 | [Responsive widths](#responsive-behavior) | The lane narrows with the window, and is never hidden |
-| [Toggle](#toggling-the-minimap) | On by default; **Settings** turns it off and the page widens out |
+| [Always there](#always-there) | The rail is the primary scroll indicator, present for every non-empty document at every window size |
 | [On an exported page](#on-an-exported-page) | A page [exported as a web page](02-navigation.md#export-the-page) carries the rail too, so whoever you send it to can see the shape of the whole document |
 
 ## What it is
@@ -39,6 +39,8 @@ Each of those is written straight onto the element that draws it, never as a CSS
 
 A `requestAnimationFrame`-throttled loop writes those on scroll, and reads no geometry at all while doing it. The rail's measurements — the document's height, the thumbnail's scale, the rail's own height — change only when the content or the window does, so they are cached and dropped by the things that can change them; scrolling changes none of them. Re-measuring per wheel click instead forces a fresh layout of the entire document, which on a large file is the whole difference between a rail that follows the wheel and one that answers a second later. The indicator's position and travel come from the reader's exact scroll position over its scrollable height, and the indicator's height is the reader window scaled to the rail — so click-to-scroll and the indicator stay aligned with the thumbnail on documents of any length.
 
+A [complete HTML file](01-rendering.md#html-files) keeps its own styles inside a contained page, so its rail is another contained rendering of that same page rather than a body clone the app would restyle. That second rendering is built once when the document is drawn; scrolling moves only the viewport indicator over it. Markdown and every other format keep the windowed real-page clone described above.
+
 The wheel is not handled by Leaftext at all. The rail's column is itself a scroller, with a spacer below the thumbnail sized to travel exactly as far as the reader can, and the column's scroll writes the reader's position one to one — so a notch over the rail is the same gesture it is over the page, carried on the browser's own scrolling, and it moves the way the page moves rather than in steps. The thumbnail, the track and the indicator are pinned to the top of that column, so the travel never shifts the parts a click or a drag reads. The reader's own scroll writes the column back the other way, which is what leaves the column where a click on the rail, a drag on the indicator, the keyboard or a tab switch has just put the reader; while the indicator is being dragged the column's scroll stands aside, so a notch cannot fight the box being held. With no rail in the column, or a document short enough that the reader cannot scroll, the column has no travel and a notch there is the browser's exactly as it is anywhere else on the window.
 
 > [!NOTE]
@@ -57,7 +59,7 @@ The [code view](07-editing.md#code-view) has a rail of its own — the editor's,
 Both rails are **chrome, not page**: they stand on the window's textured surface beside the card, and the page's own right border is the line between the two. In the code view that means the editor paints no background out there, the map's own drawing surface is transparent, and the editor casts no scroll shadow across the rail's top — so the chrome's dot grain shows through between the lines of the map, and the map reads as text on the window rather than as a second, differently-colored page.
 
 > [!NOTE]
-> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose, but the [minimap setting](#toggling-the-minimap) governs only the first — the code view always has its rail.
+> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose, and both are always present while their view is open.
 
 ## On an exported page
 

@@ -93,12 +93,14 @@ const SYSTEM_LABEL = '../docs/learn/ticket-workflow-linkedin';
 // Every file in that folder and which of three answers it is. `taken` is a byte copy of a skill here and is compared exactly. `rewritten` names the skill here it was written again from, and what is held is that the skill still exists: rename or retire one and the giveaway is teaching a job this repo no longer has. `own` is the giveaway's own writing, which this repo has no source for. **The reason column is what the table is for** — a file left out of the comparison with nothing beside it saying why is a decision nobody was asked to make.
 export const SYSTEM_FILES = [
   ['AUDIT.md', 'own', 'the reading that produced the giveaway, about the giveaway'],
+  ['README.md', 'own', 'the index for the giveaway folder and its owned writing'],
   ['ryans-product-team-template.zip', 'own', 'the packaged download, written from the system rows by bundle-giveaway.mjs'],
   ['system/DESIGN.md', 'own', 'the system explained to a stranger, in place of the design skill and the checks behind it'],
   ['system/GLOSSARY.md', 'own', 'the planning words, with no part of this app in them'],
   ['system/GUIDE.md', 'own', 'the guide a stranger starts from, holding none of the rules this repo paid for'],
   ['system/HOOKS.md', 'own', 'the hooks described rather than shipped, since none of these scripts travel'],
   ['system/README.md', 'own', 'how the system is used, and the file that told a stranger the wrong thing about a second session'],
+  ['system/skills/README.md', 'own', 'the index for the rewritten skills in the giveaway'],
   ['system/skills/check/SKILL.md', 'rewritten', 'check'],
   ['system/skills/design/SKILL.md', 'rewritten', 'design'],
   ['system/skills/design-system/SKILL.md', 'rewritten', 'design-tokens'],
@@ -110,6 +112,8 @@ export const SYSTEM_FILES = [
   ['system/skills/sync-tests/SKILL.md', 'rewritten', 'sync-tests'],
   ['system/skills/ticket/SKILL.md', 'rewritten', 'ticket'],
   ['system/templates/backlog-readme.md', 'own', 'the ticket index a stranger starts empty'],
+  ['system/templates/README.md', 'own', 'the index for the giveaway templates'],
+  ['system/templates/design/README.md', 'own', 'the index for the giveaway design templates'],
   ['system/templates/design/colors.md', 'own', 'a design file to start from, not this app'],
   ['system/templates/design/components.md', 'own', 'a design file to start from, not this app'],
   ['system/templates/design/icons.md', 'own', 'a design file to start from, not this app'],

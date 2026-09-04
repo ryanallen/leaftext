@@ -17,7 +17,7 @@ import { closeSync, existsSync, fstatSync, mkdirSync, openSync, readFileSync, re
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ALWAYS, close, extend, keyedFiles, read, recordPath, requiredFor } from './gate-keycode.mjs';
+import { ALWAYS, close, codeIn, extend, forget, keyedFiles, outstanding, read, recordPath, remember, requiredFor } from './gate-keycode.mjs';
 import { KEEP, LICENSE_DIR, RING, TURN_MS, keep, licensePath, ringLines, sessionOf, sessionTag, sweep } from './hook-payload.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -197,6 +197,30 @@ export function heldBy(left, session) {
   ].join('\n');
 }
 
+/// What the turn still has to read, taken from the record the hook just wrote so both ends of the turn use one answer.
+export function keycodeContext(record) {
+  const owed = outstanding(record);
+  if (!owed.length) return '';
+  return [
+    'Before any work, read and report each keycode with `node scripts/gate-keycode.mjs <file> <code>`:',
+    ...owed.map((file) => `- ${file}`),
+  ].join('\n');
+}
+
+/// The opening note for this message. A keycode demand stands on its own when no skill supplied a checklist.
+export function additionalContext(found, keycodes, session) {
+  const lines = [];
+  if (found) {
+    lines.push(
+      `This turn's checklist is \`${listPath(session)}\` — the ${found.steps.length} steps of /${found.name}, in its order.`,
+      'Work them in order and strike each one in the same edit as the work it names. A step that does not apply is struck with its reason. The turn cannot end while one is un-struck.',
+      'They are steps, not work: anything found while working one is a ticket.',
+    );
+  }
+  if (keycodes) lines.push(keycodes);
+  return lines.join('\n');
+}
+
 function selfTest() {
   const fails = [];
 
@@ -241,20 +265,35 @@ function selfTest() {
 
   // The keycode record and the license, through the real entry point. A record still standing is a turn still running, and this is the one place that decision is wired: swapping the fold back to `open` passes every test that reaches the record directly, so it is proved here by firing the hook twice.
   const MID = `gate-checklist-record-${process.pid}`;
+  const PLAIN = `gate-checklist-plain-${process.pid}`;
+  const READ = `gate-checklist-read-${process.pid}`;
   const DEV = '.agents/skills/dev/SKILL.md';
-  const fire = (prompt) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
-    input: JSON.stringify({ session_id: MID, prompt }),
+  const fire = (prompt, session = MID) => execFileSync(process.execPath, [fileURLToPath(import.meta.url)], {
+    input: JSON.stringify({ session_id: session, prompt }),
     encoding: 'utf8',
   });
   try {
-    fire('/dev the ticket');
+    const opening = JSON.parse(fire('/dev the ticket') || '{}').hookSpecificOutput?.additionalContext ?? '';
     const opened = read(MID);
     if (!opened?.required?.includes(DEV)) fails.push('hook: a skill-named message did not owe that skill');
+    const demand = keycodeContext(opened);
+    if (!demand.includes(ALWAYS) || !demand.includes(DEV)) fails.push('hook: the opening context did not name every keycode the record owed');
+    if (!opening.includes(ALWAYS) || !opening.includes(DEV)) fails.push('hook: a skill-named message was not told it owed the rule and skill files');
+    const plain = JSON.parse(fire('check the footer wording', PLAIN) || '{}').hookSpecificOutput?.additionalContext ?? '';
+    if (!plain.includes(ALWAYS)) fails.push('hook: a message naming no skill was not told it owed the rule file');
+    if (/checklist/i.test(plain)) fails.push('hook: a message naming no skill invented a checklist');
+    const devCode = codeIn(readFileSync(join(root, DEV), 'utf8'));
+    const ruleCode = codeIn(readFileSync(join(root, ALWAYS), 'utf8'));
+    remember(DEV, devCode, READ);
+    const partlyRead = JSON.parse(fire('/dev the ticket', READ) || '{}').hookSpecificOutput?.additionalContext ?? '';
+    if (partlyRead.includes(`${DEV} —`)) fails.push('hook: a file already read at its current bytes was still named as owed');
+    remember(ALWAYS, ruleCode, READ);
+    if (fire('check the footer wording', READ).trim()) fails.push('hook: a message owing nothing still printed a keycode line');
     if (!existsSync(licensePath(MID))) fails.push('hook: no license was written for the message');
     else if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'denied') fails.push('hook: a message with no release command was licensed');
     fire('/git-release 1.2.3');
     if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'granted') fails.push('hook: a release command was not licensed');
-    fire('/clear');
+    if (fire('/clear').trim()) fails.push('hook: a host command printed a keycode line');
     if (JSON.parse(readFileSync(licensePath(MID), 'utf8')).state !== 'denied') fails.push('hook: a host command after a release kept the license');
     opened.reported = { [ALWAYS]: 'LEAF-REPORTED' };
     writeFileSync(recordPath(MID), JSON.stringify(opened) + '\n');
@@ -269,6 +308,13 @@ function selfTest() {
     close(MID);
     clear(MID);
     rmSync(licensePath(MID), { force: true });
+    close(PLAIN);
+    clear(PLAIN);
+    rmSync(licensePath(PLAIN), { force: true });
+    close(READ);
+    clear(READ);
+    forget(READ);
+    rmSync(licensePath(READ), { force: true });
   }
 
   const skill = ['---', 'name: check', '---', '', '# Check', '', 'Prose.', '', '## Process', '', '### 1. Tests first', '', 'Run it.', '', '### 2. `just verify`', '', '## Reference', '', '- a link'].join('\n');
@@ -314,6 +360,9 @@ function selfTest() {
   const drawn = render('check', ['1. Tests first', '2. `just verify`']);
   if (!drawn.includes('- 1. Tests first')) fails.push('render: a step did not become a bullet');
   if (!/not work/i.test(drawn)) fails.push('render: the list does not say it is not a work list');
+  if (additionalContext(null, 'the rule file is owed', MID) !== 'the rule file is owed') fails.push('context: a message naming no skill lost its keycode demand');
+  if (keycodeContext({ required: [], reported: {}, session: MID }) !== '') fails.push('context: a turn owing nothing still got a keycode line');
+  if (additionalContext(null, '', MID) !== '') fails.push('context: a message with no checklist or keycodes still printed a note');
 
   // The whole cycle, under two session ids, because a second agent starting a message must not take the list the first is halfway through — the fault two-agents-at-once already paid for.
   //
@@ -486,15 +535,13 @@ if (!args) {
     // A list that cannot be written holds nobody, which is the safe way round.
     process.exit(0);
   }
-  if (found) {
+  const keycodes = prompt && !isMeta(prompt) ? keycodeContext(read(session)) : '';
+  const context = additionalContext(found, keycodes, session);
+  if (context) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'UserPromptSubmit',
-        additionalContext: [
-          `This turn's checklist is \`${listPath(session)}\` — the ${found.steps.length} steps of /${found.name}, in its order.`,
-          'Work them in order and strike each one in the same edit as the work it names. A step that does not apply is struck with its reason. The turn cannot end while one is un-struck.',
-          'They are steps, not work: anything found while working one is a ticket.',
-        ].join('\n'),
+        additionalContext: context,
       },
     }));
   }

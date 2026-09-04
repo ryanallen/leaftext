@@ -292,7 +292,7 @@ How Leaftext remembers a reading position: the nearest heading above the top edg
 
 ## Settings
 
-A plain JSON file on your machine, not a panel: there is nowhere to open. Every control stands where it applies — the palette in the [app bar](GLOSSARY.md#app-bar) for [theme](GLOSSARY.md#theme) and [appearance](GLOSSARY.md#appearance), the [graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) — and each one saves the moment you use it. See [Settings](01-features/05-settings.md).
+A plain JSON file on your machine, not a panel: there is nowhere to open. Every control stands where it applies — the palette in the [app bar](GLOSSARY.md#app-bar) for [theme](GLOSSARY.md#theme-family) and [appearance](GLOSSARY.md#appearance), the [graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) — and each one saves the moment you use it. See [Settings](01-features/05-settings.md).
 
 ## Sheet
 
