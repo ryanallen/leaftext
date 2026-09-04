@@ -1659,7 +1659,7 @@ export function run() {
 
   // ---- the bar that is already down ----------------------------------------
   //
-  // `hideSelectionToolbar` is reached from selectionchange on every collapsed selection, which is every keystroke and every caret move. It returns early where the bar is already hidden and no block is held, so what these two hold is that the first call after a bar was showing still does everything, and that the invariant the early return rests on stays true at every write in the file.
+  // `hideSelectionToolbar` is reached from selectionchange on every collapsed selection, which is every keystroke and every caret move. It returns early where the bar is already hidden with no block held and no box open, so what these two hold is that the first call after a bar was showing still does everything, and that the invariant the early return rests on stays true at every write in the file.
 
   check('the first collapsed selection change after the bar was showing still takes it away, and the hide still closes the input box', () => {
     barOverSelection({ unlocked: true, words: 'some marked words' }, (stand) => {

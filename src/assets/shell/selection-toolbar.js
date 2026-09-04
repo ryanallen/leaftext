@@ -60,7 +60,11 @@ function selectionToolbarHoldsFocus(node) {
   return !!(selectionToolbar && node && selectionToolbar.contains(node));
 }
 
-// Take the bar away. Reached from selectionchange on every collapsed selection, which is every keystroke and every caret move, so the pass with nothing to take away returns on a handful of property reads rather than five teardown operations — nine tenths of what the bar costs a typist. It rests on one invariant: a hidden bar is never holding a block. Every write to the pair sets them together, and check-shell/format-bar.mjs holds them that way. The box is asked for separately because `openSelectionLinkBox` opens one on whatever bar is there, so a box standing over a hidden bar still has a listener on the page to take off.
+// Reached from selectionchange on every collapsed selection, which is every keystroke and every caret move, so the pass with nothing to take away returns on three property reads and two class tests rather than five teardown operations — nine tenths of what the bar costs a typist.
+//
+// It rests on one invariant: a hidden bar is never holding a block. Every write sets the pair together, and format-bar.mjs holds them that way.
+//
+// The box is asked for separately because `openSelectionLinkBox` opens one on whatever bar is there, so a box standing over a hidden bar still has a listener on the page to take off.
 function hideSelectionToolbar() {
   if (selectionToolbar && selectionToolbar.hidden && !selectionToolbarBlock && !selectionToolbarInputOpen()) return;
   selectionToolbarBlock = null;
