@@ -205,7 +205,7 @@ A picked file is **never copied anywhere** — the picture stays where you keep 
 
 Highlight words in a Markdown page and a small bar appears over them. What it holds follows the [padlock](#the-padlock): three buttons that read the words out or mark them up on any page, and the formatting buttons in front of those once the page is unlocked.
 
-- **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
+- **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off. **The light is about the whole highlight**: drag past the end of a bold phrase into the plain words beside it and Bold goes out, because those words are not all bold and the press would be adding the format rather than taking it off.
 - **Taking a format off leaves the same words highlighted**, wherever the phrase sits in its sentence, so the bar goes on answering for them and a third press puts the format back. Nothing has to be highlighted again by hand.
 - **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away, and the words stay highlighted. `Escape`, or a press anywhere off the box, leaves the link as it was.
 - **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.

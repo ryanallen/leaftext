@@ -21,7 +21,7 @@ export function run() {
     }
   });
 
-  // The other arm. Once somebody has clicked into a block it is an editing host, and the browser answers for bold, italic and strikethrough before the markup is ever walked — watched in a running copy, where `queryCommandState('bold')` answers false in a block nobody has opened and true in one that is open. Code and link have no command at all, so they are answered by the tag on both sides of that.
+  // The other arm. A block somebody has clicked into is an editing host, and the browser answers for bold, italic and strikethrough before the markup is walked; before that click it answers false and the tag is what lights the button. Code and link have no command at all and are answered by the tag either side of it.
   check('the browser’s own answer lights a button the markup would not have', () => {
     const stand = barOverSelection({ unlocked: true, markup: EVERY_FORMAT, startIn: null, commandState: { bold: true }, words: 'this line has' });
     if (!stand.lit.includes('bold')) throw new Error('the engine said the highlight was bold and the bar lit ' + JSON.stringify(stand.lit));
@@ -52,7 +52,7 @@ export function run() {
 
   // ---- the light answers the whole phrase ----------------------------------
   //
-  // Watched in a running copy before it was fixed: a highlight from the first character of `bold words` into the plain run after it lit Bold, and pressing that lit button left the block reading `<b>bold words and</b>` — the light said the words were bold and the press made more of them bold. The same words taken the other way round lit nothing, so the bar's answer turned on which end the drag started at.
+  // The light answers the whole phrase, not the end the drag began at. A highlight from inside `bold words` into the plain run after it is not bold, and neither is the same phrase taken the other way round — a lit button there invites a removal and applies the format.
 
   check('a highlight running out of a format lights nothing, whichever end it started at', () => {
     const outward = barOverSelection({ unlocked: true, markup: EVERY_FORMAT, startIn: 'strong', endIn: null, words: 'bold words and' });
@@ -70,7 +70,7 @@ export function run() {
     if (inside.lit.join(',') !== 'bold') throw new Error('a highlight inside the second <strong> lit ' + JSON.stringify(inside.lit));
   });
 
-  // Watched in a running copy: a highlight taken this way covers words that are wholly bold, and the Bold button was dark — because the walk started at the block and stopped there. A double-click on a bold word is the everyday gesture that reports itself like this.
+  // A browser reports a double-click on a bold word as the block and two offsets, and those words are wholly bold — so the walk starts from the child the offset names rather than from the block.
   check('a highlight the browser reports as the block and two offsets still lights the wrapper it brackets', () => {
     const around = barOverSelection({ unlocked: true, markup: EVERY_FORMAT, bracket: 'strong', words: 'bold words' });
     if (around.lit.join(',') !== 'bold') throw new Error('a highlight bracketing <strong> at block level lit ' + JSON.stringify(around.lit));

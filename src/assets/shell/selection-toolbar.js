@@ -116,7 +116,7 @@ function selectionEditableBlock(node) {
   return block;
 }
 
-// The wrapper of `tag` the WHOLE highlight is inside, or nothing. Both ends are asked and they have to land on the same element: reading the start alone said `bold words and` was bold when half of it was plain, so the lit Bold that invited a removal bolded the plain half instead — and the same words highlighted the other way round lit nothing, which made the bar's answer depend on which end the drag began at. Both ends inside one element means everything between them is too, since a highlight the bar answers for lies inside one block.
+// The wrapper of `tag` the WHOLE highlight is inside, or nothing. Both ends are asked and have to land on the same element: reading the start alone calls a half-bold phrase bold, so the lit button invites a removal and applies the format instead, and the same words dragged the other way light nothing. Both ends inside one element means everything between them is too, since a highlight the bar answers for lies inside one block.
 function selectionAncestor(tag) {
   if (!selectionToolbarBlock) return null;
   const selection = window.getSelection();
@@ -128,7 +128,7 @@ function selectionAncestor(tag) {
 
 // The nearest element of that tag between one end of the highlight and the block, or nothing.
 //
-// An end is a container and an offset, and where the container is an element that offset says which child the highlight reaches — so the walk starts from that child rather than from the element itself, the trailing end from the child before the one it stops at. Walking from the element would start at the block for every highlight a browser reports that way, which is what a double-click on a bold word gives: wholly bold words with the Bold button dark.
+// An end is a container and an offset, and where the container is an element that offset says which child the highlight reaches — so the walk starts from that child, the trailing end from the child before the one it stops at. Walking from the element starts at the block instead, which leaves a double-click on a bold word showing wholly bold words with Bold dark.
 function ancestorHolding(container, offset, trailing, tag) {
   let at = container;
   if (at && at.nodeType === Node.ELEMENT_NODE && at.childNodes.length) {
