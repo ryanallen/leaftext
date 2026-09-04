@@ -620,7 +620,7 @@ export function run() {
 
   check('the note box puts the buttons away and the input up, exactly as the link box does', () => {
     const css = readingCss('selection-toolbar.css');
-    // The mode is the class and nothing else — the script adds it and the stylesheet is the whole of what it does — so a selector that stopped naming it would leave a note being typed into a box standing behind the row of buttons it replaces.
+    // The mode is the class alone, so the stylesheet is the whole of what it does: a selector that stopped naming it leaves the note box standing behind the buttons it replaces.
     for (const [row, shown] of [['.selection-format-row', 'display: none;'], ['.selection-link-row', 'display: block;']]) {
       const at = css.indexOf('.selection-toolbar.is-linking ' + row);
       if (at < 0) throw new Error('the stylesheet no longer says what the link box does to ' + row);

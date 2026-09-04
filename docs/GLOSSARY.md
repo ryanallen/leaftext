@@ -120,7 +120,7 @@ A `[^name]` reference in the text with its definition collected at the foot of t
 
 ## Format bar
 
-The small bar that appears over words you highlight in an unlocked page: bold, italic, strikethrough, code and link for the words, then text, a bigger or smaller heading, and quote for the whole [block](GLOSSARY.md#block). A button with nowhere to go grays out. See [Editing](01-features/07-editing.md#the-format-bar).
+The small bar that appears over words you highlight: copy, highlight and annotate for the words on any page, and on an unlocked one bold, italic, strikethrough, code and link in front of those, then text, a bigger or smaller heading, and quote for the whole [block](GLOSSARY.md#block). A button with nowhere to go grays out. What it holds follows the [padlock](GLOSSARY.md#padlock), because marking a passage up needs no block opened for typing. See [Editing](01-features/07-editing.md#the-format-bar).
 
 ## Frontmatter
 
@@ -256,7 +256,7 @@ A `.txt` file. Leaftext draws it as one block kept exactly as typed — every sp
 
 ## Padlock
 
-The lock in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether you can type into the view you are in. There are two — one for the [reading view](GLOSSARY.md#reading-view), one for the [code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page you read does not open the file's own text. Both start locked and both are remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the reading view's turned off for you. Checkboxes toggle either way.
+The lock in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether you can type into the view you are in. There are two — one for the [reading view](GLOSSARY.md#reading-view), one for the [code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page you read does not open the file's own text. Both start locked and both are remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the reading view's turned off for you. Checkboxes toggle either way, and so do copy, highlight and annotate on the [format bar](GLOSSARY.md#format-bar).
 
 ## Pager
 

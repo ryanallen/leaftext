@@ -239,7 +239,7 @@ fn a_highlight_is_washed_in_the_theme_rather_than_the_browser_yellow() {
     let css = reading_mode_css();
     let mark = rule_body(&css, ".document-body mark {");
 
-    // Left alone a browser paints `<mark>` a fixed yellow and forces black ink over it, which is a foreign object in every dark family. The wash is the warning role, the same shape find.css gives a search match, so a highlight lands beside a hit (the accent) and an action (the primary) without being taken for either.
+    // Unstyled, a browser paints `<mark>` a fixed yellow with black ink over it, which is a foreign object in every dark family.
     assert_contains(
         mark,
         "background-color: color-mix(in srgb, var(--lt-warning) 45%, transparent);",

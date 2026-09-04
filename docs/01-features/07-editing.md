@@ -33,7 +33,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
 | [Exporting a diagram](#export) | The diagram's own corner, and the flowchart sheet, write it out as its own file — Markdown, PNG, WebP, PDF or JPEG |
-| [The format bar](#the-format-bar) | Highlight words and a bar appears over them: bold, italic, strikethrough, code, link, then text, bigger/smaller heading and quote for the whole block |
+| [The format bar](#the-format-bar) | Highlight words and a bar appears over them: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code and link as well, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
 | [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
@@ -134,7 +134,7 @@ Taking something out of a document is not the same as emptying it of words. Clea
 - **The whole document can go.** Empty the last block and the file is empty, and the page comes back as a blank one — a title and a line to type on, the same as a [new document](#new-document).
 - **Selecting a section takes two presses.** With the caret in a block, `Ctrl+A` (`Cmd+A`) widens a step at a time: the first press selects the block you are in, the second the **section** — the nearest heading at or above you and everything under it, down to the next heading of any size — and the third the whole page. Move the caret and the next press starts at the block again. From outside a block it is one press and the whole page, as it always was.
 - **A code block's inside is not a block.** Clear the code out of a fence and you have an empty fence, not a missing one — see [above](#inline-editing-the-reading-view).
-- Deleting is behind the same [padlock](#the-padlock) as typing. A locked page can still be selected and copied, and `Ctrl+A` on one selects the page in one press.
+- Deleting is behind the same [padlock](#the-padlock) as typing. A locked page can still be selected, copied, [highlighted and annotated](#the-format-bar), and `Ctrl+A` on one selects the page in one press.
 
 ### The block gutter
 
@@ -199,9 +199,11 @@ A picked file is **never copied anywhere** — the picture stays where you keep 
 
 ### The format bar
 
-![A few highlighted words in a paragraph with the format bar floating above them: bold, italic, strikethrough, code and link, then the text, bigger heading, smaller heading and quote buttons, with one lit up and one grayed out](../../imgs/format-bar.png)
+![A highlighted heading with the format bar floating above it: bold, italic, strikethrough, code and link, then the text, bigger heading, smaller heading and quote buttons, with one lit up and one grayed out, and copy, highlight and annotate at the end](../../imgs/format-bar.png)
 
-Highlight words in an unlocked Markdown page and a small bar appears over them.
+![The same highlighted heading on a locked page, with the bar over it holding three buttons only: copy, highlight and annotate](../../imgs/format-bar-locked.png)
+
+Highlight words in a Markdown page and a small bar appears over them. What it holds follows the [padlock](#the-padlock): three buttons that read the words out or mark them up on any page, and the formatting buttons in front of those once the page is unlocked.
 
 - **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off.
 - **Taking a format off leaves the same words highlighted**, wherever the phrase sits in its sentence, so the bar goes on answering for them and a third press puts the format back. Nothing has to be highlighted again by hand.
@@ -210,9 +212,14 @@ Highlight words in an unlocked Markdown page and a small bar appears over them.
 - These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
 - The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.
 - On body text or a quote, the bigger H makes it a `##` heading — the ordinary section heading, with `#` one more press away. The smaller H grays out there, since body text has no size to shrink.
-- `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do the first three without the bar. `Escape` dismisses it.
+- **Copy** puts the highlighted words on the clipboard as they read, not as the Markdown behind them.
+- **Highlight** washes the words in the [theme](06-themes.md)'s own warning color, so a marked passage reads the same in every family and in both modes. Press it on words already marked and the highlight comes off.
+- **Annotate** opens a box for a note. `Enter` writes it as a footnote — a marker after the highlighted words, the note itself at the foot of the document — and `Escape` leaves it alone. Press **Annotate** again on a passage that already carries a marker and the marker and its note come off together.
+- **A note needs no words to hang off.** On a locked page, click a single point with nothing highlighted and **Annotate** stands there on its own, over the place you clicked.
+- **These three write into the document and wait for Save**, like any other edit, and each goes in as one press of [Undo](#undo) — a note's marker and its own line included, though they sit at opposite ends of the file. None of them opens a block for typing, which is why they are offered with the padlock shut.
+- `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do bold, italic and the link box without the bar, on an unlocked page. `Escape` dismisses it.
 
-The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)` — and saved with the block, by the same splice as any other inline edit.
+The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)`, a highlight as `<mark>…</mark>` and a note as a [footnote](01-rendering.md#footnotes) — and saved with the block, by the same splice as any other inline edit.
 
 ### The padlock
 
@@ -220,7 +227,7 @@ Whether a document can be typed into is a padlock in the recess beside the view 
 
 - **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
 - **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
-- **Checkboxes toggle either way.** Ticking a box is a quick action that auto-saves and records no undo, not text editing.
+- **Checkboxes toggle either way**, and so do copy, highlight and annotate on the [format bar](#the-format-bar). Ticking a box is a quick action that auto-saves and records no undo; the other three are ordinary edits that wait for Save. What the shut padlock refuses is typing, not marking the words up.
 - **The reading view's padlock is absent on a page nothing can be typed into.** An [email](01-rendering.md#email-eml) whose every part is coded into the file proves nothing to open, so the button leaves the recess rather than standing there answering a press with nothing. The source keeps its padlock on every document.
 - Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
 - Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.

@@ -116,7 +116,7 @@ Mouse side buttons also trigger Back and Forward on Windows.
 
 Documents open **locked**, so a stray click never changes a file. Open the [padlock](01-features/07-editing.md#the-padlock) on the floating toolbar, then click into any sentence and type — the rendered page [edits in place](01-features/07-editing.md#inline-editing-the-reading-view), and the green **Save** button appears. Leaftext remembers the answer, so you only do this once.
 
-- Highlight words for a [format bar](01-features/07-editing.md#the-format-bar).
+- Highlight words for a [format bar](01-features/07-editing.md#the-format-bar). Copy, highlight and annotate are on it whether the page is locked or not.
 - Use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block).
 - For the raw source instead, click the code-brackets button on the toolbar. It has a padlock of its own, so unlocking the page does not open the file's text.
 - To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it.
