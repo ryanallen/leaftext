@@ -516,7 +516,7 @@ export function run() {
     try {
       booted.window.leafBlocksResynced({ source });
       booted.bindSelectionToolbar();
-      // Nothing selected, and the place under the pointer answerable the standard way — so a bar that came up came up from the click alone.
+      // Nothing selected, and the place under the pointer still answerable — so a bar standing here would have come from the click alone.
       booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
       const asked = [];
       booted.document.caretRangeFromPoint = (x, y) => {
