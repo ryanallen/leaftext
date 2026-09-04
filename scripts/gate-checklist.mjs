@@ -48,7 +48,7 @@ function writeLicense(granted, prompt, session) {
       session,
       prompt: prompt.slice(0, 120),
     }) + '\n');
-    // Nothing ever deleted a license: a stale one was only ignored on its age when something read it, and one file per session is a folder that grows.
+    // Without this nothing deletes a license: a stale one is only ignored on its age when something reads it, and one file per session is a folder that grows.
     sweep(LICENSE_DIR, 'git-license');
   } catch {
     // A license that cannot be written reads as denied, which is the safe way round.

@@ -54,7 +54,7 @@ export const TURN_MS = 60 * 60 * 1000;
 /// How long a file belonging to one session is kept. Longer than the four hours a release license is good for, so the sweep never takes one that still counts.
 export const STALE_MS = 24 * 60 * 60 * 1000;
 
-/// Throw away every file of one kind that is past the window. One file per session is one file per agent per day otherwise: nothing ever deleted the license, which was only ignored on its age when something read it.
+/// Throw away every file of one kind that is past the window. One file per session is one file per agent per day otherwise: nothing else deletes the license, which is only ignored on its age when something reads it.
 export function sweep(dir, starts, now = Date.now()) {
   try {
     for (const name of readdirSync(dir)) {

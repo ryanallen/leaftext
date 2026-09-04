@@ -7,7 +7,7 @@
 //
 // The article's skill copies are byte-identical, because the article is evidence about this repository and a copy that reads better than its skill is the copy lying. `--fix` copies bytes so the copy stays exact.
 //
-// The other giveaway is not that. It is a system written to be dropped into any repository, so its ten skills are rewritten throughout — a human rather than an owner, no path, no script name, no keycode — and two of them answer to a different name here. Held to the bytes, every one of them would fail for being correct. So it is answered for instead: a row per file saying which of three answers it is, the reason beside every row that is not compared, and the folder walked against the list rather than the list trusted. The download beside it is written from the system rows by bundle-giveaway.mjs and opened entry by entry in the gate.
+// The other giveaway is not that. It is a system written to be dropped into any repository, so its ten skills are rewritten throughout — a human rather than an owner, no path, no script name — and two of them answer to a different name here. Held to the bytes, every one of them would fail for being correct. So it is answered for instead: a row per file saying which of three answers it is, the reason beside every row that is not compared, and the folder walked against the list rather than the list trusted. The download beside it is written from the system rows by bundle-giveaway.mjs and opened entry by entry in the gate.
 
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
