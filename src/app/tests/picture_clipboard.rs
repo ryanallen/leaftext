@@ -3,6 +3,9 @@
 use super::*;
 use crate::app::picture_clipboard::{clipboard_helper, picture_bytes, ScratchPicture};
 
+/// A scratch picture is named after the process, so every test in this file shares one namespace in the temporary folder and one of them counts what is in there. Held for the length of each, so a copy on another thread never comes and goes inside that count.
+static ONE_AT_A_TIME: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// The scratch pictures this process is holding right now, so a test can say a copy left none behind.
 fn scratch_pictures_here() -> Vec<PathBuf> {
     let prefix = format!("leaftext-clipboard-{}-", std::process::id());
@@ -22,6 +25,7 @@ fn scratch_pictures_here() -> Vec<PathBuf> {
 
 #[test]
 fn a_payload_that_is_not_a_picture_is_refused_before_any_file_is_written() {
+    let _one_at_a_time = ONE_AT_A_TIME.lock().expect("the scratch namespace is free");
     // The decode comes before the file on purpose: a refusal that had already written one would leave the reader's picture sitting in the temporary folder with nothing left to clean it up.
     let before = scratch_pictures_here();
 
@@ -42,6 +46,7 @@ fn a_payload_that_is_not_a_picture_is_refused_before_any_file_is_written() {
 
 #[test]
 fn a_scratch_picture_holds_the_bytes_and_is_gone_once_the_copy_is_over() {
+    let _one_at_a_time = ONE_AT_A_TIME.lock().expect("the scratch namespace is free");
     // Both platforms read a picture from a path rather than from their own input, so the copy has to leave a file somewhere — and this is what says it never survives the copy, whether the helper worked or failed.
     let held = {
         let scratch = ScratchPicture::written(b"PNG-bytes").expect("a scratch picture is written");
@@ -65,6 +70,7 @@ fn a_scratch_picture_holds_the_bytes_and_is_gone_once_the_copy_is_over() {
 
 #[test]
 fn the_clipboard_helper_is_built_for_the_scratch_picture_and_not_yet_run() {
+    let _one_at_a_time = ONE_AT_A_TIME.lock().expect("the scratch namespace is free");
     let scratch = ScratchPicture::written(b"PNG-bytes").expect("a scratch picture is written");
     let helper = clipboard_helper(scratch.path());
     let program = helper.get_program().to_string_lossy().into_owned();

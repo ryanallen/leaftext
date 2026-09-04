@@ -200,7 +200,7 @@ fn normalize_recent_path(path: &Path) -> PathBuf {
 }
 
 /// Reverse-DNS app id, and the two halves it is built from. macOS names the per-app folder with the whole id; Windows nests organization inside application. Both spellings are load-bearing: they are where every existing install already keeps its settings, recent files, and vault registry. Only macOS spells the qualifier into a path; Windows ignores it entirely.
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", feature = "desktop"))]
 const APP_QUALIFIER: &str = "com";
 #[cfg(feature = "desktop")]
 const APP_ORGANIZATION: &str = "ryanallen";
@@ -261,7 +261,8 @@ pub(crate) fn installed_data_local_dir() -> Option<PathBuf> {
     }
 }
 
-#[cfg(target_os = "macos")]
+// Both of its callers are the desktop's own, and the two halves of the id it spells are the desktop's too — so the browser build, which has neither, must not carry this either.
+#[cfg(all(target_os = "macos", feature = "desktop"))]
 pub(crate) fn macos_application_support_dir() -> Option<PathBuf> {
     let home = std::env::var_os("HOME").filter(|home| !home.is_empty())?;
     Some(

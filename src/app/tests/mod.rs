@@ -43,7 +43,10 @@ fn scratch_dir(label: &str) -> PathBuf {
     });
     let dir = std::env::temp_dir().join(format!("leaf-{label}-{}-{run}", std::process::id()));
     fs::create_dir_all(&dir).expect("scratch directory is created");
-    dir
+    // Spelled the way the disk will report it, because a test that hands one of these to the vault and then canonicalizes the same folder has to get one path back. The temporary folder is reached through a symbolic link on macOS, so the two spellings differ there and a corpus keyed on the resolved one answers nothing for the raw one. `plain_event_path` takes the extended prefix back off, which is what Windows canonicalizes to.
+    crate::app::watch::plain_event_path(
+        fs::canonicalize(&dir).expect("the scratch directory canonicalizes"),
+    )
 }
 
 #[test]

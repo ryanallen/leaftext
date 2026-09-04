@@ -109,11 +109,18 @@ fn a_link_to_a_file_the_app_does_not_read_reaches_the_opener_resolved() {
         Some("https://example.com/a.pdf".to_string())
     );
 
-    // Both spellings of a whole path stand on their own rather than being joined onto the note's folder.
-    assert_eq!(
-        os_open_target(r"C:\notes\a.pdf", &current),
-        Some(r"C:\notes\a.pdf".to_string())
-    );
+    // Both spellings of a whole path stand on their own rather than being joined onto the note's folder — where the platform reads them as whole paths at all. A drive letter and backslashes name nothing off Windows, so there the same address is an ordinary relative one and is joined like any other.
+    if cfg!(windows) {
+        assert_eq!(
+            os_open_target(r"C:\notes\a.pdf", &current),
+            Some(r"C:\notes\a.pdf".to_string())
+        );
+    } else {
+        let joined = os_open_target(r"C:\notes\a.pdf", &current)
+            .expect("a relative address reaches the opener");
+        assert!(joined.contains("leaf-link-fixtures"), "{joined}");
+        assert!(joined.ends_with(r"C:\notes\a.pdf"), "{joined}");
+    }
     // A path written from the root of the disk stands on its own rather than being hung off the note's folder. Windows reads a rooted path as rooted on the drive the app is running from, which is that platform's own answer for the same path.
     let rooted =
         os_open_target("/Users/reader/a.pdf", &current).expect("a rooted path reaches the opener");

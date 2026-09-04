@@ -585,9 +585,11 @@ fn the_code_view_payload_url_is_one_the_page_is_allowed_to_fetch() {
     // Derived from the URL rather than spelled out again, so the two cannot drift.
     let (scheme, rest) = url.split_once("://").expect("the payload URL has a scheme");
     let origin = format!("{scheme}://{}", rest.split('/').next().unwrap_or_default());
+    // Either grant reaches it, and which one the policy needs is the platform's answer: Windows serves the scheme over `http://leaf-source.local`, which has to be named as an origin, while every other host serves `leaf-source://` and a bare `leaf-source:` in a policy allows the whole scheme.
+    let scheme_grant = format!("{scheme}:");
     assert!(
-        connect_src.contains(&origin),
-        "connect-src must allow {origin} or the code view cannot fetch its source: {connect_src}"
+        connect_src.contains(&origin) || connect_src.contains(&scheme_grant),
+        "connect-src must allow {origin}, as that origin or as the whole {scheme_grant} scheme, or the code view cannot fetch its source: {connect_src}"
     );
 }
 

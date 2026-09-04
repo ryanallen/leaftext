@@ -198,7 +198,14 @@ fn the_page_carries_a_policy_of_its_own_and_a_base_of_ours() {
     // One base in the head, and it is ours. An author's would point every relative address in the page somewhere else.
     assert_eq!(page.matches("<base ").count(), 1);
     assert!(!page.contains("elsewhere.example"));
-    assert_contains(&page, "<base href=\"http://leaf-site.local/");
+    // Read off the one function that spells the scheme, because which of the two spellings the web view serves is the platform's answer and not ours: Windows takes `http://leaf-site.local/`, every other host `leaf-site://local/`.
+    assert_contains(
+        &page,
+        &format!(
+            "<base href=\"{}",
+            crate::site_protocol::site_webview_url("")
+        ),
+    );
 }
 
 #[test]

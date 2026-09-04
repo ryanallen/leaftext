@@ -19,8 +19,15 @@ fn a_graph_scope_answers_the_request_it_means() {
 
 #[test]
 fn typing_help_chooses_the_vault_or_the_documents_folder() {
-    let root = Path::new(r"C:\notes");
-    let document = Path::new(r"C:\notes\folder\plan.md");
+    // Spelled with the platform's own separator: whether a vault holds a document is decided on that separator, so a path written the other way round is not inside the vault at all and the test would be asking a different question.
+    let root = PathBuf::from(if cfg!(windows) { r"C:\notes" } else { "/notes" });
+    let document = root.join("folder").join("plan.md");
+    let elsewhere = PathBuf::from(if cfg!(windows) {
+        r"C:\elsewhere\plan.md"
+    } else {
+        "/elsewhere/plan.md"
+    });
+    let (root, document) = (root.as_path(), document.as_path());
     assert_eq!(
         intel_source_choice(Some(root), true, document),
         IntelSourceChoice::Corpus
@@ -30,7 +37,7 @@ fn typing_help_chooses_the_vault_or_the_documents_folder() {
         IntelSourceChoice::ReadCorpus
     );
     assert_eq!(
-        intel_source_choice(Some(root), true, Path::new(r"C:\elsewhere\plan.md")),
+        intel_source_choice(Some(root), true, &elsewhere),
         IntelSourceChoice::Folder
     );
     assert_eq!(

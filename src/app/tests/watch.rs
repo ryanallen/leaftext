@@ -648,21 +648,21 @@ fn only_a_document_that_moved_redraws_the_map() {
         "a refresh that changed nothing reached the vault graph rebuild"
     );
 
-    // A document's own map has no cache to compare against, so it cannot answer that question — but it still refuses to redraw for a path that is not a document at all, which is most of what the watcher reports.
+    // A document's own map has no cache to compare against, so it cannot answer that question — but it still refuses to redraw for a path that is not a document at all, which is most of what the watcher reports. The document is outside the vault, because that is the whole condition for drawing a document's own map rather than the vault's.
     state.last_graph = Some(PendingGraph {
-        document: Some(PathBuf::from("/vault/note.md")),
+        document: Some(PathBuf::from("/elsewhere/note.md")),
         request: GraphRequest::default(),
     });
     assert!(
         matches!(
-            corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/.git/index")], true),
+            corpus_changes_redraw(&mut state, &[PathBuf::from("/elsewhere/.git/index")], true),
             GraphRedraw::Nothing
         ),
         "a document map rebuilt for a path that is not a document"
     );
     assert!(
         matches!(
-            corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/other.md")], true),
+            corpus_changes_redraw(&mut state, &[PathBuf::from("/elsewhere/other.md")], true),
             GraphRedraw::Document { .. }
         ),
         "a document map stopped rebuilding for a document that could be in the picture"
@@ -670,7 +670,7 @@ fn only_a_document_that_moved_redraws_the_map() {
 
     // And a map nobody is looking at is never rebuilt, whatever moved.
     assert!(matches!(
-        corpus_changes_redraw(&mut state, &[PathBuf::from("/vault/other.md")], false),
+        corpus_changes_redraw(&mut state, &[PathBuf::from("/elsewhere/other.md")], false),
         GraphRedraw::Nothing
     ));
 }

@@ -13,10 +13,11 @@ pub(super) struct WebCoreFixture {
 
 /// A folder no machine has, so the walks above a fixture find nothing and every render is reproducible.
 pub(super) fn web_core_fixture_path(file: &str) -> PathBuf {
+    // The recorded digests below cover the whole render, and the render opens with a `<base>` built from this path — so the two spellings have to reach the same `file:///C:/leaf-web-core-fixtures/` URL or the pin would need a second table per platform. `C:` is an ordinary folder name everywhere but Windows, and nothing here touches the disk.
     let root = if cfg!(windows) {
         r"C:\leaf-web-core-fixtures"
     } else {
-        "/leaf-web-core-fixtures"
+        "/C:/leaf-web-core-fixtures"
     };
     Path::new(root).join(file)
 }
@@ -566,7 +567,7 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
             document.title,
             document.blocks.len(),
             document.tasks.len(),
-            document.html
+            site_scheme_as_the_table_took_it(&document.html)
         )
         .as_bytes(),
     )
@@ -574,9 +575,35 @@ pub(super) fn web_core_render_digest(document: &OpenedDocument) -> String {
     .to_string()
 }
 
+/// A contained HTML page's `<base>` is the one part of a render the platform decides rather than we do: the web view serves the site scheme as `http://leaf-site.local/` on Windows and `leaf-site://local/` everywhere else, and the folder id in it is a hash of the fixture's own absolute path, which cannot be spelled the same on both. Neither is a render this pin is here to catch moving, so both are read as one fixed address and everything else is pinned byte for byte.
+fn site_scheme_as_the_table_took_it(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    for spelling in ["leaf-site://local/", "http://leaf-site.local/"] {
+        while let Some(at) = rest.find(spelling) {
+            out.push_str(&rest[..at]);
+            out.push_str("<the staged site folder>/");
+            rest = &rest[at + spelling.len()..];
+            // The id follows the host, and the page addresses a file under it by name.
+            let end = rest.find('/').map_or(rest.len(), |slash| slash + 1);
+            if rest[..end]
+                .trim_end_matches('/')
+                .chars()
+                .all(|c| c.is_ascii_digit())
+            {
+                rest = &rest[end..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 /// What each fixture rendered to before the host boundary was drawn, taken on 6 August 2026. Nothing in that work is allowed to move one of these.
 ///
 /// The markdown one has moved since, on purpose: it is the only fixture with a leading field block, and its two fences were reported as blocks the page has no element for, which cost that document every editable range it had. Same title, same HTML, two fewer blocks.
+///
+/// The html one has moved too, and for nothing about the render: it is the only fixture drawn as a contained page, so it is the only one carrying a staged site address, and that address is now read as one fixed string because neither the scheme's spelling nor the folder id in it is the same on two platforms. Every other byte of it is pinned as it was.
 ///
 /// So has the xml one: every value the file keeps inside a tag now carries the bytes between its quotes, and the values composed into one run are drawn in an element each so a press can name one of them. Same title, same blocks, more names on the markup.
 ///
@@ -624,7 +651,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "html",
-        "84a26bf547a14e8eecccae794afc88e026403867928896f8eb9cbf4b0d528545",
+        "9e2c0b661d0147e54cf457e2178d1d2790c32d916fae8c622b4ec01b940915ef",
     ),
     (
         "text",

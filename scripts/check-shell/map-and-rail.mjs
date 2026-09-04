@@ -823,6 +823,57 @@ export function run() {
     }
   });
 
+  // The mirror's own direction of the one-frame lag, and the whole of the Mac trackpad jitter. While the page glides its scroll writes the column, and the column's answering event lands a frame later carrying the position the page held then — written back, that drags the page to the previous frame and cancels the animation drawing it. Measured in the running app: eleven such write-backs a second of glide, and the page stopped a third of the way down and sat still.
+  check('the column never carries the reader\u2019s own mirror back onto a gliding page', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      // Frame N of a glide: the page's scroll writes the column to where the page is.
+      stand.app.scrollTop = 3000;
+      stand.readerScroll();
+      if (stand.rail.scrollTop !== 3000) throw new Error(`the reader glided to 3000 and left the column at ${stand.rail.scrollTop}`);
+      // Frame N+1: the glide has moved on, and the column's late scroll event arrives still carrying frame N.
+      stand.app.scrollTop = 3400;
+      stand.columnScroll();
+      if (stand.app.scrollTop !== 3400) throw new Error(`the column\u2019s echo dragged the gliding reader back to ${stand.app.scrollTop}`);
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The other half of that guard: it may only ever swallow the mirror's own write. A hand on the rail lands the column somewhere the mirror never put it, and that has to carry the page exactly as it does today.
+  check('a rail gesture off the recorded position still carries the reader one to one', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      stand.app.scrollTop = 3000;
+      stand.readerScroll();
+      stand.rail.scrollTop = 800;
+      stand.columnScroll();
+      if (stand.app.scrollTop !== 800) throw new Error(`a rail gesture to 800 left the reader at ${stand.app.scrollTop}`);
+    } finally {
+      stand.done();
+    }
+  });
+
+  // The record is a module-scope value, so a document switch that left it standing would carry one document's mirrored position into the next — and there the page is not where the record says, so the guard would swallow the first rail gesture that happened to land on it.
+  check('a fresh document clears the position the mirror last wrote', () => {
+    const stand = railColumnStand();
+    try {
+      stand.setReader(16320, 787);
+      stand.app.scrollTop = 3000;
+      stand.readerScroll();
+      // The next document, opened where the last one was read.
+      booted.initializeMinimapState();
+      stand.app.scrollTop = 0;
+      stand.rail.scrollTop = 3000;
+      stand.columnScroll();
+      if (stand.app.scrollTop !== 3000) throw new Error(`a rail gesture to 3000 on a fresh document left the reader at ${stand.app.scrollTop}`);
+    } finally {
+      stand.done();
+    }
+  });
+
   // The column stands while the code view is up, where it holds no rail at all — and the same case covers the start screen and a document short enough to need no scrolling. No travel there, so the notch is the web view's to do nothing with, exactly as it is today.
   check('an empty column is left to the web view', () => {
     const stand = railColumnStand();
