@@ -137,7 +137,7 @@ fn a_vault_registered_before_the_kind_column_reads_as_a_folder() {
             "CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
              CREATE TABLE vaults (id INTEGER PRIMARY KEY, name TEXT NOT NULL, root_path TEXT NOT NULL UNIQUE, added_at INTEGER NOT NULL);
              CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-             INSERT INTO vaults (name, root_path, added_at) VALUES ('Dharma', 'C:\\Dharma', 10), ('Work', 'C:\\Work', 20);
+             INSERT INTO vaults (name, root_path, added_at) VALUES ('Meadow', 'C:\\Meadow', 10), ('Work', 'C:\\Work', 20);
              INSERT INTO schema_migrations (version, applied_at) VALUES (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0);",
         )
         .expect("migration 6 schema created");
@@ -162,7 +162,7 @@ fn a_vault_registered_before_the_kind_column_reads_as_a_folder() {
         );
     }
     // And the order they were added in survives the migration, since that is what the switcher lists them in.
-    assert_eq!(vaults[0].name, "Dharma");
+    assert_eq!(vaults[0].name, "Meadow");
     assert_eq!(vaults[1].name, "Work");
 
     // Somewhere to record what a mirror holds, cascading on the vault so forgetting one forgets what it copied down.
@@ -255,7 +255,7 @@ fn changing_one_vaults_automatic_sync_leaves_the_other_off_and_names_the_page_fi
 #[test]
 fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
     let dir = unique_dir("vault-add");
-    let root = dir.join("dharma");
+    let root = dir.join("meadow");
     std::fs::create_dir_all(&root).expect("folder created");
     std::fs::write(root.join("note.md"), "# Note\n").expect("file written");
     let before: Vec<String> = std::fs::read_dir(&root)
@@ -267,7 +267,7 @@ fn a_vault_is_a_row_and_writes_nothing_into_the_folder() {
 
     let vault = add_vault(&conn, &root, &default_vault_name(&root), VaultKind::Folder)
         .expect("vault added");
-    assert_eq!(vault.name, "dharma");
+    assert_eq!(vault.name, "meadow");
     assert_eq!(vault.root_path, path_to_string(&root));
     assert!(vault.id > 0);
 
@@ -1158,16 +1158,16 @@ fn html_links_join_documents_and_web_addresses_without_copying_the_page() {
 #[test]
 fn a_file_is_owned_by_the_innermost_vault_that_holds_it() {
     let dir = unique_dir("owner");
-    let outer = dir.join("dharma");
+    let outer = dir.join("meadow");
     let inner = outer.join("emptyguru");
     let other = dir.join("elsewhere");
     // A sibling whose name merely starts with a vault's: it must not be claimed.
-    let lookalike = dir.join("dharma-old");
+    let lookalike = dir.join("meadow-old");
     for folder in [&outer, &inner, &other, &lookalike] {
         std::fs::create_dir_all(folder).expect("folder created");
     }
     let conn = open_db(&dir).expect("db opens");
-    let outer_vault = add_vault(&conn, &outer, "Dharma", VaultKind::Folder).expect("added");
+    let outer_vault = add_vault(&conn, &outer, "Meadow", VaultKind::Folder).expect("added");
     let inner_vault = add_vault(&conn, &inner, "Empty Guru", VaultKind::Folder).expect("added");
     add_vault(&conn, &other, "Elsewhere", VaultKind::Folder).expect("added");
 

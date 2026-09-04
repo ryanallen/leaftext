@@ -52,11 +52,11 @@ Open a `.md` file and it renders the way you'd expect, with the extras people ac
 
 Write a `mermaid` code fence and get a diagram — flowchart, sequence, gantt, mindmap, pie — drawn offline in your theme's own colors and font. Switch theme and the diagrams on the page are redrawn to match. A page of sixty opens as fast as a page of three: only the ones near what you are reading are drawn, and the rest fill in as you scroll to them. Drag one to move it, `Ctrl` and the wheel to zoom, without the page around it shifting. **[Diagrams →](docs/01-features/01-rendering.md#mermaid-diagrams)**
 
-### XML, sitemaps, feeds, and Buddhist canon
+### XML, sitemaps, feeds, and TEI
 
 ![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](imgs/xml.png)
 
-[Any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags — a sitemap, a feed, a `pom.xml`. And [84000-style TEI](docs/01-features/01-rendering.md#tei-xml-84000-translations), the format the Buddhist canon is translated into, gets a reader that understands its conventions: titles, front matter, nested divisions, verse, endnotes. **[XML →](docs/01-features/01-rendering.md#xml)**
+[Any XML](docs/01-features/01-rendering.md#any-xml) reads as sections, fields, and tables instead of tags — a sitemap, a feed, a `pom.xml`. And [TEI](docs/01-features/01-rendering.md#tei-xml), the markup scholarly editions and archives are written in, gets a reader that understands its conventions: titles, front matter, nested divisions, verse, endnotes. **[XML →](docs/01-features/01-rendering.md#xml)**
 
 ### JSON and YAML as pages
 

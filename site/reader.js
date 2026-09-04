@@ -34,7 +34,7 @@ const renderDocument = (body, path) => {
 // The settings menu (theme + show/hide minimap) pinned to the top-right. The single-README site has no navigation sidebar, so no "Show library" toggle.
 installSettings({ hasLibrary: false });
 
-// Glossary links (e.g. GLOSSARY.md#karma) open the term in a bottom sheet over the README rather than navigating. The file is docs/GLOSSARY.md — there is no copy at the site root, so a bare 'GLOSSARY.md' here is a 404 in the sheet.
+// Glossary links (e.g. GLOSSARY.md#gauge) open the term in a bottom sheet over the README rather than navigating. The file is docs/GLOSSARY.md — there is no copy at the site root, so a bare 'GLOSSARY.md' here is a 404 in the sheet.
 //
 // This single-README page has no router, so it cannot render the whole glossary itself. "Open the full glossary" (and any plain link to the glossary file) goes to the docs viewer's GLOSSARY route — `docs/#/GLOSSARY` — which renders the file with full chrome; the default fetches the raw .md, which the browser shows as unrendered Markdown.
 const glossary = installGlossary({

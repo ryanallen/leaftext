@@ -89,11 +89,11 @@ fn recent_record_collapses_equivalent_path_spellings() {
 #[test]
 fn normalize_entries_collapses_existing_duplicate_spellings_on_load() {
     let app_readme = Path::new("app").join("README.md");
-    let dharma_readme = Path::new("dharma").join("README.md");
+    let meadow_readme = Path::new("meadow").join("README.md");
     let mut recent = RecentFiles {
         files: vec![
             Path::new("app").join(".tmp").join("..").join("README.md"),
-            dharma_readme.clone(),
+            meadow_readme.clone(),
             app_readme.clone(),
         ],
     };
@@ -101,7 +101,7 @@ fn normalize_entries_collapses_existing_duplicate_spellings_on_load() {
     recent.normalize_entries();
 
     // The two spellings of app/README.md collapse, keeping first-seen order.
-    assert_eq!(recent.files, vec![app_readme, dharma_readme]);
+    assert_eq!(recent.files, vec![app_readme, meadow_readme]);
 }
 
 #[test]

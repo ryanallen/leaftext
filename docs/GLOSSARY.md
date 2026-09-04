@@ -44,7 +44,7 @@ A panel that slides up over the reading view without taking you off the page —
 
 ## Breadcrumb
 
-The folder path across the top of the [library pane](GLOSSARY.md#library-pane) — `Vajrayana › docs › features`. Click any crumb to step back to that level. What does not fit collapses into a `…` menu. The [sync button](GLOSSARY.md#sync-button) appears at its end.
+The folder path across the top of the [library pane](GLOSSARY.md#library-pane) — `Fieldwork › docs › features`. Click any crumb to step back to that level. What does not fit collapses into a `…` menu. The [sync button](GLOSSARY.md#sync-button) appears at its end.
 
 ## Bubble
 
@@ -336,7 +336,7 @@ A checkbox list — `- [ ]` and `- [x]`. The boxes are live: click one to tick i
 
 ## TEI
 
-The XML format 84000 publishes Buddhist canon translations in. Leaftext gives it its own reader — titles, front matter as a collapsed section, nested divisions, verse as quoted stanzas, endnotes as [footnotes](GLOSSARY.md#footnote). See [Rendering](01-features/01-rendering.md#tei-xml-84000-translations).
+The XML markup scholarly editions, archives and field records are written in. Leaftext gives it its own reader — titles, front matter as a collapsed section, nested divisions, verse as quoted stanzas, endnotes as [footnotes](GLOSSARY.md#footnote). See [Rendering](01-features/01-rendering.md#tei-xml).
 
 ## Theme family
 

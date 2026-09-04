@@ -25,17 +25,17 @@ fn an_answer_to_a_query_the_field_moved_past_never_reaches_the_page() {
             path: "/vault/note.md".to_string(),
             label: "note".to_string(),
             aliases: Vec::new(),
-            text: "A talk on dharma.".to_string(),
+            text: "A note on meadow.".to_string(),
         }],
         truncated: false,
     };
     let generation = state.search.generation.clone();
     assert!(corpus
-        .search_until(&typed("dharma").parsed, None, &|| !generation
+        .search_until(&typed("meadow").parsed, None, &|| !generation
             .is_current(second))
         .is_some());
     assert!(corpus
-        .search_until(&typed("dharma").parsed, None, &|| !generation
+        .search_until(&typed("meadow").parsed, None, &|| !generation
             .is_current(first))
         .is_none());
 
@@ -90,7 +90,7 @@ fn corpus_of(paths: &[&str]) -> VaultCorpus {
                 path: path.to_string(),
                 label: "note".to_string(),
                 aliases: Vec::new(),
-                text: "a talk on dharma".to_string(),
+                text: "a note on meadow".to_string(),
             })
             .collect(),
         truncated: false,
@@ -104,7 +104,7 @@ fn slice_document(name: &str) -> CorpusDocument {
         path: format!("/vault/{name}.md"),
         label: name.to_string(),
         aliases: Vec::new(),
-        text: format!("# {name}\n\na talk on dharma\n"),
+        text: format!("# {name}\n\na note on meadow\n"),
     }
 }
 
@@ -115,7 +115,7 @@ fn every_slice_of_a_read_answers_the_parked_query_and_moves_the_corpus_number() 
     state.root = Some(root.clone());
     state.corpus_loading = true;
     // Somebody typed before the vault had been read, so the query is waiting on it.
-    state.pending_search = Some(typed("dharma"));
+    state.pending_search = Some(typed("meadow"));
     let started = state.corpus_generation;
     // Every slice below is stamped with this one read's number, the way a live read's are.
     let reading = state.corpus_read.claim();
@@ -317,7 +317,7 @@ fn an_ask_left_waiting_by_a_vault_switch_is_owed_a_read() {
     state.root = Some(PathBuf::from("/vault"));
 
     // Somebody switched vaults, then searched in the one they switched to. The read they were turned away by has just let go.
-    state.pending_search = Some(typed("dharma"));
+    state.pending_search = Some(typed("meadow"));
     assert!(
         read_is_owed(&state),
         "a search left waiting by a vault switch was never given a read"
@@ -410,7 +410,7 @@ fn both_ways_of_pointing_at_a_vault_ask_whether_the_folder_moved_first() {
 fn nothing_is_owed_while_a_read_is_still_running() {
     let mut state = VaultState::load(None);
     state.root = Some(PathBuf::from("/vault"));
-    state.pending_search = Some(typed("dharma"));
+    state.pending_search = Some(typed("meadow"));
     // A slice thrown away mid-read is an ordinary thing, and it must not put a second read of the same folder on the machine.
     state.corpus_loading = true;
     assert!(
@@ -429,7 +429,7 @@ fn an_unread_open_vault_is_owed_after_the_guard_frees() {
     );
 
     // The one-read guard stays the boundary even when somebody is waiting.
-    state.pending_search = Some(typed("dharma"));
+    state.pending_search = Some(typed("meadow"));
     state.corpus_loading = true;
     assert!(
         !read_is_owed(&state),
@@ -599,7 +599,7 @@ fn the_preview_starts_the_text_and_the_first_sorted_slice_throws_it_away() {
     state.root = Some(root.clone());
     state.corpus_loading = true;
     // Somebody searched a vault nobody had read, which is what paid for the walk.
-    state.pending_search = Some(typed("dharma"));
+    state.pending_search = Some(typed("meadow"));
     let reading = state.corpus_read.claim();
 
     let preview = absorb_corpus_slice(
@@ -758,7 +758,7 @@ fn one_search_answer() -> SearchResults {
             start_line: 3,
             end_line: 3,
             anchor: None,
-            snippet: "a talk on dharma".to_string(),
+            snippet: "a note on meadow".to_string(),
             score: 1.0,
         }],
         truncated: false,
@@ -780,13 +780,13 @@ fn an_answer_scanned_over_part_of_a_vault_is_never_kept() {
         &mut state,
         None,
         None,
-        "dharma",
+        "meadow",
         one_search_answer(),
         scanned,
         true,
     );
     assert!(
-        state.search.remembered(&typed("dharma"), scanned).is_none(),
+        state.search.remembered(&typed("meadow"), scanned).is_none(),
         "an answer that had seen half a vault was kept as the answer to that query"
     );
 
@@ -794,16 +794,16 @@ fn an_answer_scanned_over_part_of_a_vault_is_never_kept() {
         &mut state,
         None,
         None,
-        "dharma",
+        "meadow",
         one_search_answer(),
         scanned,
         false,
     );
     // Kept under the text it actually scanned, never under whatever the number had reached by the time it landed.
-    assert!(state.search.remembered(&typed("dharma"), scanned).is_some());
+    assert!(state.search.remembered(&typed("meadow"), scanned).is_some());
     assert!(state
         .search
-        .remembered(&typed("dharma"), state.corpus_generation)
+        .remembered(&typed("meadow"), state.corpus_generation)
         .is_none());
 }
 
@@ -818,7 +818,7 @@ fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
             start_line: 3,
             end_line: 3,
             anchor: None,
-            snippet: "a talk on dharma".to_string(),
+            snippet: "a note on meadow".to_string(),
             score: 1.0,
         }],
         truncated: false,
@@ -828,21 +828,21 @@ fn the_same_query_over_unchanged_text_is_answered_from_the_last_one() {
         matched: vec!["/vault/note.md".to_string()],
     };
     let corpus = state.corpus_generation;
-    state.search.remember("dharma", corpus, answer);
+    state.search.remember("meadow", corpus, answer);
 
     // The pane re-runs its search on every folder move, and the same query over the same text has the same answer.
-    assert!(state.search.remembered(&typed("dharma"), corpus).is_some());
+    assert!(state.search.remembered(&typed("meadow"), corpus).is_some());
     // Another query is another question.
-    assert!(state.search.remembered(&typed("dharmas"), corpus).is_none());
+    assert!(state.search.remembered(&typed("meadows"), corpus).is_none());
     // Text that has moved on since is not what the kept answer describes: the watcher patching the vault and a vault switch both count.
     assert!(state
         .search
-        .remembered(&typed("dharma"), corpus + 1)
+        .remembered(&typed("meadow"), corpus + 1)
         .is_none());
     state.drop_corpus();
     assert!(state
         .search
-        .remembered(&typed("dharma"), state.corpus_generation)
+        .remembered(&typed("meadow"), state.corpus_generation)
         .is_none());
 }
 
@@ -858,24 +858,24 @@ fn one_more_letter_scans_what_the_last_letter_matched() {
         matched: vec!["/vault/one.md".to_string(), "/vault/two.md".to_string()],
     };
     let corpus = state.corpus_generation;
-    state.search.remember("dhar", corpus, answer);
+    state.search.remember("mead", corpus, answer);
 
     // Typing on the end can only shrink the set, so the next keystroke reads those two documents rather than the vault.
     let within = state
         .search
-        .narrowing(&typed("dharma"), corpus)
+        .narrowing(&typed("meadow"), corpus)
         .expect("a longer query narrows to the shorter one's matches");
     assert_eq!(within.len(), 2);
 
     // Everything else is a different question: the same query (already answered from the kept results), a letter deleted, a different word, another case.
-    assert!(state.search.narrowing(&typed("dhar"), corpus).is_none());
-    assert!(state.search.narrowing(&typed("dha"), corpus).is_none());
-    assert!(state.search.narrowing(&typed("sutra"), corpus).is_none());
-    assert!(state.search.narrowing(&typed("Dharma"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("mead"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("mea"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("survey"), corpus).is_none());
+    assert!(state.search.narrowing(&typed("Meadow"), corpus).is_none());
     // And text that moved under it is not narrowed at all — a file saved mid-typing would otherwise be invisible until the query changed.
     assert!(state
         .search
-        .narrowing(&typed("dharma"), corpus + 1)
+        .narrowing(&typed("meadow"), corpus + 1)
         .is_none());
 }
 
@@ -946,7 +946,7 @@ fn a_change_made_during_a_read_lands_once_when_the_read_ends() {
     let reading = state.corpus_read.claim();
 
     // Saved before the read had handed over anything at all.
-    fs::write(&note, "the note says dharma").expect("the note is saved");
+    fs::write(&note, "the note says meadow").expect("the note is saved");
     assert!(
         !record_or_refresh_corpus_path(&mut state, &note).text,
         "a change was patched into text the read still owns"
@@ -965,7 +965,7 @@ fn a_change_made_during_a_read_lands_once_when_the_read_ends() {
     .expect("the first sorted slice is kept");
 
     // Saved again between slices, this time to a document the read has not reached.
-    fs::write(&sibling, "the sibling says dharma").expect("the sibling is saved");
+    fs::write(&sibling, "the sibling says meadow").expect("the sibling is saved");
     assert!(!record_or_refresh_corpus_path(&mut state, &sibling).text);
 
     let last = absorb_corpus_slice(
@@ -996,11 +996,11 @@ fn a_change_made_during_a_read_lands_once_when_the_read_ends() {
         found[0].text.clone()
     };
     assert!(
-        text(&note).contains("the note says dharma"),
+        text(&note).contains("the note says meadow"),
         "a save made before the read's first slice was lost"
     );
     assert!(
-        text(&sibling).contains("the sibling says dharma"),
+        text(&sibling).contains("the sibling says meadow"),
         "a save made between two slices was lost"
     );
     assert!(
@@ -1056,7 +1056,7 @@ fn a_change_after_the_read_refreshes_the_held_text_at_once() {
     state.root = Some(root.clone());
     state.corpus = Some(Arc::new(VaultCorpus::read(&root)));
 
-    fs::write(&note, "the note says dharma").expect("the note is saved");
+    fs::write(&note, "the note says meadow").expect("the note is saved");
     assert!(
         record_or_refresh_corpus_path(&mut state, &note).text,
         "a save against a finished vault moved nothing"
@@ -1066,7 +1066,7 @@ fn a_change_after_the_read_refreshes_the_held_text_at_once() {
         corpus
             .documents
             .iter()
-            .any(|document| document.text.contains("the note says dharma")),
+            .any(|document| document.text.contains("the note says meadow")),
         "the save was not findable until the vault was read again"
     );
     assert!(

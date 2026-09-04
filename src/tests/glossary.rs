@@ -53,31 +53,28 @@ fn auto_links_glossary_terms_from_an_ancestor_folder() {
     fs::create_dir_all(&deep).expect("tree is created");
     fs::write(
         root.join("GLOSSARY.md"),
-        "# Glossary\n\n## Bodhisattva\n*byang chub sems dpa'*, a being bound for awakening.\n",
+        "# Glossary\n\n## Observer\n*the initials beside each entry*, whoever took the reading.\n",
     )
     .expect("glossary written");
 
     let md = deep.join("chapter.md");
-    fs::write(&md, "# Chapter\n\nThe Bodhisattva was dwelling there.\n").expect("markdown written");
+    fs::write(&md, "# Chapter\n\nThe Observer was standing there.\n").expect("markdown written");
     let from_md =
-        opened_document_from_markdown("# Chapter\n\nThe Bodhisattva was dwelling there.\n", &md);
+        opened_document_from_markdown("# Chapter\n\nThe Observer was standing there.\n", &md);
 
     let xml = deep.join("chapter.xml");
     let tei = "<TEI xmlns=\"http://www.tei-c.org/ns/1.0\"><text><body>\
-            <div type=\"translation\"><p>The Bodhisattva was dwelling there.</p></div>\
+            <div type=\"translation\"><p>The Observer was standing there.</p></div>\
             </body></text></TEI>";
     fs::write(&xml, tei).expect("xml written");
     let from_xml = opened_document_from_xml(tei, &xml);
 
     fs::remove_dir_all(&root).expect("tree removed");
 
-    assert_contains(
-        &from_md.html,
-        r#"<a href="glossary:bodhisattva">Bodhisattva</a>"#,
-    );
+    assert_contains(&from_md.html, r#"<a href="glossary:observer">Observer</a>"#);
     assert_contains(
         &from_xml.html,
-        r#"<a href="glossary:bodhisattva">Bodhisattva</a>"#,
+        r#"<a href="glossary:observer">Observer</a>"#,
     );
 }
 
@@ -85,15 +82,15 @@ fn auto_links_glossary_terms_from_an_ancestor_folder() {
 fn does_not_auto_link_terms_inside_the_glossary_file_itself() {
     let root = scratch_dir("glossary-self");
     let glossary = root.join("GLOSSARY.md");
-    let text = "# Glossary\n\n## Buddha\nan awakened one.\n\n## Dharma\nthe Buddha's teaching.\n";
+    let text = "# Glossary\n\n## Gauge\nthe staff read for height.\n\n## Stage\nthe gauge's reading at a moment.\n";
     fs::write(&glossary, text).expect("glossary written");
 
     let rendered = opened_document_from_markdown(text, &glossary);
     fs::remove_dir_all(&root).expect("tree removed");
 
-    // "Buddha" appears in the Dharma definition but must not be self-linked.
+    // "Gauge" appears in the Stage definition but must not be self-linked.
     assert!(
-        !rendered.html.contains("glossary:buddha"),
+        !rendered.html.contains("glossary:gauge"),
         "the glossary file should not auto-link its own terms"
     );
 }

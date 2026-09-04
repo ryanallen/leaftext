@@ -61,7 +61,7 @@ export function run() {
   // A pager button opens a page, and three things have to agree about that: the card, the middle click and the menu. Only the card is ever handed the button, so the answer comes off the address — a `file://` URL, which the scheme branch would otherwise call an app command.
   check('a pager button is another page to the card, the middle click and the menu alike', () => {
     const { linkHoverInfo, linkHoverKind, isAnotherPageHref } = booted;
-    const href = 'file:///docs/002-rains.md';
+    const href = 'file:///docs/002-stage.md';
     const pager = linkHoverInfo(href);
     if (pager.kind !== 'Another page') throw new Error(`the card calls it ${pager.kind}`);
     if (pager.detail !== href) throw new Error(`the address moved: ${pager.detail}`);
@@ -371,9 +371,9 @@ export function run() {
     };
     try {
       // Pointer in the middle of a button two thirds down the window: the card goes above the whole button, not to the pointer.
-      if (place(target('The Rains Retreat', 600), 620) !== '390px') throw new Error(`the card landed at ${tip.style.top} instead of above the button`);
+      if (place(target('Weir Crest Survey', 600), 620) !== '390px') throw new Error(`the card landed at ${tip.style.top} instead of above the button`);
       // A button at the top of the window has no room above it, so the card goes under it rather than off screen.
-      if (place(target('The Rains Retreat', 20), 40) !== '100px') throw new Error(`with no room above, the card landed at ${tip.style.top}`);
+      if (place(target('Weir Crest Survey', 20), 40) !== '100px') throw new Error(`with no room above, the card landed at ${tip.style.top}`);
       // An ordinary link is not a big target, and its card follows the pointer until the window edge keeps it on screen.
       if (place(target(null, 600), 620) !== '402px') throw new Error(`an ordinary link's card moved to ${tip.style.top}`);
     } finally {

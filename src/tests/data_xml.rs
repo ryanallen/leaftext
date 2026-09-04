@@ -173,8 +173,8 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
   <text><body>
     <div type="translation">
       <lg>
-        <l>When a tree rots,</l>
-        <l>What use has it for blossoms and boughs?</l>
+        <l>When a stem is cut in autumn,</l>
+        <l>The bark parts easily from the wood.</l>
       </lg>
       <l>Bare line one,</l>
       <l>Bare line two.</l>
@@ -188,7 +188,7 @@ fn tei_lg_and_bare_l_render_as_verse_blockquotes() {
     // The <lg> group becomes a blockquote with its lines joined by <br>.
     assert_contains(
             &html,
-            "<blockquote class=\"tei-verse\">\n<p>When a tree rots,<br>\nWhat use has it for blossoms and boughs?</p>\n</blockquote>",
+            "<blockquote class=\"tei-verse\">\n<p>When a stem is cut in autumn,<br>\nThe bark parts easily from the wood.</p>\n</blockquote>",
         );
     // Consecutive bare <l> lines (no <lg>) coalesce into one blockquote too.
     assert_contains(
@@ -207,13 +207,13 @@ fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
   <teiHeader><fileDesc><titleStmt>
-    <title type="mainTitle" xml:lang="Bo-Ltn">rab tu 'byung ba'i gzhi</title>
+    <title type="mainTitle" xml:lang="Bo-Ltn">rtsa ba dang shun pa'i le'u</title>
     <title type="mainTitle" xml:lang="bo">bo-script-title</title>
-    <title type="mainTitle" xml:lang="en">The Chapter on Going Forth</title>
-    <title type="mainTitle" xml:lang="Sa-Ltn">Pravrajyāvastu</title>
-    <title type="longTitle" xml:lang="en">"Going Forth" from The Chapters on Monastic Discipline</title>
-    <title type="longTitle" xml:lang="Sa-Ltn">Vinayavastu Pravrajyāvastu</title>
-    <title type="longTitle" xml:lang="Bo-Ltn">'dul ba gzhi las</title>
+    <title type="mainTitle" xml:lang="en">The Chapter on Roots and Barks</title>
+    <title type="mainTitle" xml:lang="Sa-Ltn">Mūlatvakavarga</title>
+    <title type="longTitle" xml:lang="en">"Roots and Barks" from The Compendium of Herbs</title>
+    <title type="longTitle" xml:lang="Sa-Ltn">Auṣadhasaṃgraha Mūlatvakavarga</title>
+    <title type="longTitle" xml:lang="Bo-Ltn">sman gyi bsdus pa las</title>
   </titleStmt></fileDesc></teiHeader>
   <text><body><div type="translation"><p>Body.</p></div></body></text>
 </TEI>"#;
@@ -221,23 +221,23 @@ fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
     let (title, html) = render_xml_body(xml);
 
     // The returned title (window/tab/library) is the English main title.
-    assert_eq!(title.as_deref(), Some("The Chapter on Going Forth"));
-    assert_contains(&html, ">The Chapter on Going Forth</h1>");
+    assert_eq!(title.as_deref(), Some("The Chapter on Roots and Barks"));
+    assert_contains(&html, ">The Chapter on Roots and Barks</h1>");
 
     // Under the h1: Sanskrit main title, English long title, Sanskrit long title, in that order, with Sanskrit in italics.
     assert_contains(&html, "<div class=\"tei-doc-subtitles\">");
     // Three subtitle lines, each anchored to its own `<title>` element, so the class and the words are asserted apart from the range that sits between them.
     assert_eq!(html.matches("<p class=\"tei-doc-subtitle\"").count(), 3);
-    assert_contains(&html, "<em>Pravrajyāvastu</em></p>");
-    assert_contains(&html, "<em>Vinayavastu Pravrajyāvastu</em></p>");
+    assert_contains(&html, "<em>Mūlatvakavarga</em></p>");
+    assert_contains(&html, "<em>Auṣadhasaṃgraha Mūlatvakavarga</em></p>");
     let main_sa = html
-        .find("<em>Pravrajyāvastu</em>")
+        .find("<em>Mūlatvakavarga</em>")
         .expect("Sanskrit main title rendered");
     let long_en = html
-        .find("Going Forth\" from The Chapters")
+        .find("Roots and Barks\" from The Compendium")
         .expect("English long title rendered");
     let long_sa = html
-        .find("<em>Vinayavastu Pravrajyāvastu</em>")
+        .find("<em>Auṣadhasaṃgraha Mūlatvakavarga</em>")
         .expect("Sanskrit long title rendered");
     assert!(
         main_sa < long_en && long_en < long_sa,
@@ -245,16 +245,16 @@ fn tei_title_prefers_english_and_stacks_sanskrit_and_long_titles() {
     );
 
     // Tibetan titles never appear, in any script.
-    assert!(!html.contains("rab tu"));
+    assert!(!html.contains("rtsa ba"));
     assert!(!html.contains("bo-script-title"));
-    assert!(!html.contains("'dul ba"));
+    assert!(!html.contains("sman gyi"));
 }
 
 #[test]
 fn tei_front_matter_renders_collapsed_before_the_body() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
-  <teiHeader><fileDesc><titleStmt><title>The Sutra</title></titleStmt></fileDesc></teiHeader>
+  <teiHeader><fileDesc><titleStmt><title>The Compendium</title></titleStmt></fileDesc></teiHeader>
   <text>
     <front>
       <div type="summary">
@@ -330,9 +330,9 @@ fn a_published_translation_renders_its_titles_verse_and_end_notes() {
     let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
   <teiHeader><fileDesc><titleStmt>
-    <title type="mainTitle" xml:lang="en">The Chapter on Going Forth</title>
-    <title type="mainTitle" xml:lang="Sa-Ltn">Pravrajyāvastu</title>
-    <title type="longTitle" xml:lang="en">“The Chapter on Going Forth” from The Chapters on Monastic Discipline</title>
+    <title type="mainTitle" xml:lang="en">The Chapter on Roots and Barks</title>
+    <title type="mainTitle" xml:lang="Sa-Ltn">Mūlatvakavarga</title>
+    <title type="longTitle" xml:lang="en">“The Chapter on Roots and Barks” from The Compendium of Herbs</title>
   </titleStmt></fileDesc></teiHeader>
   <text>
     <front><div type="summary"><head>Summary</head><p>What this text is about.</p></div></front>
@@ -340,12 +340,12 @@ fn a_published_translation_renders_its_titles_verse_and_end_notes() {
       <div type="translation">
         <div type="section">
           <head>The Setting</head>
-          <p>The Blessed One was staying at Rājagṛha.<note place="end" xml:id="UT-1">Toh 1, folio 3.a.</note></p>
+          <p>The plant is found on chalk and never on clay.<note place="end" xml:id="UT-1">Compendium 1, folio 3.a.</note></p>
           <div type="chapter">
-            <head>Going Forth</head>
+            <head>Roots and Barks</head>
             <lg>
-              <l>When a tree rots,</l>
-              <l>What use has it for blossoms and boughs?</l>
+              <l>When a stem is cut in autumn,</l>
+              <l>The bark parts easily from the wood.</l>
             </lg>
           </div>
         </div>
@@ -357,9 +357,9 @@ fn a_published_translation_renders_its_titles_verse_and_end_notes() {
 
     let (title, html) = render_xml_body(xml);
 
-    assert_eq!(title.as_deref(), Some("The Chapter on Going Forth"));
+    assert_eq!(title.as_deref(), Some("The Chapter on Roots and Barks"));
     // The other languages stack under the title rather than competing with it.
-    assert_contains(&html, "Pravrajyāvastu");
+    assert_contains(&html, "Mūlatvakavarga");
     // The front matter is there and closed, so the reader lands on the translation.
     assert_contains(&html, "<details class=\"tei-front\"");
     assert!(
@@ -368,16 +368,16 @@ fn a_published_translation_renders_its_titles_verse_and_end_notes() {
     );
     // A chapter inside a section is drawn smaller than the section holding it — the fix Emptyguru's own copy never received.
     assert_contains(&html, r#"id="the-setting">The Setting</h2>"#);
-    assert_contains(&html, r#"id="going-forth">Going Forth</h3>"#);
+    assert_contains(&html, r#"id="roots-and-barks">Roots and Barks</h3>"#);
     // Verse is a blockquote with its lines joined, not a paragraph of run-together text.
     assert_contains(
         &html,
-        "<blockquote class=\"tei-verse\">\n<p>When a tree rots,<br>\nWhat use has it for blossoms and boughs?</p>\n</blockquote>",
+        "<blockquote class=\"tei-verse\">\n<p>When a stem is cut in autumn,<br>\nThe bark parts easily from the wood.</p>\n</blockquote>",
     );
     // An end note is cited where it was written and defined at the foot, with a way back.
     assert_contains(&html, "<sup class=\"footnote-reference\"");
     assert_contains(&html, "<div class=\"footnote-definition\" id=\"fn1\">");
-    assert_contains(&html, "Toh 1, folio 3.a.");
+    assert_contains(&html, "Compendium 1, folio 3.a.");
     assert_contains(&html, "class=\"footnote-backref\"");
 }
 

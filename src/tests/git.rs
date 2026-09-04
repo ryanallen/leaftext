@@ -122,9 +122,9 @@ fn a_vault_that_is_its_own_repository_is_told_what_it_holds() {
     run_git(&vault, &["add", "godaddy"]);
     run_git(&vault, &["commit", "-m", "Track godaddy"]);
 
-    let ignored = vault.join("dharma").join("emptyguru");
+    let ignored = vault.join("notes").join("emptyguru");
     std::fs::create_dir_all(ignored.join(".git")).expect("the ignored repository is created");
-    std::fs::write(vault.join(".gitignore"), "dharma/emptyguru/\n")
+    std::fs::write(vault.join(".gitignore"), "notes/emptyguru/\n")
         .expect("the hand-written ignore line is written");
 
     let loose = vault.join("leaftext").join("app");
@@ -136,9 +136,9 @@ fn a_vault_that_is_its_own_repository_is_told_what_it_holds() {
     assert_eq!(
         repo.nested,
         vec![
-            String::from("dharma/emptyguru"),
             String::from("godaddy"),
             String::from("leaftext/app"),
+            String::from("notes/emptyguru"),
         ]
     );
     // The pointer is named and left alone: an ignore line for a tracked path does nothing.
@@ -245,20 +245,20 @@ fn a_commit_says_what_changed_and_not_who_made_it() {
 #[test]
 fn a_remote_reads_as_owner_and_name_in_any_form_git_takes() {
     assert_eq!(
-        remote_label("https://github.com/ryanallen/dharma.git"),
-        "ryanallen/dharma"
+        remote_label("https://github.com/ryanallen/notes.git"),
+        "ryanallen/notes"
     );
     assert_eq!(
-        remote_label("https://github.com/ryanallen/dharma"),
-        "ryanallen/dharma"
+        remote_label("https://github.com/ryanallen/notes"),
+        "ryanallen/notes"
     );
     assert_eq!(
-        remote_label("https://github.com/ryanallen/dharma/"),
-        "ryanallen/dharma"
+        remote_label("https://github.com/ryanallen/notes/"),
+        "ryanallen/notes"
     );
     assert_eq!(
-        remote_label("git@github.com:ryanallen/dharma.git"),
-        "ryanallen/dharma"
+        remote_label("git@github.com:ryanallen/notes.git"),
+        "ryanallen/notes"
     );
     // Not GitHub, and not guessable: show it as it is rather than inventing an owner out of whatever the last two path segments happen to be.
     assert_eq!(remote_label("/srv/backups/notes.git"), "/srv/backups/notes");
@@ -266,7 +266,7 @@ fn a_remote_reads_as_owner_and_name_in_any_form_git_takes() {
 
 #[test]
 fn a_vault_name_becomes_something_github_will_accept() {
-    assert_eq!(repo_name_for_vault("Vajrayana"), "Vajrayana");
+    assert_eq!(repo_name_for_vault("Fieldwork"), "Fieldwork");
     assert_eq!(repo_name_for_vault("My Reading Notes"), "My-Reading-Notes");
     // Runs of punctuation collapse rather than stacking up dashes, and the ends are trimmed — GitHub rejects a name that starts or ends with one.
     assert_eq!(repo_name_for_vault("  notes // 2026!  "), "notes-2026");
@@ -300,21 +300,21 @@ fn nested_repositories_are_ignored_once_and_the_reason_goes_with_them() {
 fn the_index_says_which_repositories_inside_the_vault_it_already_holds() {
     let nested = vec![
         "godaddy".to_string(),
-        "dharma/emptyguru".to_string(),
+        "notes/emptyguru".to_string(),
         "leaftext/app".to_string(),
     ];
     // A pointer the vault swallowed, and a repository whose files it listed one by one. Both mean the same thing to the offer: an ignore line for either does nothing.
     let listing = concat!(
         "160000 9f1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	godaddy
 ",
-        "100644 aa1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	dharma/emptyguru/README.md
+        "100644 aa1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	notes/emptyguru/README.md
 ",
-        "100644 bb1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	dharma/emptyguru/site/index.html
+        "100644 bb1c0c5b0b8f0e2b0a1d2c3e4f5a6b7c8d9e0f10 0	notes/emptyguru/site/index.html
 ",
     );
     assert_eq!(
         tracked_nested(listing, &nested),
-        vec!["godaddy".to_string(), "dharma/emptyguru".to_string()]
+        vec!["godaddy".to_string(), "notes/emptyguru".to_string()]
     );
     // Nothing listed is nothing tracked, and a lookalike sibling is not the folder.
     assert!(tracked_nested("", &nested).is_empty());
@@ -344,7 +344,7 @@ fn the_index_says_which_repositories_inside_the_vault_it_already_holds() {
 #[test]
 fn ignoring_the_same_repositories_twice_writes_the_reason_once() {
     let vault = scratch_dir("git-ignore-twice");
-    let nested = vec!["godaddy".to_string(), "dharma/emptyguru".to_string()];
+    let nested = vec!["godaddy".to_string(), "notes/emptyguru".to_string()];
 
     crate::write_gitignore(&vault, &nested).expect("the ignore lines are written");
     let once = std::fs::read_to_string(vault.join(".gitignore")).expect("the file is there");

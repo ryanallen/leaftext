@@ -294,19 +294,19 @@ export function homeStand(booted) {
 
   // The folder is part of a vault row wherever the host sends one, and the page needs it: a recent carries no vault of its own, so the only thing that says which vault it is in is the folder holding it.
   const VAULTS = [
-    { id: 1, name: 'Dharma', rootPath: 'C:\\Vaults\\Dharma' },
+    { id: 1, name: 'Meadow', rootPath: 'C:\\Vaults\\Meadow' },
     { id: 2, name: 'Work', rootPath: 'C:\\Vaults\\Work' },
   ];
   const KEPT = [
-    { vaultId: 1, path: 'C:\\Vaults\\Dharma\\A sutta.md', kind: 'document' },
+    { vaultId: 1, path: 'C:\\Vaults\\Meadow\\A survey.md', kind: 'document' },
     { vaultId: 2, path: 'C:\\Vaults\\Work\\Standup.md', kind: 'document' },
-    { vaultId: 1, path: 'C:\\Vaults\\Dharma\\Journal', kind: 'folder' },
+    { vaultId: 1, path: 'C:\\Vaults\\Meadow\\Journal', kind: 'folder' },
     { vaultId: null, path: 'C:\\Users\\me\\Desktop\\Loose.md', kind: 'document' },
   ];
 
   const RECENT = [
     'C:\\Vaults\\Work\\Standup.md',
-    'C:\\Vaults\\Dharma\\Journal\\Today.md',
+    'C:\\Vaults\\Meadow\\Journal\\Today.md',
     'C:\\Users\\me\\Desktop\\Loose.md',
     'C:\\Vaults\\Work\\Notes\\Roadmap.md',
   ];

@@ -15,7 +15,7 @@ const MAX_GROUP_DEPTH: usize = 16;
 /// The longest a field name may be. Longer than any real one, and short enough that a pasted time of day is never read as a field.
 const MAX_FIELD_NAME: usize = 32;
 
-/// Letters of English prose, rarest first. Skipping to a needle's rarest byte finds far fewer false starts than skipping to its first: 'm' in "dharma" turns up half as often as 'd' does, and every false start costs a comparison.
+/// Letters of English prose, rarest first. Skipping to a needle's rarest byte finds far fewer false starts than skipping to its first: 'm' in "demand" turns up half as often as 'd' does, and every false start costs a comparison.
 const LETTERS_BY_RARITY: &[u8] = b"zqxjkvbpygfwmucldrhsnioate";
 
 fn rank(byte: u8) -> usize {

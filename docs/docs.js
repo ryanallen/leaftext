@@ -101,7 +101,7 @@ function collectRoutePaths(nodes, map) {
 // The route of the page whose content is currently on screen, set only when a render SUCCEEDS. In-page relative links resolve against this, not the URL hash (currentRoute()): if a fetch 404s the hash changes but the old content stays visible, and resolving its relative links against the broken hash would keep prepending the failed path (the "URL keeps getting longer" bug). Resolving against the displayed route keeps a bad link from compounding.
 let displayedRoute = '';
 
-// The glossary bottom sheet, created in boot() once the tree has said where the glossary is. Links pointing at it (e.g. ../GLOSSARY.md#karma) open the entry in a sheet instead of routing.
+// The glossary bottom sheet, created in boot() once the tree has said where the glossary is. Links pointing at it (e.g. ../GLOSSARY.md#gauge) open the entry in a sheet instead of routing.
 let glossary = null;
 // Where to fetch the glossary from, and the route that opens the whole of it — both read off the documentation tree rather than written down, because the two sites this reader serves keep their glossary in different places. A glossary inside this folder is a page of it, addressed like any other. A folder with none has one above it, which is outside the set this reader routes over, so the addresses to try are the three spellings a site above /docs might use.
 let GLOSSARY_URLS = ['GLOSSARY.md'];

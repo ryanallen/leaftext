@@ -72,19 +72,19 @@ fn matches(query: &str, candidate: &Note) -> bool {
     Query::parse(query, TODAY).matches(candidate)
 }
 
-fn dharma() -> Note {
+fn meadow() -> Note {
     note(
-        "The Dharma Bums",
-        "C:\\vault\\notes\\2026\\the-dharma-bums.md",
-        "A draft about the dharma bums and the road.",
+        "The Meadow Walk",
+        "C:\\vault\\notes\\2026\\the-meadow-walk.md",
+        "A draft about the meadow walk and the road.",
     )
 }
 
 #[test]
 fn a_bare_word_reaches_the_name_an_alias_the_folder_and_the_text() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.aliases = vec!["Kerouac".to_string()];
-    assert!(matches("dharma", &subject), "the name");
+    assert!(matches("meadow", &subject), "the name");
     assert!(matches("kerouac", &subject), "an alias");
     assert!(matches("2026", &subject), "the folder");
     assert!(matches("road", &subject), "the text");
@@ -93,24 +93,24 @@ fn a_bare_word_reaches_the_name_an_alias_the_folder_and_the_text() {
 
 #[test]
 fn a_space_means_and_as_it_always_has() {
-    let subject = dharma();
-    assert!(matches("dharma road", &subject));
-    assert!(!matches("dharma kafka", &subject));
+    let subject = meadow();
+    assert!(matches("meadow road", &subject));
+    assert!(!matches("meadow kafka", &subject));
 }
 
 #[test]
 fn a_quoted_phrase_wants_those_words_in_that_order() {
-    let subject = dharma();
-    assert!(matches("\"the dharma bums\"", &subject));
-    assert!(!matches("\"bums dharma\"", &subject));
+    let subject = meadow();
+    assert!(matches("\"the meadow walk\"", &subject));
+    assert!(!matches("\"walk meadow\"", &subject));
 }
 
 #[test]
 fn a_minus_excludes() {
-    let subject = dharma();
+    let subject = meadow();
     assert!(!matches("-draft", &subject));
     assert!(matches("-kafka", &subject));
-    assert!(matches("dharma -kafka", &subject));
+    assert!(matches("meadow -kafka", &subject));
 }
 
 #[test]
@@ -129,7 +129,7 @@ fn minus_and_hash_inside_a_quoted_phrase_are_plain_characters() {
 
 #[test]
 fn a_tag_matches_itself_and_anything_under_it() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.tags = Some(vec!["work/reports".to_string()]);
     assert!(matches("#work", &subject), "the parent");
     assert!(matches("#work/reports", &subject), "the tag itself");
@@ -139,14 +139,14 @@ fn a_tag_matches_itself_and_anything_under_it() {
 
 #[test]
 fn a_tag_matches_nothing_when_the_caller_does_not_know_the_tag_set() {
-    let subject = dharma();
+    let subject = meadow();
     assert_eq!(subject.tags(), None);
     assert!(!matches("#work", &subject), "cannot answer, so no match");
 }
 
 #[test]
 fn a_field_is_read_by_value_and_by_being_set_at_all() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![(
         "status".to_string(),
         vec![FieldValue::Text("open".to_string())],
@@ -161,7 +161,7 @@ fn a_field_is_read_by_value_and_by_being_set_at_all() {
 
 #[test]
 fn a_field_matches_nothing_when_the_caller_holds_no_fields() {
-    let subject = dharma();
+    let subject = meadow();
     assert_eq!(subject.field("status"), FieldAnswer::Unknown);
     assert!(!matches("status:open", &subject));
     assert!(!matches("status:", &subject));
@@ -169,13 +169,13 @@ fn a_field_matches_nothing_when_the_caller_holds_no_fields() {
 
 #[test]
 fn an_unknown_field_name_is_carried_through_for_the_message() {
-    let query = Query::parse("duee:open dharma status:<friday", TODAY);
+    let query = Query::parse("duee:open meadow status:<friday", TODAY);
     assert_eq!(query.field_names(), vec!["duee", "status"]);
 }
 
 #[test]
 fn a_date_field_compares_as_a_date() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![(
         "due".to_string(),
         vec![FieldValue::Date(date!(2026 - 08 - 07))],
@@ -192,7 +192,7 @@ fn a_date_field_compares_as_a_date() {
 
 #[test]
 fn a_weekday_means_the_next_one_and_today_when_today_is_one() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![("due".to_string(), vec![FieldValue::Date(TODAY)])]);
     assert!(matches("due:thursday", &subject), "today is a Thursday");
     assert!(matches("due:<friday", &subject), "friday is tomorrow");
@@ -201,7 +201,7 @@ fn a_weekday_means_the_next_one_and_today_when_today_is_one() {
 
 #[test]
 fn a_number_field_compares_as_a_number() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![("rating".to_string(), vec![FieldValue::Number(4.5)])]);
     assert!(matches("rating:>4", &subject));
     assert!(!matches("rating:>5", &subject));
@@ -210,7 +210,7 @@ fn a_number_field_compares_as_a_number() {
 
 #[test]
 fn a_checkbox_field_reads_as_the_word_it_was_written_with() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![(
         "publish".to_string(),
         vec![FieldValue::Checkbox(true)],
@@ -221,7 +221,7 @@ fn a_checkbox_field_reads_as_the_word_it_was_written_with() {
 
 #[test]
 fn a_list_field_matches_on_any_of_its_items() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![(
         "people".to_string(),
         vec![
@@ -235,7 +235,7 @@ fn a_list_field_matches_on_any_of_its_items() {
 
 #[test]
 fn an_extension_and_a_folder_are_read_off_the_path() {
-    let subject = dharma();
+    let subject = meadow();
     assert!(matches("ext:md", &subject));
     assert!(matches("ext:MD", &subject));
     assert!(matches("ext:.md", &subject), "a leading dot is tolerated");
@@ -248,7 +248,7 @@ fn an_extension_and_a_folder_are_read_off_the_path() {
 
 #[test]
 fn a_task_condition_reads_the_unfinished_markers() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     assert!(
         !matches("task:open", &subject),
         "cannot answer, so no match"
@@ -268,12 +268,12 @@ fn a_task_condition_reads_the_unfinished_markers() {
 
 #[test]
 fn or_takes_either_side_and_brackets_group() {
-    let subject = dharma();
-    assert!(matches("kafka OR dharma", &subject));
+    let subject = meadow();
+    assert!(matches("kafka OR meadow", &subject));
     assert!(!matches("kafka OR proust", &subject));
-    assert!(matches("(kafka OR dharma) -proust", &subject));
-    assert!(!matches("(kafka OR dharma) -draft", &subject));
-    assert!(matches("dharma AND road", &subject), "AND is the space");
+    assert!(matches("(kafka OR meadow) -proust", &subject));
+    assert!(!matches("(kafka OR meadow) -draft", &subject));
+    assert!(matches("meadow AND road", &subject), "AND is the space");
 }
 
 #[test]
@@ -289,33 +289,33 @@ fn or_is_uppercase_only_so_a_document_named_or_is_still_found() {
 
 #[test]
 fn an_unclosed_quote_runs_to_the_end_of_what_was_typed() {
-    let subject = dharma();
-    assert!(matches("\"the dharma", &subject));
+    let subject = meadow();
+    assert!(matches("\"the meadow", &subject));
     assert!(!matches("\"the kafka", &subject));
 }
 
 #[test]
 fn an_unclosed_bracket_groups_to_the_end_and_a_stray_close_is_ignored() {
-    let subject = dharma();
-    assert!(matches("(kafka OR dharma", &subject));
-    assert!(matches("dharma )", &subject));
-    assert!(matches(") dharma (", &subject));
+    let subject = meadow();
+    assert!(matches("(kafka OR meadow", &subject));
+    assert!(matches("meadow )", &subject));
+    assert!(matches(") meadow (", &subject));
 }
 
 #[test]
 fn a_dangling_or_drops_and_the_side_that_is_there_stands() {
-    let subject = dharma();
-    assert!(matches("dharma OR", &subject));
-    assert!(matches("OR dharma", &subject));
+    let subject = meadow();
+    assert!(matches("meadow OR", &subject));
+    assert!(matches("OR meadow", &subject));
     assert!(!matches("kafka OR", &subject));
     assert!(Query::parse("OR", TODAY).is_empty());
 }
 
 #[test]
 fn an_empty_group_and_a_lone_minus_mean_what_they_look_like() {
-    let subject = dharma();
+    let subject = meadow();
     assert!(Query::parse("()", TODAY).is_empty());
-    assert!(matches("() dharma", &subject));
+    assert!(matches("() meadow", &subject));
     assert!(
         !matches("-", &subject),
         "a lone minus is the character, and this note has not got one"
@@ -347,33 +347,33 @@ fn a_field_name_longer_than_the_cap_is_text() {
 fn an_empty_query_asks_nothing() {
     assert!(Query::parse("", TODAY).is_empty());
     assert!(Query::parse("   ", TODAY).is_empty());
-    assert!(!Query::parse("dharma", TODAY).is_empty());
+    assert!(!Query::parse("meadow", TODAY).is_empty());
 }
 
 #[test]
 fn a_plain_query_is_told_apart_from_one_with_syntax_in_it() {
-    assert!(Query::parse("dharma bums", TODAY).is_plain());
-    assert!(Query::parse("\"the dharma bums\"", TODAY).is_plain());
-    assert!(!Query::parse("dharma OR bums", TODAY).is_plain());
-    assert!(!Query::parse("dharma -bums", TODAY).is_plain());
+    assert!(Query::parse("meadow walk", TODAY).is_plain());
+    assert!(Query::parse("\"the meadow walk\"", TODAY).is_plain());
+    assert!(!Query::parse("meadow OR walk", TODAY).is_plain());
+    assert!(!Query::parse("meadow -walk", TODAY).is_plain());
     assert!(!Query::parse("status:open", TODAY).is_plain());
     assert!(!Query::parse("#work", TODAY).is_plain());
 }
 
 #[test]
 fn scoring_leaves_out_whatever_was_excluded() {
-    let query = Query::parse("dharma -draft (bums OR road)", TODAY);
+    let query = Query::parse("meadow -draft (walk OR road)", TODAY);
     let words: Vec<&str> = query
         .scoring_needles()
         .iter()
         .map(|needle| needle.text())
         .collect();
-    assert_eq!(words, vec!["dharma", "bums", "road"]);
+    assert_eq!(words, vec!["meadow", "walk", "road"]);
 }
 
 #[test]
 fn a_query_says_which_kinds_of_question_it_asks() {
-    let asks = Query::parse("dharma #work status:open task:open in:notes", TODAY).asks();
+    let asks = Query::parse("meadow #work status:open task:open in:notes", TODAY).asks();
     assert_eq!(
         asks,
         Asks {
@@ -383,7 +383,7 @@ fn a_query_says_which_kinds_of_question_it_asks() {
             tasks: true,
         }
     );
-    let plain = Query::parse("dharma in:notes ext:md", TODAY).asks();
+    let plain = Query::parse("meadow in:notes ext:md", TODAY).asks();
     assert_eq!(
         plain,
         Asks {
@@ -397,7 +397,7 @@ fn a_query_says_which_kinds_of_question_it_asks() {
 
 #[test]
 fn a_query_of_two_hundred_terms_does_not_blow_the_stack() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.text = Some((0..200).fold(String::new(), |mut text, index| {
         text.push_str(&format!("word{index} "));
         text
@@ -414,15 +414,15 @@ fn brackets_nested_past_the_cap_become_plain_characters() {
     let subject = note(
         "Deep",
         "C:\\vault\\deep.md",
-        "a ( in the text and dharma too",
+        "a ( in the text and meadow too",
     );
-    let deep = format!("{}dharma{}", "(".repeat(64), ")".repeat(64));
+    let deep = format!("{}meadow{}", "(".repeat(64), ")".repeat(64));
     assert!(Query::parse(&deep, TODAY).matches(&subject));
 }
 
 #[test]
 fn a_value_may_be_quoted_so_it_can_hold_a_space() {
-    let mut subject = dharma();
+    let mut subject = meadow();
     subject.fields = Some(vec![(
         "status".to_string(),
         vec![FieldValue::Text("in progress".to_string())],
@@ -433,8 +433,8 @@ fn a_value_may_be_quoted_so_it_can_hold_a_space() {
 
 #[test]
 fn a_needle_folds_case_and_reports_the_span_it_covered() {
-    let needle = Needle::new("Dharma");
-    assert_eq!(needle.find("the DHARMA bums", 0), Some((4, 6)));
+    let needle = Needle::new("Meadow");
+    assert_eq!(needle.find("the MEADOW walk", 0), Some((4, 6)));
     assert_eq!(needle.find("nothing here", 0), None);
     let accented = Needle::new("café");
     assert!(accented.is_in("A CAFÉ somewhere"));

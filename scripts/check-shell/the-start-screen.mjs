@@ -27,7 +27,7 @@ export function run() {
       });
     const inside = screen(1);
     // The whole screen is that vault's, both lists included, so it is said once over everything — in the word that was already there.
-    if (!inside.includes('<button type="button" class="kicker library-vault-switch home-vault-switch"') || !inside.includes('lt-icon-package-open') || !inside.includes('>Dharma</button>')) {
+    if (!inside.includes('<button type="button" class="kicker library-vault-switch home-vault-switch"') || !inside.includes('lt-icon-package-open') || !inside.includes('>Meadow</button>')) {
       throw new Error(`the word over the headline is not the vault switcher: ${inside.slice(0, 400)}`);
     }
     // And nowhere else: the lists are headed what they have always been headed.
@@ -139,11 +139,11 @@ export function run() {
   check('switching vaults changes the favorites on screen', () => {
     onTheStartScreen(KEPT, (screen) => {
       booted.leafSetVaults({ vaults: VAULTS, active: 1 });
-      if (!screen().includes('A sutta')) throw new Error(`the vault switched to lost its own kept file: ${screen()}`);
+      if (!screen().includes('A survey')) throw new Error(`the vault switched to lost its own kept file: ${screen()}`);
       booted.leafSetVaults({ vaults: VAULTS, active: 2 });
       const markup = screen();
       if (!markup.includes('Standup')) throw new Error(`the second vault's kept file never arrived: ${markup}`);
-      if (markup.includes('A sutta') || markup.includes('Loose')) {
+      if (markup.includes('A survey') || markup.includes('Loose')) {
         throw new Error(`the vault that was left is still on the screen: ${markup}`);
       }
       if (!markup.includes('Favorites (1)')) throw new Error(`the count is not this vault's: ${markup}`);
@@ -156,7 +156,7 @@ export function run() {
       booted.leafSetVaults({ vaults: VAULTS, active: 0 });
       const markup = screen();
       const groups = [...markup.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((m) => m[1]);
-      if (groups.join('|') !== 'Dharma|Work|Outside a vault') {
+      if (groups.join('|') !== 'Meadow|Work|Outside a vault') {
         throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
       }
       if (!markup.includes('Favorites (4)')) throw new Error(`not every favorite came back: ${markup}`);
@@ -295,7 +295,7 @@ export function run() {
       const markup = screen();
       if (markup.includes('Standup')) throw new Error(`the removed vault left its favorite on screen: ${markup}`);
       const groups = [...markup.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((m) => m[1]);
-      if (groups.join('|') !== 'Dharma|Outside a vault') {
+      if (groups.join('|') !== 'Meadow|Outside a vault') {
         throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
       }
     });
@@ -341,7 +341,7 @@ export function run() {
         throw new Error(`the sheet does not know which list it is showing: ${booted.homeSheetShowing}`);
       }
       // The same box as the column, so a list read here is the list read there — same bar, same fades.
-      if (!body.innerHTML.includes('home-list-box') || !body.innerHTML.includes('A sutta')) {
+      if (!body.innerHTML.includes('home-list-box') || !body.innerHTML.includes('A survey')) {
         throw new Error(`the sheet was filled with something other than that list: ${body.innerHTML}`);
       }
       // The page's own answer about what is open. The ask pipe reads this, so a panel missing from it is one nothing outside the window can see.

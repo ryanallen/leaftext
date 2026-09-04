@@ -402,7 +402,7 @@ fn document_state_script_never_serializes_raw_title_markup() {
     let path = scratch_dir("title-state").join("document.md");
     fs::write(
         &path,
-        r#"# <div align="center">Words &amp; My Perfect Teacher</div>
+        r#"# <div align="center">Field Notes &amp; the Lower Weir</div>
 
 ![Image alt](cover.png)
 "#,
@@ -414,8 +414,8 @@ fn document_state_script_never_serializes_raw_title_markup() {
 
     fs::remove_file(&path).expect("test markdown is removed");
 
-    assert_eq!(document.title, "Words & My Perfect Teacher");
-    assert_contains(&script, r#""title":"Words & My Perfect Teacher""#);
+    assert_eq!(document.title, "Field Notes & the Lower Weir");
+    assert_contains(&script, r#""title":"Field Notes & the Lower Weir""#);
     assert!(!script.contains(r#""title":"<div"#));
     assert!(!script.contains(r#""title":"Words &amp;"#));
 }
@@ -625,7 +625,7 @@ fn a_search_payload_carries_the_document_ceiling_the_search_cut_it_at() {
             path: format!("/vault/note-{index}.md"),
             label: format!("note-{index}"),
             aliases: Vec::new(),
-            text: "A dharma talk, and a dharma talk again, and a dharma talk once more."
+            text: "A meadow walk, and a meadow walk again, and a meadow walk once more."
                 .to_string(),
         })
         .collect();
@@ -635,7 +635,7 @@ fn a_search_payload_carries_the_document_ceiling_the_search_cut_it_at() {
         truncated: false,
         skipped: Vec::new(),
     };
-    let results = corpus.search("dharma");
+    let results = corpus.search("meadow");
     assert!(results.truncated, "eighty matching documents should be cut");
 
     let mut paths: Vec<&str> = results
@@ -646,7 +646,7 @@ fn a_search_payload_carries_the_document_ceiling_the_search_cut_it_at() {
     paths.sort_unstable();
     paths.dedup();
 
-    let script = search_results_script("dharma", &results, true);
+    let script = search_results_script("meadow", &results, true);
     let start = script.find('(').expect("the call opens") + 1;
     let payload: serde_json::Value = serde_json::Deserializer::from_str(&script[start..])
         .into_iter::<serde_json::Value>()

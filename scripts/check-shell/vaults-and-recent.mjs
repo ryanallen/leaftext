@@ -66,7 +66,7 @@ export function run() {
     const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
     const groups = [...markup.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((m) => m[1]);
     // One per vault the kept paths name, plus one for the paths inside none — a file on the desktop is still a file you kept.
-    if (groups.join('|') !== 'Dharma|Work|Outside a vault') {
+    if (groups.join('|') !== 'Meadow|Work|Outside a vault') {
       throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
     }
     if (!markup.includes('Favorites (4)')) {
@@ -83,10 +83,10 @@ export function run() {
     if ((markup.match(/data-home-unfavorite=/g) || []).length !== 4) {
       throw new Error('a favorite row drew its heart as a mark rather than a control');
     }
-    if (!markup.includes('data-home-unfavorite="C:\\Vaults\\Dharma\\Journal" data-home-kind="folder"')) {
+    if (!markup.includes('data-home-unfavorite="C:\\Vaults\\Meadow\\Journal" data-home-kind="folder"')) {
       throw new Error(`the heart does not carry its own path and kind: ${markup}`);
     }
-    if (!folderRow.startsWith('data-folder-path="C:\\Vaults\\Dharma\\Journal"')) {
+    if (!folderRow.startsWith('data-folder-path="C:\\Vaults\\Meadow\\Journal"')) {
       throw new Error(`the folder row does not carry its own path: ${folderRow.slice(0, 120)}`);
     }
   });
@@ -97,7 +97,7 @@ export function run() {
       throw new Error('one group was labeled anyway — there is nothing to tell it from');
     }
     if (!markup.includes('Standup')) throw new Error("the vault you are in lost its own kept file");
-    if (markup.includes('A sutta') || markup.includes('Loose')) {
+    if (markup.includes('A survey') || markup.includes('Loose')) {
       throw new Error('another vault leaked into the column');
     }
     if (!markup.includes('Favorites (1)')) throw new Error(`the count is not this vault's: ${markup}`);
@@ -107,8 +107,8 @@ export function run() {
   // The page's rule, held to the host's: the same four cases `a_file_is_owned_by_the_innermost_vault_that_holds_it` pins for `vault_containing` in `src/store/tests.rs`. A recent carries no vault, so this is the whole of how its column knows which one it is in.
   check('a recent belongs to the innermost vault whose folder holds it', () => {
     const nested = [
-      { id: 1, name: 'Dharma', rootPath: 'C:\\Vaults\\Dharma' },
-      { id: 2, name: 'Empty Guru', rootPath: 'C:\\Vaults\\Dharma\\Emptyguru' },
+      { id: 1, name: 'Meadow', rootPath: 'C:\\Vaults\\Meadow' },
+      { id: 2, name: 'Empty Guru', rootPath: 'C:\\Vaults\\Meadow\\Emptyguru' },
       { id: 3, name: 'Elsewhere', rootPath: 'C:\\Vaults\\Elsewhere' },
     ];
     const owner = (path) =>
@@ -117,17 +117,17 @@ export function run() {
         return vault ? vault.id : null;
       });
     // Nested: the innermost wins, which is the vault the file actually lives in.
-    if (owner('C:\\Vaults\\Dharma\\Emptyguru\\site\\index.md') !== 2) {
+    if (owner('C:\\Vaults\\Meadow\\Emptyguru\\site\\index.md') !== 2) {
       throw new Error('a file in a nested vault went to the vault around it');
     }
     // Above the inner one, still inside the outer.
-    if (owner('C:\\Vaults\\Dharma\\notes.md') !== 1) throw new Error('a file above the nested vault lost its own');
+    if (owner('C:\\Vaults\\Meadow\\notes.md') !== 1) throw new Error('a file above the nested vault lost its own');
     // A prefix is not a parent.
-    if (owner('C:\\Vaults\\Dharma-old\\stale.md') !== null) throw new Error('a lookalike sibling folder was claimed');
+    if (owner('C:\\Vaults\\Meadow-old\\stale.md') !== null) throw new Error('a lookalike sibling folder was claimed');
     // Nothing owns a file outside every vault: that is the whole library.
     if (owner('C:\\Vaults\\loose.md') !== null) throw new Error('a file outside every vault was claimed');
     // And the same file under either spelling is the same file, off a Mac.
-    if (owner('c:/vaults/dharma/notes.md') !== 1) throw new Error('another spelling of the same folder missed');
+    if (owner('c:/vaults/meadow/notes.md') !== 1) throw new Error('another spelling of the same folder missed');
   });
 
   check('inside a vault Recent is that vault too, so both boxes are about one vault', () => {
@@ -147,7 +147,7 @@ export function run() {
     const column = markup.slice(0, markup.indexOf('Favorites ('));
     const groups = [...column.matchAll(/<li class="home-list-group"[^>]*>([^<]*)</g)].map((one) => one[1]);
     // In the order the list already had, since a recent list is a record of what happened — and the leftovers after the vaults, because they are not one.
-    if (groups.join('|') !== 'Work|Dharma|Outside a vault') {
+    if (groups.join('|') !== 'Work|Meadow|Outside a vault') {
       throw new Error(`the groups came out as ${JSON.stringify(groups)}`);
     }
     if (!markup.includes('Recent (4)')) throw new Error(`nothing is hidden outside a vault: ${markup}`);
@@ -429,12 +429,12 @@ export function run() {
   });
 
   check('a vault that is its own repository is told which repositories it holds', () => {
-    booted.leafSetVaultGit(gitState(GIT_VAULT, { nested: ['godaddy', 'dharma/emptyguru'] }));
+    booted.leafSetVaultGit(gitState(GIT_VAULT, { nested: ['godaddy', 'notes/emptyguru'] }));
     const named = panelNotes(GIT_VAULT).find((note) => note.includes('godaddy'));
     if (!named) {
       throw new Error(`the panel said nothing about the repositories inside the vault: ${JSON.stringify(panelNotes(GIT_VAULT))}`);
     }
-    if (!named.includes('dharma/emptyguru')) throw new Error(`the note named one and dropped the other: ${named}`);
+    if (!named.includes('notes/emptyguru')) throw new Error(`the note named one and dropped the other: ${named}`);
 
     // A vault holding none draws no row at all, or every vault carries a line saying nothing.
     booted.leafSetVaultGit(gitState(PLAIN_VAULT, { nested: [] }));
@@ -464,7 +464,7 @@ export function run() {
     try {
       booted.leafSetVaultGit(
         gitState(GIT_VAULT, {
-          nested: ['godaddy', 'dharma/emptyguru', 'leaftext/app'],
+          nested: ['godaddy', 'notes/emptyguru', 'leaftext/app'],
           tracked: ['godaddy'],
           unhandled: ['leaftext/app'],
         }),

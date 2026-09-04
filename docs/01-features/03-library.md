@@ -88,7 +88,7 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 
 - Click a folder row — or its `›` chevron — to go into it. The folder you open is on screen in one frame, with nothing fading and nothing sliding.
 - The row above the list steps back out one level. So does a crumb.
-- The **breadcrumb** above the search box is the path you are on: `Vajrayana › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
+- The **breadcrumb** above the search box is the path you are on: `Fieldwork › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
 - Folders sort before files, each alphabetized. Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
 - Pointing at a row washes it and nothing else — no shadow, no change of shape, nothing sliding — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint instead, so what is open still reads as open.
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
@@ -244,8 +244,8 @@ The search box takes more than words.
 
 | You type | You get |
 | --- | --- |
-| `dharma` | the word, in a name, one of its [other names](#other-names), the folder path or the text |
-| `"the dharma bums"` | those words in that order |
+| `harvest` | the word, in a name, one of its [other names](#other-names), the folder path or the text |
+| `"the second draft"` | those words in that order |
 | `-draft` | not that. It goes in front of anything, not just a word — `-status:open` works |
 | `#work` | the note carries that tag, or one under it like `#work/reports` |
 | `status:open` | a [frontmatter field](01-rendering.md#frontmatter) with that value |

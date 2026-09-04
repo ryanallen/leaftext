@@ -17,15 +17,15 @@ fn pager_loaded_script_routes_through_webview_hook() {
 #[test]
 fn pager_label_matches_web_label_rule() {
     assert_eq!(
-        pager_label("book-1-words-of-the-buddha--kangyur"),
-        "Book 1 Words Of The Buddha Kangyur"
+        pager_label("book-1-lower_weir--readings"),
+        "Book 1 Lower Weir Readings"
     );
-    assert_eq!(pager_label("going-forth.md"), "Going Forth");
+    assert_eq!(pager_label("left-bank.md"), "Left Bank");
     assert_eq!(pager_label("get_started"), "Get Started");
     // TEI XML chapters are pager pages too; their extension is stripped.
     assert_eq!(
-        pager_label("001-001_toh1-1_chapter_on_going_forth.xml"),
-        "001 001 Toh1 1 Chapter On Going Forth"
+        pager_label("001-001_survey1-1_chapter_on_left_bank.xml"),
+        "001 001 Survey1 1 Chapter On Left Bank"
     );
     // So are the data formats, and so is theirs.
     assert_eq!(pager_label("release-notes.json"), "Release Notes");
@@ -38,13 +38,13 @@ fn pager_label_matches_web_label_rule() {
 #[test]
 fn pager_includes_tei_xml_documents() {
     let root = scratch_dir("pager-xml");
-    let book = root.join("book-1-going-forth--pravrajyavastu");
+    let book = root.join("book-1-left-bank--abutment");
     fs::create_dir_all(&book).expect("tree is created");
     fs::write(root.join("README.md"), "# Root\n").expect("root README written");
     fs::write(book.join("README.md"), "# Book\n").expect("book README written");
     // Two XML chapters plus a Markdown one, to prove XML both appears in the order and pages to its neighbors.
-    let ch1 = book.join("001-going-forth.xml");
-    let ch2 = book.join("002-ordination.xml");
+    let ch1 = book.join("001-left-bank.xml");
+    let ch2 = book.join("002-datum.xml");
     let notes = book.join("003-notes.md");
     for (p, body) in [(&ch1, "<TEI/>"), (&ch2, "<TEI/>")] {
         fs::write(p, body).expect("xml chapter written");
@@ -58,11 +58,11 @@ fn pager_includes_tei_xml_documents() {
     fs::remove_dir_all(&root).expect("tree removed");
 
     assert!(
-        html.contains(r#"class="docs-pager-next""#) && html.contains("002 Ordination"),
+        html.contains(r#"class="docs-pager-next""#) && html.contains("002 Datum"),
         "an XML chapter should page to the next document: {html}"
     );
     assert!(
-        html_mid.contains("001 Going Forth") && html_mid.contains("003 Notes"),
+        html_mid.contains("001 Left Bank") && html_mid.contains("003 Notes"),
         "the XML chapter should sit between its neighbors: {html_mid}"
     );
 }
@@ -92,9 +92,9 @@ fn pager_includes_json_and_yaml_documents() {
 #[test]
 fn pager_orders_by_folder_tree_like_the_web_viewer() {
     let root = scratch_dir("pager");
-    let book = root.join("book-1-words-of-the-buddha--kangyur");
-    let section = book.join("discipline--vinayavastu");
-    let chapter = section.join("chapter-1-going-forth--pravrajyavastu");
+    let book = root.join("book-1-lower_weir--readings");
+    let section = book.join("channel--cross_sections");
+    let chapter = section.join("chapter-1-left-bank--abutment");
     fs::create_dir_all(&chapter).expect("tree is created");
     for dir in [&root, &book, &section, &chapter] {
         fs::write(dir.join("README.md"), "# x\n").expect("README written");
@@ -106,13 +106,12 @@ fn pager_orders_by_folder_tree_like_the_web_viewer() {
     fs::remove_dir_all(&root).expect("tree removed");
 
     assert!(
-        html.contains(r#"class="docs-pager-prev""#)
-            && html.contains("Book 1 Words Of The Buddha Kangyur"),
+        html.contains(r#"class="docs-pager-prev""#) && html.contains("Book 1 Lower Weir Readings"),
         "prev should link the parent book: {html}"
     );
     assert!(
         html.contains(r#"class="docs-pager-next""#)
-            && html.contains("Chapter 1 Going Forth Pravrajyavastu"),
+            && html.contains("Chapter 1 Left Bank Abutment"),
         "next should link the child chapter: {html}"
     );
     // GLOSSARY.md is opened in the sheet, never a sequential page.
@@ -126,19 +125,19 @@ fn pager_orders_by_folder_tree_like_the_web_viewer() {
 fn each_pager_button_carries_the_page_it_opens() {
     let root = scratch_dir("pager-title");
     fs::write(root.join("README.md"), "# Landing\n").expect("README written");
-    for name in ["001-ordination.md", "002-rains.md", "003-robes.md"] {
+    for name in ["001-datum.md", "002-stage.md", "003-scour.md"] {
         fs::write(root.join(name), "# x\n").expect("page written");
     }
 
     // Standing on the middle page: back one and on one, each button saying which page it opens.
-    let middle = pager_html(&root.join("002-rains.md"));
+    let middle = pager_html(&root.join("002-stage.md"));
     // The landing page is not a sequential entry, so Next from it opens the first page.
     let landing = pager_html(&root.join("README.md"));
     fs::remove_dir_all(&root).expect("folder removed");
 
-    assert_contains(&middle, r#"data-pager-title="001 Ordination""#);
-    assert_contains(&middle, r#"data-pager-title="003 Robes""#);
-    assert_contains(&landing, r#"data-pager-title="001 Ordination""#);
+    assert_contains(&middle, r#"data-pager-title="001 Datum""#);
+    assert_contains(&middle, r#"data-pager-title="003 Scour""#);
+    assert_contains(&landing, r#"data-pager-title="001 Datum""#);
     // Nothing counts the pages: the reading order climbs through every folder above the one being read, so a total says nothing a reader can use.
     assert!(
         !middle.contains("data-pager-position"),

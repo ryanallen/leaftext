@@ -39,7 +39,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 
 | Page | What it covers |
 | --- | --- |
-| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, Leaf buttons, local images, XML (any file, plus 84000 TEI translations), JSON/YAML, email (`.eml`), and file encodings |
+| [Rendering](01-features/01-rendering.md) | The full supported syntax with live examples: CommonMark, GFM, syntax highlighting, Mermaid, math, alerts, footnotes, emoji, Leaf buttons, local images, XML (any file, plus TEI documents), JSON/YAML, email (`.eml`), and file encodings |
 | [Navigation](01-features/02-navigation.md) | Tabs, Back/Forward history, the toolbar, the outline, scroll anchors, live reload, recent files, the glossary sheet, link hints, the pager, and the single-window rule |
 | [Library](01-features/03-library.md) | The left-side pane: vaults, the file tree and its breadcrumb, search, the filter syntax, the graph view, GitHub sync, file actions, live updates, and narrow-window layout |
 | [Minimap](01-features/04-minimap.md) | The scaled real-text document clone in the side rail: how it renders, when it rebuilds, the code view's own rail, responsive widths, and the on/off toggle |

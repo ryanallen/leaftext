@@ -13,14 +13,14 @@ fn markdown_with_words_has_content_and_an_empty_source_has_none() {
 #[test]
 fn a_rendered_tei_body_has_content_from_its_blocks() {
     // A TEI document renders straight to HTML, so the answer has to come off the rendered blocks; a no leaves the reader with no rail at all.
-    let xml = "<TEI><teiHeader><fileDesc><titleStmt><title>A Sutra</title>\
+    let xml = "<TEI><teiHeader><fileDesc><titleStmt><title>A Survey</title>\
             </titleStmt></fileDesc></teiHeader><text><body>\
             <p>A short opening line.</p>\
             <lg><l>Verse line one,</l><l>verse line two.</l></lg>\
             <p>A closing paragraph.</p>\
             </body></text></TEI>";
 
-    let document = opened_document_from_xml(xml, Path::new("sutra.xml"));
+    let document = opened_document_from_xml(xml, Path::new("survey.xml"));
 
     assert!(document.has_visible_content);
 }

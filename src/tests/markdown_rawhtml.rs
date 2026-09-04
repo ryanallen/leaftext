@@ -6,20 +6,20 @@ use super::*;
 fn raw_html_anchor_ids_survive_so_in_page_links_resolve() {
     // Raw-HTML anchor targets carry an explicit `id=`; the sanitizers must keep it so `[..](#id)` links still scroll.
     let rendered = render_markdown_document(
-        r#"[Foreword](#forewordhhdl) [Plate](#guru-rinpoche-il) [Notice](#copyright) [Spearman](#black-spearman)
+        r#"[Foreword](#forewordhhdl) [Plate](#frontispiece-il) [Notice](#copyright) [Plate two](#gauge-plate)
 
 <h1 id="forewordhhdl" align="center" onclick="bad()">Foreword</h1>
-<p id="guru-rinpoche-il">Plate caption.</p>
+<p id="frontispiece-il">Plate caption.</p>
 <div id="copyright">Notice.</div>
-<a id="black-spearman">Spearman.</a>
+<a id="gauge-plate">Plate two.</a>
 "#,
         "README.md",
     );
 
     assert_contains(&rendered.html, r#"id="forewordhhdl""#);
-    assert_contains(&rendered.html, r#"id="guru-rinpoche-il""#);
+    assert_contains(&rendered.html, r#"id="frontispiece-il""#);
     assert_contains(&rendered.html, r#"id="copyright""#);
-    assert_contains(&rendered.html, r#"id="black-spearman""#);
+    assert_contains(&rendered.html, r#"id="gauge-plate""#);
     // The id rides through, but unsafe attributes on the same tag still go.
     assert!(!rendered.html.contains("onclick"));
 }
@@ -186,25 +186,25 @@ Water is H<sub>2</sub>O and 2<sup>10</sup> = 1024. Some <mark>highlight</mark>,
 
 #[test]
 fn preserves_safe_raw_html_alignment_in_markdown_headings() {
-    let markdown = r##"# <div align="center">Words of My Perfect Teacher</div>
-<div align="center">A Complete Translation of a Classic Introduction to Tibetan Buddhism</div>
-<div align="RIGHT" onclick="bad()">by <a href="#patrul-rinpoche">Patrul Rinpoche</a></div>
+    let markdown = r##"# <div align="center">Field Notes from the Lower Weir</div>
+<div align="center">A Complete Account of Four Seasons of Readings at the Lower Weir</div>
+<div align="RIGHT" onclick="bad()">by <a href="#anna-holt">Anna Holt</a></div>
 <div align="expression(alert(1))">not aligned</div>"##;
 
     let rendered = render_markdown_document(markdown, "README.md");
 
-    assert_eq!(rendered.title, "Words of My Perfect Teacher");
+    assert_eq!(rendered.title, "Field Notes from the Lower Weir");
     assert_contains(
         &rendered.html,
-        r#"<div align="center">Words of My Perfect Teacher</div>"#,
+        r#"<div align="center">Field Notes from the Lower Weir</div>"#,
     );
     assert_contains(
         &rendered.html,
-        r#"<div align="center">A Complete Translation of a Classic Introduction to Tibetan Buddhism</div>"#,
+        r#"<div align="center">A Complete Account of Four Seasons of Readings at the Lower Weir</div>"#,
     );
     assert_contains(
         &rendered.html,
-        r##"<div align="right">by <a href="#patrul-rinpoche" rel="noopener noreferrer">Patrul Rinpoche</a></div>"##,
+        r##"<div align="right">by <a href="#anna-holt" rel="noopener noreferrer">Anna Holt</a></div>"##,
     );
     assert_contains(&rendered.html, "<div>not aligned</div>");
     assert!(!rendered.html.contains("onclick"));

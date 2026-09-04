@@ -824,7 +824,7 @@ fn saving_the_open_note_replaces_its_searchable_text_at_once() {
     let (dir, note, mut workspace) = vault_with_an_open_note(
         "saving_the_open_note_replaces_its_searchable_text_at_once",
         "# Note\n\nthe words the vault was read with\n",
-        "# Note\n\nthe note says dharma\n",
+        "# Note\n\nthe note says meadow\n",
     );
     let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
     let note = plain_event_path(fs::canonicalize(&note).expect("the note canonicalizes"));
@@ -845,12 +845,12 @@ fn saving_the_open_note_replaces_its_searchable_text_at_once() {
             .expect("the vault's text is held")
             .documents
             .iter()
-            .any(|document| document.text.contains("the note says dharma")),
+            .any(|document| document.text.contains("the note says meadow")),
         "the save was not findable until the vault was read again"
     );
     assert_eq!(
         watch.active_hash,
-        Some(content_hash("# Note\n\nthe note says dharma\n")),
+        Some(content_hash("# Note\n\nthe note says meadow\n")),
         "the save stopped suppressing its own reload"
     );
     assert!(
@@ -867,7 +867,7 @@ fn saving_the_open_note_during_a_read_lands_once_when_the_read_ends() {
     let (dir, note, mut workspace) = vault_with_an_open_note(
         "saving_the_open_note_during_a_read_lands_once_when_the_read_ends",
         "# Note\n\nthe words the vault was read with\n",
-        "# Note\n\nthe note says dharma\n",
+        "# Note\n\nthe note says meadow\n",
     );
     let root = plain_event_path(fs::canonicalize(&dir).expect("the fixture canonicalizes"));
     let note = plain_event_path(fs::canonicalize(&note).expect("the note canonicalizes"));
@@ -909,7 +909,7 @@ fn saving_the_open_note_during_a_read_lands_once_when_the_read_ends() {
         .corpus
         .documents
         .iter()
-        .filter(|document| document.text.contains("the note says dharma"))
+        .filter(|document| document.text.contains("the note says meadow"))
         .collect();
     assert_eq!(
         saved.len(),

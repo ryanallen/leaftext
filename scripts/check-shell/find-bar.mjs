@@ -28,14 +28,14 @@ export function run() {
     if (!matches('a.b', 'a.b')) throw new Error('a plain query does not find itself');
     if (!matches('a.b', 'a.b')) throw new Error('a plain query is being read as an expression');
     // And case does not matter until it is asked to.
-    if (!matches('dharma', 'DHARMA')) throw new Error('find is case-sensitive by default');
+    if (!matches('meadow', 'MEADOW')) throw new Error('find is case-sensitive by default');
     toggleFindFlag('matchCase');
-    if (matches('dharma', 'DHARMA')) throw new Error('match case did not take');
+    if (matches('meadow', 'MEADOW')) throw new Error('match case did not take');
     toggleFindFlag('matchCase');
 
     toggleFindFlag('wholeWord');
-    if (matches('dharma', 'dharmakaya')) throw new Error('whole word matched inside a longer word');
-    if (!matches('dharma', 'the dharma talk')) throw new Error('whole word lost a real word');
+    if (matches('meadow', 'meadowsweet')) throw new Error('whole word matched inside a longer word');
+    if (!matches('meadow', 'the meadow talk')) throw new Error('whole word lost a real word');
     toggleFindFlag('wholeWord');
 
     toggleFindFlag('regex');
@@ -328,26 +328,26 @@ export function run() {
   check('a replace in the reading view rewrites the block, or refuses it whole', () => {
     const { findRewriteBlock, toggleFindFlag } = booted;
     const field = booted.document.getElementById('findInput');
-    const source = '# Notes\n\nThe dharma talk, and the dharma book.\n';
+    const source = '# Notes\n\nThe meadow talk, and the meadow book.\n';
     booted.window.leafBlocksResynced({ source });
     // The paragraph's own byte range, as the reading view stamps it on the block.
     const start = source.indexOf('The');
     const end = source.length - 1;
-    field.value = 'dharma';
+    field.value = 'meadow';
 
     // Both occurrences the page found in this block.
-    const both = findRewriteBlock({ start, end, ranks: [0, 1], total: 2 }, 'sutra');
-    if (both !== 'The sutra talk, and the sutra book.') throw new Error(`replace all rewrote: ${both}`);
+    const both = findRewriteBlock({ start, end, ranks: [0, 1], total: 2 }, 'river');
+    if (both !== 'The river talk, and the river book.') throw new Error(`replace all rewrote: ${both}`);
     // Only the one the cursor is on.
-    const second = findRewriteBlock({ start, end, ranks: [1], total: 2 }, 'sutra');
-    if (second !== 'The dharma talk, and the sutra book.') throw new Error(`one replace rewrote: ${second}`);
+    const second = findRewriteBlock({ start, end, ranks: [1], total: 2 }, 'river');
+    if (second !== 'The meadow talk, and the river book.') throw new Error(`one replace rewrote: ${second}`);
     // The page shows a match the block's source does not hold in one piece — formatting split it — so nothing is spliced rather than the wrong thing.
-    if (findRewriteBlock({ start, end, ranks: [0], total: 3 }, 'sutra') !== null) {
+    if (findRewriteBlock({ start, end, ranks: [0], total: 3 }, 'river') !== null) {
       throw new Error('a match split by formatting was replaced anyway');
     }
     toggleFindFlag('regex');
     field.value = '(unclosed';
-    if (findRewriteBlock({ start, end, ranks: [0], total: 1 }, 'sutra') !== null) {
+    if (findRewriteBlock({ start, end, ranks: [0], total: 1 }, 'river') !== null) {
       throw new Error('a bad expression was allowed to rewrite a block');
     }
     toggleFindFlag('regex');
@@ -390,7 +390,7 @@ export function run() {
   });
 
   check('replace all rewrites blocks whose matches start on text boundaries', () => {
-    const source = 'dharma one\n\ndharma two\n';
+    const source = 'meadow one\n\nmeadow two\n';
     const blocks = [{ dataset: {} }, { dataset: {} }];
     const parent = (block) => ({ closest: () => block });
     const nodes = [
@@ -413,8 +413,8 @@ export function run() {
     booted.ipc = { postMessage: (message) => sent.push(JSON.parse(message)) };
     const field = booted.document.getElementById('findInput');
     const replacement = booted.document.getElementById('findReplaceInput');
-    field.value = 'dharma';
-    replacement.value = 'sutra';
+    field.value = 'meadow';
+    replacement.value = 'river';
     booted.setReadingUnlocked(true);
     booted.window.leafBlocksResynced({ source });
     try {
@@ -434,8 +434,8 @@ export function run() {
       const edits = sent.filter((message) => message.command === 'editBlocks');
       if (edits.length !== 1) throw new Error(`replace all sent ${edits.length} edits`);
       if (JSON.stringify(edits[0].blocks) !== JSON.stringify([
-        { start: 0, end: 10, text: 'sutra one' },
-        { start: 12, end: 22, text: 'sutra two' },
+        { start: 0, end: 10, text: 'river one' },
+        { start: 12, end: 22, text: 'river two' },
       ])) throw new Error(`replace all wrote ${JSON.stringify(edits[0].blocks)}`);
     } finally {
       vm.runInContext('findTextValid = false; findTextNodes = []; findNodeRecords = new Map(); findMatches = []; findCurrent = -1;', booted);
@@ -493,7 +493,7 @@ export function run() {
   check('one source is encoded once however many blocks are rewritten', () => {
     const { findRewriteBlock, sliceSourceBytes } = booted;
     const field = booted.document.getElementById('findInput');
-    field.value = 'dharma';
+    field.value = 'meadow';
     const encodes = () => vm.runInContext('__encodeCalls', booted);
     const reset = () => vm.runInContext('__encodeCalls = 0', booted);
     vm.runInContext(
@@ -501,29 +501,29 @@ export function run() {
       booted
     );
     try {
-      const first = '# Notes\n\nThe dharma talk, and the dharma book.\n';
+      const first = '# Notes\n\nThe meadow talk, and the meadow book.\n';
       booted.window.leafBlocksResynced({ source: first });
       const group = { start: first.indexOf('The'), end: first.length - 1, ranks: [0, 1], total: 2 };
       reset();
-      for (let round = 0; round < 20; round += 1) findRewriteBlock(group, 'sutra');
+      for (let round = 0; round < 20; round += 1) findRewriteBlock(group, 'river');
       if (encodes() !== 1) throw new Error(`twenty rewrites of one source encoded it ${encodes()} times`);
 
       // A second source is encoded once more and answers out of its own bytes. Its heading carries an o-umlaut, so the paragraph starts one byte later than it starts characters — the reading that goes wrong first if the cache ever hands back the source before it.
-      const second = '# Nötes\n\nThe dharma talk, and the dharma book.\n';
+      const second = '# Nötes\n\nThe meadow talk, and the meadow book.\n';
       booted.window.leafBlocksResynced({ source: second });
       const bytes = new TextEncoder();
       const at = bytes.encode(second.slice(0, second.indexOf('The'))).length;
       const to = bytes.encode(second).length - 1;
       if (at !== second.indexOf('The') + 1) throw new Error('the second source does not push the block off its character offset');
       reset();
-      const rewritten = findRewriteBlock({ start: at, end: to, ranks: [0, 1], total: 2 }, 'sutra');
+      const rewritten = findRewriteBlock({ start: at, end: to, ranks: [0, 1], total: 2 }, 'river');
       if (encodes() !== 1) throw new Error(`a source the helper had not seen encoded ${encodes()} times`);
-      if (rewritten !== 'The sutra talk, and the sutra book.') throw new Error(`the second source rewrote: ${rewritten}`);
+      if (rewritten !== 'The river talk, and the river book.') throw new Error(`the second source rewrote: ${rewritten}`);
 
       // And the first document handed over again is encoded once more, because the door holds the open document and nothing before it.
       booted.window.leafBlocksResynced({ source: first });
       reset();
-      if (sliceSourceBytes(group.start, group.end) !== 'The dharma talk, and the dharma book.') {
+      if (sliceSourceBytes(group.start, group.end) !== 'The meadow talk, and the meadow book.') {
         throw new Error('the first source came back wrong after a second one');
       }
       if (encodes() !== 1) throw new Error(`going back to the first source encoded ${encodes()} times`);
@@ -575,7 +575,7 @@ export function run() {
     booted.leafToast = (message) => growls.push(message);
     booted.ipc = { postMessage: () => {} };
     booted.setReadingUnlocked(true);
-    booted.window.leafBlocksResynced({ source: 'The dharma talk.\n' });
+    booted.window.leafBlocksResynced({ source: 'The meadow talk.\n' });
     try {
       // The blocks and the rewrite stand in, so the growl under test is the shipped sentence rather than a copy of it.
       vm.runInContext('__wasGroups = findRenderedGroups; __wasRewrite = findRewriteBlock;', booted);
@@ -613,11 +613,11 @@ export function run() {
     booted.ipc = { postMessage: () => {} };
     booted.setReadingUnlocked(true);
     booted.setCodeUnlocked(true);
-    booted.window.leafBlocksResynced({ source: 'The dharma talk.\n' });
+    booted.window.leafBlocksResynced({ source: 'The meadow talk.\n' });
     const field = booted.document.getElementById('findInput');
     const replacement = booted.document.getElementById('findReplaceInput');
-    field.value = 'dharma';
-    replacement.value = 'sutra';
+    field.value = 'meadow';
+    replacement.value = 'river';
     try {
       // The blocks and the rewrite stand in, so what is under test is the sentence the shipped path composes rather than a copy of it.
       vm.runInContext('__wasGroups = findRenderedGroups; __wasRewrite = findRewriteBlock;', booted);

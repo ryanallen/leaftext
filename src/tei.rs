@@ -4,7 +4,7 @@ use crate::*;
 // TEI XML renderer
 // ---------------------------------------------------------------------------
 
-/// Heading level for a div, from nesting depth (h2 at top, one smaller per level, floored at h6). Depth-based rather than type-based because 84000 TEI nests div types in varying orders, so a type→level table would invert sizes. `type="translation"` is a transparent wrapper: no heading, depth unchanged.
+/// Heading level for a div, from nesting depth (h2 at top, one smaller per level, floored at h6). Depth-based rather than type-based because TEI files nest div types in varying orders, so a type→level table would invert sizes. `type="translation"` is a transparent wrapper: no heading, depth unchanged.
 pub(crate) fn tei_div_heading_level(div_type: &str, depth: usize) -> Option<u8> {
     if div_type.eq_ignore_ascii_case("translation") {
         return None;
@@ -102,7 +102,7 @@ pub(crate) fn tei_render_inline<'a>(node: roxmltree::Node<'a, 'a>, ctx: &mut Tei
                     ));
                 }
                 "ptr" => {
-                    // 84000 puts the cross-reference label inside <ptr>. Keep the text; link it only for external URLs (internal #ids don't map to our heading slugs).
+                    // TEI puts the cross-reference label inside <ptr>. Keep the text; link it only for external URLs (internal #ids don't map to our heading slugs).
                     let label = tei_render_inline(child, ctx);
                     if !label.is_empty() {
                         match child.attribute("target") {
@@ -296,7 +296,7 @@ pub(crate) fn render_tei_inner<'a>(doc: &'a roxmltree::Document<'a>) -> (Option<
     let mut ctx = TeiCtx::new();
     let root = doc.root_element();
 
-    // Collect every `titleStmt > title` in document order. 84000 headers carry a matrix of titles (type × language), so we pick by type/lang below rather than taking whichever the file lists first. The node travels with the text so the drawn title can be anchored back to the element its words came from.
+    // Collect every `titleStmt > title` in document order. A TEI header carries a matrix of titles (type × language), so we pick by type/lang below rather than taking whichever the file lists first. The node travels with the text so the drawn title can be anchored back to the element its words came from.
     let titles: Vec<(String, String, String, roxmltree::Node<'a, 'a>)> = root
         .descendants()
         .filter(|n| {

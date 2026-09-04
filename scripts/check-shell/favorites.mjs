@@ -126,7 +126,7 @@ export function run() {
   });
 
   check('a favorite whose file is not there is struck where it stands, with a way out', () => {
-    const gone = 'C:\\Vaults\\Dharma\\A sutta.md';
+    const gone = 'C:\\Vaults\\Meadow\\A survey.md';
     const markup = withVaults(VAULTS, 0, () => homeListsMarkup({ recent: [], favorites: KEPT }));
     // Every kept document carries the way out already, so saying a file has gone is a class on a row that is already on screen — never a redraw, which would throw a dropped row's half-finished dissolve away.
     if ((markup.match(/data-home-repair=/g) || []).length !== 3) {
@@ -396,7 +396,7 @@ export function run() {
     const was = booted.ipc.postMessage;
     booted.ipc.postMessage = (text) => sent.push(JSON.parse(text));
     try {
-      booted.openHomeFolder('C:\\Vaults\\Dharma\\Journal');
+      booted.openHomeFolder('C:\\Vaults\\Meadow\\Journal');
     } finally {
       booted.ipc.postMessage = was;
     }
@@ -406,7 +406,7 @@ export function run() {
       throw new Error(`a kept folder was opened as a document: ${JSON.stringify(commands)}`);
     }
     const asked = sent.find((one) => one.command === 'getFolder');
-    if (!asked || asked.path !== 'C:\\Vaults\\Dharma\\Journal') {
+    if (!asked || asked.path !== 'C:\\Vaults\\Meadow\\Journal') {
       throw new Error(`the pane was not sent to that folder: ${JSON.stringify(sent)}`);
     }
   });

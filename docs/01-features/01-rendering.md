@@ -1,8 +1,8 @@
 # Rendering
 
-> Read without the noise. Leaftext renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: 84000-style TEI translations through a reader that knows the format, any other XML through a generic one, JSON or YAML as readable pages, plain text exactly as you typed it, config files as a page of sections, and saved emails as the message they carry.
+> Read without the noise. Leaftext renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: TEI documents through a reader that knows the format, any other XML through a generic one, JSON or YAML as readable pages, plain text exactly as you typed it, config files as a page of sections, and saved emails as the message they carry.
 
-Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml-84000-translations), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` and `.odp` reach the app as bytes rather than as text, because each is a zip rather than something somebody typed: the archive is opened, the member holding the words is unpacked, and that member goes to [its own reader](#office-and-opendocument-files). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, email and Office sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
+Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` and `.odp` reach the app as bytes rather than as text, because each is a zip rather than something somebody typed: the archive is opened, the member holding the words is unpacked, and that member goes to [its own reader](#office-and-opendocument-files). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, email and Office sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
 
 ## Summary
 
@@ -15,7 +15,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width, opening on the whole window, and saving out as a PNG, a WebP, a JPEG, a PDF or a Markdown document |
 | Safety | Sanitized HTML allowlist |
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
-| [TEI XML](#tei-xml-84000-translations) | 84000 Buddhist-translation format; headings, paragraphs, verse, footnotes |
+| [TEI XML](#tei-xml) | Scholarly and archival markup; headings, paragraphs, verse, footnotes |
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
 | [Email](#email-eml) | Any `.eml`, `.mht`, or `.mhtml` file: headers, the message body, inline images, attachments |
 | [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place |
@@ -424,7 +424,7 @@ version: "1.0"                     # quoted, so text — bare 1.0 is a number
 
 `<details>` / `<summary>` fold content away. Add `open` to start expanded.
 
-It slides rather than jumping: opening one grows it to its height over a quarter of a second and the page below travels with it, and closing is the same move, quicker. That is true of everything in the app that folds open in the flow of the page — the [front matter of a TEI document](#tei-xml-84000-translations), the find bar's [replace row](02-navigation.md#find-in-this-document) and the [insert row](07-editing.md#adding-a-block) in the page's margin. It is the one piece of motion the app cannot draw everywhere: on Windows it slides, and on a Mac it opens in a single frame, because the Mac's web view cannot animate a height nobody set in advance. Under [Reduce Motion](05-settings.md#reduce-motion) it opens in one frame on both.
+It slides rather than jumping: opening one grows it to its height over a quarter of a second and the page below travels with it, and closing is the same move, quicker. That is true of everything in the app that folds open in the flow of the page — the [front matter of a TEI document](#tei-xml), the find bar's [replace row](02-navigation.md#find-in-this-document) and the [insert row](07-editing.md#adding-a-block) in the page's margin. It is the one piece of motion the app cannot draw everywhere: on Windows it slides, and on a Mac it opens in a single frame, because the Mac's web view cannot animate a height nobody set in advance. Under [Reduce Motion](05-settings.md#reduce-motion) it opens in one frame on both.
 
 <details open>
 <summary>Open by default — click to collapse</summary>
@@ -478,7 +478,7 @@ Line one.<br>Same paragraph, next line.
 
 Markdown italic can wrap an HTML heading — useful for centering and italicising a title together:
 
-*<h1 align="center">Words of My Perfect Teacher</h1>*
+*<h1 align="center">Field Notes from the Lower Weir</h1>*
 
 Stripped for safety: `<script>`, inline event handlers such as `onclick=`, `javascript:` URLs, and disallowed elements such as `<iframe>` and `<form>`.
 
@@ -509,7 +509,7 @@ Editing is anchored to byte offsets in the file, so a multi-byte character above
 
 ![An XML sitemap opened in Leaftext, rendered as a table of URL records with columns for URL, last modified and priority, instead of raw tags](../../imgs/xml.png)
 
-Leaftext opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml-84000-translations); everything else goes to the generic one.
+Leaftext opens `.xml` files alongside `.md` files — the same "Open Document" dialog accepts both, and the [library](03-library.md) indexes both. Which XML renderer runs is decided by the file itself, not by its name: a document with a `<TEI>` root or a `<teiHeader>` goes to the [TEI renderer](#tei-xml); everything else goes to the generic one.
 
 Doctypes are read and ignored, so plists, XHTML, and DocBook open normally. A file that is not well-formed renders as a single line naming the parse position — `XML parse error. expected 'b' tag, not 'a' at 1:7` — instead of a blank page.
 
@@ -533,9 +533,9 @@ A file that names no title of its own — a sitemap has nowhere to say what it i
 
 A sitemap, for example, renders as a table of its `<url>` records; an RSS or Atom feed as its channel title, its channel fields, then one section per item; a Maven POM as its project fields plus a table of dependencies.
 
-### TEI XML (84000 translations)
+### TEI XML
 
-![An 84000 TEI translation open in Leaftext: the English main title as the page heading with the Sanskrit title in muted italics beneath it, the front matter collapsed into a disclosure, and a verse stanza rendered as a quoted block](../../imgs/xml-tei.png)
+![A TEI field-notes document open in Leaftext: the main title as the page heading with the long title in muted text beneath it, the front matter collapsed into a disclosure, a numbered end note in the prose, and a verse stanza rendered as a quoted block](../../imgs/xml-tei.png)
 
 TEI documents have conventions worth following, so they get their own renderer.
 

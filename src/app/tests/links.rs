@@ -317,13 +317,13 @@ fn resolves_local_markdown_links_against_current_document() {
 #[test]
 fn reads_the_slug_out_of_a_glossary_scheme_link() {
     assert_eq!(
-        glossary_scheme_slug("glossary:karma").as_deref(),
-        Some("karma")
+        glossary_scheme_slug("glossary:gauge").as_deref(),
+        Some("gauge")
     );
-    // A leading '#' (from a within-sheet jump like `glossary:#karma`) is dropped.
+    // A leading '#' (from a within-sheet jump like `glossary:#gauge`) is dropped.
     assert_eq!(
-        glossary_scheme_slug("glossary:#karma").as_deref(),
-        Some("karma")
+        glossary_scheme_slug("glossary:#gauge").as_deref(),
+        Some("gauge")
     );
     // The scheme name is case-insensitive and the slug is percent-decoded.
     assert_eq!(
@@ -333,7 +333,7 @@ fn reads_the_slug_out_of_a_glossary_scheme_link() {
     // A bare scheme (the "open full glossary" link) yields an empty slug.
     assert_eq!(glossary_scheme_slug("glossary:").as_deref(), Some(""));
     // Ordinary links are not glossary-scheme links.
-    assert_eq!(glossary_scheme_slug("../glossary.md#karma"), None);
+    assert_eq!(glossary_scheme_slug("../glossary.md#gauge"), None);
     assert_eq!(glossary_scheme_slug("https://example.com"), None);
 }
 

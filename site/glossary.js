@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // Shared bottom-sheet glossary behavior for the web reading views (the root README reader in reader.js and the /docs site in docs.js).
 //
-// A "glossary link" is any in-page link whose target file is the glossary (its basename is GLOSSARY_FILE) and that carries a "#anchor" — for example `[karma](../../GLOSSARY.md#karma)`. Clicking one slides the matching entry up in a sheet over the reading view instead of navigating away, so the doc underneath keeps its scroll position. Links inside the sheet that point at other glossary terms swap the entry in place; any other link dismisses the sheet first and hands the navigation back to the host.
+// A "glossary link" is any in-page link whose target file is the glossary (its basename is GLOSSARY_FILE) and that carries a "#anchor" — for example `[gauge](../../GLOSSARY.md#gauge)`. Clicking one slides the matching entry up in a sheet over the reading view instead of navigating away, so the doc underneath keeps its scroll position. Links inside the sheet that point at other glossary terms swap the entry in place; any other link dismisses the sheet first and hands the navigation back to the host.
 //
 // The host owns its own click handling, so this module does NOT register a document-wide listener. It returns `handleClick(event)`: call it first in the host's content click handler and bail out when it returns true.
 // ---------------------------------------------------------------------------

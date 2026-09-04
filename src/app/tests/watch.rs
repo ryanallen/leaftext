@@ -609,7 +609,7 @@ fn only_a_document_that_moved_redraws_the_map() {
             path: "/vault/note.md".to_string(),
             label: "note".to_string(),
             aliases: Vec::new(),
-            text: "a talk on dharma".to_string(),
+            text: "a note on meadow".to_string(),
         }],
         truncated: false,
         skipped: Vec::new(),

@@ -201,17 +201,17 @@ fn opened_document_starts_with_async_pager_placeholder() {
 #[test]
 fn document_title_strips_raw_html_from_markdown_heading() {
     let rendered = render_markdown_document(
-        r#"# <div align="center">Words of My Perfect Teacher</div>
+        r#"# <div align="center">Field Notes from the Lower Weir</div>
 
 Body stays readable.
 "#,
         "README.md",
     );
 
-    assert_eq!(rendered.title, "Words of My Perfect Teacher");
+    assert_eq!(rendered.title, "Field Notes from the Lower Weir");
     assert!(!rendered.title.contains("<div"));
     assert!(!rendered.title.contains("</div>"));
-    assert_contains(&rendered.html, "Words of My Perfect Teacher");
+    assert_contains(&rendered.html, "Field Notes from the Lower Weir");
 }
 
 #[test]
@@ -251,7 +251,7 @@ Body.
         "README.md",
     );
     let raw_block = render_markdown_document(
-        r#"<div align="center">Words of My Perfect Teacher</div>
+        r#"<div align="center">Field Notes from the Lower Weir</div>
 
 Body.
 "#,
@@ -259,7 +259,7 @@ Body.
     );
 
     assert_eq!(raw_heading.title, "Raw HTML & Heading");
-    assert_eq!(raw_block.title, "Words of My Perfect Teacher");
+    assert_eq!(raw_block.title, "Field Notes from the Lower Weir");
     assert!(!raw_heading.title.contains("<em>"));
     assert!(!raw_block.title.contains("align="));
 }
