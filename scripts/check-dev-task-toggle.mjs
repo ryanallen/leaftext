@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Recording progress must never reach a running window: reading a ticket through the app fronts its page and the toggle refuses a document that is not already there, so a tick took the owner's page and keyboard every time a box finished. The check holds the build skill to the file-safe edit and refuses either app call anywhere in it.
+// Recording progress must never reach a running window: reading a ticket through the app fronts its page and the toggle refuses a document that is not already there, so a tick takes the owner's page and keyboard every time a box finishes. The check holds the build skill to the file-safe edit and refuses either app call anywhere in it.
 
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

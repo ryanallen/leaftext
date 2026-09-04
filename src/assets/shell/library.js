@@ -601,7 +601,7 @@ function renderLibraryCrumbs(chain) {
   fitLibraryCrumbs();
 }
 
-// The launch's own first draw of the pane, in the three stages the settle pass orders. Drawing the library measures the crumb trail and laying the pane out measures the window, and either reading taken while the fragments are still loading makes the browser lay the whole window out again from nothing. Registered by library-search.js, which is where the seeded pane used to be painted outright.
+// The launch's own first draw of the pane, in the three stages the settle pass orders. Drawing the library measures the crumb trail and laying the pane out measures the window, and either reading taken while the fragments are still loading makes the browser lay the whole window out again from nothing. Registered by library-search.js.
 function prepareSettledLibraryDraw() {
   crumbFitSettling = true;
   crumbFitSettlingSegments = null;
