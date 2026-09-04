@@ -608,6 +608,156 @@ export function run() {
     }
   });
 
+  /** The note box open over a locked block with `typed` in it, and everything a press against it needs. The caller restores. */
+  const noteBoxStanding = (name, typed) => {
+    const doc = 'A passage worth a note.\n';
+    const readingApp = booted.document.getElementById('app');
+    const { body, block } = lockedBlock(name, 'A passage worth a note.', doc, 1);
+    const stand = domStand(block);
+    const posted = [];
+    const held = standIn(readingApp, body, block, stand, posted);
+    booted.window.leafBlocksResynced({ source: doc });
+    booted.bindSelectionToolbar();
+    stand.selectWords({ start: 0, end: 23 }, 'A passage worth a note.');
+    booted.syncSelectionToolbar();
+    press(vm.runInContext('selectionToolbarButtons', booted), 'annotate');
+    const bar = vm.runInContext('selectionToolbar', booted);
+    const input = vm.runInContext('selectionToolbarLinkInput', booted);
+    // The fake page answers every containment question no, so the bar is handed the walk a browser does — the guard being tested is the one that asks it, and an answer of no for ever would let a press on the box's own input close it and still pass.
+    bar.contains = (node) => {
+      for (let at = node; at; at = at.parentElement) if (at === bar) return true;
+      return false;
+    };
+    if (typed !== undefined) input.value = typed;
+    return { bar, input, block, body, posted, held };
+  };
+
+  /** Play one event at the page's own document listeners, in the order they registered. */
+  const raiseOnPage = (type, target) => {
+    const event = { type, target, button: type === 'contextmenu' ? 2 : 0, clientX: 0, clientY: 0, ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, detail: 1, preventDefault() {}, stopPropagation() {} };
+    for (const handler of [...(booted.document.listeners.get(type) || [])]) handler(event);
+  };
+
+  /** Whether the box's own outside-press listener is on the document right now. */
+  const outsidePressArmed = () =>
+    (booted.document.listeners.get('pointerdown') || []).includes(vm.runInContext('onSelectionInputOutsidePress', booted));
+
+  check('a press off the note box puts it away and writes nothing', () => {
+    const stand = noteBoxStanding('note-press-out', 'Half a thought.');
+    try {
+      if (!stand.bar.classList.contains('is-noting')) throw new Error('pressing Annotate did not open the note box');
+      raiseOnPage('pointerdown', stand.body);
+      if (!stand.bar.hidden) throw new Error('a press off the box left the bar standing over the words');
+      if (stand.bar.classList.contains('is-noting')) throw new Error('a press off the box left the bar wearing its note mode');
+      if (stand.posted.some((message) => String(message.command).startsWith('edit'))) {
+        throw new Error('a press off the box wrote ' + JSON.stringify(stand.posted));
+      }
+      // Discarding, not writing: a note nobody finished is a note nobody meant to write.
+      if (stand.input.value !== '') throw new Error('the abandoned note was left in the box as ' + JSON.stringify(stand.input.value));
+    } finally {
+      stand.held.restore();
+    }
+  });
+
+  check('a press inside the note box leaves it standing with the typing where it was', () => {
+    const stand = noteBoxStanding('note-press-in', 'Half a thought.');
+    try {
+      raiseOnPage('pointerdown', stand.input);
+      if (stand.bar.hidden) throw new Error("a press on the box's own input took the box away");
+      if (!stand.bar.classList.contains('is-noting')) throw new Error('a press on the input took the note mode off');
+      if (stand.input.value !== 'Half a thought.') throw new Error('a press on the input left the note reading ' + JSON.stringify(stand.input.value));
+    } finally {
+      stand.held.restore();
+    }
+  });
+
+  check('a right-press off the note box takes it away, which is the press a click dismissal would miss', () => {
+    const stand = noteBoxStanding('note-right-press', 'Half a thought.');
+    try {
+      // Watched in a running copy: a right-press outside gives pointerdown and mousedown and no click at all, so this plays exactly those and never a click.
+      raiseOnPage('pointerdown', stand.body);
+      raiseOnPage('mousedown', stand.body);
+      raiseOnPage('contextmenu', stand.body);
+      if (!stand.bar.hidden) throw new Error("a right-press off the box left it standing under the reader's own menu");
+      if (stand.bar.classList.contains('is-noting')) throw new Error('a right-press off the box left the bar wearing its note mode');
+    } finally {
+      stand.held.restore();
+    }
+  });
+
+  check('the press that took the note box down leaves no bar standing behind it', () => {
+    const stand = noteBoxStanding('note-press-after', 'Half a thought.');
+    try {
+      raiseOnPage('pointerdown', stand.body);
+      // Everything the browser sends behind that press. None of it may put the bar back up, whichever order the selection settles in.
+      raiseOnPage('mousedown', stand.body);
+      booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
+      raiseOnPage('selectionchange', stand.body);
+      raiseOnPage('click', stand.body);
+      if (!stand.bar.hidden) throw new Error('the press that dismissed the box left a bar standing behind it');
+      if (stand.posted.some((message) => String(message.command).startsWith('edit'))) {
+        throw new Error('the press behind the box wrote ' + JSON.stringify(stand.posted));
+      }
+    } finally {
+      stand.held.restore();
+    }
+  });
+
+  check('the link box goes the same way, and the listener is gone once either box has closed', () => {
+    // One input in two hats, so one arming answers both. A listener living past the close is what would make every press on the page hide a bar nobody had opened.
+    const stand = noteBoxStanding('note-listener', 'Half a thought.');
+    try {
+      if (!outsidePressArmed()) throw new Error('the note box left no press listener on the page');
+      raiseOnPage('pointerdown', stand.body);
+      if (outsidePressArmed()) throw new Error('the press that closed the note box left its listener behind');
+
+      booted.openSelectionLinkBox();
+      if (!stand.bar.classList.contains('is-linking')) throw new Error('the link box did not open');
+      if (!outsidePressArmed()) throw new Error('the link box left no press listener on the page');
+      raiseOnPage('pointerdown', stand.body);
+      if (!stand.bar.hidden) throw new Error('a press off the link box left the bar standing');
+      if (stand.bar.classList.contains('is-linking')) throw new Error('a press off the link box left the bar wearing its link mode');
+      if (outsidePressArmed()) throw new Error('the press that closed the link box left its listener behind');
+    } finally {
+      stand.held.restore();
+    }
+  });
+
+  check('writing a link takes the press listener off even though the bar stays standing', () => {
+    // The one close that does not hide the bar. It used to take its class off by hand, which left the listener on the page with nothing open — so every press afterwards would have hidden a bar nobody had opened.
+    const wasRestore = booted.restoreSelectionForEdit;
+    try {
+      // The words go back to the block before a link is written, and what that path needs is an editing host — which is not what this check is about, so it is handed the answer and the commit runs its own branch.
+      booted.restoreSelectionForEdit = () => true;
+      barOverSelection({ unlocked: true }, (unlocked) => {
+        unlocked.press('link');
+        const input = vm.runInContext('selectionToolbarLinkInput', booted);
+        if (!unlocked.bar.classList.contains('is-linking')) throw new Error('pressing Link did not open the box');
+        if (!outsidePressArmed()) throw new Error('the link box left no press listener on the page');
+        // An empty box takes the link away, which is the commit that writes nothing into the page and leaves the bar over the words.
+        input.value = '';
+        for (const handler of [...(input.listeners.get('keydown') || [])]) handler({ key: 'Enter', preventDefault() {} });
+        if (unlocked.bar.hidden) throw new Error('writing a link took the bar away rather than leaving it over the words');
+        if (unlocked.bar.classList.contains('is-linking')) throw new Error('writing a link left the bar wearing its link mode');
+        if (outsidePressArmed()) throw new Error('writing a link left its press listener on the page');
+      });
+    } finally {
+      booted.restoreSelectionForEdit = wasRestore;
+    }
+  });
+
+  check('a render landing while the note box stands takes its press listener with it', () => {
+    // The bar is rebuilt for every render, so a listener armed against the old one would be left holding an element nothing on the page can reach.
+    const stand = noteBoxStanding('note-rerender', 'Half a thought.');
+    try {
+      if (!outsidePressArmed()) throw new Error('the note box left no press listener on the page');
+      booted.bindSelectionToolbar();
+      if (outsidePressArmed()) throw new Error('a render left the old box\'s press listener on the page');
+    } finally {
+      stand.held.restore();
+    }
+  });
+
   check('the note box puts the buttons away and the input up, exactly as the link box does', () => {
     const css = readingCss('selection-toolbar.css');
     // The mode is the class alone, so the stylesheet is the whole of what it does: a selector that stopped naming it leaves the note box standing behind the buttons it replaces.
