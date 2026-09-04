@@ -724,7 +724,7 @@ export function run() {
   });
 
   check('writing a link takes the press listener off even though the bar stays standing', () => {
-    // The one close that does not hide the bar. It used to take its class off by hand, which left the listener on the page with nothing open — so every press afterwards would have hidden a bar nobody had opened.
+    // The one close that does not hide the bar, so it is the one that has to go through the door that disarms: a class taken off by hand leaves the listener on the page with nothing open, and every press afterwards hides a bar nobody opened.
     const wasRestore = booted.restoreSelectionForEdit;
     try {
       // The words go back to the block before a link is written, and what that path needs is an editing host — which is not what this check is about, so it is handed the answer and the commit runs its own branch.

@@ -73,9 +73,9 @@ function selectionToolbarInputOpen() {
   return !!selectionToolbar && (selectionToolbar.classList.contains('is-linking') || selectionToolbar.classList.contains('is-noting'));
 }
 
-// While the input box stands, a press anywhere off the bar puts it away. Until this it had one way out, Escape, and nothing on screen said so.
+// While the input box stands, a press anywhere off the bar puts it away. Escape is the only other way out and nothing on screen says so, which is a box a reader who opened it by accident cannot leave.
 //
-// Taken on the way down and with capture, both for watched reasons: a right-press outside fires no click at all, so a dismissal hung on one leaves the box standing under the reader's own menu, and a target that stops the press bubbling never reaches a document listener that is not capturing. The flowchart menu comes down this same way — flow-menu.js.
+// Taken on the way down and with capture: a right-press outside fires no click at all, so a dismissal hung on one leaves the box standing under the reader's own menu, and a target that stops the press bubbling never reaches a document listener that is not capturing. The flowchart menu comes down this same way — flow-menu.js.
 //
 // Armed as the box opens and taken off as it closes, so a page with no box open pays nothing per press.
 function onSelectionInputOutsidePress(event) {
@@ -564,7 +564,7 @@ function openSelectionLinkBox() {
 
 function commitSelectionLink() {
   const url = selectionToolbarLinkInput.value.trim();
-  // Through the one door rather than taking the class off here, so the press listener the box armed goes with it.
+  // Through the one door, so the press listener the box armed goes with it.
   closeSelectionInputBox();
   if (!restoreSelectionForEdit()) {
     hideSelectionToolbar();
@@ -657,7 +657,7 @@ function selectionToolbarButton(format, onPress) {
 
 // Build the bar for the render that just landed. One bar for the page, moved to whatever is highlighted — see block-controls.js for why not one per block.
 function bindSelectionToolbar() {
-  // A render landing while a box stood leaves its listener holding a bar that is about to be replaced.
+  // A render landing while a box stands leaves its listener holding a bar that is about to be replaced.
   disarmSelectionInputOutsidePress();
   selectionToolbar = null;
   selectionToolbarRow = null;
