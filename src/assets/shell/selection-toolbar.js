@@ -116,16 +116,29 @@ function selectionEditableBlock(node) {
   return block;
 }
 
-// The nearest ancestor of `tag` between the selection and its block.
+// The wrapper of `tag` the WHOLE highlight is inside, or nothing. Both ends are asked and they have to land on the same element: reading the start alone said `bold words and` was bold when half of it was plain, so the lit Bold that invited a removal bolded the plain half instead — and the same words highlighted the other way round lit nothing, which made the bar's answer depend on which end the drag began at. Both ends inside one element means everything between them is too, since a highlight the bar answers for lies inside one block.
 function selectionAncestor(tag) {
   if (!selectionToolbarBlock) return null;
   const selection = window.getSelection();
   if (!selection || !selection.rangeCount) return null;
-  let node = selection.getRangeAt(0).startContainer;
-  if (node.nodeType !== Node.ELEMENT_NODE) node = node.parentElement;
-  while (node && node !== selectionToolbarBlock) {
-    if (node.tagName && node.tagName.toLowerCase() === tag) return node;
-    node = node.parentElement;
+  const range = selection.getRangeAt(0);
+  const holding = ancestorHolding(range.startContainer, range.startOffset, false, tag);
+  return holding && holding === ancestorHolding(range.endContainer, range.endOffset, true, tag) ? holding : null;
+}
+
+// The nearest element of that tag between one end of the highlight and the block, or nothing.
+//
+// An end is a container and an offset, and where the container is an element that offset says which child the highlight reaches — so the walk starts from that child rather than from the element itself, the trailing end from the child before the one it stops at. Walking from the element would start at the block for every highlight a browser reports that way, which is what a double-click on a bold word gives: wholly bold words with the Bold button dark.
+function ancestorHolding(container, offset, trailing, tag) {
+  let at = container;
+  if (at && at.nodeType === Node.ELEMENT_NODE && at.childNodes.length) {
+    const step = trailing ? offset - 1 : offset;
+    at = at.childNodes[Math.max(0, Math.min(step, at.childNodes.length - 1))];
+  }
+  if (at && at.nodeType !== Node.ELEMENT_NODE) at = at.parentElement;
+  while (at && at !== selectionToolbarBlock) {
+    if (at.tagName && at.tagName.toLowerCase() === tag) return at;
+    at = at.parentElement;
   }
   return null;
 }

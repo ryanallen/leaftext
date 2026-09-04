@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import {
   check,
   fakeElement,
+  formatBarStand,
   readingCss,
   record,
   source,
@@ -15,6 +16,7 @@ export function run() {
   if (!booted) return;
   const { fencedCodeInnerSpan } = booted;
   const { withPageTimers, raiseWindowEvent, pressWindowKey, saveKeyPress, typedBlock, openTyping, restTyping } = typingStand(booted);
+  const { barOverSelection } = formatBarStand(booted);
 
   // ---- the bar over a locked page ------------------------------------------
   //
@@ -23,60 +25,6 @@ export function run() {
   // What the bar offers a locked page, read off the page's own list. The nine below are spelled out, because losing one of those is the failure these checks exist to catch; the reading formats grow phase by phase and are pinned by the checks that press them.
   const readingFormats = () => vm.runInContext('READING_FORMATS.map((one) => one.id)', booted);
   const EDITING_FORMATS = ['bold', 'italic', 'strike', 'code', 'link', 'text', 'bigger', 'smaller', 'quote'];
-
-  /** Float the bar over a selection inside one block of a page that is locked or unlocked, hand the reading to `body` while it is still standing, and answer whatever `body` answered. */
-  const barOverSelection = ({ unlocked, kind = 'paragraph', words = 'the words' }, body = (bar) => bar) => {
-    const readingApp = booted.document.getElementById('app');
-    const layout = fakeElement('bar-reader-layout');
-    layout.className = 'reader-layout';
-    layout.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
-    const block = fakeElement('bar-block');
-    block.tagName = 'P';
-    block.className = unlocked ? 'leaf-editable' : '';
-    block.dataset.srcStart = '10';
-    block.dataset.srcEnd = String(10 + words.length);
-    block.dataset.blockKind = kind;
-    block.textContent = words;
-    const range = {
-      startContainer: block,
-      endContainer: block,
-      toString: () => words,
-      cloneRange() {
-        return this;
-      },
-      getClientRects: () => [{ left: 100, top: 200, width: 60, height: 20 }],
-      getBoundingClientRect: () => ({ left: 100, top: 200, right: 160, bottom: 220, width: 60, height: 20 }),
-    };
-    const wasQuery = readingApp.querySelector;
-    const wasContains = readingApp.contains;
-    const wasSelection = booted.getSelection;
-    const wasFormat = vm.runInContext('currentDocumentFormat', booted);
-    const wasUnlocked = vm.runInContext('readingUnlocked', booted);
-    try {
-      readingApp.querySelector = (selector) => (String(selector) === '.reader-layout' ? layout : wasQuery.call(readingApp, selector));
-      readingApp.contains = (node) => node === block;
-      booted.getSelection = () => ({ rangeCount: 1, isCollapsed: false, getRangeAt: () => range });
-      vm.runInContext("currentDocumentFormat = 'markdown'; readingUnlocked = " + (unlocked ? 'true' : 'false') + ';', booted);
-      booted.bindSelectionToolbar();
-      const bar = vm.runInContext('selectionToolbar', booted);
-      if (!bar) return body({ bar: null, showing: [], press: () => {} });
-      const buttons = vm.runInContext('selectionToolbarButtons', booted);
-      booted.syncSelectionToolbar();
-      const showing = [...buttons].filter(([, button]) => !button.hidden).map(([id]) => id);
-      const press = (id) => {
-        const button = buttons.get(id);
-        if (!button) throw new Error('the bar carries no ' + id + ' button');
-        for (const handler of [...(button.listeners.get('click') || [])]) handler({ preventDefault() {} });
-      };
-      return body({ bar, hidden: bar.hidden, showing, block, press, divider: bar.classList.contains('has-block-formats') });
-    } finally {
-      readingApp.querySelector = wasQuery;
-      readingApp.contains = wasContains;
-      booted.getSelection = wasSelection;
-      vm.runInContext('currentDocumentFormat = ' + JSON.stringify(wasFormat) + '; readingUnlocked = ' + (wasUnlocked ? 'true' : 'false') + ';', booted);
-      vm.runInContext('selectionToolbar = null; selectionToolbarRow = null; selectionToolbarLinkInput = null; selectionToolbarButtons = new Map(); selectionToolbarBlock = null; selectionToolbarRange = null;', booted);
-    }
-  };
 
   check('a locked page gets the bar, carrying the reading formats and nothing that writes', () => {
     const locked = barOverSelection({ unlocked: false });
@@ -701,6 +649,21 @@ export function run() {
     } finally {
       stand.held.restore();
     }
+  });
+
+  // The box is filled from `selectionAncestor`, the same reading that lights the buttons — so tightening that to the whole highlight has to leave an editable link editable, and has to stop offering the address of a link the highlight only half covers.
+  check('the link box opens on the address of a link the whole highlight is inside, and empty where it runs out of one', () => {
+    const linked = 'go to <a href="https://example.com">the linked phrase</a> and then some plain words.';
+    barOverSelection({ unlocked: true, markup: linked, startIn: 'a', words: 'the linked phrase' }, () => {
+      booted.openSelectionLinkBox();
+      const input = vm.runInContext('selectionToolbarLinkInput', booted);
+      if (input.value !== 'https://example.com') throw new Error('the box opened reading ' + JSON.stringify(input.value) + ' over a highlight inside the link');
+    });
+    barOverSelection({ unlocked: true, markup: linked, startIn: 'a', endIn: null, words: 'the linked phrase and then' }, () => {
+      booted.openSelectionLinkBox();
+      const input = vm.runInContext('selectionToolbarLinkInput', booted);
+      if (input.value !== '') throw new Error('a highlight running out of the link opened the box on ' + JSON.stringify(input.value));
+    });
   });
 
   check('the link box goes the same way, and the listener is gone once either box has closed', () => {

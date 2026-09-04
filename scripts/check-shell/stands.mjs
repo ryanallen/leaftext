@@ -216,6 +216,97 @@ export function typingStand(booted) {
   return { withPageTimers, raiseWindowEvent, pressWindowKey, saveKeyPress, typedBlock, wordsFollowMarkup, typeInto, pressUndoKey, openTyping, restTyping };
 }
 
+/** The format bar floated over a highlight inside one block: what the bar subject and the light subject both build on. */
+export function formatBarStand(booted) {
+  // Where one end of the highlight sits. `null` is a text child of the block itself; a string is the first text node inside the first element matching it; `{ tag, nth }` picks a later one, which is how two runs of the same format are told apart.
+  const endOf = (block, spec, fallback) => {
+    if (!spec) {
+      const own = block.childNodes.filter((child) => child.nodeType === 3);
+      return (fallback === 'last' ? own[own.length - 1] : own[0]) || block;
+    }
+    const tag = typeof spec === 'string' ? spec : spec.tag;
+    const wrapper = block.querySelectorAll(tag)[typeof spec === 'string' ? 0 : spec.nth || 0];
+    if (!wrapper) throw new Error('the block carries no ' + tag + ' to stand the highlight in');
+    const inside = (node) => {
+      if (node.nodeType === 3) return node;
+      for (const child of node.childNodes || []) {
+        const found = inside(child);
+        if (found) return found;
+      }
+      return null;
+    };
+    return inside(wrapper) || wrapper;
+  };
+
+  /**
+   * Float the bar over a highlight inside one block of a page that is locked or unlocked, hand the reading to `body` while it is still standing, and answer whatever `body` answered.
+   *
+   * `markup` gives the block wrappers to stand the highlight inside; `startIn` and `endIn` say which, in the shape `endOf` reads; leaving `endIn` out puts both ends in the same place, and writing it as null puts the far end in the block's own plain words. `bracket` names a wrapper instead and reports the highlight the way a browser reports a double-click — both ends the block itself, with the offsets on either side of that child. `commandState` stands the browser's own answer on the fake document, which has none of its own — so leaving it out is a page where `queryCommandState` throws and the tag walk is what answers, which is the arm a reader meets before they click into a block.
+   */
+  const barOverSelection = ({ unlocked, kind = 'paragraph', words = 'the words', markup = null, startIn = null, endIn, bracket = null, commandState = null }, body = (bar) => bar) => {
+    const readingApp = booted.document.getElementById('app');
+    const layout = fakeElement('bar-reader-layout');
+    layout.className = 'reader-layout';
+    layout.getBoundingClientRect = () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600 });
+    const block = fakeElement('bar-block');
+    block.tagName = 'P';
+    block.className = unlocked ? 'leaf-editable' : '';
+    block.dataset.srcStart = '10';
+    block.dataset.srcEnd = String(10 + words.length);
+    block.dataset.blockKind = kind;
+    if (markup) block.innerHTML = markup;
+    else block.textContent = words;
+    const bracketed = bracket ? block.childNodes.indexOf(block.querySelectorAll(typeof bracket === 'string' ? bracket : bracket.tag)[typeof bracket === 'string' ? 0 : bracket.nth || 0]) : -1;
+    const range = {
+      startContainer: bracket ? block : markup ? endOf(block, startIn, 'first') : block,
+      startOffset: bracket ? bracketed : 0,
+      endContainer: bracket ? block : markup ? endOf(block, endIn === undefined ? startIn : endIn, 'last') : block,
+      endOffset: bracket ? bracketed + 1 : 0,
+      toString: () => words,
+      cloneRange() {
+        return this;
+      },
+      getClientRects: () => [{ left: 100, top: 200, width: 60, height: 20 }],
+      getBoundingClientRect: () => ({ left: 100, top: 200, right: 160, bottom: 220, width: 60, height: 20 }),
+    };
+    const wasQuery = readingApp.querySelector;
+    const wasContains = readingApp.contains;
+    const wasSelection = booted.getSelection;
+    const wasCommandState = booted.document.queryCommandState;
+    const wasFormat = vm.runInContext('currentDocumentFormat', booted);
+    const wasUnlocked = vm.runInContext('readingUnlocked', booted);
+    try {
+      readingApp.querySelector = (selector) => (String(selector) === '.reader-layout' ? layout : wasQuery.call(readingApp, selector));
+      readingApp.contains = (node) => node === block;
+      booted.getSelection = () => ({ rangeCount: 1, isCollapsed: false, getRangeAt: () => range });
+      if (commandState) booted.document.queryCommandState = (command) => !!commandState[command];
+      vm.runInContext("currentDocumentFormat = 'markdown'; readingUnlocked = " + (unlocked ? 'true' : 'false') + ';', booted);
+      booted.bindSelectionToolbar();
+      const bar = vm.runInContext('selectionToolbar', booted);
+      if (!bar) return body({ bar: null, showing: [], lit: [], press: () => {} });
+      const buttons = vm.runInContext('selectionToolbarButtons', booted);
+      booted.syncSelectionToolbar();
+      const showing = [...buttons].filter(([, button]) => !button.hidden).map(([id]) => id);
+      const lit = [...buttons].filter(([, button]) => button.classList.contains('is-active')).map(([id]) => id);
+      const press = (id) => {
+        const button = buttons.get(id);
+        if (!button) throw new Error('the bar carries no ' + id + ' button');
+        for (const handler of [...(button.listeners.get('click') || [])]) handler({ preventDefault() {} });
+      };
+      return body({ bar, hidden: bar.hidden, showing, lit, block, press, divider: bar.classList.contains('has-block-formats') });
+    } finally {
+      readingApp.querySelector = wasQuery;
+      readingApp.contains = wasContains;
+      booted.getSelection = wasSelection;
+      if (wasCommandState === undefined) delete booted.document.queryCommandState;
+      else booted.document.queryCommandState = wasCommandState;
+      vm.runInContext('currentDocumentFormat = ' + JSON.stringify(wasFormat) + '; readingUnlocked = ' + (wasUnlocked ? 'true' : 'false') + ';', booted);
+      vm.runInContext('selectionToolbar = null; selectionToolbarRow = null; selectionToolbarLinkInput = null; selectionToolbarButtons = new Map(); selectionToolbarBlock = null; selectionToolbarRange = null;', booted);
+    }
+  };
+  return { barOverSelection };
+}
+
 /** A diagram block the page drew, and an element answering only for what has really been put in it: what the export subject and the drawn-box subject both build on. */
 export function diagramStand(booted) {
   // An element that answers only for what has really been put in it. The stand-in page answers every element query with an element, which would tell the builder its row was already there — so a stage the page itself built gets this too, before it is handed back to the builder.
