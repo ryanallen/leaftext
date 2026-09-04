@@ -1,5 +1,7 @@
 // The format bar over a selection, and saving while the words are still being typed.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import vm from 'node:vm';
 import {
   check,
@@ -7,6 +9,7 @@ import {
   formatBarStand,
   readingCss,
   record,
+  root,
   source,
   typingStand,
 } from './shared.mjs';
@@ -1652,5 +1655,67 @@ export function run() {
     } finally {
       booted.getSelection = wasSelection;
     }
+  });
+
+  // ---- the bar that is already down ----------------------------------------
+  //
+  // `hideSelectionToolbar` is reached from selectionchange on every collapsed selection, which is every keystroke and every caret move. It returns early where the bar is already hidden and no block is held, so what these two hold is that the first call after a bar was showing still does everything, and that the invariant the early return rests on stays true at every write in the file.
+
+  check('the first collapsed selection change after the bar was showing still takes it away, and the hide still closes the input box', () => {
+    barOverSelection({ unlocked: true, words: 'some marked words' }, (stand) => {
+      if (stand.hidden) throw new Error('the bar never came up over the highlight to be taken away');
+      const bar = stand.bar;
+      let writes = 0;
+      let down = bar.hidden;
+      Object.defineProperty(bar, 'hidden', { configurable: true, get: () => down, set: (value) => { writes += 1; down = value; } });
+      booted.getSelection = () => ({ rangeCount: 0, isCollapsed: true, getRangeAt: () => null, toString: () => '' });
+      booted.syncSelectionToolbar();
+      if (!bar.hidden) throw new Error('the caret landing in the words left the bar standing');
+      if (vm.runInContext('selectionToolbarBlock', booted)) throw new Error('the hide left a block held behind a hidden bar');
+      if (writes !== 1) throw new Error('the hide wrote hidden ' + writes + ' times rather than once');
+      // Every keystroke after it is the guarded pass: the bar is already down and nothing is held, so the teardown is not reached at all.
+      for (let typed = 0; typed < 5; typed += 1) booted.syncSelectionToolbar();
+      if (writes !== 1) throw new Error('five more keystrokes tore the bar down ' + (writes - 1) + ' more times');
+      if (!bar.hidden) throw new Error('the guarded pass put the bar back up');
+    });
+
+    // And the call that does run still shuts the box: the listener off the page, both hats off the bar, and the input emptied.
+    const stand = noteBoxStanding('hide-closes-the-box', 'Half a thought.');
+    try {
+      if (!outsidePressArmed()) throw new Error('the note box left no press listener on the page');
+      booted.hideSelectionToolbar();
+      if (!stand.bar.hidden) throw new Error('the hide left the bar standing');
+      if (stand.bar.classList.contains('is-noting') || stand.bar.classList.contains('is-linking')) throw new Error('the hide left the bar wearing a box');
+      if (outsidePressArmed()) throw new Error('the hide left the box\'s press listener on the page');
+      if (stand.input.value !== '') throw new Error('the hide left ' + JSON.stringify(stand.input.value) + ' in the input');
+    } finally {
+      stand.held.restore();
+    }
+  });
+
+  check('a bar left hidden is never left holding a block, at every write in the file', () => {
+    // Read off the file rather than played, because the early return is only safe while this holds at writes a check has no way to reach — so a later one that hides the bar without letting the block go fails here instead of leaving the bar stuck down over the next highlight.
+    const file = readFileSync(join(root, 'src/assets/shell/selection-toolbar.js'), 'utf8');
+    const bodies = [...file.matchAll(/^function (\w+)\(\)? ?[^)]*\) \{\n([\s\S]*?)^\}/gm)].map((one) => ({ name: one[1], body: one[2] }));
+    if (bodies.length < 10) throw new Error('the file walk found ' + bodies.length + ' functions, so it is no longer reading the file');
+    const holds = (body, pattern) => pattern.test(body);
+    let hidden = 0;
+    let shown = 0;
+    let held = 0;
+    for (const { name, body } of bodies) {
+      if (holds(body, /selectionToolbar\.hidden = true/)) {
+        hidden += 1;
+        if (!holds(body, /selectionToolbarBlock = null/)) throw new Error(name + ' hides the bar without letting the block go');
+      }
+      if (holds(body, /selectionToolbar\.hidden = false/)) {
+        shown += 1;
+        if (!holds(body, /selectionToolbarBlock = (?!null)/)) throw new Error(name + ' shows the bar without taking hold of a block');
+      }
+      if (holds(body, /selectionToolbarBlock = (?!null)/)) {
+        held += 1;
+        if (!holds(body, /selectionToolbar\.hidden = false/)) throw new Error(name + ' takes hold of a block without showing the bar');
+      }
+    }
+    if (!hidden || !shown || !held) throw new Error('the walk found ' + hidden + ' hides, ' + shown + ' shows and ' + held + ' holds, so at least one kind of write has been renamed past it');
   });
 }
