@@ -127,9 +127,12 @@ for (const extension of coreModule.formats()) {
     continue;
   }
   const strips = drawn.html.match(/<nav class="docs-pager/g) || [];
-  if (strips.length !== 1) {
-    problems.push(`a .${extension} document carries ${strips.length} Previous/Next strips, and a page can only fill one`);
-  } else if (!drawn.html.includes('docs-pager-loading')) {
+  // A whole HTML page is drawn as the page its own CSS makes, inside a frame, and nothing of Leaftext's is drawn around it — so it is the one format that carries no strip at all. Read off the markup rather than off a list of extensions, so a second contained format needs no second name here.
+  const contained = drawn.html.includes('document-body-site');
+  const wanted = contained ? 0 : 1;
+  if (strips.length !== wanted) {
+    problems.push(`a .${extension} document carries ${strips.length} Previous/Next strips where it should carry ${wanted}`);
+  } else if (!contained && !drawn.html.includes('docs-pager-loading')) {
     problems.push(`a .${extension} document's Previous/Next strip is not the waiting one, so the page has nothing to fill`);
   }
 }
