@@ -84,9 +84,7 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {",
         "minimapPreviewFrame = window.requestAnimationFrame(() => {",
         "function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {",
-        // The clone is skipped when nothing shaping the thumbnail changed, so a height-only resize doesn't rebuild the whole document.
-        "minimapBuiltVersion === minimapContentVersion &&",
-        "minimapBuiltSourceWidth === metrics.sourceWidth &&",
+        // The clone is skipped when nothing shaping the thumbnail changed, so a height-only resize doesn't rebuild the whole document. The first two of those are the rail's other builder's as well, so they are held in the block below rather than here.
         "minimapBuiltPreviewWidth === previewWidth &&",
         "minimapBuiltFrameWidth === frameWidth &&",
         "preview = source.cloneNode(true);",
@@ -95,13 +93,10 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapFrameWidth(fallbackWidth) {",
         "const width = layout.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);",
         "const frameWidth = minimapFrameWidth(metrics.sourceWidth);",
-        "frame.className = 'document-minimap-frame';",
         "frame.style.width = `${frameWidth}px`;",
         "frame.style.transform = `translateY(${metrics.sourceTop * previewScale}px) scale(${previewScale})`;",
         "frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;",
-        "frame.appendChild(preview);",
-        "content.replaceChildren(frame);",
-        // A document taller than the rail is cloned as the slice the rail can actually show, not whole: a full clone put a second copy of every element on the page, which cost ~890ms a frame to slide on a 4MB glossary. The window is still a clone of the real rendering, so the rail keeps real text — and on any document the rail can show in full it IS the whole document, which is why nothing here is gated on a size threshold.
+    // A document taller than the rail is cloned as the slice the rail can actually show, not whole: a full clone put a second copy of every element on the page, which cost ~890ms a frame to slide on a 4MB glossary. The window is still a clone of the real rendering, so the rail keeps real text — and on any document the rail can show in full it IS the whole document, which is why nothing here is gated on a size threshold.
         "function minimapWindowCoversView(metrics, scrollTop) {",
         "function minimapVisibleDocumentRange(metrics, scrollTop) {",
         "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
@@ -119,6 +114,38 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
     ] {
         assert_contains(&html, expected);
     }
+    // The lines the rail's two builders share: the clone's, and the second frame a whole HTML page gets instead. Each is held in the block that writes it, so neither builder can quietly lose one.
+    for expected in [
+        "minimapBuiltVersion === minimapContentVersion &&",
+        "minimapBuiltSourceWidth === metrics.sourceWidth &&",
+        "frame.className = 'document-minimap-frame';",
+        "frame.appendChild(preview);",
+        "content.replaceChildren(frame);",
+    ] {
+        assert_in(
+            &html,
+            "function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {",
+            expected,
+        );
+    }
+
+    // A whole HTML page is drawn in a frame, so the rail is one more frame over the same page rather than a clone of a body the app page would restyle. It carries no script and takes no keyboard.
+    for expected in [
+        "frame.className = 'document-minimap-frame';",
+        "preview.className = 'document-site document-minimap-preview';",
+        "preview.setAttribute('sandbox', 'allow-same-origin');",
+        "preview.setAttribute('srcdoc', reading.getAttribute('srcdoc') || '');",
+        "preview.setAttribute('tabindex', '-1');",
+        "frame.appendChild(preview);",
+        "content.replaceChildren(frame);",
+    ] {
+        assert_in(
+            &html,
+            "function updateContainedPageMinimapPreview(track, content, minimap) {",
+            expected,
+        );
+    }
+
     for expected in [
         "minimapPreviewFrame = 0;",
         "minimapResizeObserver = null;",
@@ -225,7 +252,7 @@ fn app_shell_clicks_minimap_to_scroll_document() {
         "const scrollToMinimapSnapshotPoint = (event) => {",
         "const content = track.querySelector('.document-minimap-content');",
         "const clickedDocumentY = (event.clientY - contentRect.top) / metrics.previewScale;",
-        "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));",
+        "readerScrollElement().scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));",
         "track.addEventListener('pointerdown', (event) => {",
         "if (Number.isFinite(minimapPointerOffsetY)) {",
         // A bare click falls through to the snapshot, and the arm on its own is all over the page.
@@ -364,8 +391,8 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
         "const minimapRect = minimap.getBoundingClientRect();",
         "return Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));",
         "function measureDocumentMinimap(track) {",
-        "const scrollHeight = Math.max(1, Math.ceil(app.scrollHeight));",
-        "const scrollTop = Math.min(scrollable, Math.max(0, app.scrollTop));",
+        "const scrollHeight = Math.max(1, Math.ceil(reader.scrollHeight));",
+        "const scrollTop = Math.min(scrollable, Math.max(0, reader.scrollTop));",
         "const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);",
         "const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;",
         "const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));",
@@ -381,7 +408,7 @@ fn app_shell_sizes_minimap_track_to_available_reader_height() {
         "const shellRect = app.getBoundingClientRect();",
     );
     for expected in [
-        "const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));",
+        "const viewportHeight = Math.max(1, Math.ceil(reader.clientHeight));",
         "const scrollable = Math.max(0, scrollHeight - viewportHeight);",
     ] {
         assert_in(&html, "function measureDocumentMinimap(track) {", expected);
@@ -440,7 +467,7 @@ fn app_shell_records_the_anchor_whenever_the_minimap_moves_the_reader() {
         // Every re-record goes through the one helper, which keeps the place the reader is holding when there is nothing to measure -- a reader off screen answers against boxes that all read zero, and the search below falls through to the last block of the document.
         "function refreshReaderScrollAnchor() {\n  if (readerOffScreen()) {",
         // Rail click (pointerdown, so already flagged as dragging).
-        "app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));\n    recordReaderScrollPosition();",
+        "readerScrollElement().scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));\n    recordReaderScrollPosition();",
         // Drag release: drop the queued pass built on the pre-drag anchor first, then record where the drag landed.
         "cancelReaderLayoutUpdate();\n      recordReaderScrollPosition();",
         "function cancelReaderLayoutUpdate() {",

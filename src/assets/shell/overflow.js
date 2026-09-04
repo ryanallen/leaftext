@@ -230,6 +230,8 @@ const PAGE_EXPORT_CONTROLS = '.code-copy, .image-lane-corner, .mermaid-tools, .m
 const PAGE_EXPORT_WRAPPER_OPEN = '<div class="app-surface"><main class="reader-shell has-document"><div class="reader-layout reader-layout-no-minimap">';
 const PAGE_EXPORT_WRAPPER_CLOSE = '</div></main></div>';
 function pageExportMarkup() {
+  // A whole HTML page goes out as itself rather than wrapped in Leaftext's own chain: the page is the page, and the rules that draw it travel inside it.
+  if (readingIsContainedPage()) return containedPageExportMarkup();
   const drawn = app ? app.querySelector('.document-body') : null;
   if (!drawn) return '';
   const copy = drawn.cloneNode(true);

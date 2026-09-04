@@ -123,10 +123,10 @@ pub(crate) fn refresh_vault_status(
     id: i64,
 ) {
     let generation = state.change_generation;
-    let Some((root, generation)) = status_read_to_start(state, id, generation) else {
+    let Some(root) = status_read_to_start(state, id, generation) else {
         return;
     };
-    read_vault_status_off_loop(proxy, id, generation, root);
+    read_vault_status_off_loop(proxy, id, root);
 }
 
 /// The folder a status read would walk, or nothing where there is no such vault or one is already running for it. State alone and no worker, which is what lets a test ask it.
@@ -136,18 +136,13 @@ pub(crate) fn status_read_to_start(
     state: &mut VaultState,
     id: i64,
     generation: u64,
-) -> Option<(PathBuf, u64)> {
+) -> Option<PathBuf> {
     let (_name, root) = vault_root(state, id)?;
-    state
-        .may_read_status(id, generation)
-        .then_some((root, generation))
+    state.may_read_status(id, generation).then_some(root)
 }
 
 /// The folder the one repeat is owed against, once a status answer has reached the page — or nothing where nobody asked while the read was running.
-pub(crate) fn status_read_after_delivery(
-    state: &mut VaultState,
-    id: i64,
-) -> Option<(PathBuf, u64)> {
+pub(crate) fn status_read_after_delivery(state: &mut VaultState, id: i64) -> Option<PathBuf> {
     let generation = state.status_read_settled(id)?;
     status_read_to_start(state, id, generation)
 }
@@ -161,17 +156,20 @@ pub(crate) fn read_vault_status(root: &Path) -> VaultRepo {
 pub(crate) fn read_vault_status_off_loop(
     proxy: &EventLoopProxy<UserEvent>,
     id: i64,
-    generation: u64,
     root: PathBuf,
 ) {
     off_loop(proxy, move || {
         let repo = read_vault_status(&root);
         UserEvent::VaultStatusReady {
             id,
-            generation,
             json: serde_json::to_string(&repo).unwrap_or_else(|_| "null".to_string()),
         }
     });
+}
+
+/// The line the page is handed: the vault and its state, and nothing after them. Its own function so a test can read what the host writes rather than the bytes it is written in — a third argument the page had stopped reading rode this line through a whole release.
+pub(crate) fn vault_status_script(id: i64, json: &str) -> String {
+    format!("window.leafSetVaultStatus({id}, {json});")
 }
 
 /// Hand the header's button its vault's state, then let the next read for that vault start.
@@ -182,16 +180,15 @@ pub(crate) fn deliver_vault_status(
     state: &mut VaultState,
     proxy: &EventLoopProxy<UserEvent>,
     id: i64,
-    generation: u64,
     json: &str,
 ) {
     run_page_script(
         webview,
-        &format!("window.leafSetVaultStatus({id}, {json}, {generation});"),
+        &vault_status_script(id, json),
         "Failed to update the vault status",
     );
-    if let Some((root, generation)) = status_read_after_delivery(state, id) {
-        read_vault_status_off_loop(proxy, id, generation, root);
+    if let Some(root) = status_read_after_delivery(state, id) {
+        read_vault_status_off_loop(proxy, id, root);
     }
 }
 

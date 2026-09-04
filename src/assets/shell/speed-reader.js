@@ -139,7 +139,7 @@ function shouldSkipSpeedReaderTextNode(node, root) {
   }
   return !root.contains(parent);
 }
-function applySpeedReaderToDocument(root = app.querySelector('.document-body')) {
+function applySpeedReaderToDocument(root = readingDocumentRoot()) {
   if (!speedReaderEnabled || !root || root.dataset.speedReaderProcessed === 'true') {
     return;
   }

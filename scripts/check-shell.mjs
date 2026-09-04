@@ -56,6 +56,7 @@ import { run as runTheOutlineInThePane } from './check-shell/the-outline-in-the-
 import { run as runAThemeSwapsADrawing } from './check-shell/a-theme-swaps-a-drawing.mjs';
 import { run as runARedrawThatIsNotMadeTwice } from './check-shell/a-redraw-that-is-not-made-twice.mjs';
 import { run as runANoteThatLosesItsMarker } from './check-shell/a-note-that-loses-its-marker.mjs';
+import { run as runHtmlSiteView } from './check-shell/html-site-view.mjs';
 
 // Every subject, in the order it was written in. The boot comes first: it fills the record the rest read.
 
@@ -112,6 +113,7 @@ runTheOutlineInThePane();
 runAThemeSwapsADrawing();
 runARedrawThatIsNotMadeTwice();
 runANoteThatLosesItsMarker();
+runHtmlSiteView();
 
 // ---- report -----------------------------------------------------------------
 

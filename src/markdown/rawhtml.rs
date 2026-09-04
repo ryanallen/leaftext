@@ -455,3 +455,134 @@ pub(crate) fn html_block_renders_to_no_element(source: &str) -> bool {
 
     true
 }
+
+/// The URL schemes a whole HTML page may keep. Wider than the list above by `data:`, because a saved page carries its pictures and fonts inline as often as beside it, and narrower by `glossary:`, which is Leaftext's own decoration and means nothing in a stranger's page. `file:` stays off it: the page is drawn inside a policy that refuses everything but its own folder, so an address naming the disk directly would be a hole in the one boundary the contained page has.
+pub(crate) const SITE_HTML_URL_SCHEMES: [&str; 4] = ["http", "https", "mailto", "data"];
+
+/// The tags a whole HTML page keeps on top of ammonia's own list: what a page is drawn with rather than what prose is written with.
+///
+/// `form`, `button`, `input`, `select`, `textarea`, `iframe`, `object`, `embed`, `script` and `base` are all absent from both lists, so each is dropped without being named — a page contained here draws and does nothing else.
+const SITE_HTML_TAGS: [&str; 26] = [
+    "style",
+    "link",
+    "main",
+    "section",
+    "picture",
+    "source",
+    "video",
+    "audio",
+    "track",
+    "svg",
+    "path",
+    "g",
+    "circle",
+    "rect",
+    "line",
+    "polygon",
+    "polyline",
+    "ellipse",
+    "text",
+    "tspan",
+    "defs",
+    "symbol",
+    "use",
+    "clipPath",
+    "linearGradient",
+    "stop",
+];
+
+/// The second named policy in this boundary: what a whole HTML page may keep when it is drawn as the page its own CSS makes, rather than folded into a Leaftext document.
+///
+/// It differs from [`configure_rendered_html_sanitizer`] in exactly one direction — it keeps the page's own styling. `<style>` stays with its contents, a `<link>` keeps its address only where it is a stylesheet, and `class`, `id` and `style` survive on every tag, because keeping the CSS while the attribute list still strips `class` off a paragraph draws rules that match nothing.
+///
+/// Everything that could act still goes: no script, no event handler, no form, no frame, no object, no embed, and no author `<base>` — the base is the app's to write, and a page that could move it could point every relative address at somewhere else. The page is served into a frame carrying `default-src 'none'`, so a `url()` inside a kept `<style>` reaches nothing this policy did not already allow.
+pub(crate) fn configure_site_html_sanitizer(sanitizer: &mut Builder<'_>) {
+    sanitizer
+        .url_schemes(SITE_HTML_URL_SCHEMES.into_iter().collect())
+        // `style` comes off this list, which is the whole point of the policy. `title` and `script` stay on it: the tab's name is read off the source before this runs, and a script's text drawn as words would be the page's own code on the page.
+        .clean_content_tags(["script", "title"].into_iter().collect())
+        .add_tags(&SITE_HTML_TAGS)
+        // No script, never a URL context, and a page's own layout is written in all three: the styling attributes go on every tag rather than on a list of them.
+        .add_generic_attributes(&["class", "id", "style"])
+        .add_tag_attributes("link", &["href", "media", "rel", "type"])
+        .add_tag_attributes("source", &["media", "sizes", "src", "srcset", "type"])
+        .add_tag_attributes("img", &["decoding", "loading", "sizes", "srcset"])
+        .add_tag_attributes(
+            "video",
+            &["controls", "height", "loop", "muted", "poster", "width"],
+        )
+        .add_tag_attributes("audio", &["controls", "loop", "muted"])
+        .add_tag_attributes("track", &["kind", "label", "src", "srclang"])
+        .add_tag_attributes("svg", &["fill", "height", "viewBox", "width", "xmlns"])
+        .add_tag_attributes(
+            "path",
+            &[
+                "d",
+                "fill",
+                "fill-rule",
+                "stroke",
+                "stroke-linecap",
+                "stroke-linejoin",
+                "stroke-width",
+            ],
+        )
+        .add_tag_attributes("g", &["fill", "stroke", "transform"])
+        .add_tag_attributes("circle", &["cx", "cy", "fill", "r", "stroke"])
+        .add_tag_attributes(
+            "rect",
+            &["fill", "height", "rx", "ry", "stroke", "width", "x", "y"],
+        )
+        .add_tag_attributes("line", &["stroke", "x1", "x2", "y1", "y2"])
+        .add_tag_attributes("polygon", &["fill", "points", "stroke"])
+        .add_tag_attributes("polyline", &["fill", "points", "stroke"])
+        .add_tag_attributes("ellipse", &["cx", "cy", "fill", "rx", "ry", "stroke"])
+        .add_tag_attributes(
+            "text",
+            &[
+                "dominant-baseline",
+                "fill",
+                "font-family",
+                "font-size",
+                "font-weight",
+                "text-anchor",
+                "x",
+                "y",
+            ],
+        )
+        .add_tag_attributes("tspan", &["dy", "fill", "x", "y"])
+        // A page draws its icons once and points at that drawing from every place one goes: `<symbol>` holds it, `<use>` points at it, and `<defs>` holds whatever else is referred to rather than drawn. Without all three the page keeps the space each icon stands in and draws nothing in it.
+        .add_tag_attributes("symbol", &["preserveAspectRatio", "viewBox"])
+        .add_tag_attributes("use", &["height", "href", "width", "x", "xlink:href", "y"])
+        .add_tag_attributes("clipPath", &["clipPathUnits"])
+        .add_tag_attributes(
+            "linearGradient",
+            &["gradientTransform", "gradientUnits", "x1", "x2", "y1", "y2"],
+        )
+        .add_tag_attributes("stop", &["offset", "stop-color", "stop-opacity"])
+        .add_tag_attributes("col", &["span"])
+        .add_tag_attributes("colgroup", &["span"])
+        .add_tag_attributes("td", &["colspan", "headers", "rowspan"])
+        .add_tag_attributes("th", &["colspan", "headers", "rowspan", "scope"])
+        // A `<link>` that is not a stylesheet loses the one attribute that makes it do anything, so a preload, a prefetch and an icon all arrive as an element that fetches nothing. Filtering the attribute rather than the tag is what ammonia can do: it decides by name, and this is the only rule in the policy that has to read a value.
+        .attribute_filter(|element, attribute, value| {
+            if element == "link" && attribute == "rel" && !value.eq_ignore_ascii_case("stylesheet")
+            {
+                return None;
+            }
+            // A `<use>` points at a drawing in this same page and nowhere else. The contained page's own policy refuses a load from anywhere already, so this is the second lock on purpose: an element that could carry one is one somebody has to reason about later.
+            if element == "use"
+                && (attribute == "href" || attribute == "xlink:href")
+                && !value.starts_with('#')
+            {
+                return None;
+            }
+            Some(std::borrow::Cow::Borrowed(value))
+        });
+}
+
+/// Run a whole HTML page through the policy above.
+pub(crate) fn sanitize_site_html(html: &str) -> String {
+    let mut sanitizer = Builder::new();
+    configure_site_html_sanitizer(&mut sanitizer);
+    sanitizer.clean(html).to_string()
+}

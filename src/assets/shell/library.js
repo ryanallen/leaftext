@@ -1061,7 +1061,7 @@ function requestActiveVaultStatus() {
   renderVaultSyncButton();
   if (activeVaultId) send({ command: 'getVaultStatus', id: activeVaultId });
 }
-window.leafSetVaultStatus = (id, repo, generation = 0) => {
+window.leafSetVaultStatus = (id, repo) => {
   if (typeof id !== 'number' || !repo) return;
   const previous = vaultGitByVault.get(id);
   // The cheap read does not walk the folder, so it says nothing about what the folder holds: keep what the panel's own read found rather than blanking its note on the next save.

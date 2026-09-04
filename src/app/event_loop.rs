@@ -367,12 +367,11 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                 for step in watched_batch_steps(&vault_state, changed, generation) {
                     match step {
                         WatchedChangeStep::RereadVaultStatus { id, generation } => {
-                            let Some((root, generation)) =
-                                status_read_to_start(&mut vault_state, id, generation)
+                            let Some(root) = status_read_to_start(&mut vault_state, id, generation)
                             else {
                                 continue;
                             };
-                            read_vault_status_off_loop(&proxy, id, generation, root);
+                            read_vault_status_off_loop(&proxy, id, root);
                         }
                         WatchedChangeStep::ReloadActiveDocument => {
                             reload_active_document(&mut reader, &mut file_watch)
@@ -400,19 +399,8 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
             Event::UserEvent(UserEvent::VaultGitReady { json }) => {
                 deliver_vault_git(reader.page(), &json);
             }
-            Event::UserEvent(UserEvent::VaultStatusReady {
-                id,
-                generation,
-                json,
-            }) => {
-                deliver_vault_status(
-                    reader.page(),
-                    &mut vault_state,
-                    &proxy,
-                    id,
-                    generation,
-                    &json,
-                );
+            Event::UserEvent(UserEvent::VaultStatusReady { id, json }) => {
+                deliver_vault_status(reader.page(), &mut vault_state, &proxy, id, &json);
             }
             Event::UserEvent(UserEvent::CloudFoldersReady { folders }) => {
                 deliver_cloud_folders(&vault_state, reader.page(), &folders);

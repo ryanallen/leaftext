@@ -6460,6 +6460,32 @@ body:has(#readerToolbar:not([hidden])) {
   cursor: pointer;
 }
 
+/* And no wash over the page's own top and bottom. The edge fade dissolves a cut line of Leaftext's own text back into Leaftext's own page color, which over somebody else's page is Leaftext's color painted across the top and bottom of it — the page reads as stopping short of the card rather than filling it. The map already switches the fade off for the same reason: what is drawn there is not a column of text being sliced. */
+.library-shell:has(.document-body-site) .reader-edge-fade {
+  display: none;
+}
+/* The lane's own side padding as well. Every other format is a column of words that wants a margin either side; a whole HTML page is a page, and a page stops at the edge of the window it is in. Written as the lane's own variable rather than as a negative margin on the article, so the rail's clone box — which is sized from this lane's content width — measures the same room the page is drawn in. */
+.reader-layout:has(.document-body-site) {
+  --reader-layout-padding-inline: 0px;
+}
+/* A whole HTML file is drawn as the page its own CSS makes, so the article holding it takes none of Leaftext's measure, padding or type — the only thing around it is the reader's own edges. */
+.document-body-site {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+/* The page itself. It is the page's viewport as well as the page, which is the whole reason it is sized rather than grown to its content: a frame that grew would make the page's own viewport units mean the height of the document, and a sticky header would never stick. The export grows it on purpose, for exactly as long as the sheet is being measured and drawn. */
+.document-site {
+  border: 0;
+  display: block;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 /* ---- The block gutter --------------------------------------------------
    The handle you drag a block by and the plus that writes a new one, in the page's left margin. Positioned inside .reader-layout (the reader's positioned ancestor), so it scrolls with the document instead of being chased down the page by a scroll handler. See block-controls.js.
 
@@ -10613,7 +10639,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 165 values that do not change with the theme, all 65 icons, and all 74 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 82 colors, the 165 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -10635,7 +10661,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>82</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>165</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>65</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>74</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>75</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -11009,7 +11035,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">74 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">75 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -11125,6 +11151,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Outline</h3><code class="built">.document-outline</code><span class="built">site/outline.js, on the published sites</span></header>
 <div class="stage"><div class="document-body"><details class="document-outline" open><summary class="document-outline-summary"><span>Outline</span><span class="document-outline-count">(131 lines)</span></summary><ul><li><a class="document-outline-link" href="#">A heading</a></li></ul></details></div></div>
+</section>
+<section class="part">
+<header><h3>Contained page</h3><code class="built">.document-site</code><span class="built">html.rs, driven by html-site-view.js</span></header>
+<div class="stage"><div class="document-body document-body-site" style="height:180px"><iframe class="document-site" sandbox="allow-same-origin" title="A saved page" srcdoc="&lt;style&gt;body{margin:0;font:16px/1.5 system-ui;background:%23123456;color:%23ffcc00}.hero{padding:24px}.card{border:3px solid %23ff0000;border-radius:12px;padding:12px;margin:0 24px 24px}&lt;/style&gt;&lt;div class=&quot;hero&quot;&gt;&lt;h1&gt;A page its own CSS draws&lt;/h1&gt;&lt;p&gt;Its colors, its type, its layout.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;card&quot;&gt;And a box the page drew itself.&lt;/div&gt;"></iframe></div></div>
 </section>
 <section class="part">
 <header><h3>Pager</h3><code class="built">.docs-pager</code><span class="built">library.js, reading-blocks.js</span></header>

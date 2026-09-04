@@ -57,7 +57,7 @@ use leaftext::{
     UpdateDownload, VaultCorpus, VaultRepo, WorkspacePayloadMessage, CORPUS_SLICE_DOCUMENTS,
     EXPORTED_PAGE_ASSETS_FOLDER, EXPORTED_PAGE_MATH_FONTS_FOLDER, EXPORTED_PAGE_MATH_STYLESHEET,
     EXPORTED_PAGE_MINIMAP_SCRIPT, KATEX_CSS, KATEX_FONTS, LOCAL_ASSET_PROTOCOL,
-    LOCAL_IMAGE_PROTOCOL, MARKDOWN_EXPORT_EXTENSIONS,
+    LOCAL_IMAGE_PROTOCOL, MARKDOWN_EXPORT_EXTENSIONS, SITE_PROTOCOL,
 };
 use notify_debouncer_mini::{
     new_debouncer,
@@ -464,6 +464,7 @@ fn run_app() -> Result<(), Box<dyn Error>> {
             SOURCE_PAYLOAD_PROTOCOL.to_string(),
             source_payload_protocol_handler(),
         )
+        .with_custom_protocol(SITE_PROTOCOL.to_string(), site_protocol_handler())
         .with_ipc_handler(handler)
         .with_drag_drop_handler(drag_drop_handler);
 
@@ -604,6 +605,21 @@ fn bundled_asset_protocol_handler(
             .header("Cache-Control", "max-age=31536000, immutable")
             .body(asset.body)
             .expect("bundled asset protocol response builds")
+    }
+}
+
+// The open HTML page's own folder: its stylesheet, its pictures, its fonts and its media, one requested file at a time. No `Access-Control-Allow-Origin`: a contained page draws these and never reads their bytes back, and the app page around it is on an origin of its own that this must not hand anything to.
+fn site_protocol_handler(
+) -> impl Fn(wry::WebViewId, Request<Vec<u8>>) -> Response<Cow<'static, [u8]>> {
+    move |_webview_id, request| {
+        let asset = leaftext::site_protocol_response(request.uri().to_string().as_str());
+        Response::builder()
+            .status(asset.status)
+            .header("Content-Type", asset.content_type)
+            // A stylesheet edited on disk is a live reload away, and a cached copy would draw the page the reader just changed.
+            .header("Cache-Control", "no-store")
+            .body(Cow::Owned(asset.body))
+            .expect("site protocol response builds")
     }
 }
 

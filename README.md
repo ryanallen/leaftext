@@ -70,9 +70,9 @@ A lock file, a CI workflow, or a Kubernetes manifest as headed sections, aligned
 
 An `.eml` from Gmail, Outlook, or Apple Mail opens as the message it carries: headers, body, inline images, attachments — instead of a wall of base64. Nothing in the message reaches the network. **[Email →](docs/01-features/01-rendering.md#email-eml)**
 
-### HTML without the web page taking over
+### HTML as the page it is
 
-A saved report, exported note, or hand-written `.html` page opens in Leaftext's own reading view. Scripts, styles, forms, buttons, event handlers, and unsafe addresses are removed; the source view keeps the original file for editing. **[HTML →](docs/01-features/01-rendering.md#html-files)**
+A saved report, exported note, or hand-written `.html` page opens as the page its own CSS draws — its colors, its type, its layout, its sticky headers — with nothing to press and nothing to turn off. It runs no script and reaches no network address; what it may read is the folder it sits in. Find, the outline, the minimap and the right-click menu all still work on it, and the source view keeps the original file for editing. **[HTML →](docs/01-features/01-rendering.md#html-files)**
 
 ### Plain text, exactly as you typed it
 

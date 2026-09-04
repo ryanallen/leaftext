@@ -271,10 +271,11 @@ function scheduleMinimapSpacerResize() {
 }
 // Everything that moves the reader without touching the column — a click on the rail, a drag on the box, the keyboard, a tab switch, a reflow re-pin — leaves the column behind, and the next notch there would jump the page back. Never a write while the two already agree: writing a position a scroller has already reached cancels an animation it has in flight, which is the glide this whole path exists for.
 function syncMinimapColumnToReader() {
-  if (!readerMinimap || Math.round(readerMinimap.scrollTop) === Math.round(app.scrollTop)) {
+  const reader = readerScrollElement();
+  if (!readerMinimap || Math.round(readerMinimap.scrollTop) === Math.round(reader.scrollTop)) {
     return;
   }
-  readerMinimap.scrollTop = app.scrollTop;
+  readerMinimap.scrollTop = reader.scrollTop;
 }
 function bindDocumentMinimap() {
   const minimap = currentMinimap();
@@ -319,7 +320,7 @@ function bindDocumentMinimap() {
       : (handleRange <= 0 ? 0 : (targetViewportTop / handleRange) * metrics.scrollable);
     // Set scrollTop against the cached range, then pin the box + thumbnail. The scroll handler skips its update while dragging; pointerup settles once.
     const boundedScrollTop = Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop));
-    app.scrollTop = boundedScrollTop;
+    readerScrollElement().scrollTop = boundedScrollTop;
     const minimap = track.closest('.document-minimap');
     if (minimap) {
       placeMinimapViewport(minimap, metrics, boundedScrollTop);
@@ -341,7 +342,7 @@ function bindDocumentMinimap() {
       return;
     }
     const clickedDocumentY = (event.clientY - contentRect.top) / metrics.previewScale;
-    app.scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));
+    readerScrollElement().scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));
     recordReaderScrollPosition();
     updateMinimapViewport();
   };
@@ -396,7 +397,7 @@ function bindDocumentMinimap() {
 }
 // The minimap is a shrunken clone of the rendered document, so the rail shows real text. The clone rebuilds only on content changes, never on scroll (which only moves the viewport box and, on tall documents, the thumbnail's slide). The element it mirrors: the reading view's document body. The rail is a reading-view affordance — the code view has the editor's own minimap instead.
 function minimapSourceElement() {
-  return app.querySelector('.document-body');
+  return readingDocumentRoot();
 }
 function bindDocumentMinimapPreview(track) {
   disconnectMinimapPreviewObservers();
@@ -521,6 +522,12 @@ function clampReaderScrollTop(scrollTop) {
   if (!Number.isFinite(nextScrollTop)) {
     return 0;
   }
+  // A contained page is clamped against its own scroller and nothing else. The origin correction below is Leaftext's own answer to the room its bar takes over its own layout, and inside somebody else's page there is no such room to cancel.
+  const contained = siteFrameScroller();
+  if (contained) {
+    const room = Math.max(0, contained.scrollHeight - contained.clientHeight);
+    return Math.min(room, Math.max(0, nextScrollTop));
+  }
   const source = app.querySelector('.document-body');
   if (!currentState?.document || !source) {
     return Math.max(0, nextScrollTop);
@@ -531,17 +538,18 @@ function clampReaderScrollTop(scrollTop) {
   return Math.min(range.maxScrollTop, Math.max(range.minScrollTop, nextScrollTop));
 }
 function setReaderScrollTop(scrollTop) {
-  app.scrollTop = clampReaderScrollTop(scrollTop);
+  readerScrollElement().scrollTop = clampReaderScrollTop(scrollTop);
 }
 function clampReaderScrollPosition() {
   if (!currentState?.document) {
     return false;
   }
-  const clampedScrollTop = clampReaderScrollTop(app.scrollTop);
-  if (Math.abs(clampedScrollTop - app.scrollTop) < 0.5) {
+  const reader = readerScrollElement();
+  const clampedScrollTop = clampReaderScrollTop(reader.scrollTop);
+  if (Math.abs(clampedScrollTop - reader.scrollTop) < 0.5) {
     return false;
   }
-  app.scrollTop = clampedScrollTop;
+  reader.scrollTop = clampedScrollTop;
   return true;
 }
 let resetReaderScrollFrame = 0;
@@ -808,17 +816,22 @@ function measureDocumentMinimap(track) {
   const minimap = track.closest('.document-minimap');
   const source = minimapSourceElement();
   const appRect = app.getBoundingClientRect();
+  // A contained page scrolls inside its own frame, so every number below is that scroller's rather than the shell's — the shell holding it never moves a pixel.
+  const contained = siteFrameScroller();
+  const reader = contained || app;
   const sourceRect = source ? source.getBoundingClientRect() : null;
   const sourceWidth = sourceRect ? Math.max(1, Math.ceil(sourceRect.width)) : 1;
   const content = minimap ? minimap.querySelector('.document-minimap-content') : null;
   const contentWidth = content ? Math.max(1, Math.ceil(content.getBoundingClientRect().width)) : sourceWidth;
   const trackRect = track.getBoundingClientRect();
-  const scrollHeight = Math.max(1, Math.ceil(app.scrollHeight));
-  const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));
+  const scrollHeight = Math.max(1, Math.ceil(reader.scrollHeight));
+  const viewportHeight = Math.max(1, Math.ceil(reader.clientHeight));
   const scrollable = Math.max(0, scrollHeight - viewportHeight);
-  const scrollTop = Math.min(scrollable, Math.max(0, app.scrollTop));
-  // Where the document content begins in the scroll container (top gap included); the thumbnail starts here too so its top lines up with the real content.
-  const sourceTop = sourceRect ? Math.max(0, Math.round(sourceRect.top - appRect.top + app.scrollTop)) : 0;
+  const scrollTop = Math.min(scrollable, Math.max(0, reader.scrollTop));
+  // Where the document content begins in the scroll container (top gap included); the thumbnail starts here too so its top lines up with the real content. A contained page begins at its own top, and its rect is measured in the frame rather than in the shell, so the two coordinate spaces are never subtracted from each other.
+  const sourceTop = contained
+    ? 0
+    : (sourceRect ? Math.max(0, Math.round(sourceRect.top - appRect.top + app.scrollTop)) : 0);
   const previewScale = contentWidth / sourceWidth;
   const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);
   // Size the rail to the thumbnail, capped at the space below its top: a short document gets a short rail, a long one fills the screen and slides inside.
@@ -1040,6 +1053,45 @@ function minimapFrameWidth(fallbackWidth) {
   const width = layout.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
   return width > 0 ? width : fallbackWidth;
 }
+// The rail over a whole HTML page: one more frame carrying the same page, scaled to the rail. It is a second layout of the whole document rather than a windowed slice — a frame cannot be cut in half — so it is built once per render and left alone, and scrolling only moves the box over it.
+//
+// The frame carries the reading frame's own `srcdoc`, which costs nothing to hand over: it is the string the page was already drawn from. It takes no pointer events and no keyboard, and it runs no script for the same reason the reading frame does not.
+function updateContainedPageMinimapPreview(track, content, minimap) {
+  const metrics = measureDocumentMinimap(track);
+  const reading = documentSiteFrame();
+  if (!reading) return;
+  const built = content.querySelector('.document-minimap-preview');
+  if (built && minimapBuiltVersion === minimapContentVersion && minimapBuiltSourceWidth === metrics.sourceWidth) {
+    updateMinimapViewport();
+    return;
+  }
+  const frame = document.createElement('div');
+  frame.className = 'document-minimap-frame';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.width = `${metrics.sourceWidth}px`;
+  frame.style.transform = `scale(${metrics.previewScale})`;
+  const preview = document.createElement('iframe');
+  preview.className = 'document-site document-minimap-preview';
+  preview.setAttribute('aria-hidden', 'true');
+  preview.setAttribute('tabindex', '-1');
+  preview.setAttribute('sandbox', 'allow-same-origin');
+  preview.style.width = `${metrics.sourceWidth}px`;
+  preview.style.height = `${metrics.scrollHeight}px`;
+  preview.setAttribute('srcdoc', reading.getAttribute('srcdoc') || '');
+  frame.appendChild(preview);
+  content.replaceChildren(frame);
+  minimapBuiltVersion = minimapContentVersion;
+  minimapBuiltSourceWidth = metrics.sourceWidth;
+  minimapBuiltPreviewWidth = Math.max(1, Math.ceil(content.getBoundingClientRect().width));
+  minimapBuiltFrameWidth = metrics.sourceWidth;
+  minimapBuiltRange = null;
+  minimapBuiltFirstRow = -1;
+  minimapBuiltLastRow = -1;
+  minimapBuiltRowPath = '';
+  minimapBuiltSlack = MINIMAP_WINDOW_SLACK;
+  markMinimapWarming();
+  placeMinimapViewport(minimap, metrics, null);
+}
 // Build the thumbnail: clone the document, strip ids/links, shrink to the rail width with a transform. Rebuilt on content changes and when scrolling leaves the window it was built for; scroll otherwise just repositions the box and slides it.
 //
 // The clone holds only the slice the rail can show. Cloning the whole document put a second copy of every element on the page — 99.9% of it off-screen — which cost ~890ms a frame to slide on a 4MB glossary. It is still a clone of the real rendering, so the rail keeps real text rather than a synthesized line pattern.
@@ -1049,6 +1101,11 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   const content = track ? track.querySelector('.document-minimap-content') : null;
   const source = minimapSourceElement();
   if (!track || !content || !source) {
+    return;
+  }
+  // A whole HTML page has no rows to window and no clone that would draw: a copy of its body dropped into the app page is laid out by the app's rules rather than by its own, so the rail is a second frame over the same prepared page, scaled.
+  if (readingIsContainedPage()) {
+    updateContainedPageMinimapPreview(track, content, minimap);
     return;
   }
   const metrics = measureDocumentMinimap(track);

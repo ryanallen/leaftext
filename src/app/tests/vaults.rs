@@ -182,7 +182,7 @@ fn a_vault_whose_folder_is_known_reads_it_once_per_burst() {
     // The answer lands, and the one repeat everything waiting is owed reads the same folder.
     assert_eq!(
         status_read_after_delivery(&mut state, id),
-        Some((first.0.clone(), 11)),
+        Some(first.clone()),
         "the repeat everything waiting is owed never started"
     );
     assert_eq!(
@@ -193,6 +193,18 @@ fn a_vault_whose_folder_is_known_reads_it_once_per_burst() {
 
     drop(state);
     fs::remove_dir_all(&dir).expect("test directory is removed");
+}
+
+#[test]
+fn the_status_line_the_host_writes_carries_the_vault_and_its_state_alone() {
+    // The line the host writes, against the line the page declares. A third argument the page had stopped reading rode this call through a whole release, so both halves are held together here.
+    assert_eq!(
+        vault_status_script(7, "{\"state\":\"clean\"}"),
+        "window.leafSetVaultStatus(7, {\"state\":\"clean\"});"
+    );
+
+    let page = include_str!("../../assets/shell/library.js");
+    assert!(page.contains("window.leafSetVaultStatus = (id, repo) => {"));
 }
 
 #[test]

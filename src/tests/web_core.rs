@@ -210,7 +210,7 @@ fn every_fixture_renders_through_a_host_with_no_disk() {
         let document = opened_document_from_source_with_host(fixture.source, &path, &BareHost);
 
         assert!(
-            document.html.contains("<article class=\"document-body\""),
+            document.html.contains("<article class=\"document-body"),
             "the {} fixture rendered nothing through a bare host: {}",
             fixture.name,
             document.html
@@ -350,18 +350,27 @@ fn a_fence_highlights_to_the_markup_both_engines_have_to_agree_on() {
     );
 }
 
-/// A waiting state is a promise. The desktop can keep it — it walks the folder and fills the strip in — and a host that cannot see a document's neighbors never draws one, rather than leaving a skeleton that spins for ever.
+/// A waiting state is a promise. The desktop can keep it — it walks the folder and fills the strip in — and a host that cannot see a document's neighbors never draws one, rather than leaving a skeleton that spins for ever. A whole HTML page is the one document with no strip on either host: it is drawn as the page it is, filling the reader to its bottom edge, and a divider with two of Leaftext's buttons under it would be Leaftext's chrome inside somebody else's page.
 #[test]
 fn only_a_host_that_can_find_the_neighbors_draws_the_previous_next_strip() {
     for fixture in web_core_fixtures() {
         let path = web_core_fixture_path(fixture.file);
 
         let desktop = opened_document_from_source(fixture.source, &path);
-        assert!(
-            desktop.html.contains("docs-pager-loading"),
-            "the {} fixture lost the desktop's waiting strip",
-            fixture.name
-        );
+        if fixture.name == "html" {
+            assert!(
+                !desktop.html.contains("docs-pager"),
+                "a whole HTML page drew a Previous/Next strip inside itself:
+{}",
+                desktop.html
+            );
+        } else {
+            assert!(
+                desktop.html.contains("docs-pager-loading"),
+                "the {} fixture lost the desktop's waiting strip",
+                fixture.name
+            );
+        }
 
         let bare = opened_document_from_source_with_host(fixture.source, &path, &BareHost);
         assert!(
@@ -615,7 +624,7 @@ const WEB_CORE_RENDERS: &[(&str, &str)] = &[
     ),
     (
         "html",
-        "0188116ace3f436bdbfdf4ada04315e2ae763a5318c772a78831f1b88d74da30",
+        "84a26bf547a14e8eecccae794afc88e026403867928896f8eb9cbf4b0d528545",
     ),
     (
         "text",

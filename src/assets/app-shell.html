@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: https://fonts.googleapis.com; font-src 'self' data: http://leaf-asset.local leaf-asset: https://fonts.gstatic.com; connect-src 'self' http://leaf-source.local leaf-source: https://api.github.com">
+<!-- `leaf-site` is the open HTML page's own folder, and it is named here because a frame drawn from `srcdoc` inherits this policy and enforces its own on top: the two are additive, so a contained page can only ever be tighter than this and never looser. Without these four the page's own stylesheet, pictures, fonts and media would be refused by the app page before its own policy was ever asked. Nothing on this page can reach that folder itself — the app's markup is written here, and the sanitizer a note's raw HTML crosses allows neither a style block nor a stylesheet link. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: http://leaf-image.local leaf-image: http://leaf-site.local leaf-site: data:; script-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset:; style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: http://leaf-site.local leaf-site: https://fonts.googleapis.com; font-src 'self' data: http://leaf-asset.local leaf-asset: http://leaf-site.local leaf-site: https://fonts.gstatic.com; media-src 'self' http://leaf-site.local leaf-site:; connect-src 'self' http://leaf-source.local leaf-source: https://api.github.com">
 <title>Leaftext</title>
 <script>{{THEME_BOOTSTRAP_SCRIPT}}</script>
 <link rel="stylesheet" href="{{KATEX_CSS_URL}}">

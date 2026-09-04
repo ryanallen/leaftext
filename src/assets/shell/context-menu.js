@@ -87,6 +87,9 @@ function pictureMenuTarget(picture) {
 }
 // The words highlighted in the rendered document, exactly as selected, or nothing — a selection reaching outside it, or over a body standing behind another view, is not what a reader means by copy. The copy key reads this too, so the two gestures cannot disagree about which words go on the clipboard.
 function selectionTextInReadingView() {
+  // A contained page keeps its own selection, in its own document — so this is asked before the app page's own, whose selection is empty the whole time a reader has words highlighted inside the frame.
+  const contained = siteFrameDocument();
+  if (contained) return containedPageSelectionText(contained);
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || !selection.rangeCount) return '';
   const body = app.querySelector('.document-body');

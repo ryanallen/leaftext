@@ -508,6 +508,40 @@ fn app_shell_csp_grants_no_unsafe_eval() {
 }
 
 #[test]
+fn the_app_page_admits_the_open_pages_own_folder_for_what_it_draws_and_nothing_else() {
+    // A frame drawn from `srcdoc` inherits this policy and enforces its own on top, so a contained page can only ever be tighter than this. Without the grant here its stylesheet, pictures, fonts and media are refused by the app page before the page's own policy is ever asked — and the grant is only ever those four, because nothing on this page can reach that folder itself.
+    let html = app_shell_page();
+    let csp_line = html
+        .lines()
+        .find(|line| line.contains("Content-Security-Policy"))
+        .expect("shell declares a Content-Security-Policy");
+
+    let mut granted = Vec::new();
+    for directive in csp_line.split(';').map(str::trim) {
+        let Some(name) = directive.split_whitespace().next() else {
+            continue;
+        };
+        if !name.ends_with("-src") {
+            continue;
+        }
+        if directive.contains("leaf-site") {
+            assert!(
+                directive.contains("http://leaf-site.local") && directive.contains("leaf-site:"),
+                "{name} must name both spellings of the open page's folder: {directive}"
+            );
+            granted.push(name);
+        }
+    }
+    granted.sort_unstable();
+
+    assert_eq!(
+        granted,
+        ["font-src", "img-src", "media-src", "style-src"],
+        "the app page grants the open page's own folder to {granted:?}"
+    );
+}
+
+#[test]
 fn app_shell_csp_allows_github_api_for_update_check() {
     // The update check fetches api.github.com; without a connect-src grant the webview's default-src 'self' blocks it. Guard against that regression.
     let html = app_shell_page();

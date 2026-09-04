@@ -601,3 +601,29 @@
   cursor: pointer;
 }
 
+/* And no wash over the page's own top and bottom. The edge fade dissolves a cut line of Leaftext's own text back into Leaftext's own page color, which over somebody else's page is Leaftext's color painted across the top and bottom of it — the page reads as stopping short of the card rather than filling it. The map already switches the fade off for the same reason: what is drawn there is not a column of text being sliced. */
+.library-shell:has(.document-body-site) .reader-edge-fade {
+  display: none;
+}
+/* The lane's own side padding as well. Every other format is a column of words that wants a margin either side; a whole HTML page is a page, and a page stops at the edge of the window it is in. Written as the lane's own variable rather than as a negative margin on the article, so the rail's clone box — which is sized from this lane's content width — measures the same room the page is drawn in. */
+.reader-layout:has(.document-body-site) {
+  --reader-layout-padding-inline: 0px;
+}
+/* A whole HTML file is drawn as the page its own CSS makes, so the article holding it takes none of Leaftext's measure, padding or type — the only thing around it is the reader's own edges. */
+.document-body-site {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+/* The page itself. It is the page's viewport as well as the page, which is the whole reason it is sized rather than grown to its content: a frame that grew would make the page's own viewport units mean the height of the document, and a sticky header would never stick. The export grows it on purpose, for exactly as long as the sheet is being measured and drawn. */
+.document-site {
+  border: 0;
+  display: block;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+}

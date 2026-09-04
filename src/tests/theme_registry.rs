@@ -285,10 +285,10 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
 
     // The CSP admits Google Fonts (stylesheet host + font-file host) and no more.
     assert!(html.contains(
-        "style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: https://fonts.googleapis.com"
+        "style-src 'self' 'unsafe-inline' http://leaf-asset.local leaf-asset: http://leaf-site.local leaf-site: https://fonts.googleapis.com"
     ));
     assert!(html.contains(
-        "font-src 'self' data: http://leaf-asset.local leaf-asset: https://fonts.gstatic.com"
+        "font-src 'self' data: http://leaf-asset.local leaf-asset: http://leaf-site.local leaf-site: https://fonts.gstatic.com"
     ));
 }
 

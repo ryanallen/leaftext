@@ -715,6 +715,8 @@ function renderState(keepDetachedRender = false) {
     }
     // Past this line the document has geometry, so anything that measures it, or renders by measuring text, or wants focus, is safe.
     placeDeferredReadingCaret();
+    // Before the links below: a contained page carries its own, on its own document, and this is what puts them there once its page arrives.
+    bindDocumentSiteFrame(renderedPath);
     bindDocumentLinks();
     requestDocumentPager(state.document.path || activeDocumentPath());
     bindDocumentMinimap();

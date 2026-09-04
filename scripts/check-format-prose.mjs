@@ -175,6 +175,8 @@ const LISTS = [
       ['src/eml.rs', 'the email renderer and the HTML policy it shares with Markdown, not the formats the app admits'],
       ['src/markdown/images.rs', 'image paths written in Markdown or HTML, not the formats the app admits'],
       ['src/markdown/rawhtml.rs', 'the shared HTML sanitizer policy, not the formats the app admits'],
+      ['src/site_protocol.rs', 'the boundary between two lists — the words say a note beside a page is a document rather than a page asset, and the scheme refuses it; nothing there describes what the app opens'],
+      ['src/assets/shell/html-site-view.js', 'the one format drawn in a frame of its own, and what a document that is not one falls back to — the words mark that boundary rather than naming the formats the app admits'],
       ['src/scripts.rs', 'the shape and cost of one rendered-document payload, not the formats the app admits'],
       ['src/tests/images.rs', 'picture paths written in Markdown or HTML, not the formats the app admits'],
       ['src/tests/markdown_rawhtml.rs', 'raw HTML written inside Markdown, not the formats the app admits'],

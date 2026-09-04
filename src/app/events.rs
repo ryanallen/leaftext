@@ -20,11 +20,7 @@ pub(crate) enum UserEvent {
     /// The git panel's next whole state, already serialized on the worker thread.
     VaultGitReady { json: String },
     /// Just the folder's own git state, for the header's sync button.
-    VaultStatusReady {
-        id: i64,
-        generation: u64,
-        json: String,
-    },
+    VaultStatusReady { id: i64, json: String },
     /// The clock says it is time to ask the remote vaults what has moved. The loop decides which, if any, are worth asking — it is the only place that knows what is busy and what is resting.
     RemoteRefreshDue,
     /// A refresh pass finished. `ran_under` is the mirror it ran against, so a pass that outlived its vault is thrown away rather than delivered.

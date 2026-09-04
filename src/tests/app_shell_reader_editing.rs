@@ -167,9 +167,9 @@ fn app_shell_clamps_reader_scroll_to_rendered_content_range() {
             "function clampReaderScrollTop(scrollTop) {",
             "return Math.min(range.maxScrollTop, Math.max(range.minScrollTop, nextScrollTop));",
             "function setReaderScrollTop(scrollTop) {",
-            "app.scrollTop = clampReaderScrollTop(scrollTop);",
+            "readerScrollElement().scrollTop = clampReaderScrollTop(scrollTop);",
             "function clampReaderScrollPosition() {",
-            "const clampedScrollTop = clampReaderScrollTop(app.scrollTop);",
+            "const clampedScrollTop = clampReaderScrollTop(reader.scrollTop);",
             // A scroll reaches the clamp through the settle, and this line is the whole of that path.
             "readerScrollSettleTimer = window.setTimeout(settleReaderScroll, READER_SCROLL_SETTLE_MS);",
             "setReaderScrollTop(app.scrollTop);",

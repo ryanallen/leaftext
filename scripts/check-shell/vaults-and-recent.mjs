@@ -327,15 +327,15 @@ export function run() {
       vm.runInContext('leafVaults = __testVaults; activeVaultId = 91; syncInFlight = false;', booted);
       booted.leafSetVaultGit(gitState(GIT_VAULT, { changed: 1 }));
 
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 1);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 });
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 });
       if (sent.filter((one) => one.command === 'syncVault').length !== 1) {
-        throw new Error(`one local generation started more than one sync: ${JSON.stringify(sent)}`);
+        throw new Error(`two identical status answers started more than one sync, so syncInFlight did not stop the second: ${JSON.stringify(sent)}`);
       }
 
       booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
       if (!GIT_VAULT.gitAutoSync) throw new Error('a failure turned the vault choice off');
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 2);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 });
       if (sent.filter((one) => one.command === 'syncVault').length !== 1) {
         throw new Error('a later save tried automatic sync again after the last job failed');
       }
@@ -345,7 +345,7 @@ export function run() {
       manual.run();
       booted.leafVaultGitBusy(GIT_VAULT.id);
       booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 0 }), { message: 'synced:1' }));
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 3);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 });
       if (sent.filter((one) => one.command === 'syncVault').length !== 3) {
         throw new Error(`manual Sync and its success did not start automatic sync again: ${JSON.stringify(sent)}`);
       }
@@ -353,7 +353,7 @@ export function run() {
       booted.leafSetVaultGit(gitState(GIT_VAULT, { changed: 1 }));
       booted.__testVaults = [Object.assign({}, GIT_VAULT, { gitAutoSync: false }), PLAIN_VAULT];
       vm.runInContext('leafVaults = __testVaults; syncSpinUntil = 0; if (syncSpinTimer) clearTimeout(syncSpinTimer); syncSpinTimer = 0;', booted);
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 4);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 });
       if (sent.filter((one) => one.command === 'syncVault').length !== 3) {
         throw new Error('automatic sync started while the vault choice was off');
       }
@@ -376,10 +376,10 @@ export function run() {
       booted.__testVaults = [GIT_VAULT, SECOND_GIT_VAULT];
       vm.runInContext('leafVaults = __testVaults; activeVaultId = 91; syncInFlight = false;', booted);
       booted.leafSetVaultGit(Object.assign(gitState(GIT_VAULT, { changed: 1 }), { message: 'network failed', error: true }));
-      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 }, 2);
+      booted.leafSetVaultStatus(GIT_VAULT.id, { atRoot: true, remote: 'me/work', changed: 1, ahead: 0 });
       vm.runInContext('activeVaultId = 93;', booted);
       booted.leafSetVaultGit(gitState(SECOND_GIT_VAULT, { changed: 1 }));
-      booted.leafSetVaultStatus(SECOND_GIT_VAULT.id, { atRoot: true, remote: 'me/notes', changed: 1, ahead: 0 }, 1);
+      booted.leafSetVaultStatus(SECOND_GIT_VAULT.id, { atRoot: true, remote: 'me/notes', changed: 1, ahead: 0 });
       const starts = sent.filter((one) => one.command === 'syncVault');
       if (starts.length !== 1 || starts[0].id !== SECOND_GIT_VAULT.id) {
         throw new Error(`one vault's failure stopped another vault: ${JSON.stringify(sent)}`);

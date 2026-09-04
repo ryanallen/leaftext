@@ -50,6 +50,7 @@ mod reading_css_reader;
 mod reading_css_tokens;
 mod remote;
 mod settings_paths;
+mod site_protocol;
 mod text;
 mod theme_registry;
 mod updater;

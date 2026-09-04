@@ -44,7 +44,7 @@ fn a_vault_with_work_to_send_says_so_in_its_own_header() {
 
     // The count is read off disk, on a path that never asks the network. The panel's reading is the one that runs `gh auth status`; doing that on every save would put a token check behind Ctrl+S.
     assert!(html.contains("send({ command: 'getVaultStatus', id: activeVaultId });"));
-    assert!(html.contains("window.leafSetVaultStatus = (id, repo, generation = 0) => {"));
+    assert!(html.contains("window.leafSetVaultStatus = (id, repo) => {"));
 
     // There are two ways the page learns which vault is active and they share no path: a switch mid-session comes through `leafSetVaults`, but a cold launch never calls that -- the list is already on the window as `__leafVaults` and read straight out of it. Asking from only one of them is a button that works all session and is missing every time the app starts.
     assert!(html.contains("function requestActiveVaultStatus() {"));

@@ -607,7 +607,7 @@ export function run() {
     if (opened < 0 || closed < 0) throw new Error('the reading view is not a <main id="app"> any more');
     if (page.slice(opened, closed).includes('readerMinimap')) throw new Error('the rail moved inside the reading view, so its clone lands where the watcher can see it');
     const fragment = readFileSync(join(root, 'src/assets/shell/minimap.js'), 'utf8');
-    if (!/function minimapSourceElement\(\) \{\s*return app\.querySelector\('\.document-body'\);/.test(fragment)) throw new Error('the thumbnail no longer clones the reading view’s own body');
+    if (!/function minimapSourceElement\(\) \{\s*return readingDocumentRoot\(\);/.test(fragment)) throw new Error('the thumbnail no longer clones the reading view’s own body');
     if (!/minimapBodyObserver = new MutationObserver\(invalidateMinimapPreview\);\s*minimapBodyObserver\.observe\(source, \{/.test(fragment)) throw new Error('the watcher is no longer bound to the element the thumbnail is cloned from');
   });
 

@@ -22,6 +22,10 @@ pub(crate) use eml::*;
 #[path = "html.rs"]
 mod html_document;
 pub(crate) use html_document::*;
+/// The open HTML page's own folder, served one file at a time to the frame that page is drawn in.
+mod site_protocol;
+pub use site_protocol::{site_protocol_path, site_protocol_response, SiteResponse, SITE_PROTOCOL};
+pub(crate) use site_protocol::{stage_site_folder, SITE_POLICY_SOURCES};
 mod text;
 pub(crate) use text::*;
 mod ini;
@@ -197,6 +201,8 @@ pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     "assets/shell/selection-toolbar.js",
     // Find, after both views' own code: it drives Monaco through code-view.js's editor and splices through reading-edits.js's edit path.
     "assets/shell/find-bar.js",
+    // The reading view of a whole HTML page: a frame the reader's own features are bridged into. Before the renderer that draws it, and after every fragment it reaches back into to re-ask its question once the page has arrived.
+    "assets/shell/html-site-view.js",
     "assets/shell/render-document.js",
     "assets/shell/glossary.js",
     // Generated from design/icons.md, and data only: the icon set the next fragment hands to mermaid so `A@{ icon: "leaf:back" }` draws the app's own drawing rather than mermaid's off-theme blue square.
@@ -499,13 +505,7 @@ pub fn opened_document_from_source_with_host(
             render_eml_document,
             host,
         ),
-        DocumentFormat::Html => opened_document_from_tree(
-            Cow::Borrowed(source),
-            path,
-            DocumentFormat::Html,
-            render_html_document,
-            host,
-        ),
+        DocumentFormat::Html => opened_document_from_html_with_host(source, path, host),
         DocumentFormat::Ini => opened_document_from_tree(
             Cow::Borrowed(source),
             path,
@@ -614,6 +614,11 @@ pub fn opened_document_from_yaml(yaml: &str, path: impl AsRef<Path>) -> OpenedDo
         render_yaml_document,
         &DesktopHost::default(),
     )
+}
+
+/// Render a complete HTML page into an `OpenedDocument`: the page its own CSS draws, inside a frame of its own.
+pub fn opened_document_from_html(html: &str, path: impl AsRef<Path>) -> OpenedDocument {
+    opened_document_from_html_with_host(html, path.as_ref(), &DesktopHost::default())
 }
 
 /// Render a MIME message (.eml, .mht) into an `OpenedDocument`.

@@ -74,7 +74,7 @@ function findPattern(global) {
 // ---- the reading view: the text on the page ------------------------------
 
 function findRenderedBody() {
-  return app.querySelector('.document-body');
+  return readingDocumentRoot();
 }
 
 // Something redrew the page, so the flattening is a picture of a page that is gone and the next search rebuilds before it reads.

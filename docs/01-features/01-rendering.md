@@ -591,9 +591,13 @@ Editing works, with one limit worth knowing. The [code view](07-editing.md#code-
 
 ## HTML files
 
-Leaftext opens `.html` and `.htm` files in its own reading view, so a saved report, exported note, or hand-written page uses the same theme, outline, minimap, Find, pager, and link behavior as every other document. The file name supplies the page heading when the source does not provide one Leaftext can safely use.
+Leaftext opens `.html` and `.htm` files as the page their own CSS draws. A saved report, an exported note or a hand-written page keeps its own colors, type, layout, sticky headers and media queries — the way a browser tab draws it. There is nothing to press and nothing to turn off: an HTML file has one reading view and this is it. The tab is named by the page's own `<title>`, and by the file name where the page names itself nothing.
 
-The full page crosses the same sanitizer as HTML written inside Markdown. Document structure including `main` and `section` stays; scripts, styles, event handlers, forms, buttons, and unsafe addresses do not reach the reading view. The original source stays intact in the [code view](07-editing.md#code-view), which is the editing surface because sanitizing cannot prove byte ranges for click-to-edit blocks.
+The page is drawn in a frame of its own, which is what keeps it from reaching anything around it. It runs no script, no form, no frame, no object and no embed, and it carries a security policy of its own that refuses every network address — a saved page cannot phone the site it was saved from. What it may reach is the folder it sits in: its stylesheets, pictures, fonts and media, one file at a time, and nothing above that folder. A rule in the page cannot style Leaftext, and Leaftext's own type and spacing are not applied to the page.
+
+The reader's own tools still work on it. [Find](02-navigation.md#find-in-this-document), the [outline](02-navigation.md#outline), the [minimap](04-minimap.md), the right-click menu, text selection, the speed reader and link following all reach into the page, and exporting it writes the whole page rather than one screen. The frame scrolls itself, so where you were is remembered across a tab switch.
+
+The original source stays intact in the [code view](07-editing.md#code-view), which is the editing surface because a page drawn this way proves no byte ranges for click-to-edit blocks. A change there redraws the page without saving.
 
 Installing Leaftext offers it under **Open with** for HTML without replacing the browser as the default. See [File associations](../02-installation.md#file-associations).
 

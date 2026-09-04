@@ -190,7 +190,17 @@ fn app_shell_draws_the_documents_headings_in_the_library_pane() {
     );
     // Read on every render and handed on, so a document with no headings clears what the last one left.
     assert_contains(&html, "function publishDocumentOutline() {");
-    assert_contains(&html, "publishDocumentOutline();");
+    // Twice in the page: once as the render publishes them, and once when a contained page finishes arriving and the render's own answer was an empty frame.
+    assert_in(
+        &html,
+        "function renderState(keepDetachedRender = false) {",
+        "publishDocumentOutline();",
+    );
+    assert_in(
+        &html,
+        "function siteFrameReady() {",
+        "publishDocumentOutline();",
+    );
     assert_contains(
         &html,
         "setDocumentOutlineRows(body ? collectDocumentOutlineRows(body) : []);",
@@ -805,7 +815,6 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
     for expected in [
         "function newPageModifierHeld(event) {",
         "return isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;",
-        "sendDocumentLink(link, newPageModifierHeld(event));",
         "send({ command: 'openLink', href: rawHref, scroll_anchor: currentScrollAnchor(), newPage });",
         "app.addEventListener('mousedown', (event) => {",
         // A middle click only acts where there is a page to open.
@@ -819,8 +828,20 @@ fn app_shell_opens_a_held_or_middle_click_as_a_page_of_its_own() {
         "app.addEventListener('auxclick', (event) => {",
         "const link = event.button === 1 ? documentLinkFor(event.target) : null;",
         "sendDocumentLink(link, true);",
+        // Both documents a click can land in send the same way, so the block is what says which one this is.
+        "sendDocumentLink(link, newPageModifierHeld(event));",
     ] {
         assert_in(&html, "function bindDocumentLinks() {", expected);
+    }
+
+    // The other document a click lands in: a whole HTML page, drawn in a frame whose own document never lets an event reach the page around it. The same three gestures, on that document.
+    for expected in [
+        "page.addEventListener('click', (event) => {",
+        "sendDocumentLink(link, newPageModifierHeld(event));",
+        "sendDocumentLink(link, true);",
+        "const link = event.button === 1 ? containedPageLinkFor(event.target) : null;",
+    ] {
+        assert_in(&html, "function bindContainedPageLinks(page) {", expected);
     }
 
     // One platform test for the whole front-end, shared out of state.js — the menu reads it for Ctrl-click and the link handler for which key opens a page.

@@ -1274,7 +1274,7 @@ function collectDocumentOutlineRows(body) {
 }
 // Read the open document's sections and hand them to whatever draws them, which is the library pane. Run before bindDocumentLinks, and on every render — a document with none clears what the last one left.
 function publishDocumentOutline() {
-  const body = app.querySelector('.document-body');
+  const body = readingDocumentRoot();
   setDocumentOutlineRows(body ? collectDocumentOutlineRows(body) : []);
   scheduleLibraryOutline();
 }

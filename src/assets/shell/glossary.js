@@ -753,7 +753,13 @@ function startLinkHover(event) {
   }
   showLinkHoverTip(event);
 }
-// A leave never hides on its own word: one frame later the link under the pointer decides — the active one stays, another takes the card over, none at all hides it.
+// A leave never hides on its own word: one frame later the link under the pointer decides — the active one stays, another takes the card over, none at all hides it. The pointer moved with a card up: follow it. Its own function rather than a closure on the listener, so a contained page can carry its own pointer out to the same place.
+function moveLinkHover(event) {
+  recordLinkHoverPoint(event);
+  if (!activeHoverLink) return;
+  linkHoverPointer = event;
+  positionLinkHoverTip(event);
+}
 function endLinkHover(event) {
   if (!activeHoverLink) return;
   const leaving = event.target.closest && event.target.closest(HOVERABLE_LINK);
@@ -784,12 +790,7 @@ function endLinkHover(event) {
 linkHoverCardReady = true;
 if (canHoverLinks) {
   document.addEventListener('pointerover', startLinkHover);
-  document.addEventListener('pointermove', (event) => {
-    recordLinkHoverPoint(event);
-    if (!activeHoverLink) return;
-    linkHoverPointer = event;
-    positionLinkHoverTip(event);
-  });
+  document.addEventListener('pointermove', moveLinkHover);
   document.addEventListener('pointerout', endLinkHover);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) hideLinkHoverTip();
