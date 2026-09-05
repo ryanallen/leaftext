@@ -172,12 +172,12 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[
 /// Where each outside icon pack's block sits inside `assets/icons.css`, as `(pack, start, end)` byte offsets. Only true of the exact sheet beside them, which is why one generator writes both.
 #[rustfmt::skip]
 pub(crate) const LEAF_ICON_PACK_RANGES: &[(&str, usize, usize)] = &[
-    ("feather", 33503, 55981),
-    ("lucide", 55981, 85513),
-    ("tabler", 85513, 115403),
-    ("remix", 115403, 146237),
-    ("phosphor", 146237, 169903),
-    ("heroicons", 169903, 191462),
+    ("feather", 33503, 56940),
+    ("lucide", 56940, 87460),
+    ("tabler", 87460, 118384),
+    ("remix", 118384, 149970),
+    ("phosphor", 149970, 174628),
+    ("heroicons", 174628, 197042),
 ];
 // END GENERATED ICON PACKS
 

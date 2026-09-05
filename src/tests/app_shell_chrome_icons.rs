@@ -156,6 +156,91 @@ fn every_icon_is_a_value_the_root_declares_and_the_class_reads() {
     }
 }
 
+#[test]
+fn every_icon_pack_keeps_view_drawings_in_both_states() {
+    let css = include_str!("../assets/icons.css");
+    let mut covered = 0;
+    for pack in [
+        "feather",
+        "lucide",
+        "tabler",
+        "remix",
+        "phosphor",
+        "heroicons",
+    ] {
+        let marker = format!("/* The {pack} pack");
+        let start = css
+            .find(&marker)
+            .unwrap_or_else(|| panic!("{pack} has a block"));
+        let rest = &css[start..];
+        let end = rest[1..].find("/* The ").map_or(rest.len(), |at| at + 1);
+        let block = &rest[..end];
+        for name in ["code-view", "document", "graph"] {
+            if block.contains(&format!("--lt-icon-{name}:")) {
+                covered += 1;
+                assert_contains(block, &format!("--lt-icon-{name}-heavy:"));
+            }
+        }
+    }
+    assert_eq!(
+        covered, 12,
+        "the six outside packs should each draw two view buttons"
+    );
+}
+
+#[test]
+fn an_icon_packs_bolder_view_mask_keeps_its_own_drawing() {
+    let css = include_str!("../assets/icons.css");
+    let start = css.find("/* The lucide pack").expect("lucide has a block");
+    let rest = &css[start..];
+    let end = rest[1..].find("/* The ").map_or(rest.len(), |at| at + 1);
+    let block = &rest[..end];
+    let heavy = block
+        .lines()
+        .find(|line| line.contains("--lt-icon-document-heavy:"))
+        .expect("lucide declares a bolder document mask");
+    assert!(
+        !heavy.contains("M19.5 14.25"),
+        "lucide's bolder document mask fell back to the app's drawing"
+    );
+    assert_contains(heavy, "M6 22a2 2 0 0 1-2-2V4");
+}
+
+#[test]
+fn icon_pack_bolder_masks_stamp_strokes_and_leave_fills_alone() {
+    let css = include_str!("../assets/icons.css");
+    let block = |pack: &str| {
+        let marker = format!("/* The {pack} pack");
+        let start = css
+            .find(&marker)
+            .unwrap_or_else(|| panic!("{pack} has a block"));
+        let rest = &css[start..];
+        let end = rest[1..].find("/* The ").map_or(rest.len(), |at| at + 1);
+        &rest[..end]
+    };
+    let lucide = block("lucide");
+    let lucide_heavy = lucide
+        .lines()
+        .find(|line| line.contains("--lt-icon-document-heavy:"))
+        .expect("lucide declares a bolder document mask");
+    assert_contains(lucide_heavy, "stroke-width='2.25'");
+
+    let remix = block("remix");
+    let value = |name: &str| {
+        remix
+            .lines()
+            .find(|line| line.contains(&format!("--lt-icon-{name}:")))
+            .and_then(|line| line.split_once(": "))
+            .map(|(_, value)| value)
+            .unwrap_or_else(|| panic!("remix declares {name}"))
+    };
+    assert_eq!(
+        value("document"),
+        value("document-heavy"),
+        "a filled pack's bolder mask should keep its own unstamped bytes"
+    );
+}
+
 /// `A@{ icon: "leaf:back" }` in a diagram draws the app's own back arrow, out of a set generated from the same rows as the stylesheet — so an icon is named in one place and mermaid never falls back to its own glyph, an 80x80 square in a hardcoded #087ebf.
 #[test]
 fn every_icon_row_reaches_the_diagram_icon_set_and_nothing_else_does() {

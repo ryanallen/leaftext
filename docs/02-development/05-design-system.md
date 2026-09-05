@@ -56,7 +56,7 @@ Widths, heights and positional offsets are **not** tokens: they are one componen
 
 ## Icons
 
-65 icons, each a class drawn with `mask-image`. A mask reads only transparency, so the icon takes the color of whatever it sits in — and a drawing used in five places is in the app once. A control with a bolder active state swaps to a second mask rather than thickening a stroke a mask does not have. Each row also names the pack its drawing came from, so a pack with no license notice in the app is refused, and its line weight names the box the drawing must be in.
+65 icons, each a class drawn with `mask-image`. A mask reads only transparency, so the icon takes the color of whatever it sits in — and a drawing used in five places is in the app once. A control with a bolder active state swaps to a second mask rather than thickening a stroke a mask does not have. An outside pack redeclares that bolder mask beside its resting one; a filled pack has no stroke to stamp, so both masks use its own drawing and the pressed button changes color alone. Each row also names the pack its drawing came from, so a pack with no license notice in the app is refused, and its line weight names the box the drawing must be in.
 
 Every drawing is a value the page root declares and the class reads, which is what lets a theme family bring its own. A family names a whole pack on a `**Pack:**` line in its own file; the pack's drawings are copied into `src/assets/icon-packs/<pack>/`, one file per icon name, and compiled into one block of values under every family wearing it. A pack with no drawing for one of the 65 jobs declares nothing for it, so the value at the root stands and the reader keeps the drawing they already know. `leaftext` is a pack too — the app's own mixed set, a permanent choice, and the fallback for all 6 outside ones.
 
@@ -157,7 +157,7 @@ It is a page in the repo, not a feature in the app: looking at every component i
 | Check | Fails when |
 | --- | --- |
 | `check-tokens` | a generated token file has drifted from `design/`, a theme sets a color nothing lists, or a component row names a class family nothing styles |
-| `check-icons` | `icons.css` has drifted, a row names a file that is not there, an SVG has no row, a row names no pack or one with no license notice, a drawing is in a box its weight was not set for, or two rows compile to the same mask |
+| `check-icons` | `icons.css` has drifted, a row names a file that is not there, an SVG has no row, a row names no pack or one with no license notice, a drawing is in a box its weight was not set for, a pack covers a bolder state without declaring its mask, or two rows compile to the same mask |
 | `check-gallery` | the gallery has drifted, or a component has no sample to draw it with |
 | `check-classes` | a class in `src/assets/reading/` is not accounted for — as a component, as something a rendered document brings, or as a state |
 | `check-design-docs` | this page has drifted from `design/` |

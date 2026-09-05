@@ -284,24 +284,27 @@ export function run() {
   });
 
   // The rail stood up over a document of a hundred twenty-pixel rows, with the two answers the rebuild reads off a real page swapped for known ones — the rail's geometry, and the body it clones. Everything between them is the shipped rebuild, so what these two checks read back is the slice it really built. A 70-pixel track over a 2,000-pixel document drawn at a tenth covers the first 700 pixels of it, which is rows 0 to 35; a screen either side reaches row 70.
-  const railOverARowedDocument = () => {
+  const railOverARowedDocument = (geometry) => {
     const body = fakeElement('rail-slack-source');
     body.className = 'document-body';
     body.innerHTML = Array.from({ length: 100 }, (_, index) => `<p>row ${index}</p>`).join('');
+    // The rail reads viewport rectangles and adds the scroll back on, so the rows answer where they are on the screen rather than where they are in the document — which is what lets a check move the reader down the document and read back the slice the rail then builds.
     body.children.forEach((row, index) => {
-      row.getBoundingClientRect = () => ({ top: index * 20, bottom: (index + 1) * 20, height: 20, width: 800 });
+      row.getBoundingClientRect = () => ({ top: index * 20 - metrics.scrollTop, bottom: (index + 1) * 20 - metrics.scrollTop, height: 20, width: 800 });
     });
-    const metrics = {
+    const metrics = Object.assign({
       sourceWidth: 800,
       sourceTop: 0,
       scrollHeight: 2000,
       viewportHeight: 700,
       scrollable: 1300,
       scrollTop: 0,
+      // The rail's own box on the screen, which a drag maps a pointer through. Every other reader here works in document pixels and never asks for it.
+      trackRect: { top: 0, bottom: 70, height: 70, width: 80 },
       trackHeight: 70,
       scaledDocumentHeight: 200,
       previewScale: 0.1,
-    };
+    }, geometry);
     const was = {
       measure: booted.measureDocumentMinimap,
       source: booted.minimapSourceElement,
@@ -329,6 +332,8 @@ export function run() {
     content.getBoundingClientRect = () => ({ top: 0, bottom: 70, height: 70, width: 80 });
     return {
       turns,
+      metrics,
+      rail,
       read: (name) => vm.runInContext(name, booted),
       restore: () => {
         booted.measureDocumentMinimap = was.measure;
@@ -341,7 +346,9 @@ export function run() {
           'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
             + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1; minimapBuiltRange = null;'
             + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
-            + 'minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;',
+            + 'minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;'
+            + 'minimapPreviewOwed = false; minimapDragging = false; minimapDragMetrics = null;'
+            + 'minimapPointerId = null; minimapPointerOffsetY = null; readerScrolling = false;',
           booted,
         );
       },
@@ -388,6 +395,138 @@ export function run() {
     }
   });
 
+
+  // The rail withholding its rebuild for the length of a gesture, watched through what it schedules. Coverage is answered by a stand rather than the real comparison, because what is held here is when a rebuild is laid out and not which slice it picks; the schedule is watched through the shipped one, so a rebuild that is asked for still really happens.
+  const railThroughAGesture = (geometry) => {
+    const stand = railOverARowedDocument(geometry);
+    const was = {
+      covers: booted.minimapWindowCoversView,
+      schedule: booted.scheduleMinimapPreviewUpdate,
+    };
+    const asks = [];
+    const state = { covers: false };
+    // The stand’s own restore, held before this one takes its name: put the page back the way it found it, then hand the rowed stand its own turn.
+    const restoreStand = stand.restore;
+    booted.minimapWindowCoversView = () => state.covers;
+    booted.scheduleMinimapPreviewUpdate = (slack) => {
+      asks.push(slack === undefined ? vm.runInContext('MINIMAP_WINDOW_SLACK', booted) : slack);
+      return was.schedule(slack);
+    };
+    return Object.assign(stand, {
+      asks,
+      state,
+      owed: () => vm.runInContext('minimapPreviewOwed', booted),
+      frame: () => vm.runInContext('minimapPreviewFrame', booted),
+      // A wheel notch: the reader moves, the scroll listener has already said a gesture is running, and the rail answers on the frame behind it.
+      notch: (scrollTop) => {
+        vm.runInContext('app', booted).scrollTop = scrollTop;
+        stand.metrics.scrollTop = scrollTop;
+        vm.runInContext('readerScrolling = true', booted);
+        booted.updateMinimapViewportFromScroll();
+      },
+      restore: () => {
+        booted.minimapWindowCoversView = was.covers;
+        booted.scheduleMinimapPreviewUpdate = was.schedule;
+        restoreStand();
+      },
+    });
+  };
+
+  // The whole of the fault, in the one place the reader feels it: a fling leaves the built window on its first notches and every notch after that laid a fresh slice out on the frame the wheel was on — five rebuilds of 120 to 184ms in one driven fling, and the worst frame gap 246ms. The standing thumbnail is left up instead and the rebuild waits for the wheel to stop.
+  check('a wheel out of the built window rebuilds nothing until the scroll settles', () => {
+    const stand = railThroughAGesture();
+    try {
+      stand.notch(400);
+      if (stand.asks.length !== 0) throw new Error(`the wheel was still turning and the rail asked for ${stand.asks.length} rebuilds`);
+      if (stand.frame() !== 0) throw new Error('the wheel was still turning and the rail booked a frame to rebuild on');
+      if (!stand.owed()) throw new Error('the rail left the built window and remembered no rebuild, so the settle has nothing to pay');
+
+      booted.settleReaderScroll();
+      if (stand.asks.length !== 1) throw new Error(`the scroll settled and the rail asked for ${stand.asks.length} rebuilds rather than one`);
+      if (stand.asks[0] !== 1) throw new Error(`the settled rebuild asked for ${stand.asks[0]} screens either side rather than the full one`);
+      if (stand.owed()) throw new Error('the settle rebuilt and the rail still owes itself another');
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // A fling passes hundreds of positions and only the last of them is looked at, so the debt is one answer rather than one a movement. The settle then reads where the scroll actually stopped: a rebuild kept per position would clone a slice for ground the reader has already gone past.
+  check('a fling of notches leaves one owed rebuild, and it is built for where the scroll stopped', () => {
+    const stand = railThroughAGesture();
+    try {
+      stand.notch(200);
+      stand.notch(700);
+      stand.notch(1300);
+      if (stand.asks.length !== 0) throw new Error(`three notches asked for ${stand.asks.length} rebuilds`);
+      if (!stand.owed()) throw new Error('three notches out of the window and the rail owes itself nothing');
+
+      // The fresh measure at the settle can disagree with the cached geometry the gesture answered on, so the debt is asked as well as the coverage — or the withheld rebuild is dropped and the rail keeps a thumbnail of ground nobody is on.
+      stand.state.covers = true;
+      booted.settleReaderScroll();
+      booted.__frames.drain();
+      if (stand.asks.length !== 1) throw new Error(`the scroll settled and the rail asked for ${stand.asks.length} rebuilds rather than the one it owed`);
+      const built = [stand.read('minimapBuiltFirstRow'), stand.read('minimapBuiltLastRow')];
+      if (built[0] !== 30 || built[1] !== 99) throw new Error(`the settled rebuild sliced rows ${built[0]} to ${built[1]} rather than the 30 to 99 the foot of the document reaches`);
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // The owner's own gesture: one drag of the position box down the rail asked for nine rebuilds of 12 to 63ms, on the same pointer path the drag already refuses to re-measure on for exactly that reason. Held here through the real handlers, because what is proved is which of them pays.
+  check('a held position box rebuilds nothing until it is let go', () => {
+    // A track three times the box's height, so the box travels inside it rather than the thumbnail sliding under a full-height box — a drag has nothing to map a pointer through otherwise.
+    const stand = railThroughAGesture({
+      trackRect: { top: 0, bottom: 200, height: 200, width: 80 },
+      trackHeight: 200,
+      scaledDocumentHeight: 200,
+    });
+    try {
+      const track = stand.rail.querySelector('.document-minimap-track');
+      const box = track.querySelector('.document-minimap-viewport');
+      box.getBoundingClientRect = () => ({ top: 0, bottom: 70, height: 70, width: 80 });
+      // Standing the rail up builds its first thumbnail over the slice the reader is on, which is not the gesture: the drag starts from a rail that already holds one, the way a reader’s does. The drag then carries the box off that slice.
+      stand.state.covers = true;
+      booted.bindDocumentMinimap();
+      booted.__frames.drain();
+      stand.state.covers = false;
+      stand.asks.length = 0;
+      const press = (track.listeners.get('pointerdown') || [])[0];
+      const move = (track.listeners.get('pointermove') || [])[0];
+      const release = (track.listeners.get('pointerup') || [])[0];
+      if (!press || !move || !release) throw new Error('the rail is not listening for a drag on its own track');
+      const pointer = (clientY) => ({ button: 0, pointerId: 7, clientY, preventDefault() {} });
+
+      press(pointer(10));
+      for (let step = 20; step <= 100; step += 10) move(pointer(step));
+      if (stand.asks.length !== 0) throw new Error(`the box was still held and the rail asked for ${stand.asks.length} rebuilds`);
+      if (stand.frame() !== 0) throw new Error('the box was still held and the rail booked a frame to rebuild on');
+      if (!stand.owed()) throw new Error('the drag crossed the built window and remembered no rebuild');
+      const landed = vm.runInContext('app', booted).scrollTop;
+      if (landed !== 900) throw new Error(`the drag left the reader at ${landed} rather than the 900 the pointer maps to`);
+
+      release(pointer(100));
+      if (stand.asks.length !== 1) throw new Error(`the box was let go and the rail asked for ${stand.asks.length} rebuilds rather than one`);
+      if (stand.asks[0] !== 1) throw new Error(`the released rebuild asked for ${stand.asks[0]} screens either side rather than the full one`);
+      if (stand.owed()) throw new Error('the release rebuilt and the rail still owes itself another');
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // A render places the reader deliberately, and the settle that was going to pay the debt is dropped with the document it was scrolling. The debt goes with it: paid on the next page it would clone a slice for a position that page was never at.
+  check('a render drops the rebuild the outgoing document’s scroll was owed', () => {
+    const stand = railThroughAGesture();
+    try {
+      stand.notch(700);
+      if (!stand.owed()) throw new Error('the notch out of the window left nothing owed to drop');
+
+      booted.cancelReaderScrollSettle();
+      if (stand.owed()) throw new Error('the render took the document away and the rail still owes it a rebuild');
+      if (stand.asks.length !== 0) throw new Error('the render rebuilt the rail for a document that has gone');
+    } finally {
+      stand.restore();
+    }
+  });
 
   // The document the fault needs: one block taller than the window the rail asks for, with ground on both sides of it. Thirty-one rows of 100px with the eleventh a block spanning 1,000 to 6,000 and holding fifty of them, under a 70px track over an 8,000px document drawn at a tenth — so the rail shows 700px at a time, asks for a screen either side of that, and the block is five times the 2,100px it asked for. Everything the rebuild reads off a real page is swapped for a known number and everything between them is the shipped rebuild, so what these checks read back is the slice it really built.
   const railOverABlockedDocument = () => {

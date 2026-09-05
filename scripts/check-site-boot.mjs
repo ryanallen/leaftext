@@ -551,6 +551,8 @@ await check('a picture that arrives rebuilds the minimap once rather than on eve
   // The width the stylesheet lays a visible rail out at, on the rail and on what the thumbnail is scaled to; a rail measuring nothing is one it took off the page and gets no thumbnail.
   rail.layoutWidth = 62;
   held.clientWidth = 62;
+  // The page's own height, given before the first build reads it: the rail holds everything a scroll cannot move, and a stand-in document that grows afterwards tells nothing.
+  document.documentElement.scrollHeight = 4000;
 
   late.dispatchEvent(leafEvent('load'));
   await new Promise((resolve) => setTimeout(resolve, 20));
@@ -563,13 +565,12 @@ await check('a picture that arrives rebuilds the minimap once rather than on eve
 
   // The rail's own window listener, read back by dispatching rather than by reaching into the map. The handler takes no event, so the window is the honest place to fire from: this is the page having scrolled.
   const viewport = rail.querySelector('.document-minimap-viewport');
-  const document_ = document.documentElement;
-  document_.scrollHeight = 4000;
-  viewport.style.top = '';
+  viewport.style.transform = '';
   globalThis.window.scrollY = 2000;
   globalThis.window.dispatchEvent(leafEvent('scroll'));
   await new Promise((resolve) => setTimeout(resolve, 20));
-  want(viewport.style.top && viewport.style.top !== '0px', `the page scrolled and the rectangle in the rail stayed at ${JSON.stringify(viewport.style.top)}, so the window's own listener was never reached`);
+  want(viewport.style.transform && viewport.style.transform !== 'translateY(0px)', `the page scrolled and the rectangle in the rail stayed at ${JSON.stringify(viewport.style.transform)}, so the window's own listener was never reached`);
+  want(viewport.style.top === '', `the page scrolled and the rectangle was slid by the layout property top (${JSON.stringify(viewport.style.top)}), which lays the whole page out on every frame it moves`);
   globalThis.window.scrollY = 0;
   source.remove();
   rail.remove();
@@ -602,11 +603,11 @@ await check("a rebuild places the exported page's thumbnail once", async () => {
   const content = rail.querySelector('.document-minimap-content');
   const viewport = rail.querySelector('.document-minimap-viewport');
   want(content.querySelector('.document-minimap-preview'), 'the initial build did not place its thumbnail directly');
-  want(viewport.style.top !== '', 'the initial build did not place the viewport rectangle directly');
+  want(viewport.style.transform !== '', 'the initial build did not place the viewport rectangle directly');
   let placements = 0;
   viewport.style = new Proxy(viewport.style, {
     set(target, key, value) {
-      if (key === 'top') placements += 1;
+      if (key === 'transform') placements += 1;
       return Reflect.set(target, key, value);
     },
   });
@@ -624,7 +625,7 @@ await check("a rebuild places the exported page's thumbnail once", async () => {
   placements = 0;
   globalThis.window.dispatchEvent(leafEvent('scroll'));
   await new Promise((resolve) => setTimeout(resolve, 20));
-  want(measurements === 1, `a standalone scroll measured the page ${measurements} times instead of measuring its own placement once`);
+  want(measurements === 0, `a standalone scroll measured the page ${measurements} times, when a scroll moves nothing the held geometry carries`);
   want(placements === 1, `a standalone scroll placed the thumbnail ${placements} times instead of scheduling one placement`);
 
   measurements = 0;
@@ -635,6 +636,79 @@ await check("a rebuild places the exported page's thumbnail once", async () => {
   want(content.firstChild !== beforeResize, 'a resize placed once only because it never rebuilt the thumbnail');
   want(measurements === 1, `a resize measured the page ${measurements} times after rebuilding its thumbnail`);
   want(placements === 1, `a resize placed the rebuilt thumbnail ${placements} times instead of canceling the held placement`);
+  source.remove();
+  rail.remove();
+});
+
+await check("a scroll slides the exported page's thumbnail and box by a transform and never by top", async () => {
+  // Both of them move on every frame of a wheel, and a layout property lays the whole page out to move anything: over a 60,748px published page either one written as top cost a layout on all 120 frames, and moving only the thumbnail left that count where it was. So this reads both, and a version that puts either back fails here.
+  const document = globalThis.document;
+  const source = document.createElement('article');
+  source.innerHTML = '<h1>One</h1><p>Some words to stand under it.</p>';
+  source.layoutWidth = 700;
+  document.body.appendChild(source);
+  initMinimap(source);
+  const rail = document.querySelectorAll('.document-minimap').at(-1);
+  const content = rail.querySelector('.document-minimap-content');
+  const viewport = rail.querySelector('.document-minimap-viewport');
+  // The width the stylesheet lays a visible rail out at; a rail measuring nothing is one it took off the page and places neither element.
+  rail.layoutWidth = 62;
+  content.clientWidth = 62;
+  document.documentElement.scrollHeight = 4000;
+  content.style.transform = '';
+  viewport.style.transform = '';
+  content.style.top = '';
+  viewport.style.top = '';
+  globalThis.window.scrollY = 2000;
+  globalThis.window.dispatchEvent(leafEvent('scroll'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(content.style.transform.startsWith('translateY('), `a scroll left the thumbnail at ${JSON.stringify(content.style.transform)}, so the rail no longer slides it with a transform`);
+  want(viewport.style.transform.startsWith('translateY('), `a scroll left the rectangle at ${JSON.stringify(viewport.style.transform)}, so the rail no longer slides it with a transform`);
+  want(content.style.top === '', `a scroll slid the thumbnail by the layout property top (${JSON.stringify(content.style.top)}), which lays the whole page out on every frame it moves`);
+  want(viewport.style.top === '', `a scroll slid the rectangle by the layout property top (${JSON.stringify(viewport.style.top)}), which lays the whole page out on every frame it moves`);
+  globalThis.window.scrollY = 0;
+  source.remove();
+  rail.remove();
+});
+
+await check("the exported page's rail holds what a scroll cannot move and reads the scroll on every frame", async () => {
+  // The two halves of one hold: a scroll frame asks the page for nothing, and it still places the rectangle where the page now is. A version holding the scroll offset with the rest passes the first assertion and freezes the rail, which is the second.
+  const document = globalThis.document;
+  const source = document.createElement('article');
+  source.innerHTML = '<h1>One</h1><p>Some words to stand under it.</p>';
+  source.layoutWidth = 700;
+  let measurements = 0;
+  const sourceRect = source.getBoundingClientRect.bind(source);
+  source.getBoundingClientRect = () => {
+    measurements += 1;
+    return sourceRect();
+  };
+  document.body.appendChild(source);
+  initMinimap(source);
+  const rail = document.querySelectorAll('.document-minimap').at(-1);
+  const content = rail.querySelector('.document-minimap-content');
+  const viewport = rail.querySelector('.document-minimap-viewport');
+  rail.layoutWidth = 62;
+  content.clientWidth = 62;
+  document.documentElement.scrollHeight = 4000;
+  // One frame to take the measurement the two below must not take again.
+  globalThis.window.scrollY = 0;
+  globalThis.window.dispatchEvent(leafEvent('scroll'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  measurements = 0;
+  globalThis.window.scrollY = 1000;
+  globalThis.window.dispatchEvent(leafEvent('scroll'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const nearTheTop = viewport.style.transform;
+  globalThis.window.scrollY = 3000;
+  globalThis.window.dispatchEvent(leafEvent('scroll'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  const furtherDown = viewport.style.transform;
+  want(measurements === 0, `two scroll frames measured the page ${measurements} times, when a scroll moves nothing the held geometry carries`);
+  want(nearTheTop.startsWith('translateY('), `a scroll left the rectangle at ${JSON.stringify(nearTheTop)}, so there are no two placements here to tell apart`);
+  want(nearTheTop !== furtherDown, `two scroll frames at different offsets both placed the rectangle at ${JSON.stringify(nearTheTop)}, so the scroll offset is held with the geometry instead of read on every frame`);
+  globalThis.window.scrollY = 0;
   source.remove();
   rail.remove();
 });

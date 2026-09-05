@@ -43,7 +43,7 @@ An icon reaches the page as a name — `<span class="lt-icon lt-icon-back"></spa
 | phosphor | Phosphor-MIT.md | 256 | filled |
 | heroicons | Heroicons-MIT.md | 24 | stroked |
 
-**A row marked `heavy` in the fifth column gets a second mask** at the heavy weight, published as `--lt-icon-<name>-heavy`. The three view buttons use it: the view you are in is drawn a touch bolder as well as brighter, and a mask has no strokes to thicken, so the heavier drawing is its own mask.
+**A row marked `heavy` in the fifth column gets a second mask** at the heavy weight, published as `--lt-icon-<name>-heavy`. The three view buttons use it: the view you are in is drawn a touch bolder as well as brighter, and a mask has no strokes to thicken, so the heavier drawing is its own mask. An outside pack redeclares that bolder mask beside its resting one; a filled pack has no stroke to stamp, so both masks use its own drawing and the pressed button changes color alone.
 
 | Name | File | Source | Stroke | Heavy | Audit | Feather | Lucide | Tabler | Remix | Phosphor | Heroicons | Where it is worn |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

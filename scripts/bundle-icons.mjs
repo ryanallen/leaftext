@@ -259,6 +259,13 @@ function heldMasks(row, svg) {
   });
 }
 
+function heavyCoverProblems(pack, rows_, covers) {
+  const declared = new Set(covers.map((line) => /--lt-icon-([^:]+):/.exec(line)?.[1]).filter(Boolean));
+  return rows_
+    .filter((row) => row.heavy && declared.has(row.name) && !declared.has(`${row.name}-heavy`))
+    .map((row) => `${pack} covers ${row.name}, whose Heavy cell says yes, without declaring --lt-icon-${row.name}-heavy beside it`);
+}
+
 // The rules prove their own refusals on made-up rows, ahead of the real table: a check that only ever sees good rows is one nobody has watched refuse anything, and putting this last would skip it on the runs where something is actually wrong.
 if (check) {
   const one = { label: 'a (a.svg)', uri: 'x' };
@@ -304,6 +311,13 @@ if (check) {
     const got = weightInBox(value, setFor, drawnIn);
     if (got !== wanted) fails.push(`${what} was stamped at ${got}, not ${wanted}`);
   }
+  const heavyRow = [{ name: 'view', heavy: true }];
+  const missingHeavy = heavyCoverProblems('made-up', heavyRow, ['  --lt-icon-view: x;']).join(' ');
+  if (!missingHeavy.includes('made-up covers view') || !missingHeavy.includes('--lt-icon-view-heavy')) {
+    fails.push(`a covered Heavy row with no bolder mask was not refused (got "${missingHeavy || 'nothing'}")`);
+  }
+  const completeHeavy = heavyCoverProblems('made-up', heavyRow, ['  --lt-icon-view: x;', '  --lt-icon-view-heavy: y;']);
+  if (completeHeavy.length) fails.push(`a covered Heavy row with its bolder mask was refused: ${completeHeavy.join(' ')}`);
   // Which box a drawing is measured in. A borrowed one arrives in the lending pack box, so it is scaled against that rather than against the box of the pack wearing it — the same lookup the box refusals above make.
   const measured = [
     ['a drawing borrowed from the 256-unit pack', ['feather', 'phosphor'], '256'],
@@ -530,8 +544,16 @@ for (const pack of outsidePacks()) {
     const stamped = wanted && STROKE_WIDTH.test(svg) ? atWeight(svg, weightInBox(wanted, BOXES.get(row.stroke), drawnIn)) : svg;
     STROKE_WIDTH.lastIndex = 0;
     covers.push(`  --lt-icon-${row.name}: url("data:image/svg+xml,${encode(stamped)}");`);
+    if (row.heavy) {
+      const weight = weightInBox(WEIGHTS.get('heavy'), BOXES.get('heavy'), drawnIn);
+      const bolder = STROKE_WIDTH.test(svg) ? atWeight(svg, weight) : svg;
+      STROKE_WIDTH.lastIndex = 0;
+      // A variant is one drawing under two names, so it stays out of the copy check.
+      covers.push(`  --lt-icon-${row.name}-heavy: url("data:image/svg+xml,${encode(bolder)}");`);
+    }
     covers.push(...heldMasks(row, stamped));
   }
+  problems.push(...heavyCoverProblems(pack, rows, covers));
   if (!covers.length) continue;
   // Two ways in, one copy of the drawings. `data-leaf-theme` on the page root is what the app writes, and `data-leaf-pack` is a name any element can take — which is how the design-system gallery shows all seven packs on one page, where seven page roots do not exist. Nothing in the app ever writes the second.
   const worn = wearing.length ? `worn by ${wearing.join(', ')}` : 'worn by no family yet';
