@@ -205,9 +205,7 @@ function listDomToMarkdown(listEl, indent) {
   return items.join(listIsSpacedApart(listEl) ? '\n\n' : '\n');
 }
 
-// Serialize a rendered blockquote to `> `-prefixed Markdown, one quoted paragraph per child separated by a bare `>` line. `.blockquote-line` spans (from consumed
-// <br>s) re-join with backslash hard breaks. Any unexpected child still
-// serializes as a paragraph rather than being dropped.
+// Serialize a rendered blockquote to `> `-prefixed Markdown, one quoted paragraph per child separated by a bare `>` line. `.blockquote-line` spans (from consumed `<br>`s) re-join with backslash hard breaks. Any unexpected child still serializes as a paragraph rather than being dropped.
 function blockquoteDomToMarkdown(el) {
   const paragraphs = [];
   Array.from(el.children).forEach((child) => {
