@@ -120,7 +120,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 | Group | What is in it |
 | --- | --- |
 | Views | [Reading](01-rendering.md), the [source](07-editing.md#code-view), and the [graph](03-library.md#graph). One pill in the accent color sits behind them, and it slides to the button you press with a small bounce at the end. It moves at the press rather than when the new view lands, so the bar answers straight away; a source view that will not open puts it back |
-| Editing tools | A recess to the left of the view buttons, so the three views stay together. It carries the tools of the view you are in: the [padlock](07-editing.md#the-padlock) in both editable views, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](07-editing.md#typing-help) wand in the source. The graph has none, so the recess goes with it |
+| Editing tools | A recess to the left of the view buttons, so the three views stay together. It carries the tools of the view you are in: the [padlock](07-editing.md#the-padlock) in both editable views, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](07-editing.md#typing-help) wand in the source. A view left with none of them loses the recess and the handle above it — the graph, and the reading view of a [page drawn in its own frame](01-rendering.md#html-files), which has neither |
 | Source tools | Shown only on the code view, in the same recess: the [typing help](07-editing.md#typing-help) wand |
 | Edits | [Undo](07-editing.md#undo) and [Save](07-editing.md#save), each appearing only when there is something to undo or save |
 

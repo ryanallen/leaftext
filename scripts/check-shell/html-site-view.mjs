@@ -436,7 +436,7 @@ export function run() {
     }
   });
 
-  // The export is where the damage would leave the app: with the setting on, every span the pass wrote was written into the file the reader saved — Leaftext's own class names sprinkled through somebody else's page.
+  // The export is where the damage leaves the app: a span the pass writes into a contained page is written into the file the reader saves — Leaftext's own class names sprinkled through somebody else's page.
   check('an exported page carries none of the reader own word spans', () => {
     const { context } = bootContainedPage();
     vm.runInContext('setSpeedReaderEnabled(true)', context);

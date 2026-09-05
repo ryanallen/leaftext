@@ -29,7 +29,7 @@ const PAPER_SURFACE = 'body.leaf-paper .app-surface {';
 /** The branch that hands a display at 100% a lattice big enough for a device pixel to hold. */
 const RESOLUTION_BRANCH = '@media (resolution <= 1dppx)';
 
-/** The same stylesheet with that branch and everything it sets taken out, which is what a display at 100% had before this was written. */
+/** The same stylesheet with that branch and everything it sets taken out: the lattice a display at 100% is left with. */
 function withoutTheResolutionBranch(css) {
   const at = css.indexOf(RESOLUTION_BRANCH);
   if (at < 0) return css;

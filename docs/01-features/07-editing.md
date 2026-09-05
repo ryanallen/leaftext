@@ -206,6 +206,7 @@ A picked file is **never copied anywhere** — the picture stays where you keep 
 Highlight words in a Markdown page and a small bar appears over them. What it holds follows the [padlock](#the-padlock): three buttons that read the words out or mark them up on any page, and the formatting buttons in front of those once the page is unlocked.
 
 - **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off. **The light is about the whole highlight**: drag past the end of a bold phrase into the plain words beside it and Bold goes out, because those words are not all bold and the press would be adding the format rather than taking it off.
+- **Coding out of a code span leaves one code span.** Highlight from inside `code` into the plain words beside it and the two runs join, so the file carries one span rather than two touching ones — and only the words you chose stay highlighted.
 - **Taking a format off leaves the same words highlighted**, wherever the phrase sits in its sentence, so the bar goes on answering for them and a third press puts the format back. Nothing has to be highlighted again by hand.
 - **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away, and the words stay highlighted. `Escape`, or a press anywhere off the box, leaves the link as it was.
 - **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
@@ -233,7 +234,7 @@ Whether a document can be typed into is a padlock in the recess beside the view 
 - Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
 - Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
 
-The recess holds the tools of the view you are in — the padlock in both, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+The recess holds the tools of the view you are in — the padlock in both, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source. It is there only while it holds something, so a view whose every tool has stood down loses the recess and the handle over it. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
 
 ### Undo
 

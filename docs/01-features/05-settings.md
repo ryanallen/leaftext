@@ -137,6 +137,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Dims non-anchor prose text (including headings) so bold lead anchors carry the most contrast against the background
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole
+- Leaves an [HTML page drawn in its own frame](01-rendering.md#html-files) exactly as its author wrote it, and the switch is not offered on one
 - Saved as `speed_reader_enabled`
 
 ### Typing help
