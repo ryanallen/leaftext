@@ -269,12 +269,14 @@ export function run() {
     if (parked.includes('overflow: hidden;')) {
       throw new Error(`the tray hides rather than clips, so its shadow is clipped away with the tools: ${parked}`);
     }
+    // The tools park a whole open height below the tray's foot, so no margin of one spread can reach them, which the carry below proves and is why the margin is safe.
     if (!parked.includes('overflow-clip-margin: var(--lt-shadow-spread);')) {
       throw new Error(`the tray's clip does not make room for the one shadow every floating surface throws: ${parked}`);
     }
-    // The tools park a whole open height below the tray's foot, so no margin of one spread can reach them -- which the carry below already proves, and is why the margin is safe. A length, whether it is written out or named. The token file is read rather than the sheet, because the sheet the checks are handed carries the rules and not the values behind them.
+    // The token file is read rather than the sheet, because the sheet the checks are handed carries the rules and not the values behind them.
     const tokens = readFileSync(join(root, 'src/assets/tokens.css'), 'utf8');
     const componentLength = (name) => new RegExp(`${name}:\\s*(-?[\\d.]+)px;`).exec(parked);
+    // A length, whether it is written out or named.
     const lengthOf = (value) => {
       const named = /^var\((--[\w-]+)\)$/.exec(value.trim());
       // Doubled on purpose: a template literal eats a single backslash, so `\s` written here would reach the pattern as a bare `s`.

@@ -186,7 +186,7 @@ fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
         "the dead document button must come after the live one to take the hand back"
     );
 
-    // The arrows that used to sit on native buttons are gone, or they would outrank the shared rule and the hand would stop at whichever control wrote one.
+    // No arrow sits on a native button, or it would outrank the shared rule and the hand would stop at whichever control wrote one.
     for selector in [
         ".document-body pre > .code-copy {",
         ".table-sheet-open,
@@ -362,7 +362,7 @@ fn the_minimap_tiles_grained_cells_inside_its_scaled_copy() {
 fn the_pager_card_fills_with_the_theme_and_throws_the_halftone_instead_of_graining() {
     let css = reading_mode_css();
 
-    // It used to fill with the heaviest lattice in the tree, which is the app's own way of saying a thing is quiet — across a card the width of the measure that read as switched off. It takes the fill the chrome buttons take instead, and the halftone it throws is what keeps it from being a slab.
+    // It takes the fill the chrome buttons take, never the heaviest lattice in the tree: that lattice is the app's own way of saying a thing is quiet, and across a card the width of the measure it reads as switched off. The halftone it throws is what keeps it from being a slab.
     let hover = rule_body(
         css,
         ".document-body .docs-pager a:hover,\n.document-body .docs-pager a:focus-visible {",
@@ -638,7 +638,7 @@ fn every_shadow_host_declares_one_radius_and_no_shadow_of_its_own() {
         "border-top-left-radius: var(--lt-shadow-host-radius);",
     );
 
-    // The recipe no longer scales with the box, so nothing is left for a small or a wide surface to correct: no private inset, no fade of its own, and no second copy of the lattice.
+    // The recipe does not scale with the box, so nothing is left for a small or a wide surface to correct: no private inset, no fade of its own, and no second copy of the lattice.
     for private in [
         ".reader-toolbar::before {",
         ".selection-toolbar::before {",
