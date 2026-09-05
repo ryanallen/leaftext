@@ -126,7 +126,7 @@ export function run() {
     vm.runInContext('graphViewOpen = false; codeViewActive = false; pendingReaderView = null;', booted);
   });
 
-  check("the parked tray is the nub, keeps the padlock in the Tab order, and follows the view you are in", () => {
+  check("the nub follows each view button in the toolbar's coordinates", () => {
     const toolbar = booted.document.getElementById('readerToolbar');
     const tray = booted.document.getElementById('readerToolTray');
     const tools = booted.document.getElementById('readerViewTools');
@@ -143,11 +143,14 @@ export function run() {
     }
 
     // Where each view's button stands, so the anchor can be read back against the one that is on.
+    const group = toolbar.querySelector('.reader-tool-group');
+    group.offsetParent = toolbar;
+    group.offsetLeft = 4;
     const middles = { reading: 40, code: 70, graph: 100 };
     const place = (id, middle) => {
       const button = booted.document.getElementById(id);
-      button.offsetParent = toolbar;
-      button.offsetLeft = middle - 12;
+      button.offsetParent = group;
+      button.offsetLeft = middle - group.offsetLeft - 12;
       button.offsetWidth = 24;
       return button;
     };
@@ -155,7 +158,8 @@ export function run() {
     place('viewCodeButton', middles.code);
     place('viewGraphButton', middles.graph);
     // The map's tools are one named list wider than a button, so that tray takes the bar's own middle rather than the graph button's — centered on the button it hangs off the end of the bar.
-    toolbar.offsetWidth = 130;
+    toolbar.offsetWidth = 132;
+    toolbar.clientWidth = 130;
     middles.graph = 65;
 
     // The graph view fills the tray with a named list and the other two with stacked icons, so how far the nub grows has to be measured rather than declared — and a clipped box cannot report its own content height, which is why it is scrollHeight.
@@ -178,6 +182,16 @@ export function run() {
       }
     }
 
+    const reading = booted.document.getElementById('viewReadingButton');
+    const prior = toolbar.style.getPropertyValue('--reader-tray-left');
+    reading.offsetParent = group;
+    group.offsetParent = null;
+    booted.renderViewTools('reading');
+    if (toolbar.style.getPropertyValue('--reader-tray-left') !== prior) {
+      throw new Error('a button outside the toolbar chain replaced the last good tray anchor');
+    }
+    group.offsetParent = toolbar;
+
     // And the padlock is still a real element in both editable views, which is what Tab walks.
     for (const view of ['reading', 'code']) {
       booted.renderViewTools(view);
@@ -185,7 +199,21 @@ export function run() {
     }
   });
 
-  check('the nub grows into the tray in place, quick and with a spring at the top', () => {
+  check("the map nub uses the toolbar's padding-box middle", () => {
+    const toolbar = booted.document.getElementById('readerToolbar');
+    const group = toolbar.querySelector('.reader-tool-group');
+    const graph = booted.document.getElementById('viewGraphButton');
+    group.offsetParent = toolbar;
+    graph.offsetParent = group;
+    toolbar.offsetWidth = 132;
+    toolbar.clientWidth = 130;
+    vm.runInContext('currentDocumentBindsAnything = true;', booted);
+    booted.renderViewTools('graph');
+    const at = toolbar.style.getPropertyValue('--reader-tray-left');
+    if (at !== '65px') throw new Error(`the map nub used ${at || 'nothing'} instead of the toolbar's 65px inner middle`);
+  });
+
+  check('the open tray leaves equal steps above and below its tools', () => {
     const css = readingCss();
     // The rule that opens a line, never one that merely ends with the same name: `.reader-tool-tray:hover .reader-view-tools {` would otherwise answer for `.reader-view-tools`.
     const body = (selector) => {
@@ -219,7 +247,7 @@ export function run() {
       }
     }
     // Anchored inside the bar's border box, so its foot goes behind the opaque face and the nub meets the bar with no seam.
-    if (!/bottom:\s*calc\(100% - \d+px\);/.test(parked)) {
+    if (!/bottom:\s*calc\(100% - var\(--reader-tray-foot\)\);/.test(parked)) {
       throw new Error(`the tray does not sink its foot into the bar: ${parked}`);
     }
     // It grows to what it holds, measured beside the anchor — a height that is not a number cannot be animated to, so `none` or `max-content` would snap.
@@ -239,11 +267,12 @@ export function run() {
     }
     // A length, whether it is written out or named. The token file is read rather than the sheet, because the sheet the checks are handed carries the rules and not the values behind them.
     const tokens = readFileSync(join(root, 'src/assets/tokens.css'), 'utf8');
+    const componentLength = (name) => new RegExp(`${name}:\\s*(-?[\\d.]+)px;`).exec(parked);
     const lengthOf = (value) => {
       const named = /^var\((--[\w-]+)\)$/.exec(value.trim());
       // Doubled on purpose: a template literal eats a single backslash, so `\s` written here would reach the pattern as a bare `s`.
       const literal = named
-        ? new RegExp(`${named[1]}:\\s*(-?[\\d.]+)px;`).exec(tokens)
+        ? componentLength(named[1]) || new RegExp(`${named[1]}:\\s*(-?[\\d.]+)px;`).exec(tokens)
         : /^(-?[\d.]+)px$/.exec(value.trim());
       if (!literal) throw new Error(`not a length this check can read: ${value}`);
       return Number(literal[1]);
@@ -253,26 +282,34 @@ export function run() {
       if (!found) throw new Error(`${property} is not declared: ${rule}`);
       return lengthOf(found[1]);
     };
-    const sunk = /bottom:\s*calc\(100% - (\d+)px\);/.exec(parked);
+    const sunk = /bottom:\s*calc\(100% - (var\(--reader-tray-foot\))\);/.exec(parked);
     if (!sunk) throw new Error(`the tray does not say how far it sinks into the bar: ${parked}`);
-    const inset = /padding:\s*(var\(--lt-space-\d+\));/.exec(parked);
-    if (!inset) throw new Error(`the tray is not inset the same step on every edge: ${parked}`);
+    const inset = /padding:\s*(var\(--lt-space-\d+\))\s+var\(--lt-space-\d+\)\s+calc\(([^)]+\)[^;]*)\);/.exec(parked);
+    if (!inset) throw new Error(`the tray does not name its top and bottom steps: ${parked}`);
     const top = lengthOf(inset[1]);
-    const proud = px(parked, 'height') - Number(sunk[1]);
+    const bottom = inset[2].split(/\s*\+\s*/).reduce((sum, value) => sum + lengthOf(value), 0);
+    const foot = lengthOf(sunk[1]);
+    const barStroke = lengthOf('var(--lt-stroke-1)');
+    const proud = px(parked, 'height') - foot;
     // The nub stands proud of the bar rather than level with it, or there is nothing to say the tools are in there — which is what evening the insets cost once, before the tools were carried out of the nub instead of held below it.
     if (proud < 1) {
       throw new Error(`the nub stands ${proud}px proud of the bar, so nothing peeks`);
     }
-    // And the tools reach the bar's own top edge rather than being cut by it: the tray's foot is inside the bar, so the step under them has to be no deeper than the sink.
-    if (top > Number(sunk[1])) {
-      throw new Error(`the tools are set ${top}px above a foot only ${sunk[1]}px inside the bar, so the bottom one is cut by its face`);
+    // The hidden foot and the bar's stroke come back off the bottom padding, leaving the same visible step as the top.
+    const visibleBottom = bottom - foot - barStroke;
+    if (top !== visibleBottom) {
+      throw new Error(`the tray leaves ${top}px above its tools and ${visibleBottom}px below them`);
     }
     // Nothing of the tools is in the nub, and it is the carry rather than the inset that keeps them out — so how proud the nub stands and how far they are inset are free of each other, which is what evening the insets cost when they were not.
     const recess = body('.reader-view-tools');
     const carried = /transform: translateY\(calc\((.+) - (\d+)px\)\);/.exec(recess);
     if (!carried) throw new Error(`the tools are not carried out of the nub while it is parked: ${recess}`);
-    if (!carried[1].includes('var(--reader-tray-height')) {
-      throw new Error(`the tools are carried by something other than the height the tray grows by: ${carried[0]}`);
+    const verticalPieces = 'var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2';
+    if (!out.includes(`height: calc(${verticalPieces});`)) {
+      throw new Error(`the grown tray does not count every vertical piece: ${out}`);
+    }
+    if (carried[1] !== verticalPieces) {
+      throw new Error(`the parked tools do not travel by the tray's full grown height: ${carried[0]}`);
     }
     // And by exactly the growth, so they land where the grown tray's own inset puts them: the nub's own height is what comes back off.
     if (Number(carried[2]) !== px(parked, 'height')) {

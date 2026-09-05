@@ -173,9 +173,17 @@ function anchorToolTray(current) {
   if (!readerToolTray || readerToolTray.hidden) return;
   const button = current === 'graph' ? viewGraphButton : current === 'code' ? viewCodeButton : viewReadingButton;
   if (!button || !button.offsetParent) return;
-  // The button's own middle, in the bar's coordinates: the tray is placed by it and pulls itself half its width back. The map is the exception — its tools are one named list wider than a button, so centered on the graph button it hangs off the end of the bar; it takes the bar's own middle instead and the nub stands there with it.
-  const middle =
-    current === 'graph' ? readerToolbar.offsetWidth / 2 : button.offsetLeft + button.offsetWidth / 2;
+  // The button's own middle, in the bar's padding-box coordinates: the tray is placed by it and pulls itself half its width back. The map is the exception — its tools are one named list wider than a button, so centered on the graph button it hangs off the end of the bar; it takes the padding box's own middle instead and the nub stands there with it.
+  let middle = readerToolbar.clientWidth / 2;
+  if (current !== 'graph') {
+    middle = button.offsetWidth / 2;
+    let part = button;
+    while (part && part !== readerToolbar) {
+      middle += part.offsetLeft;
+      part = part.offsetParent;
+    }
+    if (part !== readerToolbar) return;
+  }
   readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);
   // And how tall the nub grows to, taken off the tools rather than off the tray: the tray is clipped to the nub, and its own scrollHeight cannot answer either, because what overflows a bottom-anchored box goes off the top and nothing above a box counts as scrollable. The recess is `flex: none`, so its height is what it needs whatever the clip is; the stylesheet adds the tray's own padding and edge to it. The graph view fills it with a named list and the other two with stacked icons, so it is measured rather than declared — off the same forced layout the anchor above already pays for.
   if (readerViewTools) {

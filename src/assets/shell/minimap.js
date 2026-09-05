@@ -20,6 +20,8 @@ var minimapBuiltRange;
 var minimapBuiltFirstRow;
 var minimapBuiltLastRow;
 var minimapBuiltRowPath;
+// Whether either carried edge of the built clone was sliced rather than taken whole. A sliced clone reaches only as far as the range it was asked for, so a rebuild over the same rows can hold more than the one already on the page and the guard below has to let it through.
+var minimapBuiltSliced;
 // How much slack the built clone holds, as the multiple of a screen it was asked for. The skip guard counts it, which is what lets a wider rebuild over the same rows through.
 var minimapBuiltSlack;
 // The widest slack anything has asked the booked frame to build with. A scroll and a keystroke landing in the same frame get one rebuild, and it is the scroll's, because the scroll is the one that needs room either side.
@@ -60,6 +62,7 @@ function initializeMinimapState() {
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
   minimapBuiltRowPath = '';
+  minimapBuiltSliced = false;
   minimapBuiltSlack = -1;
   minimapPendingSlack = 0;
   minimapWidenTimer = 0;
@@ -460,6 +463,7 @@ function disconnectMinimapPreviewObservers() {
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
   minimapBuiltRowPath = '';
+  minimapBuiltSliced = false;
   minimapBuiltSlack = -1;
   invalidateMinimapMetrics();
 }
@@ -951,6 +955,7 @@ function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, fir
     && minimapBuiltFirstRow === first
     && minimapBuiltLastRow === last
     && minimapBuiltRowPath === rowPath
+    && !minimapBuiltSliced
     && minimapBuiltSlack >= slack;
 }
 // Document offset of an element's top/bottom edge, on the same basis as metrics.sourceTop (the scroll container's content coordinates).
@@ -974,6 +979,10 @@ function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
   }
   return found;
 }
+// A table row's cells sit beside one another rather than down the page, so a search for vertical rows that descends into one reads its columns as more rows and keeps a single cell where the whole row belongs. It is where a descent stops, on both the primary block and a sliced carried row.
+function minimapRowIsAtomic(row) {
+  return row.tagName === 'TR';
+}
 // Descend through a row taller than the window, keeping the wrappers the slice must wear.
 function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
   let holder = source;
@@ -996,11 +1005,11 @@ function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
     // Only an end of the run can be taller than the window: a row between them has a window row above it and another below it, so it cannot reach past both edges. Asking all 1,552 rows of a window into a description list of 40,000 children cost 13.7 ms of a typing pause where these two reads cost none of it. The first is checked before the last so the document-order answer is the one that survives.
     if (first <= last) {
       const firstEdges = minimapBlockEdges(rows[first], appTop, scrollTop);
-      if (rows[first].children.length && firstEdges.bottom - firstEdges.top > windowHeight) {
+      if (rows[first].children.length && !minimapRowIsAtomic(rows[first]) && firstEdges.bottom - firstEdges.top > windowHeight) {
         deeper = first;
       } else if (last !== first) {
         const lastEdges = minimapBlockEdges(rows[last], appTop, scrollTop);
-        if (rows[last].children.length && lastEdges.bottom - lastEdges.top > windowHeight) deeper = last;
+        if (rows[last].children.length && !minimapRowIsAtomic(rows[last]) && lastEdges.bottom - lastEdges.top > windowHeight) deeper = last;
       }
     }
     if (deeper < 0) {
@@ -1023,10 +1032,11 @@ function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
   }
 }
 // A clone holding rows `first..last` only.
-function buildWindowedMinimapClone(source, window, first, last) {
+function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'both') {
+  // Only the padding on the side the content was taken from. A carried row sliced at its foot keeps everything above that foot, so zeroing its head too would lift every one of those rows by that padding.
   const resetPadding = (node) => {
-    node.style.paddingTop = '0';
-    node.style.paddingBottom = '0';
+    if (cutAt !== 'bottom') node.style.paddingTop = '0';
+    if (cutAt !== 'top') node.style.paddingBottom = '0';
   };
   const slice = (from, into) => {
     const firstNode = window.rows[first];
@@ -1043,12 +1053,27 @@ function buildWindowedMinimapClone(source, window, first, last) {
   resetPadding(preview);
   // The rows on the far side of the block, beside the wrapper chain rather than inside it, since that is where they sit in the document. They land at the offset they really have because the descended slice reaches the block's own edge in exactly the case that asks for them: run off the block's foot and the slice ends on its last row, so what follows sits straight after it; run off its head and the slice starts on its first row, so what comes before sits straight above and the clone is placed at the first of those rows instead.
   const block = window.path === '' ? -1 : Number(window.path.split('/')[0]);
-  const carry = (from, through) => {
+  // Where the clone's first content really begins, and whether either carried end was sliced. Both are numbers the caller has no other way to read back, and both decide where the thumbnail is placed and how far it may claim to reach.
+  const built = { preview, firstTop: NaN, slicedTop: false, slicedBottom: false };
+  const carry = (from, through, edge) => {
+    const crossing = edge === 'top' ? from : through;
     for (let index = from; index <= through; index += 1) {
-      preview.appendChild(source.children[index].cloneNode(true));
+      const row = source.children[index];
+      const sliced = index === crossing ? windowCarriedMinimapRow(row, cut, edge) : null;
+      if (!sliced) {
+        preview.appendChild(row.cloneNode(true));
+        continue;
+      }
+      preview.appendChild(sliced.preview);
+      if (edge === 'top') {
+        built.slicedTop = true;
+        built.firstTop = sliced.firstTop;
+      } else {
+        built.slicedBottom = true;
+      }
     }
   };
-  if (window.beforeFirst >= 0) carry(window.beforeFirst, block - 1);
+  if (window.beforeFirst >= 0) carry(window.beforeFirst, block - 1, 'top');
   let into = preview;
   for (const wrapper of window.wrappers) {
     const clone = wrapper.cloneNode(false);
@@ -1057,8 +1082,27 @@ function buildWindowedMinimapClone(source, window, first, last) {
     into = clone;
   }
   slice(window.holder, into);
-  if (window.afterLast >= 0) carry(block + 1, window.afterLast);
-  return preview;
+  if (window.afterLast >= 0) carry(block + 1, window.afterLast, 'bottom');
+  if (cut && Number.isNaN(built.firstTop)) {
+    const head = window.beforeFirst >= 0 ? source.children[window.beforeFirst] : window.rows[first];
+    if (head) built.firstTop = minimapBlockEdges(head, cut.appTop, cut.scrollTop).top;
+  }
+  return built;
+}
+// A carried row running off an end of the asked range is windowed the same way the primary block is rather than cloned whole. At a boundary between two long tables the clone otherwise takes a 45,566px table for the 91px of it the rail can show, and that one clone is most of the rebuild: windowing it there cut the same rebuild from 45-49ms to 25-26ms.
+//
+// Answers null wherever there is nothing to win — a row already wholly inside the range, a row with nothing inside it to slice, a table row, or a search that would keep every child anyway — and the caller clones the row whole.
+function windowCarriedMinimapRow(row, cut, edge) {
+  if (!cut || !row.children.length || minimapRowIsAtomic(row)) return null;
+  const edges = minimapBlockEdges(row, cut.appTop, cut.scrollTop);
+  // Each carried end is cut on one side only: the row above the block runs off the head of the range and the row below it runs off the foot, so the other end of each is inside the range already.
+  const top = edge === 'top' ? Math.max(edges.top, cut.top) : edges.top;
+  const bottom = edge === 'top' ? edges.bottom : Math.min(edges.bottom, cut.bottom);
+  if (edges.top >= top && edges.bottom <= bottom) return null;
+  const nested = minimapWindowRows(row, cut.appTop, cut.scrollTop, top, bottom);
+  if (nested.first > nested.last) return null;
+  if (!nested.wrappers.length && nested.first <= 0 && nested.last >= nested.rows.length - 1) return null;
+  return buildWindowedMinimapClone(row, nested, nested.first, nested.last, cut, edge);
 }
 // Strip the clone: nothing focusable, nothing with a duplicate id, no second copy of every link for a screen reader to find.
 function stripMinimapClone(preview) {
@@ -1128,6 +1172,7 @@ function updateContainedPageMinimapPreview(track, content, minimap) {
   minimapBuiltFirstRow = -1;
   minimapBuiltLastRow = -1;
   minimapBuiltRowPath = '';
+  minimapBuiltSliced = false;
   minimapBuiltSlack = MINIMAP_WINDOW_SLACK;
   markMinimapWarming();
   placeMinimapViewport(minimap, metrics, null);
@@ -1206,35 +1251,40 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     minimapBuiltFirstRow = -1;
     minimapBuiltLastRow = -1;
     minimapBuiltRowPath = '';
+    minimapBuiltSliced = false;
     // The whole document is in the clone, which is more than any slack could ask for.
     minimapBuiltSlack = MINIMAP_WINDOW_SLACK;
   } else {
-    preview = buildWindowedMinimapClone(source, window, first, last);
+    const cut = { appTop, scrollTop, top: view.top - slackHeight, bottom: view.bottom + slackHeight };
+    const built = buildWindowedMinimapClone(source, window, first, last, cut);
+    preview = built.preview;
     stripMinimapClone(preview);
     preview.style.width = `${metrics.sourceWidth}px`;
     const topRows = source.children;
-    // Where rows before the block were carried in, the clone starts at the first of them rather than at the block's own first row.
-    if (window.beforeFirst >= 0) {
-      firstTop = minimapBlockEdges(topRows[window.beforeFirst], appTop, scrollTop).top;
-    } else if (first < rows.length) {
-      firstTop = minimapBlockEdges(rows[first], appTop, scrollTop).top;
-    }
+    // Where rows before the block were carried in, the clone starts at the first of them rather than at the block's own first row — and at the first row still inside that one where it was sliced.
+    if (!Number.isNaN(built.firstTop)) firstTop = built.firstTop;
     frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
     // At the ends of the run the range takes the ends of whatever the search stopped inside — the outermost wrapper where it descended into a block, the document itself where it did not. The padding argument holds either way: above the first row and below the last there is only the holder's own padding, which no clone of the rows can hold, so row edges there fail the guard at every top and every foot and every failure asks for another rebuild. A wrapper has that padding as much as the document does. Taking the document's ends after a descent is what left the slice claiming ground the clone holds no rows for, so the guard answered yes over an empty rail and nothing ever asked for it back.
     const outerEdges = window.wrappers.length ? minimapBlockEdges(window.wrappers[0], appTop, scrollTop) : null;
+    // A sliced carried end claims only what was asked for. The row it came out of still stands whole in the document, and most of it is not in the clone — claiming its outer edge is what would put a blank band back under the reader.
     minimapBuiltRange = {
-      top: window.beforeFirst >= 0
-        ? (window.beforeFirst === 0 ? 0 : firstTop)
-        : (first === 0 ? (outerEdges ? outerEdges.top : 0) : firstTop),
-      bottom: window.afterLast >= 0
-        ? (window.afterLast >= topRows.length - 1 ? metrics.scrollHeight : minimapBlockEdges(topRows[window.afterLast], appTop, scrollTop).bottom)
-        : (last >= rows.length - 1
-          ? (outerEdges ? outerEdges.bottom : metrics.scrollHeight)
-          : minimapBlockEdges(rows[last], appTop, scrollTop).bottom),
+      top: built.slicedTop
+        ? cut.top
+        : (window.beforeFirst >= 0
+          ? (window.beforeFirst === 0 ? 0 : firstTop)
+          : (first === 0 ? (outerEdges ? outerEdges.top : 0) : firstTop)),
+      bottom: built.slicedBottom
+        ? cut.bottom
+        : (window.afterLast >= 0
+          ? (window.afterLast >= topRows.length - 1 ? metrics.scrollHeight : minimapBlockEdges(topRows[window.afterLast], appTop, scrollTop).bottom)
+          : (last >= rows.length - 1
+            ? (outerEdges ? outerEdges.bottom : metrics.scrollHeight)
+            : minimapBlockEdges(rows[last], appTop, scrollTop).bottom)),
     };
     minimapBuiltFirstRow = first;
     minimapBuiltLastRow = last;
     minimapBuiltRowPath = window.path;
+    minimapBuiltSliced = built.slicedTop || built.slicedBottom;
     minimapBuiltSlack = slack;
   }
   frame.appendChild(preview);

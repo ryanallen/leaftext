@@ -101,9 +101,9 @@ fn app_shell_builds_minimap_preview_from_document_clone() {
         "function minimapVisibleDocumentRange(metrics, scrollTop) {",
         "function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {",
         "const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;",
-        "preview = buildWindowedMinimapClone(source, window, first, last);",
+        "const built = buildWindowedMinimapClone(source, window, first, last, cut);",
         "function minimapWindowRows(source, appTop, scrollTop, top, bottom) {",
-        "function buildWindowedMinimapClone(source, window, first, last) {",
+        "function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'both') {",
         "into.appendChild(node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true));",
         // Scrolling reads no geometry at all — cached metrics, arithmetic, and CSS variable writes. Re-measuring per wheel click forced a fresh layout of the whole document, which is what made one click take ~2 seconds.
         "function minimapMetricsForScroll(track) {",

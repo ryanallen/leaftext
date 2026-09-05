@@ -186,7 +186,8 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert_contains(tray, "z-index: var(--lt-z-below);");
     assert_contains(tray, "height: 9px;");
     assert_contains(tray, "overflow: hidden;");
-    assert_contains(tray, "bottom: calc(100% - 3px);");
+    assert_contains(tray, "--reader-tray-foot: 3px;");
+    assert_contains(tray, "bottom: calc(100% - var(--reader-tray-foot));");
     assert_contains(tray, "pointer-events: auto;");
     assert!(
         !tray.contains("display: none;") && !tray.contains("visibility: hidden;"),
@@ -199,11 +200,14 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     );
     // The tools ride at the top of the drawer and come out with it, held below the bar's own edge while it is the nub so that nub is a clean edge rather than a sliver of the padlock.
     assert_contains(tray, "justify-content: flex-start;");
-    assert_contains(tray, "padding: var(--lt-space-2);");
+    assert_contains(
+        tray,
+        "padding: var(--lt-space-2) var(--lt-space-2) calc(var(--lt-space-2) + var(--reader-tray-foot) + var(--lt-stroke-1));",
+    );
     // Nothing of the tools is in the nub, and it is the carry rather than a deeper step at the top that keeps them out — so how proud the nub stands and how far they are inset are free of each other, which they were not when evening the insets took the nub away.
     assert_contains(
         rule_body(css, ".reader-view-tools {"),
-        "transform: translateY(calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1) - 9px));",
+        "transform: translateY(calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2 - 9px));",
     );
     assert!(css.contains(
         ".reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray .reader-view-tools,
@@ -228,7 +232,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     // Out is the same element grown to what it holds, measured because a height that is not a number cannot be animated to.
     assert_contains(
         out,
-        "height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1));",
+        "height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2);",
     );
     assert!(
         !out.contains("transform:") && !out.contains("opacity:"),
@@ -238,9 +242,10 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert_contains(out, "var(--lt-ease-overshoot)");
     assert_contains(out, "var(--lt-duration-200)");
     // The tray stands over the button of the view whose tools it holds and grows to what it holds, both measured because anchor positioning is not on the Mac web view and a clipped box cannot report its own content height. The map is the exception: its tools are one named list wider than a button, so centered on the graph button they hang off the end of the bar, and that tray takes the bar's own middle instead.
-    assert!(html.contains(
-        "current === 'graph' ? readerToolbar.offsetWidth / 2 : button.offsetLeft + button.offsetWidth / 2;"
-    ));
+    assert!(html.contains("let middle = readerToolbar.clientWidth / 2;"));
+    assert!(html.contains("while (part && part !== readerToolbar) {"));
+    assert!(html.contains("middle += part.offsetLeft;"));
+    assert!(html.contains("if (part !== readerToolbar) return;"));
     assert!(html.contains(
         "readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);"
     ));

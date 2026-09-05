@@ -283,6 +283,33 @@ export function run() {
     }
   });
 
+  // A sliced carried edge reaches only as far as the range it was asked for, so the same row numbers can stand for two different clones. The guard counts that, or a reader moving out of one long table into the next keeps a thumbnail cut short of where they now are.
+  check('a thumbnail whose carried edge was sliced asks for a rebuild over the same rows', () => {
+    const { minimapRebuildWouldChangeNothing } = booted;
+    const metrics = { sourceWidth: 800 };
+    const built = (sliced) => vm.runInContext(
+      'minimapContentVersion = 7; minimapBuiltVersion = 7; minimapBuiltSourceWidth = 800;'
+        + 'minimapBuiltPreviewWidth = 90; minimapBuiltFrameWidth = 760;'
+        + `minimapBuiltFirstRow = 12; minimapBuiltLastRow = 40; minimapBuiltRowPath = '1/0';`
+        + `minimapBuiltSlack = 1; minimapBuiltSliced = ${sliced};`,
+      booted,
+    );
+    try {
+      built(false);
+      if (!minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0')) throw new Error('a thumbnail built out of whole rows rebuilt itself anyway');
+      built(true);
+      if (minimapRebuildWouldChangeNothing(metrics, 90, 760, 12, 40, '1/0')) throw new Error('a thumbnail whose carried edge was sliced kept itself over the same rows');
+    } finally {
+      vm.runInContext(
+        'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
+          + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1;'
+          + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
+          + 'minimapBuiltSlack = -1; minimapBuiltSliced = false;',
+        booted,
+      );
+    }
+  });
+
   // The rail stood up over a document of a hundred twenty-pixel rows, with the two answers the rebuild reads off a real page swapped for known ones — the rail's geometry, and the body it clones. Everything between them is the shipped rebuild, so what these two checks read back is the slice it really built. A 70-pixel track over a 2,000-pixel document drawn at a tenth covers the first 700 pixels of it, which is rows 0 to 35; a screen either side reaches row 70.
   const railOverARowedDocument = (geometry) => {
     const body = fakeElement('rail-slack-source');
@@ -528,6 +555,67 @@ export function run() {
     }
   });
 
+  // The wiring both documents below need. The rebuild reads its geometry off the metrics and its rows off the body, and everything between them is the shipped rebuild, so what a check reads back is the slice it really built. `setScroll` moves the offset each row answers its rectangle against, since the rail reads viewport rectangles and adds the scroll back on.
+  const railStandFor = (body, metrics, setScroll) => {
+    let scrollTop = 0;
+    const was = { measure: booted.measureDocumentMinimap, source: booted.minimapSourceElement };
+    booted.measureDocumentMinimap = () => ({ ...metrics, scrollTop });
+    booted.minimapSourceElement = () => body;
+    booted.setMinimapMarkup(booted.documentMinimapMarkup());
+    const rail = booted.document.getElementById('readerMinimap');
+    const content = rail.querySelector('.document-minimap-track').querySelector('.document-minimap-content');
+    content.getBoundingClientRect = () => ({ top: 0, bottom: 70, height: 70, width: 80 });
+    const move = (offset) => {
+      scrollTop = offset;
+      setScroll(offset);
+    };
+    return {
+      metrics,
+      // Build the thumbnail for a reader sitting at this offset, the way a scroll past the built slice does.
+      buildAt: (offset) => {
+        move(offset);
+        booted.updateDocumentMinimapPreview();
+      },
+      coversAt: (offset) => {
+        move(offset);
+        return booted.minimapWindowCoversView({ ...metrics, scrollTop }, offset);
+      },
+      // What the thumbnail on the page ended up holding: the block's own copy, and the top-level rows carried in beside it on either side.
+      clonedRows: () => {
+        const built = content.querySelector('.document-minimap-preview');
+        const kids = built ? built.children : [];
+        const at = Array.prototype.findIndex.call(kids, (child) => child.classList.contains('table-bay'));
+        return {
+          block: at >= 0,
+          before: at < 0 ? 0 : at,
+          after: at < 0 ? 0 : kids.length - at - 1,
+          leadsWithCarried: at > 0,
+        };
+      },
+      // The thumbnail itself, for a check that has to look inside a row it carried.
+      builtClone: () => content.querySelector('.document-minimap-preview'),
+      // Where the thumbnail was placed down the rail: the box the clone hangs in wears it.
+      placedAt: () => {
+        const box = content.querySelector('.document-minimap-frame');
+        return box ? box.style.transform : '';
+      },
+      read: (name) => vm.runInContext(name, booted),
+      restore: () => {
+        booted.measureDocumentMinimap = was.measure;
+        booted.minimapSourceElement = was.source;
+        booted.setMinimapMarkup('');
+        booted.__frames.drain();
+        vm.runInContext(
+          'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
+            + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1; minimapBuiltRange = null;'
+            + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
+            + 'minimapBuiltSliced = false; minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;',
+          booted,
+        );
+      },
+    };
+  };
+
   // The document the fault needs: one block taller than the window the rail asks for, with ground on both sides of it. Thirty-one rows of 100px with the eleventh a block spanning 1,000 to 6,000 and holding fifty of them, under a 70px track over an 8,000px document drawn at a tenth — so the rail shows 700px at a time, asks for a screen either side of that, and the block is five times the 2,100px it asked for. Everything the rebuild reads off a real page is swapped for a known number and everything between them is the shipped rebuild, so what these checks read back is the slice it really built.
   const railOverABlockedDocument = () => {
     // The rail reads viewport rectangles and adds the scroll back on, so the rows answer where they are on the screen rather than where they are in the document.
@@ -561,56 +649,7 @@ export function run() {
       scaledDocumentHeight: 800,
       previewScale: 0.1,
     };
-    const was = { measure: booted.measureDocumentMinimap, source: booted.minimapSourceElement };
-    booted.measureDocumentMinimap = () => ({ ...metrics, scrollTop });
-    booted.minimapSourceElement = () => body;
-    booted.setMinimapMarkup(booted.documentMinimapMarkup());
-    const rail = booted.document.getElementById('readerMinimap');
-    const content = rail.querySelector('.document-minimap-track').querySelector('.document-minimap-content');
-    content.getBoundingClientRect = () => ({ top: 0, bottom: 70, height: 70, width: 80 });
-    return {
-      metrics,
-      // Build the thumbnail for a reader sitting at this offset, the way a scroll past the built slice does.
-      buildAt: (offset) => {
-        scrollTop = offset;
-        booted.updateDocumentMinimapPreview();
-      },
-      coversAt: (offset) => {
-        scrollTop = offset;
-        return booted.minimapWindowCoversView({ ...metrics, scrollTop }, offset);
-      },
-      // What the thumbnail on the page ended up holding: the block's own copy, and the top-level rows carried in beside it on either side.
-      clonedRows: () => {
-        const built = content.querySelector('.document-minimap-preview');
-        const kids = built ? built.children : [];
-        const at = Array.prototype.findIndex.call(kids, (child) => child.classList.contains('table-bay'));
-        return {
-          block: at >= 0,
-          before: at < 0 ? 0 : at,
-          after: at < 0 ? 0 : kids.length - at - 1,
-          leadsWithCarried: at > 0,
-        };
-      },
-      // Where the thumbnail was placed down the rail: the box the clone hangs in wears it.
-      placedAt: () => {
-        const box = content.querySelector('.document-minimap-frame');
-        return box ? box.style.transform : '';
-      },
-      read: (name) => vm.runInContext(name, booted),
-      restore: () => {
-        booted.measureDocumentMinimap = was.measure;
-        booted.minimapSourceElement = was.source;
-        booted.setMinimapMarkup('');
-        booted.__frames.drain();
-        vm.runInContext(
-          'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
-            + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1; minimapBuiltRange = null;'
-            + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
-            + 'minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;',
-          booted,
-        );
-      },
-    };
+    return railStandFor(body, metrics, (offset) => { scrollTop = offset; });
   };
 
   // The slice is the only thing that decides whether the rail ever rebuilds again, so it has to say where the clone really ends. Taking the document's own ends after the search had descended into a block left it claiming 2,000px above and below that the clone holds no row for, and the guard reads those two numbers and nothing else — so it answered yes over an empty rail and nothing ever asked for the picture back.
@@ -672,6 +711,101 @@ export function run() {
     }
   });
 
+
+  // The document the boundary between two long tables needs: a block taller than the window with a table on each side of it. Fourteen top-level rows over a 31,900px document under a 70px track at a tenth, so the rail shows 700px and asks for a screen either side of that, 2,100px in all. The table above the block is 1,800px, short enough that the search descends into the block rather than into it; the table below is 24,000px, which is the one the clone used to take whole for the few hundred pixels of it the rail could show. Both are built of 600px rows, taller than the sliver of either table a window at these boundaries reaches — which is what makes the row itself the thing a descent has to stop at.
+  const railBetweenLongTables = () => {
+    let scrollTop = 0;
+    const body = fakeElement('rail-table-source');
+    body.className = 'document-body';
+    const table = (lines) => `<table><tbody>${Array.from({ length: lines }, (_, line) => `<tr><td>a${line}</td><td>b${line}</td><td>c${line}</td></tr>`).join('')}</tbody></table>`;
+    body.innerHTML = Array.from({ length: 14 }, (_, index) => {
+      if (index === 7) return table(3);
+      if (index === 10) return `<div class="table-bay">${Array.from({ length: 50 }, (_, line) => `<p>line ${line}</p>`).join('')}</div>`;
+      if (index === 11) return table(40);
+      return `<p>row ${index}</p>`;
+    }).join('');
+    const span = (index) => {
+      if (index < 7) return [index * 100, index * 100 + 100];
+      if (index === 7) return [700, 2500];
+      if (index < 10) return [2500 + (index - 8) * 100, 2600 + (index - 8) * 100];
+      if (index === 10) return [2700, 7700];
+      if (index === 11) return [7700, 31700];
+      return [31700 + (index - 12) * 100, 31800 + (index - 12) * 100];
+    };
+    const stands = (node, top, bottom) => {
+      node.getBoundingClientRect = () => ({ top: top - scrollTop, bottom: bottom - scrollTop, height: bottom - top, width: 800 });
+    };
+    body.children.forEach((row, index) => {
+      const [top, bottom] = span(index);
+      stands(row, top, bottom);
+    });
+    body.children[10].children.forEach((line, index) => stands(line, 2700 + index * 100, 2800 + index * 100));
+    // Each table answers for its one tbody as well as its rows: the search measures the tbody on its way down and stops at the rows.
+    for (const [row, from] of [[7, 700], [11, 7700]]) {
+      const holder = body.children[row].children[0];
+      stands(holder, from, from + holder.children.length * 600);
+      holder.children.forEach((line, index) => stands(line, from + index * 600, from + index * 600 + 600));
+    }
+    const metrics = {
+      sourceWidth: 800,
+      sourceTop: 0,
+      scrollHeight: 31900,
+      viewportHeight: 700,
+      scrollable: 31200,
+      scrollTop: 0,
+      trackHeight: 70,
+      scaledDocumentHeight: 3190,
+      previewScale: 0.1,
+    };
+    return railStandFor(body, metrics, (offset) => { scrollTop = offset; });
+  };
+
+  // Every row of a sliced table, and every cell in each of them. Descending into a <tr> reads its columns as more vertical rows, which leaves one cell standing where the whole row belongs.
+  const slicedTableRows = (carried, of) => {
+    if (!carried) throw new Error('the clone holds nothing where the carried table should be');
+    if (carried.tagName !== 'TABLE') throw new Error(`the clone carried in a ${carried.tagName} rather than the table beside the block`);
+    const rows = carried.children[0] ? carried.children[0].children : [];
+    for (const row of rows) {
+      if (row.tagName !== 'TR') throw new Error(`the slice descended past the table's rows and kept a ${row.tagName}`);
+      if (row.children.length !== 3) throw new Error(`a row of the carried table kept ${row.children.length} of its 3 cells, so the descent read its columns as more rows`);
+    }
+    if (rows.length !== of) throw new Error(`the carried table went into the clone with ${rows.length} rows rather than the ${of} the window reaches`);
+    return rows;
+  };
+
+  // A carried row is what stops the rail going blank past a long block, and it used to go in whole: at a boundary between two long tables that took a 20,000px table for the 500px of it the rail could show, and building the clone is most of a rebuild. It is windowed now the same way the block is — and the slice has to say so, or the guard keeps a thumbnail for ground the clone holds no row for.
+  check('a long table carried in past a block’s foot is sliced to the rows the window reaches', () => {
+    const stand = railBetweenLongTables();
+    try {
+      stand.buildAt(6800);
+      if (stand.read('minimapBuiltRowPath') !== '10') throw new Error(`the search stopped at path ${stand.read('minimapBuiltRowPath')} rather than descending into the block, so this proves nothing`);
+      const kids = stand.builtClone().children;
+      if (kids.length !== 2) throw new Error(`the clone holds ${kids.length} top-level rows rather than the block and the table carried in past its foot`);
+      slicedTableRows(kids[1], 1);
+      const foot = stand.read('minimapBuiltRange');
+      if (foot.bottom !== 8200) throw new Error(`the slice says it ends at ${foot.bottom} rather than at the 8,200 it asked for; the carried table runs to 31,700 and the clone holds none of that`);
+      if (stand.coversAt(8500)) throw new Error('a reader below the sliced table was told the thumbnail already holds where they are');
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // The same at the other edge, where the carried row sits above the block and the window reaches back into its last rows. The clone starts inside that row, so the number the slice claims for its top is the one it asked for rather than the top of a table whose first eleven rows it does not hold.
+  check('a long table carried in above a block is sliced to the rows the window reaches back into', () => {
+    const stand = railBetweenLongTables();
+    try {
+      stand.buildAt(2400);
+      if (stand.read('minimapBuiltRowPath') !== '10') throw new Error(`the search stopped at path ${stand.read('minimapBuiltRowPath')} rather than descending into the block, so this proves nothing`);
+      const kids = stand.builtClone().children;
+      if (kids.length !== 4) throw new Error(`the clone holds ${kids.length} top-level rows rather than the table, the two rows after it and the block`);
+      slicedTableRows(kids[0], 2);
+      const head = stand.read('minimapBuiltRange');
+      if (head.top !== 1700) throw new Error(`the slice says it starts at ${head.top} rather than at the 1,700 it asked for; the carried table starts at 700 and the clone holds none of that`);
+      if (stand.coversAt(1000)) throw new Error('a reader above the sliced table was told the thumbnail already holds where they are');
+    } finally {
+      stand.restore();
+    }
+  });
 
   // A windowed clone starts mid-document, so its first block's top margin has nothing above it to collapse against and the thumbnail lands off by that margin; the rebuild measures the miss and takes it back out. Once rows are carried in above a block the clone starts with one of them rather than with the wrapper chain, so the row that miss is measured on is one step down and no longer at the foot of the wrappers — walked down the chain instead, the read runs off the end of the clone, finds nothing and leaves the thumbnail sitting wherever the margin put it.
   check('a thumbnail that starts with a carried row is placed by measuring that row', () => {
@@ -736,7 +870,7 @@ export function run() {
     if (window.rows.length !== 4) throw new Error('the rows a window slices are not the body’s own blocks');
 
     // A window over the middle two rows: those rows and nothing else, in the order the document has them.
-    const windowed = booted.buildWindowedMinimapClone(body, window, 1, 2);
+    const windowed = booted.buildWindowedMinimapClone(body, window, 1, 2).preview;
     if (windowed === body) throw new Error('the thumbnail is the reading body itself rather than a copy of it');
     if (windowed.children.length !== 2) throw new Error(`the window holds ${windowed.children.length} rows rather than the two it names`);
     if (windowed.textContent !== 'First words.flowchart TD') throw new Error(`the window says ${JSON.stringify(windowed.textContent)}`);
@@ -844,7 +978,7 @@ export function run() {
     const pre = body.children[0];
     const code = pre.children[0];
     const window = { holder: code, rows: Array.from(code.children), wrappers: [pre, code], path: '0/0' };
-    const clone = booted.buildWindowedMinimapClone(body, window, 0, 1);
+    const clone = booted.buildWindowedMinimapClone(body, window, 0, 1).preview;
     if (clone.textContent !== 'one\ntwo') throw new Error(`the slice joined its lines as ${JSON.stringify(clone.textContent)}`);
     const copiedCode = clone.children[0].children[0];
     if (copiedCode.childNodes.length !== 3 || copiedCode.childNodes[1].nodeType !== 3) throw new Error('the slice kept elements instead of the child nodes between them');
@@ -857,7 +991,7 @@ export function run() {
     const pre = body.children[0];
     const code = pre.children[0];
     const window = { holder: code, rows: Array.from(code.children), wrappers: [pre, code], path: '0/0' };
-    const clone = booted.buildWindowedMinimapClone(body, window, 1, 1);
+    const clone = booted.buildWindowedMinimapClone(body, window, 1, 1).preview;
     const copiedPre = clone.children[0];
     const copiedCode = copiedPre && copiedPre.children[0];
     if (!copiedPre || !copiedCode || copiedCode.children.length !== 1 || copiedCode.textContent !== 'two') throw new Error('the descended slice was not put back inside its ancestor chain');
@@ -879,7 +1013,7 @@ export function run() {
     code.getBoundingClientRect = () => ({ top: 20, bottom: 20020 });
     code.children.forEach((line, index) => { line.getBoundingClientRect = () => ({ top: 20 + index * 20, bottom: 40 + index * 20 }); });
     const window = booted.minimapWindowRows(body, 0, 0, 0, 160);
-    const clone = booted.buildWindowedMinimapClone(body, window, window.first, window.last);
+    const clone = booted.buildWindowedMinimapClone(body, window, window.first, window.last).preview;
     const copiedLines = clone.querySelectorAll('span');
     if (window.holder !== code || copiedLines.length >= 1000) throw new Error(`the thumbnail copied ${copiedLines.length} of the thousand lines`);
     if (copiedLines.length < 7 || copiedLines.length > 9) throw new Error(`a 160-pixel window copied ${copiedLines.length} twenty-pixel lines`);

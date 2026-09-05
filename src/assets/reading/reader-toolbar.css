@@ -162,7 +162,8 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool-tray {
   position: absolute;
   /* Three pixels down inside the bar's border box, so the foot is covered and the nub stands six proud of it. It grows from here and never moves. Geometry of this one component. */
-  bottom: calc(100% - 3px);
+  --reader-tray-foot: 3px;
+  bottom: calc(100% - var(--reader-tray-foot));
   left: var(--reader-tray-left, 50%);
   display: flex;
   flex-direction: column;
@@ -173,8 +174,8 @@ body:has(#readerToolbar:not([hidden])) {
   /* Parked, it is the nub: the three sunk into the bar plus the six standing proud of it. A real height rather than a ceiling, because the spring on the way out has to carry the box past its resting size and a ceiling would simply stop at the content. Geometry of this one component. */
   height: 9px;
   /* No bottom edge to draw — that side is inside the bar — and only the corners that show are rounded, so the nub is the tray's own top and nothing else. */
-  /* One step in from every edge, which is what the reader sees. How proud the nub stands is not traded against it: the tools are carried down out of the nub while it is parked rather than held below it by a deeper step, so the two are free of each other. */
-  padding: var(--lt-space-2);
+  /* One visible step on every edge, with the hidden foot and the bar's top stroke repaid at the bottom. */
+  padding: var(--lt-space-2) var(--lt-space-2) calc(var(--lt-space-2) + var(--reader-tray-foot) + var(--lt-stroke-1));
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: none;
   border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
@@ -199,8 +200,8 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool-tray:hover,
 .reader-tool-tray:has(:focus-visible),
 .reader-tool-tray:has(select:focus) {
-  /* The tools' own height, measured by renderViewTools, plus the padding above and below them and the one edge the tray draws. A length rather than `auto`, because a height that is not a number cannot be animated to. */
-  height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1));
+  /* The tools' measured height plus both visible steps, the hidden foot, and the tray and bar strokes. */
+  height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2);
   transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-200) var(--lt-ease-overshoot);
 }
 /* And the tools come up out of the bar with it, which is what the nub says is in there. */
@@ -219,7 +220,7 @@ body:has(#readerToolbar:not([hidden])) {
   /* Never squashed to fit the nub. A flex item shrinks by default, so inside a tray clipped to its shortest the tools would compress to that height instead of standing behind it. */
   flex: none;
   /* Carried down out of the nub while it is parked, by exactly the height the tray grows by — so nothing of them is in the nub however proud it stands, and how proud it stands stops being traded against how far they are inset. The tray's own clip hides them the rest of the way, and this is a translate rather than a fade: the drawer's contents come out with the drawer. */
-  transform: translateY(calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1) - 9px));
+  transform: translateY(calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2 - 9px));
   transition: transform var(--lt-duration-140) var(--lt-ease-accelerate);
   box-sizing: border-box;
   /* As wide as a view button is tall where it holds icons, and as wide as it needs where it holds the graph's named list. The tray is out of the bar's row either way, so neither widens the bar. */

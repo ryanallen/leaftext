@@ -770,7 +770,11 @@ fn the_graph_size_box_uses_the_wells_inset_on_every_side() {
     let label = rule_body(css, ".reader-subselect {");
     let select = rule_body(css, ".reader-subselect select {");
 
-    assert_contains(tray, "padding: var(--lt-space-2);");
+    // The tray's own step, which the box inside it adds nothing to. The bottom repays the foot sunk into the bar and the bar's top stroke, so what the reader sees below the box equals what they see above it.
+    assert_contains(
+        tray,
+        "padding: var(--lt-space-2) var(--lt-space-2) calc(var(--lt-space-2) + var(--reader-tray-foot) + var(--lt-stroke-1));",
+    );
     assert!(!label.contains("padding:"));
     assert_contains(select, "height: 26px;");
 }
