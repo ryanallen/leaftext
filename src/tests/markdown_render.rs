@@ -608,3 +608,20 @@ fn touching_code_delimiters_read_back_as_one_span_and_a_joined_one_reads_back_wh
         "a joined code span put a delimiter backtick in the reader's words: {joined}"
     );
 }
+
+// The other end of the write-back the page performs: every spelling `codeSpanToMarkdown` can produce, read as the code text that was typed. The front-end check pins what Leaftext writes and this pins what Leaftext reads, so neither side can agree with its own copy of the rule.
+#[test]
+fn a_code_span_delimiter_longer_than_its_content_reads_back_as_the_typed_text() {
+    for (markdown, code) in [
+        ("`alpha`", "alpha"),
+        ("``alpha` beta``", "alpha` beta"),
+        ("`` `alpha ``", "`alpha"),
+        ("`` alpha` ``", "alpha`"),
+        ("`` `alpha` ``", "`alpha`"),
+        ("``` `` ```", "``"),
+        ("```a``b```", "a``b"),
+    ] {
+        let html = render_markdown_document(&format!("before {markdown} after\n"), "note.md").html;
+        assert_contains(&html, &format!("<code>{code}</code>"));
+    }
+}

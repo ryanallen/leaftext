@@ -225,7 +225,7 @@ The formatting is written into the page as you would expect it in Markdown — `
 
 ### The padlock
 
-Whether a document can be typed into is a padlock in the recess beside the view buttons on the [floating toolbar](02-navigation.md#the-floating-toolbar). A shut padlock means read-only; an open one means you can type.
+Whether a document can be typed into is a padlock in the recess that rides in the tray above the button of the view you are in, on the [floating toolbar](02-navigation.md#the-floating-toolbar). A shut padlock means read-only; an open one means you can type.
 
 - **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
 - **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
@@ -234,7 +234,7 @@ Whether a document can be typed into is a padlock in the recess beside the view 
 - Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
 - Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
 
-The recess holds the tools of the view you are in — the padlock in both, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source. It is there only while it holds something, so a view whose every tool has stood down loses the recess and the handle over it. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+The recess holds the tools of the view you are in, and it stands in the tray over that view's own button rather than beside the buttons — the padlock in both editable views, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source, and how big a graph to draw on the [graph](03-library.md#graph). It is there only while it holds something, so a view whose every tool has stood down loses the tray and the nub it stands as. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
 
 ### Undo
 
@@ -380,7 +380,7 @@ This is **IntelliSense** — the completion popup, hover card and squiggly under
 - **Hover a `[[wikilink]]`** for a card with the note's opening lines.
 - **Broken links get a wavy underline** — a moment after you stop typing, links whose file does not exist and wiki names no note answers to are marked, with a plain-words message on hover. The same underline says when two notes answer to one name, and when a note lists more [other names](03-library.md#other-names) than are used.
 
-It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-floating-toolbar) — in the recess beside the view buttons, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
+It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-floating-toolbar) — in the recess above the code view's own button, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
 
 ## Saving
 

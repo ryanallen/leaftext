@@ -34,6 +34,23 @@ function rawInlineHtmlToMarkdown(el, tag) {
   return '<' + tag + rawInlineHtmlAttributes(el, tag) + '>' + inlineDomToMarkdown(el) + '</' + tag + '>';
 }
 
+// A code span's delimiter has to be a backtick run longer than any the content holds, or the file cannot tell delimiter from text and the next render reads a shorter span with different words. Content that begins or ends with a backtick takes one space inside both delimiters so the two cannot join; the parser removes that pair on the way back in.
+function codeSpanToMarkdown(text) {
+  let longest = 0;
+  let run = 0;
+  for (let at = 0; at < text.length; at += 1) {
+    if (text.charCodeAt(at) === 96) {
+      run += 1;
+      if (run > longest) longest = run;
+    } else {
+      run = 0;
+    }
+  }
+  const fence = '`'.repeat(longest + 1);
+  const pad = text.charCodeAt(0) === 96 || text.charCodeAt(text.length - 1) === 96 ? ' ' : '';
+  return fence + pad + text + pad + fence;
+}
+
 // Serialize a block's inline DOM back to Markdown (bold, italic, strikethrough, code, links, and safe raw inline HTML), stripping render-only decorations. Unknown wrappers contribute just their text.
 function inlineDomToMarkdown(node) {
   let out = '';
@@ -72,7 +89,7 @@ function inlineDomToMarkdown(node) {
       return;
     }
     if (tag === 'code') {
-      out += '`' + child.textContent + '`';
+      out += codeSpanToMarkdown(child.textContent);
       return;
     }
     if (tag === 'a') {
