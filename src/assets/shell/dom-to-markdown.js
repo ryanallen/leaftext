@@ -36,6 +36,7 @@ function rawInlineHtmlToMarkdown(el, tag) {
 
 // A code span's delimiter has to be a backtick run longer than any the content holds, or the file cannot tell delimiter from text and the next render reads a shorter span with different words. Content that begins or ends with a backtick takes one space inside both delimiters so the two cannot join; the parser removes that pair on the way back in.
 function codeSpanToMarkdown(text) {
+  if (!text) return '';
   let longest = 0;
   let run = 0;
   for (let at = 0; at < text.length; at += 1) {
@@ -77,15 +78,18 @@ function inlineDomToMarkdown(node) {
       return;
     }
     if (tag === 'strong' || tag === 'b') {
-      out += '**' + inlineDomToMarkdown(child) + '**';
+      const content = inlineDomToMarkdown(child);
+      if (content) out += '**' + content + '**';
       return;
     }
     if (tag === 'em' || tag === 'i') {
-      out += '*' + inlineDomToMarkdown(child) + '*';
+      const content = inlineDomToMarkdown(child);
+      if (content) out += '*' + content + '*';
       return;
     }
     if (tag === 'del' || tag === 's') {
-      out += '~~' + inlineDomToMarkdown(child) + '~~';
+      const content = inlineDomToMarkdown(child);
+      if (content) out += '~~' + content + '~~';
       return;
     }
     if (tag === 'code') {
@@ -367,4 +371,3 @@ function footnoteDefinitionWysiwygSafe(el) {
   if (el.querySelector('ul, ol, pre, table, blockquote, img, .katex, .mermaid, input')) return false;
   return !!footnoteNameOf(el) && inlineMarkdownDomWysiwygSafe(paragraphs[0]);
 }
-

@@ -8,6 +8,7 @@ export function run() {
 
   // One code element inside a paragraph, serialized the way a committed edit serializes it.
   const written = (text) => booted.inlineDomToMarkdown(node('p', { children: [node('code', { children: [text] })] }));
+  const formatted = (tag, text) => booted.inlineDomToMarkdown(node('p', { children: [node(tag, { children: [text] })] }));
 
   // The shortest delimiter the content cannot be mistaken for, and one padding space inside both where the content touches a backtick at either edge. The parser removes that pair, so the reader gets back exactly what is on the left.
   const SPELLINGS = [
@@ -24,6 +25,30 @@ export function run() {
     for (const [text, expected] of SPELLINGS) {
       const out = written(text);
       if (out !== expected) throw new Error(`${JSON.stringify(text)} was written as ${JSON.stringify(out)} rather than ${JSON.stringify(expected)}`);
+    }
+  });
+
+  check('an empty code span writes nothing', () => {
+    const out = written('');
+    if (out !== '') throw new Error(`an empty code span was written as ${JSON.stringify(out)}`);
+  });
+
+  check('empty bold, italic, and strikethrough wrappers write nothing', () => {
+    for (const tag of ['strong', 'em', 'del']) {
+      const out = formatted(tag, '');
+      if (out !== '') throw new Error(`an empty ${tag} wrapper was written as ${JSON.stringify(out)}`);
+    }
+  });
+
+  check('nonempty inline wrappers keep their delimiters and a one-space code span keeps its space', () => {
+    const spellings = [
+      [formatted('strong', 'alpha'), '**alpha**'],
+      [formatted('em', 'alpha'), '*alpha*'],
+      [formatted('del', 'alpha'), '~~alpha~~'],
+      [written(' '), '` `'],
+    ];
+    for (const [out, expected] of spellings) {
+      if (out !== expected) throw new Error(`${JSON.stringify(out)} was expected to be ${JSON.stringify(expected)}`);
     }
   });
 

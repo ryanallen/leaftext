@@ -394,6 +394,8 @@ function applyHighlight() {
   } else if (!wrapCloneSpan(clone, span, 'mark')) {
     return;
   }
+  // After the branch rather than inside either one: the add can leave a mark nested in a mark, the removal can leave two touching where the one between them went, and both spell the same run in two shades.
+  tidyMarks(clone);
   const text = blockDomToMarkdown(clone);
   hideSelectionToolbar();
   if (!text) return;
@@ -412,6 +414,45 @@ function wrapCloneSpan(clone, span, tag) {
   wrapper.appendChild(range.extractContents());
   range.insertNode(wrapper);
   return true;
+}
+
+// One highlight the reader made is one `<mark>` in the file. A press that runs out of a mark hands the extract a partly covered one back, so the clone carries a mark inside a mark — two washes over the words they share — and the touching pair left over answers `selectionAncestor('mark')` with null, so the next press adds a mark instead of taking one off. Nesting flattened, empties dropped, touching runs merged: the reader gets one even wash and a way back off it.
+//
+// On the clone the press built, never on the serializer: `blockDomToMarkdown` is what every inline commit and every block move calls, so a tidy living there would re-spell a nesting the reader wrote in their own file the moment they typed anywhere in that paragraph.
+function tidyMarks(root) {
+  // A mark inside a mark paints the words twice. Its own children stand in its place, and the loop runs again because the children can hold marks of their own.
+  for (let nested = markInsideAMark(root); nested; nested = markInsideAMark(root)) {
+    nested.replaceWith(...[...nested.childNodes]);
+  }
+  // An empty one goes before the merge, so the marks either side of it are touching by the time the merge looks.
+  for (const mark of [...root.querySelectorAll('mark')]) {
+    if (!mark.textContent && !mark.children.length) mark.remove();
+  }
+  for (const mark of [...root.querySelectorAll('mark')]) {
+    const holder = mark.parentElement;
+    if (!holder) continue;
+    // Held to one holder: a mark inside a `<strong>` merged with the one beside it outside would move words in or out of the bold. By the holder's own node list rather than `nextSibling`, which the fake page does not answer.
+    for (;;) {
+      const kids = [...holder.childNodes];
+      const at = kids.indexOf(mark);
+      const next = at < 0 ? null : kids[at + 1];
+      if (!next || next.nodeType !== 1 || next.tagName !== 'MARK') break;
+      for (const child of [...next.childNodes]) mark.appendChild(child);
+      next.remove();
+    }
+  }
+  // The runs of words the merges left standing side by side, joined back into one.
+  root.normalize();
+}
+
+// The first mark standing inside another, or nothing. Read off the holder chain rather than a descendant selector, because a mark two elements deep inside one is nested just the same.
+function markInsideAMark(root) {
+  for (const mark of root.querySelectorAll('mark')) {
+    for (let up = mark.parentElement; up && up !== root; up = up.parentElement) {
+      if (up.tagName === 'MARK') return mark;
+    }
+  }
+  return null;
 }
 
 // Copy: the words as they read, not the Markdown behind them. The clipboard path the right-click menu's Copy already takes, and the selection is left where it was — a second door onto one path, not a second path.

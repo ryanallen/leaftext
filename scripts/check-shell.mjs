@@ -12,6 +12,7 @@ import { run as runLinksAndPreviews } from './check-shell/links-and-previews.mjs
 import { run as runReaderToolbar } from './check-shell/reader-toolbar.mjs';
 import { run as runFormatBar } from './check-shell/format-bar.mjs';
 import { run as runCodeSpanDelimiters } from './check-shell/code-span-delimiters.mjs';
+import { run as runAHighlightThatRunsOutOfAMark } from './check-shell/a-highlight-that-runs-out-of-a-mark.mjs';
 import { run as runTheBarsOwnLight } from './check-shell/the-bars-own-light.mjs';
 import { run as runUndoAndRedo } from './check-shell/undo-and-redo.mjs';
 import { run as runOtherFormats } from './check-shell/other-formats.mjs';
@@ -72,6 +73,7 @@ runLinksAndPreviews();
 runReaderToolbar();
 runFormatBar();
 runCodeSpanDelimiters();
+runAHighlightThatRunsOutOfAMark();
 runTheBarsOwnLight();
 runUndoAndRedo();
 runOtherFormats();
