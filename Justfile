@@ -529,9 +529,7 @@ check-doc-images:
 check-shot-edges:
     node scripts/check-shot-edges.mjs --check
 
-# Fail if the dot grain is missing from a rendered picture. Every other reading of the
-# grain reads the stylesheet, and the stylesheet was right the whole time an exported
-# picture was coming out flat. This one lays the stylesheet out and samples the pixels.
+# Fail if the dot grain is missing from a rendered picture. Every other reading of the grain reads the stylesheet, which cannot say whether the render painted the dot layer at all. This one lays the stylesheet out and samples the pixels.
 check-grain-in-a-picture:
     node scripts/check-grain-in-a-picture.mjs --check
 

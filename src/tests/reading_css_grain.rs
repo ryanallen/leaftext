@@ -864,7 +864,7 @@ fn the_paper_class_composites_the_app_box_so_an_exported_picture_carries_the_gra
     let surface = rule_body(css, "body.leaf-paper .app-surface {");
     assert_contains(surface, "will-change: transform;");
 
-    // `will-change` alone reads as a hint somebody could drop, so the four properties measured against it in a running copy are named beside it: each wrote a byte-identical picture, and this one is what put the dots back. Without that sentence the next reader spends the same afternoon on `contain` that the first one did.
+    // `will-change` alone reads as a hint somebody could drop, so the four properties measured against it in a running copy are named beside it: each wrote a byte-identical picture, and this one is what put the dots back. Without that sentence a reader reaches for `contain` and measures the same four properties over again.
     for measured in [
         "contain: layout",
         "contain: paint",
