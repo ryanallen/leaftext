@@ -349,4 +349,60 @@ export function run() {
       booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
     }
   });
+
+  // A document is drawn far more often than the strip over it changes, and every one of those draws used to rebuild every tab and refold the bar behind them — a fold that reads the window's layout once per action it tries, and measured about forty-five times what building the tabs costs. So the strip is compared with the string it was last drawn from: same string, same tabs, no fold.
+  check('an unchanged strip keeps its tabs and reads no layout, and every real change still redraws', () => {
+    const one = 'C:\\Notes\\one.md';
+    const two = 'C:\\Notes\\two.md';
+    const tabBar = booted.document.getElementById('tabBar');
+    const held = Object.getOwnPropertyDescriptor(tabBar, 'scrollWidth');
+    // The fold's first act is to measure the strip, so counting that read is what says whether the bar was refolded at all.
+    let layoutReads = 0;
+    Object.defineProperty(tabBar, 'scrollWidth', { configurable: true, get: () => { layoutReads += 1; return 0; } });
+    const draw = (tabs, active, favorites) =>
+      booted.window.leafSetWorkspace({ recent: [], favorites: favorites || [], tabs, active });
+    const tabs = () => Array.from(tabBar.children);
+    const strip = () => tabBar.innerHTML;
+    try {
+      vm.runInContext('dirtyByPath.clear(); lastTabsMarkup = null;', booted);
+      draw([{ path: one }, { path: two }], 0);
+      const first = tabs();
+      if (first.length !== 2) throw new Error(`the strip drew ${first.length} tabs instead of two`);
+      if (!layoutReads) throw new Error('the first draw of a strip never refolded the bar, so this check cannot tell a fold from no fold');
+
+      // The same workspace again: every tab is the element that was already standing, and nothing measured the bar.
+      layoutReads = 0;
+      draw([{ path: one }, { path: two }], 0);
+      const again = tabs();
+      if (again.length !== 2 || again[0] !== first[0] || again[1] !== first[1]) {
+        throw new Error('an unchanged strip threw its tabs away and built them again, so the tab under the pointer lost its close cross');
+      }
+      if (layoutReads !== 0) {
+        throw new Error(`an unchanged strip read the window's layout ${layoutReads} times`);
+      }
+
+      // Each thing that can move the strip, one at a time, from the same resting pair: the tabs are replaced and the right strip is drawn.
+      for (const [what, run, shows] of [
+        ['a changed name', () => draw([{ path: one }, { path: 'C:\\Notes\\renamed.md' }], 0), (html) => html.includes('>renamed.md<')],
+        ['a changed active tab', () => draw([{ path: one }, { path: two }], 1), (html) => /data-tab-path="[^"]*two[^"]*"/.test(html.split('tab-active')[1] || '')],
+        ['a changed order', () => draw([{ path: two }, { path: one }], 0), (html) => html.indexOf('two.md') < html.indexOf('one.md')],
+        ['a changed dirty mark', () => draw([{ path: one, dirty: true }, { path: two }], 0), (html) => html.includes('tab-modified')],
+        ['a changed favorite mark', () => draw([{ path: one }, { path: two }], 0, [{ path: one, kind: 'document' }]), (html) => html.includes('lt-icon-favorite-on')],
+      ]) {
+        vm.runInContext('dirtyByPath.clear();', booted);
+        draw([{ path: one }, { path: two }], 0);
+        const before = tabs();
+        layoutReads = 0;
+        run();
+        const after = tabs();
+        if (after[0] === before[0]) throw new Error(`${what} left the old tab elements standing`);
+        if (!layoutReads) throw new Error(`${what} redrew the strip without refolding the bar behind it`);
+        if (!shows(strip())) throw new Error(`${what} did not reach the strip: ${strip()}`);
+      }
+    } finally {
+      Object.defineProperty(tabBar, 'scrollWidth', held);
+      vm.runInContext('dirtyByPath.clear();', booted);
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
+    }
+  });
 }

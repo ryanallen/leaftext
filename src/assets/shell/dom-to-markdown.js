@@ -6,6 +6,11 @@ function isRenderedFootnoteMark(el) {
   );
 }
 
+// Whether this is the bold lead the speed reader draws around the front of a word: a span the render made, which the source never held. A separate rule from the footnote marks above on purpose — those are the renderer's own words and go whole, while an anchor's words are the file's and are kept, so one predicate serving both would delete the reader's text.
+function isSpeedReaderAnchor(el) {
+  return !!(el.classList && el.classList.contains('speed-reader-anchor'));
+}
+
 // A footnote's name, off the element rather than off the number on screen: the reference wears `fnref-name`, the definition wears the name itself.
 function footnoteNameOf(el) {
   const id = el.getAttribute ? el.getAttribute('id') || '' : '';
@@ -100,7 +105,8 @@ function inlineDomToMarkdown(node) {
       out += anchorToMarkdown(child);
       return;
     }
-    if (MARKDOWN_RAW_INLINE_TAGS.has(tag)) {
+    // An anchor is a `span`, so the raw inline arm would write it into the file. It falls past to the unwrap below instead, which keeps the word and drops the decoration around it.
+    if (MARKDOWN_RAW_INLINE_TAGS.has(tag) && !isSpeedReaderAnchor(child)) {
       out += rawInlineHtmlToMarkdown(child, tag);
       return;
     }
