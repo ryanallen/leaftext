@@ -221,7 +221,7 @@ Highlight words in a Markdown page and a small bar appears over them. What it ho
 - **These three write into the document and wait for Save**, like any other edit, and each goes in as one press of [Undo](#undo) — a note's marker and its own line included, though they sit at opposite ends of the file. None of them opens a block for typing, which is why they are offered with the padlock shut.
 - `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do bold, italic and the link box without the bar, on an unlocked page. `Escape` dismisses it.
 
-The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)`, a highlight as `<mark>…</mark>` and a note as a [footnote](01-rendering.md#footnotes) — and saved with the block, by the same splice as any other inline edit.
+The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)`, a highlight as `<mark>…</mark>` and a note as a [footnote](01-rendering.md#footnotes) — and saved with the block, by the same splice as any other inline edit. **Code holding backticks of its own is fenced with a longer run of them**, so the file still reads as the one span you were looking at: code containing a single backtick is written between two, and code that begins or ends with one takes a space inside each end, which the next render takes back off.
 
 ### The padlock
 
