@@ -161,14 +161,19 @@ function applySpeedReaderToDocument(root = readingDocumentRoot()) {
   root.dataset.speedReaderProcessed = 'true';
 }
 let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;
-function setSpeedReaderEnabled(enabled) {
+// The flag the stylesheet reads, written on its own. Separate because the launch below can write it and nothing else: the walk's default root reaches a fragment twenty-one further down this script, and a `const` there cannot be read before its own line runs.
+function setSpeedReaderFlag(enabled) {
   speedReaderEnabled = Boolean(enabled);
   document.documentElement.dataset.speedReader = String(speedReaderEnabled);
+}
+function setSpeedReaderEnabled(enabled) {
+  setSpeedReaderFlag(enabled);
   if (speedReaderEnabled) {
     applySpeedReaderToDocument();
   }
 }
-setSpeedReaderEnabled(speedReaderEnabled);
+// The launch writes the flag and walks nothing: there is no document on the page yet, and every render walks the one that arrives.
+setSpeedReaderFlag(speedReaderEnabled);
 // The padlocks: whether documents open ready to type into. Saved settings, not a question asked again on every file you open. One per editable view, because typing in the page and typing in the source are two different risks and unlocking one is not consent to the other. Both locked by default.
 readingUnlocked = LEAF_SETTINGS.readingUnlocked === true;
 codeUnlocked = LEAF_SETTINGS.codeUnlocked === true;

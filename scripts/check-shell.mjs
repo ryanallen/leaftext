@@ -58,6 +58,7 @@ import { run as runAThemeSwapsADrawing } from './check-shell/a-theme-swaps-a-dra
 import { run as runARedrawThatIsNotMadeTwice } from './check-shell/a-redraw-that-is-not-made-twice.mjs';
 import { run as runANoteThatLosesItsMarker } from './check-shell/a-note-that-loses-its-marker.mjs';
 import { run as runHtmlSiteView } from './check-shell/html-site-view.mjs';
+import { run as runSpeedReader } from './check-shell/speed-reader.mjs';
 
 // Every subject, in the order it was written in. The boot comes first: it fills the record the rest read.
 
@@ -116,6 +117,7 @@ runAThemeSwapsADrawing();
 runARedrawThatIsNotMadeTwice();
 runANoteThatLosesItsMarker();
 runHtmlSiteView();
+runSpeedReader();
 
 // ---- report -----------------------------------------------------------------
 
