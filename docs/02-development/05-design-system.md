@@ -45,7 +45,8 @@ One value each, whatever theme is on.
 | Duration | 18 |
 | Easing | 8 |
 | Layers | 11 |
-| Strokes, rings and one recess | 6 |
+| Shadow spread | 1 |
+| Strokes, rings and one recess | 5 |
 | Grain | 6 |
 | Fixed colors | 5 |
 | Fixed tints | 3 |

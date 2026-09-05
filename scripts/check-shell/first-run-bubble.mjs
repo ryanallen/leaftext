@@ -336,6 +336,78 @@ export function run() {
     }
   });
 
+  check('the control leaving takes the bubble with it, and the control coming back draws it again where it now is', () => {
+    const { sent, built, restore } = hintHarness();
+    const wasTimeout = booted.setTimeout;
+    try {
+      booted.leafResetHints();
+      const surface = booted.document.getElementById('appSurface');
+      const button = booted.document.getElementById('libraryVaultSwitch');
+      if (!surface || !button) throw new Error('the page has no surface or vault switch');
+      // Low on the left, so the only side with room is to its right — and moved before the control comes back, so where the bubble returns says whether it was measured again or put back where it stood.
+      let box = { left: 8, top: 700, right: 40, bottom: 726, width: 32, height: 26 };
+      button.getBoundingClientRect = () => box;
+      const watches = new Map();
+      button.addEventListener = (name, handler) => watches.set(name, handler);
+      button.removeEventListener = (name) => watches.delete(name);
+      // The takedown waits out its fade before the box leaves the page, and nothing here ever ends one, so the fallback runs where it stands.
+      booted.setTimeout = (fn) => { fn(); return 0; };
+      const onSurface = () => surface.children.filter((child) => child.classes && child.classes.has('hint-bubble'));
+      const met = () => hintStates(sent).some((state) => state.seen.includes('libraryVault'));
+      // The newest registration on the control, which is the one the bubble that is up put there.
+      const watchOnControl = () => booted.__watchers.filter((one) => one.kind === 'ResizeObserver' && one.target === button).at(-1);
+      // A shut pane is a control 0 by 0 and off the app, which is what `hintTarget` reads for.
+      const shut = { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 };
+
+      built.length = 0;
+      sent.length = 0;
+      booted.runHintPass();
+      if (onSurface().length !== 1) throw new Error('the launch drew no bubble to take down');
+      if (onSurface()[0].style.left !== '50px') throw new Error(`the bubble was placed at ${onSurface()[0].style.left}`);
+
+      const watch = watchOnControl();
+      if (!watch) throw new Error('nothing watches the control the bubble points at');
+      // The reader shuts the pane. The control is still on the page; it has no size and no place on the app.
+      box = shut;
+      watch.callback([{ target: button, contentRect: { width: 0, height: 0 } }], watch);
+      if (onSurface().length !== 0) throw new Error('the bubble stood over a window the control had left');
+      if (met()) throw new Error('the control going counted as the reader meeting the hint');
+      if (watches.has('pointerenter')) throw new Error('the pointer watch outlived the bubble');
+
+      // The pane comes back, at a different width than it went — which is why the box is measured again rather than put back at 50.
+      box = { left: 600, top: 100, right: 632, bottom: 126, width: 32, height: 26 };
+      watch.callback([{ target: button, contentRect: { width: 32, height: 26 } }], watch);
+      const back = onSurface();
+      if (back.length !== 1) throw new Error(`the control coming back drew ${back.length} bubbles`);
+      if (back[0].style.left !== '642px') throw new Error(`the returned bubble was placed at ${back[0].style.left}`);
+      const words = back[0].children.map((child) => child.textContent).join('');
+      if (!words.includes('folder the list below shows')) throw new Error(`the returned bubble said "${words}"`);
+
+      // A sheet closing while the control is still away must hold the promise rather than spend it: the sheet has gone and the pane has not come back, so there is nothing to draw against yet and the watch is what draws it.
+      box = shut;
+      watchOnControl().callback([{ target: button, contentRect: { width: 0, height: 0 } }], watchOnControl());
+      if (onSurface().length !== 0) throw new Error('the bubble stood over a window the control had left a second time');
+      booted.openThemeSheet();
+      booted.closeThemeSheet();
+      if (onSurface().length !== 0) throw new Error('a sheet closing drew a bubble against a control that is not there');
+      box = { left: 600, top: 100, right: 632, bottom: 126, width: 32, height: 26 };
+      watchOnControl().callback([{ target: button, contentRect: { width: 32, height: 26 } }], watchOnControl());
+      if (onSurface().length !== 1) throw new Error('a sheet passing while the control was away spent the hint, so the control coming back drew nothing');
+      if (met()) throw new Error('none of that counted as the reader meeting the hint');
+
+      // Met for good: the watch goes with the promise, so a later report cannot put a met bubble back.
+      booted.retireHint('libraryVault');
+      if (onSurface().length !== 0) throw new Error('meeting the hint left its bubble up');
+      const after = watchOnControl();
+      after.callback([{ target: button, contentRect: { width: 32, height: 26 } }], after);
+      if (onSurface().length !== 0) throw new Error('a report after the hint was met drew it again');
+    } finally {
+      booted.setTimeout = wasTimeout;
+      booted.leafResetHints();
+      restore();
+    }
+  });
+
   check('the bubble takes the first side that fits the window whole', () => {
     const view = { width: 1080, height: 820 };
     const size = { width: 260, height: 60 };

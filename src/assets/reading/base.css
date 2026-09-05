@@ -73,28 +73,22 @@ body:has(.app-surface) {
   overflow: hidden;
   /* Nothing paints the whole window: past the app's own edge the window is where the shadow falls, and a page color there would be the app painting its own halo out to the frame. The app surface below carries the color. */
   background: transparent;
-  /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The two classes below turn it on. */
-  --app-shadow-top: 0px;
-  --app-shadow-side: 0px;
-  --app-shadow-bottom: 0px;
+  /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two, and the same on all four sides, which is what a light hung overhead and centered gives. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The two classes below turn it on. */
+  --app-shadow-spread: 0px;
 }
 /* Where the app owns its own frame, so the shadow is the app's to draw. One class covers both platforms: a Mac carries this as well as `mac-frame`, because both kinds draw the app bar as the title bar. */
 body.frameless {
-  --app-shadow-top: 13px;
-  --app-shadow-side: 20px;
-  --app-shadow-bottom: 10px;
+  --app-shadow-spread: var(--lt-shadow-spread);
 }
 /* Nothing behind a window filling the screen for a shadow to fall on, and a band there would show the desktop through a frame inside the screen edge. Filling the screen means maximized on Windows or full screen on either platform — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
 body.frameless:not(.mac-frame).is-maximized,
 body.frameless.is-fullscreen {
-  --app-shadow-top: 0px;
-  --app-shadow-side: 0px;
-  --app-shadow-bottom: 0px;
+  --app-shadow-spread: 0px;
 }
 /* One box that means "the app", holding everything the page has. `contain: paint` is the whole point of it: it makes this element what a `position: fixed` child is measured from and what one is clipped to, so the fourteen rules below that place an overlay against the window place it against the app instead. The two are the same rectangle until the inset above turns on, and part company after it. Fixed rather than a block, so its height is definite for the two grids that fill it. */
 .app-surface {
   position: fixed;
-  inset: var(--app-shadow-top) var(--app-shadow-side) var(--app-shadow-bottom);
+  inset: var(--app-shadow-spread);
   contain: paint;
   /* The page color and the app's own edge, both the app's to draw: with the client area running out to the window's own edge there is no frame left for the platform to draw a line in. */
   background: var(--lt-background);
@@ -130,15 +124,15 @@ body::before {
   background-repeat: repeat;
   /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
   background-attachment: fixed;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
-    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
-    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-top)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-bottom));
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
   -webkit-mask-composite: source-in, source-in, source-in;
-  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
-    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-side)),
-    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-top)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-bottom));
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
   mask-composite: intersect;
 }
 /* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */

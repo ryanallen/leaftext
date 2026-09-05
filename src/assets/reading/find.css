@@ -23,9 +23,10 @@
   padding: var(--lt-space-10);
   /* Transparent, not gone: the border holds the box's size while ::after paints the visible face — the same arrangement the reader's toolbar uses. */
   border: var(--lt-stroke-1) solid transparent;
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: transparent;
-  box-shadow: var(--lt-shadow-raised);
   font-family: var(--app-font);
   font-size: var(--lt-text-12);
   color: var(--lt-foreground);

@@ -23,6 +23,8 @@ let hintBubble = null;
 let hintShowing = null;
 // The control the bubble on screen points at, and the pointer watch put on it. Held so the watch comes off with the bubble rather than outliving it.
 let hintWatched = null;
+// The size watch on that same control, held apart from the pointer watch above because the two have opposite lifetimes: the pointer watch comes off with the box, while this one is what notices the control coming back, so it outlives every takedown and is let go only where the hint is finished. Carries the name it was put on for, so a retirement can tell its own watch from a later hint's.
+let hintTargetWatch = null;
 // The sheets standing over the app, and the name of the bubble one of them took down. A sheet is not a gesture that ends the way a menu is: it stands until it is dismissed, and everything it covers is out of reach while it does — including the control a bubble is pointing at, and both of the gestures that meet a hint. So the promise is held rather than lost.
 const hintSheets = new Set();
 let hintSuspended = null;
@@ -112,6 +114,9 @@ function retireHint(name) {
     saveHintState();
   }
   if (hintShowing === name) hideHintBubble();
+  if (hintSuspended === name) hintSuspended = null;
+  // Finished rather than merely hidden, so the size watch goes too. `hideHintBubble` leaves it alone on purpose: a bubble taken down for a shut pane still needs the control watched, because that watch is what brings it back.
+  disconnectHintTargetWatch(name);
 }
 
 // Whether a name has been met. Not every once-per-install promise is a bubble — the pane's vault introduction is a box that has to outlive a pointer — so the met list is readable by whatever draws one, while the pacing above stays the bubble's alone.
@@ -144,13 +149,55 @@ function restoreHintAfterSheet(sheet) {
   if (sheet) hintSheets.delete(sheet);
   const name = hintSuspended;
   if (!name || hintSheetsStanding()) return;
-  hintSuspended = null;
-  if (hintsSeen.has(name)) return;
+  if (hintsSeen.has(name)) {
+    hintSuspended = null;
+    return;
+  }
   const hint = hintRegistry.get(name);
-  if (!hint) return;
+  if (!hint) {
+    hintSuspended = null;
+    return;
+  }
+  // Held rather than let go where the control is out of reach, because the size watch on that control is what puts the bubble back and a name dropped here is a promise nobody can keep for the rest of the launch. A sheet closing over a shut pane is the case: the sheet has gone and the control still has not come back.
   const target = hintTarget(hint);
   if (!target) return;
+  hintSuspended = null;
   drawHintBubble(hint, target);
+}
+
+// Let the size watch go. A name asks for its own watch and leaves a later hint's alone; no name lets go of whichever is there.
+function disconnectHintTargetWatch(name) {
+  if (!hintTargetWatch) return;
+  if (name && hintTargetWatch.name !== name) return;
+  hintTargetWatch.observer.disconnect();
+  hintTargetWatch = null;
+}
+
+// Watch the control a bubble was just drawn against. A sheet arriving in front of the control is already answered; this is the other way a control goes out of reach — the reader shuts the pane it sits in, or hides the tray it is part of — which nothing on the page notices today, because the only other watch here is the pointer one that retires the hint.
+//
+// Re-pointed on every draw rather than kept for the life of the page: the bubble points at one control at a time, and a watch left on the last one reports a pane the current hint does not care about.
+function watchHintTarget(name, element) {
+  disconnectHintTargetWatch();
+  if (typeof ResizeObserver === 'undefined' || !element) return;
+  const observer = new ResizeObserver(() => hintTargetChanged(name));
+  hintTargetWatch = { name, element, observer };
+  observer.observe(element);
+}
+
+// The control changed shape, so ask the same question that was asked before drawing. A report is not itself the answer: a pane closing and a pane opening arrive the same way, and a control can be 0 by 0 or pushed off the app without ever leaving the page, which is exactly what `hintTarget` already reads for.
+function hintTargetChanged(name) {
+  if (HINTS_OFF || hintsSeen.has(name)) return;
+  const hint = hintRegistry.get(name);
+  if (!hint) return;
+  const there = !!hintTarget(hint);
+  // Gone: down, with the name held unmet, the way a sheet standing over the control takes it down. Nothing is spent — the launch was counted when it drew, and the reader still has this one to meet it in.
+  if (!there && hintShowing === name) {
+    hintSuspended = name;
+    hideHintBubble();
+    return;
+  }
+  // Back: through the pair the sheet case already ships, which refuses while a sheet is still standing and measures the control where it now is rather than putting the box back where it stood — a pane reopened after a divider drag comes back a different width.
+  if (there && !hintShowing && hintSuspended === name) restoreHintAfterSheet(null);
 }
 
 function drawHintBubble(hint, target) {
@@ -181,6 +228,7 @@ function drawHintBubble(hint, target) {
   const onEnter = () => retireHint(hint.name);
   hintWatched = { element, onEnter };
   element.addEventListener('pointerenter', onEnter);
+  watchHintTarget(hint.name, element);
   // A frame later, so the rise has a start state to move away from.
   window.requestAnimationFrame(() => bubble.classList.add('is-shown'));
 }
@@ -231,5 +279,6 @@ window.leafResetHints = () => {
   hintSuspended = null;
   saveHintState();
   hideHintBubble();
+  disconnectHintTargetWatch();
   return true;
 };

@@ -420,7 +420,9 @@
   padding: var(--lt-space-4);
   /* The app-chrome pair, the same one .context-menu is built from: the reading surfaces this used are two shades that a dark theme draws almost alike, so the hover was there and invisible. */
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
   font-size: var(--lt-text-12-5);
 }

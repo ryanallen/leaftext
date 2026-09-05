@@ -152,8 +152,9 @@
   --lt-z-45: 45;
   --lt-z-50: 50;
   --lt-z-51: 51;
+  /* Shadow spread */
+  --lt-shadow-spread: 8px;
   /* Strokes, rings and one recess */
-  --lt-shadow-raised: 0 1px 3px rgba(0, 0, 0, 0.18);
   --lt-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
   --lt-shadow-hairline: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent);
   --lt-shadow-hairline-strong: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent);

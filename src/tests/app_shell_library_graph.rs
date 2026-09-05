@@ -185,7 +185,13 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     let tray = rule_body(css, ".reader-tool-tray {");
     assert_contains(tray, "z-index: var(--lt-z-below);");
     assert_contains(tray, "height: 9px;");
-    assert_contains(tray, "overflow: hidden;");
+    // Clipped rather than hidden, and widened by exactly the ring: `hidden` paints nothing at all outside the tray's box, which takes the one shadow every floating surface throws away with the tools.
+    assert_contains(tray, "overflow: clip;");
+    assert_contains(tray, "overflow-clip-margin: var(--lt-shadow-spread);");
+    assert!(
+        !tray.contains("overflow: hidden;"),
+        "a hidden tray has no room for its own shadow: {tray}"
+    );
     assert_contains(tray, "--reader-tray-foot: 3px;");
     assert_contains(tray, "bottom: calc(100% - var(--reader-tray-foot));");
     assert_contains(tray, "pointer-events: auto;");

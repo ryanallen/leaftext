@@ -4,7 +4,9 @@
   min-width: 168px;
   padding: var(--lt-space-4);
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
   font-family: var(--app-font);
 }
@@ -52,7 +54,9 @@
   width: 232px;
   padding: var(--lt-space-4);
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
 }
 .rename-box[hidden] {
@@ -138,7 +142,9 @@
   gap: var(--lt-space-14);
   width: min(290px, calc(100vw - 28px));
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
   padding: var(--lt-space-14);
 }
@@ -180,7 +186,7 @@
 .update-button-spinner[hidden] {
   display: none;
 }
-/* Every surface that throws a shadow, said once — the floating ones and, at the foot of a page, the Previous / Next card: the same 2px dot lattice the two toolbars throw, in shadow ink, thinning out under an ellipse — a halftone, never a smooth blur. The second mask layer punches the host's own box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ellipse` — the punch inside out. */
+/* Every surface that throws a shadow, said once — the floating ones and, at the foot of a page, the Previous / Next card: the same 2px dot lattice the two toolbars throw, in shadow ink, over a band one spread wide — a halftone, never a smooth blur. Four edge ramps intersected, alpha nothing at the band's outer rim and full at the surface's own edge, so each corner is the product of two and the ring weighs the same on every side whatever the surface's size or shape: one light, overhead and centered. The layer takes the spread as padding, which makes its content box the host's own box, so the browser derives the inner curve from the outer one rather than being told it. The fifth mask layer punches that rounded content box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ring` — the punch inside out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
@@ -193,71 +199,50 @@
 .find-bar::before,
 .confirm-dialog::before,
 .leaf-sheet::before,
+.reader-toolbar::before,
+.reader-tool-tray::before,
+.selection-toolbar::before,
+.filter-menu::before,
+.hint-bubble::before,
 .document-body .docs-pager a::before {
   content: '';
   position: absolute;
   z-index: var(--lt-z-below);
-  inset: -13px -20px -10px;
+  inset: calc(-1 * var(--lt-shadow-spread));
+  padding: var(--lt-shadow-spread);
+  /* The outside corner is the surface's own plus the spread, which strikes both arcs from one center; each host declares the one number its own border already reads. */
+  border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread));
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
   background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
-  -webkit-mask-image: radial-gradient(
-      ellipse farthest-side at 50% 55%,
-      var(--lt-mask-opaque) 30%,
-      transparent 98%
-    ),
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  -webkit-mask-size: 100% 100%, calc(100% - 40px) calc(100% - 23px);
-  -webkit-mask-position: 0 0, 20px 13px;
+  -webkit-mask-origin: border-box, border-box, border-box, border-box, content-box;
+  -webkit-mask-clip: border-box, border-box, border-box, border-box, content-box;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-composite: source-out;
-  mask-image: radial-gradient(
-      ellipse farthest-side at 50% 55%,
-      var(--lt-mask-opaque) 30%,
-      transparent 98%
-    ),
+  -webkit-mask-composite: source-in, source-in, source-in, source-out;
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  mask-size: 100% 100%, calc(100% - 40px) calc(100% - 23px);
-  mask-position: 0 0, 20px 13px;
+  mask-origin: border-box, border-box, border-box, border-box, content-box;
+  mask-clip: border-box, border-box, border-box, border-box, content-box;
   mask-repeat: no-repeat;
-  mask-composite: subtract;
+  mask-composite: intersect, intersect, intersect, subtract;
 }
-/* The fade above runs across the whole box, so a surface as small as the link card lands its entire visible ring in the last, nearly transparent stretch and shows nothing; these stops put the fade in the ring itself. */
-.link-hover-tip::before {
-  -webkit-mask-image: radial-gradient(
-      ellipse farthest-side at 50% 55%,
-      var(--lt-mask-opaque) calc(100% - 34px),
-      transparent 100%
-    ),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  mask-image: radial-gradient(
-      ellipse farthest-side at 50% 55%,
-      var(--lt-mask-opaque) calc(100% - 34px),
-      transparent 100%
-    ),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-}
-/* The one host on that list sitting inside the document rather than over it, which makes two lines of the shared rule wrong for it. `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. And the shared fade runs across the whole box, which on a card the width of the measure leaves the whole ring in the transparent tail, so it takes the link card's stops. The mask's second layer still punches the card's own face out, which is what keeps a dot off the words. */
+/* The one host on that list sitting inside the document rather than over it, which makes one line of the shared rule wrong for it: `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. The mask's punch layer still takes the card's own face out, which is what keeps a dot off the words. */
 .document-body .docs-pager a::before {
   z-index: 0;
   /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. The fade matches the shared hover fade, so the ring arrives with the fill rather than snapping over it. */
   opacity: 0;
   transition: opacity var(--lt-duration-120) var(--lt-ease);
-  -webkit-mask-image: radial-gradient(
-      ellipse farthest-side at 50% 55%,
-      var(--lt-mask-opaque) calc(100% - 34px),
-      transparent 100%
-    ),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  mask-image: radial-gradient(
-      ellipse farthest-side at 50% 55%,
-      var(--lt-mask-opaque) calc(100% - 34px),
-      transparent 100%
-    ),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {

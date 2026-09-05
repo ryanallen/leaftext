@@ -136,7 +136,7 @@ export function run() {
     // Parked it is clipped to the nub, which is the only part a press can reach — a tray nobody can see must not take the press meant for the page under it, and clipping is what holds both the pointer and the tools. Never taken out of the layout: display:none and visibility:hidden both drop the padlock out of the Tab order, and focus arriving is one of the two ways the tray comes out.
     const css = readingCss();
     const parked = css.slice(css.indexOf('.reader-tool-tray {'), css.indexOf('}', css.indexOf('.reader-tool-tray {')));
-    if (!parked.includes('overflow: hidden;')) throw new Error(`the parked tray does not hold its tools inside the nub: ${parked}`);
+    if (!parked.includes('overflow: clip;')) throw new Error(`the parked tray does not hold its tools inside the nub: ${parked}`);
     if (!/height:\s*\d+px;/.test(parked)) throw new Error(`the parked tray is not clipped to a nub at all: ${parked}`);
     if (parked.includes('display: none;') || parked.includes('visibility: hidden;')) {
       throw new Error(`the parked tray is out of the Tab order: ${parked}`);
@@ -262,10 +262,17 @@ export function run() {
       throw new Error('the tray does not animate the height it grows by');
     }
     // The tools are held inside it rather than hidden, and they sit below the bar's own top edge while it is the nub, so the nub is a clean edge rather than a sliver of the padlock.
-    if (!parked.includes('overflow: hidden;') || !parked.includes('justify-content: flex-start;')) {
+    if (!parked.includes('overflow: clip;') || !parked.includes('justify-content: flex-start;')) {
       throw new Error(`the tools are not held inside the tray behind its own edge: ${parked}`);
     }
-    // A length, whether it is written out or named. The token file is read rather than the sheet, because the sheet the checks are handed carries the rules and not the values behind them.
+    // `clip` rather than `hidden`, and widened by exactly the ring: `hidden` paints nothing outside the tray's box at all, which takes the tray's own shadow away with the tools. The margin is the one spread and never a number of its own, or the ring and the clip drift apart.
+    if (parked.includes('overflow: hidden;')) {
+      throw new Error(`the tray hides rather than clips, so its shadow is clipped away with the tools: ${parked}`);
+    }
+    if (!parked.includes('overflow-clip-margin: var(--lt-shadow-spread);')) {
+      throw new Error(`the tray's clip does not make room for the one shadow every floating surface throws: ${parked}`);
+    }
+    // The tools park a whole open height below the tray's foot, so no margin of one spread can reach them -- which the carry below already proves, and is why the margin is safe. A length, whether it is written out or named. The token file is read rather than the sheet, because the sheet the checks are handed carries the rules and not the values behind them.
     const tokens = readFileSync(join(root, 'src/assets/tokens.css'), 'utf8');
     const componentLength = (name) => new RegExp(`${name}:\\s*(-?[\\d.]+)px;`).exec(parked);
     const lengthOf = (value) => {

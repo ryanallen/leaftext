@@ -149,10 +149,14 @@ fn load_window_icon() -> Option<Icon> {
     Icon::from_rgba(buffer, info.width, info.height).ok()
 }
 
-/// The smallest readable page, plus the strip the app is held off the window by so the shadow has room: the page inside stays the size it was pinned at rather than losing the band out of it. Named because a resize the host drives itself sets the size directly and goes around the limit the platform holds, so it has to clamp to the same pair.
+/// How far the app is held off the window on every side so the shadow band has room, mirroring `--lt-shadow-spread` in `design/tokens.md`: the page cannot read a custom property, so the one number is written on both sides of the boundary and a test holds them to each other.
+pub(crate) const SHADOW_SPREAD: f64 = 8.0;
+
+/// The smallest readable page, plus the band on both sides of it: the page inside stays the size it was pinned at rather than losing the band out of it. Named because a resize the host drives itself sets the size directly and goes around the limit the platform holds, so it has to clamp to the same pair.
 ///
 /// Applied when the window grows rather than when it is built, because the launch window below is smaller than it and the platform would clamp that away. See `finish_startup` in `src/app/window_cmds.rs`.
-pub(crate) const MIN_INNER_SIZE: (f64, f64) = (380.0 + 40.0, 480.0 + 23.0);
+pub(crate) const MIN_INNER_SIZE: (f64, f64) =
+    (380.0 + SHADOW_SPREAD * 2.0, 480.0 + SHADOW_SPREAD * 2.0);
 
 /// The window a launch puts up while the page is still coming: small, square, and holding the startup card. The window exists a few hundred milliseconds before the web view has drawn a pixel, so this is the whole of what a reader meets in the meantime — a small deliberate box rather than a full-size empty one. It grows into the window they left the moment the page says it has drawn something.
 pub(crate) const STARTUP_INNER_SIZE: (f64, f64) = (256.0, 256.0);

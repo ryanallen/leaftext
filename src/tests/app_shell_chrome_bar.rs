@@ -484,7 +484,7 @@ fn both_shells_draw_their_own_three_window_buttons() {
     );
     // What full screen does take is the frame the window is held off its own edge by: no shadow, no outer line, no rounded corner.
     for rule in [
-        "body.frameless.is-fullscreen {\n  --app-shadow-top: 0px;",
+        "body.frameless.is-fullscreen {\n  --app-shadow-spread: 0px;",
         "body.frameless.is-fullscreen .app-surface {\n  border: 0;\n  --app-window-radius: 0px;\n}",
         "body.frameless.is-fullscreen::before {\n  content: none;\n}",
     ] {

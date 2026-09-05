@@ -15,27 +15,12 @@
   padding: var(--lt-space-4);
   /* Transparent, not gone: the border holds the box's size while ::after paints the visible face — the same arrangement the reader's bottom toolbar uses, and for the same reason. A negative-z child paints over its parent's own background, so the only way the dot shadow (::before) gets behind an opaque face is for the face to be a later negative-z child itself. */
   border: var(--lt-stroke-1) solid transparent;
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: transparent;
-  /* Only the contact line stays smooth; the soft spread is the dot screen. */
-  box-shadow: var(--lt-shadow-raised);
   font-family: var(--app-font);
   transform: translate(-50%, -100%);
-}
-/* The bar's drop shadow: the same 2px dot lattice the reader's toolbar throws, in shadow ink, thinning away under a mask — a halftone shadow rather than a smooth blur. Fixed attachment keeps its dots on the one window-anchored lattice every grained surface shares. */
-.selection-toolbar::before {
-  content: '';
-  position: absolute;
-  z-index: var(--lt-z-below);
-  inset: -13px -20px -10px;
-  pointer-events: none;
-  --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
-  background-repeat: repeat;
-  background-attachment: fixed;
-  -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
-  mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
 }
 /* The face — fill and hairline. inset -1px re-covers the border box the element's transparent border holds in layout. */
 .selection-toolbar::after {

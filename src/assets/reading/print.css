@@ -98,6 +98,11 @@ body.leaf-web .document-minimap {
     z-index: var(--lt-z-30);
     background: var(--lt-markdown-background);
   }
+  body.leaf-web .document-minimap-track::before,
+  body.leaf-web .document-minimap-track::after {
+    background-color: var(--lt-markdown-background);
+    background-image: none;
+  }
   /* The app lays its clone inside a frame element carrying the scale; this script has no such frame and writes the scale onto the clone itself, so the origin it is scaled from has to be said here or the thumbnail shrinks toward the middle of the rail. */
   body.leaf-web .document-minimap-preview {
     transform-origin: 0 0;

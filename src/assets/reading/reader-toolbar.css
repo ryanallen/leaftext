@@ -24,12 +24,12 @@ body:has(#readerToolbar:not([hidden])) {
   margin-bottom: var(--lt-space-8);
   margin-right: calc(-1 * var(--reader-toolbar-edits));
   padding: var(--lt-space-4);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   /* Transparent, not gone: the border keeps the box's size while ::after paints the visible face — see below. */
   border: var(--lt-stroke-1) solid transparent;
   background: transparent;
-  /* Only the contact line stays smooth; the soft spread is the dot screen below. */
-  box-shadow: var(--lt-shadow-raised);
 }
 /* The bar's face — fill and hairline — on ::after rather than the element: a negative-z child paints over its parent's own background, so the only way the dot shadow (::before) gets behind an opaque face is for the face to be a later negative-z child itself. inset -1px re-covers the border box the element's transparent border holds in layout. */
 .reader-toolbar::after {
@@ -42,21 +42,6 @@ body:has(#readerToolbar:not([hidden])) {
   /* Opaque: the page scrolls underneath it. */
   background: var(--lt-surface);
   pointer-events: none;
-}
-/* The bar's drop shadow: the same 2px dot lattice the page fade is screened with, in shadow ink instead of the page's color, thinning away from the bar under a mask — a halftone shadow rather than a smooth blur. Fixed attachment keeps its dots on the one window-anchored lattice every grained surface shares. z-index -1 keeps it inside the bar's own stacking context, above the page fade (4) and under the ::after face that follows it in tree order. */
-.reader-toolbar::before {
-  content: "";
-  position: absolute;
-  z-index: var(--lt-z-below);
-  inset: -14px -22px -9px;
-  pointer-events: none;
-  --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
-  background-repeat: repeat;
-  background-attachment: fixed;
-  -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
-  mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
 }
 .reader-tool-group {
   position: relative;
@@ -178,12 +163,15 @@ body:has(#readerToolbar:not([hidden])) {
   padding: var(--lt-space-2) var(--lt-space-2) calc(var(--lt-space-2) + var(--reader-tray-foot) + var(--lt-stroke-1));
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-bottom: none;
-  border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-md);
+  border-radius: var(--lt-shadow-host-radius) var(--lt-shadow-host-radius) 0 0;
   /* The bar's own face, carried up with the tray. The recess wash is a translucent black, which reads as a well only because something opaque is behind it — over a document the page would read straight through the tools. Opaque the whole time: there is no fade here, because a thing growing out of the bar was never somewhere else. */
   background: var(--lt-surface);
-  box-shadow: var(--lt-shadow-raised);
-  /* What holds the tools inside the nub. Never display:none or visibility:hidden: both drop the padlock out of the Tab order, and focus arriving is one of the two ways the tray comes out. */
-  overflow: hidden;
+  /* What holds the tools inside the nub. Never display:none or visibility:hidden: both drop the padlock out of the Tab order, and focus arriving is one of the two ways the tray comes out. `clip` rather than `hidden` so the margin below can widen it: `hidden` paints nothing at all outside this box, which takes the ring with the tools. */
+  overflow: clip;
+  /* Exactly the ring and nothing else. The parked tools sit a whole open height below the tray's foot and are narrower than it, so eight pixels reaches none of them. */
+  overflow-clip-margin: var(--lt-shadow-spread);
   /* The bar's own lower layer, in both states: the face is a later negative-layer child, so it covers the foot inside the bar's box and nothing above it. */
   z-index: var(--lt-z-below);
   transform: translateX(-50%);

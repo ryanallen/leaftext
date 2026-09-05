@@ -190,7 +190,9 @@
   z-index: var(--lt-z-45);
   max-width: min(520px, calc(100% - 36px));
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
   font-family: var(--app-font);
@@ -258,10 +260,11 @@
   z-index: var(--lt-z-44);
   max-width: 260px;
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
   color: var(--lt-foreground);
-  box-shadow: var(--lt-shadow-raised);
   font-family: var(--app-font);
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-600);

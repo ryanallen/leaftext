@@ -230,15 +230,22 @@ Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or
 | lt-z-50 | 50 | A floating menu. |
 | lt-z-51 | 51 | A submenu or tooltip over it. |
 
-## Strokes, rings and one recess
+## Shadow spread
 
-Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floating surface throws the dot halftone the stylesheet draws instead. Each takes a color from the contract or mixes one, so it still belongs to its theme.
-
-**The halftone shadow** is the one cast shadow, and it is not a token because only its ink is a value — the geometry is one shared rule in `src/assets/reading/panels.css`. Every floating surface — menu, toast, dialog, sheet, find bar, rename box, drag ghost, link card — and the Previous / Next card at the foot of a page joins that rule's selector list rather than writing a shadow of its own: the strong grain ink on a thin band around the surface, thinning out under an ellipse, with the surface's own box punched back out so no dot lands on its face. The ellipse fades across a fraction of the box, so a surface as small as the link card lands its whole visible band in the nearly transparent tail and shows nothing; a surface that small keeps the shared rule and overrides only the fade stops, moving the fade into the band itself, and the pager card takes the same stops from the other end, being wide enough that the ellipse lands its ring in the tail too. That card is also the one host sitting inside the document rather than over it, so it is the one that overrides the layer as well: the shared negative depth falls behind the opaque reading shell and never draws.
+How far the one cast shadow reaches past the surface throwing it, and the only length its recipe spends. One value for every floating surface and for the window's own band, so the app has one shadow size rather than a size per box: the ring is four edge ramps intersected over this distance, and the band's outside corner is the surface's own corner plus it, which strikes both arcs from one center.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
-| lt-shadow-raised | `0 1px 3px rgba(0, 0, 0, 0.18)` | A row or chip lifted a hair off its surface. |
+| lt-shadow-spread | 8px | How far a cast shadow reaches past the surface throwing it, and how much its outer corner is rounded beyond that surface's own. |
+
+## Strokes, rings and one recess
+
+Everything the app puts in a `box-shadow`. None of them is a cast shadow, and none may be: the app has one light, hung overhead and centered, and a `box-shadow` with a vertical offset is a second one pointing somewhere else. A floating surface throws the dot halftone the stylesheet draws instead. Each takes a color from the contract or mixes one, so it still belongs to its theme.
+
+**The halftone shadow** is the one cast shadow, and it is not a token because only its ink is a value — the geometry is one shared rule in `src/assets/reading/panels.css`, spending the one spread above. Every floating surface — menu, toast, dialog, sheet, find bar, rename box, drag ghost, link card, filter menu, first-run bubble, both toolbars and the tool tray — and the Previous / Next card at the foot of a page joins that rule's selector list rather than writing a shadow of its own: the strong grain ink on a band one spread wide around the surface, drawn by four edge ramps intersected so the ring weighs the same on every side and at every corner whatever the surface's size or shape. The layer takes the spread as padding, which makes its content box the surface's own, so the browser derives the ring's inner curve from its outer one; the outer corner is the surface's own corner plus the spread, read from the `--lt-shadow-host-radius` each host declares beside its own border. The window's band is the same recipe over the same distance, drawn as a sibling of the app surface rather than a child, so it needs no punch. The pager card is the one host sitting inside the document rather than over it, so it is the one that overrides the layer: the shared negative depth falls behind the opaque reading shell and never draws.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
 | lt-shadow-inset | `inset 0 1px 2px rgba(0, 0, 0, 0.35)` | A field that reads as pressed into the surface. |
 | lt-shadow-hairline | `inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent)` | An edge drawn inside the box, so it costs no layout. |
 | lt-shadow-hairline-strong | `inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent)` | The same edge, for a hovered or selected box. |

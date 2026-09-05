@@ -372,7 +372,9 @@
 .home-row-ghost {
   position: fixed;
   z-index: var(--lt-z-50);
-  border-radius: var(--lt-radius-md);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-md);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   pointer-events: none;
 }

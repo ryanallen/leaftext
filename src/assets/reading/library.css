@@ -551,9 +551,10 @@ body.library-resizing button {
   max-width: 240px;
   padding: var(--lt-space-2);
   border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-md);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-surface-elevated);
-  box-shadow: var(--lt-shadow-raised);
 }
 .filter-menu[hidden] {
   display: none;

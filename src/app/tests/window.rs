@@ -119,11 +119,23 @@ fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
         !source.contains("border_r"),
         "the divider color is still being sent to a frame that draws nothing with it"
     );
-    // The smallest window grows by the band, so the smallest readable page is the size it was pinned at rather than 40px narrower. Read off the value itself: a resize the host drives clamps to the same pair, and the two have to be one number.
+    // The smallest window grows by the band on both sides, so the smallest readable page is the size it was pinned at rather than the band narrower. Read off the value itself: a resize the host drives clamps to the same pair, and the two have to be one number.
     assert_eq!(
         MIN_INNER_SIZE,
-        (380.0 + 40.0, 480.0 + 23.0),
+        (380.0 + 16.0, 480.0 + 16.0),
         "the smallest window lost the band out of its readable page"
+    );
+    // And the band is the one the stylesheet draws. The page cannot read a Rust constant and this cannot read a custom property, so the number is written on both sides of the boundary and held to itself here: a spread changed in `design/tokens.md` alone would leave the window clamping to the old band.
+    let spread = include_str!("../../../design/tokens.md")
+        .lines()
+        .find(|line| line.starts_with("| lt-shadow-spread |"))
+        .and_then(|line| line.split('|').nth(2))
+        .map(str::trim)
+        .expect("design/tokens.md declares the shadow spread");
+    assert_eq!(
+        spread,
+        format!("{}px", SHADOW_SPREAD as i64),
+        "the window's band and the stylesheet's spread are two spellings of one number"
     );
     // Not at the builder: the launch window is smaller than this, so a limit asked for there would clamp it straight back up and there would be no small window at all. It is applied in the step that grows the window instead, which is the test below.
     assert!(

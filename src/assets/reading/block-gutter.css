@@ -136,7 +136,9 @@
   z-index: 5;
   padding: var(--lt-space-2) var(--lt-space-10);
   margin-left: calc(var(--lt-space-10) * -1);
-  border-radius: var(--lt-radius-lg);
+  /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   opacity: var(--lt-opacity-92);
   pointer-events: none;

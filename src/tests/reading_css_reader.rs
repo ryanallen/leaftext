@@ -674,6 +674,31 @@ fn minimap_hard_cuts_dissolve_into_the_rail_without_fading_the_viewport() {
 }
 
 #[test]
+fn an_exported_pages_rail_fades_into_the_pages_own_surface() {
+    let css = reading_mode_css();
+    let exported_fades = rule_body(
+        &css,
+        "  body.leaf-web .document-minimap-track::before,\n  body.leaf-web .document-minimap-track::after {",
+    );
+
+    assert_contains(
+        exported_fades,
+        "background-color: var(--lt-markdown-background);",
+    );
+    assert_contains(exported_fades, "background-image: none;");
+
+    let window_fades = rule_body(
+        &css,
+        ".document-minimap-track::before,\n.document-minimap-track::after {",
+    );
+    assert_contains(window_fades, "background-color: var(--lt-surface);");
+    assert_contains(
+        window_fades,
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
+    );
+}
+
+#[test]
 fn the_page_ends_above_the_floating_bar() {
     let css = reading_mode_css();
 

@@ -420,7 +420,7 @@ fn the_pager_card_fills_with_the_theme_and_throws_the_halftone_instead_of_graini
 fn the_pagers_halftone_sits_above_the_reading_page_rather_than_below_it() {
     let css = reading_mode_css();
 
-    // It joins the one shared list rather than copying the geometry, and then overrides the two lines that are right for a panel hanging over the page and wrong for a card sitting inside it.
+    // It joins the one shared list rather than copying the geometry, and then overrides the one line that is right for a panel hanging over the page and wrong for a card sitting inside it.
     assert_contains(css, ".document-body .docs-pager a::before {");
     let own = rule_body(
         css,
@@ -435,9 +435,11 @@ fn the_pagers_halftone_sits_above_the_reading_page_rather_than_below_it() {
         "a negative layer inside the document body renders nowhere: {own}"
     );
 
-    // The shared ellipse fades across the whole box, which on a card this wide leaves the whole ring in the transparent tail. These are the link card's stops, which put the fade inside the band.
-    assert_contains(own, "var(--lt-mask-opaque) calc(100% - 34px),");
-    assert_contains(own, "mask-image: radial-gradient(");
+    // And nothing else: the ring is one spread wide whatever the card's size, so a wide card has nothing left to correct.
+    assert!(
+        !own.contains("mask-image"),
+        "the ring does not scale with the box, so this card overrides no mask: {own}"
+    );
 
     // Drawn at rest and revealed, because the literal gate refuses a lattice inside a hovered rule in any ink but the hover ink — and the halftone's is the shadow ink.
     assert_contains(own, "opacity: 0;");
@@ -477,8 +479,9 @@ fn the_shared_halftone_list_still_holds_every_floating_surface() {
 #[test]
 fn every_box_shadow_is_a_stroke_a_ring_or_a_recess() {
     // Nothing in the app casts a smooth blur: a floating surface throws the dot halftone below instead. What is left in a `box-shadow` draws an edge, a focus ring, or the one recess in the reader's tool bar.
+    //
+    // The app has one light, hung overhead and centered, so a second one cannot come back through a rule nobody thought to name: every value here is an inset edge or a ring drawn at the box, and not one of them offsets anything downward.
     const DRAWN_WITH: &[&str] = &[
-        "var(--lt-shadow-raised)",
         "var(--lt-shadow-inset)",
         "var(--lt-shadow-hairline)",
         "var(--lt-shadow-hairline-strong)",
@@ -528,15 +531,203 @@ fn every_floating_surface_throws_the_dot_halftone() {
         "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
     );
     assert_contains(halftone, "--lt-grain-dot: var(--lt-grain-dot-strong);");
-    // The second mask layer punches the surface's own box out, or the dots land on its face: a negative-layer child paints above its parent's background. Subtract, not xor -- xor is the punch inside out, and a stale one would win by coming last.
-    assert_contains(halftone, "mask-composite: subtract;");
-    assert_contains(halftone, "-webkit-mask-composite: source-out;");
+    // The fifth mask layer punches the surface's own box out, or the dots land on its face: a negative-layer child paints above its parent's background. Subtract, not xor -- xor is the punch inside out, and a stale one would win by coming last.
+    assert_contains(
+        halftone,
+        "mask-composite: intersect, intersect, intersect, subtract;",
+    );
+    assert_contains(
+        halftone,
+        "-webkit-mask-composite: source-in, source-in, source-in, source-out;",
+    );
     assert!(
-        !halftone.contains("mask-composite: exclude;")
-            && !halftone.contains("-webkit-mask-composite: xor;"),
+        !halftone.contains("exclude;") && !halftone.contains("xor;"),
         "xor/exclude is the punch inside out"
     );
     assert_contains(halftone, "z-index: var(--lt-z-below);");
+}
+
+#[test]
+fn the_halftone_is_four_ramps_over_one_spread_with_a_rounded_punch() {
+    let css = reading_mode_css();
+    let halftone = rule_body(css, ".app-overflow-panel::before,");
+
+    // Four edge ramps intersected, each running from nothing at the band's outer rim to full at the surface's own edge, so every corner is the product of two: one light, overhead and centered, weighing the same on all four sides whatever the box is.
+    for direction in ["to right", "to left", "to bottom", "to top"] {
+        assert_contains(
+            halftone,
+            &format!(
+                "linear-gradient({direction}, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread))"
+            ),
+        );
+    }
+    // The layer takes the spread as padding, which makes its content box the host's own box; the punch is clipped to that box, so the browser derives the ring's inner curve from its outer one instead of cutting a rectangle through it.
+    assert_contains(halftone, "padding: var(--lt-shadow-spread);");
+    assert_contains(halftone, "inset: calc(-1 * var(--lt-shadow-spread));");
+    for property in [
+        "mask-origin",
+        "mask-clip",
+        "-webkit-mask-origin",
+        "-webkit-mask-clip",
+    ] {
+        assert_contains(
+            halftone,
+            &format!("{property}: border-box, border-box, border-box, border-box, content-box;"),
+        );
+    }
+    // Both radii come from the one number the host's own border reads, plus the spread, which strikes the outer arc from the inner arc's center.
+    assert_contains(
+        halftone,
+        "border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread));",
+    );
+
+    // The ellipse was what made the shadow's weight a function of the surface's size, so nowhere in the compiled stylesheet may one come back.
+    assert!(
+        !css.contains("ellipse farthest-side"),
+        "an ellipse sized to the box is what gave every surface a shadow of its own weight"
+    );
+}
+
+#[test]
+fn every_shadow_host_declares_one_radius_and_no_shadow_of_its_own() {
+    let css = reading_mode_css();
+
+    // The roster is read off the shared rule's own selector list rather than written out beside it, so a surface joining that list later cannot arrive with no radius for its ring to be struck from -- which draws a square corner outside a rounded one.
+    let list = rule_at(css, ".app-overflow-panel::before,");
+    let selectors = &css[list..list + css[list..].find('{').expect("the shared rule opens")];
+    let hosts: Vec<&str> = selectors
+        .split(',')
+        .map(str::trim)
+        .filter(|one| !one.is_empty())
+        .map(|one| one.trim_end_matches("::before"))
+        .collect();
+    assert!(
+        hosts.len() >= 18,
+        "the shared list lost hosts, so this reads a shorter roster than the app throws: {hosts:?}"
+    );
+
+    // Each host's own rule, or rules -- the sheet and the tray each open more than one -- and the one that declares the radius has to hand it straight back to a border.
+    for host in hosts {
+        let mut declared = false;
+        for body in rule_bodies(css, &format!("{host} {{")) {
+            if !body.contains("--lt-shadow-host-radius: var(--lt-radius-") {
+                continue;
+            }
+            assert!(
+                body.contains("border-radius: var(--lt-shadow-host-radius)")
+                    || body.contains("border-top-left-radius: var(--lt-shadow-host-radius);"),
+                "{host} declares a radius the shadow cannot read: {body}"
+            );
+            declared = true;
+        }
+        assert!(
+            declared,
+            "{host} throws the one shadow and declares no radius for its outer corner"
+        );
+    }
+
+    // And the sheet's own value, which is the one host not rounded like a panel.
+    let sheet = rule_body(
+        css,
+        ".leaf-sheet {
+  left: 0;",
+    );
+    assert_contains(sheet, "--lt-shadow-host-radius: var(--lt-radius-2xl);");
+    assert_contains(
+        sheet,
+        "border-top-left-radius: var(--lt-shadow-host-radius);",
+    );
+
+    // The recipe no longer scales with the box, so nothing is left for a small or a wide surface to correct: no private inset, no fade of its own, and no second copy of the lattice.
+    for private in [
+        ".reader-toolbar::before {",
+        ".selection-toolbar::before {",
+        ".link-hover-tip::before {",
+    ] {
+        assert!(
+            !css.contains(private),
+            "{private} is a private copy of a shadow that is now one shared rule"
+        );
+    }
+    // The pager card keeps the one line the shared rule cannot give it -- it sits inside the document rather than over it -- and nothing else.
+    let pager = rule_body(
+        css,
+        ".document-body .docs-pager a::before {
+  z-index: 0;",
+    );
+    assert_contains(pager, "z-index: 0;");
+    assert!(
+        !pager.contains("mask-image") && !pager.contains("inset:"),
+        "the pager card overrides only its layer: {pager}"
+    );
+}
+
+#[test]
+fn no_shadow_in_the_app_falls_from_a_second_light() {
+    let css = reading_mode_css();
+
+    // The token that carried the second light, and every rule that spent it. It was offset a pixel downward on six surfaces, so on those the light was neither overhead nor centered.
+    assert!(
+        !css.contains("--lt-shadow-raised"),
+        "the offset blur is back, which is a second light in a second direction"
+    );
+    // And no rule may write one by hand either: every `box-shadow` left in the app is an inset edge or a ring struck at the box, so none of them has a direction at all.
+    for (at, _) in css.match_indices("box-shadow:") {
+        let value = css[at + "box-shadow:".len()..]
+            .split(';')
+            .next()
+            .expect("a declaration should end")
+            .trim();
+        assert!(
+            !value.starts_with("0 ") || value.starts_with("0 0 0 "),
+            "box-shadow: {value} offsets or blurs, which is a light of its own"
+        );
+    }
+}
+
+#[test]
+fn every_control_that_floats_over_the_page_throws_the_one_shadow() {
+    let css = reading_mode_css();
+
+    // The print stylesheet names every control on the page one at a time, which makes it the roster to check a floating surface against: anything hidden there that stands over the page rather than sitting in it owes the halftone.
+    let hidden = rule_body(css, "body.leaf-paper :is(.docs-pager,");
+    let ring = rule_body(css, ".app-overflow-panel::before,");
+
+    // What is hidden for paper and does not float: it sits in the window's own layout, so it has nothing to cast onto.
+    const IN_THE_WINDOW: &[&str] = &[
+        ".app-bar",
+        ".reader-corner",
+        ".library-pane",
+        ".library-divider",
+        ".reader-graph",
+        ".reader-edge-fade",
+        ".reader-minimap",
+        ".reader-loading",
+        // The scrim is what a sheet is read against rather than a surface of its own, and the two diagram layers are the sheet's contents.
+        ".lt-backdrop",
+        ".flow-sheet",
+        ".crumb-menu",
+        ".mermaid-tools",
+        ".diagram-overlay",
+        ".block-gutter",
+        ".block-gap-line",
+    ];
+
+    for control in hidden.lines().flat_map(|line| line.split(',')) {
+        let name = control
+            .split_whitespace()
+            .next()
+            .unwrap_or_default()
+            .trim_start_matches("body.leaf-paper :is(")
+            .trim_end_matches(')');
+        if !name.starts_with('.') || IN_THE_WINDOW.contains(&name) {
+            continue;
+        }
+        assert!(
+            ring.contains(&format!("{name}::before")) || ring.contains(&format!("{name} a::before")),
+            "{name} floats over the page and throws no shadow, so it is the one surface with a light of its own"
+        );
+    }
 }
 
 #[test]
@@ -945,11 +1136,22 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
         "the band punches a box out of itself, which is a child's problem and not a sibling's"
     );
 
-    // One spread, said once, and the same one every panel inside the app throws. One class for both platforms: a Mac carries `frameless` as well as `mac-frame`.
+    // One spread, said once and on all four sides, and the same one every panel inside the app throws — which is what a light hung overhead and centered gives. Three distances were three lights. One class for both platforms: a Mac carries `frameless` as well as `mac-frame`.
     let frame = rule_body(&css, "body.frameless {");
-    assert_contains(frame, "--app-shadow-top: 13px;");
-    assert_contains(frame, "--app-shadow-side: 20px;");
-    assert_contains(frame, "--app-shadow-bottom: 10px;");
+    assert_contains(frame, "--app-shadow-spread: var(--lt-shadow-spread);");
+    assert!(
+        !css.contains("--app-shadow-top")
+            && !css.contains("--app-shadow-side")
+            && !css.contains("--app-shadow-bottom"),
+        "the band still names a side of its own, which is a second light"
+    );
+    // And the band spends that one distance four times, once per edge.
+    assert_eq!(
+        band.matches("var(--lt-mask-opaque) var(--app-shadow-spread))")
+            .count(),
+        8,
+        "each of the four ramps, prefixed and not, runs over the one spread"
+    );
 
     // Nothing behind a maximized Windows window or a full-screen window on either platform to cast onto, and a band there would show the desktop through a frame inside the screen edge.
     let maxed = rule_body(
@@ -957,15 +1159,9 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
         "body.frameless:not(.mac-frame).is-maximized,\nbody.frameless.is-fullscreen {",
     );
     let page_rule = rule_body(&css, "body:has(.app-surface) {");
-    for zero in [
-        "--app-shadow-top: 0px;",
-        "--app-shadow-side: 0px;",
-        "--app-shadow-bottom: 0px;",
-    ] {
-        assert_contains(maxed, zero);
-        // And the same three on `body` itself, which is what a page carrying neither frame class gets: a browser has no window to cast a shadow off.
-        assert_contains(page_rule, zero);
-    }
+    assert_contains(maxed, "--app-shadow-spread: 0px;");
+    // And the same on `body` itself, which is what a page carrying neither frame class gets: a browser has no window to cast a shadow off.
+    assert_contains(page_rule, "--app-shadow-spread: 0px;");
     // Drawn nowhere rather than masked to nothing, in all three cases.
     assert_contains(
         &css,
@@ -990,10 +1186,7 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     // The corner is read from a variable rather than written here, so the four states that change it all set one number. Windows' own figure for a top-level app window is the default it starts from.
     assert_contains(surface, "--app-window-radius: var(--lt-radius-lg);");
     assert_contains(surface, "border-radius: var(--app-window-radius);");
-    assert_contains(
-        surface,
-        "inset: var(--app-shadow-top) var(--app-shadow-side) var(--app-shadow-bottom);",
-    );
+    assert_contains(surface, "inset: var(--app-shadow-spread);");
     assert_contains(page_rule, "background: transparent;");
     assert!(
         !rule_body(&css, "html,\nbody {").contains("background:"),
@@ -1119,7 +1312,7 @@ fn nothing_lifts_or_changes_shape_when_a_pointer_lands_on_it() {
     for (at, _) in css.match_indices(":hover") {
         let rule = &css[at..css[at..].find('}').map_or(css.len(), |end| at + end)];
         assert!(
-            !rule.contains("--lt-shadow-raised"),
+            !rule.contains("box-shadow: 0 "),
             "a control that rises off the surface under the pointer: {rule}"
         );
     }
@@ -1227,13 +1420,13 @@ fn the_lattices_geometry_is_said_once_rather_than_written_into_every_rule() {
         drawn += 1;
     }
     assert!(
-        drawn >= 24,
+        drawn >= 22,
         "the stylesheet should still draw the lattice on every grained surface ({drawn} found)"
     );
 
     let tile = "background-size: var(--lt-grain-tile) var(--lt-grain-tile)";
     assert!(
-        css.matches(tile).count() >= 23,
+        css.matches(tile).count() >= 21,
         "every lattice rule tiles from --lt-grain-tile"
     );
     assert!(

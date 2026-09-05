@@ -1475,8 +1475,9 @@ export function run() {
       if (!css.includes('.link-hover-tip.has-preview {\n  width: 17rem;\n}')) throw new Error('a preview card has no fixed width of its own');
       // The card is the width of its picture, so the address under it has to break mid-path rather than push the card wider.
       if (!css.slice(css.indexOf('.link-hover-tip-detail {'), css.indexOf('.link-hover-tip-lines {')).includes('overflow-wrap: anywhere;')) throw new Error('a long address would widen the card rather than wrapping inside it');
-      // The shared halftone fades across a fraction of the box; a card this small needs the fade inside its own band or it shows nothing.
-      if (!css.includes('.link-hover-tip::before {') || !css.includes('var(--lt-mask-opaque) calc(100% - 34px)')) throw new Error('the card has no fade stops of its own for the halftone shadow');
+      // The shared halftone is one spread wide whatever the box, so this card takes it whole rather than correcting a fade that used to scale with its own size.
+      if (!css.includes('.link-hover-tip::before,')) throw new Error('the card is off the one shared halftone list');
+      if (css.includes('.link-hover-tip::before {')) throw new Error('the card has a shadow of its own again, which is a weight nothing else in the app throws');
     } finally {
       booted.document.elementFromPoint = wasElementFromPoint;
       vm.runInContext('linkPreviewCache.delete("notes/first.md"); hideLinkHoverTip(); endLinkHoverFade();', booted);
