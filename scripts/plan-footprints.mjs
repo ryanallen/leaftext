@@ -32,7 +32,7 @@ const FOOTPRINT_ROOTS = ['app/', 'docs/'];
 //
 // `docs/README.md` and `docs/GLOSSARY.md`: a build reaches these only by filing what it found beside its work, which appends a row to a table rather than rewriting the file.
 //
-// **`docs/TRACKS.md` is deliberately not on this list.** Read out of the skills it has one writer — `/pm`, giving a subject its first track — and no build among them, so it is a real collider and two tickets planning to write it are told so.
+// **`docs/tracks/` and the `docs/TRACKS.md` above it are deliberately not on this list.** Read out of the skills they have one writer — `/pm`, giving a subject its first track a file and the index its row — and no build among them, so they are real colliders and two tickets planning to write either are told so. The folder counts the way any folder does: a ticket naming `docs/tracks/` collides with every ticket naming a track file inside it.
 //
 // **`app/AGENTS.md` is deliberately not on it either.** It is the biggest single false collider among citations, and a workflow ticket genuinely does change the guide: excluding it would call two such tickets safe together, which is the one mistake that costs somebody's work.
 export const EXCLUDED = ['docs/PLAN.md', 'docs/README.md', 'docs/GLOSSARY.md'];
@@ -364,7 +364,9 @@ const EXCLUSION_CASES = [
   ['the running order', 'docs/PLAN.md', true],
   ['the ticket index', 'docs/README.md', true],
   ['the planning glossary', 'docs/GLOSSARY.md', true],
-  ['the subject order', 'docs/TRACKS.md', false],
+  ['the subject order index', 'docs/TRACKS.md', false],
+  ['one subject order', 'docs/tracks/performance.md', false],
+  ['the whole folder of them', 'docs/tracks/', false],
   ['the guide', 'app/AGENTS.md', false],
 ];
 

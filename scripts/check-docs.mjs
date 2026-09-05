@@ -54,6 +54,7 @@ const PLAN_ROLES = [
   ['canceled', 'decided against, kept for the reasoning'],
   ['on-hold', 'parked by the owner, kept ready to return to the live list'],
   ['tests', 'a document to open in the app, not a plan'],
+  ['tracks', 'one subject order, indexed by TRACKS.md and held to its steps by `check-plan`'],
   ['learn/ticket-workflow-medium/skills', "giveaway: a byte copy of one of this repo's own skills — owes what its source owes, and is held to it by `check-learn-snapshots`"],
   ['learn/ticket-workflow-medium/sources/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],
   ['learn/llm-wiki-karpathy-src.md', 'giveaway: borrowed writing, kept to read — nothing here may edit it, so it owes a role and nothing else'],
@@ -103,6 +104,7 @@ const ROLE_CASES = [
   ['the page about this app names who keeps it true', 'learn/offered-field-names.md', 'giveaway: what the field box offers, kept true against the front end by `/sync-docs`'],
   ["everything else in there is this repo's own writing", 'learn/ticket-workflow-linkedin/AUDIT.md', "giveaway: this repo's own writing for a reader outside this tree — ours to edit, so it owes a stamp on every date, no box-character drawing and US spelling, and no plan shape"],
   ['an article draft beside the copies is ours too', 'learn/ticket-workflow-medium/leaftext-workflow-v5.md', "giveaway: this repo's own writing for a reader outside this tree — ours to edit, so it owes a stamp on every date, no box-character drawing and US spelling, and no plan shape"],
+  ['a subject order is its own kind, not a plan', 'tracks/a-subject.md', 'one subject order, indexed by TRACKS.md and held to its steps by `check-plan`'],
   ['a file matching no row has no role at all', 'nowhere/a.md', null],
 ];
 

@@ -269,26 +269,59 @@ function whyProblems(row) {
 const TRACK_HEADING = /^##(?!#)\s+(.+?)\s*$/;
 const EMPTY_CELL = /^[—–-]?$/;
 
+// What a `Track` cell links: the subject's own file under `docs/tracks/`, spelled from wherever the running order sits. The file name is the anchor, which is the key every subject order is held by.
+const TRACK_LINK = /\(\s*[^)\s]*tracks\/([a-z0-9-]+)\.md\s*\)/g;
+
 // A heading's own anchor, the way every Markdown renderer in this tree spells one: lowercased, punctuation dropped, spaces hyphenated.
 function anchor(heading) {
   return heading.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
 }
 
-// `{ anchor => Set(ticket paths) }` — every heading in the tracks file, with the tickets its table names as steps. A heading with no table is still a track, so it answers with an empty set rather than being absent.
-function trackSteps(text) {
+// A subject's own file opens with the subject, so its track is read at either heading level — the file's title is the track.
+const PART_HEADING = /^#{1,2}(?!#)\s+(.+?)\s*$/;
+
+// `{ anchor => Set(ticket paths) }` — every subject order, with the tickets its table names as steps. A heading with no table is still a track, so it answers with an empty set rather than being absent.
+//
+// One file per subject under `docs/tracks/`, which is why this takes the folder rather than a file: the anchor a heading gives is the key, and it is the same key each of the 406 links naming a track already carried, so every one of them became a path to exactly one file.
+function trackSteps(parts) {
   const found = new Map();
+  // A part file sits one folder below the running order, so its rows name a ticket a folder further out. The map is keyed on the path the running order writes, which is what both rules above compare against.
   let held = null;
-  for (const line of text.split('\n')) {
-    const heading = TRACK_HEADING.exec(line.trim());
-    if (heading) {
-      held = anchor(heading[1]);
-      if (!found.has(held)) found.set(held, new Set());
-      continue;
+  for (const text of parts) {
+    held = null;
+    for (const line of text.split('\n')) {
+      const heading = PART_HEADING.exec(line.trim());
+      if (heading) {
+        held = anchor(heading[1]);
+        if (!found.has(held)) found.set(held, new Set());
+        continue;
+      }
+      if (held === null || !line.trim().startsWith('|')) continue;
+      for (const path of links(line)) found.get(held).add(path.replace(/^\.\.\//, ''));
     }
-    if (held === null || !line.trim().startsWith('|')) continue;
-    for (const path of links(line)) found.get(held).add(path);
   }
   return found;
+}
+
+// The index above them says what each subject is and nothing else. A step table written back into it would be a subject order in two places, and the anchor a `Track` cell names would then have two files to be — so the next pass giving a subject its first track is refused here rather than finding out when the two disagree.
+function indexTableProblems(indexText) {
+  const problems = [];
+  let held = null;
+  for (const line of indexText.split('\n')) {
+    const heading = TRACK_HEADING.exec(line.trim());
+    if (heading) {
+      held = heading[1];
+      continue;
+    }
+    if (held === null || !/^\|\s*\d+\s*\|/.test(line.trim())) continue;
+    problems.push({
+      rule: 'track-index',
+      subject: 'TRACKS.md',
+      message: `TRACKS.md carries a step table under "${held}" — the index says what each subject is and one row per track, and the steps go in docs/tracks/${anchor(held)}.md`,
+    });
+    held = null;
+  }
+  return problems;
 }
 
 // The column index the header row gives `Track`, or null where the file carries no such column.
@@ -379,12 +412,12 @@ function devsWithProblems(planText, live, claims = null) {
   return problems;
 }
 
-function trackProblems(planText, tracksText, live) {
+function trackProblems(planText, parts, live) {
   const problems = [];
   const say = (subject, message) => problems.push({ rule: 'track', subject, message });
   const column = trackColumn(planText);
   if (column === null) return problems;
-  const steps = trackSteps(tracksText);
+  const steps = trackSteps(parts);
   let tier = null;
   const lines = planText.split('\n');
   for (let i = 0; i < lines.length; i += 1) {
@@ -408,18 +441,18 @@ function trackProblems(planText, tracksText, live) {
       say(ticket, `position ${cells[0]} names no track for ${ticket}, so nothing says which subject it is part of — one ticket is a track with one step`);
       continue;
     }
-    const named = [...cell.matchAll(/\(\s*TRACKS\.md#([^)\s]+)\s*\)/g)].map((m) => m[1]);
+    const named = [...cell.matchAll(TRACK_LINK)].map((m) => m[1]);
     if (!named.length) {
-      say(ticket, `position ${cells[0]} says "${cell}" and links no heading in TRACKS.md, so a reader cannot open the track it names`);
+      say(ticket, `position ${cells[0]} says "${cell}" and links no subject order, so a reader cannot open the track it names`);
       continue;
     }
     for (const slug of named) {
       if (!steps.has(slug)) {
-        say(ticket, `position ${cells[0]} names TRACKS.md#${slug}, and no heading in that file spells it`);
+        say(ticket, `position ${cells[0]} names the ${slug} track, and no subject order spells it`);
         continue;
       }
       if (!steps.get(slug).has(ticket)) {
-        say(ticket, `position ${cells[0]} names TRACKS.md#${slug} and ${ticket} is not a step of it, so the link lands the reader on a table their own ticket is nowhere in`);
+        say(ticket, `position ${cells[0]} names the ${slug} track and ${ticket} is not a step of it, so the link lands the reader on a table their own ticket is nowhere in`);
       }
     }
   }
@@ -430,10 +463,10 @@ const PERFORMANCE_MARKER = /^> \*\*Performance finding\.\*\*\s*$/m;
 const PERFORMANCE_BOOTSTRAP = 'done/workflow/nothing-files-a-performance-finding.md';
 
 // The marker records why a ticket exists, so it decides both destinations without guessing from a file name or a sentence about speed.
-function performanceProblems(planText, tracksText, ticketTexts) {
+function performanceProblems(planText, parts, ticketTexts) {
   const problems = [];
   const say = (rule, subject, message) => problems.push({ rule, subject, message });
-  const performance = trackSteps(tracksText).get('performance') ?? new Set();
+  const performance = trackSteps(parts).get('performance') ?? new Set();
   for (const row of planRows(planText)) {
     if (row.ticket === null) continue;
     const marked = PERFORMANCE_MARKER.test(ticketTexts.get(row.ticket) ?? '');
@@ -990,21 +1023,50 @@ const NAME_CASES = [
     ['features/PLAN.md'], ['done/PLAN.md', 'canceled/PLAN.md'], [], ''],
 ];
 
-// The track a row names, read against the file the tracks live in. `tracked(row, ...)` writes a running order carrying the seventh column, and `tracks(...)` the file beside it.
+// The track a row names, read against the folder the subject orders live in. `tracked(row, ...)` writes a running order carrying the seventh column, and the part files below stand for that folder.
 const TRACKED_TABLE = '| # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |\n|---|---|---|---|---|---|---|---|\n';
 
 function tracked(...rows) {
   return `${TITLE}\n\n## Tier 3 — a band\n\n${TRACKED_TABLE}${rows.map((r) => `${r}\n`).join('')}\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 }
 
-const TRACKS_FILE = '# Tracks\n\n## A subject\n\n| step | Work |\n|---|---|\n| 1 | [one](refactor/a/one.md) |\n\n## Another subject\n\n| step | Work |\n|---|---|\n| 1 | [two](refactor/b/two.md) |\n';
+// The folder of subject orders, one file per subject, their rows spelled a folder deeper than the running order writes them.
+const TRACKS_FILE = [
+  '# A subject\n\n| step | Work |\n|---|---|\n| 1 | [one](../refactor/a/one.md) |\n',
+  '# Another subject\n\n| step | Work |\n|---|---|\n| 1 | [two](../refactor/b/two.md) |\n',
+  '# A part subject\n\nWhat this subject is.\n\n| step | Work |\n|---|---|\n| 1 | [one](../refactor/a/one.md) |\n| 2 | [three](../refactor/c/three.md) |\n',
+];
 
-const TRACK_LIVE = new Set(['refactor/a/one.md']);
-const TRACK_ROW = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | — | first |';
+// The index above them, and the same index with a step table written back into it.
+const TRACK_INDEX = '# Tracks\n\n| Track | What it is | Steps |\n|---|---|---|\n| [A subject](tracks/a-subject.md) | What this subject is. | 1 |\n';
+const TRACK_INDEX_WITH_TABLE = `${TRACK_INDEX}\n## A new subject\n\n| step | Work |\n|---|---|\n| 1 | [four](refactor/d/four.md) |\n`;
+
+const TRACK_INDEX_CASES = [
+  ['an index of one row per track passes', TRACK_INDEX, []],
+  ['a step table written back into the index is refused, and the track is named',
+    TRACK_INDEX_WITH_TABLE, ['track-index TRACKS.md'], 'A new subject'],
+];
+
+function trackIndexSelfTest() {
+  const fails = [];
+  for (const [name, text, want, said] of TRACK_INDEX_CASES) {
+    const found = indexTableProblems(text);
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) fails.push(`${name}: got [${got}], want [${want}]`);
+    if (said && !found.some((p) => p.message.includes(said))) fails.push(`${name}: no message said \`${said}\``);
+  }
+  return fails;
+}
+
+const TRACK_LIVE = new Set(['refactor/a/one.md', 'refactor/c/three.md']);
+const TRACK_ROW = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](tracks/a-subject.md) step 1 | — | first |';
 const TRACK_NONE = '| 1 | [one](refactor/a/one.md) | Ready | — | — | — | — | first |';
 const TRACK_UNLINKED = '| 1 | [one](refactor/a/one.md) | Ready | — | — | A subject step 1 | — | first |';
-const TRACK_MISSING = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Nowhere](TRACKS.md#nowhere) step 1 | — | first |';
-const TRACK_WRONG = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Another subject](TRACKS.md#another-subject) step 1 | — | first |';
+const TRACK_MISSING = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Nowhere](tracks/nowhere.md) step 1 | — | first |';
+const TRACK_WRONG = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [Another subject](tracks/another-subject.md) step 1 | — | first |';
+// A subject written in a file of its own, named the way the running order names one. Two rows, because a part file answering with only its first step would call the second row absent from its own track.
+const TRACK_PART = '| 1 | [one](refactor/a/one.md) | Ready | — | — | [A part subject](tracks/a-part-subject.md) step 1 | — | first |';
+const TRACK_PART_SECOND = '| 2 | [three](refactor/c/three.md) | Ready | — | — | [A part subject](tracks/a-part-subject.md) step 2 | — | second |';
 // The same row without the seventh column: a running order that carries no Track column is outside the rule rather than failing every row of it.
 const TRACK_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 
@@ -1013,21 +1075,24 @@ const TRACK_CASES = [
   ['an em dash where a track belongs is refused, and the one-step rule is said',
     tracked(TRACK_NONE), ['track refactor/a/one.md'], 'a track with one step'],
   ['a track named in words with no link to its heading is refused',
-    tracked(TRACK_UNLINKED), ['track refactor/a/one.md'], 'links no heading in TRACKS.md'],
-  ['a track no heading in that file spells is refused, and the anchor is quoted',
-    tracked(TRACK_MISSING), ['track refactor/a/one.md'], 'no heading in that file spells it'],
+    tracked(TRACK_UNLINKED), ['track refactor/a/one.md'], 'links no subject order'],
+  ['a track written in a file of its own resolves', tracked(TRACK_PART), []],
+  ['every step of a track written in a file of its own resolves, not only the first',
+    tracked(TRACK_PART, TRACK_PART_SECOND), []],
+  ['a track no subject order spells is refused, and the anchor is quoted',
+    tracked(TRACK_MISSING), ['track refactor/a/one.md'], 'no subject order spells it'],
   ['a track the ticket is not a step of is refused, which is the one a reader cannot see',
     tracked(TRACK_WRONG), ['track refactor/a/one.md'], 'is not a step of it'],
   ['a running order with no Track column at all is outside the rule', TRACK_ABSENT, []],
 ];
 
 const PERFORMANCE_FINDING = 'refactor/performance/slow.md';
-const PERFORMANCE_ROW = '| 1 | [slow](refactor/performance/slow.md) | Ready | — | — | [Performance](TRACKS.md#performance) step 2 | — | repeated work |';
-const PERFORMANCE_TRACKS = `# Tracks\n\n## Performance\n\n| step | Work |\n|---|---|\n| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) |\n| 2 | [slow](${PERFORMANCE_FINDING}) |\n`;
-const OTHER_TRACKS = `# Tracks\n\n## Performance\n\n| step | Work |\n|---|---|\n| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) |\n\n## Other\n\n| step | Work |\n|---|---|\n| 1 | [slow](${PERFORMANCE_FINDING}) |\n`;
+const PERFORMANCE_ROW = '| 1 | [slow](refactor/performance/slow.md) | Ready | — | — | [Performance](../../docs/tracks/performance.md) step 2 | — | repeated work |';
+const PERFORMANCE_TRACKS = [`# Performance\n\n| step | Work |\n|---|---|\n| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) |\n| 2 | [slow](${PERFORMANCE_FINDING}) |\n`];
+const OTHER_TRACKS = [`# Performance\n\n| step | Work |\n|---|---|\n| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) |\n`, `# Other\n\n| step | Work |\n|---|---|\n| 1 | [slow](${PERFORMANCE_FINDING}) |\n`];
 const MARKED_FINDING = new Map([[PERFORMANCE_FINDING, '> **Performance finding.**\n']]);
 const UNMARKED_FINDING = new Map([[PERFORMANCE_FINDING, '# Slow\n']]);
-const BOOTSTRAP_ROW = `| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) | Dev | — | — | [Performance](TRACKS.md#performance) step 1 | — | the filing route |`;
+const BOOTSTRAP_ROW = `| 1 | [bootstrap](${PERFORMANCE_BOOTSTRAP}) | Dev | — | — | [Performance](../../docs/tracks/performance.md) step 1 | — | the filing route |`;
 const PERFORMANCE_CASES = [
   ['a marked finding in tier 0 and the Performance track passes', tracked(PERFORMANCE_ROW).replace('## Tier 3', '## Tier 0'), PERFORMANCE_TRACKS, MARKED_FINDING, []],
   ['a marked finding outside tier 0 is refused and names its row', tracked(PERFORMANCE_ROW), PERFORMANCE_TRACKS, MARKED_FINDING, [`performance-tier ${PERFORMANCE_FINDING}`]],
@@ -1037,7 +1102,7 @@ const PERFORMANCE_CASES = [
 ];
 
 // The eighth column, read the same way. `tracked(...)` writes the header this column sits in, so a row here is a `Devs with` cell in the seventh place and `Why` in the eighth.
-const DEVS_ROW = (cell) => `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`;
+const DEVS_ROW = (cell) => `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](tracks/a-subject.md) step 1 | ${cell} | first |`;
 const DEVS_ABSENT = `${TITLE}\n\n## Tier 3 — a band\n\n${TABLE}${ONE}\n\n**Last ranked 9 August 2026, 4:07pm.** Live: 1. On hold: 0. Retired: 0. Turned down: 0.\n`;
 
 // The rule reads the cell's links against what is live, so the fixture's live set has to hold the tickets a passing cell names.
@@ -1072,10 +1137,10 @@ const DEVS_CLAIMED_LIVE = new Set([...DEVS_CLAIMS.keys()]);
 // Four rows in one table, so the whole column is read at once the way the real file is. `cell` fills row 1's; the other three carry what the footprints say.
 function devsTable(cell) {
   return tracked(
-    `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | ${cell} | first |`,
-    '| 2 | [two](refactor/b/two.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | [three](refactor/b/three.md), [four](refactor/b/four.md) | second |',
-    '| 3 | [three](refactor/b/three.md) | Ready | — | — | [A subject](TRACKS.md#a-subject) step 1 | [one](refactor/a/one.md), [two](refactor/b/two.md), [four](refactor/b/four.md) | third |',
-    '| 4 | [four](refactor/b/four.md) | Ready | — | [one](refactor/a/one.md) | [A subject](TRACKS.md#a-subject) step 1 | [two](refactor/b/two.md), [three](refactor/b/three.md) | fourth |',
+    `| 1 | [one](refactor/a/one.md) | Ready | — | — | [A subject](tracks/a-subject.md) step 1 | ${cell} | first |`,
+    '| 2 | [two](refactor/b/two.md) | Ready | — | — | [A subject](tracks/a-subject.md) step 1 | [three](refactor/b/three.md), [four](refactor/b/four.md) | second |',
+    '| 3 | [three](refactor/b/three.md) | Ready | — | — | [A subject](tracks/a-subject.md) step 1 | [one](refactor/a/one.md), [two](refactor/b/two.md), [four](refactor/b/four.md) | third |',
+    '| 4 | [four](refactor/b/four.md) | Ready | — | [one](refactor/a/one.md) | [A subject](tracks/a-subject.md) step 1 | [two](refactor/b/two.md), [three](refactor/b/three.md) | fourth |',
   );
 }
 
@@ -1097,6 +1162,7 @@ function selfTest() {
       fails.push(`${name}: got [${got}], want [${want}]`);
     }
   }
+  fails.push(...trackIndexSelfTest());
   for (const [name, text, want, said] of TRACK_CASES) {
     const found = trackProblems(text, TRACKS_FILE, TRACK_LIVE);
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
@@ -1243,12 +1309,23 @@ for (const ticket of live) {
 }
 
 const text = readFileSync(join(plans, 'PLAN.md'), 'utf8');
+
+// The subject orders: the index, and one file per track in the folder under it. Read once and handed to both rules, because the two questions are asked of the same orders.
+const trackFolder = join(plans, 'tracks');
+const tracks = {
+  index: readFileSync(join(plans, 'TRACKS.md'), 'utf8'),
+  parts: (existsSync(trackFolder) ? readdirSync(trackFolder) : [])
+    .filter((name) => name.endsWith('.md'))
+    .map((name) => readFileSync(join(trackFolder, name), 'utf8')),
+};
+
 const problems = [
   ...shapeProblems(text, { live, retired, turnedDown, held, phases }),
   ...shippedRead.problems,
   ...heldProblems(readFileSync(join(plans, 'on-hold', 'PLAN.md'), 'utf8'), new Set([...archived].filter((file) => file.startsWith('on-hold/')))),
-  ...trackProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), live),
-  ...performanceProblems(text, readFileSync(join(plans, 'TRACKS.md'), 'utf8'), ticketTexts),
+  ...trackProblems(text, tracks.parts, live),
+  ...performanceProblems(text, tracks.parts, ticketTexts),
+  ...indexTableProblems(tracks.index),
   ...devsWithProblems(text, live, claimsInTree(plans)),
 ];
 
@@ -1283,4 +1360,4 @@ if (nameFails.length) {
 
 if (problems.length || indexFails.length || nameFails.length) process.exit(1);
 
-console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${held} on hold, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of in TRACKS.md, every Devs with cell the one the footprints give and every pair it names sharing no file and waiting on nothing, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} outside it, no live one taking a name the shipped, refused or held work already holds`);
+console.log(`plan: opening with \`${TITLE}\`, ${planRows(text).length} rows, one per live ticket, positions 1 to ${live.size} once each, ${held} on hold, ${retired} retired and ${turnedDown} turned down matching the tree, no row above what it waits on, every Blocks cell agreeing with the waits, every row under the sub-band heading its phases name, every fix in tier 1, no feature in tier 1, a stamp naming the day and the time it was ranked, every row naming a track it is a step of under docs/tracks/, no step table left in the index above them, every Devs with cell the one the footprints give and every pair it names sharing no file and waiting on nothing, every retired row inside the tier table it was retired from, square with that table's header, and one row opened per ticket in the index beside it, ${live.size} live and ${archived.size} outside it, no live one taking a name the shipped, refused or held work already holds`);
