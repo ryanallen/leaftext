@@ -1410,7 +1410,7 @@ dependencies = [
 
 [[package]]
 name = "leaftext"
-version = "1.60.17"
+version = "1.60.18"
 dependencies = [
  "ammonia",
  "blake3",

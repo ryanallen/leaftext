@@ -822,7 +822,7 @@ fn the_map_takes_the_column_the_minimap_is_not_using() {
     );
     assert!(css.contains(":root[data-graph-view=\"true\"] .reader-edge-fade {"));
 
-    // And the chrome that draws the top of the card has to reach the map's right edge, not the page's. Both the bar's divider and the top-right arc are positioned off the minimap column, so the column closes in this view rather than each of them learning about the map: the stroke used to stop a rail's width short and the arc turned down in mid-air over the top of the canvas.
+    // And the chrome that draws the top of the card has to reach the map's right edge, not the page's. Both the bar's divider and the top-right arc are positioned off the minimap column, so the column closes in this view rather than each of them learning about the map: a stroke measured off the page stops a rail's width short and the arc turns down in mid-air over the top of the canvas.
     assert_contains(
         css,
         ":root[data-graph-view=\"true\"] > body {\n  --reader-minimap-column: 0px;\n}",

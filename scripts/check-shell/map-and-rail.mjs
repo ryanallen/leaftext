@@ -198,7 +198,7 @@ export function run() {
   });
 
 
-  // The same comparison over the slice a descent leaves behind. Its two numbers used to be the document's own ends whenever the search had reached inside a block, so both of these answered yes and the rail never asked for the picture back — the whole of the fault, in the one call every path into a rebuild makes first.
+  // The same comparison over the slice a descent leaves behind. Two numbers claiming the document's own ends from inside a block answer yes to both of these and the rail never asks for the picture back — the whole of the fault, in the one call every path into a rebuild makes first.
   check('a view outside a slice taken from inside a long block asks for a rebuild', () => {
     const { minimapWindowCoversView } = booted;
     const metrics = { scrollable: 12322, scaledDocumentHeight: 1314.2, trackHeight: 700, previewScale: 0.1 };
@@ -712,7 +712,7 @@ export function run() {
   });
 
 
-  // The document the boundary between two long tables needs: a block taller than the window with a table on each side of it. Fourteen top-level rows over a 31,900px document under a 70px track at a tenth, so the rail shows 700px and asks for a screen either side of that, 2,100px in all. The table above the block is 1,800px, short enough that the search descends into the block rather than into it; the table below is 24,000px, which is the one the clone used to take whole for the few hundred pixels of it the rail could show. Both are built of 600px rows, taller than the sliver of either table a window at these boundaries reaches — which is what makes the row itself the thing a descent has to stop at.
+  // The document the boundary between two long tables needs: a block taller than the window with a table on each side of it. Fourteen top-level rows over a 31,900px document under a 70px track at a tenth, so the rail shows 700px and asks for a screen either side of that, 2,100px in all. The table above the block is 1,800px, short enough that the search descends into the block rather than into it; the table below is 24,000px, the one a clone taking its carried row whole takes entire for the few hundred pixels of it the rail can show. Both are built of 600px rows, taller than the sliver of either table a window at these boundaries reaches — which is what makes the row itself the thing a descent has to stop at.
   const railBetweenLongTables = () => {
     let scrollTop = 0;
     const body = fakeElement('rail-table-source');
@@ -773,7 +773,7 @@ export function run() {
     return rows;
   };
 
-  // A carried row is what stops the rail going blank past a long block, and it used to go in whole: at a boundary between two long tables that took a 20,000px table for the 500px of it the rail could show, and building the clone is most of a rebuild. It is windowed now the same way the block is — and the slice has to say so, or the guard keeps a thumbnail for ground the clone holds no row for.
+  // A carried row is what stops the rail going blank past a long block, and going in whole it costs: at a boundary between two long tables that is a 20,000px table taken for the 500px of it the rail can show, and building the clone is most of a rebuild. It is windowed the same way the block is — and the slice has to say so, or the guard keeps a thumbnail for ground the clone holds no row for.
   check('a long table carried in past a block’s foot is sliced to the rows the window reaches', () => {
     const stand = railBetweenLongTables();
     try {
@@ -807,7 +807,7 @@ export function run() {
     }
   });
 
-  // A windowed clone starts mid-document, so its first block's top margin has nothing above it to collapse against and the thumbnail lands off by that margin; the rebuild measures the miss and takes it back out. Once rows are carried in above a block the clone starts with one of them rather than with the wrapper chain, so the row that miss is measured on is one step down and no longer at the foot of the wrappers — walked down the chain instead, the read runs off the end of the clone, finds nothing and leaves the thumbnail sitting wherever the margin put it.
+  // A windowed clone starts mid-document, so its first block's top margin has nothing above it to collapse against and the thumbnail lands off by that margin; the rebuild measures the miss and takes it back out. Once rows are carried in above a block the clone starts with one of them rather than with the wrapper chain, so the row that miss is measured on is one step down and not at the foot of the wrappers — walked down the chain instead, the read runs off the end of the clone, finds nothing and leaves the thumbnail sitting wherever the margin put it.
   check('a thumbnail that starts with a carried row is placed by measuring that row', () => {
     const stand = railOverABlockedDocument();
     try {
