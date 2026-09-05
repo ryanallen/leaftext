@@ -350,7 +350,7 @@ export function run() {
     }
   });
 
-  // A document is drawn far more often than the strip over it changes, and every one of those draws used to rebuild every tab and refold the bar behind them — a fold that reads the window's layout once per action it tries, and measured about forty-five times what building the tabs costs. So the strip is compared with the string it was last drawn from: same string, same tabs, no fold.
+  // A document is drawn far more often than the strip over it changes, and rebuilding every tab refolds the bar behind them — a fold that reads the window's layout once per action it tries, and measured about forty-five times what building the tabs costs. So the strip is compared with the string it was last drawn from: same string, same tabs, no fold.
   check('an unchanged strip keeps its tabs and reads no layout, and every real change still redraws', () => {
     const one = 'C:\\Notes\\one.md';
     const two = 'C:\\Notes\\two.md';

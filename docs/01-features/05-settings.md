@@ -138,6 +138,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole
 - Leaves an [HTML page drawn in its own frame](01-rendering.md#html-files) exactly as its author wrote it, and the switch is not offered on one
+- A way of reading and nothing more: an [edit](07-editing.md) made with it on writes the words your file holds, never the anchors drawn over them
 - Saved as `speed_reader_enabled`
 
 ### Typing help
