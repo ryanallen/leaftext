@@ -282,7 +282,7 @@ const PART_HEADING = /^#{1,2}(?!#)\s+(.+?)\s*$/;
 
 // `{ anchor => Set(ticket paths) }` — every subject order, with the tickets its table names as steps. A heading with no table is still a track, so it answers with an empty set rather than being absent.
 //
-// One file per subject under `docs/tracks/`, which is why this takes the folder rather than a file: the anchor a heading gives is the key, and it is the same key each of the 406 links naming a track already carried, so every one of them became a path to exactly one file.
+// One file per subject under `docs/tracks/`, which is why this takes the folder rather than a file: the anchor a heading gives is the key, and it is the key every link naming a track carries, so a link resolves to exactly one file.
 function trackSteps(parts) {
   const found = new Map();
   // A part file sits one folder below the running order, so its rows name a ticket a folder further out. The map is keyed on the path the running order writes, which is what both rules above compare against.
