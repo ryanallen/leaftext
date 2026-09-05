@@ -32,6 +32,7 @@ export function initMinimap(source) {
   let pointerOffsetY = null; // grab offset inside the viewport rect, or null for a click-jump
   let previewFrame = 0;
   let viewportFrame = 0;
+  let drawnGeometry = null;
 
   // The stylesheet decides whether the rail is on the page — the breakpoint and the reader's own toggle both — and a rail that is on it always has a width, so ask the rail rather than copying either rule.
   const isHidden = () => minimap.getBoundingClientRect().width <= 0;
@@ -76,13 +77,24 @@ export function initMinimap(source) {
   }
 
   // ---- the thumbnail ------------------------------------------------------
-  // Clone the live document, strip ids/links (so nothing is focusable or duplicated for assistive tech), and shrink it to the rail width with a transform. Rebuilt whenever the document reflows (images decoding, resize).
+  // Clone the live document, strip ids/links (so nothing is focusable or duplicated for assistive tech), and shrink it to the rail width with a transform. Rebuilt when the thumbnail geometry changes.
   function buildPreview() {
     previewFrame = 0;
     // A rebuild is the document itself having changed shape, so nothing measured before it stands.
     forgetGeometry();
     if (isHidden()) return;
     const m = measure();
+    if (drawnGeometry
+      && drawnGeometry.sourceWidth === m.sourceWidth
+      && drawnGeometry.contentWidth === m.contentWidth
+      && drawnGeometry.scrollHeight === m.scrollHeight) {
+      if (viewportFrame) {
+        cancelAnimationFrame(viewportFrame);
+        viewportFrame = 0;
+      }
+      updateViewport(m);
+      return;
+    }
     const preview = source.cloneNode(true);
     preview.removeAttribute('id');
     preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
@@ -95,6 +107,11 @@ export function initMinimap(source) {
     content.style.height = `${m.scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
     content.replaceChildren(preview);
+    drawnGeometry = {
+      sourceWidth: m.sourceWidth,
+      contentWidth: m.contentWidth,
+      scrollHeight: m.scrollHeight,
+    };
     // Place it here from the measurement already taken, and drop any frame a scroll booked: that frame would measure the page again and place the same thumbnail a second time.
     if (viewportFrame) {
       cancelAnimationFrame(viewportFrame);

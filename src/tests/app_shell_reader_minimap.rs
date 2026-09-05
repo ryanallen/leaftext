@@ -192,7 +192,7 @@ fn app_shell_maps_minimap_geometry_proportionally() {
             "const viewportTopPerScrollPixel = metrics.previewScale - previewTravel / metrics.scrollable;",
             "const clickedDocumentY = (event.clientY - contentRect.top) / metrics.previewScale;",
             "content.style.transform = `translateY(${previewTop}px)`;",
-            "viewport.style.top = `${viewportTop}px`;",
+            "viewport.style.transform = `translateY(${viewportTop}px)`;",
             "viewport.style.height = `${boundedViewportHeight}px`;",
         ] {
             assert_contains(&html, expected);
@@ -332,7 +332,7 @@ fn app_shell_preserves_focus_and_updates_minimap_viewport_indicator() {
     for expected in [
         "const restoreFocus = () => {",
         "active.focus({ preventScroll: true });",
-        "viewport.style.top = ",
+        "viewport.style.transform = ",
         "viewport.style.height = ",
     ] {
         assert_contains(&html, expected);

@@ -600,6 +600,7 @@ await check("a rebuild places the exported page's thumbnail once", async () => {
     elementPrototype.getBoundingClientRect = elementRect;
   }
   const rail = document.querySelectorAll('.document-minimap').at(-1);
+  const track = rail.querySelector('.document-minimap-track');
   const content = rail.querySelector('.document-minimap-content');
   const viewport = rail.querySelector('.document-minimap-viewport');
   want(content.querySelector('.document-minimap-preview'), 'the initial build did not place its thumbnail directly');
@@ -631,11 +632,35 @@ await check("a rebuild places the exported page's thumbnail once", async () => {
   measurements = 0;
   placements = 0;
   const beforeResize = content.firstChild;
+  document.documentElement.scrollHeight = 20000;
   globalThis.window.dispatchEvent(leafEvent('resize'));
   await new Promise((resolve) => setTimeout(resolve, 20));
   want(content.firstChild !== beforeResize, 'a resize placed once only because it never rebuilt the thumbnail');
   want(measurements === 1, `a resize measured the page ${measurements} times after rebuilding its thumbnail`);
   want(placements === 1, `a resize placed the rebuilt thumbnail ${placements} times instead of canceling the held placement`);
+
+  const beforeHeightResize = content.firstChild;
+  const beforeTrackHeight = track.style.height;
+  const beforeViewportHeight = viewport.style.height;
+  globalThis.window.innerHeight = 700;
+  globalThis.window.dispatchEvent(leafEvent('resize'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(content.firstChild === beforeHeightResize, 'a height-only resize replaced the thumbnail even though none of the clone inputs moved');
+  want(track.style.height !== beforeTrackHeight, `a height-only resize left the rail at ${JSON.stringify(track.style.height)}`);
+  want(viewport.style.height !== beforeViewportHeight, `a height-only resize left the position box at ${JSON.stringify(viewport.style.height)}`);
+  globalThis.window.innerHeight = 900;
+
+  const beforeWidthResize = content.firstChild;
+  content.clientWidth = 80;
+  globalThis.window.dispatchEvent(leafEvent('resize'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(content.firstChild !== beforeWidthResize, 'a rail width change left the old thumbnail in place');
+
+  const beforeDocumentGrowth = content.firstChild;
+  document.documentElement.scrollHeight += 100;
+  globalThis.window.dispatchEvent(leafEvent('resize'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(content.firstChild !== beforeDocumentGrowth, 'a document height change at the same width left the old thumbnail in place');
   source.remove();
   rail.remove();
 });

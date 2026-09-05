@@ -130,7 +130,7 @@
 .document-minimap-preview pre.mermaid {
   content-visibility: visible !important;
 }
-/* Place and size are written onto this element by JS; these two are the frames before the first write. Not a custom property on the rail above, which inherits into the clone and costs 78ms a write to re-resolve. */
+/* Place and size are written onto this element by JS: the place as a transform, so `top: 0%` here is the origin that transform is measured from, and `height` is the frame before the first write. A transform, not `top`: the box moves every frame with a new number, and as a layout property `top` left the rail's own subtree to be laid out again to draw it — 12.0 to 21.0µs a frame against 3.5 to 4.0. Not a custom property on the rail above, which inherits into the clone and costs 78ms a write to re-resolve. */
 .document-minimap-viewport {
   position: absolute;
   inset-inline: 0;

@@ -935,7 +935,7 @@ export function run() {
     if (!/minimapBodyObserver = new MutationObserver\(invalidateMinimapPreview\);\s*minimapBodyObserver\.observe\(source, \{/.test(fragment)) throw new Error('the watcher is no longer bound to the element the thumbnail is cloned from');
   });
 
-  // Placing the box runs every frame of every scroll, and a custom property inherits — so writing one on the rail re-resolves style across the whole clone hanging under it, which measured 78ms a write against 0.13ms for writing onto the element that draws. Neither `transform` nor `top` inherits, so neither reaches the clone at all.
+  // Placing the box runs every frame of every scroll, and a custom property inherits — so writing one on the rail re-resolves style across the whole clone hanging under it, which measured 78ms a write against 0.13ms for writing onto the element that draws. A transform inherits no further than a custom property does, and it is not a layout property: the box's place was once written to `top`, which left the rail's own subtree to be laid out again on every frame of every scroll — 12.0 to 21.0µs a frame against 3.5 to 4.0 as a transform — so a `top` written back on it fails here.
   check('the box and the thumbnail are placed by writing to themselves', () => {
     const styled = () => ({ style: { setProperty() { throw new Error('a custom property was written on the rail'); } } });
     const content = styled();
@@ -946,7 +946,9 @@ export function run() {
     const metrics = { scaledDocumentHeight: 2000, trackHeight: 700, scrollable: 12322, scrollTop: 0, viewportHeight: 800, previewScale: 0.05 };
     booted.placeMinimapViewport(rail, metrics, 6161);
     if (!/^translateY\(-?\d/.test(content.style.transform || '')) throw new Error(`the thumbnail lane was not slid by its own transform: ${content.style.transform}`);
-    if (!/px$/.test(viewport.style.top || '') || !/px$/.test(viewport.style.height || '')) throw new Error('the box was not placed and sized on itself');
+    if (!/^translateY\(-?\d/.test(viewport.style.transform || '')) throw new Error(`the box was not placed by its own transform: ${viewport.style.transform}`);
+    if (viewport.style.top) throw new Error(`the box was placed by top, a layout property the rail lays its own subtree out again to answer: ${viewport.style.top}`);
+    if (!/px$/.test(viewport.style.height || '')) throw new Error('the box was not sized on itself');
   });
 
   // A comparison put back on either height would pass the check above, because the first pass leaves the right number sitting there for the second to read. So the writes are counted instead: this web view drops an identical inline write before the attribute is touched, and reading the value back to skip one costs twice what the write does.
