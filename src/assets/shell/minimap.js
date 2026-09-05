@@ -1394,6 +1394,7 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
     viewport.style.transform = `translateY(${viewportTop}px)`;
     viewport.style.height = `${boundedViewportHeight}px`;
   }
+  // Each band gives up whatever the position box covers, clipped from the box numbers this frame already worked out. Measured back from the band's own far edge, so the depth of the fade stays a value in the stylesheet and the scroll path never reads layout for it.
   if (topFade) {
     topFade.style.clipPath = `inset(0 0 max(0px, calc(100% - ${viewportTop}px)) 0)`;
   }
