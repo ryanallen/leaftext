@@ -79,6 +79,7 @@ export function initMinimap(source) {
     content.style.height = `${m.scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
     content.replaceChildren(preview);
+    // Place it here from the measurement already taken, and drop any frame a scroll booked: that frame would measure the page again and place the same thumbnail a second time.
     if (viewportFrame) {
       cancelAnimationFrame(viewportFrame);
       viewportFrame = 0;
