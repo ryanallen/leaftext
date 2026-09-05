@@ -34,7 +34,7 @@
 | accent-foreground                       | `#ffffff`                            |
 | danger                                  | `#cf2e3f`                            |
 | danger-foreground                       | `#ffffff`                            |
-| warning                                 | `#9a6a00`                            |
+| warning                                 | `#956600`                            |
 | success                                 | `#1c7d3f`                            |
 | success-foreground                      | `#ffffff`                            |
 | done                                    | `#7b3fe4`                            |
@@ -62,7 +62,7 @@
 | markdown-alert-note                     | `#0c6f8c`                            |
 | markdown-alert-tip                      | `#1c7d3f`                            |
 | markdown-alert-important                | `#7b3fe4`                            |
-| markdown-alert-warning                  | `#9a6a00`                            |
+| markdown-alert-warning                  | `#956600`                            |
 | markdown-alert-caution                  | `#cf2e3f`                            |
 | markdown-badge-background               | `#e7e0f5`                            |
 | markdown-badge-foreground               | `#26222e`                            |

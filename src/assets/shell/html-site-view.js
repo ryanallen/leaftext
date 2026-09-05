@@ -68,6 +68,50 @@ function containedPageSelectionText(page) {
   return selection.toString();
 }
 
+function containedPageCanvasColor(page) {
+  const view = page.defaultView;
+  if (!view || !view.getComputedStyle || !page.documentElement || !page.body || !page.createElement) return null;
+  const probe = page.createElement('i');
+  probe.style.setProperty('position', 'fixed', 'important');
+  probe.style.setProperty('width', '1px', 'important');
+  probe.style.setProperty('height', '1px', 'important');
+  probe.style.setProperty('background', 'Canvas', 'important');
+  page.body.appendChild(probe);
+  let layers;
+  try {
+    layers = [page.documentElement, page.body, probe].map((element) => {
+      const style = view.getComputedStyle(element);
+      if (style.backgroundImage && style.backgroundImage !== 'none') return null;
+      return colorRgb(style.backgroundColor || '');
+    });
+  } finally {
+    probe.remove();
+  }
+  let painted = [0, 0, 0, 0];
+  for (let index = layers.length - 1; index >= 0; index -= 1) {
+    const layer = layers[index];
+    if (!layer || layer[3] <= 0) continue;
+    const alpha = layer[3] + painted[3] * (1 - layer[3]);
+    painted = [
+      (layer[0] * layer[3] + painted[0] * painted[3] * (1 - layer[3])) / alpha,
+      (layer[1] * layer[3] + painted[1] * painted[3] * (1 - layer[3])) / alpha,
+      (layer[2] * layer[3] + painted[2] * painted[3] * (1 - layer[3])) / alpha,
+      alpha,
+    ];
+  }
+  if (painted[3] < 1) return null;
+  return `rgb(${painted.slice(0, 3).map(Math.round).join(', ')})`;
+}
+
+function applyContainedPageTabPalette(page) {
+  const fill = containedPageCanvasColor(page);
+  if (!fill) return;
+  const root = document.documentElement;
+  const ink = colorContrast(fill, '#000') >= colorContrast(fill, '#fff') ? '#000' : '#fff';
+  root.style.setProperty('--tab-page-fill', fill);
+  root.style.setProperty('--tab-page-ink', ink);
+}
+
 // Where a point inside the contained page is on the app's own page, so a menu opens under the pointer rather than at the top-left of the window.
 function siteFramePointOnPage(event) {
   const frame = documentSiteFrame();
@@ -155,6 +199,7 @@ function bindContainedPageMenu(page) {
 function siteFrameReady() {
   const page = siteFrameDocument();
   if (!page || !page.body) return;
+  applyContainedPageTabPalette(page);
   if (siteFrameListening !== page) {
     siteFrameListening = page;
     bindContainedPageLinks(page);
@@ -190,6 +235,8 @@ function fillContainedPageBase(frame) {
 
 // Called by the renderer once the document is on the page. A frame that is not there clears the record, so a Markdown note after an HTML page is not read as a contained one.
 function bindDocumentSiteFrame(path) {
+  document.documentElement.style.removeProperty('--tab-page-fill');
+  document.documentElement.style.removeProperty('--tab-page-ink');
   const frame = documentSiteFrame();
   if (!frame) {
     siteFrameListening = null;

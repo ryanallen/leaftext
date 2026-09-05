@@ -1,12 +1,12 @@
 # Colors
 
-> The 83 color names a theme is drawn from. This file is the list; the values live in `themes/`, one file per family.
+> The 84 color names a theme is drawn from. This file is the list; the values live in `themes/`, one file per family.
 
 A color is **themed**: 11 families each give it a value in light and in dark, so this file names them and says what each is for and never holds a value. Everything that is one value for the whole app — radii, the type scale, shadows — is in [tokens.md](tokens.md) instead.
 
 `just bundle-tokens` compiles this into `LEAF_SEMANTIC_TOKEN_CONTRACT` in `src/theme.rs`, and `just check-tokens` fails when the two drift. The names here are written bare; the compiler adds the `--lt-` prefix, exactly as the theme files do.
 
-**`Default` empty means the row is required.** 81 of the 83 are, and a family that misses one is refused at startup. A filled cell names another row here whose value the compiler copies when a family says nothing, so the row is one a family may set and usually does not — the copied value is written into the family's compiled block as its own hex, never as a pointer.
+**`Default` empty means the row is required.** 81 of the 84 are, and a family that misses one is refused at startup. A filled cell names another row here whose value the compiler copies when a family says nothing, so the row is one a family may set and usually does not — the copied value is written into the family's compiled block as its own hex, never as a pointer.
 
 **A row here is the only way a color exists.** `theme.rs` emits a custom property for any row it finds in a theme file, so a key no longer listed here would become dead CSS in every theme — `check-tokens` fails on that instead. Adding a color means adding a row here *and* a row in all 11 theme files; the startup check refuses a family that misses one.
 
@@ -26,8 +26,9 @@ The window, its chrome, and the roles a control can take.
 | border-strong |  | The hairline that is: a focused field, a divider that has to carry weight. |
 | muted-foreground |  | Secondary text, icons at rest, anything that must read as quieter than the body. |
 | hover-tint | muted-foreground | The ink every hover fill is mixed from, so a row under the pointer lightens on a dark family and darkens on a light one. Set it to run hovers in a hue of your own; leave it out and the quiet-text color is copied in. |
-| primary |  | The action color: a filled button, the active tab's mark, the accent the app is recognized by. |
+| primary |  | The action color as a fill, a wash or a border: a filled button, the active tab's mark, the accent the app is recognized by. |
 | primary-foreground |  | What prints on `primary`. |
+| primary-ink | primary | The same action color when it is words or a thin mark rather than a fill — the start screen's list headings, a sheet's title, the heart on a favorite, the leaf beside a file name. A fill wants the color light enough to print dark text on and an ink wants it dark enough to read on the page, and on some families those two demands do not overlap; set it to give the role a second value, leave it out and the fill's own value is copied in. |
 | accent |  | A second highlight for state that is not an action — a matched search hit, a selected row. |
 | accent-foreground |  | What prints on `accent`. |
 | danger |  | Destructive and failed: a delete, an error line, a broken link. |

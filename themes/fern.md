@@ -142,7 +142,7 @@
 | primary-foreground                      | `#1e1e1e`                        |
 | accent                                  | `#4c9dff`                        |
 | accent-foreground                       | `#1e1e1e`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb4f55`                        |
 | danger-foreground                       | `#1e1e1e`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |

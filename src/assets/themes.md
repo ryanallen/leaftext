@@ -121,7 +121,7 @@
 | primary-foreground                      | `#1e1e1e`                        |
 | accent                                  | `#4c9dff`                        |
 | accent-foreground                       | `#1e1e1e`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb4f55`                        |
 | danger-foreground                       | `#1e1e1e`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |
@@ -712,7 +712,7 @@
 | primary-foreground                      | `#1e1e1e`                        |
 | accent                                  | `#4c9dff`                        |
 | accent-foreground                       | `#1e1e1e`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb4f55`                        |
 | danger-foreground                       | `#1e1e1e`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |
@@ -836,6 +836,7 @@
 | muted-foreground                        | `#6f6151`                          |
 | primary                                 | `#f0662e`                          |
 | primary-foreground                      | `#2b1e14`                          |
+| primary-ink                             | `#b5461a`                          |
 | accent                                  | `#f0662e`                          |
 | accent-foreground                       | `#2b1e14`                          |
 | danger                                  | `#c0392b`                          |
@@ -867,7 +868,7 @@
 | markdown-blockquote-foreground          | `#6f6151`                          |
 | markdown-alert-note                     | `#3560b5`                          |
 | markdown-alert-tip                      | `#46671f`                          |
-| markdown-alert-important                | `#c0501e`                          |
+| markdown-alert-important                | `#bd4f1e`                          |
 | markdown-alert-warning                  | `#8a5e12`                          |
 | markdown-alert-caution                  | `#c0395a`                          |
 | markdown-badge-background               | `#f2e9db`                          |
@@ -924,7 +925,7 @@
 | primary-foreground                      | `#2a2d3d`                        |
 | accent                                  | `#f2934e`                        |
 | accent-foreground                       | `#2a2d3d`                        |
-| danger                                  | `#ff626b`                        |
+| danger                                  | `#ff777f`                        |
 | danger-foreground                       | `#2a2d3d`                        |
 | warning                                 | `#f9e2af`                        |
 | success                                 | `#38c68d`                        |
@@ -1111,6 +1112,7 @@
 | muted-foreground                        | `#9198a1`                                      |
 | primary                                 | `#238636`                                      |
 | primary-foreground                      | `#ffffff`                                      |
+| primary-ink                             | `#258f3a`                                      |
 | accent                                  | `#4493f8`                                      |
 | accent-foreground                       | `#ffffff`                                      |
 | danger                                  | `#f85149`                                      |
@@ -1142,7 +1144,7 @@
 | markdown-blockquote-foreground          | `#9198a1`                                      |
 | markdown-alert-note                     | `#4493f8`                                      |
 | markdown-alert-tip                      | `#3fb950`                                      |
-| markdown-alert-important                | `#238636`                                      |
+| markdown-alert-important                | `#258f3a`                                      |
 | markdown-alert-warning                  | `#d29922`                                      |
 | markdown-alert-caution                  | `#f85149`                                      |
 | markdown-badge-background               | `#212830`                                      |
@@ -1228,6 +1230,7 @@
 | hover-tint                              | `#f0b400`                          |
 | primary                                 | `#f0b400`                          |
 | primary-foreground                      | `#1c1a15`                          |
+| primary-ink                             | `#9a6800`                          |
 | accent                                  | `#f0b400`                          |
 | accent-foreground                       | `#1c1a15`                          |
 | danger                                  | `#c0392b`                          |
@@ -1506,7 +1509,7 @@
 | primary-foreground                      | `#1c2127`                        |
 | accent                                  | `#4c9dff`                        |
 | accent-foreground                       | `#1c2127`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb5d62`                        |
 | danger-foreground                       | `#1c2127`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |
@@ -1611,7 +1614,7 @@
 | accent-foreground                       | `#ffffff`                            |
 | danger                                  | `#cf2e3f`                            |
 | danger-foreground                       | `#ffffff`                            |
-| warning                                 | `#9a6a00`                            |
+| warning                                 | `#956600`                            |
 | success                                 | `#1c7d3f`                            |
 | success-foreground                      | `#ffffff`                            |
 | done                                    | `#7b3fe4`                            |
@@ -1639,7 +1642,7 @@
 | markdown-alert-note                     | `#0c6f8c`                            |
 | markdown-alert-tip                      | `#1c7d3f`                            |
 | markdown-alert-important                | `#7b3fe4`                            |
-| markdown-alert-warning                  | `#9a6a00`                            |
+| markdown-alert-warning                  | `#956600`                            |
 | markdown-alert-caution                  | `#cf2e3f`                            |
 | markdown-badge-background               | `#e7e0f5`                            |
 | markdown-badge-foreground               | `#26222e`                            |
@@ -1884,7 +1887,7 @@
 | primary-foreground                      | `#10233a`                        |
 | accent                                  | `#4a9eff`                        |
 | accent-foreground                       | `#10233a`                        |
-| danger                                  | `#ff453a`                        |
+| danger                                  | `#ff5c52`                        |
 | danger-foreground                       | `#1c1c1e`                        |
 | warning                                 | `#ffb340`                        |
 | success                                 | `#32d74b`                        |
@@ -2067,6 +2070,7 @@
 | border                                  | `#dcdad5`                |
 | border-strong                           | `#b3b1aa`                |
 | primary                                 | `#3f7aa8`                |
+| primary-ink                             | `#3c75a1`                |
 | accent                                  | `#3f7aa8`                |
 | done                                    | `#3f7aa8`                |
 | link                                    | `#3f7aa8`                |
@@ -2076,12 +2080,12 @@
 | editor-inline-code-background           | `#eeece8`                |
 | editor-code-background                  | `#eeece8`                |
 | markdown-background                     | `#f7f6f4`                |
-| markdown-link                           | `#3f7aa8`                |
+| markdown-link                           | `#3c75a1`                |
 | markdown-blockquote-border              | `#b3b1aa`                |
 | markdown-table-header-background        | `#eeece8`                |
 | markdown-math-inline-background         | `#eeece8`                |
 | markdown-badge-background               | `#eeece8`                |
-| markdown-alert-note                     | `#3f7aa8`                |
+| markdown-alert-note                     | `#3c75a1`                |
 | markdown-alert-important                | `#4a4a48`                |
 | minimap-viewport-border                 | `#3f7aa8`                |
 | minimap-viewport-background             | `rgba(74, 74, 72, 0.14)` |
@@ -2114,7 +2118,7 @@
 | primary-foreground                      | `#1e1e1e`                        |
 | accent                                  | `#82a9c9`                        |
 | accent-foreground                       | `#1e1e1e`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb4f55`                        |
 | danger-foreground                       | `#1e1e1e`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |

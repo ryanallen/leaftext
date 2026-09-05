@@ -1,8 +1,8 @@
 # Theming
 
-> Leaftext enforces a semantic token contract of 83 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
+> Leaftext enforces a semantic token contract of 84 CSS custom properties, validated when the theme CSS is compiled at startup. Palettes are data — a bundled `themes.md` compiled from per-family Markdown files — so adding a theme takes no Rust.
 
-Leaftext's theme system is built around a semantic token contract — 83 `--lt-*` CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
+Leaftext's theme system is built around a semantic token contract — 84 `--lt-*` CSS custom properties, 81 of which every theme must define. The contract is not enforced by the Rust compiler; it is checked at startup, the first time the theme CSS is compiled. If a token is missing, that compile step hits an assertion and `panic!`s with an explicit message (so a test run or the first launch surfaces it), rather than silently rendering with broken fallback colors.
 
 **One property is optional, and it is the only one.** `--lt-hover-tint` is the ink every fill under the pointer is mixed from. A family that names it runs its hovers in that hue; a family that says nothing gets its own `--lt-muted-foreground` **copied in as a value**, not aliased to it, so the compiled block stays a flat list of colors. Which properties may be left out is generated alongside the contract, from the `Default` column of `design/colors.md`, as `LEAF_SEMANTIC_TOKEN_DEFAULTS` in `src/theme.rs`.
 
@@ -18,7 +18,7 @@ Palettes are **data, not code**: every theme's values live in Markdown tables (`
 
 App surface and text colors, named by role: `--lt-background`, `--lt-foreground`, `--lt-surface`, `--lt-surface-elevated`, `--lt-surface-muted`, `--lt-surface-sunken`, `--lt-border`, `--lt-border-strong`, `--lt-muted-foreground`, and the semantic role tokens `--lt-primary`, `--lt-accent`, `--lt-danger`, `--lt-warning`, `--lt-success`, `--lt-done`, `--lt-link`, `--lt-link-hover`, plus `--lt-focus-ring` and the two focus-selection colors.
 
-A role has a `-foreground` partner only where something prints on it: `primary`, `accent`, `danger` and `success` have one; `warning`, `done` and `link` do not.
+A role has a `-foreground` partner only where something prints on it: `primary`, `accent`, `danger` and `success` have one; `warning`, `done` and `link` do not. `primary` also has an `-ink` partner — `--lt-primary-ink`, the same role as words or a thin mark rather than as a fill — because a fill and an ink pull the color opposite ways; see [`--lt-primary` is a fill and `--lt-primary-ink` is an ink](#--lt-primary-is-a-fill-and---lt-primary-ink-is-an-ink).
 
 ### Editor and Markdown elements
 
@@ -179,11 +179,26 @@ This surfaces as a test-time or launch-time failure (any run that compiles the t
 
 ## Accessibility gate
 
-Three tests re-derive contrast across **every** theme so an unreadable palette fails `just verify` instead of shipping (the third covers diagrams):
+Four tests re-derive contrast across **every** theme so an unreadable palette fails `just verify` instead of shipping (the third covers diagrams, the fourth the role colors the app paints as words):
 
 - `theme_compiler_gates_readable_pairs_for_every_source` checks text pairs (foreground on background, code, selection, syntax) at **4.5:1** (WCAG AA for text).
 - `theme_compiler_gates_interactive_chrome_contrast` checks icons and controls on filled backgrounds — buttons, nav, badges, and the tab-close hover — at **3:1** (WCAG 1.4.11 for non-text UI).
 - `theme_compiler_gates_diagram_colors_for_every_source` re-derives **every pair a Mermaid diagram makes** out of our tokens: label text on the page, on box and subgraph surfaces, and on quadrant panels at **4.5:1**; arrows and outlines as graphics at **3:1**; and each fill we set — Gantt's four bar states, the sequence number, the error box, the quadrant panels — required to have one theme ink that reads on it at **4.5:1**, worst case across the group. See [Diagram colors](#diagram-colors).
+- `theme_compiler_gates_every_painted_ink_for_every_source` walks the **paint list** below: each role ink against the surface the stylesheet rule that paints it puts it on, at the floor that rule owes.
+
+### The paint list
+
+The three gates above pair a token with its own partner — `--lt-primary-foreground` with `--lt-primary`. A role ink has no partner: what it sits on is decided by a rule in a stylesheet and what floor it owes by whether that rule paints words or a drawing, so the list is a row of *ink, surface, floor and rule* rather than a row of two tokens. `PAINT_LIST` in `src/tests/theme_registry.rs` holds it, and the failure names the family, the half, both hex values, the ratio, the floor and the rule, so whoever reads it goes to the line rather than hunting for where a color is spent.
+
+**Words owe 4.5:1 and a drawing owes 3:1**, the same split the diagram gate uses row by row: a leaf mark beside a file name is graphics under WCAG 1.4.11, and holding it to the text floor would make this the tightest number in the tree with nothing to point at.
+
+**A new rule that spends `--lt-markdown-link`, one of the five alert colors, `--lt-primary-ink`, `--lt-warning` or `--lt-danger` as `color:`, `fill:` or `stroke:` owes a row.** The list also carries the inactive window, where `base.css` re-points the role colors at `--lt-muted-foreground` for the whole of the chrome — the same surfaces, a different ink.
+
+### `--lt-primary` is a fill and `--lt-primary-ink` is an ink
+
+The action color has two jobs that pull opposite ways. As a **fill** — a filled button, the active tab's mark, a search-hit wash, a border — it has to stay light enough for `--lt-primary-foreground` to print on it. As an **ink** — the start screen's list headings, a folded sheet's title, the heart on a favorite, the leaf beside a file name, the app-bar logomark, a document's outline and ghost buttons — it has to be dark enough to read on the page. On Goldenrod's light half the two windows do not overlap at any value, so the role is two tokens: `--lt-primary` stays the fill, the wash and the border, and `--lt-primary-ink` is what the role looks like as words or a thin mark.
+
+`primary-ink` carries a `Default` of `primary` in `design/colors.md`, so a family that says nothing compiles the fill's own value into its block as a hex and not one pixel moves. Four halves declare a second value today — Goldenrod light and Ginger light take the darker gold and darker orange each already carries as its link, and GitHub dark and Sage light take a step of their own. `the_action_color_paints_words_and_marks_out_of_the_ink_token` refuses a rule that goes back to spending the fill as `color:`.
 
 ## `compiled_theme_css()`
 

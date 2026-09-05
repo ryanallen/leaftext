@@ -85,6 +85,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-hover-tint",
     "--lt-primary",
     "--lt-primary-foreground",
+    "--lt-primary-ink",
     "--lt-accent",
     "--lt-accent-foreground",
     "--lt-danger",
@@ -162,6 +163,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
 #[rustfmt::skip]
 pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[
     ("--lt-hover-tint", "--lt-muted-foreground"),
+    ("--lt-primary-ink", "--lt-primary"),
     ("--lt-markdown-table-row-background", "--lt-surface-sunken"),
 ];
 // END GENERATED

@@ -57,9 +57,9 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
     );
 
     let close = rule_body(css, ".tab-close {");
-    // A wash behind it, since it now lands on the last letters of the name rather than in cleared space.
+    // A wash behind it, since it now lands on the last letters of the name rather than in cleared space. On the selected tab that wash follows the contained page's own color; everywhere else it falls back to the surface.
     assert!(
-        close.contains("background: var(--lt-surface);"),
+        close.contains("background: var(--tab-corner-fill, var(--lt-surface));"),
         "the cross needs a wash to read over the name: {close}"
     );
     // In decelerating, out accelerating after a hold — the heart's timing in the opposite corner, every value a token. The colors ride behind the opacity leg; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.

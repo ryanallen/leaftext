@@ -29,7 +29,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Link       | `#086ddd` | `#4c9dff` |
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb464c` |
+| Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#e0e0e0` | `#363636` |
 
 ### Arabica
@@ -86,7 +86,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Link       | `#1a7f37` | `#56d364` |
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb464c` |
+| Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#e0e0e0` | `#363636` |
 
 ### Ginger
@@ -105,7 +105,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Link       | `#b5461a` | `#f2934e` |
 | Success    | `#46671f` | `#38c68d` |
 | Warning    | `#8a5e12` | `#f9e2af` |
-| Danger     | `#c0392b` | `#ff626b` |
+| Danger     | `#c0392b` | `#ff777f` |
 | Border     | `#e6dac6` | `#414559` |
 
 ### GitHub
@@ -162,7 +162,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Link       | `#086ddd` | `#4c9dff` |
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb464c` |
+| Danger     | `#d3243a` | `#fb5d62` |
 | Border     | `#e6e9ee` | `#353b44` |
 
 ### Nightshade
@@ -180,7 +180,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Accent     | `#0c6f8c` | `#8be9fd` |
 | Link       | `#0c6f8c` | `#8be9fd` |
 | Success    | `#1c7d3f` | `#50fa7b` |
-| Warning    | `#9a6a00` | `#f1fa8c` |
+| Warning    | `#956600` | `#f1fa8c` |
 | Danger     | `#cf2e3f` | `#ff8f8f` |
 | Border     | `#d8d0e6` | `#6272a4` |
 
@@ -200,7 +200,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Link       | `#0a63c9` | `#4a9eff` |
 | Success    | `#1f7a34` | `#32d74b` |
 | Warning    | `#a05a00` | `#ffb340` |
-| Danger     | `#d70015` | `#ff453a` |
+| Danger     | `#d70015` | `#ff5c52` |
 | Border     | `#d8d8dd` | `#3a3a3c` |
 
 ### Sage
@@ -219,7 +219,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Link       | `#3f7aa8` | `#82a9c9` |
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb464c` |
+| Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#dcdad5` | `#363636` |
 
 ## Adding or editing a theme

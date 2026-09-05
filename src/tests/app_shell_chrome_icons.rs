@@ -24,7 +24,7 @@ fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
     let base = rule_body(css, ".lt-icon {");
     assert_contains(base, "background-color: currentColor;");
 
-    // Both sites point that inherited color at the theme's primary token.
+    // Both sites point that inherited color at the action color's ink half: a thin mark is read, not a fill, so it is measured against the surface it lands on.
     for selector in [".brand-button > .lt-icon", ".library-file > .lt-icon"] {
         let rule_start = css
             .find(selector)
@@ -34,8 +34,8 @@ fn app_shell_inlines_one_leaf_mark_that_tracks_the_theme() {
             .map(|offset| rule_start + offset)
             .expect("rule closes");
         assert!(
-            css[rule_start..rule_end].contains("color: var(--lt-primary)"),
-            "{selector} should take the theme's primary color"
+            css[rule_start..rule_end].contains("color: var(--lt-primary-ink)"),
+            "{selector} should take the theme's action ink"
         );
     }
 }

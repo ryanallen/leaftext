@@ -131,10 +131,10 @@ export function run() {
   check('every color a chrome family is drawn from either goes gray or is written down as staying', () => {
     const body = inactiveBody();
 
-    // Re-pointed, because each one is a hue or the ink the frame draws with: the text and every `currentColor` icon, the leaf and the pressed tool, a matched hit, the danger button, the warning and success marks, a finished bar, a link in the interface, the ring around whatever holds the keyboard, a hovered chrome button, and the minimap's viewport box.
+    // Re-pointed, because each one is a hue or the ink the frame draws with: the text and every `currentColor` icon, the leaf and the pressed tool, a matched hit, the danger button, the warning and success marks, a finished bar, a link in the interface, the ring around whatever holds the keyboard, a hovered chrome button, and the minimap's viewport box. Both halves of the action color are here — the fill and the ink — or the logomark keeps its color while the chrome around it steps back.
     const grayed = [
       'foreground', 'border-strong', 'hover-tint',
-      'primary', 'accent', 'danger', 'warning', 'success', 'done', 'link', 'link-hover', 'focus-ring',
+      'primary', 'primary-ink', 'accent', 'danger', 'warning', 'success', 'done', 'link', 'link-hover', 'focus-ring',
       'navigation-button-hover-background', 'minimap-viewport-border', 'minimap-viewport-background',
     ];
     // Left exactly as the family wrote it, each for its own reason: the window and its chrome surfaces, because a state that moves a background is the state the owner threw out; the ordinary hairline, because every neutral below it is a surface and a line drawn in one of those is a line gone, which changes the frame's shape rather than quieting it; the quiet-text color, because it is what everything else here is re-pointed at, and every neutral under it is unreadable as text; every `-foreground`, because it is what prints on a fill and graying both takes the contrast with them; the selection pair, because selected text stays selected; and the home screen's own rows and a disabled button's grays, which carry no hue to take.

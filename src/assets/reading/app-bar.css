@@ -68,7 +68,7 @@
   display: block;
   flex-shrink: 0;
   /* The logomark is an inline SVG filled with currentColor, so it takes the theme's primary color and recolors whenever the theme changes. */
-  color: var(--lt-primary);
+  color: var(--lt-primary-ink);
   transition: color var(--lt-duration-120) var(--lt-ease);
 }
 .brand-button {
@@ -163,7 +163,11 @@
 }
 .tab-active {
   /* Drop the bottom stroke so the page-colored fill flows over the reader divider and the tab looks joined to the document below. The other three strokes are the selection cue — only the active tab frames itself. The fill is a variable because the flares below have to match it. */
-  --tab-fill: var(--lt-background);
+  --tab-fill: var(--tab-page-fill, var(--lt-background));
+  --tab-label-ink: var(--tab-page-ink, var(--lt-foreground));
+  --tab-corner-fill: var(--tab-page-fill, var(--lt-surface));
+  --tab-corner-ink: var(--tab-page-ink, var(--lt-muted-foreground));
+  --tab-corner-marked-ink: var(--tab-page-ink, var(--lt-foreground));
   /* These carry the fill out over the divider rather than just turning a stroke. Capped by the room beside the active tab, which they grow into — the strip's 4px gap plus this tab's own 12px margin next to another tab, and the strip's own 16px inset at an end — and the strip scrolls, so a flare wider than that 16px inset is clipped flat: inside it the largest radius that still leaves daylight is 14px. */
   --tab-flare: var(--lt-radius-2xl);
   background: var(--tab-fill);
@@ -220,8 +224,8 @@
   mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 33px), transparent calc(100% - 15px));
 }
 .tab-active .tab-label {
-  /* Full-strength foreground so the active tab's name stays legible in every theme (a hardcoded white vanished on the light page-colored tab). */
-  color: var(--lt-foreground);
+  /* Full-strength ink so the selected name stays readable on the surface it joins. */
+  color: var(--tab-label-ink, var(--lt-foreground));
   max-width: none;
   -webkit-mask-image: none;
   mask-image: none;
@@ -232,7 +236,7 @@
 }
 .tab:hover .tab-label {
   /* Text-only hover so the inactive grain and the active frame both stay put. */
-  color: var(--lt-foreground);
+  color: var(--tab-label-ink, var(--lt-foreground));
 }
 .tab-close {
   /* Tucked into the tab's top-right corner, out of the label's flow, close enough that its hover chip clears both strokes by about 2px and no more. It covers the last letters of the name on purpose; the wash is what keeps it readable over them. */
@@ -249,8 +253,8 @@
   padding: 0;
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-sm);
-  background: var(--lt-surface);
-  color: var(--lt-muted-foreground);
+  background: var(--tab-corner-fill, var(--lt-surface));
+  color: var(--tab-corner-ink, var(--lt-muted-foreground));
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here instead. */
   transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
@@ -286,8 +290,8 @@
   padding: 0;
   border: var(--lt-stroke-1) solid transparent;
   border-radius: var(--lt-radius-sm);
-  background: var(--lt-surface);
-  color: var(--lt-muted-foreground);
+  background: var(--tab-corner-fill, var(--lt-surface));
+  color: var(--tab-corner-ink, var(--lt-muted-foreground));
   /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. The colors ride along for the reason written on the close button. */
   opacity: 0;
   transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
@@ -308,7 +312,7 @@
 }
 /* A hollow heart is an offer; a filled one is a fact, so it is drawn in full ink. */
 .tab-favorite.is-on {
-  color: var(--lt-foreground);
+  color: var(--tab-corner-marked-ink, var(--lt-foreground));
 }
 .tab-favorite:hover {
   background: var(--lt-navigation-button-hover-background);

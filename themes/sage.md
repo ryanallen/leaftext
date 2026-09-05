@@ -112,6 +112,7 @@
 | border                                  | `#dcdad5`                |
 | border-strong                           | `#b3b1aa`                |
 | primary                                 | `#3f7aa8`                |
+| primary-ink                             | `#3c75a1`                |
 | accent                                  | `#3f7aa8`                |
 | done                                    | `#3f7aa8`                |
 | link                                    | `#3f7aa8`                |
@@ -121,12 +122,12 @@
 | editor-inline-code-background           | `#eeece8`                |
 | editor-code-background                  | `#eeece8`                |
 | markdown-background                     | `#f7f6f4`                |
-| markdown-link                           | `#3f7aa8`                |
+| markdown-link                           | `#3c75a1`                |
 | markdown-blockquote-border              | `#b3b1aa`                |
 | markdown-table-header-background        | `#eeece8`                |
 | markdown-math-inline-background         | `#eeece8`                |
 | markdown-badge-background               | `#eeece8`                |
-| markdown-alert-note                     | `#3f7aa8`                |
+| markdown-alert-note                     | `#3c75a1`                |
 | markdown-alert-important                | `#4a4a48`                |
 | minimap-viewport-border                 | `#3f7aa8`                |
 | minimap-viewport-background             | `rgba(74, 74, 72, 0.14)` |
@@ -159,7 +160,7 @@
 | primary-foreground                      | `#1e1e1e`                        |
 | accent                                  | `#82a9c9`                        |
 | accent-foreground                       | `#1e1e1e`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb4f55`                        |
 | danger-foreground                       | `#1e1e1e`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |

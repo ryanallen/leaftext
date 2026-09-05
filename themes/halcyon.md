@@ -118,7 +118,7 @@
 | primary-foreground                      | `#1c2127`                        |
 | accent                                  | `#4c9dff`                        |
 | accent-foreground                       | `#1c2127`                        |
-| danger                                  | `#fb464c`                        |
+| danger                                  | `#fb5d62`                        |
 | danger-foreground                       | `#1c2127`                        |
 | warning                                 | `#e0de71`                        |
 | success                                 | `#44cf6e`                        |

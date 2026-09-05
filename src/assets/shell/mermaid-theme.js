@@ -175,21 +175,33 @@ function themeTokenValue(style, token) {
   return (style.getPropertyValue(token) || '').trim();
 }
 
-// Relative luminance, for deciding which of two inks reads on a color. Hex only: a token that is a gradient, a color function or a name is not something to measure, and the caller falls back rather than guess.
+function colorRgb(color) {
+  const value = String(color || '').trim();
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex) {
+    const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
+    const channels = parseInt(digits, 16);
+    return [(channels >> 16) & 255, (channels >> 8) & 255, channels & 255, 1];
+  }
+  const rgb = /^rgb\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i.exec(value);
+  const rgba = /^rgba\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i.exec(value);
+  const matched = rgb || rgba;
+  if (!matched) return null;
+  const channels = matched.slice(1, 4).map(Number);
+  const alpha = rgba ? Number(matched[4]) : 1;
+  if (channels.some((channel) => channel < 0 || channel > 255) || alpha < 0 || alpha > 1) return null;
+  return [...channels, alpha];
+}
+
+// Relative luminance, for deciding which of two inks reads on a solid color. A gradient, another color function or a name is not something to measure, and the caller falls back rather than guess.
 function colorLuminance(color) {
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
-  if (!hex) return null;
-  const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
-  const value = parseInt(digits, 16);
+  const rgb = colorRgb(color);
+  if (!rgb) return null;
   const channel = (byte) => {
     const part = byte / 255;
     return part <= 0.03928 ? part / 12.92 : Math.pow((part + 0.055) / 1.055, 2.4);
   };
-  return (
-    0.2126 * channel((value >> 16) & 255) +
-    0.7152 * channel((value >> 8) & 255) +
-    0.0722 * channel(value & 255)
-  );
+  return 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
 }
 
 function colorContrast(a, b) {
@@ -230,11 +242,8 @@ function readableInk(style, fillTokens) {
 }
 
 function colorChannels(color) {
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim());
-  if (!hex) return null;
-  const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
-  const value = parseInt(digits, 16);
-  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+  const rgb = colorRgb(color);
+  return rgb ? rgb.slice(0, 3) : null;
 }
 
 // Hue and saturation only: the scale sets its own lightness, so that is the one part of the seed we throw away.

@@ -12,7 +12,7 @@ function siteArticle(page = PAGE) {
 }
 
 /** A document, a heading and a link, standing in for what a frame's own page would hold. The fake page has no frames, so the one thing a real web view gives us — a second document behind `contentDocument` — is built here. */
-function containedDocument(context, frame) {
+function containedDocument(context, frame, options = {}) {
   const make = (tag, className) => {
     const element = context.document.createElement(tag);
     if (className) element.className = className;
@@ -54,7 +54,17 @@ function containedDocument(context, frame) {
     defaultView: {
       getSelection: () => page.selection,
       location: { hash: '' },
+      getComputedStyle: (element) => {
+        if (element === page.documentElement) {
+          return { backgroundColor: options.rootColor || 'rgba(0, 0, 0, 0)', backgroundImage: options.rootImage || 'none' };
+        }
+        if (element === body) {
+          return { backgroundColor: options.bodyColor || 'rgba(0, 0, 0, 0)', backgroundImage: options.bodyImage || 'none' };
+        }
+        return { backgroundColor: options.canvasColor || 'rgb(255, 255, 255)', backgroundImage: 'none' };
+      },
     },
+    createElement: (tag) => make(tag),
     selection: { isCollapsed: true, rangeCount: 0, toString: () => '' },
     querySelector: (selector) => body.querySelector(selector),
     querySelectorAll: (selector) => body.querySelectorAll(selector),
@@ -93,7 +103,7 @@ function bootContainedPage(options = {}) {
   const frame = app.querySelector('.document-body-site > .document-site');
   // The frame stands where the reader's stage stands, so a point inside the page has somewhere to be carried out to.
   if (frame) frame.getBoundingClientRect = () => ({ top: 120, left: 300, right: 1100, bottom: 920, width: 800, height: 800 });
-  const page = frame ? containedDocument(context, frame) : null;
+  const page = frame ? containedDocument(context, frame, options) : null;
   // The renderer bound the frame while it was still empty, which is what happens in the window too: the page arrives afterwards and raises its own load.
   if (frame) vm.runInContext('siteFrameReady()', context);
   return { context, app, frame, page, sent, path };
@@ -137,6 +147,73 @@ function barControls(context) {
 
 export function run() {
   if (!record.booted) return;
+
+  check('solid CSS colors share one contrast parser', () => {
+    const { context } = bootMarkdown();
+    const values = vm.runInContext(`({
+      hex: colorLuminance('#369'),
+      rgb: colorLuminance('rgb(51, 102, 153)'),
+      contrast: colorContrast('#fff', '#000'),
+      refused: [colorLuminance('linear-gradient(#fff, #000)'), colorLuminance('white'), colorLuminance('color-mix(in srgb, white, black)')],
+    })`, context);
+    if (Math.abs(values.hex - values.rgb) > Number.EPSILON) {
+      throw new Error(`the same color measured as ${values.hex} in hex and ${values.rgb} in rgb`);
+    }
+    if (values.contrast !== 21) throw new Error(`black and white measured at ${values.contrast}:1`);
+    if (values.refused.some((value) => value !== null)) {
+      throw new Error(`unsupported colors measured as ${JSON.stringify(values.refused)}`);
+    }
+  });
+
+  check('the selected HTML tab takes its page color and readable ink', () => {
+    const palette = (options) => {
+      const { context } = bootContainedPage(options);
+      const style = context.document.documentElement.style;
+      return {
+        context,
+        fill: style.getPropertyValue('--tab-page-fill'),
+        ink: style.getPropertyValue('--tab-page-ink'),
+      };
+    };
+    const body = palette({ bodyColor: 'rgb(248, 248, 248)' });
+    const root = palette({ rootColor: 'rgb(16, 24, 32)', bodyColor: 'rgb(248, 248, 248)' });
+    const canvas = palette({ canvasColor: 'rgb(18, 18, 18)' });
+    const alpha = palette({ rootColor: 'rgba(255, 0, 0, 0.5)', canvasColor: 'rgb(0, 0, 255)' });
+    const gradient = palette({ rootColor: 'rgb(255, 0, 0)', rootImage: 'linear-gradient(red, blue)', canvasColor: 'rgb(32, 96, 64)' });
+    const expected = [
+      [body.fill, 'rgb(248, 248, 248)'],
+      [root.fill, 'rgb(16, 24, 32)'],
+      [canvas.fill, 'rgb(18, 18, 18)'],
+      [alpha.fill, 'rgb(128, 0, 128)'],
+      [gradient.fill, 'rgb(32, 96, 64)'],
+    ];
+    for (const [actual, wanted] of expected) {
+      if (actual !== wanted) throw new Error(`the page color was ${actual || 'empty'} rather than ${wanted}`);
+    }
+    if (body.ink !== '#000' || root.ink !== '#fff') {
+      throw new Error(`the light and dark pages chose ${body.ink || 'nothing'} and ${root.ink || 'nothing'}`);
+    }
+    for (const one of [body, root, canvas, alpha, gradient]) {
+      const ratio = vm.runInContext(`colorContrast(${JSON.stringify(one.fill)}, ${JSON.stringify(one.ink)})`, one.context);
+      if (ratio < 4.5) throw new Error(`${one.ink} reads at only ${ratio}:1 on ${one.fill}`);
+    }
+    vm.runInContext('renderTabs(currentState)', root.context);
+    const rootStyle = root.context.document.documentElement.style;
+    if (rootStyle.getPropertyValue('--tab-page-fill') !== root.fill || rootStyle.getPropertyValue('--tab-page-ink') !== root.ink) {
+      throw new Error('rebuilding the tab strip threw its page palette away');
+    }
+    root.context.window.leafSetState({
+      recent: [], favorites: [], tabs: [{ title: 'note', path: 'C:\\Notes\\note.md' }], active: 0,
+      document: { title: 'note', path: 'C:\\Notes\\note.md', html: '<article class="document-body"><p>Words</p></article>', has_visible_content: true, format: 'Markdown', blocks: [], tasks: [], source: 'Words' },
+    });
+    if (rootStyle.getPropertyValue('--tab-page-fill') || rootStyle.getPropertyValue('--tab-page-ink')) {
+      throw new Error('an ordinary document kept the saved page palette');
+    }
+    const css = readingCss();
+    for (const value of ['--tab-page-fill', '--tab-page-ink', '--tab-label-ink', '--tab-corner-fill', '--tab-corner-ink']) {
+      if (!css.includes(value)) throw new Error(`the selected tab never reads ${value}`);
+    }
+  });
 
   // The reading view of an HTML file is the page, and that is the whole of it: no switch, no row in the tray, nothing remembered. The bar an HTML file gets is the bar every document gets.
   check('an HTML page is drawn in a frame and adds no control to the bar', () => {

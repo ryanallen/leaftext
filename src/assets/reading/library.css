@@ -897,7 +897,7 @@ body.library-resizing button {
   flex: none;
   width: 14px;
   height: 14px;
-  color: var(--lt-primary);
+  color: var(--lt-primary-ink);
 }
 /* The mark on a library action — the way back out, New vault…, Remove vault — dimmed to the muted tone so the word stays primary. No size of its own: the back row sits among folder rows and takes the same icon box they do. */
 .library-action-icon {

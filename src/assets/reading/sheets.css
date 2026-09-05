@@ -369,7 +369,7 @@
   flex: none;
 }
 .home-sheet-title {
-  color: var(--lt-primary);
+  color: var(--lt-primary-ink);
   font-family: var(--app-font);
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-700);

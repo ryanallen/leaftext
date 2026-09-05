@@ -180,7 +180,7 @@ The theme picker links to the project on GitHub for making your own theme. A the
 
 ## See them all
 
-[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 83 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
+[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 84 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
 
 ## CSS
 

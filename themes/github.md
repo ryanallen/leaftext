@@ -116,6 +116,7 @@
 | muted-foreground                        | `#9198a1`                                      |
 | primary                                 | `#238636`                                      |
 | primary-foreground                      | `#ffffff`                                      |
+| primary-ink                             | `#258f3a`                                      |
 | accent                                  | `#4493f8`                                      |
 | accent-foreground                       | `#ffffff`                                      |
 | danger                                  | `#f85149`                                      |
@@ -147,7 +148,7 @@
 | markdown-blockquote-foreground          | `#9198a1`                                      |
 | markdown-alert-note                     | `#4493f8`                                      |
 | markdown-alert-tip                      | `#3fb950`                                      |
-| markdown-alert-important                | `#238636`                                      |
+| markdown-alert-important                | `#258f3a`                                      |
 | markdown-alert-warning                  | `#d29922`                                      |
 | markdown-alert-caution                  | `#f85149`                                      |
 | markdown-badge-background               | `#212830`                                      |

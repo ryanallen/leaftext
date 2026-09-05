@@ -625,6 +625,33 @@ export function run() {
     if (!/px$/.test(viewport.style.top || '') || !/px$/.test(viewport.style.height || '')) throw new Error('the box was not placed and sized on itself');
   });
 
+  // A comparison put back on either height would pass the check above, because the first pass leaves the right number sitting there for the second to read. So the writes are counted instead: this web view drops an identical inline write before the attribute is touched, and reading the value back to skip one costs twice what the write does.
+  check('the lane and the box are sized on every pass, never compared first', () => {
+    const counting = () => {
+      const style = { transform: '', top: '' };
+      const written = { height: 0 };
+      let height = '';
+      Object.defineProperty(style, 'height', {
+        get: () => height,
+        set: (value) => {
+          height = value;
+          written.height += 1;
+        },
+      });
+      return { style, written };
+    };
+    const content = counting();
+    const viewport = counting();
+    const rail = {
+      querySelector: (selector) => (selector === '.document-minimap-content' ? content : selector === '.document-minimap-viewport' ? viewport : null),
+    };
+    const metrics = { scaledDocumentHeight: 2000, trackHeight: 700, scrollable: 12322, scrollTop: 0, viewportHeight: 800, previewScale: 0.05 };
+    booted.placeMinimapViewport(rail, metrics, 6161);
+    booted.placeMinimapViewport(rail, metrics, 6161);
+    if (content.written.height !== 2) throw new Error(`the thumbnail lane's height was written ${content.written.height} times over two identical passes`);
+    if (viewport.written.height !== 2) throw new Error(`the box's height was written ${viewport.written.height} times over two identical passes`);
+  });
+
   // Nothing in the page may put itself straight back on the frame queue: a job that does keeps the window drawing for as long as its condition holds, and the condition here is a 600ms pane motion. Draining has to reach a fixed point, and the pane finishing is what asks again.
   check('the rail waits for the library pane instead of asking every frame', () => {
     // Its own page, because it moves the pane and the app bar's fold with it, and the shared one is read by every check after this.
