@@ -405,4 +405,84 @@ export function run() {
       booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
     }
   });
+
+  // ---- 5a. the strip's edges under a held tab ---------------------------------
+  //
+  // Dragging a tab writes a transform onto the dragged tab and onto every tab it displaces, and the autoscroll that walks the strip along under the hand needs the strip's own two edges. Asked for on each move, that read sits behind those writes and makes the browser settle them before it can answer — measured at roughly 0.3ms per move in a running copy, on two numbers a drag cannot change. So the press reads them once and the drag carries them. A page of its own, because a drag left half-open on the shared page would arm the next check's pointer events.
+
+  /** A page with two tabs drawn, each given a real box, the strip's box counted every time it is asked for, and the drag's own pointer events playable. */
+  function tabDragStand() {
+    const context = runShell(source);
+    const tabBar = context.document.getElementById('tabBar');
+    context.window.leafSetWorkspace({
+      recent: [],
+      favorites: [],
+      tabs: [{ path: 'C:\\Notes\\one.md' }, { path: 'C:\\Notes\\two.md' }],
+      active: 0,
+    });
+    let stripReads = 0;
+    // The strip runs 200 to 900, so its 48px zones are everything left of 248 and everything right of 852.
+    tabBar.getBoundingClientRect = () => {
+      stripReads += 1;
+      return { left: 200, top: 0, right: 900, bottom: 40, width: 700, height: 40 };
+    };
+    const tabs = Array.from(tabBar.querySelectorAll('.tab'));
+    tabs.forEach((el, at) => {
+      const left = 200 + at * 160;
+      el.getBoundingClientRect = () => ({ left, top: 0, right: left + 160, bottom: 40, width: 160, height: 40 });
+    });
+    const pointer = (clientX) => ({ target: tabs[0], button: 0, buttons: 1, pointerId: 5, clientX, clientY: 20, preventDefault() {}, stopPropagation() {} });
+    // Every handler the page registered, in the order it registered them — the same walk the real page makes, so a drag here is a drag there.
+    const raise = (type, clientX) => {
+      for (const handler of [...(context.document.listeners.get(type) || [])]) handler(pointer(clientX));
+    };
+    return {
+      tabBar,
+      press: (clientX) => {
+        for (const handler of [...(tabBar.listeners.get('pointerdown') || [])]) handler(pointer(clientX));
+      },
+      move: (clientX) => raise('pointermove', clientX),
+      cancel: () => raise('pointercancel', 0),
+      reads: () => stripReads,
+      forget: () => { stripReads = 0; },
+    };
+  }
+
+  check('a walked drag reads the strip once however many moves the hand makes', () => {
+    const stand = tabDragStand();
+    try {
+      stand.forget();
+      stand.press(280);
+      if (stand.reads() !== 1) throw new Error(`the press read the strip ${stand.reads()} times instead of once`);
+      // Forty moves, every one of them past the four-pixel threshold that arms the drag, so each one runs the whole active path.
+      for (let at = 0; at < 40; at += 1) stand.move(275 - at);
+      if (stand.reads() !== 1) {
+        throw new Error(`forty moves of a drag read the strip's box ${stand.reads()} times, so the browser laid the strip out again on each one`);
+      }
+    } finally {
+      stand.cancel();
+    }
+  });
+
+  check('the autoscroll still walks the strip toward either edge and leaves it alone in the middle', () => {
+    for (const [where, clientX, wanted] of [
+      ['the left edge', 210, 'down'],
+      ['the right edge', 890, 'up'],
+      ['the middle', 550, 'still'],
+    ]) {
+      const stand = tabDragStand();
+      try {
+        stand.press(280);
+        stand.tabBar.scrollLeft = 200;
+        stand.move(clientX);
+        const moved = stand.tabBar.scrollLeft;
+        const went = moved < 200 ? 'down' : moved > 200 ? 'up' : 'still';
+        if (went !== wanted) {
+          throw new Error(`a tab held at ${where} took the strip's scroll ${went} rather than ${wanted}: 200 became ${moved}`);
+        }
+      } finally {
+        stand.cancel();
+      }
+    }
+  });
 }

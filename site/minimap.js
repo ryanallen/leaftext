@@ -79,15 +79,19 @@ export function initMinimap(source) {
     content.style.height = `${m.scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
     content.replaceChildren(preview);
-    updateViewport();
+    if (viewportFrame) {
+      cancelAnimationFrame(viewportFrame);
+      viewportFrame = 0;
+    }
+    updateViewport(m);
   }
 
   // ---- the viewport rectangle --------------------------------------------
   // Place the rectangle (and slide the thumbnail) to reflect the current scroll position. When the thumbnail is taller than the rail it scrolls inside the rail, the way a code-editor minimap does on long files.
-  function updateViewport() {
+  function updateViewport(measurement) {
     viewportFrame = 0;
     if (isHidden()) return;
-    const m = measure();
+    const m = measurement || measure();
     const scaledDocHeight = m.scaledDocHeight;
     content.style.height = `${scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
@@ -113,7 +117,7 @@ export function initMinimap(source) {
   }
   function scheduleViewport() {
     if (viewportFrame) return;
-    viewportFrame = requestAnimationFrame(updateViewport);
+    viewportFrame = requestAnimationFrame(() => updateViewport());
   }
 
   // ---- pointer: click to jump, drag to scrub ------------------------------

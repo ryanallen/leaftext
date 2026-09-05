@@ -575,6 +575,70 @@ await check('a picture that arrives rebuilds the minimap once rather than on eve
   rail.remove();
 });
 
+await check("a rebuild places the exported page's thumbnail once", async () => {
+  const document = globalThis.document;
+  const source = document.createElement('article');
+  source.innerHTML = '<p><img id="rebuild-late" src="imgs/one.png"></p>';
+  source.layoutWidth = 700;
+  let measurements = 0;
+  const sourceRect = source.getBoundingClientRect.bind(source);
+  source.getBoundingClientRect = () => {
+    measurements += 1;
+    return sourceRect();
+  };
+  document.body.appendChild(source);
+  const elementPrototype = Object.getPrototypeOf(source);
+  const elementRect = elementPrototype.getBoundingClientRect;
+  elementPrototype.getBoundingClientRect = function () {
+    if (this.classList.contains('document-minimap')) return { top: 0, left: 0, right: 62, bottom: 0, width: 62, height: 0, x: 0, y: 0 };
+    return elementRect.call(this);
+  };
+  try {
+    initMinimap(source);
+  } finally {
+    elementPrototype.getBoundingClientRect = elementRect;
+  }
+  const rail = document.querySelectorAll('.document-minimap').at(-1);
+  const content = rail.querySelector('.document-minimap-content');
+  const viewport = rail.querySelector('.document-minimap-viewport');
+  want(content.querySelector('.document-minimap-preview'), 'the initial build did not place its thumbnail directly');
+  want(viewport.style.top !== '', 'the initial build did not place the viewport rectangle directly');
+  let placements = 0;
+  viewport.style = new Proxy(viewport.style, {
+    set(target, key, value) {
+      if (key === 'top') placements += 1;
+      return Reflect.set(target, key, value);
+    },
+  });
+  rail.layoutWidth = 62;
+  content.clientWidth = 62;
+
+  measurements = 0;
+  placements = 0;
+  document.getElementById('rebuild-late').dispatchEvent(leafEvent('load'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(measurements === 1, `a late picture rebuild measured the page ${measurements} times instead of handing its one measurement to placement`);
+  want(placements === 1, `a late picture rebuild placed the thumbnail ${placements} times instead of placing it directly once`);
+
+  measurements = 0;
+  placements = 0;
+  globalThis.window.dispatchEvent(leafEvent('scroll'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(measurements === 1, `a standalone scroll measured the page ${measurements} times instead of measuring its own placement once`);
+  want(placements === 1, `a standalone scroll placed the thumbnail ${placements} times instead of scheduling one placement`);
+
+  measurements = 0;
+  placements = 0;
+  const beforeResize = content.firstChild;
+  globalThis.window.dispatchEvent(leafEvent('resize'));
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  want(content.firstChild !== beforeResize, 'a resize placed once only because it never rebuilt the thumbnail');
+  want(measurements === 1, `a resize measured the page ${measurements} times after rebuilding its thumbnail`);
+  want(placements === 1, `a resize placed the rebuilt thumbnail ${placements} times instead of canceling the held placement`);
+  source.remove();
+  rail.remove();
+});
+
 // ---- phase 2: both entry readers --------------------------------------------
 //
 // The documents below are fixtures, not the site's own pages: what is under test is the code between the module and a reader, and a fixture is the only way to say what the finished page should hold. Every address one of them asks for is served here, so a reader that reached anywhere else fails rather than quietly falling back.

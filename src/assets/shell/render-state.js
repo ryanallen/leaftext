@@ -385,6 +385,8 @@ tabBar.addEventListener('pointerdown', (event) => {
     .filter((t) => t.pos !== dragIndex)
     .sort((a, b) => a.mid - b.mid);
   const filteredFrom = others.filter((t) => t.mid < dragMid).length;
+  // The strip's own edges, read here with the rest of the gesture's geometry. The autoscroll needs them on every move, and asking for them there makes the browser settle the transforms that move just wrote — about 0.3ms of layout per move for two numbers a drag cannot change. A fold, a pane resize or a window resize is picked up by the next press.
+  const barRect = tabBar.getBoundingClientRect();
   tabDrag = {
     index: dragIndex,
     el: tabEl,
@@ -395,5 +397,7 @@ tabBar.addEventListener('pointerdown', (event) => {
     others,
     draggedWidth: dragRect.width,
     filteredFrom,
+    stripLeft: barRect.left,
+    stripRight: barRect.right,
   };
 });

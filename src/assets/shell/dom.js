@@ -95,13 +95,13 @@ function updateTabSlides() {
     t.el.style.transform = shift !== 0 ? 'translateX(' + shift + 'px)' : '';
   });
 }
+// The edges come off the drag, which read them once at the press: a geometry read here would sit behind the transforms written just above it and make the browser lay the strip out again on every move.
 function autoScrollTabBar(clientX) {
-  const rect = tabBar.getBoundingClientRect();
   const zone = 48;
-  if (clientX < rect.left + zone) {
-    tabBar.scrollLeft -= Math.ceil((1 - (clientX - rect.left) / zone) * 8);
-  } else if (clientX > rect.right - zone) {
-    tabBar.scrollLeft += Math.ceil((1 - (rect.right - clientX) / zone) * 8);
+  if (clientX < tabDrag.stripLeft + zone) {
+    tabBar.scrollLeft -= Math.ceil((1 - (clientX - tabDrag.stripLeft) / zone) * 8);
+  } else if (clientX > tabDrag.stripRight - zone) {
+    tabBar.scrollLeft += Math.ceil((1 - (tabDrag.stripRight - clientX) / zone) * 8);
   }
 }
 document.addEventListener('pointermove', (event) => {

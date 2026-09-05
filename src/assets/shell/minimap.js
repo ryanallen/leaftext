@@ -970,11 +970,18 @@ function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
   let holder = source;
   const wrappers = [];
   const path = [];
+  // The top-level run, kept from the first pass: the rows the asked range reaches before anything descends. Where the search then goes inside a block, these are the rows on the far side of it and the clone has to carry them.
+  let topFirst = 0;
+  let topLast = -1;
   while (true) {
     // The live list, never a copy of it: every reader here and downstream takes an index, and copying a description list of 40,000 children was 2.8 ms of a 3.4 ms call. That is safe only while nothing writes into the reading body between this line and the last read of `rows` — the clone below is built with cloneNode into a detached wrapper, the strip and the diagram fill touch that copy alone, and the rail is written after both index reads. A step added in that stretch that moves a row breaks it.
     const rows = holder.children;
     let first = minimapFirstBlockPast(rows, appTop, scrollTop, top);
     let last = Math.min(rows.length - 1, minimapFirstBlockPast(rows, appTop, scrollTop, bottom));
+    if (holder === source) {
+      topFirst = first;
+      topLast = last;
+    }
     const windowHeight = Math.max(0, bottom - top);
     let deeper = -1;
     // Only an end of the run can be taller than the window: a row between them has a window row above it and another below it, so it cannot reach past both edges. Asking all 1,552 rows of a window into a description list of 40,000 children cost 13.7 ms of a typing pause where these two reads cost none of it. The first is checked before the last so the document-order answer is the one that survives.
@@ -988,7 +995,18 @@ function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
       }
     }
     if (deeper < 0) {
-      return { holder, rows, wrappers, path: path.join('/'), first, last };
+      // Where the run reached an end of the block it descended into, the asked range runs off that edge and the rows past it are the document's own top-level ones rather than any of the block's. Naming them here is what lets buildWindowedMinimapClone hold both sides of the edge; without them the rail draws nothing for a rail-height past every long table, whatever the slice says.
+      const block = path.length ? path[0] : -1;
+      return {
+        holder,
+        rows,
+        wrappers,
+        path: path.join('/'),
+        first,
+        last,
+        beforeFirst: block > 0 && first === 0 && topFirst < block ? topFirst : -1,
+        afterLast: block >= 0 && last >= rows.length - 1 && topLast > block ? topLast : -1,
+      };
     }
     path.push(deeper);
     wrappers.push(rows[deeper]);
@@ -1014,6 +1032,14 @@ function buildWindowedMinimapClone(source, window, first, last) {
   // cloneNode(false) keeps the body's own classes and attributes, so every `.document-body x` rule still matches inside the clone.
   const preview = source.cloneNode(false);
   resetPadding(preview);
+  // The rows on the far side of the block, beside the wrapper chain rather than inside it, since that is where they sit in the document. They land at the offset they really have because the descended slice reaches the block's own edge in exactly the case that asks for them: run off the block's foot and the slice ends on its last row, so what follows sits straight after it; run off its head and the slice starts on its first row, so what comes before sits straight above and the clone is placed at the first of those rows instead.
+  const block = window.path === '' ? -1 : Number(window.path.split('/')[0]);
+  const carry = (from, through) => {
+    for (let index = from; index <= through; index += 1) {
+      preview.appendChild(source.children[index].cloneNode(true));
+    }
+  };
+  if (window.beforeFirst >= 0) carry(window.beforeFirst, block - 1);
   let into = preview;
   for (const wrapper of window.wrappers) {
     const clone = wrapper.cloneNode(false);
@@ -1022,6 +1048,7 @@ function buildWindowedMinimapClone(source, window, first, last) {
     into = clone;
   }
   slice(window.holder, into);
+  if (window.afterLast >= 0) carry(block + 1, window.afterLast);
   return preview;
 }
 // Strip the clone: nothing focusable, nothing with a duplicate id, no second copy of every link for a screen reader to find.
@@ -1176,16 +1203,25 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     preview = buildWindowedMinimapClone(source, window, first, last);
     stripMinimapClone(preview);
     preview.style.width = `${metrics.sourceWidth}px`;
-    if (first < rows.length) {
+    const topRows = source.children;
+    // Where rows before the block were carried in, the clone starts at the first of them rather than at the block's own first row.
+    if (window.beforeFirst >= 0) {
+      firstTop = minimapBlockEdges(topRows[window.beforeFirst], appTop, scrollTop).top;
+    } else if (first < rows.length) {
       firstTop = minimapBlockEdges(rows[first], appTop, scrollTop).top;
     }
     frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
-    // At the ends of the document the range takes the document's own ends: above the first row and below the last there is only the layout's padding, which no clone of the rows can hold. Row edges there fail the guard at every scroll top and every foot, and every failure asks for another rebuild.
+    // At the ends of the run the range takes the ends of whatever the search stopped inside — the outermost wrapper where it descended into a block, the document itself where it did not. The padding argument holds either way: above the first row and below the last there is only the holder's own padding, which no clone of the rows can hold, so row edges there fail the guard at every top and every foot and every failure asks for another rebuild. A wrapper has that padding as much as the document does. Taking the document's ends after a descent is what left the slice claiming ground the clone holds no rows for, so the guard answered yes over an empty rail and nothing ever asked for it back.
+    const outerEdges = window.wrappers.length ? minimapBlockEdges(window.wrappers[0], appTop, scrollTop) : null;
     minimapBuiltRange = {
-      top: first === 0 ? 0 : firstTop,
-      bottom: last >= rows.length - 1
-        ? metrics.scrollHeight
-        : minimapBlockEdges(rows[last], appTop, scrollTop).bottom,
+      top: window.beforeFirst >= 0
+        ? (window.beforeFirst === 0 ? 0 : firstTop)
+        : (first === 0 ? (outerEdges ? outerEdges.top : 0) : firstTop),
+      bottom: window.afterLast >= 0
+        ? (window.afterLast >= topRows.length - 1 ? metrics.scrollHeight : minimapBlockEdges(topRows[window.afterLast], appTop, scrollTop).bottom)
+        : (last >= rows.length - 1
+          ? (outerEdges ? outerEdges.bottom : metrics.scrollHeight)
+          : minimapBlockEdges(rows[last], appTop, scrollTop).bottom),
     };
     minimapBuiltFirstRow = first;
     minimapBuiltLastRow = last;
@@ -1198,7 +1234,9 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   // A windowed clone starts mid-document, so its first block's top margin has nothing above it to collapse against and lands off by that margin — enough to shift the thumbnail on every rebuild. Cheaper to measure the miss than to model the collapsing. One read, on the rebuild path, never on scroll.
   if (minimapBuiltRange) {
     let clonedFirst = preview;
-    for (let depth = 0; depth <= window.wrappers.length && clonedFirst; depth += 1) {
+    // Down to the row firstTop names: through the wrapper chain to the sliced rows, or one step where the clone starts on a carried row instead.
+    const depthToFirst = window.beforeFirst >= 0 ? 0 : window.wrappers.length;
+    for (let depth = 0; depth <= depthToFirst && clonedFirst; depth += 1) {
       clonedFirst = clonedFirst.firstElementChild;
     }
     if (clonedFirst) {

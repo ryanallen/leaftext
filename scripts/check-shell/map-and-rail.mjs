@@ -197,6 +197,29 @@ export function run() {
     }
   });
 
+
+  // The same comparison over the slice a descent leaves behind. Its two numbers used to be the document's own ends whenever the search had reached inside a block, so both of these answered yes and the rail never asked for the picture back — the whole of the fault, in the one call every path into a rebuild makes first.
+  check('a view outside a slice taken from inside a long block asks for a rebuild', () => {
+    const { minimapWindowCoversView } = booted;
+    const metrics = { scrollable: 12322, scaledDocumentHeight: 1314.2, trackHeight: 700, previewScale: 0.1 };
+    const covers = (range, scrollTop) => {
+      vm.runInContext(`minimapBuiltRange = ${JSON.stringify(range)};`, booted);
+      return minimapWindowCoversView(metrics, scrollTop);
+    };
+    try {
+      // A block spanning 2,000 to 11,000 of a 13,142px document, with the slice taking its edges rather than the document's.
+      const block = { top: 2000, bottom: 11000 };
+      if (covers(block, 12322)) throw new Error('a reader below the block was told the thumbnail already holds where they are');
+      if (covers(block, 0)) throw new Error('a reader above the block was told the thumbnail already holds where they are');
+      if (!covers(block, 6161)) throw new Error('a reader inside the block rebuilt anyway');
+      // What shipped, for as long as the rail was blank: the same clone claiming the whole document.
+      const claimed = { top: 0, bottom: 13142 };
+      if (!covers(claimed, 12322) || !covers(claimed, 0)) throw new Error('the widened range fails now, so this proves nothing about what the fix took away');
+    } finally {
+      vm.runInContext('minimapBuiltRange = null;', booted);
+    }
+  });
+
   // The keep-it half. This answers without asking the guard at all, which is the whole point: a guard that starts failing again for some later reason costs one comparison rather than a rebuild every frame for as long as the window is open.
   check('a rebuild that would clone the same rows keeps the thumbnail', () => {
     const { minimapRebuildWouldChangeNothing } = booted;
@@ -360,6 +383,168 @@ export function run() {
       booted.__frames.drain();
       if (stand.turns.booked.length !== 2) throw new Error('the second change to the words booked no turn of its own, so the screen either side never comes back');
       if (stand.read('minimapWidenTimer') !== stand.turns.booked[1]) throw new Error('the rail is waiting on a turn that is not the one it booked last');
+    } finally {
+      stand.restore();
+    }
+  });
+
+
+  // The document the fault needs: one block taller than the window the rail asks for, with ground on both sides of it. Thirty-one rows of 100px with the eleventh a block spanning 1,000 to 6,000 and holding fifty of them, under a 70px track over an 8,000px document drawn at a tenth — so the rail shows 700px at a time, asks for a screen either side of that, and the block is five times the 2,100px it asked for. Everything the rebuild reads off a real page is swapped for a known number and everything between them is the shipped rebuild, so what these checks read back is the slice it really built.
+  const railOverABlockedDocument = () => {
+    // The rail reads viewport rectangles and adds the scroll back on, so the rows answer where they are on the screen rather than where they are in the document.
+    let scrollTop = 0;
+    const body = fakeElement('rail-block-source');
+    body.className = 'document-body';
+    body.innerHTML = Array.from({ length: 31 }, (_, index) => (index === 10
+      ? `<div class="table-bay">${Array.from({ length: 50 }, (_, line) => `<p>line ${line}</p>`).join('')}</div>`
+      : `<p>row ${index}</p>`)).join('');
+    const span = (index) => {
+      if (index < 10) return [index * 100, index * 100 + 100];
+      if (index === 10) return [1000, 6000];
+      return [6000 + (index - 11) * 100, 6100 + (index - 11) * 100];
+    };
+    body.children.forEach((row, index) => {
+      const [top, bottom] = span(index);
+      row.getBoundingClientRect = () => ({ top: top - scrollTop, bottom: bottom - scrollTop, height: bottom - top, width: 800 });
+    });
+    body.children[10].children.forEach((line, index) => {
+      const top = 1000 + index * 100;
+      line.getBoundingClientRect = () => ({ top: top - scrollTop, bottom: top + 100 - scrollTop, height: 100, width: 800 });
+    });
+    const metrics = {
+      sourceWidth: 800,
+      sourceTop: 0,
+      scrollHeight: 8000,
+      viewportHeight: 700,
+      scrollable: 7300,
+      scrollTop: 0,
+      trackHeight: 70,
+      scaledDocumentHeight: 800,
+      previewScale: 0.1,
+    };
+    const was = { measure: booted.measureDocumentMinimap, source: booted.minimapSourceElement };
+    booted.measureDocumentMinimap = () => ({ ...metrics, scrollTop });
+    booted.minimapSourceElement = () => body;
+    booted.setMinimapMarkup(booted.documentMinimapMarkup());
+    const rail = booted.document.getElementById('readerMinimap');
+    const content = rail.querySelector('.document-minimap-track').querySelector('.document-minimap-content');
+    content.getBoundingClientRect = () => ({ top: 0, bottom: 70, height: 70, width: 80 });
+    return {
+      metrics,
+      // Build the thumbnail for a reader sitting at this offset, the way a scroll past the built slice does.
+      buildAt: (offset) => {
+        scrollTop = offset;
+        booted.updateDocumentMinimapPreview();
+      },
+      coversAt: (offset) => {
+        scrollTop = offset;
+        return booted.minimapWindowCoversView({ ...metrics, scrollTop }, offset);
+      },
+      // What the thumbnail on the page ended up holding: the block's own copy, and the top-level rows carried in beside it on either side.
+      clonedRows: () => {
+        const built = content.querySelector('.document-minimap-preview');
+        const kids = built ? built.children : [];
+        const at = Array.prototype.findIndex.call(kids, (child) => child.classList.contains('table-bay'));
+        return {
+          block: at >= 0,
+          before: at < 0 ? 0 : at,
+          after: at < 0 ? 0 : kids.length - at - 1,
+          leadsWithCarried: at > 0,
+        };
+      },
+      // Where the thumbnail was placed down the rail: the box the clone hangs in wears it.
+      placedAt: () => {
+        const box = content.querySelector('.document-minimap-frame');
+        return box ? box.style.transform : '';
+      },
+      read: (name) => vm.runInContext(name, booted),
+      restore: () => {
+        booted.measureDocumentMinimap = was.measure;
+        booted.minimapSourceElement = was.source;
+        booted.setMinimapMarkup('');
+        booted.__frames.drain();
+        vm.runInContext(
+          'minimapContentVersion = 0; minimapBuiltVersion = -1; minimapBuiltSourceWidth = -1;'
+            + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1; minimapBuiltRange = null;'
+            + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
+            + 'minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;',
+          booted,
+        );
+      },
+    };
+  };
+
+  // The slice is the only thing that decides whether the rail ever rebuilds again, so it has to say where the clone really ends. Taking the document's own ends after the search had descended into a block left it claiming 2,000px above and below that the clone holds no row for, and the guard reads those two numbers and nothing else — so it answered yes over an empty rail and nothing ever asked for the picture back.
+  check('a slice built inside a long block ends at that block’s own edges rather than at the document’s', () => {
+    const stand = railOverABlockedDocument();
+    try {
+      stand.buildAt(5000);
+      if (stand.read('minimapBuiltRowPath') !== '10') throw new Error(`the search stopped at path ${stand.read('minimapBuiltRowPath')} rather than descending into the block, so this proves nothing`);
+      if (stand.read('minimapBuiltLastRow') !== 49) throw new Error('the slice does not reach the block’s last row, so its bottom was never widened');
+      const foot = stand.read('minimapBuiltRange');
+      if (foot.bottom === 8000) throw new Error('the slice still claims the document’s own height, 2,000px below the last row the clone holds');
+      // The block’s own foot is 6,000 and the document’s is 8,000. Anything below 6,000 and short of the document’s end is the block’s edge plus whatever rows past it the clone carried; the exact number is the carrying check’s.
+      if (foot.bottom < 6000 || foot.bottom >= 8000) throw new Error(`the slice says it ends at ${foot.bottom}, which is neither the block’s own foot nor a row past it`);
+      // The whole point of the number: a reader below the block is outside the clone, so the rail asks for one that holds where they are.
+      if (stand.coversAt(7300)) throw new Error('a reader at the foot of the document was told the thumbnail already holds where they are');
+
+      stand.buildAt(1000);
+      if (stand.read('minimapBuiltRowPath') !== '10') throw new Error('the search did not descend at the block’s head, so this proves nothing');
+      if (stand.read('minimapBuiltFirstRow') !== 0) throw new Error('the slice does not reach the block’s first row, so its top was never widened');
+      const head = stand.read('minimapBuiltRange');
+      if (head.top === 0) throw new Error('the slice still claims the top of the document, 1,000px above the first row the clone holds');
+      // The block’s own head is 1,000. Anything above it and below the document’s own top is a carried row before the block.
+      if (head.top <= 0 || head.top > 1000) throw new Error(`the slice says it starts at ${head.top}, which is neither the block’s own head nor a row above it`);
+      if (stand.coversAt(0)) throw new Error('a reader at the top of the document was told the thumbnail already holds where they are');
+    } finally {
+      stand.restore();
+    }
+  });
+
+
+  // A block taller than the window the rail asks for is descended into, and the clone is built out of that block's own rows — so a window reaching past the block's edge could hold no row on the other side of it, and the rail drew nothing at all for a rail-height past every long table. The rows past the edge are the document's top-level ones, so they go in beside the wrapper rather than inside it.
+  check('a window reaching past a long block’s edge holds rows from both sides of it', () => {
+    const stand = railOverABlockedDocument();
+    try {
+      // Sitting near the block's foot: the asked range runs from inside the block out to 6,400, which is four rows past it.
+      stand.buildAt(5000);
+      if (stand.read('minimapBuiltRowPath') !== '10') throw new Error('the search never descended into the block, so this proves nothing');
+      const past = stand.clonedRows();
+      if (!past.block) throw new Error('the thumbnail holds no part of the block it was built inside');
+      if (past.after < 1) throw new Error('the thumbnail holds nothing past the block’s foot, so a reader below it sees an empty rail');
+      if (past.after !== 5) throw new Error(`the thumbnail carried ${past.after} rows past the block rather than the 5 the asked range reaches`);
+      if (past.before !== 0) throw new Error('rows above the block were carried into a window that never reached its head');
+      // The whole of the second half: the slice now covers the band the rail is showing, so the band stops asking for a rebuild on every frame of itself.
+      for (const at of [5000, 5200, 5400, 5600, 5800]) {
+        if (!stand.coversAt(at)) throw new Error(`the reader at ${at} is past the block’s foot and the rail asked for another rebuild`);
+      }
+
+      // And the same at the block's head, where the carried rows sit above it and the clone is placed at the first of them.
+      stand.buildAt(1000);
+      const ahead = stand.clonedRows();
+      if (ahead.before !== 7) throw new Error(`the thumbnail carried ${ahead.before} rows above the block rather than the 7 the asked range reaches`);
+      if (ahead.after !== 0) throw new Error('rows below the block were carried into a window that never reached its foot');
+      if (!ahead.leadsWithCarried) throw new Error('the clone starts with the block rather than with the first row it actually holds, so the thumbnail is drawn where the block is');
+      for (const at of [1000, 800, 600, 400]) {
+        if (!stand.coversAt(at)) throw new Error(`the reader at ${at} is above the block’s head and the rail asked for another rebuild`);
+      }
+    } finally {
+      stand.restore();
+    }
+  });
+
+
+  // A windowed clone starts mid-document, so its first block's top margin has nothing above it to collapse against and the thumbnail lands off by that margin; the rebuild measures the miss and takes it back out. Once rows are carried in above a block the clone starts with one of them rather than with the wrapper chain, so the row that miss is measured on is one step down and no longer at the foot of the wrappers — walked down the chain instead, the read runs off the end of the clone, finds nothing and leaves the thumbnail sitting wherever the margin put it.
+  check('a thumbnail that starts with a carried row is placed by measuring that row', () => {
+    const stand = railOverABlockedDocument();
+    try {
+      stand.buildAt(1000);
+      if (!stand.clonedRows().leadsWithCarried) throw new Error('the thumbnail does not start with a carried row, so this proves nothing');
+      const scale = stand.metrics.previewScale;
+      const uncorrected = `translateY(${stand.read('minimapBuiltRange').top * scale}px) scale(${scale})`;
+      if (stand.placedAt() === uncorrected) {
+        throw new Error('the thumbnail was left at the offset the slice asked for, so nothing measured where its first row actually landed');
+      }
     } finally {
       stand.restore();
     }
