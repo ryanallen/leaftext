@@ -57,7 +57,7 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
     );
 
     let close = rule_body(css, ".tab-close {");
-    // A wash behind it, since it now lands on the last letters of the name rather than in cleared space. On the selected tab that wash follows the contained page's own color; everywhere else it falls back to the surface.
+    // A wash behind it, because it lands on the last letters of the name rather than in cleared space. On the selected tab that wash follows the contained page's own color; everywhere else it falls back to the surface.
     assert!(
         close.contains("background: var(--tab-corner-fill, var(--lt-surface));"),
         "the cross needs a wash to read over the name: {close}"
