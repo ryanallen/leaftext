@@ -6,7 +6,7 @@ Work here starts as a written plan and ends as a released version, and the same 
 
 ## The order
 
-**1. Plan it.** `/ticket` writes a Markdown plan — why, what was measured with the line it came from, how it is built, and phases with a checkbox per piece of work. Plans live in the `docs/` folder beside this repo, not in the published site.
+**1. Plan it.** `/ticket` writes a Markdown plan — why, what was measured with the line it came from, how it is built, and phases with a checkbox per piece of work. Plans live in the `docs/` folder beside this repo, not in the published site. That planning tree keeps the live index at its root and the shipped, held and turned-down indexes beside the tickets in their matching folders, so each file opens on one status.
 
 **2. Read the plan against the code.** `/design` opens every line the plan cites, holds it against the rules that already cost a version number, fixes what is wrong in the file, and signs the top with a date. It never edits app code. Where reading the code finishes a phase's own research it ticks those boxes and writes `Done in the design pass.` in that phase's reason, so the tick has an author.
 
