@@ -935,7 +935,7 @@ export function run() {
     if (!/minimapBodyObserver = new MutationObserver\(invalidateMinimapPreview\);\s*minimapBodyObserver\.observe\(source, \{/.test(fragment)) throw new Error('the watcher is no longer bound to the element the thumbnail is cloned from');
   });
 
-  // Placing the box runs every frame of every scroll, and a custom property inherits — so writing one on the rail re-resolves style across the whole clone hanging under it, which measured 78ms a write against 0.13ms for writing onto the element that draws. A transform inherits no further than a custom property does, and it is not a layout property: the box's place was once written to `top`, which left the rail's own subtree to be laid out again on every frame of every scroll — 12.0 to 21.0µs a frame against 3.5 to 4.0 as a transform — so a `top` written back on it fails here.
+  // Placing the box runs every frame of every scroll, and a custom property inherits — so writing one on the rail re-resolves style across the whole clone hanging under it, which measured 78ms a write against 0.13ms for writing onto the element that draws. Neither `transform` nor `top` inherits, so neither reaches the clone — but `top` is a layout property, and writing the box's place to it makes the browser lay the rail's own subtree out again on every frame of every scroll, 12.0 to 21.0µs a frame against 3.5 to 4.0 as a transform. So a `top` on the box fails here.
   check('the box and the thumbnail are placed by writing to themselves', () => {
     const styled = () => ({ style: { setProperty() { throw new Error('a custom property was written on the rail'); } } });
     const content = styled();
