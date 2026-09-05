@@ -806,7 +806,7 @@ fn dot_layer_is_anchored(css: &str, rule: &str, selector: &str) -> bool {
 
 #[test]
 fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
-    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. `contain: paint` moves what "anchored" means for everything inside it — from the window to the app surface — which costs nothing while every anchored surface is inside that box, and puts one lattice out of phase with all the others the moment one is not. Four boxes tile from themselves on purpose and are named here, so a fifth is a decision somebody made rather than a drift.
+    // The grain is anchored rather than tiled from each box, so two surfaces meeting share one lattice and the seam between them cannot show. What that anchor resolves to is not `contain: paint`'s to decide: putting that containment back under the paper class, or `contain: layout`, or taking the anchoring away with `background-attachment: scroll`, each wrote a byte-identical exported picture, so containment moves neither the lattice nor what a render paints. Four boxes tile from themselves on purpose and are named here, so a fifth is a decision somebody made rather than a drift.
     const OWN_BOX: [&str; 4] = [
         ".tab",
         ".home-list-scroll li.is-dropzone",
@@ -855,6 +855,24 @@ fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
         ),
         "background-attachment: scroll;",
     );
+}
+
+#[test]
+fn the_paper_class_composites_the_app_box_so_an_exported_picture_carries_the_grain() {
+    // Every surface the test above anchors is painted as nothing by the render behind an exported picture and an exported PDF, unless the box holding it composites — so a table header, a tinted row, a code block and the outline all reached both files as one flat wash. The paper class is where the fix belongs: the class is on for the render and off everywhere else, so nothing in the window changes.
+    let css = reading_mode_css();
+    let surface = rule_body(css, "body.leaf-paper .app-surface {");
+    assert_contains(surface, "will-change: transform;");
+
+    // `will-change` alone reads as a hint somebody could drop, so the four properties measured against it in a running copy are named beside it: each wrote a byte-identical picture, and this one is what put the dots back. Without that sentence the next reader spends the same afternoon on `contain` that the first one did.
+    for measured in [
+        "contain: layout",
+        "contain: paint",
+        "transform: translateZ(0)",
+        "background-attachment: scroll",
+    ] {
+        assert_contains(surface, measured);
+    }
 }
 
 #[test]

@@ -10,7 +10,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const imgs = join(root, 'imgs');
@@ -19,7 +19,7 @@ const imgs = join(root, 'imgs');
 const CHANNELS = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
 
 /** Decode a non-interlaced 8-bit PNG to `{ width, height, rgba }`. Enough for what this repo ships and loud about anything else, because a picture this cannot read is one it must not call clean. */
-function decode(bytes) {
+export function decode(bytes) {
   if (bytes.readUInt32BE(0) !== 0x89504e47) throw new Error('not a PNG');
   let at = 8;
   let head = null;
@@ -143,31 +143,34 @@ function pictures(dir) {
   return out;
 }
 
-// A file named on the command line is a retake being looked at before it is filed; with none, the whole folder.
-const asked = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
-const looking = asked.length ? asked : pictures('').map((name) => join(imgs, name));
+// Everything below runs only when this file is the command being run. `decode` is the one PNG reader in `scripts/`, and `check-grain-in-a-picture.mjs` imports it rather than writing a second one — an import that scanned the whole picture folder as a side effect would make that check answer for these as well.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  // A file named on the command line is a retake being looked at before it is filed; with none, the whole folder.
+  const asked = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+  const looking = asked.length ? asked : pictures('').map((name) => join(imgs, name));
 
-const found = [];
-const unreadable = [];
-for (const name of looking) {
-  try {
-    const edges = blackEdges(decode(readFileSync(name)));
-    const worst = Math.max(edges.left, edges.right, edges.top, edges.bottom);
-    if (worst) found.push({ name, edges, worst });
-  } catch (error) {
-    unreadable.push(`${name}: ${error.message}`);
+  const found = [];
+  const unreadable = [];
+  for (const name of looking) {
+    try {
+      const edges = blackEdges(decode(readFileSync(name)));
+      const worst = Math.max(edges.left, edges.right, edges.top, edges.bottom);
+      if (worst) found.push({ name, edges, worst });
+    } catch (error) {
+      unreadable.push(`${name}: ${error.message}`);
+    }
   }
-}
-found.sort((a, b) => b.worst - a.worst);
+  found.sort((a, b) => b.worst - a.worst);
 
-for (const { name, edges } of found) {
-  const sides = ['left', 'right', 'top', 'bottom'].filter((side) => edges[side]);
-  console.log(`  ${short(name)}  ${sides.map((side) => `${side} ${edges[side]}px`).join(', ')}`);
-}
-for (const problem of unreadable) console.log(`  ${problem}`);
-console.log(`${found.length} of the ${looking.length} pictures read carry a black edge nobody drew`);
+  for (const { name, edges } of found) {
+    const sides = ['left', 'right', 'top', 'bottom'].filter((side) => edges[side]);
+    console.log(`  ${short(name)}  ${sides.map((side) => `${side} ${edges[side]}px`).join(', ')}`);
+  }
+  for (const problem of unreadable) console.log(`  ${problem}`);
+  console.log(`${found.length} of the ${looking.length} pictures read carry a black edge nobody drew`);
 
-if (process.argv.includes('--check') && (found.length || unreadable.length)) {
-  console.error('a black edge is the invisible resize border, photographed: scripts/capture-screenshot.ps1 takes the visible frame, so retake the picture.');
-  process.exit(1);
+  if (process.argv.includes('--check') && (found.length || unreadable.length)) {
+    console.error('a black edge is the invisible resize border, photographed: scripts/capture-screenshot.ps1 takes the visible frame, so retake the picture.');
+    process.exit(1);
+  }
 }

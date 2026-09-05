@@ -529,6 +529,12 @@ check-doc-images:
 check-shot-edges:
     node scripts/check-shot-edges.mjs --check
 
+# Fail if the dot grain is missing from a rendered picture. Every other reading of the
+# grain reads the stylesheet, and the stylesheet was right the whole time an exported
+# picture was coming out flat. This one lays the stylesheet out and samples the pixels.
+check-grain-in-a-picture:
+    node scripts/check-grain-in-a-picture.mjs --check
+
 # Join same-sized PNG screenshot sources with a vertical or diagonal seam, or tile
 # previews into a grid. The checked helper is the source of every composed picture.
 compose-shots mode out *args:
@@ -610,7 +616,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-web-fixtures check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-web-fixtures check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-grain-in-a-picture check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

@@ -5203,7 +5203,7 @@ body:has(#readerToolbar:not([hidden])) {
   grid-row: 1;
   align-self: end;
   justify-self: center;
-  /* The same choice the top bar makes: stand over the document wait at 6. Seven is the smallest layer that clears it. */
+  /* The same choice the top bar makes: stand over the document wait, which is at 6. Seven is the smallest layer that clears it. */
   z-index: 7;
   /* Anchor for the dot-screened shadow behind it. */
   position: relative;
@@ -10457,6 +10457,8 @@ body.leaf-paper:has(.app-surface)::before {
 body.leaf-paper .app-surface {
   position: static;
   contain: none;
+  /* The render behind an exported picture and an exported PDF paints a fixed-attachment background as nothing at all unless the box holding it composites, so without this the dot grain is absent from both, top to bottom — every table header, tinted row, code block and outline comes out a flat wash. Measured in a running copy: `contain: layout`, `contain: paint`, `transform: translateZ(0)` and `background-attachment: scroll` each wrote a byte-identical picture, and this is the only one of the five that moves a pixel. It costs the print nothing — one page, the same sheet. */
+  will-change: transform;
   inset: auto;
   height: auto;
   border: 0;
