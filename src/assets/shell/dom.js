@@ -431,6 +431,7 @@ function beginReaderLoading(owner) {
   readerLoadingSafety = setTimeout(() => {
     readerLoadingOwner = null;
     clearReaderLoading();
+    clearPendingReaderView();
   }, READER_LOADING_SAFETY_MS);
 }
 function clearReaderLoading(owner) {

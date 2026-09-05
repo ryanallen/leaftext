@@ -169,6 +169,8 @@ fn reading_mode_css_defines_document_typography() {
             "font-size: var(--type-h4-size);",
             "font-size: var(--type-h5-size);",
             "font-size: var(--type-h6-size);",
+            // A block opened for raw-source typing loses the inner <code> that was carrying the family's code face, so this rule is the only thing left holding it. It reads the same name every other code surface does.
+            ".document-body .leaf-editing-source {\n  font-family: var(--code-font);",
         ] {
             assert_contains(css, rule);
         }

@@ -571,8 +571,9 @@
 .document-body .leaf-editable:focus-visible {
   outline: none;
 }
+/* The family's own code face, the same name every other code surface reads, so a block does not change face under the click that opens its source. base.css declares it, so there is nothing to fall back to. */
 .document-body .leaf-editing-source {
-  font-family: var(--lt-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-family: var(--code-font);
   white-space: pre-wrap;
   background: var(--lt-editor-inline-code-background);
   border-radius: var(--lt-radius-sm);

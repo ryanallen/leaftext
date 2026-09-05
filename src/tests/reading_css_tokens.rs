@@ -131,6 +131,17 @@ fn reading_mode_css_keeps_one_name_per_color() {
 }
 
 #[test]
+fn no_rule_asks_for_a_code_face_by_a_name_no_theme_sets() {
+    // `--lt-code-font` shipped for months on the block being typed into: nothing declares it, so the rule resolved to its inline fallback and the block drew in a generic monospace on ten of the eleven families. The name is dead and must stay dead, whichever rule reaches for it next.
+    let css = reading_mode_css();
+
+    assert!(
+        !css.contains("--lt-code-font"),
+        "the theme sets --code-font, not --lt-code-font; a rule naming the second one resolves to nothing"
+    );
+}
+
+#[test]
 fn app_css_is_served_over_the_asset_protocol_not_inlined() {
     // The reading-mode stylesheet is delivered as a linked stylesheet, so the shell links it and the protocol serves the full CSS. Keeping it out of the inlined shell is what keeps `NavigateToString` under WebView2's size cap.
     let html = app_shell_page();

@@ -32,6 +32,7 @@ let pendingSearchJump = null;
 let readingUnlocked;
 let codeUnlocked;
 let graphViewOpen = false;
+let pendingReaderView = null;
 let graphExitPending = false;
 let graphActivePath = null;
 let graphFocusPending = false;

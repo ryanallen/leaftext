@@ -1094,6 +1094,7 @@ function renderCodeView(state) {
 function abandonCodeView(what, error) {
   console.error(`code view: ${what}`, error);
   clearReaderLoading();
+  clearPendingReaderView();
   const handoff = viewHandoff && viewHandoff.path === activeDocumentPath() ? viewHandoff : null;
   if (handoff && handoff.readerScrollTop != null) handoff.restoreExact = true;
   window.leafShowError('The source view could not be opened.');

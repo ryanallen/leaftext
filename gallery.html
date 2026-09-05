@@ -5203,7 +5203,8 @@ body:has(#readerToolbar:not([hidden])) {
   grid-row: 1;
   align-self: end;
   justify-self: center;
-  z-index: 6;
+  /* The same choice the top bar makes: stand over the document wait at 6. Seven is the smallest layer that clears it. */
+  z-index: 7;
   /* Anchor for the dot-screened shadow behind it. */
   position: relative;
   display: flex;
@@ -5248,9 +5249,23 @@ body:has(#readerToolbar:not([hidden])) {
   mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
 }
 .reader-tool-group {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--lt-space-2);
+}
+.reader-tool-chip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-accent);
+  pointer-events: none;
+  transform: translateX(var(--reader-tool-chip-x, 0px));
+  /* Transform owns the transition because an unregistered custom property cannot interpolate. */
+  transition: transform var(--lt-duration-200) var(--lt-ease-overshoot);
 }
 /* The reading view's tools, sunk into the bar beside the button that turns that view on. A recess says "these belong to the thing next to them"; another row of same-level buttons would just read as more views. Grained on the same window-anchored lattice as the bar and the rail, so it is the same surface pressed in rather than a different one laid on top. */
 /* The vault's own sync button, at the end of its crumb row. Carries a count rather than a bare dot: "3" is a reason to press it, a dot is only a rumor. Absent entirely when there is nothing waiting -- see renderVaultSyncButton. */
@@ -5363,7 +5378,7 @@ body:has(#readerToolbar:not([hidden])) {
   transform: translateX(-50%);
   /* The nub answers the pointer, which is how the tray is reached at all; clipped to the nub, it can take nothing else. */
   pointer-events: auto;
-  transition: height var(--lt-duration-140) var(--lt-ease-accelerate);
+  transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-140) var(--lt-ease-accelerate);
 }
 .reader-tool-tray[hidden] {
   display: none;
@@ -5376,7 +5391,7 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool-tray:has(select:focus) {
   /* The tools' own height, measured by renderViewTools, plus the padding above and below them and the one edge the tray draws. A length rather than `auto`, because a height that is not a number cannot be animated to. */
   height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--lt-stroke-1));
-  transition: height var(--lt-duration-200) var(--lt-ease-overshoot);
+  transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-200) var(--lt-ease-overshoot);
 }
 /* And the tools come up out of the bar with it, which is what the nub says is in there. */
 .reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray .reader-view-tools,
@@ -5502,6 +5517,7 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
 }
 .reader-tool {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5525,7 +5541,7 @@ body:has(#readerToolbar:not([hidden])) {
 /* The view you are in. The one piece of color in the bar, so the bar answers "where am I" at a glance — the same job the highlighted tool does in Figma. */
 .reader-tool.is-active,
 .reader-tool.is-active:hover {
-  background: var(--lt-accent);
+  background: transparent;
   color: var(--lt-markdown-background);
 }
 /* The active glyph is drawn a touch heavier than its resting outline, so the selected view reads as bolder as well as brighter. A mask has no strokes to thicken, so it swaps to the bolder drawing, which `just bundle-icons` writes from the same file at stroke-width 2.25. */
@@ -6451,8 +6467,9 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body .leaf-editable:focus-visible {
   outline: none;
 }
+/* The family's own code face, the same name every other code surface reads, so a block does not change face under the click that opens its source. base.css declares it, so there is nothing to fall back to. */
 .document-body .leaf-editing-source {
-  font-family: var(--lt-code-font, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-family: var(--code-font);
   white-space: pre-wrap;
   background: var(--lt-editor-inline-code-background);
   border-radius: var(--lt-radius-sm);
@@ -11295,7 +11312,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-speed-reader-off"></span></button></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div>
+<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-speed-reader-off"></span></button></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>

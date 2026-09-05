@@ -342,9 +342,15 @@ fn the_graph_is_a_page_view_toggled_beside_the_code_view() {
         html.contains("button.addEventListener('click', () => setReaderView(button.dataset.view))")
     );
     assert!(html.contains(
-        "const current = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';"
+        "const rendered = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';"
     ));
+    assert!(html.contains("const current = pendingReaderView || rendered;"));
     assert!(css.contains(".reader-tool.is-active,"));
+    // One pill for all three views, written ahead of the buttons so it draws behind them. Deleting it takes the lit state off the bar entirely, since the button's own fill is transparent.
+    assert!(html.contains(
+        "<span class=\"reader-tool-chip\" aria-hidden=\"true\"></span>
+    <button type=\"button\" id=\"viewReadingButton\""
+    ));
     // It floats over the page rather than scrolling with it: placed by the grid in the reader's own cell, not parented to the scroller.
     assert!(css.contains(".reader-toolbar {"));
     assert!(css.contains("  align-self: end;"));

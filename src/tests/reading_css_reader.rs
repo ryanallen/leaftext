@@ -647,6 +647,61 @@ fn the_bar_is_measured_against_the_page_and_the_map_together() {
 }
 
 #[test]
+fn the_floating_bar_stands_above_the_document_wait() {
+    let css = reading_mode_css();
+    let bar = rule_body(css, ".reader-toolbar {");
+    let wait = rule_body(css, ".reader-loading {");
+
+    assert_contains(bar, "z-index: 7;");
+    assert_contains(wait, "z-index: 6;");
+}
+
+#[test]
+fn the_view_chip_and_tray_travel_on_the_bars_spring() {
+    let css = reading_mode_css();
+    let chip = rule_body(css, ".reader-tool-chip {");
+    let parked_tray = rule_body(css, ".reader-tool-tray {");
+    let grown_tray = rule_body(
+        css,
+        ".reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray,\n.reader-tool-tray:hover,\n.reader-tool-tray:has(:focus-visible),\n.reader-tool-tray:has(select:focus) {",
+    );
+
+    assert_contains(
+        chip,
+        "transform: translateX(var(--reader-tool-chip-x, 0px));",
+    );
+    assert_contains(
+        chip,
+        "transition: transform var(--lt-duration-200) var(--lt-ease-overshoot);",
+    );
+    for tray in [parked_tray, grown_tray] {
+        assert_contains(tray, "left var(--lt-duration-200) var(--lt-ease-overshoot)");
+    }
+}
+
+#[test]
+fn the_lit_view_is_a_pill_behind_the_buttons_rather_than_a_fill_on_one() {
+    // The fill used to sit on the pressed button, so it could only appear and disappear -- there was nothing to travel. It is one pill inside the group now, which is why the group has to be a positioning parent and the buttons have to draw over it.
+    let css = reading_mode_css();
+    let chip = rule_body(css, ".reader-tool-chip {");
+    let group = rule_body(css, ".reader-tool-group {");
+    let button = rule_body(css, ".reader-tool {");
+    let lit = rule_body(
+        css,
+        ".reader-tool.is-active,
+.reader-tool.is-active:hover {",
+    );
+
+    assert_contains(chip, "position: absolute;");
+    assert_contains(chip, "background: var(--lt-accent);");
+    // The press has to reach the button the pill is sitting over.
+    assert_contains(chip, "pointer-events: none;");
+    assert_contains(group, "position: relative;");
+    assert_contains(button, "position: relative;");
+    assert_contains(lit, "background: transparent;");
+}
+
+#[test]
 fn the_graph_size_box_uses_the_wells_inset_on_every_side() {
     let css = reading_mode_css();
     let tray = rule_body(css, ".reader-tool-tray {");

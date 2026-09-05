@@ -9,6 +9,122 @@ import { check, readingCss, record, root } from './shared.mjs';
 export function run() {
   const booted = record.booted;
   if (!booted) return;
+  const standViewButtons = () => {
+    booted.document.getElementById('viewReadingButton').dataset.view = 'reading';
+    booted.document.getElementById('viewCodeButton').dataset.view = 'code';
+    booted.document.getElementById('viewGraphButton').dataset.view = 'graph';
+  };
+
+  check('a view press leaves the floating bar visible while the document wait is up', () => {
+    const toolbar = booted.document.getElementById('readerToolbar');
+    const wait = booted.document.getElementById('readerLoading');
+    try {
+      vm.runInContext("currentState = { tabs: [{ path: 'notes.md' }], active: 0 }; setReaderView('code');", booted);
+      if (toolbar.hidden) throw new Error('the source press hid the floating bar');
+      if (wait.hidden) throw new Error('the source press raised no document wait');
+    } finally {
+      vm.runInContext('clearReaderLoading(); currentState = null;', booted);
+    }
+  });
+
+  check('pressing source lights its chip before the host answers', () => {
+    const code = booted.document.getElementById('viewCodeButton');
+    try {
+      standViewButtons();
+      vm.runInContext("currentState = { tabs: [{ path: 'notes.md' }], active: 0 }; graphViewOpen = false; codeViewActive = false; pendingReaderView = null; setReaderView('code');", booted);
+      if (code.getAttribute('aria-pressed') !== 'true') throw new Error('the reading chip stayed lit while source was pending');
+      if (vm.runInContext('codeViewActive', booted)) throw new Error('the host answered inside the press stand');
+    } finally {
+      vm.runInContext('clearReaderLoading(); pendingReaderView = null; currentState = null;', booted);
+    }
+  });
+
+  check('a map-to-source press lights source while the map is still up', () => {
+    const code = booted.document.getElementById('viewCodeButton');
+    const graph = booted.document.getElementById('readerGraph');
+    try {
+      standViewButtons();
+      vm.runInContext("currentState = { tabs: [{ path: 'notes.md' }], active: 0 }; graphViewOpen = true; codeViewActive = false; pendingReaderView = null; applyGraphView(); setReaderView('code');", booted);
+      if (graph.hidden) throw new Error('the map left before source arrived');
+      if (code.getAttribute('aria-pressed') !== 'true') throw new Error('the map chip stayed lit while source was pending');
+    } finally {
+      vm.runInContext('clearReaderLoading(); graphViewOpen = false; graphExitPending = false; pendingReaderView = null; currentState = null;', booted);
+    }
+  });
+
+  check('a source view that will not open restores the reading chip', () => {
+    const reading = booted.document.getElementById('viewReadingButton');
+    try {
+      standViewButtons();
+      vm.runInContext("currentState = { tabs: [{ path: 'notes.md' }], active: 0 }; graphViewOpen = false; codeViewActive = false; pendingReaderView = null; setReaderView('code'); abandonCodeView('test refusal', new Error('refused'));", booted);
+      if (reading.getAttribute('aria-pressed') !== 'true') throw new Error('the refused source view left its chip lit');
+      if (vm.runInContext('pendingReaderView', booted) !== null) throw new Error('the refused source view stayed pending');
+    } finally {
+      vm.runInContext('clearReaderLoading(); pendingReaderView = null; currentState = null;', booted);
+    }
+  });
+
+  check('a host that never answers restores the rendered chip with the wait timeout', () => {
+    const reading = booted.document.getElementById('viewReadingButton');
+    try {
+      standViewButtons();
+      vm.runInContext("currentState = { tabs: [{ path: 'notes.md' }], active: 0 }; graphViewOpen = false; codeViewActive = false; pendingReaderView = null; setReaderView('code');", booted);
+      const safety = booted.__timers.armed().find((timer) => timer.delay === 30000);
+      if (!safety) throw new Error('the document wait armed no safety timeout');
+      booted.__timers.run(safety.id);
+      if (reading.getAttribute('aria-pressed') !== 'true') throw new Error('the timed-out source view left its chip lit');
+      if (vm.runInContext('pendingReaderView', booted) !== null) throw new Error('the timed-out source view stayed pending');
+    } finally {
+      vm.runInContext('clearReaderLoading(); pendingReaderView = null; currentState = null;', booted);
+    }
+  });
+
+  check('the view chip sits at the pressed button inside its group', () => {
+    const group = booted.document.getElementById('readerToolbar').querySelector('.reader-tool-group');
+    const buttons = {
+      reading: booted.document.getElementById('viewReadingButton'),
+      code: booted.document.getElementById('viewCodeButton'),
+      graph: booted.document.getElementById('viewGraphButton'),
+    };
+    standViewButtons();
+    buttons.reading.offsetLeft = 0;
+    buttons.code.offsetLeft = 32;
+    buttons.graph.offsetLeft = 64;
+    for (const [view, button] of Object.entries(buttons)) {
+      vm.runInContext(`pendingReaderView = '${view}'; renderReaderToolbar(true);`, booted);
+      const at = group.style.getPropertyValue('--reader-tool-chip-x');
+      if (at !== `${button.offsetLeft}px`) throw new Error(`the ${view} chip sat at ${at || 'nothing'} instead of ${button.offsetLeft}px`);
+    }
+    vm.runInContext('pendingReaderView = null;', booted);
+  });
+
+  check('all six view trips move one chip and editing actions leave it in place', () => {
+    const toolbar = booted.document.getElementById('readerToolbar');
+    const group = toolbar.querySelector('.reader-tool-group');
+    const save = booted.document.getElementById('saveButton');
+    const undo = booted.document.getElementById('undoButton');
+    const buttons = {
+      reading: booted.document.getElementById('viewReadingButton'),
+      code: booted.document.getElementById('viewCodeButton'),
+      graph: booted.document.getElementById('viewGraphButton'),
+    };
+    standViewButtons();
+    buttons.reading.offsetLeft = 0;
+    buttons.code.offsetLeft = 32;
+    buttons.graph.offsetLeft = 64;
+    for (const [from, to] of [['reading', 'code'], ['reading', 'graph'], ['code', 'reading'], ['code', 'graph'], ['graph', 'reading'], ['graph', 'code']]) {
+      vm.runInContext(`graphViewOpen = ${from === 'graph'}; codeViewActive = ${from === 'code'}; pendingReaderView = '${to}'; renderReaderToolbar(true);`, booted);
+      if (buttons[to].getAttribute('aria-pressed') !== 'true') throw new Error(`${from} to ${to} left another chip lit`);
+      if (group.style.getPropertyValue('--reader-tool-chip-x') !== `${buttons[to].offsetLeft}px`) throw new Error(`${from} to ${to} left the chip behind`);
+      save.hidden = false;
+      undo.hidden = false;
+      booted.renderReaderToolbar(true);
+      if (group.style.getPropertyValue('--reader-tool-chip-x') !== `${buttons[to].offsetLeft}px`) throw new Error(`editing actions moved the ${to} chip`);
+      save.hidden = true;
+      undo.hidden = true;
+    }
+    vm.runInContext('graphViewOpen = false; codeViewActive = false; pendingReaderView = null;', booted);
+  });
 
   check("the parked tray is the nub, keeps the padlock in the Tab order, and follows the view you are in", () => {
     const toolbar = booted.document.getElementById('readerToolbar');

@@ -80,14 +80,27 @@ function renderReaderToolbar(hasDocument) {
   if (!readerToolbar) return;
   readerToolbar.hidden = !hasDocument;
   if (!hasDocument) return;
-  const current = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
+  const rendered = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
+  if (pendingReaderView === rendered) pendingReaderView = null;
+  const current = pendingReaderView || rendered;
   for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
     if (!button) continue;
     const on = button.dataset.view === current;
     button.setAttribute('aria-pressed', String(on));
     button.classList.toggle('is-active', on);
   }
+  const activeButton = [viewReadingButton, viewCodeButton, viewGraphButton].find(
+    (button) => button && button.dataset.view === current
+  );
+  if (activeButton && activeButton.parentElement) {
+    activeButton.parentElement.style.setProperty('--reader-tool-chip-x', `${Math.round(activeButton.offsetLeft)}px`);
+  }
   renderViewTools(current);
+}
+function clearPendingReaderView() {
+  if (!pendingReaderView) return;
+  pendingReaderView = null;
+  renderReaderToolbar(!!activeDocumentPath());
 }
 const GRAPH_ERROR = 'Graph failed to load.';
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
@@ -203,6 +216,8 @@ if (speedReaderButton) {
 }
 // Going to a view. Each is a way of showing the same thing, so entering one leaves the others — there is no state where two are on.
 function setReaderView(view) {
+  pendingReaderView = view;
+  renderReaderToolbar(!!activeDocumentPath());
   if (view === 'graph') {
     // The source view is of a document; the map is not. Leave it first.
     if (codeViewActive) toggleCodeView();
