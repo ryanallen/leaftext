@@ -2901,6 +2901,10 @@
   --reader-surface-grain: var(--app-bar-grain);
   /* The ink the dot lattice is drawn in, and the only part of it that is a variable: each rule writes the circles into its own `background-image`. Never hold the whole gradient in a custom property — its `var()` is substituted where the property is declared and descendants inherit the finished string, so one declared here silently paints every surface below in this ink whatever `--lt-grain-dot` they set. */
   --lt-grain-dot: var(--app-bar-grain);
+  /* The dot lattice's geometry: how far the dot is solid, where its antialiasing ramp ends, and the tile it repeats in. A length is safe in a custom property where the whole gradient is not — it carries no ink, so a surface below still gets the `--lt-grain-dot` it sets. Said once because the resolution branch below is the only thing that changes them. */
+  --lt-grain-radius: 0.6px;
+  --lt-grain-edge: 0.7px;
+  --lt-grain-tile: 2px;
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
   /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
@@ -2923,6 +2927,14 @@
   --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+/* A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
+@media (resolution <= 1dppx) {
+  :root {
+    --lt-grain-radius: 0.9px;
+    --lt-grain-edge: 1.05px;
+    --lt-grain-tile: 3px;
+  }
 }
 * {
   box-sizing: border-box;
@@ -2991,8 +3003,8 @@ body::before {
   z-index: var(--lt-z-below);
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
   background-attachment: fixed;
@@ -3190,8 +3202,8 @@ body.is-window-inactive .reader-minimap {
   padding: 0;
   /* The chrome shade under a fine dithered dot grid, for a rough old-cassette texture. Flat and opaque, never translucent: a translucent bar takes its tone from whatever sits behind it, so it can never match the pane it meets. */
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   /* Tile the grain from the window, not this element's box, so every grained surface shares one lattice. Box-anchored grids fall out of phase wherever two meet — a 1px border is enough — and the seam reads as a faint hairline. */
   background-attachment: fixed;
@@ -3305,8 +3317,8 @@ body.is-window-inactive .reader-minimap {
   border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
   /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. */
   --lt-grain-dot: var(--library-header-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   user-select: none;
   /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
@@ -3915,8 +3927,8 @@ body.is-maximized #winMaximize .wc-restore {
   inset: -13px -20px -10px;
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   -webkit-mask-image: radial-gradient(
@@ -4170,8 +4182,8 @@ body.is-embedded .library-shell {
   position: relative;
   /* The chrome shade and grain again, on the same window-anchored lattice as the bar and the rail. What shows here is the gutter the reader is held off the window frame by (see --reader-gutter), so the texture runs unbroken from the bar, down the rail, and around the page. */
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
 /* Too narrow for a pane beside the page, so the library becomes a sheet over it: full width, parked off the left edge until the app bar's button pulls it in. Out of flow, so the grid still treats the library as closed and the page keeps the whole window. Under the app bar's z-index, which is what keeps the button that opened it reachable to close it again. */
@@ -4266,8 +4278,8 @@ body.is-library-settling .app-bar::after {
   height: 100%;
   /* The app bar's shade and grain, so the pane continues the bar rather than sitting under it. The tree rows on top are transparent, so the whole pane carries the texture. */
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
   color: var(--lt-markdown-foreground);
   font-family: var(--app-font);
@@ -4284,8 +4296,8 @@ body.is-library-settling .app-bar::after {
   width: calc(var(--lt-radius-md) + 1px);
   height: calc(var(--lt-radius-md) + 1px);
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   /* The same window-anchored lattice as every other grained surface, so a corner stays in phase with the bar and pane around it. */
   background-attachment: fixed;
   pointer-events: none;
@@ -4734,8 +4746,8 @@ body.library-resizing button {
   display: flex;
   align-items: center;
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }
@@ -5241,8 +5253,8 @@ body:has(#readerToolbar:not([hidden])) {
   inset: -14px -22px -9px;
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
@@ -5421,8 +5433,8 @@ body:has(#readerToolbar:not([hidden])) {
   /* A well cut into the bar: a wash of shadow over its face, and more inside the top edge. Black at an alpha, never a mix toward the foreground — that lightens on a dark theme, which is a recess lit from inside. Not a shade mixed from the chrome token either, so the bar stays one color. */
   /* The one grained surface in the reader that tiles from its own box rather than the app's shared lattice, and it says so: the tray is centered by a transform and this well is carried down out of the nub by another, and a transform re-anchors a fixed background to the moving box. The well floats over an ungrained tray face, so it meets no other grain and has no seam to show — asking for the shared lattice here only claimed a phase it could not hold. */
   background-color: var(--lt-tint-recess);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   box-shadow: var(--lt-shadow-inset);
 }
 .reader-view-tools[hidden] {
@@ -5675,8 +5687,8 @@ body:has(#readerToolbar:not([hidden])) {
   height: var(--reader-edge-fade-depth);
   /* The chrome's own lattice, in the page's color rather than the bar's. */
   --lt-grain-dot: var(--reader-edge-fade-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }
@@ -6719,8 +6731,8 @@ body.is-block-dragging .document-body [data-src-start] {
   inset: -13px -20px -10px;
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
@@ -7068,8 +7080,8 @@ body.is-block-dragging .document-body [data-src-start] {
   /* The code block's own cell, kept rather than cleared: a diagram you drag around needs an edge to be inside of. The grain is restated here because the shared rule further down loses to this selector — same token and the same 2px window-anchored lattice, so it is one texture with every other reading surface. */
   background-color: var(--lt-editor-code-background);
   --lt-grain-dot: var(--reader-surface-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   border: 0;
@@ -7315,8 +7327,8 @@ body.is-block-dragging .document-body [data-src-start] {
   right: 0;
   height: 18px;
   --lt-grain-dot: var(--lt-syntax-background);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent);
@@ -7487,13 +7499,13 @@ body.is-block-dragging .document-body [data-src-start] {
   /* Off until the scroll says otherwise, which is also what a table with nothing to scroll is left at: no timeline, no animation, no veil over a narrow table. */
   opacity: 0;
   --lt-grain-dot: var(--lt-markdown-background);
-  background-size: 2px 2px, 100% 100%;
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile), 100% 100%;
   background-repeat: repeat, no-repeat;
   background-attachment: fixed, scroll;
 }
 .table-lane::before {
   left: 0;
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)),
     linear-gradient(
       to right,
       var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
@@ -7512,7 +7524,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .table-lane::after {
   right: 0;
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)),
     linear-gradient(
       to left,
       var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
@@ -7590,16 +7602,16 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body th,
 .document-body tr:nth-child(2n) td {
   --lt-grain-dot: var(--reader-surface-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }
 /* Grain the untinted rows too, so a dark table reads as one texture banded light and dark rather than speckled rows alternating with flat ones. Same fixed lattice as every other grain, so the dots run straight down across the stripe. Light themes zero the token rather than drop the rule, keeping one selector to reason about against the frontmatter opt-out below. */
 .document-body tr:nth-child(2n + 1) td {
   --lt-grain-dot: var(--reader-row-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }
@@ -8047,6 +8059,48 @@ body.is-block-dragging .document-body [data-src-start] {
   touch-action: none;
   user-select: none;
 }
+/* The clipped thumbnail dissolves into the same fixed grain the rail stands on, using the page edge's depth and hold so the two views end alike. */
+.document-minimap-track::before,
+.document-minimap-track::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: var(--reader-edge-fade-depth);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-repeat: repeat;
+  background-attachment: fixed;
+  z-index: 1;
+  pointer-events: none;
+}
+.document-minimap-track::before {
+  top: 0;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
+.document-minimap-track::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(
+    to top,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to top,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
 /* While the thumbnail is being built — it clones the rendered page, so it can't exist until that page is laid out. updateDocumentMinimapPreview drops the class once a clone is in. */
 .document-minimap-spinner {
   position: absolute;
@@ -8070,6 +8124,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-minimap-content {
   position: absolute;
   top: 0;
+  z-index: 0;
   transform: translateY(0px);
   right: var(--minimap-padding-inline);
   left: var(--minimap-padding-inline);
@@ -8121,7 +8176,7 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   inset-inline: 0;
   top: 0%;
-  z-index: 1;
+  z-index: 2;
   height: 100%;
   min-height: 22px;
   border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
@@ -8516,8 +8571,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .home-list-scroll li.is-dropzone {
   --lt-grain-dot: var(--lt-grain-hover);
   border-radius: var(--lt-radius-md);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
 }
 /* Rows step aside rather than jumping, so the list reads as making room. Only while a drag is on: no list pays for this at rest, and Reduce Motion answers it with the rest of the app. */
@@ -8608,8 +8663,8 @@ body.is-home-row-dragging .home-list-scroll li {
   /* Dimmed and dotted: the tint does the dimming, the 2px lattice every grained surface wears does the rest, on the same window-anchored grid. */
   --lt-grain-dot: var(--lt-grain-dot-strong);
   background-color: var(--lt-tint-backdrop);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   opacity: 0;
@@ -8718,8 +8773,8 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 /* The same cassette grain the app bar and the reading surfaces wear, so a sheet reads as one of this app's surfaces rather than a plain card dropped on it. The color under it is each sheet's own, written as `background-color`: the shorthand would reset the lattice. It tiles from the sheet's own box rather than from the window, which is right for a surface that slides up over the page — and is what it does anyway, since a sheet always carries a transform and a transform re-anchors a fixed background to the element itself. */
 .leaf-sheet {
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
 }
 .leaf-sheet[hidden] {
@@ -9235,8 +9290,8 @@ body.is-home-row-dragging .home-list-scroll li {
   display: grid;
   place-items: center;
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   opacity: 1;
@@ -10174,15 +10229,15 @@ body.is-home-row-dragging .home-list-scroll li {
 .table-sheet-grid th,
 .table-sheet-grid tr:nth-child(2n) td {
   --lt-grain-dot: var(--reader-surface-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }
 .table-sheet-grid tr:nth-child(2n + 1) td {
   --lt-grain-dot: var(--reader-row-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }

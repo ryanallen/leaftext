@@ -384,8 +384,8 @@
 .home-list-scroll li.is-dropzone {
   --lt-grain-dot: var(--lt-grain-hover);
   border-radius: var(--lt-radius-md);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
 }
 /* Rows step aside rather than jumping, so the list reads as making room. Only while a drag is on: no list pays for this at rest, and Reduce Motion answers it with the rest of the app. */

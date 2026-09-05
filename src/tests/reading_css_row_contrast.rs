@@ -9,6 +9,8 @@ const ROW_SEPARATION_FLOOR: f64 = 3.5;
 ///
 /// The lattice is a circle solid to a 0.6px radius, fading linearly to nothing at 0.7px, on a 2px by 2px tile. Solid disc, pi times 0.6 squared, is 1.1310; the feathered ring integrates to 0.1990. Over the tile's 4px squared: 0.3325.
 ///
+/// A display at 100% takes those three lengths multiplied by 1.5 — the tile could not hold the dot at all otherwise — and the share is unchanged by that: both radii and the tile grow together, so the ratio the coverage is is the same number.
+///
 /// This is the idealization, and it is why a number here and a number off a photograph disagree by up to 1.2: a browser rasterizing a 0.6px radius at a real device pixel ratio does not land on the ideal. The floor above is chosen to survive that spread in both directions. Ranking two fills finely needs a driven copy, not this.
 const GRAIN_COVERAGE: f64 = 0.3325;
 

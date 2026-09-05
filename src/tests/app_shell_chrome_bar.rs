@@ -305,9 +305,9 @@ fn app_shell_header_keeps_one_chrome_shade_with_dividers() {
         // One flat chrome shade under the dot grid. No translucent fill or backdrop blur: either makes the bar's tone depend on what sits behind it.
         "background-color: var(--lt-surface);",
         // The circles are written here rather than pulled from a variable holding the finished gradient: the ink has to resolve on the element that draws it, or a surface setting its own would silently get this one's.
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
         "--lt-grain-dot: var(--app-bar-grain);",
-        "background-size: 2px 2px;",
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
         // The grain tiles from the window, so every grained surface shares one lattice and no seam between them reads as a hairline.
         "background-attachment: fixed;",
         // The bar keeps a hairline top divider in the outer border color.

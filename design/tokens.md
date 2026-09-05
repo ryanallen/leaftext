@@ -247,7 +247,7 @@ Everything the app puts in a `box-shadow`. None of them is a cast shadow: a floa
 
 ## Grain
 
-The dot lattice's ink. Only the ink is a token: each rule writes the circles into its own `background-image`, because a custom property holding the whole gradient is substituted where it is declared and would paint every surface below it in one ink.
+The dot lattice's ink. Only the ink is a token: each rule writes the circles into its own `background-image`, because a custom property holding the whole gradient is substituted where it is declared and would paint every surface below it in one ink. The lattice's three lengths — how far the dot is solid, where its ramp ends, and the tile it repeats in — are not tokens either, but they are said once: `--lt-grain-radius`, `--lt-grain-edge` and `--lt-grain-tile` sit in the metrics block in `src/assets/reading/base.css`, where a length carries no ink and so is safe to hoist, and a display at 100% takes bigger ones from the resolution branch at the foot of that file.
 
 | Token | Value | What it is for |
 | --- | --- | --- |

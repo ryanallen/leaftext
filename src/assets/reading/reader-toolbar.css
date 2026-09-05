@@ -51,8 +51,8 @@ body:has(#readerToolbar:not([hidden])) {
   inset: -14px -22px -9px;
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   -webkit-mask-image: radial-gradient(ellipse farthest-side at 50% 55%, var(--lt-mask-opaque) 30%, transparent 98%);
@@ -231,8 +231,8 @@ body:has(#readerToolbar:not([hidden])) {
   /* A well cut into the bar: a wash of shadow over its face, and more inside the top edge. Black at an alpha, never a mix toward the foreground — that lightens on a dark theme, which is a recess lit from inside. Not a shade mixed from the chrome token either, so the bar stays one color. */
   /* The one grained surface in the reader that tiles from its own box rather than the app's shared lattice, and it says so: the tray is centered by a transform and this well is carried down out of the nub by another, and a transform re-anchors a fixed background to the moving box. The well floats over an ungrained tray face, so it meets no other grain and has no seam to show — asking for the shared lattice here only claimed a phase it could not hold. */
   background-color: var(--lt-tint-recess);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   box-shadow: var(--lt-shadow-inset);
 }
 .reader-view-tools[hidden] {

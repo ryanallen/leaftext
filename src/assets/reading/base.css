@@ -23,6 +23,10 @@
   --reader-surface-grain: var(--app-bar-grain);
   /* The ink the dot lattice is drawn in, and the only part of it that is a variable: each rule writes the circles into its own `background-image`. Never hold the whole gradient in a custom property — its `var()` is substituted where the property is declared and descendants inherit the finished string, so one declared here silently paints every surface below in this ink whatever `--lt-grain-dot` they set. */
   --lt-grain-dot: var(--app-bar-grain);
+  /* The dot lattice's geometry: how far the dot is solid, where its antialiasing ramp ends, and the tile it repeats in. A length is safe in a custom property where the whole gradient is not — it carries no ink, so a surface below still gets the `--lt-grain-dot` it sets. Said once because the resolution branch below is the only thing that changes them. */
+  --lt-grain-radius: 0.6px;
+  --lt-grain-edge: 0.7px;
+  --lt-grain-tile: 2px;
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
   /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
@@ -45,6 +49,14 @@
   --app-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+/* A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
+@media (resolution <= 1dppx) {
+  :root {
+    --lt-grain-radius: 0.9px;
+    --lt-grain-edge: 1.05px;
+    --lt-grain-tile: 3px;
+  }
 }
 * {
   box-sizing: border-box;
@@ -113,8 +125,8 @@ body::before {
   z-index: var(--lt-z-below);
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
   background-attachment: fixed;

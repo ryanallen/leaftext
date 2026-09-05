@@ -42,7 +42,13 @@ function containedDocument(context, frame) {
   const page = {
     readyState: 'complete',
     body,
-    documentElement: { scrollHeight: 4000 },
+    // The root a real frame's page carries: its height is what the paper hold grows the frame to, and its markup is the whole of what the export writes out as the file.
+    documentElement: {
+      scrollHeight: 4000,
+      get outerHTML() {
+        return `<html><head></head>${body.outerHTML}</html>`;
+      },
+    },
     scrollingElement: body,
     // A frame's own address, which is what an in-page link is followed by: setting the hash is what scrolls the page and starts `:target` matching. The selection is the frame's own too, and a test that gives the reader words to copy writes it here.
     defaultView: {
@@ -143,9 +149,28 @@ export function run() {
     if (frame.getAttribute('sandbox') !== 'allow-same-origin') {
       throw new Error(`the frame's grant is ${frame.getAttribute('sandbox')}`);
     }
-    // Against a note rather than against a written-down list: the claim is that an HTML file changes nothing about the bar, so the bar a note gets is the thing to compare with.
-    if (barControls(context) !== barControls(bootMarkdown().context)) {
-      throw new Error(`the bar an HTML file gets is ${barControls(context)}`);
+    // Against a note rather than against a written-down list: the claim is that an HTML file brings no control of its own, so the bar a note gets is the thing to compare with. Nothing it has that the note has not — a tool the note has and this file does not is a tool with nothing to do on a page drawn in its own frame, which is the check below.
+    const note = barControls(bootMarkdown().context).split(',');
+    const extra = barControls(context).split(',').filter((one) => one && !note.includes(one));
+    if (extra.length) {
+      throw new Error(`an HTML file brought ${extra.join(',')} that a note does not have`);
+    }
+  });
+
+  // The tray's nub says where a view's tools went, so a tray with nothing in it is a promise with nothing behind it. On a contained page the padlock has nothing to bind to and the speed reader is refused, which empties the reading view's recess — while the source view of the same file still has both its padlock and its typing help.
+  check('the reading view of a page in its own frame leaves no nub', () => {
+    const { context } = bootContainedPage();
+    const tray = context.document.getElementById('readerToolTray');
+    const tools = context.document.getElementById('readerViewTools');
+    if (!tray.hidden) throw new Error('the nub stood over the bar with nothing in the tray');
+    if (!tools.hidden) throw new Error('the recess stayed open on a view with no tools');
+    const showing = [...tools.children].filter((tool) => !tool.hidden).map((tool) => tool.id);
+    if (showing.length) throw new Error(`${showing.join(',')} was still standing in the recess`);
+    vm.runInContext("renderViewTools('code')", context);
+    if (tray.hidden) throw new Error('the source view of the same file lost its nub too');
+    const inSource = [...tools.children].filter((tool) => !tool.hidden).map((tool) => tool.id).join(',');
+    if (!inSource.includes('readerLockButton') || !inSource.includes('codeIntelButton')) {
+      throw new Error(`the source view's recess holds ${inSource || 'nothing'}`);
     }
   });
 
@@ -374,17 +399,58 @@ export function run() {
     if (vm.runInContext('activeHoverLink', context)) throw new Error('the card stayed up after the pointer left the link');
   });
 
-  // The speed reader treats the words a reader is reading, and for a contained page those words are in the frame's document — the article out here holds the frame and no words at all.
-  check('the speed reader reaches the words in the page', () => {
+  // The setting is saved and global, so a reader who turned it on over a note opens an HTML file with it already on. Splitting a word inside somebody else's layout makes two flex items out of it and the row's own gap opens in the middle of the word, and the bold lead never arrives in exchange, so the page must come through untouched.
+  check('the speed reader leaves a page drawn in its own frame whole', () => {
     const { context, app, page } = bootContainedPage();
     vm.runInContext('setSpeedReaderEnabled(true)', context);
     try {
-      if (page.body.dataset.speedReaderProcessed !== 'true') {
-        throw new Error('the speed reader never reached the page the reader is reading');
+      if (page.body.dataset.speedReaderProcessed === 'true') {
+        throw new Error('the speed reader walked the page the author wrote');
+      }
+      if (page.body.querySelectorAll('.speed-reader-anchor').length) {
+        throw new Error('a word in the page came apart into two elements');
       }
       const article = app.querySelector('.document-body-site');
       if (article.dataset.speedReaderProcessed === 'true') {
-        throw new Error('the speed reader treated the frame around the page rather than the page');
+        throw new Error('the speed reader treated the frame around the page');
+      }
+    } finally {
+      vm.runInContext('setSpeedReaderEnabled(false)', context);
+    }
+  });
+
+  // The guard is about the contained page and nothing else: every format Leaftext draws itself keeps the speed reader working exactly as it does today.
+  check('an ordinary drawn document still gets the speed reader', () => {
+    const { context } = bootMarkdown();
+    vm.runInContext('setSpeedReaderEnabled(true)', context);
+    try {
+      const drawn = context.document.getElementById('app').querySelector('.document-body');
+      if (drawn.dataset.speedReaderProcessed !== 'true') {
+        throw new Error('the guard took the speed reader off a note as well');
+      }
+      if (!drawn.querySelectorAll('.speed-reader-anchor').length) {
+        throw new Error('a note came through with no word split at all');
+      }
+    } finally {
+      vm.runInContext('setSpeedReaderEnabled(false)', context);
+    }
+  });
+
+  // The export is where the damage would leave the app: with the setting on, every span the pass wrote was written into the file the reader saved — Leaftext's own class names sprinkled through somebody else's page.
+  check('an exported page carries none of the reader own word spans', () => {
+    const { context } = bootContainedPage();
+    vm.runInContext('setSpeedReaderEnabled(true)', context);
+    try {
+      const written = vm.runInContext('pageExportMarkup()', context);
+      // Asked before the words are looked at, because an export that wrote nothing would carry no spans either and pass without proving a thing. The doctype rather than a sentence: a sentence is what comes apart when the pass has run, so it cannot be the proof that a page was written.
+      if (!written.startsWith('<!doctype html>')) {
+        throw new Error('the export wrote no page at all, so it proves nothing about what is in one');
+      }
+      if (written.includes('speed-reader-anchor')) {
+        throw new Error('the saved file carries the app own word spans');
+      }
+      if (!written.includes('A saved page')) {
+        throw new Error("the saved file has the page's own words broken up in it");
       }
     } finally {
       vm.runInContext('setSpeedReaderEnabled(false)', context);

@@ -1414,7 +1414,7 @@ export function run() {
     if (styled.textContent !== 'heavyleaning') throw new Error('folding a styled span lost its words');
   });
 
-  const pressCodeOn = (markup, source, edgeBoundary = false) => {
+  const pressCodeOn = (markup, source, edgeBoundary = false, highlight = null) => {
     const { applyInlineFormat, blockDomToSource, commitBlockEdit } = booted;
     const block = fakeElement('code-format-block');
     block.tagName = 'P';
@@ -1451,6 +1451,17 @@ export function run() {
       walk(block);
       return count;
     };
+    // A character offset in the block’s visible words as a run and a place in it, so a check can name a highlight that begins inside one wrapper and ends outside it.
+    const pointAt = (offset, preferNext = false) => {
+      let remaining = offset;
+      let last = null;
+      for (const node of textNodes(block)) {
+        if (remaining < node.nodeValue.length || (!preferNext && remaining === node.nodeValue.length)) return { node, offset: remaining };
+        remaining -= node.nodeValue.length;
+        last = node;
+      }
+      return last ? { node: last, offset: last.nodeValue.length } : null;
+    };
     const makeRange = () => {
       const range = {
         startContainer: block,
@@ -1481,12 +1492,30 @@ export function run() {
         toString() {
           return block.textContent.slice(visibleOffset(this.startContainer, this.startOffset), visibleOffset(this.endContainer, this.endOffset));
         },
+        // The words between the two ends taken out of every run they cross, then both ends put where a browser leaves them: at the leading end where one end holds the other, and otherwise just past the last thing the leading end sits inside that the far end does not. That second answer is what stands a new code element beside the old one rather than inside it.
         deleteContents() {
-          if (this.startContainer !== this.endContainer || this.startContainer.nodeType !== 3) throw new Error('the normalized code selection did not stay in one run of words');
-          const node = this.startContainer;
-          node.nodeValue = node.nodeValue.slice(0, this.startOffset) + node.nodeValue.slice(this.endOffset);
-          node.textContent = node.nodeValue;
-          this.endOffset = this.startOffset;
+          const from = visibleOffset(this.startContainer, this.startOffset);
+          const to = visibleOffset(this.endContainer, this.endOffset);
+          const holdsEnd = contains(this.startContainer, this.endContainer);
+          let at = 0;
+          for (const node of textNodes(block)) {
+            const started = at;
+            at += node.nodeValue.length;
+            const cutFrom = Math.max(from, started);
+            const cutTo = Math.min(to, at);
+            if (cutTo <= cutFrom) continue;
+            node.nodeValue = node.nodeValue.slice(0, cutFrom - started) + node.nodeValue.slice(cutTo - started);
+            node.textContent = node.nodeValue;
+          }
+          if (holdsEnd) {
+            this.setEnd(this.startContainer, this.startOffset);
+            return;
+          }
+          let node = this.startContainer;
+          while (node.parentElement && !contains(node.parentElement, this.endContainer)) node = node.parentElement;
+          const holder = node.parentElement || block;
+          this.setStart(holder, holder.childNodes.indexOf(node) + 1);
+          this.setEnd(holder, this.startOffset);
         },
         insertNode(node) {
           const holder = this.startContainer.nodeType === 3 ? this.startContainer.parentElement : this.startContainer;
@@ -1513,7 +1542,12 @@ export function run() {
       },
     };
     const initial = makeRange();
-    if (edgeBoundary && wrapped) {
+    if (highlight) {
+      const from = pointAt(highlight.start, true);
+      const to = pointAt(highlight.end);
+      initial.setStart(from.node, from.offset);
+      initial.setEnd(to.node, to.offset);
+    } else if (edgeBoundary && wrapped) {
       initial.setStart(block, block.childNodes.indexOf(wrapped));
       initial.setEnd(words, words.nodeValue.length);
     } else {
@@ -1558,6 +1592,25 @@ export function run() {
     }
   };
 
+  // Coding half of an already-coded word ends the highlight outside the span it began in, so the press adds a second code element beside the first. Two of them touching write two delimiter pairs against each other, which the file reads back as one span holding the backticks as words — so the press joins them and the check reads the page, the highlight, the serialized line and the buffer.
+  check('coding out of a code span leaves one code element and one code span in the file', () => {
+    const source = 'before `words` after';
+    const cases = [
+      { name: 'out of the span into the words after it', highlight: { start: 10, end: 15 }, page: 'before <code>words af</code>ter', selected: 'ds af', markdown: 'before `words af`ter' },
+      { name: 'out of the words into the span after them', highlight: { start: 3, end: 9 }, page: 'bef<code>ore words</code> after', selected: 'ore wo', markdown: 'bef`ore words` after' },
+    ];
+    for (const one of cases) {
+      const result = pressCodeOn('before <code>words</code> after', source, false, one.highlight);
+      const spans = result.block.querySelectorAll('code').length;
+      if (spans !== 1) throw new Error(`coding ${one.name} left ${spans} code elements standing on the page`);
+      if (result.block.innerHTML !== one.page) throw new Error(`coding ${one.name} drew ${result.block.innerHTML}`);
+      if (result.selected !== one.selected) throw new Error(`coding ${one.name} left ${JSON.stringify(result.selected)} highlighted rather than the words that were chosen`);
+      if (result.markdown !== one.markdown) throw new Error(`coding ${one.name} serialized as ${JSON.stringify(result.markdown)}`);
+      if (!result.edit) throw new Error(`coding ${one.name} committed nothing`);
+      const written = source.slice(0, result.edit.start) + result.edit.text + source.slice(result.edit.end);
+      if (written !== one.markdown) throw new Error(`coding ${one.name} put ${JSON.stringify(written)} in the buffer`);
+    }
+  });
   check('code keeps an italic word when the saved selection begins outside its wrapper', () => {
     const source = 'before*words*after';
     const result = pressCodeOn('before<em>words</em>after', source, true);

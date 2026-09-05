@@ -55,7 +55,10 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
     // The row grain belongs to the untinted stripe, not the tinted one.
     assert_contains(&css[odd..], "--lt-grain-dot: var(--reader-row-grain);");
     // Same 2px lattice on both, so the dots line up down the page across a stripe.
-    assert_contains(&css[odd..], "background-size: 2px 2px;");
+    assert_contains(
+        &css[odd..],
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+    );
 
     // Source order is load-bearing: the row rules and the frontmatter opt-out tie on specificity, so the opt-out wins only by coming last.
     assert!(even < odd, "even-row grain should precede odd-row grain");
@@ -293,8 +296,8 @@ fn reading_surfaces_carry_the_chrome_dot_grain() {
         ".document-body th,",
         ".document-body tr:nth-child(2n) td {",
         "--lt-grain-dot: var(--reader-surface-grain);",
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
-        "background-size: 2px 2px;",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
         "background-attachment: fixed;",
     ] {
         assert_contains(css, expected);
@@ -522,7 +525,7 @@ fn every_floating_surface_throws_the_dot_halftone() {
     let halftone = rule_body(css, ".app-overflow-panel::before,");
     assert_contains(
         halftone,
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
     );
     assert_contains(halftone, "--lt-grain-dot: var(--lt-grain-dot-strong);");
     // The second mask layer punches the surface's own box out, or the dots land on its face: a negative-layer child paints above its parent's background. Subtract, not xor -- xor is the punch inside out, and a stale one would win by coming last.
@@ -542,7 +545,7 @@ fn the_sheet_scrim_dims_and_dots_the_page_behind_it() {
     assert_contains(scrim, "background-color: var(--lt-tint-backdrop);");
     assert_contains(
         scrim,
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
     );
     assert_contains(scrim, "background-attachment: fixed;");
 }
@@ -919,9 +922,12 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     assert_contains(band, "--lt-grain-dot: var(--lt-grain-dot-strong);");
     assert_contains(
         band,
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
     );
-    assert_contains(band, "background-size: 2px 2px;");
+    assert_contains(
+        band,
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+    );
     // Four edge gradients, intersected: nothing at the window's edge, full where the app starts, and each corner the product of two. Not the shared panel recipe's ellipse — on a box the size of a window its falloff is measured in hundreds of pixels and the band lands in the tail, where there is nothing left to draw.
     assert_eq!(band.matches("linear-gradient(to ").count(), 8);
     assert_contains(band, "mask-composite: intersect;");
@@ -1190,4 +1196,70 @@ fn the_alternating_rows_fill_is_a_name_a_family_answers_rather_than_one_color() 
             "expected {selector} to fill from a token, found {fill}"
         );
     }
+}
+
+#[test]
+fn the_lattices_geometry_is_said_once_rather_than_written_into_every_rule() {
+    // Twenty-four rules across thirteen files drew the same circle at the same size with the numbers typed into each one, so a display that cannot hold a 0.6px dot could only ever be answered twenty-four times over. The three lengths are declared once in the metrics block; a rule that writes one by hand sits outside the resolution branch and keeps drawing flat at 100%.
+    let css = strip_css_comments(&reading_mode_css());
+
+    for declared in [
+        "--lt-grain-radius: 0.6px;",
+        "--lt-grain-edge: 0.7px;",
+        "--lt-grain-tile: 2px;",
+    ] {
+        assert_eq!(
+            css.matches(declared).count(),
+            1,
+            "the lattice's geometry is declared exactly once, in the metrics block: {declared}"
+        );
+    }
+
+    let head = "radial-gradient(circle, var(--lt-grain-dot)";
+    let whole = "radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge))";
+    let mut drawn = 0;
+    for (at, _) in css.match_indices(head) {
+        assert!(
+            css[at..].starts_with(whole),
+            "a lattice rule writes the dot by hand, so the resolution branch cannot reach it: {}",
+            &css[at..(at + whole.len()).min(css.len())]
+        );
+        drawn += 1;
+    }
+    assert!(
+        drawn >= 24,
+        "the stylesheet should still draw the lattice on every grained surface ({drawn} found)"
+    );
+
+    let tile = "background-size: var(--lt-grain-tile) var(--lt-grain-tile)";
+    assert!(
+        css.matches(tile).count() >= 23,
+        "every lattice rule tiles from --lt-grain-tile"
+    );
+    assert!(
+        !css.contains("background-size: 2px 2px"),
+        "a lattice rule writes the tile by hand"
+    );
+}
+
+#[test]
+fn a_display_at_one_hundred_percent_gets_a_lattice_it_can_draw() {
+    // At 1dppx the 2px tile is two device pixels and all four of them sit 0.7071px from the dot's center, outside its 0.7px edge, so the shipped lattice paints nothing at all and every grained surface reads as a flat wash. The branch hands that display the same numbers multiplied by 1.5, which draws the device-pixel pattern a 150% display draws today; nothing above 1dppx sees a changed pixel.
+    let css = strip_css_comments(&reading_mode_css());
+    let at = css
+        .find("@media (resolution <= 1dppx)")
+        .expect("a display at 100% needs a lattice big enough to hold a dot");
+    let branch = &css[at..at + css[at..].find("\n}").expect("the branch closes")];
+
+    for declared in [
+        "--lt-grain-radius: 0.9px;",
+        "--lt-grain-edge: 1.05px;",
+        "--lt-grain-tile: 3px;",
+    ] {
+        assert_contains(branch, declared);
+    }
+    assert!(
+        branch.contains(":root {"),
+        "the branch has to reach every grained surface, so it sets the properties on the root"
+    );
 }

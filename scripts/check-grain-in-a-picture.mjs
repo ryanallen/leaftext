@@ -6,7 +6,7 @@
 //
 // Every other reading of the grain in this tree reads the stylesheet, and the stylesheet was right the whole time an exported picture was arriving flat: a `background-attachment: fixed` layer paints nothing at all in the capture unless the box holding it composites, and no rule anybody could read says so. So this one lays the compiled stylesheet out over a fixture document with the paper class on, captures it the way `src/app/fileops.rs` does — `Page.captureScreenshot`, beyond the viewport, clipped to the whole document — and samples the code block for the two shades a dithered surface has.
 //
-// `--check` renders twice, because a check that only proves the grain is there today would pass on a stylesheet somebody had quietly flattened. The first render takes `will-change` back off the paper class and has to come out flat; the second is the stylesheet as it stands and has to come out dithered. A run where both agree is the reading itself failing rather than the app.
+// `--check` renders four times: at a display scale of 1 and again at 1.5, the stylesheet as it stands and the same stylesheet with that scale's fix taken back out. A check that only proves the grain is there today would pass on one somebody had quietly flattened, so the stripped render has to come out flat and the real one dithered; a pair that agrees is the reading itself failing rather than the app. The two scales lose the grain to different faults and so are read against different controls: at 1.5 an uncomposited box drops the fixed layer out of the capture, and at 1 the shipped 0.6px dot in a 2px tile misses all four device pixels of its tile unless the resolution branch hands that display a bigger one.
 //
 // Edge headless over its own developer protocol, which is the engine the app's web view runs on and the one call — `Page.captureScreenshot` with `captureBeyondViewport` — that the fault lives inside. No crate, no package: the PNG reader is `check-shot-edges.mjs`'s and the browser is `wireframe.mjs`'s. A machine with neither Edge nor Chrome says so and passes, the way a wireframe does — a browser is not a build dependency here.
 
@@ -26,8 +26,42 @@ const COMPOSITED = 'will-change: transform;';
 /** The rule it lives in. Named rather than matched loosely: a stylesheet with the declaration somewhere else would let the flat render pass for the wrong reason. */
 const PAPER_SURFACE = 'body.leaf-paper .app-surface {';
 
-/** The display scale the app is measured at: Windows' own default on a laptop panel, and the one this fault was watched on. It is the whole reading. A dot 0.6px across in a 2px tile is drawn in device pixels, so a page rasterized at 1 loses the lattice whatever the stylesheet says — render at 1 here and the fixed stylesheet and the broken one come back identically flat. */
-const DISPLAY_SCALE = 1.5;
+/** The branch that hands a display at 100% a lattice big enough for a device pixel to hold. */
+const RESOLUTION_BRANCH = '@media (resolution <= 1dppx)';
+
+/** The same stylesheet with that branch and everything it sets taken out, which is what a display at 100% had before this was written. */
+function withoutTheResolutionBranch(css) {
+  const at = css.indexOf(RESOLUTION_BRANCH);
+  if (at < 0) return css;
+  let depth = 0;
+  for (let scan = css.indexOf('{', at); scan < css.length; scan++) {
+    if (css[scan] === '{') depth++;
+    else if (css[scan] === '}' && --depth === 0) return css.slice(0, at) + css.slice(scan + 1);
+  }
+  return css;
+}
+
+/** The same stylesheet with the one declaration taken back out of the one rule it is in. */
+function withoutTheCompositedPaper(css) {
+  const at = css.indexOf(PAPER_SURFACE);
+  return css.slice(0, at) + css.slice(at).replace(COMPOSITED, '');
+}
+
+/** What the grain rests on at each display scale, and the edit that takes it away. 1.5 is Windows' own default on a laptop panel and the scale the export fault was watched on; 1 is the ordinary desktop monitor, and nothing else in the tree reads a pixel there, so an edit that drops the branch fails here or nowhere. */
+const RESTS_ON = [
+  {
+    scale: 1,
+    strip: withoutTheResolutionBranch,
+    named: RESOLUTION_BRANCH,
+    fix: `A display at 100% needs a lattice it can draw — ${RESOLUTION_BRANCH} setting --lt-grain-radius, --lt-grain-edge and --lt-grain-tile in src/assets/reading/base.css.`,
+  },
+  {
+    scale: 1.5,
+    strip: withoutTheCompositedPaper,
+    named: COMPOSITED,
+    fix: `The paper class has to composite the app box — ${COMPOSITED} on ${PAPER_SURFACE} in src/assets/reading/print.css.`,
+  },
+];
 
 /** A share of the sampled block below which a shade is text, an edge or an artifact rather than the surface. */
 const REAL_SHARE = 0.1;
@@ -87,7 +121,7 @@ async function pageSocket(port) {
 }
 
 /** Lay one page out and photograph the whole of it the way the app does, then say what the code block came out as. */
-async function renderAndSample(browser, html) {
+async function renderAndSample(browser, html, scale) {
   const work = mkdtempSync(join(tmpdir(), 'leaf-grain-'));
   const page = join(work, 'page.html');
   writeFileSync(page, html, 'utf8');
@@ -139,11 +173,11 @@ async function renderAndSample(browser, html) {
 
     await ask(socket, pending, 'Page.enable');
     await ask(socket, pending, 'Runtime.enable');
-    // The one setting the whole reading rests on. A dot 0.6px across in a 2px tile is drawn in device pixels, so at a scale factor of 1 it falls below what the rasterizer will paint at all and no stylesheet can bring it back — and the app's own capture asks for the picture at one over the window's scale, which rasterizes at the display's resolution and hands back CSS-sized pixels. A render here at a plain 1 measures a lattice that was never drawn rather than one the render dropped.
+    // The one setting the whole reading rests on: it is what the page's own `resolution` query answers, and what the lattice is rasterized in. The app's own capture asks for the picture at one over the window's scale, which rasterizes at the display's resolution and hands back CSS-sized pixels, so this is the display the reading is about rather than a size of file.
     await ask(socket, pending, 'Emulation.setDeviceMetricsOverride', {
       width: 1080,
       height: 900,
-      deviceScaleFactor: DISPLAY_SCALE,
+      deviceScaleFactor: scale,
       mobile: false,
     });
     // Loading a `file:` URL on the command line races the socket, so the page is navigated again here and waited on: a capture taken against a page that has not laid out yet reads as a fault in the stylesheet.
@@ -210,26 +244,30 @@ async function run() {
   const css = readingStylesheet();
   if (!css.includes(PAPER_SURFACE)) throw new Error(`the stylesheet has no ${PAPER_SURFACE} rule`);
 
-  const withFix = await renderAndSample(browser, fixturePage(css));
-  console.log(`grain in a picture: the code block carries ${withFix.real.length} shade(s) — ${withFix.real.join(', ')}`);
-  if (!process.argv.includes('--check')) return 0;
+  const checking = process.argv.includes('--check');
+  let failed = 0;
+  for (const { scale, strip, named, fix } of RESTS_ON) {
+    const display = `${Math.round(scale * 100)}%`;
+    const withFix = await renderAndSample(browser, fixturePage(css), scale);
+    console.log(`grain in a picture at ${display}: the code block carries ${withFix.real.length} shade(s) — ${withFix.real.join(', ')}`);
+    if (!checking) continue;
 
-  // The same stylesheet with the one declaration taken back out of the one rule it is in.
-  const at = css.indexOf(PAPER_SURFACE);
-  const flat = css.slice(0, at) + css.slice(at).replace(COMPOSITED, '');
-  if (flat.length === css.length) throw new Error(`${PAPER_SURFACE} does not carry ${COMPOSITED}`);
-  const withoutFix = await renderAndSample(browser, fixturePage(flat));
-  console.log(`  without ${COMPOSITED} it carries ${withoutFix.real.length} shade(s) — ${withoutFix.real.join(', ')}`);
+    const stripped = strip(css);
+    if (stripped.length === css.length) throw new Error(`the stylesheet does not carry ${named}`);
+    const withoutFix = await renderAndSample(browser, fixturePage(stripped), scale);
+    console.log(`  without ${named} it carries ${withoutFix.real.length} shade(s) — ${withoutFix.real.join(', ')}`);
 
-  if (withoutFix.real.length > 1) {
-    console.error(`the reading itself is broken: the code block is dithered with ${COMPOSITED} taken off, so this check would pass on a stylesheet that had lost it.`);
-    return 1;
+    if (withoutFix.real.length > 1) {
+      console.error(`the reading itself is broken at ${display}: the code block is dithered with ${named} taken out, so this check would pass on a stylesheet that had lost it.`);
+      failed = 1;
+      continue;
+    }
+    if (withFix.real.length < 2) {
+      console.error(`the dot grain is missing at ${display}: the code block came out one flat shade. ${fix}`);
+      failed = 1;
+    }
   }
-  if (withFix.real.length < 2) {
-    console.error(`an exported picture loses the dot grain: the code block came out one flat shade. The paper class has to composite the app box — ${COMPOSITED} on ${PAPER_SURFACE} in src/assets/reading/print.css.`);
-    return 1;
-  }
-  return 0;
+  return failed;
 }
 
 process.exit(await run());

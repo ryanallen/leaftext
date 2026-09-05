@@ -30,8 +30,8 @@ body.is-embedded .library-shell {
   position: relative;
   /* The chrome shade and grain again, on the same window-anchored lattice as the bar and the rail. What shows here is the gutter the reader is held off the window frame by (see --reader-gutter), so the texture runs unbroken from the bar, down the rail, and around the page. */
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
 /* Too narrow for a pane beside the page, so the library becomes a sheet over it: full width, parked off the left edge until the app bar's button pulls it in. Out of flow, so the grid still treats the library as closed and the page keeps the whole window. Under the app bar's z-index, which is what keeps the button that opened it reachable to close it again. */
@@ -126,8 +126,8 @@ body.is-library-settling .app-bar::after {
   height: 100%;
   /* The app bar's shade and grain, so the pane continues the bar rather than sitting under it. The tree rows on top are transparent, so the whole pane carries the texture. */
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
   color: var(--lt-markdown-foreground);
   font-family: var(--app-font);
@@ -144,8 +144,8 @@ body.is-library-settling .app-bar::after {
   width: calc(var(--lt-radius-md) + 1px);
   height: calc(var(--lt-radius-md) + 1px);
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   /* The same window-anchored lattice as every other grained surface, so a corner stays in phase with the bar and pane around it. */
   background-attachment: fixed;
   pointer-events: none;
@@ -594,8 +594,8 @@ body.library-resizing button {
   display: flex;
   align-items: center;
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }

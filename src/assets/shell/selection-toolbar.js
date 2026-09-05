@@ -316,6 +316,29 @@ function unwrapSelectionAncestor(el) {
   if (parent) parent.normalize();
 }
 
+// Join a newly coded run with the code element directly beside it, and put the reader’s own words back under the highlight.
+//
+// The press adds a wrapper wherever the highlight runs out of a code span, leaving two code elements touching. The serializer writes a backtick pair for each, so the two delimiter runs land against each other and the parser reads them back as one span whose words hold the backticks — the file stops saying what the page drew. Only a direct sibling joins: a code span behind emphasis, a link or any other wrapper means something else and keeps its own element.
+function joinCodeSiblingsAround(el, block, highlighted) {
+  const codeBeside = (node) => (node && node.nodeType === Node.ELEMENT_NODE && node.tagName.toLowerCase() === 'code' ? node : null);
+  let joined = false;
+  for (let before = codeBeside(el.previousSibling); before; before = codeBeside(el.previousSibling)) {
+    el.textContent = before.textContent + el.textContent;
+    before.remove();
+    joined = true;
+  }
+  for (let after = codeBeside(el.nextSibling); after; after = codeBeside(el.nextSibling)) {
+    el.textContent = el.textContent + after.textContent;
+    after.remove();
+    joined = true;
+  }
+  if (!joined || !block || !highlighted) return;
+  // By visible offsets, because the join drops an element and every run of words inside it, so the range the press left standing names nodes that are gone.
+  selectTextSpanInBlock(block, highlighted);
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount) selectionToolbarRange = selection.getRangeAt(0).cloneRange();
+}
+
 function applyInlineFormat(format) {
   if (!restoreSelectionForEdit()) return;
   const block = selectionToolbarBlock;
@@ -328,8 +351,14 @@ function applyInlineFormat(format) {
     normalizeInlineFormatting(block);
   } else if (existing) {
     unwrapSelectionAncestor(existing);
+  } else if (format.tag === 'code') {
+    // The words are recorded before the wrapper goes in, because the join below removes one of the two elements the highlight is standing in.
+    const highlighted = block ? selectionTextSpanIn(block) : null;
+    const wrapper = document.createElement('code');
+    surroundSelection(wrapper, true);
+    joinCodeSiblingsAround(wrapper, block, highlighted);
   } else {
-    surroundSelection(document.createElement(format.tag), format.tag === 'code');
+    surroundSelection(document.createElement(format.tag), false);
   }
   syncSelectionToolbarSoon();
 }

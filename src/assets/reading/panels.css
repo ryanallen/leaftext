@@ -200,8 +200,8 @@
   inset: -13px -20px -10px;
   pointer-events: none;
   --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   -webkit-mask-image: radial-gradient(

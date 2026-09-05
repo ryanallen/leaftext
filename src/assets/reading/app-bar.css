@@ -14,8 +14,8 @@
   padding: 0;
   /* The chrome shade under a fine dithered dot grid, for a rough old-cassette texture. Flat and opaque, never translucent: a translucent bar takes its tone from whatever sits behind it, so it can never match the pane it meets. */
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   /* Tile the grain from the window, not this element's box, so every grained surface shares one lattice. Box-anchored grids fall out of phase wherever two meet — a 1px border is enough — and the seam reads as a faint hairline. */
   background-attachment: fixed;
@@ -129,8 +129,8 @@
   border-radius: var(--lt-radius-md) var(--lt-radius-md) 0 0;
   /* An inactive tab reads as a darker cell by tiling the header's cassette grain at its heavier weight — denser ink, no outline needed. */
   --lt-grain-dot: var(--library-header-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   user-select: none;
   /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */

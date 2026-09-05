@@ -138,13 +138,13 @@
   /* Off until the scroll says otherwise, which is also what a table with nothing to scroll is left at: no timeline, no animation, no veil over a narrow table. */
   opacity: 0;
   --lt-grain-dot: var(--lt-markdown-background);
-  background-size: 2px 2px, 100% 100%;
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile), 100% 100%;
   background-repeat: repeat, no-repeat;
   background-attachment: fixed, scroll;
 }
 .table-lane::before {
   left: 0;
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)),
     linear-gradient(
       to right,
       var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
@@ -163,7 +163,7 @@
 }
 .table-lane::after {
   right: 0;
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px),
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)),
     linear-gradient(
       to left,
       var(--lt-markdown-background) 0 var(--reader-edge-fade-hold),
@@ -241,16 +241,16 @@
 .document-body th,
 .document-body tr:nth-child(2n) td {
   --lt-grain-dot: var(--reader-surface-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }
 /* Grain the untinted rows too, so a dark table reads as one texture banded light and dark rather than speckled rows alternating with flat ones. Same fixed lattice as every other grain, so the dots run straight down across the stripe. Light themes zero the token rather than drop the rule, keeping one selector to reason about against the frontmatter opt-out below. */
 .document-body tr:nth-child(2n + 1) td {
   --lt-grain-dot: var(--reader-row-grain);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }

@@ -12,8 +12,8 @@
   /* Dimmed and dotted: the tint does the dimming, the 2px lattice every grained surface wears does the rest, on the same window-anchored grid. */
   --lt-grain-dot: var(--lt-grain-dot-strong);
   background-color: var(--lt-tint-backdrop);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   opacity: 0;
@@ -122,8 +122,8 @@
 }
 /* The same cassette grain the app bar and the reading surfaces wear, so a sheet reads as one of this app's surfaces rather than a plain card dropped on it. The color under it is each sheet's own, written as `background-color`: the shorthand would reset the lattice. It tiles from the sheet's own box rather than from the window, which is right for a surface that slides up over the page — and is what it does anyway, since a sheet always carries a transform and a transform re-anchors a fixed background to the element itself. */
 .leaf-sheet {
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
 }
 .leaf-sheet[hidden] {
@@ -639,8 +639,8 @@
   display: grid;
   place-items: center;
   background-color: var(--lt-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
   opacity: 1;

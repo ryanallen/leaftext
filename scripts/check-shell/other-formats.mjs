@@ -38,6 +38,32 @@ export function run() {
     }
   });
 
+  // The nub's whole job is to say where a view's tools went, so a tray with nothing in it is a promise with nothing behind it. Proved as a rule rather than on one document: the recess is emptied by hand here, so the next tool to leave takes the nub with it without the tray learning another document rule.
+  check('a recess with nothing left in it takes its nub with it', () => {
+    const read = (expression) => vm.runInContext(expression, booted);
+    const tools = booted.document.getElementById('readerViewTools');
+    const tray = booted.document.getElementById('readerToolTray');
+    const held = [...tools.children].map((tool) => tool.hidden);
+    try {
+      tools.children.forEach((tool) => {
+        tool.hidden = true;
+      });
+      read('showViewToolsIfAny()');
+      if (!tray.hidden) throw new Error('a view whose tools had all gone kept its nub');
+      if (!tools.hidden) throw new Error('the recess stayed open with nothing in it');
+
+      tools.children[tools.children.length - 1].hidden = false;
+      read('showViewToolsIfAny()');
+      if (tray.hidden) throw new Error('a view with one tool left lost its nub');
+      if (tools.hidden) throw new Error('the recess closed on a tool that was still standing');
+    } finally {
+      tools.children.forEach((tool, at) => {
+        tool.hidden = held[at];
+      });
+      booted.renderViewTools('reading');
+    }
+  });
+
   // The answer comes off the payload the host already sends, and it is read as a document binds — so an email that proved nothing and an empty note, which has no blocks either, must not come out the same.
   check('a document binds something when it is Markdown or a block proved a range', () => {
     const read = (expression) => vm.runInContext(expression, booted);

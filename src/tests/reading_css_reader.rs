@@ -389,7 +389,7 @@ fn the_macs_card_follows_the_macs_window_in_by_the_gutter_between_them() {
 fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     // The edge is the chrome's dot screen in the page's color, so it has to be the same circle on the same lattice as the bar — and each rule has to write the circles itself. A custom property holding the whole gradient resolves its ink where it is declared, so one at `:root` outranks every `--lt-grain-dot` below it: v0.1.439 screened the chrome's dark ink over a light page, 239-255 gray where the page is 255.
     let css = reading_mode_css();
-    let grain = "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);";
+    let grain = "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));";
     assert!(
         !css.contains("--lt-grain-image:"),
         "the lattice must not go through a variable holding the whole gradient: the ink \
@@ -397,11 +397,17 @@ fn the_readers_edges_reuse_the_chromes_grain_and_fade_it_by_opacity() {
     );
     let bar = rule_body(css, ".app-bar {");
     assert_contains(bar, grain);
-    assert_contains(bar, "background-size: 2px 2px;");
+    assert_contains(
+        bar,
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+    );
 
     let shared = rule_body(css, ".reader-edge-fade::before,");
     assert_contains(shared, grain);
-    assert_contains(shared, "background-size: 2px 2px;");
+    assert_contains(
+        shared,
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+    );
     // And the ink is the page's own color, which is the whole point: over a flat page the screen cannot be seen, and over a tinted block at the edge it still carries the lattice.
     assert_contains(shared, "--lt-grain-dot: var(--reader-edge-fade-surface);");
     assert_contains(
@@ -527,7 +533,7 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         "minimap viewport must span the full rail width"
     );
     assert!(
-            css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  transform: translateY(0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
+            css.contains(".document-minimap-content {\n  position: absolute;\n  top: 0;\n  z-index: 0;\n  transform: translateY(0px);\n  right: var(--minimap-padding-inline);\n  left: var(--minimap-padding-inline);"),
             "the minimap thumbnail lane fills the rail inside the exact 8px padding on both edges"
         );
     // The clone is laid out inside a frame carrying the same container query the reading layout carries, so a wide table in the thumbnail measures the room the page gives it instead of the whole window — which is what left the thumbnail a fifth short of the bottom.
@@ -609,6 +615,62 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
         ),
         "scrollbar-width must not sit on the base rule, or the thin bar can never be styled"
     );
+}
+
+#[test]
+fn minimap_hard_cuts_dissolve_into_the_rail_without_fading_the_viewport() {
+    let css = reading_mode_css();
+    let fades = rule_body(
+        &css,
+        ".document-minimap-track::before,\n.document-minimap-track::after {",
+    );
+
+    for expected in [
+        "height: var(--reader-edge-fade-depth);",
+        "background-color: var(--lt-surface);",
+        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
+        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+        "background-attachment: fixed;",
+        "z-index: 1;",
+        "pointer-events: none;",
+    ] {
+        assert_contains(fades, expected);
+    }
+    for (selector, direction, edge) in [
+        (
+            ".document-minimap-track::before {\n  top: 0;",
+            "to bottom",
+            "top: 0;",
+        ),
+        (
+            ".document-minimap-track::after {\n  bottom: 0;",
+            "to top",
+            "bottom: 0;",
+        ),
+    ] {
+        let fade = rule_body(&css, selector);
+        assert_contains(fade, edge);
+        assert_contains(fade, direction);
+        assert_contains(
+            fade,
+            "var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),",
+        );
+    }
+    assert_contains(
+        rule_body(&css, ".document-minimap-content {"),
+        "z-index: 0;",
+    );
+    assert_contains(
+        rule_body(&css, ".document-minimap-viewport {"),
+        "z-index: 2;",
+    );
+    let track = rule_body(&css, ".document-minimap-track {");
+    assert_contains(track, "width: 100%;");
+    assert_contains(track, "overflow: hidden;");
+    let content = rule_body(&css, ".document-minimap-content {");
+    assert_contains(content, "transform: translateY(0px);");
+    assert_contains(content, "right: var(--minimap-padding-inline);");
+    assert_contains(content, "left: var(--minimap-padding-inline);");
 }
 
 #[test]

@@ -133,11 +133,17 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(html.contains(r#"id="codeIntelButton" class="reader-subtool""#));
     assert!(html.contains("const editable = current === 'reading' || current === 'code';"));
     assert!(html.contains("const onGraph = current === 'graph';"));
-    assert!(html.contains("const showTools = editable || onGraph;"));
+    // The tray comes and goes with what it holds, so a view with no tools leaves no nub above the bar to reach for. Decided after every tool has answered rather than from the view: each tool keeps its own rule about the document in front of it and the tray learns none of them.
+    assert!(html.contains("const showTools = anyViewToolShowing();"));
     assert!(html.contains("readerViewTools.hidden = !showTools;"));
-    // The tray comes and goes with what it holds, so a view with no tools leaves no nub above the bar to reach for.
     assert!(html.contains("readerToolTray.hidden = !showTools;"));
+    assert!(html.contains("for (const tool of readerViewTools.children) {"));
     assert!(html.contains("graphScopeTool.hidden = !onGraph;"));
+    // The tools first, the tray they end up in after them, and the anchor last, because a tray that is not showing is not measured.
+    let tools_at = html.find("renderCodeTools(current === 'code');").unwrap();
+    let tray_at = html.find("  showViewToolsIfAny();\n").unwrap();
+    let anchor_at = html.find("  anchorToolTray(current);\n").unwrap();
+    assert!(tools_at < tray_at && tray_at < anchor_at);
     // Four named sizes, read rather than clicked through, and the help sentence the panel spelled out is the dropdown's tooltip now.
     assert!(html.contains(r#"<option value="small">Focus</option>"#));
     assert!(html.contains(r#"<option value="xl">Everything</option>"#));
@@ -157,7 +163,9 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     assert!(html.contains(
         "readerLockButton.hidden = !editable || (current === 'reading' && !currentDocumentBindsAnything);"
     ));
-    assert!(html.contains("speedReaderButton.hidden = current !== 'reading';"));
+    // And the speed reader stands only where it does something: a page drawn in its own frame is left as its author wrote it, so the switch leaves that tray the way the padlock already has.
+    assert!(html
+        .contains("speedReaderButton.hidden = current !== 'reading' || readingIsContainedPage();"));
     assert!(html.contains("codeIntelButton.hidden = !onCodeView;"));
     assert!(html.contains("renderViewTools(current);"));
     // Sunk into the bar and grained like it, rather than laid on top of it.

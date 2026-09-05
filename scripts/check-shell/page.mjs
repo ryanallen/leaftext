@@ -21,7 +21,27 @@ function elementIds() {
 export class FakeElement {}
 
 /** A run of words, spelled the way a browser spells one and the way the checks' own `node` helper already spells one: it says it is text, it answers its value, and it answers its words. One maker, because a bare string cannot travel — handed to a move it lands in the element list and then throws assigning a holder onto a primitive, and the tag fold's `while (el.firstChild)` loop never ends. */
-export const textNode = (words) => ({ nodeType: 3, nodeValue: String(words), textContent: String(words), parentElement: null });
+export const textNode = (words) => ({
+  nodeType: 3,
+  nodeValue: String(words),
+  textContent: String(words),
+  parentElement: null,
+  // A run of words swapped for what is handed over, at the place it was standing. A fragment hands over its own children rather than itself, the way the platform unpacks one — which is the whole move the speed reader is: one run of words out, a lead, a tail and whatever sat between them in.
+  replaceWith(...nodes) {
+    const holder = this.parentElement;
+    if (!holder) return;
+    const made = [];
+    for (const one of nodes) {
+      if (typeof one === 'string') made.push(textNode(one));
+      else if (one && one.nodeType === 11) made.push(...one.childNodes.slice());
+      else made.push(one);
+    }
+    for (const node of made) detachChild(node);
+    const spot = holder.contents.indexOf(this);
+    detachChild(this);
+    insertNodesAt(holder, spot, made);
+  },
+});
 
 /** Take a node out of whatever is holding it, so a move is a move rather than a second listing. */
 export function detachChild(child) {
@@ -495,7 +515,11 @@ export function fakeElement(id = '') {
     },
     // The one guard in the front end that asks a box what it is rather than being told: whether the pointer near an edge is on that box's own scrollbar gutter. An answer of no for ever leaves that branch unreachable.
     matches: (selector) => selectorParts(selector).some((one) => matchesSelector(element, one, element)),
-    contains: () => false,
+    // Walked up from the node asked about, the way the platform answers it, and true of the element itself. A stub saying no for ever made every guard written as "is this still inside the thing I am treating" answer no, so a pass reading one skipped the whole document while its own mark said it had run.
+    contains: (node) => {
+      for (let at = node; at; at = at.parentElement) if (at === element) return true;
+      return false;
+    },
     // Its own children and nothing else, so an element holding nothing says so.
     querySelector: (selector) => matchingDescendants(element, selector)[0] || null,
     querySelectorAll: (selector) => matchingDescendants(element, selector),
@@ -540,6 +564,24 @@ export function fakeElement(id = '') {
     if (at < 0) return null;
     return holder.children[at + step] || null;
   };
+  // The same step over the whole node list rather than the element list, because a run of words standing between two elements is what says they are not touching — and the code press asks exactly that before it joins two code spans into one.
+  const nodeSiblingAt = (step) => {
+    const holder = element.parentElement;
+    if (!holder) return null;
+    const at = holder.childNodes.indexOf(element);
+    if (at < 0) return null;
+    return holder.childNodes[at + step] || null;
+  };
+  Object.defineProperty(element, 'nextSibling', {
+    get: () => nodeSiblingAt(1),
+    configurable: true,
+    enumerable: true,
+  });
+  Object.defineProperty(element, 'previousSibling', {
+    get: () => nodeSiblingAt(-1),
+    configurable: true,
+    enumerable: true,
+  });
   Object.defineProperty(element, 'nextElementSibling', {
     get: () => siblingAt(1),
     configurable: true,
@@ -741,9 +783,29 @@ export function fakePage() {
       return made;
     },
     createTextNode: (text) => textNode(text),
-    // Nothing is rendered here, so a walk over an element finds no nodes — which is what a walk over the fake page's empty elements would find.
-    createTreeWalker: () => ({ nextNode: () => null }),
-    createDocumentFragment: () => fakeElement('fragment'),
+    // A depth-first walk over the words under an element, in the order a browser hands them over, so a pass that rewrites text is watched doing it rather than watched running. Text alone: nothing here asks for an element walk, and a filter that rejects a run of words skips that run without stopping the walk, which is what the reject the platform names does for a text node.
+    createTreeWalker: (root, show, filter) => {
+      const found = [];
+      (function walk(node) {
+        for (const child of node && node.childNodes ? node.childNodes : []) {
+          if (child.nodeType === 3) {
+            if (show && !(show & 4)) continue;
+            const answer = filter && filter.acceptNode ? filter.acceptNode(child) : 1;
+            if (answer === 1) found.push(child);
+          } else {
+            walk(child);
+          }
+        }
+      })(root);
+      let at = -1;
+      return { nextNode: () => (at + 1 < found.length ? found[(at += 1)] : null) };
+    },
+    createDocumentFragment: () => {
+      const fragment = fakeElement('fragment');
+      // Spelled as what it is, so a move handed one puts its children where it stood rather than the holder itself.
+      fragment.nodeType = 11;
+      return fragment;
+    },
     createRange: () => {
       // Where a selection was put back, kept rather than swallowed: the selection toolbar's unwrap leaves the words it kept selected so a second button press lands on the same ones, and a stub that dropped the two ends would let a check watching for that pass with nothing selected at all. A place is a holder and a spot in its node list, the way a browser records one.
       const range = {
@@ -968,7 +1030,8 @@ export function runShell(source, extras = {}) {
     // Node's own, under the browser's name and with the browser's contract: one character per byte in, base64 out. The diagram export encodes its drawing through this and reads it back nowhere, so a stand-in that answered anything at all would let a picture full of the wrong bytes pass.
     btoa,
     Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
-    NodeFilter: { SHOW_ELEMENT: 1, SHOW_TEXT: 4 },
+    // The two halves the platform puts under one name: what a walk is asked to visit, and what its filter answers about each node. The verdicts belong here as much as the kinds — a filter answering `undefined` is one whose every yes reads as a no.
+    NodeFilter: { SHOW_ELEMENT: 1, SHOW_TEXT: 4, FILTER_ACCEPT: 1, FILTER_REJECT: 2, FILTER_SKIP: 3 },
     Element: FakeElement,
     // The page's own picture, answered off the map above instead of off the network. Both live paths assign their handlers before the source and neither is written for an answer arriving on its own stack, so the answer is scheduled off it the way a browser's is. Loading and decoding are separate answers because the probe reads them separately: mermaid throws on the decode, which is the failure the whole probe exists for.
     Image: class {

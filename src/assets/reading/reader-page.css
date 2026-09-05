@@ -85,8 +85,8 @@
   height: var(--reader-edge-fade-depth);
   /* The chrome's own lattice, in the page's color rather than the bar's. */
   --lt-grain-dot: var(--reader-edge-fade-surface);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);
-  background-size: 2px 2px;
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-attachment: fixed;
 }

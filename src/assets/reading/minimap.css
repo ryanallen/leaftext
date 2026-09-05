@@ -18,6 +18,48 @@
   touch-action: none;
   user-select: none;
 }
+/* The clipped thumbnail dissolves into the same fixed grain the rail stands on, using the page edge's depth and hold so the two views end alike. */
+.document-minimap-track::before,
+.document-minimap-track::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: var(--reader-edge-fade-depth);
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-repeat: repeat;
+  background-attachment: fixed;
+  z-index: 1;
+  pointer-events: none;
+}
+.document-minimap-track::before {
+  top: 0;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
+.document-minimap-track::after {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(
+    to top,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to top,
+    var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
+    transparent
+  );
+}
 /* While the thumbnail is being built — it clones the rendered page, so it can't exist until that page is laid out. updateDocumentMinimapPreview drops the class once a clone is in. */
 .document-minimap-spinner {
   position: absolute;
@@ -41,6 +83,7 @@
 .document-minimap-content {
   position: absolute;
   top: 0;
+  z-index: 0;
   transform: translateY(0px);
   right: var(--minimap-padding-inline);
   left: var(--minimap-padding-inline);
@@ -92,7 +135,7 @@
   position: absolute;
   inset-inline: 0;
   top: 0%;
-  z-index: 1;
+  z-index: 2;
   height: 100%;
   min-height: 22px;
   border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);

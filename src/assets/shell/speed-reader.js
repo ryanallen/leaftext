@@ -143,6 +143,10 @@ function applySpeedReaderToDocument(root = readingDocumentRoot()) {
   if (!speedReaderEnabled || !root || root.dataset.speedReaderProcessed === 'true') {
     return;
   }
+  // A page drawn in its own frame is left exactly as its author wrote it. Splitting a word there adds a second flex item inside somebody else's row, so the row's gap opens in the middle of the word, and the bold lead never arrives in exchange: the rule that draws it is keyed on this page's root and on our own article class, neither of which exists in that document. The setting is saved and global, so this guard is what keeps a reader who turned it on over a note from opening an HTML file broken.
+  if (readingIsContainedPage()) {
+    return;
+  }
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       return shouldSkipSpeedReaderTextNode(node, root) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;

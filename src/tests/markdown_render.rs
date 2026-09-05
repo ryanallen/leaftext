@@ -594,3 +594,17 @@ fn loading_document_preserves_source_markdown() {
     assert!(!document.html.contains("<script"));
     assert_eq!(preserved, markdown);
 }
+
+// Coding half of an already-coded word used to leave two code spans touching in the file, and touching delimiters are one span to a CommonMark parser: the two backticks between them stop being punctuation and become words. This pins both readings — the loss the press used to write, and what the joined span gives back.
+#[test]
+fn touching_code_delimiters_read_back_as_one_span_and_a_joined_one_reads_back_whole() {
+    let lost = render_markdown_document("before `wor``ds af`ter\n", "note.md").html;
+    assert_contains(&lost, "<code>wor``ds af</code>");
+
+    let joined = render_markdown_document("before `words af`ter\n", "note.md").html;
+    assert_contains(&joined, "<code>words af</code>");
+    assert!(
+        !joined.contains('`'),
+        "a joined code span put a delimiter backtick in the reader's words: {joined}"
+    );
+}

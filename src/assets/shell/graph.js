@@ -126,11 +126,6 @@ function viewLockTooltip(onCodeView) {
 function renderViewTools(current) {
   const editable = current === 'reading' || current === 'code';
   const onGraph = current === 'graph';
-  // The recess stands in all three views now: the editable pair fill it with the padlock and its neighbors, the map with the one dropdown.
-  const showTools = editable || onGraph;
-  if (readerViewTools) readerViewTools.hidden = !showTools;
-  // The tray comes and goes with what it holds, so a view with no tools leaves no nub above the bar to reach for.
-  if (readerToolTray) readerToolTray.hidden = !showTools;
   if (graphScopeTool) graphScopeTool.hidden = !onGraph;
   if (readerLockButton) {
     // The reading padlock stands only where it is true: a document that proved no range has nothing to click into, so the button would answer a press with a re-render and no visible change. The source view's padlock is a different switch and stands on everything.
@@ -143,11 +138,27 @@ function renderViewTools(current) {
     );
   }
   if (speedReaderButton) {
-    speedReaderButton.hidden = current !== 'reading';
+    // A page drawn in its own frame is left as its author wrote it, so the switch has nothing to do there — the same answer the padlock already gives on the same document. A control that does nothing is worse than one that is not there.
+    speedReaderButton.hidden = current !== 'reading' || readingIsContainedPage();
     setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
   }
   renderCodeTools(current === 'code');
+  showViewToolsIfAny();
   anchorToolTray(current);
+}
+// The tray comes and goes with what it holds, so a view with no tools leaves no nub above the bar to reach for. Read off the tools rather than off the view, and only once every one of them has answered: each tool keeps its own rule about the document in front of it and the tray learns none of them, so the next tool to leave takes the nub with it for free.
+function showViewToolsIfAny() {
+  const showTools = anyViewToolShowing();
+  if (readerViewTools) readerViewTools.hidden = !showTools;
+  if (readerToolTray) readerToolTray.hidden = !showTools;
+}
+// Whether the recess ended up with anything in it. A scan rather than a list built and counted: it runs on every view change and answers on the first tool still standing.
+function anyViewToolShowing() {
+  if (!readerViewTools) return false;
+  for (const tool of readerViewTools.children) {
+    if (!tool.hidden) return true;
+  }
+  return false;
 }
 function retireViewToolsHint() {
   retireHint('viewTools');
