@@ -327,11 +327,17 @@ function renderTabs(state) {
   // A tab opening, closing, or changing title changes what the strip needs — refold so a longer title takes a button rather than getting clipped.
   refitAppBar();
 }
+// The mark only ever stands in for hover across a redraw, so any pointer movement at all takes it off and the browser's own `:hover` — drawing the same cross and heart a frame later — has it back. Asked of the strip rather than remembered, since the next wholesale write detaches the element last marked and removing a class from a detached node is a silent no-op that would leave the live tab wearing it.
+function clearPointedTabs() {
+  tabBar.querySelectorAll('.tab.is-pointed').forEach((tab) => tab.classList.remove('is-pointed'));
+}
 tabBar.addEventListener('pointermove', (event) => {
+  clearPointedTabs();
   const tab = event.target.closest ? event.target.closest('.tab') : null;
   pointedTabPath = tab ? tab.dataset.tabPath || null : null;
 });
 tabBar.addEventListener('pointerleave', () => {
+  clearPointedTabs();
   pointedTabPath = null;
 });
 // Both corner controls answer the press rather than the click after it. The heart's own arm rewrites the whole strip inside the handler, and a rewrite landing between a press going down and coming up leaves the browser nothing to resolve a click onto — watched: no click is dispatched at all, no arm runs, and the press is spent. Only the primary button, since a click never came from the others.

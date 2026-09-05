@@ -110,7 +110,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
     let html = app_shell_page();
     let css = reading_mode_css();
 
-    // Not a checkbox buried in Settings: the bar carries it, in a recess beside the view buttons, so the answer to "can I type here" is where the typing is. Nothing of the old Settings switch is left.
+    // Not a checkbox buried in Settings: the bar carries it, in a recess standing over the button of the view you are in, so the answer to "can I type here" is where the typing is. Nothing of the old Settings switch is left.
     assert!(!html.contains("readerEditingEnabled"));
     assert!(!html.contains("settings.readerEditing"));
     assert!(!html.contains("setReaderEditingEnabled"));
@@ -332,7 +332,7 @@ fn editing_is_one_padlock_in_the_bar_governing_both_editable_views() {
         "'The source is unlocked. Click to lock it for reading.'",
         "'The source is locked. Click to unlock and edit the text.'",
         "'Speed reader'",
-        r#"aria-label="Editing tools""#,
+        r#"aria-label="View tools""#,
     ] {
         assert!(html.contains(wording), "missing wording: {wording}");
     }

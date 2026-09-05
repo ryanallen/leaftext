@@ -406,6 +406,42 @@ export function run() {
     }
   });
 
+  check("a tab's redraw mark leaves as soon as the pointer does", () => {
+    const one = 'C:\\Notes\\one.md';
+    const two = 'C:\\Notes\\two.md';
+    const tabBar = booted.document.getElementById('tabBar');
+    const draw = (favorites = []) => booted.window.leafSetWorkspace({ recent: [], favorites, tabs: [{ path: one }, { path: two }], active: 0 });
+    const raise = (type, target) => {
+      for (const handler of tabBar.listeners.get(type) || []) handler({ target });
+    };
+    try {
+      vm.runInContext('pointedTabPath = null;', booted);
+      draw();
+      const tabs = Array.from(tabBar.querySelectorAll('.tab'));
+      tabs[0].classList.add('is-pointed');
+      tabs[1].classList.add('is-pointed');
+      if (tabBar.querySelectorAll('.tab.is-pointed').length !== 2) throw new Error('the check began without both standing redraw marks');
+
+      raise('pointermove', tabs[1]);
+      if (tabBar.querySelectorAll('.tab.is-pointed').length) throw new Error('a pointer move left a redraw mark standing');
+      if (vm.runInContext('pointedTabPath', booted) !== two) throw new Error('the pointer move never reached the pointed-path record');
+
+      draw([{ path: one, kind: 'document' }]);
+      const redrawnTabs = Array.from(tabBar.querySelectorAll('.tab'));
+      if (redrawnTabs[1] === tabs[1] || !redrawnTabs[1].classList.contains('is-pointed')) {
+        throw new Error('a wholesale write did not restore the redraw mark on the tab carrying the pointed path');
+      }
+
+      redrawnTabs[0].classList.add('is-pointed');
+      raise('pointerleave', tabBar);
+      if (tabBar.querySelectorAll('.tab.is-pointed').length) throw new Error('the pointer leaving the strip left the redraw mark standing');
+      if (vm.runInContext('pointedTabPath', booted) !== null) throw new Error('the pointer leave never cleared the pointed-path record');
+    } finally {
+      vm.runInContext('pointedTabPath = null;', booted);
+      booted.window.leafSetWorkspace({ recent: [], favorites: [], tabs: [], active: null });
+    }
+  });
+
   // ---- 5a. the strip's edges under a held tab ---------------------------------
   //
   // Dragging a tab writes a transform onto the dragged tab and onto every tab it displaces, and the autoscroll that walks the strip along under the hand needs the strip's own two edges. Asked for on each move, that read sits behind those writes and makes the browser settle them before it can answer — measured at roughly 0.3ms per move in a running copy, on two numbers a drag cannot change. So the press reads them once and the drag carries them. A page of its own, because a drag left half-open on the shared page would arm the next check's pointer events.

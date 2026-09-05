@@ -9,7 +9,7 @@ fn app_shell_renders_interactive_document_minimap() {
     for expected in [
             "function renderDocumentMinimap(hasVisibleContent) {",
             "aria-label=\"Document minimap\"",
-            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
+            "aria-hidden=\"true\"><div class=\"document-minimap-content\" aria-hidden=\"true\"></div><div class=\"document-minimap-fade\" data-edge=\"top\" aria-hidden=\"true\"></div><div class=\"document-minimap-fade\" data-edge=\"bottom\" aria-hidden=\"true\"></div><div class=\"lt-spinner document-minimap-spinner\" aria-hidden=\"true\"></div><div class=\"document-minimap-viewport\" aria-hidden=\"true\"",
             "function bindDocumentMinimap() {",
             // The rail says it is working until there is a thumbnail to show: the clone can't exist before the document has been laid out, and on a large file an empty rail beside a finished page looks broken.
             "class=\"document-minimap is-loading\"",

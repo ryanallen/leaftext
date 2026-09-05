@@ -216,7 +216,7 @@ onSettle({
 
 // The rail starts loading: the thumbnail clones the rendered document, so it can't exist until the document is laid out — on a large file, long enough that an empty rail beside a finished page looks broken rather than busy.
 function documentMinimapMarkup() {
-  return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="lt-spinner document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
+  return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-fade" data-edge="top" aria-hidden="true"></div><div class="document-minimap-fade" data-edge="bottom" aria-hidden="true"></div><div class="lt-spinner document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
 function renderDocumentMinimap(hasVisibleContent) {
   if (!window.leafMinimap.getEnabled()) {
@@ -1370,6 +1370,8 @@ function updateMinimapViewportFromScroll() {
 function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   const content = minimap.querySelector('.document-minimap-content');
   const viewport = minimap.querySelector('.document-minimap-viewport');
+  const topFade = minimap.querySelector('.document-minimap-fade[data-edge="top"]');
+  const bottomFade = minimap.querySelector('.document-minimap-fade[data-edge="bottom"]');
   const scaledDocumentHeight = metrics.scaledDocumentHeight;
   // Written plainly on the scroll path: this web view drops an identical inline write before the attribute is touched, so reading the value back to skip one costs 0.30µs against the write's 0.148µs — the frame's pair measured 1.72µs compared first against 1.56µs written straight.
   if (content) {
@@ -1382,6 +1384,7 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
   const previewTop = -scrollRatio * Math.max(0, scaledDocumentHeight - metrics.trackHeight);
   const viewportDocumentTop = scrollTop * metrics.previewScale;
   const viewportTop = Math.min(Math.max(0, metrics.trackHeight - boundedViewportHeight), Math.max(0, previewTop + viewportDocumentTop));
+  const spaceAfterViewport = Math.max(0, metrics.trackHeight - viewportTop - boundedViewportHeight);
   // Onto the two elements that draw, never a custom property on the rail's root. Neither `transform` nor `top` inherits, so neither reaches the clone; a custom property does, and one write on the rail re-resolves style across every element of the thumbnail — 78ms a write against 0.13ms for these.
   if (content) {
     content.style.transform = `translateY(${previewTop}px)`;
@@ -1390,6 +1393,12 @@ function placeMinimapViewport(minimap, metrics, scrollTopOverride) {
     // A transform, not `top`, for the same reason the lane beside it is on one: this moves every frame with a new number, and as a layout property `top` makes the browser lay the rail's own subtree out again to draw it — 12.0 to 21.0µs a frame against 3.5 to 4.0 as a transform, and the box lands 0.006px from where `top` puts it.
     viewport.style.transform = `translateY(${viewportTop}px)`;
     viewport.style.height = `${boundedViewportHeight}px`;
+  }
+  if (topFade) {
+    topFade.style.clipPath = `inset(0 0 max(0px, calc(100% - ${viewportTop}px)) 0)`;
+  }
+  if (bottomFade) {
+    bottomFade.style.clipPath = `inset(max(0px, calc(100% - ${spaceAfterViewport}px)) 0 0 0)`;
   }
 }
 // The scroll listener must stay cheap. clampReaderScrollPosition() and captureReaderScrollAnchor() each force a layout — ~400ms on a 4MB glossary, which is the wheel taking two seconds to answer — and once a frame is still too often. Nothing reads either mid-gesture (the anchor serves the reflow re-pin and tab switches; the clamp only has to hold at rest), so they settle after the wheel stops and the handler itself reads no geometry at all.

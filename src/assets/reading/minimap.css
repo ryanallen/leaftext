@@ -19,8 +19,9 @@
   user-select: none;
 }
 /* The clipped thumbnail dissolves into the same fixed grain the rail stands on, using the page edge's depth and hold so the two views end alike. */
-.document-minimap-track::before,
-.document-minimap-track::after {
+.document-minimap-fade,
+body.leaf-web .document-minimap-track::before,
+body.leaf-web .document-minimap-track::after {
   content: "";
   position: absolute;
   right: 0;
@@ -34,7 +35,8 @@
   z-index: 1;
   pointer-events: none;
 }
-.document-minimap-track::before {
+.document-minimap-fade[data-edge="top"],
+body.leaf-web .document-minimap-track::before {
   top: 0;
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -47,7 +49,8 @@
     transparent
   );
 }
-.document-minimap-track::after {
+.document-minimap-fade[data-edge="bottom"],
+body.leaf-web .document-minimap-track::after {
   bottom: 0;
   -webkit-mask-image: linear-gradient(
     to top,

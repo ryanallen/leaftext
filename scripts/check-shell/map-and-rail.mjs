@@ -1069,6 +1069,57 @@ export function run() {
     if (!/minimapBodyObserver = new MutationObserver\(invalidateMinimapPreview\);\s*minimapBodyObserver\.observe\(source, \{/.test(fragment)) throw new Error('the watcher is no longer bound to the element the thumbnail is cloned from');
   });
 
+  check('the fade stops at the position box', () => {
+    const fragment = readFileSync(join(root, 'src/assets/shell/minimap.js'), 'utf8');
+    const opened = fragment.indexOf('function placeMinimapViewport(');
+    const closed = fragment.indexOf('\n}', opened);
+    const placement = fragment.slice(opened, closed);
+    if (placement.includes('reader-edge-fade-depth')) throw new Error('the scroll path copied the fade depth out of the stylesheet');
+    if (/getBoundingClientRect|getComputedStyle/.test(placement)) throw new Error('the scroll path reads geometry to place the fade');
+    const markup = booted.documentMinimapMarkup();
+    if ((markup.match(/class="document-minimap-fade"/g) || []).length !== 2) throw new Error('the rail does not carry two fade elements');
+    if (!markup.includes('data-edge="top"') || !markup.includes('data-edge="bottom"')) throw new Error('the two fade elements do not name their edges');
+    const styled = () => ({ style: {} });
+    const content = styled();
+    const viewport = styled();
+    const fade = () => {
+      let clipPath = '';
+      const written = { clipPath: 0 };
+      const style = {};
+      Object.defineProperty(style, 'clipPath', {
+        get: () => clipPath,
+        set: (value) => {
+          clipPath = value;
+          written.clipPath += 1;
+        },
+      });
+      return { style, written };
+    };
+    const topFade = fade();
+    const bottomFade = fade();
+    const rail = {
+      style: { setProperty() { throw new Error('a custom property was written on the rail'); } },
+      querySelector: (selector) => ({
+        '.document-minimap-content': content,
+        '.document-minimap-viewport': viewport,
+        '.document-minimap-fade[data-edge="top"]': topFade,
+        '.document-minimap-fade[data-edge="bottom"]': bottomFade,
+      }[selector] || null),
+    };
+    const metrics = { scaledDocumentHeight: 100, trackHeight: 100, scrollable: 120, scrollTop: 0, viewportHeight: 80, previewScale: 0.5 };
+    const placed = (scrollTop) => {
+      booted.placeMinimapViewport(rail, metrics, scrollTop);
+      return [topFade.style.clipPath, bottomFade.style.clipPath];
+    };
+    const top = placed(0);
+    if (top[0] !== 'inset(0 0 max(0px, calc(100% - 0px)) 0)' || top[1] !== 'inset(max(0px, calc(100% - 60px)) 0 0 0)') throw new Error(`the top box left ${top.join(' and ')}`);
+    const partial = placed(40);
+    if (partial[0] !== 'inset(0 0 max(0px, calc(100% - 20px)) 0)' || partial[1] !== 'inset(max(0px, calc(100% - 40px)) 0 0 0)') throw new Error(`the partial box left ${partial.join(' and ')}`);
+    const bottom = placed(120);
+    if (bottom[0] !== 'inset(0 0 max(0px, calc(100% - 60px)) 0)' || bottom[1] !== 'inset(max(0px, calc(100% - 0px)) 0 0 0)') throw new Error(`the bottom box left ${bottom.join(' and ')}`);
+    if (topFade.written.clipPath !== 3 || bottomFade.written.clipPath !== 3) throw new Error('the two bands were not clipped on every placement');
+  });
+
   // Placing the box runs every frame of every scroll, and a custom property inherits — so writing one on the rail re-resolves style across the whole clone hanging under it, which measured 78ms a write against 0.13ms for writing onto the element that draws. Neither `transform` nor `top` inherits, so neither reaches the clone — but `top` is a layout property, and writing the box's place to it makes the browser lay the rail's own subtree out again on every frame of every scroll, 12.0 to 21.0µs a frame against 3.5 to 4.0 as a transform. So a `top` on the box fails here.
   check('the box and the thumbnail are placed by writing to themselves', () => {
     const styled = () => ({ style: { setProperty() { throw new Error('a custom property was written on the rail'); } } });

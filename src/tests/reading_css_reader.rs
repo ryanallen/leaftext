@@ -618,18 +618,23 @@ fn reading_mode_css_keeps_minimap_stable_wide_enough_and_responsive() {
 }
 
 #[test]
-fn minimap_hard_cuts_dissolve_into_the_rail_without_fading_the_viewport() {
+fn the_rails_fade_gives_up_the_stretch_the_position_box_covers() {
     let css = reading_mode_css();
     let fades = rule_body(
         &css,
-        ".document-minimap-track::before,\n.document-minimap-track::after {",
+        ".document-minimap-fade,\nbody.leaf-web .document-minimap-track::before,\nbody.leaf-web .document-minimap-track::after {",
     );
 
     for expected in [
+        "content: \"\";",
+        "position: absolute;",
+        "right: 0;",
+        "left: 0;",
         "height: var(--reader-edge-fade-depth);",
         "background-color: var(--lt-surface);",
         "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
         "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+        "background-repeat: repeat;",
         "background-attachment: fixed;",
         "z-index: 1;",
         "pointer-events: none;",
@@ -638,12 +643,12 @@ fn minimap_hard_cuts_dissolve_into_the_rail_without_fading_the_viewport() {
     }
     for (selector, direction, edge) in [
         (
-            ".document-minimap-track::before {\n  top: 0;",
+            ".document-minimap-fade[data-edge=\"top\"],\nbody.leaf-web .document-minimap-track::before {\n  top: 0;",
             "to bottom",
             "top: 0;",
         ),
         (
-            ".document-minimap-track::after {\n  bottom: 0;",
+            ".document-minimap-fade[data-edge=\"bottom\"],\nbody.leaf-web .document-minimap-track::after {\n  bottom: 0;",
             "to top",
             "bottom: 0;",
         ),
@@ -666,11 +671,25 @@ fn minimap_hard_cuts_dissolve_into_the_rail_without_fading_the_viewport() {
     );
     let track = rule_body(&css, ".document-minimap-track {");
     assert_contains(track, "width: 100%;");
+    assert_contains(track, "cursor: default;");
+    assert_contains(track, "opacity: var(--lt-opacity-92);");
     assert_contains(track, "overflow: hidden;");
+    assert_contains(track, "touch-action: none;");
+    assert_contains(track, "user-select: none;");
     let content = rule_body(&css, ".document-minimap-content {");
     assert_contains(content, "transform: translateY(0px);");
     assert_contains(content, "right: var(--minimap-padding-inline);");
     assert_contains(content, "left: var(--minimap-padding-inline);");
+    let viewport = rule_body(&css, ".document-minimap-viewport {");
+    assert_contains(
+        viewport,
+        "border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);",
+    );
+    assert_contains(
+        viewport,
+        "background: var(--lt-minimap-viewport-background);",
+    );
+    assert_contains(viewport, "pointer-events: none;");
 }
 
 #[test]
@@ -689,7 +708,7 @@ fn an_exported_pages_rail_fades_into_the_pages_own_surface() {
 
     let window_fades = rule_body(
         &css,
-        ".document-minimap-track::before,\n.document-minimap-track::after {",
+        ".document-minimap-fade,\nbody.leaf-web .document-minimap-track::before,\nbody.leaf-web .document-minimap-track::after {",
     );
     assert_contains(window_fades, "background-color: var(--lt-surface);");
     assert_contains(
