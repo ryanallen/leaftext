@@ -63,6 +63,15 @@ export function someoneOwnsTheGate(skills) {
   return '';
 }
 
+export function someoneRecordsTheGate(skills) {
+  const owner = skills.find(([name]) => name === 'test');
+  if (!owner) return 'there is no /test skill to record the green run in its tickets';
+  const words = owner[1];
+  if (!/only after the final `just verify` is green, tick the open `\/check` box/i.test(words)) return 'the /test skill does not wait for a green run before ticking a ticket';
+  if (!/in every ticket in the batch/i.test(words)) return 'the /test skill does not tick the closing check box in every ticket it covered';
+  return '';
+}
+
 /// Every skill in this checkout, as name and text.
 export function skillsInTree(dir = here) {
   const root = join(dir, '.agents', 'skills');
@@ -120,6 +129,9 @@ export function selfTest() {
   if (someoneOwnsTheGate([['dev', 'Run `just verify`.\n']]) === '') fails.push('a tree with no /test skill was let through');
   if (someoneOwnsTheGate([['test', 'Then run [`/check`](../check/SKILL.md) over the batch.\n']]) !== '') fails.push("the owner pass's own call was not recognized");
 
+  if (someoneRecordsTheGate([['test', 'Only after the final `just verify` is green, tick the open `/check` box in every ticket in the batch.\n']]) !== '') fails.push('a gate recorded in every covered ticket was refused');
+  if (someoneRecordsTheGate([['test', 'Run `just verify`, then tick one ticket.\n']]) === '') fails.push('a gate recorded in only one ticket was let through');
+
   return fails;
 }
 
@@ -137,13 +149,15 @@ function main() {
   const problems = ownershipFaults(skills);
   const lost = someoneOwnsTheGate(skills);
   if (lost) problems.push(lost);
+  const unrecorded = someoneRecordsTheGate(skills);
+  if (unrecorded) problems.push(unrecorded);
   if (problems.length) {
     console.error('the complete suite is the owner to start, and something else is starting one:');
     for (const problem of problems) console.error(`  ${problem}`);
     console.error('Run the narrow checks about what that pass writes instead — the format tests, the design checks, the front-end boot, the document checks, the Rust documentation build.');
     process.exit(1);
   }
-  console.log(`suite callers: ${skills.length} skills read, the owner's own pass holds the one run of the complete suite, and every other pass proves what it writes with the narrow checks about it`);
+  console.log(`suite callers: ${skills.length} skills read, the owner's pass holds the one complete run and records its green result in every covered ticket, and every other pass proves what it writes with the narrow checks about it`);
 }
 
 if (process.argv[1] && process.argv[1].endsWith('check-suite-callers.mjs')) {

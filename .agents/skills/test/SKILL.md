@@ -1,6 +1,6 @@
 ---
 name: test
-description: Run the complete gate once over every ticket that has actually been built. Takes the ticket paths the owner names, or with none reads ../docs/PLAN.md for every row at Dev and keeps the ones with a ticked box. Then /sync-tests across the batch and one `just verify`, with a red fixed and the suite re-run from the top. Use when the owner says "/test", "run the tests", "test the built tickets", or "check everything that is done".
+description: Run the complete gate once over every ticket that has actually been built. Takes the ticket paths the owner names, or with none reads ../docs/PLAN.md for every row at Dev and keeps the ones with a ticked box. Then /sync-tests across the batch and one `just verify`, with a red fixed and the suite re-run from the top, before ticking the closing check box in every covered ticket. Use when the owner says "/test", "run the tests", "test the built tickets", or "check everything that is done".
 ---
 
 # Test
@@ -48,11 +48,17 @@ Sixty-eight steps, and every one of them reads the tree rather than a ticket, wh
 
 **<!-- shared-rule: sessions-in-one-checkout -->Two sessions build in this one checkout, on tickets the running order's `Devs with` column says share no file, and neither of them writes the running order.<!-- /shared-rule -->** A red on a file no ticket in this batch touched is another session's work, and this pass is the one place that is not a reason to wait: the owner asked for the gate over the tree they have, so the generated file is refreshed or the fault is fixed like any other, and the run finishes. What is never done is waiting in silence with nothing left to do — that is the wait this skill was written to end.
 
-### 5. Never say what this machine cannot build
+### 5. Record the green run in every ticket in the batch
+
+Only after the final `just verify` is green, tick the open `/check` box under `### The build ends the same way` in every ticket in the batch. Append `— the whole suite ran green on 18 August 2026, 9:11pm`, using the current Arizona clock from `Get-Date`; this is the proof the box records, so a tick with no run beside it says nothing.
+
+Tick every covered ticket, including each path the owner named explicitly, in the same pass. Leave a box that is already ticked unchanged. A covered ticket with no open closing `/check` box, or with more than one, is a ticket fault: fix the ticket before handing back rather than letting a green run belong to nowhere.
+
+### 6. Never say what this machine cannot build
 
 The Mac build, the installer and the GitHub workflows do not run here, GitHub builds all three on a tagged release, and **it never goes in a hand-back** — not as a caveat, not as a footnote. Say it only if asked directly.
 
-### 6. Hand back
+### 7. Hand back
 
 The whole reply is the owner's message, word for word. The tree stays dirty; that is the correct end state. What each ticket gained, what the suite found and what is left go in the tickets, which is where the owner reads them.
 
