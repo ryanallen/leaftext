@@ -681,7 +681,7 @@ fn the_view_chip_and_tray_travel_on_the_bars_spring() {
 
 #[test]
 fn the_lit_view_is_a_pill_behind_the_buttons_rather_than_a_fill_on_one() {
-    // The fill used to sit on the pressed button, so it could only appear and disappear -- there was nothing to travel. It is one pill inside the group now, which is why the group has to be a positioning parent and the buttons have to draw over it.
+    // A fill on the pressed button can only appear and disappear -- there is nothing to travel. One pill inside the group does travel, which is why the group has to be a positioning parent and the buttons have to draw over it.
     let css = reading_mode_css();
     let chip = rule_body(css, ".reader-tool-chip {");
     let group = rule_body(css, ".reader-tool-group {");

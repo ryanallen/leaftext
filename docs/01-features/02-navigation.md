@@ -119,10 +119,12 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 | Group | What is in it |
 | --- | --- |
-| Views | [Reading](01-rendering.md), the [source](07-editing.md#code-view), and the [graph](03-library.md#graph). Exactly one is filled in the accent color: the one you are in |
+| Views | [Reading](01-rendering.md), the [source](07-editing.md#code-view), and the [graph](03-library.md#graph). One pill in the accent color sits behind them, and it slides to the button you press with a small bounce at the end. It moves at the press rather than when the new view lands, so the bar answers straight away; a source view that will not open puts it back |
 | Editing tools | A recess to the left of the view buttons, so the three views stay together. It carries the tools of the view you are in: the [padlock](07-editing.md#the-padlock) in both editable views, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](07-editing.md#typing-help) wand in the source. The graph has none, so the recess goes with it |
 | Source tools | Shown only on the code view, in the same recess: the [typing help](07-editing.md#typing-help) wand |
 | Edits | [Undo](07-editing.md#undo) and [Save](07-editing.md#save), each appearing only when there is something to undo or save |
+
+**The bar stays put while a view changes.** The page underneath goes blank for as long as the new view takes to build, and the bar stands over that wait rather than going out with it — so the control your hand is on is still there, and still pressable, the whole way across.
 
 **No document, no bar.** The three views are three ways of showing one thing, and the start screen is not that thing — a toggle there would be navigation, which the [library](03-library.md) pane already does better.
 

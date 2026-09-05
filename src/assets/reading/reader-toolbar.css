@@ -13,7 +13,7 @@ body:has(#readerToolbar:not([hidden])) {
   grid-row: 1;
   align-self: end;
   justify-self: center;
-  /* The same choice the top bar makes: stand over the document wait at 6. Seven is the smallest layer that clears it. */
+  /* The same choice the top bar makes: stand over the document wait, which is at 6. Seven is the smallest layer that clears it. */
   z-index: 7;
   /* Anchor for the dot-screened shadow behind it. */
   position: relative;
