@@ -30,12 +30,12 @@ const FOOTPRINT_ROOTS = ['app/', 'docs/'];
 //
 // `docs/PLAN.md`: no build authors a cell in it. Its stage is written in its own ticket and the column is computed, so the two writes a build can make here — `just bundle-devs-with` and `just bundle-plan-status` — are both derived, and two builds running either produce the same bytes from the same tickets rather than landing on each other's edit. The authored rewrites are `/pm`'s and `/done`'s, and neither runs beside a build.
 //
-// `docs/README.md` and `docs/GLOSSARY.md`: a build reaches these only by filing what it found beside its work, which appends a row to a table rather than rewriting the file.
+// `docs/GLOSSARY.md` and the four index files: a build reaches these only by filing what it found beside its work, which appends a row to a table rather than rewriting the file. The index is one file per status — `docs/README.md` live, `docs/done/README.md`, `docs/on-hold/README.md` and `docs/canceled/README.md` archived — and a build appends to whichever one the ticket it just filed belongs in, so each of the four is dropped for the same reason and each is named here rather than matched by shape.
 //
 // **`docs/tracks/` and the `docs/TRACKS.md` above it are deliberately not on this list.** Read out of the skills they have one writer — `/pm`, which gives a new subject its file and the index its row — and no build among them, so they are real colliders and two tickets planning to write either are told so. The folder counts the way any folder does: a ticket naming `docs/tracks/` collides with every ticket naming a track file inside it.
 //
 // **`app/AGENTS.md` is deliberately not on it either.** It is the biggest single false collider among citations, and a workflow ticket genuinely does change the guide: excluding it would call two such tickets safe together, which is the one mistake that costs somebody's work.
-export const EXCLUDED = ['docs/PLAN.md', 'docs/README.md', 'docs/GLOSSARY.md'];
+export const EXCLUDED = ['docs/PLAN.md', 'docs/GLOSSARY.md', 'docs/README.md', 'docs/done/README.md', 'docs/on-hold/README.md', 'docs/canceled/README.md'];
 
 /// The lines of a ticket's footprint section, or null where it carries none — which is a different answer from a section carrying no files.
 function footprintSection(text) {
@@ -362,7 +362,10 @@ const PAIR_CASES = [
 // What the exclusion list actually promises, read on its own rather than through the six-row order above, so adding a case here perturbs no other one. A pair differing only in an excluded file is called safe on purpose; a pair differing only in a shared plan file that is **not** excluded has to be called colliding, which is the whole of what taking a file off that list buys.
 const EXCLUSION_CASES = [
   ['the running order', 'docs/PLAN.md', true],
-  ['the ticket index', 'docs/README.md', true],
+  ['the live ticket index', 'docs/README.md', true],
+  ['the shipped ticket index', 'docs/done/README.md', true],
+  ['the held ticket index', 'docs/on-hold/README.md', true],
+  ['the refused ticket index', 'docs/canceled/README.md', true],
   ['the planning glossary', 'docs/GLOSSARY.md', true],
   ['the subject order index', 'docs/TRACKS.md', false],
   ['one subject order', 'docs/tracks/performance.md', false],

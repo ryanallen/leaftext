@@ -823,6 +823,88 @@ export function run() {
     }
   });
 
+  // The document a long table needs: a block whose own child holds the table, so the search descends four levels rather than the one the blocked document above nests. Thirty-one rows of 100px with the eleventh a bay spanning 1,000 to 6,000, holding a lane, holding the table — a 100px header row over 49 body rows — and, standing over the lane's own top corner rather than under the table, the sheet button. Same 70px track over an 8,000px document at a tenth as the blocked stand, so the rail shows 700px and asks for a screen either side of that.
+  const railOverALanedTable = () => {
+    let scrollTop = 0;
+    const body = fakeElement('rail-lane-source');
+    body.className = 'document-body';
+    const rows = Array.from({ length: 49 }, (_, line) => `<tr><td>b${line}</td></tr>`).join('');
+    const lane = `<div class="table-lane"><table><thead><tr><th>head</th></tr></thead><tbody>${rows}</tbody></table><button class="table-sheet-open">sheet</button></div>`;
+    body.innerHTML = Array.from({ length: 31 }, (_, index) => (index === 10
+      ? `<div class="table-bay">${lane}</div>`
+      : `<p>row ${index}</p>`)).join('');
+    const stands = (node, top, bottom) => {
+      node.getBoundingClientRect = () => ({ top: top - scrollTop, bottom: bottom - scrollTop, height: bottom - top, width: 800 });
+    };
+    body.children.forEach((row, index) => {
+      if (index < 10) return stands(row, index * 100, index * 100 + 100);
+      if (index === 10) return stands(row, 1000, 6000);
+      return stands(row, 6000 + (index - 11) * 100, 6100 + (index - 11) * 100);
+    });
+    const laneNode = body.children[10].children[0];
+    const table = laneNode.children[0];
+    const button = laneNode.children[1];
+    stands(laneNode, 1000, 6000);
+    stands(table, 1000, 6000);
+    stands(table.children[0], 1000, 1100);
+    stands(table.children[1], 1100, 6000);
+    table.children[1].children.forEach((line, index) => stands(line, 1100 + index * 100, 1200 + index * 100));
+    // The button stands over the table's own top corner rather than under it, which is the pair a search halving over feet cannot order. There is no cascade in this page, so the stand says on the element itself what the stylesheet says.
+    button.style.position = 'absolute';
+    stands(button, 1000, 1030);
+    const metrics = {
+      sourceWidth: 800,
+      sourceTop: 0,
+      scrollHeight: 8000,
+      viewportHeight: 700,
+      scrollable: 7300,
+      scrollTop: 0,
+      trackHeight: 70,
+      scaledDocumentHeight: 800,
+      previewScale: 0.1,
+    };
+    return { ...railStandFor(body, metrics, (offset) => { scrollTop = offset; }), body };
+  };
+
+  // The clone used to rebuild only the chain the search descended — bay, lane, table, body — with every other child of every one of them dropped. A table's header row is a sibling of its body, so a thumbnail cut anywhere inside a long table drew that body with no header band over it, while the same table cloned whole a screen further up drew with one. The sheet button went the same way, and by a second fault as well: it stands over the table's top corner rather than under it, so the halving over the lane's two children was ordering a pair it cannot order.
+  check('a window cut inside a table keeps the header row over the body and the button over the lane’s corner', () => {
+    const stand = railOverALanedTable();
+    try {
+      // The asked range opens at 1,000, which is the table's own head, so the slice starts at the body's first row and the header row stands directly above it.
+      stand.buildAt(1700);
+      if (stand.read('minimapBuiltRowPath') !== '10/0/0/1') throw new Error(`the search stopped at path ${stand.read('minimapBuiltRowPath')} rather than descending through the bay, the lane and the table into its body, so this proves nothing`);
+      const top = stand.builtClone().children;
+      if (top.length !== 1 || !top[0].classList.contains('table-bay')) throw new Error('the thumbnail does not hold the bay on its own, so the window is not the one this is about');
+      const laneClone = top[0].children[0];
+      if (!laneClone || !laneClone.classList.contains('table-lane')) throw new Error('the thumbnail lost the lane the table sits in');
+      const inLane = Array.prototype.map.call(laneClone.children, (child) => child.tagName).join(',');
+      if (inLane !== 'TABLE,BUTTON') throw new Error(`the lane in the thumbnail holds ${inLane || 'nothing'} rather than the table and the button standing over its corner`);
+      const inTable = Array.prototype.map.call(laneClone.children[0].children, (child) => child.tagName).join(',');
+      if (inTable !== 'THEAD,TBODY') throw new Error(`the table in the thumbnail holds ${inTable || 'nothing'} rather than its header row over the body the window cut into`);
+      const sliced = laneClone.children[0].children[1].children;
+      if (sliced.length !== 21) throw new Error(`the thumbnail holds ${sliced.length} body rows rather than the 21 the asked range reaches`);
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // The frame is translated to where the clone's first content really sits. Left at the first sliced row while a header row is carried in above it inside the table, the whole thumbnail lands low by that row's height, so the picture the reader is handed is of a place they are not at.
+  check('a thumbnail carrying a header row is placed at that row rather than at the first row of the body', () => {
+    const stand = railOverALanedTable();
+    try {
+      stand.buildAt(1700);
+      const cut = { appTop: 0, scrollTop: 1700, top: 1000, bottom: 3100 };
+      const window = booted.minimapWindowRows(stand.body, 0, 1700, cut.top, cut.bottom);
+      if (window.path !== '10/0/0/1') throw new Error('the search did not descend into the table’s body, so this proves nothing');
+      const built = booted.buildWindowedMinimapClone(stand.body, window, window.first, window.last, cut);
+      // The header row runs 1,000 to 1,100 and the body's first row starts where it ends.
+      if (built.firstTop === 1100) throw new Error('the thumbnail is placed at the first row of the body, so it lands low by the header row standing above it');
+      if (built.firstTop !== 1000) throw new Error(`the thumbnail is placed at ${built.firstTop}, which is neither the header row it starts with nor the body row under it`);
+    } finally {
+      stand.restore();
+    }
+  });
+
   // The rail's thumbnail is a clone of the page, and inserting a clone that holds an open <details> makes the browser fire `toggle` on it. The listener is on the document, so the rail heard its own thumbnail land, called that a change to the document and rebuilt — 29 rebuilds in 30 frames with nothing scrolling, and the wheel had no free frame to answer in.
   check('a section opening inside the rail is not the document changing', () => {
     const version = () => vm.runInContext('minimapContentVersion', booted);
@@ -970,6 +1052,16 @@ export function run() {
     if (window.holder !== closing) throw new Error('the search did not descend through the last end of its run');
     // Rows 1 and 3 are never read at all: the searches skip them and the candidate pass has no reason to ask them. Any number there is the walk over the whole window come back.
     if (reads.join(',') !== '2,0,2,0,1,2') throw new Error(`the rows were read ${reads.join(',')} times rather than 2,0,2,0,1,2`);
+  });
+
+  // Widening the run outward is what brings in a child standing over its sibling, and it must not turn back into the walk over the whole window that halving replaced — 1,552 rectangles on a description list of 40,000 children, 13.7 ms of a typing pause. Where the children do stand under one another the child past each end of the run is already clear of the asked range, so the widening reads one rectangle a side and stops there.
+  check('the minimap window search widens a run by one rectangle either side of it and no further', () => {
+    const spans = [[0, 100], [100, 200], [200, 300], [300, 400], [400, 500], [500, 600]];
+    const { body, reads } = countingRows('minimap-widening-source', spans, [0, 0, 0, 0, 0, 0]);
+    const window = booted.minimapWindowRows(body, 0, 0, 250, 350);
+    if (window.first !== 2 || window.last !== 3) throw new Error(`the run came back as ${window.first} to ${window.last} rather than the two rows the range stands over`);
+    // Rows 1 and 4 are read once by a search and once by the widening; rows 2 and 3 are the run's own ends, read by the searches and again as the candidate to descend into. A read on row 5, or a third on row 1 or row 4, is the widening walking on rather than stopping at the first child clear of the range.
+    if (reads.join(',') !== '1,2,3,2,2,0') throw new Error(`the rows were read ${reads.join(',')} times rather than 1,2,3,2,2,0`);
   });
 
   check('a slice inside one row keeps the whitespace between the lines it cuts', () => {

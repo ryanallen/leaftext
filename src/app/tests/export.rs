@@ -1468,40 +1468,6 @@ fn the_picture_save_window_leads_with_png_and_offers_what_the_host_writes() {
     assert_eq!(unknown.name, "shot.png");
 }
 
-/// The name a copied picture takes in the `imgs` folder. An export that quietly replaced somebody's file is the one mistake here nobody can undo, so a taken name is written beside rather than over.
-#[test]
-fn a_picture_copied_into_imgs_is_written_beside_a_name_already_there() {
-    let free = |taken: &[&str], name: &str| {
-        let held: Vec<String> = taken.iter().map(|one| (*one).to_string()).collect();
-        free_picture_name(name, &|candidate| held.iter().any(|one| one == candidate))
-    };
-
-    assert_eq!(
-        free(&[], "shot.png"),
-        "shot.png",
-        "a free name was numbered"
-    );
-    assert_eq!(
-        free(&["shot.png"], "shot.png"),
-        "shot-2.png",
-        "a second export wrote over the first"
-    );
-    assert_eq!(
-        free(&["shot.png", "shot-2.png"], "shot.png"),
-        "shot-3.png",
-        "the number stops going up once one name beside it is taken"
-    );
-    // Two dots, so the number has to land before the last one rather than at the end of the whole name.
-    assert_eq!(
-        free(&["a.tar.gz"], "a.tar.gz"),
-        "a.tar-2.gz",
-        "a name with two dots was numbered past its ending"
-    );
-    // A dotfile is all ending and no stem, so numbering it on the dot would take its name away.
-    assert_eq!(free(&[".hidden"], ".hidden"), ".hidden-2");
-    assert_eq!(free(&["plain"], "plain"), "plain-2");
-}
-
 /// The one line a Markdown picture export writes, and the words it puts in the label.
 #[test]
 fn a_picture_document_carries_the_words_the_note_gave_it() {
@@ -1560,7 +1526,7 @@ fn a_markdown_picture_export_writes_the_document_the_folder_and_the_copy() {
         "the document does not hold the picture and the words the note gave it"
     );
 
-    // Again, into the same folder: the first copy has to still be there afterwards.
+    // Again, into the same folder: the copy already there is this reader's own earlier export, so it is addressed rather than duplicated.
     let second = out.join("again.md");
     export_picture_markdown(None, &second, &source, "The find bar");
     assert_eq!(
@@ -1568,15 +1534,121 @@ fn a_markdown_picture_export_writes_the_document_the_folder_and_the_copy() {
         b"the picture's own bytes",
         "a second export wrote over the picture the first one put there"
     );
+    assert!(
+        !images.join("shot-2.png").exists(),
+        "a second export of one picture left a second copy of it in the folder"
+    );
     assert_eq!(
-        std::fs::read(images.join("shot-2.png")).expect("the second copy is there"),
-        b"the picture's own bytes",
-        "the second export did not write its picture beside the first"
+        std::fs::read_dir(&images)
+            .expect("the imgs folder is read")
+            .count(),
+        1,
+        "the imgs folder holds more than the one picture that was exported into it"
     );
     assert_eq!(
         std::fs::read_to_string(&second).expect("the second document is there"),
+        "![The find bar](imgs/shot.png)\n",
+        "the second document points at a copy of its own rather than the one already there"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A different picture under a name the `imgs` folder already holds is written beside it, never over it: an export that quietly replaced somebody's file is the one mistake here nobody can undo.
+#[test]
+fn a_markdown_picture_export_writes_a_different_picture_beside_the_name_already_there() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-beside-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let out = dir.join("out");
+    let images = out.join(PICTURE_EXPORT_IMAGE_DIR);
+    std::fs::create_dir_all(&images).expect("the imgs folder is made");
+    // Somebody else's picture, already exported into this folder under the name this one wants.
+    std::fs::write(images.join("shot.png"), b"another picture entirely").expect("it is written");
+
+    let source = dir.join("shot.png");
+    std::fs::write(&source, b"the picture's own bytes").expect("the picture is written");
+    let target = out.join("mine.md");
+    export_picture_markdown(None, &target, &source, "The find bar");
+
+    assert_eq!(
+        std::fs::read(images.join("shot.png")).expect("the first picture is still there"),
+        b"another picture entirely",
+        "the export wrote over a picture that was not its own"
+    );
+    assert_eq!(
+        std::fs::read(images.join("shot-2.png")).expect("the copy is there"),
+        b"the picture's own bytes",
+        "the export did not write its own picture beside the name already taken"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&target).expect("the document is there"),
         "![The find bar](imgs/shot-2.png)\n",
-        "the second document points at the first export's picture rather than its own"
+        "the document points at somebody else's picture"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The three name shapes the numbering has to get right, through the folder itself: a name with two dots, a dotfile, and a name with no ending at all. A dotfile is all ending and no stem, and a name with two dots has to be numbered before the last one, or the copy loses the ending that says what it is.
+#[test]
+fn a_markdown_picture_export_numbers_a_taken_name_before_its_ending() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-names-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let out = dir.join("out");
+    let images = out.join(PICTURE_EXPORT_IMAGE_DIR);
+    std::fs::create_dir_all(&images).expect("the imgs folder is made");
+
+    for (given, numbered) in [
+        ("a.tar.gz", "a.tar-2.gz"),
+        (".hidden", ".hidden-2"),
+        ("plain", "plain-2"),
+    ] {
+        // Another picture under that name, so the export has to number rather than recognize its own.
+        std::fs::write(images.join(given), b"another picture entirely").expect("it is written");
+        let source = dir.join(given);
+        std::fs::write(&source, format!("the bytes of {given}")).expect("the picture is written");
+        let target = out.join(format!("{given}.md"));
+        export_picture_markdown(None, &target, &source, "A picture");
+
+        assert_eq!(
+            std::fs::read_to_string(images.join(numbered))
+                .unwrap_or_else(|_| panic!("{given} was not numbered to {numbered}")),
+            format!("the bytes of {given}"),
+            "{given} was numbered to {numbered} and the bytes there are not its own"
+        );
+    }
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// A picture whose file cannot be read still lands on the first free name, and the copy failing leaves no document at all.
+///
+/// The comparison being skipped is not the walk stopping: the next name that is not taken answers straight away, so a missing picture never walks the ceiling.
+#[test]
+fn a_markdown_picture_export_of_a_file_that_cannot_be_read_writes_no_document() {
+    let dir = std::env::temp_dir().join(format!("leaf-picture-unread-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let out = dir.join("out");
+    let images = out.join(PICTURE_EXPORT_IMAGE_DIR);
+    std::fs::create_dir_all(&images).expect("the imgs folder is made");
+    std::fs::write(images.join("gone.png"), b"another picture entirely").expect("it is written");
+
+    let source = dir.join("gone.png");
+    let target = out.join("gone.md");
+    export_picture_markdown(None, &target, &source, "A picture that is not there");
+
+    assert!(
+        !target.exists(),
+        "a document was written for a picture that could not be copied"
+    );
+    assert_eq!(
+        std::fs::read(images.join("gone.png")).expect("the picture already there is still there"),
+        b"another picture entirely",
+        "the export wrote over the picture already under that name"
+    );
+    assert!(
+        !images.join("gone-2.png").exists(),
+        "a copy was left behind for a picture that could not be read"
     );
 
     let _ = std::fs::remove_dir_all(&dir);

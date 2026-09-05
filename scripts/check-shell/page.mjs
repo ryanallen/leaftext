@@ -1095,7 +1095,7 @@ export function runShell(source, extras = {}) {
       }
     },
     // No cascade here, but a custom property set on the element itself does come back out of a real browser's computed style, and the page reads its own writes that way.
-    getComputedStyle: (element) => ({ getPropertyValue: (name) => (element && element.style && typeof element.style.getPropertyValue === 'function' ? element.style.getPropertyValue(name) : ''), color: 'rgb(0, 0, 0)' }),
+    getComputedStyle: (element) => ({ getPropertyValue: (name) => (element && element.style && typeof element.style.getPropertyValue === 'function' ? element.style.getPropertyValue(name) : ''), color: 'rgb(0, 0, 0)', position: (element && element.style && element.style.position) || 'static' }),
     // The one call both browser hosts answer Export PDF with. Counted rather than swallowed: the whole of that command is "did the page's own print reach the browser", so a stub that returned nothing would leave the arm proved only by not throwing.
     print: () => {
       sandbox.__printed += 1;

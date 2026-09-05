@@ -1,6 +1,6 @@
 ---
 name: ticket
-description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads ../docs/README.md first so it never re-plans what the tree already answered, writes that README row in the same pass, then runs /pm to rank the new ticket. It researches the code and records options; /design makes the decisions. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
+description: Write a ticket — a Markdown plan with phases and a checkbox per piece of work, filed in a subject folder under ../docs/features/, ../docs/refactor/ or ../docs/fixes/. Reads all four ticket index files first so it never re-plans what the tree already answered, writes the new row into the live index in the same pass, then runs /pm to rank the new ticket. It researches the code and records options; /design makes the decisions. Use when the user says "write a ticket", "make a plan for", "spec this out", hands over work to be scoped rather than built, or asks what plans already exist.
 argument-hint: "[what the ticket is for]"
 user-invocable: true
 ---
@@ -15,7 +15,7 @@ A ticket is the research somebody follows months later with none of this convers
 
 ### 1. Read the index and neighboring tickets
 
-Open `../docs/README.md` first and refuse to re-plan an answer already in the tree.
+Open the index first and refuse to re-plan an answer already in the tree. It is four files, one per status: `../docs/README.md` is the live rows, and `../docs/done/README.md`, `../docs/on-hold/README.md` and `../docs/canceled/README.md` are the archive. An answer this tree already gave is in one of the three archive files, so reading only the live one is reading the 5% that cannot hold it.
 
 ### 2. Research the code and the request
 
@@ -53,7 +53,8 @@ The ticket tree is `leaftext/docs/`, the folder beside the app — not `app/docs
 
 | folder | what belongs there |
 | --- | --- |
-| `../docs/README.md` | one line per ticket in the whole tree. Read it first; update it last |
+| `../docs/README.md` | one line per live ticket. Read it first; the new ticket's row is written here, last |
+| `../docs/done/README.md`, `../docs/on-hold/README.md`, `../docs/canceled/README.md` | the same, one line per shipped, held or refused ticket. Read them first too: this is where an answer the tree already gave is written |
 | `../docs/GLOSSARY.md` | every word this tree uses about itself — ticket, phase, box, tier, the record. **Write the ticket in these words**, and add a row for any planning word it spends that is not there yet |
 | `../docs/PLAN.md` | the running order over the live tickets. A new ticket is not findable until it has a row here, and [`/pm`](../pm/SKILL.md) writes that row — never this skill |
 | `../docs/features/` | the app cannot do this yet |
@@ -72,11 +73,11 @@ The file name is kebab-case and names the thing, not the change: `highlight-anno
 
 **A name already used under `../docs/on-hold/`, `../docs/done/` or `../docs/canceled/` is taken, whatever folder it sits in.** Read the held ticket instead of planning it again; only the owner restores it. A shipped or canceled file keeps its name as the record of the first answer.
 
-## The README — read it first, then keep it
+## The index — read it first, then keep it
 
-`../docs/README.md` is one line per ticket in the tree, grouped by subject, saying what shipped, what is planned and what was turned down. **Read it before writing a word.** Ninety-odd plans is more than anyone holds in their head, and the two ways that costs are both expensive: planning a thing this tree already turned down, or planning around plumbing that already has a ticket. The README is where a ticket finds its neighbors — the vault tickets ride on one piece of plumbing, the filter tickets share one syntax, and a plan that ignores that gets built twice.
+The index is one line per ticket in the tree, grouped by subject, written across four files: `../docs/README.md` says what is planned, and `../docs/done/README.md`, `../docs/on-hold/README.md` and `../docs/canceled/README.md` say what shipped, what is paused and what was turned down. **Read them before writing a word.** Ninety-odd plans is more than anyone holds in their head, and the two ways that costs are both expensive: planning a thing this tree already turned down, or planning around plumbing that already has a ticket. The index is where a ticket finds its neighbors — the vault tickets ride on one piece of plumbing, the filter tickets share one syntax, and a plan that ignores that gets built twice.
 
-**Then keep it.** Adding, renaming, or moving a ticket is not finished until the README matches, in the same edit:
+**Then keep it.** A new ticket is live, so its row goes in `../docs/README.md`; [`/done`](../done/SKILL.md) is what later moves that row into the index of the folder the ticket lands in. Adding, renaming, or moving a ticket is not finished until the index matches, in the same edit:
 
 - A new ticket gets a row in the group it belongs to — or a new group if it starts one. The row says what the ticket is in the owner's words, not the file name again.
 - A ticket moved to `on-hold/`, `done/` or `canceled/` moves rows too. A held row keeps its stage and return folder; the others say **what shipped, or why not**.
@@ -224,7 +225,7 @@ Drop the bundler line when the work is nowhere near `design/`. **One check, at t
 - **A file the build will create is written down like any other.** Most of what a build writes does not exist when the plan is written, so nothing asks whether a footprint path is on the disk — a path is compared as the string it is written as, which is what lets two tickets that will both create the same module collide before either has.
 - **A ticket that writes no file at all writes `—`.** An empty section reads as a ticket nobody has filled in.
 - **A folder counts as a row** where the work is a sweep across one — a row naming `docs/features/` is a footprint, and it collides with every ticket inside it.
-- **Write the shared plan files down like any other.** `docs/PLAN.md`, `docs/README.md` and `docs/GLOSSARY.md` are written by every build, so the comparison drops those three by name; the section is what this build writes, and leaving them out to help the comparison is the section lying about the work. `docs/tracks/` is not among them and collides on purpose — `/pm` is its one writer and no build is.
+- **Write the shared plan files down like any other.** `docs/PLAN.md`, `docs/GLOSSARY.md` and the four index files — `docs/README.md`, `docs/done/README.md`, `docs/on-hold/README.md` and `docs/canceled/README.md` — are written by every build, so the comparison drops them by name; the section is what this build writes, and leaving them out to help the comparison is the section lying about the work. `docs/tracks/` is not among them and collides on purpose — `/pm` is its one writer and no build is.
 
 ## Every phase says how it is proved
 
@@ -246,7 +247,7 @@ Drop the bundler line when the work is nowhere near `design/`. **One check, at t
 **<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** Research already has the code open, so a repeated operation, needless breadth or visible wait is evidence enough to write the finding; the new ticket owns measurement and the fix.
 
 - **The test is scope, not size.** A one-line fix that is out of this ticket's work is still a ticket, because what makes it one is the record, not the cost. A find a phase already in the file has to build anyway is a box in that phase, not a second file.
-- **Two files finish it, the same two as any other ticket** — the file, its row in `../docs/README.md`, then [`/pm`](../pm/SKILL.md) once for both. Never a row placed by hand.
+- **Two files finish it, the same two as any other ticket** — the file, its row in the live index `../docs/README.md`, then [`/pm`](../pm/SKILL.md) once for both. Never a row placed by hand.
 - **Name it in the ticket it was found from**, under **Still open**, so nobody reads it as covered by the work in front of them.
 - **It is always a ticket**, never a sentence in a hand-back and never fixed in passing. [`/design`](../design/SKILL.md), [`/dev`](../dev/SKILL.md), [`/pm`](../pm/SKILL.md) and [`/sync-tests`](../sync-tests/SKILL.md) all hold to this from their own end.
 
@@ -345,7 +346,7 @@ That is [dev](../dev/SKILL.md)'s job — it builds the phases in order, ticks ea
 - `/design` — checks a written ticket against the code before anyone builds it.
 - `/dev` — builds one and always stops at the owner's box, struck or open; `/git-release` ships it; `/done` moves it to `done/` on the owner's word.
 - `/sync-tests` — where a test goes, how it is named, and the pass that writes the ones a phase asked for.
-- `../docs/README.md` — every ticket, one line each. Read first, updated last.
+- `../docs/README.md`, `../docs/done/README.md`, `../docs/on-hold/README.md`, `../docs/canceled/README.md` — the ticket index, one file per status, one line per ticket. Read all four first; the new row goes in the live one, last.
 - `../docs/imgs/` — every picture the owner has handed over, named after the ticket that uses it.
 - `../docs/GLOSSARY.md` — the words a ticket is written in. A planning word this file spends and that file does not define gets a row there in the same pass.
 - `../docs/features/editing/highlight-annotate.md` — measured table, phases, a phase 0.

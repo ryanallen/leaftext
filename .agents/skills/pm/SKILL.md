@@ -65,7 +65,7 @@ The whole reply is the owner's message, word for word.
 
 ## 1. Read first
 
-- [`../docs/README.md`](../../../../docs/README.md) — every ticket, one line, and the source of every ticket path.
+- **The ticket index, all four files of it** — [`../docs/README.md`](../../../../docs/README.md) is the live rows and [`../docs/done/README.md`](../../../../docs/done/README.md), [`../docs/on-hold/README.md`](../../../../docs/on-hold/README.md) and [`../docs/canceled/README.md`](../../../../docs/canceled/README.md) are the archive, one line per ticket and the source of every ticket path. Walking for a ticket with no row means reading all four, because a row is written in the index of the folder the ticket sits in.
 - [`../docs/GLOSSARY.md`](../../../../docs/GLOSSARY.md) — the words the ranking is written in.
 - [`../docs/TRACKS.md`](../../../../docs/TRACKS.md) — the map and the index of the subject orders, one row per track; each order itself is a file under [`../docs/tracks/`](../../../../docs/tracks/), named by the track's anchor. They are the source of every `Track` cell this pass writes, so read them before ranking, not after: a row is placed knowing which subject it belongs to, and a ticket whose subject has no track yet needs one written in this same pass.
 - **Every ticket under `../docs/features/`, `../docs/refactor/` and `../docs/fixes/`, off the disk.** Those hold subject folders, so walk them rather than one level. A ticket the README missed still gets a row.
@@ -229,7 +229,7 @@ If a cell needs more words, the ticket is what needs them.
 
 ## 10. The six files know each other
 
-The tree is read from whichever file somebody opens first, so each one names the rest: [the README](../../../../docs/README.md) says what every plan is, [`PLAN.md`](../../../../docs/PLAN.md) what is left, [`on-hold/PLAN.md`](../../../../docs/on-hold/PLAN.md) what is paused, [`done/PLAN.md`](../../../../docs/done/PLAN.md) what shipped, [`canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) what was refused, and [`TRACKS.md`](../../../../docs/TRACKS.md) the index of the subject orders cutting across them, each one a file under [`tracks/`](../../../../docs/tracks/) — with [`GLOSSARY.md`](../../../../docs/GLOSSARY.md) holding the words all six are written in. Check the links each way in this pass.
+The tree is read from whichever file somebody opens first, so each one names the rest: [the live index](../../../../docs/README.md) says what every live plan is and names the three archive indexes beside it, [`PLAN.md`](../../../../docs/PLAN.md) what is left, [`on-hold/PLAN.md`](../../../../docs/on-hold/PLAN.md) what is paused, [`done/PLAN.md`](../../../../docs/done/PLAN.md) what shipped, [`canceled/PLAN.md`](../../../../docs/canceled/PLAN.md) what was refused, and [`TRACKS.md`](../../../../docs/TRACKS.md) the index of the subject orders cutting across them, each one a file under [`tracks/`](../../../../docs/tracks/) — with [`GLOSSARY.md`](../../../../docs/GLOSSARY.md) holding the words all six are written in. Check the links each way in this pass.
 
 ## 11. Hand back
 
@@ -241,6 +241,6 @@ The whole reply is the owner's message, word for word. Which rows moved and why,
 - `../docs/done/PLAN.md` — the retired rows, with what each build found.
 - `../docs/canceled/PLAN.md` — the refused ones, with what killed each and what survived it.
 - `../docs/on-hold/PLAN.md` — the parked ones, with their stage, reason and return folder.
-- `../docs/README.md` — every ticket, one line each. Read first.
+- `../docs/README.md`, `../docs/done/README.md`, `../docs/on-hold/README.md`, `../docs/canceled/README.md` — the ticket index, one file per status, one line per ticket. Read first.
 - `../docs/GLOSSARY.md` — the words the ranking is written in.
 - `/ticket` writes them, `/design` fixes one this finds wrong, `/dev` builds the top row, `/git-release` ships it, `/done` retires its row.

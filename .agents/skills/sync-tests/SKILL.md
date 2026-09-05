@@ -98,7 +98,7 @@ Only one thing is worth saying here: a change that needs a **real window, live s
 
 Leave the tests uncommitted. The whole reply is the owner's message, word for word; what gained a test, what an existing one already covers and what cannot be tested here all go in the ticket.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in the live index `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 **<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** A test that repeats setup, walks more than its claim needs or leaves a felt wait is enough to file; this reading still finishes the tests it came to settle.
 

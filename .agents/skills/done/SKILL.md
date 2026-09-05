@@ -1,6 +1,6 @@
 ---
 name: done
-description: Retire a ticket on the owner's word, at any status. Moves it into ../docs/done/, updates the README and both plan files, syncs any page the change made false, reranks the live work and reads the running order back. Use when the owner says a ticket works, says "mark it done", or says "close the ticket".
+description: Retire a ticket on the owner's word, at any status. Moves it into ../docs/done/, moves its row from the live index into that folder's own README, updates both plan files, syncs any page the change made false, reranks the live work and reads the running order back. Use when the owner says a ticket works, says "mark it done", or says "close the ticket".
 argument-hint: "[ticket path]"
 user-invocable: true
 ---
@@ -25,9 +25,9 @@ Add `> **Shipped 18 August 2026, 9:11pm, v1.21.2.**` and keep the dated `Designe
 
 Move the ticket into the matching folder under `../docs/done/` and fix its relative links. Take the links pointing *at* it with it: search both trees for its file name and repoint every one, or `/check` fails naming each.
 
-### 3. Move the README row
+### 3. Move the README row into the index of the folder the ticket lands in
 
-Rewrite its README row to say what shipped, and **move it out of the live half into the `## Shipped` table for its subject** — the index is navigated by heading, so a row left where it was reads as work that is waiting however its words are rewritten. Seven sat that way at once. `scripts/check-plan.mjs` refuses one now, naming the heading it belongs under.
+The index is four files, one per status, each in the folder it describes. Rewrite the row to say what shipped, cut it out of the live index `../docs/README.md`, and write it into [`../docs/done/README.md`](../../../../docs/done/README.md) under the `## Shipped` table for its subject — or into `../docs/canceled/README.md` or `../docs/on-hold/README.md` where the ticket went there instead. **The links are spelled from the file's own folder**, so `done/reading/x.md` becomes `reading/x.md` and a live ticket the row names becomes `../refactor/…`. A row left in the live index reads as work that is waiting however its words are rewritten; seven sat that way at once. `scripts/check-plan.mjs` refuses one now, naming the file it belongs in.
 
 ### 4. Remove the live row
 
@@ -55,6 +55,6 @@ Do not run git. Where a box never shipped, strike it with what is missing, so th
 
 The whole reply is the owner's message, word for word.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in the live index `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 **<!-- shared-rule: performance-finding -->Anything the work in front of this pass hints could be faster is a performance finding: file it as a ticket in the same turn, without stopping for a benchmark or fixing it in passing, and never name it in the reply.<!-- /shared-rule -->** Retirement sees the plan-tree rewrites together, so repeated work, an unnecessarily broad read or a wait is enough to file while this pass finishes the owner's close.

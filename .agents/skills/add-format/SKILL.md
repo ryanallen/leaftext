@@ -50,7 +50,7 @@ Add the format-table and rendering coverage. Run the format's own tests, not the
 
 Getting these the wrong way round makes every file openable, or none.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in the live index `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

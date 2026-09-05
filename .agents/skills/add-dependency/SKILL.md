@@ -63,7 +63,7 @@ Say what it costs and what it replaces, and stop. Adding it is the owner's call,
 
 `ammonia` (stands between hostile HTML and the web view — never hand-roll a sanitizer), `rusqlite`, `syntect`, `wry`/`tao`. These are not up for review.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in the live index `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

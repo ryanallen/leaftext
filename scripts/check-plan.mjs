@@ -587,49 +587,63 @@ function heldProblems(text, held) {
 //
 // The shipped and refused half is held the same way: that half is what a reader opens to find out whether this tree already answered them, so a ticket there with no row is re-planned exactly as a live one is. One shipped ticket owned none.
 //
-// A row is read against the heading it sits under as well. That file is 700 lines and nobody reads it end to end, so it is navigated by heading — what is left is one, what already shipped is another — and a shipped ticket among the live rows reads exactly like work that is waiting. Seven did, each in the present tense with no shipped note, so a reader counting what was left counted seven things that were not.
+// A row is read against the file it is written in as well. The index was one file of a megabyte whose live rows were 4.7% of it, so it is four now — the live one, and one in each of the three folders the archive describes — and which file a row sits in is what says whether the ticket is waiting, shipped, held or refused. A shipped ticket among the live rows reads exactly like work that is waiting; seven did, each in the present tense with no shipped note, so a reader counting what was left counted seven things that were not.
 //
-// Only the headings naming a half are judged. `## Needs a second look` is where a shipped path is meant to sit beside a live-sounding claim, and a row that has met no heading yet is outside the rule too.
-//
-// Only one direction names a single heading — a `done/` path belongs under `## Shipped` outright, so the other refusal names its subject table instead.
+// A row's link is spelled from its own file, so `done/README.md` names its tickets `c/gone.md` and a live ticket wrongly written there names one `../refactor/a/one.md`. Both resolve to the path off the tree's top before anything is asked about them, which is what lets one rule read all four files.
 //
 // The live half is read by kind as well. Each of the three live headings names one, and a live row's first path segment is the kind it belongs under, so somebody opening the refactors heading to see what refactoring is queued meets every refactor rather than half of them: twelve sat in the subject tables under `## Live plans — features` and twelve in a flat table under the refactors one, two tickets out of the same folder filed apart. A subject heading is below a kind heading and leaves that answer in force.
-const LIVE_HEADING = '## Live plans';
-const ARCHIVED_HEADINGS = { done: '## Shipped', canceled: '## Decided against', 'on-hold': '## On hold' };
+const INDEX_FILES = { live: 'README.md', done: 'done/README.md', canceled: 'canceled/README.md', 'on-hold': 'on-hold/README.md' };
+const ARCHIVE_WORDS = { done: 'has already shipped', canceled: 'was turned down', 'on-hold': 'is on hold' };
 const LIVE_KIND_HEADINGS = { features: '## Live plans — features', refactor: '## Live plans — refactors', fixes: '## Live plans — fixes' };
 
-function indexProblems(text, live, archived = new Set()) {
+// The path off the tree's top, from a link spelled inside one of the four index files.
+function resolve(folder, target) {
+  const parts = folder ? folder.split('/') : [];
+  for (const step of target.split('/')) {
+    if (step === '..') parts.pop();
+    else if (step !== '.') parts.push(step);
+  }
+  return parts.join('/');
+}
+
+function indexProblems(files, live, archived = new Set()) {
   const problems = [];
   const say = (subject, message) => problems.push({ rule: 'index', subject, message });
   const owned = new Map();
-  const lines = text.split('\n');
-  let heading = null;
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i].trim();
-    if (line.startsWith('## ')) {
-      heading = line;
-      continue;
-    }
-    if (!line.startsWith('|')) continue;
-    const path = links(rowCells(line)[0] ?? '')[0];
-    if (!path || !(live.has(path) || archived.has(path))) continue;
-    if (!owned.has(path)) owned.set(path, []);
-    owned.get(path).push(i + 1);
-    const parts = path.split('/');
-    if (heading?.startsWith(LIVE_HEADING) && archived.has(path)) {
-      say(path, `line ${i + 1}: ${path} sits under ${heading} and has already shipped or been turned down, so it reads as work that is waiting — its row belongs under ${ARCHIVED_HEADINGS[parts[0]]}`);
-    } else if (Object.values(ARCHIVED_HEADINGS).includes(heading) && live.has(path)) {
+  for (const [half, file, text] of files) {
+    const folder = file.includes('/') ? file.slice(0, file.lastIndexOf('/')) : '';
+    const lines = text.split('\n');
+    let heading = null;
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i].trim();
+      if (line.startsWith('## ')) {
+        heading = line;
+        continue;
+      }
+      if (!line.startsWith('|')) continue;
+      const target = links(rowCells(line)[0] ?? '')[0];
+      if (!target) continue;
+      const path = resolve(folder, target);
+      if (!(live.has(path) || archived.has(path))) continue;
+      if (!owned.has(path)) owned.set(path, []);
+      owned.get(path).push(`${file} line ${i + 1}`);
+      const parts = path.split('/');
+      const belongs = live.has(path) ? 'live' : parts[0];
       const table = parts.length > 2 ? `, in the ${parts[1]}/ table` : '';
-      say(path, `line ${i + 1}: ${path} sits under ${heading} and is still to build, so a reader counting what is left never meets it — its row belongs under a ${LIVE_HEADING} heading${table}`);
-    } else if (live.has(path) && Object.values(LIVE_KIND_HEADINGS).includes(heading) && LIVE_KIND_HEADINGS[parts[0]] !== heading) {
-      const table = parts.length > 2 ? `, in the ${parts[1]}/ table` : '';
-      say(path, `line ${i + 1}: ${path} sits under ${heading} and its path names ${parts[0]}, so somebody opening ${LIVE_KIND_HEADINGS[parts[0]]} to see what is queued there never meets it — its row belongs under ${LIVE_KIND_HEADINGS[parts[0]]}${table}`);
+      if (belongs !== half && belongs === 'live') {
+        say(path, `${file} line ${i + 1}: ${path} is still to build, so a reader counting what is left never meets it — its row belongs in ${INDEX_FILES.live}${table}`);
+      } else if (belongs !== half) {
+        const wrong = half === 'live' ? 'so it reads as work that is waiting' : 'and the file it is written in calls it something else';
+        say(path, `${file} line ${i + 1}: ${path} ${ARCHIVE_WORDS[belongs]}, ${wrong} — its row belongs in ${INDEX_FILES[belongs]}`);
+      } else if (half === 'live' && Object.values(LIVE_KIND_HEADINGS).includes(heading) && LIVE_KIND_HEADINGS[parts[0]] !== heading) {
+        say(path, `${file} line ${i + 1}: ${path} sits under ${heading} and its path names ${parts[0]}, so somebody opening ${LIVE_KIND_HEADINGS[parts[0]]} to see what is queued there never meets it — its row belongs under ${LIVE_KIND_HEADINGS[parts[0]]}${table}`);
+      }
     }
   }
   for (const ticket of [...owned.keys()].sort()) {
     const at = owned.get(ticket);
     if (at.length > 1) {
-      say(ticket, `${ticket} opens ${at.length} rows, at lines ${at.join(', ')}: whoever reads the older one is planning against the ticket as it was before it was designed`);
+      say(ticket, `${ticket} opens ${at.length} rows, at ${at.join(', ')}: whoever reads the older one is planning against the ticket as it was before it was designed`);
     }
   }
   for (const ticket of [...live].sort()) {
@@ -639,7 +653,7 @@ function indexProblems(text, live, archived = new Set()) {
   }
   for (const ticket of [...archived].sort()) {
     if (!owned.has(ticket)) {
-      say(ticket, `${ticket} shipped or was turned down and its README row is missing, so a reader asking whether this tree already answered them never finds it`);
+      say(ticket, `${ticket} ${ARCHIVE_WORDS[ticket.split('/')[0]]} and its row in ${INDEX_FILES[ticket.split('/')[0]]} is missing, so a reader asking whether this tree already answered them never finds it`);
     }
   }
   return problems;
@@ -895,7 +909,16 @@ const HELD_CASES = [
 const INDEX_TABLE = '| ticket | what it is |\n| --- | --- |\n';
 
 function index(...rows) {
-  let out = '# The ticket README\n\n';
+  return indexFile('# The ticket README', rows);
+}
+
+// The same shape under another title: the three archive indexes open with their own, and only the rows and the `## ` headings are read.
+function archive(title, ...rows) {
+  return indexFile(title, rows);
+}
+
+function indexFile(title, rows) {
+  let out = `${title}\n\n`;
   let open = false;
   for (const row of rows) {
     if (row.startsWith('## ') || row.startsWith('### ')) {
@@ -918,26 +941,31 @@ const INDEX_TWO = '| [two](refactor/b/two.md) | what it is |';
 // The row that must not count as an owned row: `two` is named inside `one`'s prose as the work it rides on.
 const INDEX_CROSS = '| [one](refactor/a/one.md) | rides on [two](refactor/b/two.md) |';
 const INDEX_SHIPPED = '| [gone](done/c/gone.md) | what shipped |';
-const INDEX_SHIPPED_AGAIN = '| [gone](done/c/gone.md) | what it was before it shipped |';
 // The shipped ticket named inside a live row's prose: a cross-reference, so it owns nothing.
 const INDEX_SHIPPED_CROSS = '| [one](refactor/a/one.md) | finishes what [gone](done/c/gone.md) left |';
 const INDEX_REFUSED = '| [dropped](canceled/c/dropped.md) | why not |';
+// The same tickets as the file that now owns them spells them: an archive index names its own folder's tickets from inside it, and reaches a live one back out through `../`.
+const SHIPPED_OWN = '| [gone](c/gone.md) | what shipped |';
+const SHIPPED_OWN_AGAIN = '| [gone](c/gone.md) | what it was before it shipped |';
+const REFUSED_OWN = '| [dropped](c/dropped.md) | why not |';
+const LIVE_IN_ARCHIVE = '| [one](../refactor/a/one.md) | what it is |';
+const SHIPPED_INDEX_TITLE = '# What shipped, one line each';
+const REFUSED_INDEX_TITLE = '# What was turned down, one line each';
+const HELD_INDEX_TITLE = '# What is on hold, one line each';
 
 const INDEX_LIVE = new Set(['refactor/a/one.md', 'refactor/b/two.md']);
 const INDEX_ARCHIVED = new Set(['done/c/gone.md', 'canceled/c/dropped.md']);
 
-// The headings that file is navigated by. `## Needs a second look` names neither half on purpose.
+// The kind headings the live index is navigated by, and the one that names no kind on purpose.
 const LIVE_FEATURES = '## Live plans — features';
 const LIVE_REFACTORS = '## Live plans — refactors';
 const LIVE_FIXES = '## Live plans — fixes';
-const SHIPPED_HEADING = '## Shipped';
-const DECIDED_AGAINST = '## Decided against';
 const SECOND_LOOK = '## Needs a second look';
 
 const INDEX_CASES = [
   ['an index with one row per live ticket passes', index(INDEX_ONE, INDEX_TWO), INDEX_LIVE, [], ''],
-  ['a ticket opening two rows is refused, and both lines are named',
-    index(INDEX_ONE, INDEX_TWO, INDEX_ONE_AGAIN), INDEX_LIVE, ['index refactor/a/one.md'], 'lines 5, 7'],
+  ['a ticket opening two rows is refused, and both its file and its lines are named',
+    index(INDEX_ONE, INDEX_TWO, INDEX_ONE_AGAIN), INDEX_LIVE, ['index refactor/a/one.md'], 'README.md line 5, README.md line 7'],
   ['a ticket opening no row is refused, and named',
     index(INDEX_ONE), INDEX_LIVE, ['index refactor/b/two.md'], 'opens no row'],
   ['a link later in a row is a cross-reference, not an owned row',
@@ -946,41 +974,73 @@ const INDEX_CASES = [
     index(INDEX_ONE, INDEX_TWO, INDEX_SHIPPED), INDEX_LIVE, [], ''],
 ];
 
-// The shipped and refused half, which is the half a reader opens to find out whether the tree already answered them.
+// The shipped and refused half, which is the half a reader opens to find out whether the tree already answered them. It is written in the index inside the folder holding it, so every case here is a list of files rather than one, shaped `[what it asserts, the files, refusals, a phrase the message owes]`.
 const ARCHIVED_INDEX_CASES = [
-  ['an index with one row per archived ticket passes',
-    index(INDEX_ONE, INDEX_TWO, INDEX_SHIPPED, INDEX_REFUSED), [], ''],
+  ['one row per archived ticket, each in the index of the folder holding it, passes',
+    [['live', 'README.md', index(INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, SHIPPED_OWN)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    [], ''],
   ['a shipped ticket opening no row is refused, and named',
-    index(INDEX_ONE, INDEX_TWO, INDEX_REFUSED), ['index done/c/gone.md'], 'README row is missing'],
+    [['live', 'README.md', index(INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index done/c/gone.md'], 'is missing, so a reader asking whether this tree already answered them'],
   ['a refused ticket opening no row is refused, and named',
-    index(INDEX_ONE, INDEX_TWO, INDEX_SHIPPED), ['index canceled/c/dropped.md'], 'README row is missing'],
-  ['a shipped ticket opening two rows is refused, and both lines are named',
-    index(INDEX_ONE, INDEX_TWO, INDEX_SHIPPED, INDEX_REFUSED, INDEX_SHIPPED_AGAIN),
-    ['index done/c/gone.md'], 'lines 7, 9'],
-  ['a link to a shipped ticket later in a row is a cross-reference, not an owned row',
-    index(INDEX_SHIPPED_CROSS, INDEX_TWO, INDEX_REFUSED),
-    ['index done/c/gone.md'], 'README row is missing'],
+    [['live', 'README.md', index(INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, SHIPPED_OWN)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE)]],
+    ['index canceled/c/dropped.md'], 'is missing, so a reader asking whether this tree already answered them'],
+  ['a shipped ticket opening two rows is refused, and both files and lines are named',
+    [['live', 'README.md', index(INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, SHIPPED_OWN, SHIPPED_OWN_AGAIN)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index done/c/gone.md'], 'done/README.md line 5, done/README.md line 6'],
+  ['a link to a shipped ticket later in a live row is a cross-reference, not an owned row',
+    [['live', 'README.md', index(INDEX_SHIPPED_CROSS, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index done/c/gone.md'], 'is missing, so a reader asking whether this tree already answered them'],
 ];
 
-// The heading a row sits under, which is the whole of how that file is navigated. Every case carries all four tickets, so what it is asserting is the heading rule and never a missing row.
-const HEADING_INDEX_CASES = [
-  ['a shipped row under a live heading is refused, and the heading it belongs under is named',
-    index(LIVE_REFACTORS, INDEX_ONE, INDEX_TWO, INDEX_SHIPPED, DECIDED_AGAINST, INDEX_REFUSED),
-    ['index done/c/gone.md'], 'belongs under ## Shipped'],
-  ['a refused row under a live heading is refused, and the heading it belongs under is named',
-    index(LIVE_FIXES, INDEX_REFUSED, LIVE_REFACTORS, INDEX_ONE, INDEX_TWO, SHIPPED_HEADING, INDEX_SHIPPED),
-    ['index canceled/c/dropped.md'], 'belongs under ## Decided against'],
-  ['a live row under an archived heading is refused, and its subject table is named',
-    index(SHIPPED_HEADING, INDEX_SHIPPED, INDEX_ONE, DECIDED_AGAINST, INDEX_REFUSED, LIVE_REFACTORS, INDEX_TWO),
-    ['index refactor/a/one.md'], 'belongs under a ## Live plans heading, in the a/ table'],
-  ['a live refactor row under the refactors heading passes',
-    index(LIVE_REFACTORS, INDEX_ONE, INDEX_TWO, SHIPPED_HEADING, INDEX_SHIPPED, DECIDED_AGAINST, INDEX_REFUSED),
+// Which file a row is written in, which is the whole of how the index answers what a ticket's status is. Every case carries all four tickets, so what it is asserting is the file rule and never a missing row.
+const FILE_INDEX_CASES = [
+  ['a shipped row written in the live index is refused, and the file it belongs in is named',
+    [['live', 'README.md', index(LIVE_REFACTORS, INDEX_ONE, INDEX_TWO, INDEX_SHIPPED)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index done/c/gone.md'], 'belongs in done/README.md'],
+  ['a refused row written in the live index is refused, and the file it belongs in is named',
+    [['live', 'README.md', index(LIVE_REFACTORS, INDEX_ONE, INDEX_TWO, INDEX_REFUSED)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, SHIPPED_OWN)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE)]],
+    ['index canceled/c/dropped.md'], 'belongs in canceled/README.md'],
+  ['a live row written in an archive index is refused, and its subject table is named',
+    [['live', 'README.md', index(LIVE_REFACTORS, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, SHIPPED_OWN, LIVE_IN_ARCHIVE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index refactor/a/one.md'], 'belongs in README.md, in the a/ table'],
+  ['a shipped row written in the refused index is refused, and the file it belongs in is named',
+    [['live', 'README.md', index(LIVE_REFACTORS, INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN, '| [gone](../done/c/gone.md) | what shipped |')]],
+    ['index done/c/gone.md'], 'belongs in done/README.md'],
+  ['a heading in the live index no longer exempts anything: the row that used to be allowed to sit under `## Needs a second look` is refused by its file',
+    [['live', 'README.md', index(SECOND_LOOK, INDEX_SHIPPED, LIVE_REFACTORS, INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index done/c/gone.md'], 'belongs in done/README.md'],
+  ['a live row written in the held index is refused and named, so a ticket cannot be parked by moving its row',
+    [['live', 'README.md', index(LIVE_REFACTORS, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, SHIPPED_OWN)],
+      ['on-hold', 'on-hold/README.md', archive(HELD_INDEX_TITLE, LIVE_IN_ARCHIVE)],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
+    ['index refactor/a/one.md'], 'on-hold/README.md line 5: refactor/a/one.md is still to build'],
+  ['a live ticket named inside an archive row of prose is a cross-reference, not a row written in the wrong file',
+    [['live', 'README.md', index(LIVE_REFACTORS, INDEX_ONE, INDEX_TWO)],
+      ['done', 'done/README.md', archive(SHIPPED_INDEX_TITLE, '| [gone](c/gone.md) | finished what [one](../refactor/a/one.md) starts |')],
+      ['canceled', 'canceled/README.md', archive(REFUSED_INDEX_TITLE, REFUSED_OWN)]],
     [], ''],
-  ['a heading naming neither half is outside the rule, so a shipped path may sit under a live-sounding claim',
-    index(SECOND_LOOK, INDEX_SHIPPED, LIVE_REFACTORS, INDEX_ONE, INDEX_TWO, DECIDED_AGAINST, INDEX_REFUSED),
-    [], ''],
-  ['a row that has met no heading at all is outside the rule',
-    index(INDEX_ONE, INDEX_TWO, INDEX_SHIPPED, INDEX_REFUSED), [], ''],
 ];
 
 // The kind heading a live row sits under, which is what somebody asking what work of one kind is queued opens. Every case carries all three live tickets, so what it is asserting is the kind rule and never a missing row.
@@ -1214,7 +1274,7 @@ function selfTest() {
     }
   }
   for (const [name, text, live, want, said] of INDEX_CASES) {
-    const found = indexProblems(text, live);
+    const found = indexProblems([['live', 'README.md', text]], live);
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
     if (got.join(', ') !== [...want].sort().join(', ')) {
       fails.push(`${name}: got [${got}], want [${want}]`);
@@ -1223,13 +1283,19 @@ function selfTest() {
       fails.push(`${name}: no message said \`${said}\``);
     }
   }
-  const HALF_CASES = [
-    ...ARCHIVED_INDEX_CASES.map((c) => [c, INDEX_LIVE, INDEX_ARCHIVED]),
-    ...HEADING_INDEX_CASES.map((c) => [c, INDEX_LIVE, INDEX_ARCHIVED]),
-    ...KIND_INDEX_CASES.map((c) => [c, KIND_LIVE, new Set()]),
-  ];
-  for (const [[name, text, want, said], liveSet, archivedSet] of HALF_CASES) {
-    const found = indexProblems(text, liveSet, archivedSet);
+  // The three live-index cases are one file; the archive ones are the whole set of index files at once, because the rule they assert is which of them a row is written in.
+  for (const [name, text, want, said] of KIND_INDEX_CASES) {
+    const found = indexProblems([['live', 'README.md', text]], KIND_LIVE, new Set());
+    const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
+    if (got.join(', ') !== [...want].sort().join(', ')) {
+      fails.push(`${name}: got [${got}], want [${want}]`);
+    }
+    if (said && !found.some((p) => p.message.includes(said))) {
+      fails.push(`${name}: no message said \`${said}\``);
+    }
+  }
+  for (const [name, files, want, said] of [...ARCHIVED_INDEX_CASES, ...FILE_INDEX_CASES]) {
+    const found = indexProblems(files, INDEX_LIVE, INDEX_ARCHIVED);
     const got = found.map((p) => `${p.rule} ${p.subject}`).sort();
     if (got.join(', ') !== [...want].sort().join(', ')) {
       fails.push(`${name}: got [${got}], want [${want}]`);
@@ -1281,13 +1347,13 @@ for (const folder of LIVE_PLANS) {
   for (const file of markdown(full, plans)) live.add(file);
 }
 
-// Each of these folders holds its own ranking file beside the plans: the shipped log supplies the retired rows and the refused one is derived by /pm, so neither is a ticket and neither owns an index row.
+// Each of these folders holds its own ranking file and its own index beside the plans: the shipped log supplies the retired rows, the refused one is derived by /pm, and the index is where the rows themselves are written — so none of the three is a ticket and none owns a row of its own.
 const archived = new Set();
 for (const folder of ARCHIVED_PLANS) {
   const full = join(plans, folder);
   if (!existsSync(full) || !statSync(full).isDirectory()) continue;
   for (const file of markdown(full, plans)) {
-    if (file !== `${folder}/PLAN.md`) archived.add(file);
+    if (file !== `${folder}/PLAN.md` && file !== `${folder}/README.md`) archived.add(file);
   }
 }
 
@@ -1330,7 +1396,8 @@ const problems = [
 ];
 
 // The same walks answer the index, so the two cannot disagree about what is live or what is archived.
-const indexFails = indexProblems(readFileSync(join(plans, 'README.md'), 'utf8'), live, archived);
+const indexes = Object.entries(INDEX_FILES).map(([half, file]) => [half, file, readFileSync(join(plans, file), 'utf8')]);
+const indexFails = indexProblems(indexes, live, archived);
 
 // The same two walks again, asked the one question the retirement asks too late.
 const nameFails = nameProblems(live, archived);
@@ -1348,7 +1415,7 @@ if (indexFails.length) {
   for (const { message } of indexFails) console.error(`  ${message}`);
   console.error('Run /ticket: a ticket added, renamed or moved between folders is not finished until the one row');
   console.error('it opens matches. A ticket named in another row stays a cross-reference and keeps its own row.');
-  console.error('A shipped or turned-down ticket owns a row too: that half is what a reader opens to find out whether the tree already answered them.');
+  console.error('A shipped or turned-down ticket owns a row too, in the index inside the folder holding it: that half is what a reader opens to find out whether the tree already answered them.');
 }
 
 if (nameFails.length) {

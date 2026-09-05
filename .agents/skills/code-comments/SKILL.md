@@ -119,7 +119,7 @@ So, per rewrite: grep every identifier the replacement names and confirm it is r
 4. Run `cargo doc --no-deps --lib` if any Rust changed. Not the complete suite — the build this runs inside pays for that once, after this pass.
 5. Say how many comments were cut, rewritten or shortened, in which files, and anything left alone as out of scope.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in the live index `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

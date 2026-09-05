@@ -90,7 +90,7 @@ Edit the row, run the bundler, run the design checks. That is all — nothing el
 
 `just bundle-gallery` builds it, and it needs a compile: the stylesheet comes out of the binary (`--dump-css`), because the theme compiler is Rust. It is a page in the repo, not a feature in the app — nothing about it ships to a reader.
 
-**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in `../docs/README.md`, [`/pm`](../pm/SKILL.md).
+**Anything this pass finds that it is not here to do is a ticket, written before the hand-back** — [`/ticket`](../ticket/SKILL.md), its row in the live index `../docs/README.md`, [`/pm`](../pm/SKILL.md).
 
 ## Reference
 

@@ -615,9 +615,9 @@ fn exported_picture_address(
     Some(url)
 }
 
-/// The name a picture takes in the `assets` folder, and whether its bytes still have to be written there.
+/// The name a picture takes in the folder an export copies it into — `assets` beside an exported page, `imgs` beside an exported picture — and whether its bytes still have to be written there.
 ///
-/// Two documents exported into one folder is the ordinary case here rather than the odd one, so a name already there belongs to a page somebody exported earlier and is never written over. A name holding the very same file is this document's own earlier export, so it is addressed and nothing is written — otherwise exporting one page twice leaves a second copy of every picture, addressed by nothing.
+/// Two documents exported into one folder is the ordinary case here rather than the odd one, so a name already there belongs to something somebody exported earlier and is never written over: an export that quietly replaced somebody's file is the one mistake here nobody can undo. A name holding the very same file is this reader's own earlier export, so it is addressed and nothing is written — otherwise exporting the same thing twice leaves a second copy of every picture, addressed by nothing.
 ///
 /// The comparison walks every name the numbering would reach rather than only the plain one: a folder already holding another document's picture under that name is exactly the folder the numbering exists for, and comparing one name would send every export of this document to a fresh number for ever.
 fn assets_name_for(assets: &Path, source: &Path) -> (String, bool) {
@@ -1414,28 +1414,6 @@ pub(crate) fn print_diagram_pdf(webview: Option<&WebView>, target: &Path, width:
     }
 }
 
-/// The name a copied picture takes in the `imgs` folder: its own, or a numbered one beside it where that name is already there. `taken` answers for one name, so the whole of the decision can be tested without a disk.
-///
-/// Beside rather than over, because an export that quietly replaced somebody's file is the one mistake here nobody can undo. Overwriting is the cheaper code and the worse fault.
-pub(crate) fn free_picture_name(file_name: &str, taken: &dyn Fn(&str) -> bool) -> String {
-    if !taken(file_name) {
-        return file_name.to_string();
-    }
-    // The dot has to have something in front of it, or a dotfile would be numbered on its own name and lose it.
-    let (stem, ending) = match file_name.rfind('.') {
-        Some(at) if at > 0 => file_name.split_at(at),
-        _ => (file_name, ""),
-    };
-    let mut number = 2u32;
-    loop {
-        let candidate = format!("{stem}-{number}{ending}");
-        if !taken(&candidate) {
-            return candidate;
-        }
-        number += 1;
-    }
-}
-
 /// The words a picture carries, safe to sit inside `![...]`: a bracket of its own would close the label early, a backslash would escape whatever came next, and a line break would end the paragraph the picture is in.
 pub(crate) fn markdown_alt_text(alt: &str) -> String {
     let mut written = String::with_capacity(alt.len());
@@ -1461,7 +1439,7 @@ pub(crate) fn picture_export_document(alt: &str, destination: &str) -> String {
     )
 }
 
-/// Write a picture out as a Markdown document with the picture beside it: the document at `target`, an `imgs` folder next to it, and the file copied in under its own name.
+/// Write a picture out as a Markdown document with the picture beside it: the document at `target`, an `imgs` folder next to it, and the file copied in under its own name — or addressed where that folder already holds it.
 ///
 /// Two files and a folder, which no other export here writes. Nothing is converted, so this row works for every kind of picture the reading view draws.
 ///
@@ -1484,18 +1462,17 @@ pub(crate) fn export_picture_markdown(
         );
         return;
     }
-    let file_name = source
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "picture".to_string());
-    let name = free_picture_name(&file_name, &|candidate| images.join(candidate).exists());
+    let (name, write_it) = assets_name_for(&images, source);
     let copy = images.join(&name);
-    if let Err(error) = fs::copy(source, &copy) {
-        report_file_action_failure(
-            webview,
-            &format!("Could not write {}: {error}", copy.display()),
-        );
-        return;
+    // A copy that was asked for and failed leaves no document at all, where the page export lets one through so the browser can draw its own broken mark.
+    if write_it {
+        if let Err(error) = fs::copy(source, &copy) {
+            report_file_action_failure(
+                webview,
+                &format!("Could not write {}: {error}", copy.display()),
+            );
+            return;
+        }
     }
     // Asked of the same function the Insert box asks, so a name holding a space or a bracket is wrapped the way CommonMark wants it.
     let destination = markdown_image_insert_destination(&copy, target);
