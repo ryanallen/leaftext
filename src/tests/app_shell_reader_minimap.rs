@@ -323,6 +323,57 @@ fn app_shell_drags_minimap_to_scroll_document() {
         !html.contains("minimapDragStartScrollTop"),
         "minimap drag maps through the scroll range, not a cached start offset"
     );
+
+    // A rebuild is slower than a fast hand, so the slack a moving drag asks for goes where the hand is heading. The direction comes off the two mapped positions the drag already has, so the pointer path measures no layout to find it.
+    for expected in [
+        "if (minimapDragScrollTop !== null && boundedScrollTop !== minimapDragScrollTop) {",
+        "minimapDragDirection = boundedScrollTop > minimapDragScrollTop ? 1 : -1;",
+        "minimapDragScrollTop = boundedScrollTop;",
+    ] {
+        assert_in(
+            &html,
+            "const dragMinimapViewportToPointer = (event, pointerOffsetY) => {",
+            expected,
+        );
+    }
+    assert!(
+        html.find("minimapDragDirection = boundedScrollTop > minimapDragScrollTop ? 1 : -1;")
+            < html.find("scheduleMinimapPreviewUpdate(MINIMAP_GESTURE_SLACK);"),
+        "the drag aims the window before it asks for the rebuild that uses it"
+    );
+
+    // A grab has no travel behind it and a release has none in front, so both put the drag back on the resting window.
+    for opener in [
+        "function initializeMinimapState() {",
+        "track.addEventListener('pointerdown', (event) => {",
+        "if (event.pointerId === minimapPointerId) {",
+    ] {
+        for expected in ["minimapDragScrollTop = null;", "minimapDragDirection = 0;"] {
+            assert_in(&html, opener, expected);
+        }
+    }
+
+    // The window keeps its height and moves its weight: seven eighths of the slack ahead of the hand, an eighth behind it, and the sides swap the move after a reversal. Only a gesture's ask is aimed — a rest and a release come through with the full window and take it either side.
+    for expected in [
+        "const direction = slack < MINIMAP_WINDOW_SLACK ? minimapDragDirection : 0;",
+        "const behindHeight = direction === 0 ? slackHeight : slackHeight * 2 * MINIMAP_GESTURE_SLACK_BEHIND;",
+        "const aheadHeight = direction === 0 ? slackHeight : slackHeight * 2 * (1 - MINIMAP_GESTURE_SLACK_BEHIND);",
+        "const topSlack = direction < 0 ? aheadHeight : behindHeight;",
+        "const bottomSlack = direction < 0 ? behindHeight : aheadHeight;",
+        "minimapWindowRows(source, appTop, scrollTop, view.top - topSlack, view.bottom + bottomSlack)",
+        "const cut = { appTop, scrollTop, top: view.top - topSlack, bottom: view.bottom + bottomSlack };",
+    ] {
+        assert_in(
+            &html,
+            "function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {",
+            expected,
+        );
+    }
+    assert_contains(&html, "const MINIMAP_GESTURE_SLACK_BEHIND = 0.125;");
+    assert!(
+        !html.contains("view.top - slackHeight"),
+        "no ask keeps the old symmetric cut, or a drag would still lay out the ground it has left"
+    );
 }
 
 #[test]

@@ -122,7 +122,7 @@ fn the_window_asks_for_no_platform_shadow_and_shows_what_is_behind_it() {
     // The smallest window grows by the band on both sides, so the smallest readable page is the size it was pinned at rather than the band narrower. Read off the value itself: a resize the host drives clamps to the same pair, and the two have to be one number.
     assert_eq!(
         MIN_INNER_SIZE,
-        (380.0 + 16.0, 480.0 + 16.0),
+        (380.0 + 24.0, 480.0 + 24.0),
         "the smallest window lost the band out of its readable page"
     );
     // And the band is the one the stylesheet draws. The page cannot read a Rust constant and this cannot read a custom property, so the number is written on both sides of the boundary and held to itself here: a spread changed in `design/tokens.md` alone would leave the window clamping to the old band.

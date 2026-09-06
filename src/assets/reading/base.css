@@ -26,6 +26,9 @@
   /* The dot lattice's geometry: how far the dot is solid, where its antialiasing ramp ends, and the tile it repeats in. A length is safe in a custom property where the whole gradient is not — it carries no ink, so a surface below still gets the `--lt-grain-dot` it sets. Said once because the resolution branch below is the only thing that changes them. */
   --lt-grain-radius: 0.6px;
   --lt-grain-edge: 0.7px;
+  /* The shadow band's own tile, and how far its blob reaches inside one -- half the tile, so full-sized dots just touch. It is the chrome's own pitch: the band sits beside the pane, the tab strip and a tinted row, and a coarser lattice there reads as a second texture rather than as the same paper in shadow. The blob is soft the whole way rather than solid to a radius, because the curve cuts the dot at whatever coverage the edge ramps have left and a hard-edged blob has only one width to give. */
+  --lt-grain-shadow-tile: var(--lt-grain-tile);
+  --lt-grain-blob: 1px;
   --lt-grain-tile: 2px;
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
@@ -50,11 +53,12 @@
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
-/* A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
+/* The shadow's blob is in here too, because its tile is the chrome's and follows it up. A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
 @media (resolution <= 1dppx) {
   :root {
     --lt-grain-radius: 0.9px;
     --lt-grain-edge: 1.05px;
+    --lt-grain-blob: 1.5px;
     --lt-grain-tile: 3px;
   }
 }
@@ -111,29 +115,38 @@ body.frameless.is-fullscreen .app-surface {
   border: 0;
   --app-window-radius: 0px;
 }
-/* The window's own shadow, thrown by the app rather than by the platform: the same 2px dot lattice every floating surface inside the app throws, in shadow ink, over the strip of page the app is held off the window by. Four edge gradients intersected — alpha nothing at the window's edge, full where the app surface starts — so each corner is the product of two and falls off the way a corner should. No punch layer: this is a sibling of the app surface rather than a child of it, and the surface is opaque and paints over the middle. Zero-sized when the inset is zero, which is what takes it off a maximized window and out of a browser. */
+/* The window uses the same shrinking-dot halftone without a punch layer because the app surface paints over its middle. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: var(--lt-z-below);
   pointer-events: none;
-  --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-color: var(--lt-grain-shadow-base);
+  /* The same halftone the floating surfaces throw, and for the same reason it is written this way: the ramps run in front of the curve rather than in the mask, so the dot narrows toward the window's edge instead of the ink falling under one dot width. */
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    linear-gradient(to bottom, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    linear-gradient(to top, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
   background-repeat: repeat;
-  /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
-  background-attachment: fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  filter: var(--lt-grain-shadow-curve);
+  opacity: var(--lt-grain-shadow-opacity);
+  /* The same four ramps again, in the mask this time, taking the band's ink from full where the app starts to nothing at the window's edge. No punch here: this is a sibling of the app surface rather than a child, so the opaque surface covers the middle on its own. */
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  -webkit-mask-composite: source-in, source-in, source-in;
+  -webkit-mask-composite: source-in, source-in, source-in, add;
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  mask-composite: intersect;
+  mask-composite: intersect, intersect, intersect, add;
+  /* The lattice is anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. The four ramps take the layer's own box, or their 100% would size to the viewport and none of them would reach the band at all. */
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
 }
 /* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */
 body:not(.frameless)::before,

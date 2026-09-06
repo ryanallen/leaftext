@@ -150,7 +150,7 @@ fn load_window_icon() -> Option<Icon> {
 }
 
 /// How far the app is held off the window on every side so the shadow band has room, mirroring `--lt-shadow-spread` in `design/tokens.md`: the page cannot read a custom property, so the one number is written on both sides of the boundary and a test holds them to each other.
-pub(crate) const SHADOW_SPREAD: f64 = 8.0;
+pub(crate) const SHADOW_SPREAD: f64 = 12.0;
 
 /// The smallest readable page, plus the band on both sides of it: the page inside stays the size it was pinned at rather than losing the band out of it. Named because a resize the host drives itself sets the size directly and goes around the limit the platform holds, so it has to clamp to the same pair.
 ///

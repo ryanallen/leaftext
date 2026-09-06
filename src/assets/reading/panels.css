@@ -186,7 +186,7 @@
 .update-button-spinner[hidden] {
   display: none;
 }
-/* Every surface that throws a shadow, said once — the floating ones and, at the foot of a page, the Previous / Next card: the same 2px dot lattice the two toolbars throw, in shadow ink, over a band one spread wide — a halftone, never a smooth blur. Four edge ramps intersected, alpha nothing at the band's outer rim and full at the surface's own edge, so each corner is the product of two and the ring weighs the same on every side whatever the surface's size or shape: one light, overhead and centered. The layer takes the spread as padding, which makes its content box the host's own box, so the browser derives the inner curve from the outer one rather than being told it. The fifth mask layer punches that rounded content box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ring` — the punch inside out. */
+/* Every floating surface shares one halftone: four edge ramps multiply a tiled blob before the curve turns surviving coverage into one ink, and a two-layer mask punches the host face out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
@@ -213,29 +213,39 @@
   /* The outside corner is the surface's own plus the spread, which strikes both arcs from one center; each host declares the one number its own border already reads. */
   border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread));
   pointer-events: none;
-  --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-color: var(--lt-grain-shadow-base);
+  /* The four edge ramps are background layers rather than mask layers, and the blob is the bottom one, because an element is filtered before it is masked: a fade left in the mask runs after the curve, so the curve sees one full-strength lattice, cuts one dot width everywhere, and the ramps then fade its ink — which is a band of same-sized dots ending on a ruled line. Here they run in front of it, so what the curve reads is already weaker at the rim and the dot it cuts there is smaller. Screen against the white ground, never multiply: multiply can only darken, and white is its identity, so ramps written that way lift nothing at all. */
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to bottom, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to top, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
   background-repeat: repeat;
-  background-attachment: fixed;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+  /* Only the lattice is anchored to the window, so the app keeps one grid across every grained surface. The ramps take the layer's own box, or `fixed` sizes their 100% to the viewport and all four run from the window's edges instead of the band's — which lifts nothing anywhere near a panel and leaves every dot the same width again. */
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  filter: var(--lt-grain-shadow-curve);
+  opacity: var(--lt-grain-shadow-opacity);
+  /* The punch that takes the host's own face out, over four ramps that take the band's ink from full against that face to nothing at the rim. The ramps run here as well as in the background stack because the two do different things: the background pair shrinks the dot, and these fade what is left, so the band reaches true zero at its outer edge rather than stopping on the faintest row it still draws. The punch is the top layer and subtracts; the four below it intersect, which multiplies their alpha the way a corner needs. */
+  -webkit-mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  -webkit-mask-origin: border-box, border-box, border-box, border-box, content-box;
-  -webkit-mask-clip: border-box, border-box, border-box, border-box, content-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  -webkit-mask-origin: content-box, border-box, border-box, border-box, border-box;
+  -webkit-mask-clip: content-box, border-box, border-box, border-box, border-box;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-composite: source-in, source-in, source-in, source-out;
-  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+  -webkit-mask-composite: source-out, intersect, intersect, intersect, add;
+  mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  mask-origin: border-box, border-box, border-box, border-box, content-box;
-  mask-clip: border-box, border-box, border-box, border-box, content-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  mask-origin: content-box, border-box, border-box, border-box, border-box;
+  mask-clip: content-box, border-box, border-box, border-box, border-box;
   mask-repeat: no-repeat;
-  mask-composite: intersect, intersect, intersect, subtract;
+  mask-composite: subtract, intersect, intersect, intersect, add;
 }
 /* The one host on that list sitting inside the document rather than over it, which makes one line of the shared rule wrong for it: `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. The mask's punch layer still takes the card's own face out, which is what keeps a dot off the words. */
 .document-body .docs-pager a::before {
@@ -246,5 +256,5 @@
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {
-  opacity: 1;
+  opacity: var(--lt-grain-shadow-opacity);
 }

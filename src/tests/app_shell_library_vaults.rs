@@ -575,9 +575,25 @@ fn the_open_switcher_lights_the_vault_name_beside_it() {
 fn a_cloud_folder_becomes_a_vault_without_being_asked_for() {
     let html = app_shell_page();
 
-    // The host is asked at boot and again whenever the switcher opens, so a client installed mid-session is found without a restart.
+    // The host is asked once at boot; the list itself only reads the answer already held.
     assert!(html.contains("send({ command: 'getCloudFolders' });"));
     assert!(html.contains("window.leafSetCloudFolders = (folders) => {"));
+    assert_in(
+        &html,
+        "function vaultMenuItems() {",
+        "requestKnownVaultStatuses();",
+    );
+    let vault_menu_items_block = block_opened_by(&html, "function vaultMenuItems() {")
+        .expect("vaultMenuItems is on the page");
+    assert!(
+        !vault_menu_items_block.contains("requestCloudFolders();"),
+        "opening the switcher should read the held answer rather than asking again"
+    );
+
+    // A client installed mid-session is found by returning to a native window after the first answer has landed, not by a timer or a second cache.
+    assert!(html.contains(
+        "window.addEventListener('focus', () => {\n  if (leafWindowFocusIsNative() && cloudFolders !== null) requestCloudFolders();\n});"
+    ));
 
     // Nothing to press: there is no row for a cloud folder, because being found is what registers it.
     assert!(

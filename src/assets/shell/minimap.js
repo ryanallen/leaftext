@@ -12,6 +12,9 @@ var minimapPointerId;
 var minimapPointerOffsetY;
 // Document geometry captured once at the start of a minimap drag (it doesn't change while dragging, and re-measuring forces a synchronous layout). Then map pointer -> scrollTop with pure math.
 var minimapDragMetrics;
+// Where the held box put the reader on the move before this one, and which way that move went as -1, 0 or 1. A rebuild takes long enough that the hand is past the slice it laid out, so the ground ahead of the drag is worth more than the same ground behind it — and the drag already has both numbers as arithmetic, so reading the direction costs no layout on the pointer path. Null and 0 outside a drag, which is what keeps the resting window symmetric.
+var minimapDragScrollTop;
+var minimapDragDirection;
 var minimapResizeObserver;
 var minimapBodyObserver;
 // The document range the built clone holds, or null when it holds all of it — the clone is a window on long documents, so scrolling out of range is a third reason to rebuild (see updateDocumentMinimapPreview).
@@ -54,6 +57,8 @@ function initializeMinimapState() {
   minimapPointerId = null;
   minimapPointerOffsetY = null;
   minimapDragMetrics = null;
+  minimapDragScrollTop = null;
+  minimapDragDirection = 0;
   minimapResizeObserver = null;
   minimapBodyObserver = null;
   minimapBuiltRange = null;
@@ -327,6 +332,11 @@ function bindDocumentMinimap() {
       : (handleRange <= 0 ? 0 : (targetViewportTop / handleRange) * metrics.scrollable);
     // Set scrollTop against the cached range, then pin the box + thumbnail. The scroll handler skips its update while dragging; pointerup settles once.
     const boundedScrollTop = Math.min(metrics.scrollable, Math.max(0, targetViewportScrollTop));
+    // Which way the hand is travelling, before the rebuild below is asked for: a move that lands where the last one did leaves the direction where it was, so a hand held still keeps aiming the way it was going rather than falling back to a resting window.
+    if (minimapDragScrollTop !== null && boundedScrollTop !== minimapDragScrollTop) {
+      minimapDragDirection = boundedScrollTop > minimapDragScrollTop ? 1 : -1;
+    }
+    minimapDragScrollTop = boundedScrollTop;
     readerScrollElement().scrollTop = boundedScrollTop;
     const minimap = track.closest('.document-minimap');
     if (minimap) {
@@ -364,6 +374,9 @@ function bindDocumentMinimap() {
     // The drag writes the reader's position itself, so the column's own scroll stands aside until it is over: a notch landing mid-drag would fight the box being held.
     if (readerMinimap) readerMinimap.classList.add('is-scroll-held');
     minimapPointerOffsetY = minimapPointerOffset(event);
+    // A new grab has no travel behind it, so it starts on the resting window and takes its direction from its own second move.
+    minimapDragScrollTop = null;
+    minimapDragDirection = 0;
     // Measure the document geometry ONCE for the whole drag (see minimapDragMetrics).
     minimapDragMetrics = measureDocumentMinimap(track);
     leafHoldPointer(track, event.pointerId);
@@ -387,6 +400,9 @@ function bindDocumentMinimap() {
       minimapPointerOffsetY = null;
       minimapDragging = false;
       minimapDragMetrics = null;
+      // Nothing is travelling once the box is let go, so the settle below asks for the full window either side.
+      minimapDragScrollTop = null;
+      minimapDragDirection = 0;
       // The column stood aside for the drag and so fell behind it; hand its scroll back where the reader now is, or the first notch after the release would jump the page to where the drag began.
       if (readerMinimap) readerMinimap.classList.remove('is-scroll-held');
       syncMinimapColumnToReader();
@@ -872,6 +888,8 @@ function resumeMinimapPreview() {
 const MINIMAP_WINDOW_SLACK = 1;
 // What a rebuild asks for while the hand is still moving. A rebuild is priced by the rows the browser lays out, so the cost rises with the slack while the number of rebuilds falls with it: a whole screen is 31ms a rebuild inside a drag, and none at all is 63 rebuilds across a 40,000px scroll for a 90th-percentile frame three times the shipped one. A quarter is where both hold — 13 rebuilds across that scroll at the shipped frame profile, and 19.9ms a rebuild in the drag.
 const MINIMAP_GESTURE_SLACK = 0.25;
+// What share of that window's slack stays behind a hand that is travelling. The rest of it goes ahead: a drag crossing 300,000px of document in a second covers about 21,000px while one rebuild lays out its slice, so the ground behind the box is ground the reader has already left, while a quarter of a screen only reaches 3,087px ahead of them. An eighth stays because a hand that stops, or jitters a pixel back, would otherwise be standing on the window's own edge and pay a rebuild for it.
+const MINIMAP_GESTURE_SLACK_BEHIND = 0.125;
 // How long the rail waits for the typing to stop before it puts the slack back. Longer than a gap between two keystrokes, or the widening lands in the middle of a sentence and is thrown away by the next word.
 const MINIMAP_WIDEN_REST_MS = 400;
 // How much slack the rebuild is asked for, rather than a constant it reads where it stands: the whole of a rebuild is the browser laying the slice out, and that falls with the rows in it. Three screens is 13.7ms on a long config and one screen about 5, so a change to the words asks for none of it.
@@ -1268,7 +1286,13 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
   const appTop = windowsIt ? app.getBoundingClientRect().top : 0;
   const slackHeight = view.height * slack;
-  const window = minimapWindowRows(source, appTop, scrollTop, view.top - slackHeight, view.bottom + slackHeight);
+  // A held box travels one way, so the same slack reaches twice as far by going where the hand is heading instead of the same distance either side. Only a gesture's ask is aimed: a rest and a release both come through here with the full window and take it symmetrically, which is what puts the ground behind the reader back once they stop.
+  const direction = slack < MINIMAP_WINDOW_SLACK ? minimapDragDirection : 0;
+  const behindHeight = direction === 0 ? slackHeight : slackHeight * 2 * MINIMAP_GESTURE_SLACK_BEHIND;
+  const aheadHeight = direction === 0 ? slackHeight : slackHeight * 2 * (1 - MINIMAP_GESTURE_SLACK_BEHIND);
+  const topSlack = direction < 0 ? aheadHeight : behindHeight;
+  const bottomSlack = direction < 0 ? behindHeight : aheadHeight;
+  const window = minimapWindowRows(source, appTop, scrollTop, view.top - topSlack, view.bottom + bottomSlack);
   const rows = window.rows;
   let first = 0;
   let last = rows.length - 1;
@@ -1308,7 +1332,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     // The whole document is in the clone, which is more than any slack could ask for.
     minimapBuiltSlack = MINIMAP_WINDOW_SLACK;
   } else {
-    const cut = { appTop, scrollTop, top: view.top - slackHeight, bottom: view.bottom + slackHeight };
+    const cut = { appTop, scrollTop, top: view.top - topSlack, bottom: view.bottom + bottomSlack };
     const built = buildWindowedMinimapClone(source, window, first, last, cut);
     preview = built.preview;
     stripMinimapClone(preview);

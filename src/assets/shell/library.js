@@ -666,7 +666,6 @@ function folderMenuItems(hidden) {
 function vaultMenuItems() {
   // Ask about every vault, not just the one in use: the menu is where you compare them, and "which of these reach GitHub" is the comparison worth making. Cached after the first look, so this costs once per vault.
   requestKnownVaultStatuses();
-  requestCloudFolders();
   const rootIcon = (on, id) => vaultGlyph(on, id);
   const items = [{
     label: 'Library',
@@ -1238,10 +1237,14 @@ function setVaultGlyph(host, markup) {
   const glyph = host && host.querySelector('.lt-icon');
   if (glyph) glyph.outerHTML = markup;
 }
-// Ask what is on this machine. The host registers anything new as a vault and answers with the folders, which is what puts a cloud on their rows. Asked again when the switcher opens, so a client installed while the app is running is found without a restart.
+// Ask what is on this machine. The host registers anything new as a vault and answers with the folders, which is what puts a cloud on their rows.
 function requestCloudFolders() {
   send({ command: 'getCloudFolders' });
 }
+// Asked again on the one signal that means a client could now exist: returning to a native window. The cloudFolders guard keeps startup's own first answer from racing an initial focus into a duplicate ask.
+window.addEventListener('focus', () => {
+  if (leafWindowFocusIsNative() && cloudFolders !== null) requestCloudFolders();
+});
 // Cloning: paste an address, then pick where it lands. The folder picked is the parent — git makes the repository's own folder in it and removes it again if the clone fails, so a failure leaves nothing to tidy up.
 function pushCloneRow(items) {
   if (!cloneRevealed) {

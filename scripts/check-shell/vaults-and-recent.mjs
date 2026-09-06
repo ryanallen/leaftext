@@ -2,7 +2,7 @@
 
 import { join } from 'node:path';
 import vm from 'node:vm';
-import { check, fakeElement, homeStand, readingCss, record } from './shared.mjs';
+import { check, fakeElement, homeStand, readingCss, record, runShell, source } from './shared.mjs';
 
 export function run() {
   const booted = record.booted;
@@ -233,6 +233,50 @@ export function run() {
 
     vm.runInContext('hideCrumbMenu()', booted);
     booted.leafSetVaults({ vaults: [], active: 0 });
+  });
+
+  // The list reads the cloud answer the page already holds rather than asking again on every open; only a native window coming back after that answer is what still asks, because that is the one moment a client could have been installed.
+  check('the vault list stops asking once it has an answer, and only a native focus after that answer asks again', () => {
+    const sent = [];
+    const context = runShell(source, { ipc: { postMessage: (raw) => sent.push(JSON.parse(raw)) } });
+    const focus = () => {
+      for (const handler of [...(context.__windowListeners.get('focus') || [])]) handler({});
+    };
+    const button = fakeElement('libraryVaultSwitch');
+    button.classList.add('library-vault-switch');
+    context.bindVaultSwitch(button, false);
+    const press = button.listeners.get('pointerdown')[0];
+    const event = { button: 0, stopPropagation() {}, preventDefault() {} };
+    context.leafSetVaults({ vaults: VAULTS, active: 1 });
+
+    focus();
+    if (sent.some((one) => one.command === 'getCloudFolders')) {
+      throw new Error(`a focus before startup's first answer asked anyway: ${JSON.stringify(sent)}`);
+    }
+
+    context.window.leafSetCloudFolders([]);
+    sent.length = 0;
+    press(event);
+    if (sent.some((one) => one.command === 'getCloudFolders')) {
+      throw new Error(`opening the list after the answer asked again: ${JSON.stringify(sent)}`);
+    }
+    press(event);
+    press(event);
+    if (sent.some((one) => one.command === 'getCloudFolders')) {
+      throw new Error(`closing and reopening the list asked again: ${JSON.stringify(sent)}`);
+    }
+
+    focus();
+    if (sent.filter((one) => one.command === 'getCloudFolders').length !== 1) {
+      throw new Error(`a native focus after the answer did not ask exactly once: ${JSON.stringify(sent)}`);
+    }
+
+    sent.length = 0;
+    context.window.__leafHostAnswers = () => true;
+    focus();
+    if (sent.some((one) => one.command === 'getCloudFolders')) {
+      throw new Error(`a browser focus asked for cloud folders: ${JSON.stringify(sent)}`);
+    }
   });
 
   // A cloud client found while the list is open swaps each row's mark where it stands rather than rebuilding the list under the pointer. Both callers once looked for an `svg`, found a masked span, and swapped nothing — which is why a vault on GitHub kept its box.

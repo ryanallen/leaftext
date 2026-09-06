@@ -2143,7 +2143,7 @@
   --lt-z-50: 50;
   --lt-z-51: 51;
   /* Shadow spread */
-  --lt-shadow-spread: 8px;
+  --lt-shadow-spread: 12px;
   /* Strokes, rings and one recess */
   --lt-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
   --lt-shadow-hairline: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent);
@@ -2157,6 +2157,12 @@
   --lt-grain-dark-heavy: rgba(0, 0, 0, 0.72);
   --lt-grain-lift: rgba(255, 255, 255, 0.07);
   --lt-grain-hover: rgba(0, 0, 0, 0.55);
+  --lt-grain-shadow-base: #ffffff;
+  --lt-grain-shadow-blob: #000000;
+  --lt-grain-shadow-rim: rgba(255, 255, 255, 0.6);
+  --lt-grain-shadow-mid: rgba(255, 255, 255, 0.365);
+  --lt-grain-shadow-curve: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone");
+  --lt-grain-shadow-opacity: 1;
   /* Fixed colors */
   --lt-mask-opaque: #000;
   --lt-white: #ffffff;
@@ -2939,6 +2945,9 @@
   /* The dot lattice's geometry: how far the dot is solid, where its antialiasing ramp ends, and the tile it repeats in. A length is safe in a custom property where the whole gradient is not — it carries no ink, so a surface below still gets the `--lt-grain-dot` it sets. Said once because the resolution branch below is the only thing that changes them. */
   --lt-grain-radius: 0.6px;
   --lt-grain-edge: 0.7px;
+  /* The shadow band's own tile, and how far its blob reaches inside one -- half the tile, so full-sized dots just touch. It is the chrome's own pitch: the band sits beside the pane, the tab strip and a tinted row, and a coarser lattice there reads as a second texture rather than as the same paper in shadow. The blob is soft the whole way rather than solid to a radius, because the curve cuts the dot at whatever coverage the edge ramps have left and a hard-edged blob has only one width to give. */
+  --lt-grain-shadow-tile: var(--lt-grain-tile);
+  --lt-grain-blob: 1px;
   --lt-grain-tile: 2px;
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
@@ -2963,11 +2972,12 @@
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
-/* A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
+/* The shadow's blob is in here too, because its tile is the chrome's and follows it up. A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
 @media (resolution <= 1dppx) {
   :root {
     --lt-grain-radius: 0.9px;
     --lt-grain-edge: 1.05px;
+    --lt-grain-blob: 1.5px;
     --lt-grain-tile: 3px;
   }
 }
@@ -3024,29 +3034,38 @@ body.frameless.is-fullscreen .app-surface {
   border: 0;
   --app-window-radius: 0px;
 }
-/* The window's own shadow, thrown by the app rather than by the platform: the same 2px dot lattice every floating surface inside the app throws, in shadow ink, over the strip of page the app is held off the window by. Four edge gradients intersected — alpha nothing at the window's edge, full where the app surface starts — so each corner is the product of two and falls off the way a corner should. No punch layer: this is a sibling of the app surface rather than a child of it, and the surface is opaque and paints over the middle. Zero-sized when the inset is zero, which is what takes it off a maximized window and out of a browser. */
+/* The window uses the same shrinking-dot halftone without a punch layer because the app surface paints over its middle. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: var(--lt-z-below);
   pointer-events: none;
-  --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-color: var(--lt-grain-shadow-base);
+  /* The same halftone the floating surfaces throw, and for the same reason it is written this way: the ramps run in front of the curve rather than in the mask, so the dot narrows toward the window's edge instead of the ink falling under one dot width. */
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    linear-gradient(to bottom, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    linear-gradient(to top, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
   background-repeat: repeat;
-  /* Anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. */
-  background-attachment: fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  filter: var(--lt-grain-shadow-curve);
+  opacity: var(--lt-grain-shadow-opacity);
+  /* The same four ramps again, in the mask this time, taking the band's ink from full where the app starts to nothing at the window's edge. No punch here: this is a sibling of the app surface rather than a child, so the opaque surface covers the middle on its own. */
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  -webkit-mask-composite: source-in, source-in, source-in;
+  -webkit-mask-composite: source-in, source-in, source-in, add;
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  mask-composite: intersect;
+  mask-composite: intersect, intersect, intersect, add;
+  /* The lattice is anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. The four ramps take the layer's own box, or their 100% would size to the viewport and none of them would reach the band at all. */
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
 }
 /* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */
 body:not(.frameless)::before,
@@ -3950,7 +3969,7 @@ body.is-maximized #winMaximize .wc-restore {
 .update-button-spinner[hidden] {
   display: none;
 }
-/* Every surface that throws a shadow, said once — the floating ones and, at the foot of a page, the Previous / Next card: the same 2px dot lattice the two toolbars throw, in shadow ink, over a band one spread wide — a halftone, never a smooth blur. Four edge ramps intersected, alpha nothing at the band's outer rim and full at the surface's own edge, so each corner is the product of two and the ring weighs the same on every side whatever the surface's size or shape: one light, overhead and centered. The layer takes the spread as padding, which makes its content box the host's own box, so the browser derives the inner curve from the outer one rather than being told it. The fifth mask layer punches that rounded content box back out, because a negative-z child paints above its parent's background and the dots would otherwise fall on its face. Subtract, never xor: xor leaves the box holding `1 - ring` — the punch inside out. */
+/* Every floating surface shares one halftone: four edge ramps multiply a tiled blob before the curve turns surviving coverage into one ink, and a two-layer mask punches the host face out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,
@@ -3977,29 +3996,39 @@ body.is-maximized #winMaximize .wc-restore {
   /* The outside corner is the surface's own plus the spread, which strikes both arcs from one center; each host declares the one number its own border already reads. */
   border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread));
   pointer-events: none;
-  --lt-grain-dot: var(--lt-grain-dot-strong);
-  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
-  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-color: var(--lt-grain-shadow-base);
+  /* The four edge ramps are background layers rather than mask layers, and the blob is the bottom one, because an element is filtered before it is masked: a fade left in the mask runs after the curve, so the curve sees one full-strength lattice, cuts one dot width everywhere, and the ramps then fade its ink — which is a band of same-sized dots ending on a ruled line. Here they run in front of it, so what the curve reads is already weaker at the rim and the dot it cuts there is smaller. Screen against the white ground, never multiply: multiply can only darken, and white is its identity, so ramps written that way lift nothing at all. */
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to bottom, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to top, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
   background-repeat: repeat;
-  background-attachment: fixed;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+  /* Only the lattice is anchored to the window, so the app keeps one grid across every grained surface. The ramps take the layer's own box, or `fixed` sizes their 100% to the viewport and all four run from the window's edges instead of the band's — which lifts nothing anywhere near a panel and leaves every dot the same width again. */
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  filter: var(--lt-grain-shadow-curve);
+  opacity: var(--lt-grain-shadow-opacity);
+  /* The punch that takes the host's own face out, over four ramps that take the band's ink from full against that face to nothing at the rim. The ramps run here as well as in the background stack because the two do different things: the background pair shrinks the dot, and these fade what is left, so the band reaches true zero at its outer edge rather than stopping on the faintest row it still draws. The punch is the top layer and subtracts; the four below it intersect, which multiplies their alpha the way a corner needs. */
+  -webkit-mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  -webkit-mask-origin: border-box, border-box, border-box, border-box, content-box;
-  -webkit-mask-clip: border-box, border-box, border-box, border-box, content-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  -webkit-mask-origin: content-box, border-box, border-box, border-box, border-box;
+  -webkit-mask-clip: content-box, border-box, border-box, border-box, border-box;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-composite: source-in, source-in, source-in, source-out;
-  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+  -webkit-mask-composite: source-out, intersect, intersect, intersect, add;
+  mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
-  mask-origin: border-box, border-box, border-box, border-box, content-box;
-  mask-clip: border-box, border-box, border-box, border-box, content-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  mask-origin: content-box, border-box, border-box, border-box, border-box;
+  mask-clip: content-box, border-box, border-box, border-box, border-box;
   mask-repeat: no-repeat;
-  mask-composite: intersect, intersect, intersect, subtract;
+  mask-composite: subtract, intersect, intersect, intersect, add;
 }
 /* The one host on that list sitting inside the document rather than over it, which makes one line of the shared rule wrong for it: `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. The mask's punch layer still takes the card's own face out, which is what keeps a dot off the words. */
 .document-body .docs-pager a::before {
@@ -4010,7 +4039,7 @@ body.is-maximized #winMaximize .wc-restore {
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {
-  opacity: 1;
+  opacity: var(--lt-grain-shadow-opacity);
 }
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the turn are here; a site keeps only its own size and colors, because those are what differ — a 12px ring in a settings row, a 34px one on an empty reader. */
 .lt-spinner {
@@ -10761,7 +10790,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 164 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 170 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -10781,7 +10810,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>164</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>170</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>65</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>75</b></button>
 </div>
@@ -10886,7 +10915,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">164 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">170 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -11052,7 +11081,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-z-51</code><code>51</code></div>
 </div>
 <h3>Shadow spread</h3><div class="wall wide">
-<div class="value"><code>lt-shadow-spread</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-spread)"></i><code>8px</code></div>
+<div class="value"><code>lt-shadow-spread</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-spread)"></i><code>12px</code></div>
 </div>
 <h3>Strokes, rings and one recess</h3><div class="wall wide">
 <div class="value"><code>lt-shadow-inset</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-inset)"></i><code>inset 0 1px 2px rgba(0, 0, 0, 0.35)</code></div>
@@ -11068,6 +11097,12 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-grain-dark-heavy</code><code>rgba(0, 0, 0, 0.72)</code></div>
 <div class="value"><code>lt-grain-lift</code><code>rgba(255, 255, 255, 0.07)</code></div>
 <div class="value"><code>lt-grain-hover</code><code>rgba(0, 0, 0, 0.55)</code></div>
+<div class="value"><code>lt-grain-shadow-base</code><code>#ffffff</code></div>
+<div class="value"><code>lt-grain-shadow-blob</code><code>#000000</code></div>
+<div class="value"><code>lt-grain-shadow-rim</code><code>rgba(255, 255, 255, 0.6)</code></div>
+<div class="value"><code>lt-grain-shadow-mid</code><code>rgba(255, 255, 255, 0.365)</code></div>
+<div class="value"><code>lt-grain-shadow-curve</code><code>url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone")</code></div>
+<div class="value"><code>lt-grain-shadow-opacity</code><code>1</code></div>
 </div>
 <h3>Fixed colors</h3><div class="wall wide">
 <div class="value"><code>lt-mask-opaque</code><code>#000</code></div>

@@ -448,7 +448,7 @@ fn the_pagers_halftone_sits_above_the_reading_page_rather_than_below_it() {
             css,
             ".document-body .docs-pager a:hover::before,\n.document-body .docs-pager a:focus-visible::before {",
         ),
-        "opacity: 1;",
+        "opacity: var(--lt-grain-shadow-opacity);",
     );
 }
 
@@ -526,20 +526,25 @@ fn every_floating_surface_throws_the_dot_halftone() {
         assert_contains(css, surface);
     }
     let halftone = rule_body(css, ".app-overflow-panel::before,");
+    // The blob is the bottom layer and it is soft the whole way out, so the curve above has a range of coverages to cut a dot from. A blob solid to --lt-grain-radius has one width to give, whatever the ramps did to it.
     assert_contains(
         halftone,
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
+        "radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));",
     );
-    assert_contains(halftone, "--lt-grain-dot: var(--lt-grain-dot-strong);");
-    // The fifth mask layer punches the surface's own box out, or the dots land on its face: a negative-layer child paints above its parent's background. Subtract, not xor -- xor is the punch inside out, and a stale one would win by coming last.
+    // The punch is the top mask layer and takes the surface's own box out, or the dots land on its face: a negative-layer child paints above its parent's background. Subtract, not xor -- xor is the punch inside out, and a stale one would win by coming last.
     assert_contains(
         halftone,
-        "mask-composite: intersect, intersect, intersect, subtract;",
+        "background-blend-mode: screen, screen, screen, screen, multiply;",
     );
-    assert_contains(
-        halftone,
-        "-webkit-mask-composite: source-in, source-in, source-in, source-out;",
+    // The one curve, and nothing composed around it. `contrast()` and `brightness()` are the pair that shipped here and they cannot do this at all: neither touches alpha, so the band came out a solid slab of one ink with no dots left in it.
+    assert_contains(halftone, "filter: var(--lt-grain-shadow-curve);");
+    assert!(
+        !halftone.contains("contrast(") && !halftone.contains("brightness("),
+        "a color filter cannot cut a dot out of the band: it leaves every pixel opaque"
     );
+    assert_contains(halftone, "opacity: var(--lt-grain-shadow-opacity);");
+    assert_contains(halftone, "mask-composite: subtract,");
+    assert_contains(halftone, "-webkit-mask-composite: source-out,");
     assert!(
         !halftone.contains("exclude;") && !halftone.contains("xor;"),
         "xor/exclude is the punch inside out"
@@ -552,18 +557,49 @@ fn the_halftone_is_four_ramps_over_one_spread_with_a_rounded_punch() {
     let css = reading_mode_css();
     let halftone = rule_body(css, ".app-overflow-panel::before,");
 
-    // Four edge ramps intersected, each running from nothing at the band's outer rim to full at the surface's own edge, so every corner is the product of two: one light, overhead and centered, weighing the same on all four sides whatever the box is.
+    // Four edge ramps, each lifting the blob's coverage away at the band's outer rim and lifting nothing at the surface's own edge, so every corner is the product of two: one light, overhead and centered, weighing the same on all four sides whatever the box is.
     for direction in ["to right", "to left", "to bottom", "to top"] {
         assert_contains(
             halftone,
+            &format!(
+                "linear-gradient({direction}, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread))"
+            ),
+        );
+    }
+    // The same four ramps run again in the mask, and the two runs do different jobs. In the background stack they are in front of the curve, so the dot the curve cuts is smaller at the rim -- a ramp only in the mask runs after the curve, which reads a lattice nothing has faded and cuts one dot width across the whole band. In the mask they take the ink from full against the surface to nothing at the rim, so the band ends in the page rather than on the faintest row it still draws, and two bands can only meet where both are close to nothing.
+    let mask = &halftone[halftone
+        .find("-webkit-mask-image:")
+        .expect("the mask is written")..];
+    for direction in ["to right", "to left", "to bottom", "to top"] {
+        assert_contains(
+            mask,
             &format!(
                 "linear-gradient({direction}, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread))"
             ),
         );
     }
+    // The punch first and subtracting, the four ramps under it multiplying their alpha together, which is what makes a corner the product of two.
+    assert_contains(
+        mask,
+        "mask-composite: subtract, intersect, intersect, intersect, add;",
+    );
+    assert_contains(
+        mask,
+        "-webkit-mask-composite: source-out, intersect, intersect, intersect, add;",
+    );
+    // Only the lattice is the window's; the ramps take the layer's own box, or their 100% sizes to the viewport and not one of them reaches the band.
+    assert_contains(
+        halftone,
+        "background-attachment: scroll, scroll, scroll, scroll, fixed;",
+    );
+    assert_contains(
+        halftone,
+        "background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);",
+    );
     // The layer takes the spread as padding, which makes its content box the host's own box; the punch is clipped to that box, so the browser derives the ring's inner curve from its outer one instead of cutting a rectangle through it.
     assert_contains(halftone, "padding: var(--lt-shadow-spread);");
     assert_contains(halftone, "inset: calc(-1 * var(--lt-shadow-spread));");
+    // The punch is clipped to the host's own box and every ramp to the band's whole box, which is what derives the ring's inner curve from its outer one instead of cutting a rectangle through it.
     for property in [
         "mask-origin",
         "mask-clip",
@@ -572,7 +608,7 @@ fn the_halftone_is_four_ramps_over_one_spread_with_a_rounded_punch() {
     ] {
         assert_contains(
             halftone,
-            &format!("{property}: border-box, border-box, border-box, border-box, content-box;"),
+            &format!("{property}: content-box, border-box, border-box, border-box, border-box;"),
         );
     }
     // Both radii come from the one number the host's own border reads, plus the spread, which strikes the outer arc from the inner arc's center.
@@ -1010,7 +1046,7 @@ fn every_grained_surface_still_tiles_from_one_lattice_inside_the_app() {
         ".leaf-sheet",
     ];
     let css = reading_mode_css();
-    let lattice = "background-image: radial-gradient(circle, var(--lt-grain-dot)";
+    let lattice = "background-image: radial-gradient(circle, var(--lt-grain-";
     let mut anchored = 0;
     for (at, _) in css.match_indices(lattice) {
         let opens = css[..at].rfind('}').map_or(0, |brace| brace + 1);
@@ -1109,30 +1145,46 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     // The outermost edge in the app follows the same rule as every floating surface inside it: the dot lattice, never the operating system's smooth blur onto whatever is behind the window.
     let css = reading_mode_css();
     let band = rule_body(&css, "body::before {");
-    // The lattice every other surface throws, in shadow ink.
-    assert_contains(band, "--lt-grain-dot: var(--lt-grain-dot-strong);");
+    // The halftone every other surface throws, in shadow ink: the four ramps screened over a soft blob, then one alpha curve, so the dot narrows toward the window's edge at an ink that never moves.
     assert_contains(
         band,
-        "background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));",
+        "background-blend-mode: screen, screen, screen, screen, multiply;",
     );
     assert_contains(
         band,
-        "background-size: var(--lt-grain-tile) var(--lt-grain-tile);",
+        "radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));",
     );
-    // Four edge gradients, intersected: nothing at the window's edge, full where the app starts, and each corner the product of two. Not the shared panel recipe's ellipse — on a box the size of a window its falloff is measured in hundreds of pixels and the band lands in the tail, where there is nothing left to draw.
-    assert_eq!(band.matches("linear-gradient(to ").count(), 8);
-    assert_contains(band, "mask-composite: intersect;");
     assert_contains(
         band,
-        "-webkit-mask-composite: source-in, source-in, source-in;",
+        "background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);",
+    );
+    // Four edge gradients in the background stack, lifting the blob's coverage away at the window's edge and lifting nothing where the app starts, so each corner is the product of two; then the same four again in each spelling of the mask, fading the ink the rest of the way. Not the shared panel recipe's ellipse — on a box the size of a window its falloff is measured in hundreds of pixels and the band lands in the tail, where there is nothing left to draw.
+    assert_eq!(band.matches("linear-gradient(to ").count(), 12);
+    assert_contains(band, "filter: var(--lt-grain-shadow-curve);");
+    assert!(
+        !band.contains("contrast(") && !band.contains("brightness("),
+        "a color filter cannot cut a dot out of the band: it leaves every pixel opaque"
     );
     assert!(
         !band.contains("ellipse"),
         "the band borrowed the panel recipe's ellipse, which has nothing left to draw at this size"
     );
+    // The same four ramps again in the mask, taking the ink from full where the app starts to nothing at the window's edge.
+    for direction in ["to right", "to left", "to bottom", "to top"] {
+        assert_contains(
+            band,
+            &format!(
+                "linear-gradient({direction}, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread))"
+            ),
+        );
+    }
+    assert_contains(
+        band,
+        "mask-composite: intersect, intersect, intersect, add;",
+    );
     // No punch layer: this is a sibling of the app surface rather than a child, so the opaque surface paints over the middle on its own.
     assert!(
-        !band.contains("mask-composite: subtract;"),
+        !band.contains("subtract"),
         "the band punches a box out of itself, which is a child's problem and not a sibling's"
     );
 
@@ -1147,10 +1199,16 @@ fn the_window_throws_the_dot_halftone_rather_than_a_smooth_halo() {
     );
     // And the band spends that one distance four times, once per edge.
     assert_eq!(
+        band.matches("transparent var(--app-shadow-spread))")
+            .count(),
+        4,
+        "each of the four background ramps runs over the one spread"
+    );
+    assert_eq!(
         band.matches("var(--lt-mask-opaque) var(--app-shadow-spread))")
             .count(),
         8,
-        "each of the four ramps, prefixed and not, runs over the one spread"
+        "each of the four mask ramps runs over the one spread, in both spellings"
     );
 
     // Nothing behind a maximized Windows window or a full-screen window on either platform to cast onto, and a band there would show the desktop through a frame inside the screen edge.
@@ -1420,14 +1478,28 @@ fn the_lattices_geometry_is_said_once_rather_than_written_into_every_rule() {
         drawn += 1;
     }
     assert!(
-        drawn >= 22,
+        drawn >= 21,
         "the stylesheet should still draw the lattice on every grained surface ({drawn} found)"
     );
 
     let tile = "background-size: var(--lt-grain-tile) var(--lt-grain-tile)";
     assert!(
-        css.matches(tile).count() >= 21,
+        css.matches(tile).count() >= 20,
         "every lattice rule tiles from --lt-grain-tile"
+    );
+    // The shadow band names its own tile, and that name is pointed straight back at the chrome's: the band sits beside the pane, the tab strip and a tinted row, and a lattice of its own pitch there reads as a second texture rather than as the same paper in shadow.
+    assert_eq!(
+        css.matches("var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);")
+            .count(),
+        2,
+        "the shared shadow rule and the window band both tile from --lt-grain-shadow-tile, and nothing else does"
+    );
+    assert_contains(&css, "--lt-grain-shadow-tile: var(--lt-grain-tile);");
+    assert!(
+        !css.contains("--lt-grain-shadow-tile: 2px")
+            && !css.contains("--lt-grain-shadow-tile: 3px")
+            && !css.contains("--lt-grain-shadow-tile: 4px"),
+        "the shadow's tile is written as a length of its own, so it can drift from the chrome's"
     );
     assert!(
         !css.contains("background-size: 2px 2px"),

@@ -236,7 +236,7 @@ How far the one cast shadow reaches past the surface throwing it, and the only l
 
 | Token | Value | What it is for |
 | --- | --- | --- |
-| lt-shadow-spread | 8px | How far a cast shadow reaches past the surface throwing it, and how much its outer corner is rounded beyond that surface's own. |
+| lt-shadow-spread | 12px | How far a cast shadow reaches past the surface throwing it, and how much its outer corner is rounded beyond that surface's own. It is what the halftone below has to narrow across: at the display this app is usually read on a CSS pixel is one and a half device pixels, so eight of them left the band twelve pixels deep, its lattice three pixels to a tile, and every dot in it the one pixel a three-pixel tile can hold — four rows that could not differ however the curve was written. Twelve gives four rows of a coarser tile and the dot four widths to move through. |
 
 ## Strokes, rings and one recess
 
@@ -254,7 +254,7 @@ Everything the app puts in a `box-shadow`. None of them is a cast shadow, and no
 
 ## Grain
 
-The dot lattice's ink. Only the ink is a token: each rule writes the circles into its own `background-image`, because a custom property holding the whole gradient is substituted where it is declared and would paint every surface below it in one ink. The lattice's three lengths — how far the dot is solid, where its ramp ends, and the tile it repeats in — are not tokens either, but they are said once: `--lt-grain-radius`, `--lt-grain-edge` and `--lt-grain-tile` sit in the metrics block in `src/assets/reading/base.css`, where a length carries no ink and so is safe to hoist, and a display at 100% takes bigger ones from the resolution branch at the foot of that file.
+The dot lattice's ink. Only the ink is a token: each rule writes the circles into its own `background-image`, because a custom property holding the whole gradient is substituted where it is declared and would paint every surface below it in one ink. The lattice's four lengths — how far the dot is solid, where its ramp ends, how far the shadow's soft blob reaches, and the tile they all repeat in — are not tokens either, but they are said once: `--lt-grain-radius`, `--lt-grain-edge`, `--lt-grain-blob` and `--lt-grain-tile` sit in the metrics block in `src/assets/reading/base.css`, where a length carries no ink and so is safe to hoist, and a display at 100% takes bigger ones from the resolution branch at the foot of that file. The shadow band's own tokens below are a halftone rather than a fade: the ramps lift coverage off a soft blob before one alpha curve cuts it, so the dot narrows toward the rim and its ink never moves.
 
 | Token | Value | What it is for |
 | --- | --- | --- |
@@ -264,6 +264,12 @@ The dot lattice's ink. Only the ink is a token: each rule writes the circles int
 | lt-grain-dark-heavy | `rgba(0, 0, 0, 0.72)` | A dark theme's inactive tab. |
 | lt-grain-lift | `rgba(255, 255, 255, 0.07)` | The one grain that goes the other way: the darkest table row, where black has nowhere left to go. |
 | lt-grain-hover | `rgba(0, 0, 0, 0.55)` | The gap a dragged row on the home screen will land in. Black like the rest, so the box sinks on a light family and a dark one alike; heavier than the chrome's because dots cover about a quarter of what they fill, which lands the filled box about as far off its surface as [the wash](#the-hover-wash) moves a row. |
+| lt-grain-shadow-base | `#ffffff` | The opaque ground the shadow's coverage field is built on. White is the identity for both blends over it, so a pixel no layer touches carries no coverage and the curve below cuts it away. |
+| lt-grain-shadow-blob | `#000000` | The core of the shadow's soft per-tile blob, which falls away to nothing by `--lt-grain-blob` and is multiplied into the ground. How much of it survives the curve is what makes one dot wider than another. |
+| lt-grain-shadow-rim | `rgba(255, 255, 255, 0.6)` | How much coverage the four edge ramps lift back off the blob at the band's outer rim, screened over it. The more they lift, the less of the blob clears the curve, so the outermost dot is a speck. |
+| lt-grain-shadow-mid | `rgba(255, 255, 255, 0.365)` | The same lift at half the spread. The pair bends the ramp, because a straight one bunches the three inner dot rows at nearly one width and only the outermost row reads as smaller. |
+| lt-grain-shadow-curve | `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone")` | The one alpha curve, carried as a data URI so a published page gets it without any markup of the app's. It reads the coverage field's darkness as alpha, keeps what clears 0.32 and fades away over the fifth of coverage below that, and clips itself back to the band — so every dot is painted at one ink and only its width changes. A `contrast()`/`brightness()` pair cannot do this: neither touches alpha, so the band comes out a solid slab. The slope is what makes a dot a circle rather than a block: a curve steep enough to be a hard threshold decides each device pixel in or out with nothing in between, and a dot four pixels across then rasterizes square. This one saturates over about one and a half device pixels, which is the soft rim a circle needs at the size the band draws one. |
+| lt-grain-shadow-opacity | `1` | The shadow band's ink where it meets the surface throwing it. It is full because the band's own mask takes it from there to nothing at the rim, so the strength is a starting point rather than a level held across the whole band — which is what leaves two crossing bands weakest exactly where they overlap most, at their rims. |
 
 ## Fixed colors
 
