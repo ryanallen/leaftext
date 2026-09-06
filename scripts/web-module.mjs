@@ -102,6 +102,8 @@ export async function instantiateCore(file) {
       render: (handle) => JSON.parse(read(api.leaf_buffer_render(handle)) || 'null'),
       // The two lines the page is sent, both built in Rust so the shape it reads has one copy: the document with its editing state, and what a save came back as.
       documentScript: (handle) => read(api.leaf_buffer_document_script(handle)),
+      // What the raw-source editor is opened on: the buffer's own text, the language and label it is colored and titled by, and whether it is dirty.
+      codeView: (handle) => JSON.parse(read(api.leaf_buffer_code_view(handle)) || 'null'),
       saveScript: (handle, ok, error) => {
         const [at, length] = write(error || '');
         const answer = read(api.leaf_buffer_save_script(handle, ok ? 1 : 0, at, length));

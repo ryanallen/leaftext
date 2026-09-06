@@ -80,6 +80,7 @@ export function run() {
         source: () => (open ? text : null),
         encoded: () => (open ? new TextEncoder().encode((mark ? '﻿' : '') + text) : null),
         state: () => (open ? state() : null),
+        codeView: () => (open ? { text, language: 'markdown', displayName: 'Markdown', dirty: text !== saved } : null),
         render: () => ({ title: 'Notes', path, html: `<p>${text}</p>`, blocks: [], tasks: [] }),
         edit: (handle, edit) => {
           asked.push({ call: 'edit', edit });
@@ -107,9 +108,10 @@ export function run() {
     const stand = module || standInEmbedModule({ path, mark });
     const context = runShell(source, { __leafEmbedded: true, __leafPending: [...pending] });
     context.window.ipc = { postMessage: noopPost };
+    context.window.__leafRun = (script) => vm.runInContext(script, context);
 
     // Everything the host hands the page, recorded on the way through. The state call is recorded and not run, for the reason the site host's is: it renders a whole document, and nothing is rendered on this page for it to render into.
-    const seen = { state: [], resynced: [], saved: [], pager: [] };
+    const seen = { state: [], resynced: [], saved: [], pager: [], code: [] };
     const watch = (name, into) => {
       context.window[name] = (...payload) => into.push(payload.length > 1 ? payload : payload[0]);
     };
@@ -117,6 +119,7 @@ export function run() {
     watch('leafBlocksResynced', seen.resynced);
     watch('leafSaved', seen.saved);
     watch('leafSetPager', seen.pager);
+    watch('leafShowCodeView', seen.code);
 
     const host = readFileSync(join(root, 'web/embed/host.js'), 'utf8');
     // The host is an ES module with four exports and no imports, so it evaluates as a script once the export keyword is off. That it has no imports is the point — see the file's own note.
@@ -182,6 +185,17 @@ export function run() {
     if (!reply || reply[1] !== true) throw new Error(`the page was told the save came back as ${JSON.stringify(reply)}`);
     const resynced = seen.resynced[seen.resynced.length - 1];
     if (!resynced || resynced.dirty !== false) throw new Error(`a saved document still reports dirty: ${JSON.stringify(resynced)}`);
+  });
+
+  checkSettled('the source view and reading view edit one embedded buffer', async () => {
+    const { send, seen, leaf } = await bootEmbedHost();
+    send({ command: 'enterCodeView' });
+    if (!seen.code[0] || seen.code[0].text !== leaf.source()) throw new Error('the source view did not open on the held buffer');
+    const at = leaf.source().indexOf('last');
+    send({ command: 'spliceSource', start: at, removed: 4, inserted: 'final', length: leaf.source().length + 1 });
+    send({ command: 'exitCodeView' });
+    if (!leaf.source().includes('final paragraph')) throw new Error('source-view typing did not splice the held buffer');
+    if (seen.state.length < 2) throw new Error('leaving source view did not redraw the reading view from that buffer');
   });
 
   checkSettled('a save the product refuses leaves the document as it was typed and says why', async () => {

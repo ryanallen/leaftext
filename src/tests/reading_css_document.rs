@@ -124,6 +124,216 @@ fn a_record_table_is_carded_by_the_same_rules() {
             "the field block's opt-out is not written for both the container query and the width query: {selector}"
         );
     }
+    // And what those selectors hold, not just that they are written: the card row's box is the part that was never handed back, so every row of the one table meant to carry no chrome at all wore a rounded box the moment the reader went narrow.
+    let mut given_back = 0;
+    let mut at = 0;
+    while let Some(opened) = css[at..].find(".document-body .frontmatter table:not(.no-cards) tr {")
+    {
+        let opened = at + opened;
+        let closed = opened + css[opened..].find('}').expect("an unclosed rule");
+        let body = &css[opened..closed];
+        for declaration in [
+            "border: 0;",
+            "border-radius: 0;",
+            "display: table-row;",
+            "flex-wrap: nowrap;",
+            "gap: 0;",
+            "margin-bottom: 0;",
+            "padding: 0;",
+        ] {
+            assert!(
+                body.contains(declaration),
+                "the field block's opt-out keeps the card row's {declaration} so the block wears a box under the card width"
+            );
+        }
+        given_back += 1;
+        at = closed;
+    }
+    assert_eq!(
+        given_back, 2,
+        "the field block's opt-out row is not written for both the container query and the width query"
+    );
+}
+
+/// The card label is an eyebrow, and it is the whole of what tells a field's name from its answer: drawn at the value's own size, weight and shade were all a reader had, and a card read as one run of words. Held in all three copies, because a card drawn in the window, on the two published sites and on paper is one design.
+#[test]
+fn a_card_label_is_a_small_tracked_eyebrow_in_every_copy() {
+    let css = reading_mode_css();
+
+    let mut drawn = 0;
+    let mut at = 0;
+    while let Some(opened) = css[at..].find("td::before {") {
+        let opened = at + opened;
+        let head = css[..opened].rfind('\n').map_or(0, |line| line + 1);
+        let closed = opened + css[opened..].find('}').expect("an unclosed rule");
+        let body = &css[opened..closed];
+        at = closed;
+        // Only the rule that draws a label, never the one that hides it on a cell the renderer stamped no column on.
+        if !css[head..opened].contains("no-cards") && !css[head..opened].contains("is-cards") {
+            continue;
+        }
+        if !body.contains("content: attr(data-leaf-col);") {
+            continue;
+        }
+        assert!(
+            body.contains("font-size: 0.75em;"),
+            "a card label is drawn at the value's own size, so only weight and shade tell a field's name from its answer"
+        );
+        assert!(
+            body.contains("text-transform: uppercase;"),
+            "a card label is drawn in the value's own case, which is what makes the card one run of words"
+        );
+        assert!(
+            body.contains("letter-spacing: var(--lt-tracking-040);"),
+            "a card label is tracked by hand or not at all; it comes from a token like every other spacing decision"
+        );
+        drawn += 1;
+    }
+    assert_eq!(
+        drawn, 3,
+        "the eyebrow is not written for all three copies of the card: the reader's container query, the width query the two published sites take, and the measured class that carries onto paper"
+    );
+}
+
+/// And its size is relative rather than a token: a document's text scales with the reader's own setting, so a label written at a fixed size would stay put while the value beside it grew.
+#[test]
+fn a_card_label_scales_with_the_readers_own_text() {
+    let css = reading_mode_css();
+    let label = rule_body(&css, ".document-body table.is-cards td::before {");
+    assert_contains(label, "font-size: 0.75em;");
+    assert!(
+        !label.contains("var(--lt-text-"),
+        "the card label takes a fixed text size, so a reader who scales the document leaves the label behind"
+    );
+}
+
+/// A stack of cards reads as separate records only if the room around one is bigger than the room inside it. Drawn at one number for both, eighteen of them down a page were one continuous block of words broken by hairlines.
+#[test]
+fn a_card_is_opened_wider_than_the_lines_inside_it() {
+    let css = reading_mode_css();
+
+    let mut rows = 0;
+    for opened in [
+        ".document-body table:not(.no-cards) tr {",
+        ".document-body table.is-cards tr {",
+    ] {
+        let mut at = 0;
+        while let Some(found) = css[at..].find(opened) {
+            let found = at + found;
+            let closed = found + css[found..].find('}').expect("an unclosed rule");
+            let body = &css[found..closed];
+            at = closed;
+            assert!(
+                body.contains("gap: var(--lt-space-8) "),
+                "the lines inside a card are set at some other step, so the room inside it is no longer read against the room around it"
+            );
+            assert!(
+                body.contains("padding: var(--lt-space-16)"),
+                "a card is no longer opened top and bottom, so its first line sits on its own edge"
+            );
+            rows += 1;
+        }
+    }
+    assert_eq!(
+        rows, 3,
+        "the card row is not written for all three copies: the reader's container query, the width query the two published sites take, and the measured class that carries onto paper"
+    );
+
+    // And the two steps are the ones they are on purpose — the room that opens a card is the wider of the pair, or the card and the stack read the same.
+    assert_contains(css, "--lt-space-8: 8px;");
+    assert_contains(css, "--lt-space-16: 16px;");
+}
+
+/// A card wears no box. Eighteen boxed cards down a page read as a picket fence rather than as a list of records, so one rule between records separates them and the card takes back the measure the box was spending. The last one carries no rule, because a table already ends where it ends.
+#[test]
+fn a_card_is_separated_by_a_rule_and_never_boxed() {
+    let css = reading_mode_css();
+
+    let mut rows = 0;
+    let mut ends = 0;
+    for opened in [
+        ".document-body table:not(.no-cards) tr",
+        ".document-body table.is-cards tr",
+    ] {
+        let mut at = 0;
+        while let Some(found) = css[at..].find(opened) {
+            let found = at + found;
+            let closed = found + css[found..].find('}').expect("an unclosed rule");
+            let head = &css[found..found + css[found..].find('{').expect("an unopened rule")];
+            let body = &css[found..closed];
+            at = closed;
+            if head.contains("td") || head.contains("th") {
+                continue;
+            }
+            if head.contains(":last-child") {
+                assert!(
+                    body.contains("border-bottom: 0;"),
+                    "the last card in a table is followed by a rule with nothing under it"
+                );
+                ends += 1;
+                continue;
+            }
+            assert!(
+                body.contains("border: 0;") && body.contains("border-radius: 0;"),
+                "a card is boxed again, and a stack of them reads as a fence rather than a list"
+            );
+            assert!(
+                body.contains(
+                    "border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);"
+                ),
+                "nothing separates one card from the next"
+            );
+            assert!(
+                body.contains("margin-bottom: 0;"),
+                "a card is spaced away from the next one as well as ruled off it, so the rule reads as belonging to neither"
+            );
+            rows += 1;
+        }
+    }
+    assert_eq!(
+        rows, 3,
+        "the borderless card is not written for all three copies"
+    );
+    assert_eq!(
+        ends, 3,
+        "the last card's missing rule is not written for all three copies"
+    );
+}
+
+/// And the card is still one surface: the striping and the grain are written for a grid and carry the same weight as the card rules, so a cell that paints anything of its own puts a speckled band through every second record.
+#[test]
+fn a_card_paints_no_fill_of_its_own() {
+    let css = reading_mode_css();
+    let grain = css
+        .rfind(".document-body tr:nth-child(2n + 1) td {")
+        .expect("the row grain is gone");
+    let cards = css
+        .find("/* Cards, and the last word on a cell:")
+        .expect("the card block is gone");
+    assert!(
+        grain < cards,
+        "the card block is written above the striping and the grain, so every second card is shaded and every cell in it wears a box of its own"
+    );
+    // Both keyed copies, and the indented ones inside the two queries with them — a card is one design wherever it is drawn.
+    let mut painted = 0;
+    for opened in [
+        ".document-body table:not(.no-cards) td {",
+        ".document-body table.is-cards td {",
+    ] {
+        let mut at = 0;
+        while let Some(found) = css[at..].find(opened) {
+            let found = at + found;
+            let closed = found + css[found..].find('}').expect("an unclosed rule");
+            assert_contains(&css[found..closed], "background: none;");
+            assert_contains(&css[found..closed], "border: 0;");
+            painted += 1;
+            at = closed;
+        }
+    }
+    assert_eq!(
+        painted, 3,
+        "the card cell is not written for all three copies, so one of them can paint a fill the striping shows through"
+    );
 }
 
 #[test]

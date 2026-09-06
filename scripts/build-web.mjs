@@ -9,7 +9,7 @@
 // Four, because the front end is the other axis. The core and the core-with-colors render a document into somebody else's markup; the other two carry the app's own page, front end and boot state — the embed module without colors, and the whole app with them. A product dropping an editor into its own page downloads the third; a published static site is served the fourth.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, copyFileSync, cpSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
@@ -156,6 +156,14 @@ for (const [name, module] of [
   ['whole app', app],
 ]) {
   const shell = await instantiateCore(module.file);
+
+  if (name === 'embed') {
+    const assets = join(out, 'embed');
+    mkdirSync(assets, { recursive: true });
+    writeFileSync(join(assets, 'app.js'), shell.script());
+    writeFileSync(join(assets, 'app.css'), shell.styles());
+    cpSync(join(root, 'src', 'assets', 'vendor'), assets, { recursive: true });
+  }
 
   const boot = shell.boot();
   for (const line of ['window.__leafInitialState', 'window.__leafSettings', 'window.__leafDocumentExts']) {
@@ -327,6 +335,22 @@ if (!held) {
   }
   if (!document_?.includes('The last line.')) problems.push("the buffer's own document line carries a document without the edit in it");
 
+  // The raw-source editor is opened on this, and it is the one payload the offline checks can only stand in for: they hand the host a made-up object, so nothing but a real module says whether the export answers at all. It reads the live buffer rather than the file, or a reader would drop into the source view and type over words that are no longer there.
+  const sourceView = buffers.buffer.codeView(held);
+  if (!sourceView) {
+    problems.push('the buffer answers no source-view payload, so an embed has nothing to open its raw-source editor on');
+  } else {
+    if (sourceView.text !== buffers.buffer.source(held)) {
+      problems.push('the source-view payload carries text the buffer no longer holds, so typing in it would splice over words that moved');
+    }
+    if (sourceView.language !== 'markdown' || sourceView.displayName !== 'Markdown') {
+      problems.push(`a Markdown buffer opens its source view as ${JSON.stringify(sourceView.language)} / ${JSON.stringify(sourceView.displayName)}`);
+    }
+    if (sourceView.dirty !== buffers.buffer.state(held).dirty) {
+      problems.push('the source-view payload disagrees with the buffer about unsaved work, so the Save button drawn over it is a guess');
+    }
+  }
+
   const failed = buffers.buffer.saveScript(held, false, 'the server said no');
   if (!failed?.includes('window.leafSaved') || !failed.includes('the server said no')) {
     problems.push(`a refused save tells the page ${JSON.stringify(failed)}`);
@@ -339,6 +363,7 @@ if (!held) {
 
   buffers.buffer.close(held);
   if (buffers.buffer.source(held) !== null) problems.push('a closed buffer still answers, so nothing was freed');
+  if (buffers.buffer.codeView(held) !== null) problems.push('a closed buffer still answers a source-view payload, so nothing was freed');
 }
 
 // The one boot line that decides whether the front end draws the bar, the tab strip, the pane and the theme switch at all. Told on boot rather than taken down later, so a page that is not an embed has to say so as plainly as one that is.

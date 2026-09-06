@@ -606,6 +606,10 @@ preview-site *flags:
 drive-web url *steps:
     node scripts/drive-web.mjs {{ url }} {{ steps }}
 
+# Serve the product-owned sample, drive its Leaftext frame, then stop the server.
+drive-embed *steps:
+    node scripts/drive-embed.mjs {{ steps }}
+
 # Fail on quoted interpolations: cmd.exe passes quotes through as argument characters.
 check-justfile-quotes:
     node scripts/check-justfile-quotes.mjs

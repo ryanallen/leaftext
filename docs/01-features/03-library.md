@@ -4,7 +4,7 @@
 
 The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
-![The library pane open beside a document: the vault switcher at top left, the folder breadcrumb beneath it, the search box, and a file list showing folders first and then files](../../imgs/library.png)
+![The library pane open beside a document: the vault switcher at top left, the folder breadcrumb beneath it, the search box, and a file list showing three folders first and then the files beside them](../../imgs/library.png)
 
 ## Summary
 

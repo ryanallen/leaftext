@@ -4,47 +4,10 @@
 //
 // Two modules, because the highlighter is most of the weight and most documents have no code in them. The core loads first; the second is fetched only once a document turns out to have a fence, and that document is then rendered again with colors.
 
+import { loadLeaftextModule } from '../module.js';
+
 const CORE = '/dist/leaftext-core.wasm';
 const WITH_COLORS = '/dist/leaftext-highlight.wasm';
-
-/** One loaded module, and the reads and writes across its memory. */
-async function load(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`no module at ${url} — run: just build-web`);
-  const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), {});
-  const api = instance.exports;
-  const encoder = new TextEncoder();
-  const decoder = new TextDecoder();
-
-  // Everything crosses as bytes the page owns until it hands them back.
-  const put = (bytes) => {
-    const at = api.leaf_alloc(bytes.length);
-    new Uint8Array(api.memory.buffer).set(bytes, at);
-    return [at, bytes.length];
-  };
-  const write = (text) => put(encoder.encode(text));
-  const read = (answer) => {
-    if (!answer) return null;
-    const length = new DataView(api.memory.buffer).getUint32(answer, true);
-    const text = decoder.decode(new Uint8Array(api.memory.buffer, answer + 4, length));
-    api.leaf_free(answer, 4 + length);
-    return text;
-  };
-
-  return {
-    // Bytes or a string, both through the one byte entry: a package has no string form, and a string encodes on the way in — so this page cannot draw a document one way while the window draws it another.
-    render(source, path) {
-      const [body, bodyLen] = typeof source === 'string' ? write(source) : put(source);
-      const [name, nameLen] = write(path);
-      const answer = read(api.leaf_render_bytes(body, bodyLen, name, nameLen));
-      api.leaf_free(body, bodyLen);
-      api.leaf_free(name, nameLen);
-      return answer ? JSON.parse(answer) : null;
-    },
-    styles: () => read(api.leaf_styles()),
-    formats: () => read(api.leaf_formats()).split(' '),
-  };
-}
 
 /** A fence the core left uncolored, which is the signal to go and fetch the colors. */
 function hasPlainCode(html) {
@@ -52,7 +15,7 @@ function hasPlainCode(html) {
 }
 
 export async function createLeaftext() {
-  const core = await load(CORE);
+  const core = await loadLeaftextModule(CORE);
   let colors = null;
 
   return {
@@ -63,7 +26,7 @@ export async function createLeaftext() {
       const first = core.render(source, path);
       if (!first) return null;
       if (onRecolor && hasPlainCode(first.html)) {
-        colors = colors || load(WITH_COLORS);
+        colors = colors || loadLeaftextModule(WITH_COLORS);
         colors
           .then((module) => onRecolor(module.render(source, path)))
           .catch((error) => console.warn('the colors did not arrive:', error.message));

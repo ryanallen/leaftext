@@ -288,6 +288,9 @@
 /* On a screen and never on paper. The reader is a query container on the printed sheet too, and a printed lane is written as a pixel width off the chosen paper — narrower than this number on most of them — so an unguarded container query cards every table in an export or a print, which is the one place a grid has all the room it needs. The media rule under it already says `screen and` for the same reason. */
 /* The cell is a block, never a flex box. A flex container makes every child its own item, so a cell of three links and the words between them came out as six columns side by side, each one broken a word-piece per line; and a flex item cannot shrink under its longest unbreakable word, so a path ran clean out of the card. As a block the whole cell is one run of words, the label an inline box at the head of it, and `overflow-wrap: anywhere` is what lets a path break rather than overhang. */
 /* The row wraps rather than gridding, which is what puts a `#` beside a `Ticket` and leaves a paragraph a line of its own: equal grid tracks handed both the same room. A cell is laid out at its own width and the browser breaks the line where the next one stops fitting, so nothing here reads a cell to decide how long it is. */
+/* No box round a card. Eighteen boxes down a page read as a picket fence rather than as a list of records, so one rule between records does the separating and the room either side of it does the rest — and the card takes back the measure the box was spending, which is what pays for the wider column gap above. The last card carries no rule, because a table already ends where it ends. */
+/* The room a card holds and the room around it move apart rather than together: it is the space between two records that makes a stack read as a list of them rather than as one long page. So the card is opened top and bottom to the step above its column gap, and the lines inside it sit at the step below. */
+/* The label is an eyebrow, which is the whole difference between a card that reads as a run of words and one whose fields can be found without reading them. Three quarters of the value rather than four fifths: at the reader's 14 pixels that is the 10.5 the app's own muted headings are already drawn at, and the narrower label packs one more field onto a card's first line. Relative rather than a token, because a document's text scales with the reader's setting and the label has to scale with it. */
 @media screen {
   @container (max-width: 720px) {
     /* The one place the card width is decided for the window, and the flag the changeover reads. A reader wider than this is left a grid however far it overflows its lane, so the bands and the Control wheel have something to run on. */
@@ -309,13 +312,17 @@
       display: block;
     }
     .document-body table:not(.no-cards) tr {
-      border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-      border-radius: var(--lt-radius-md);
+      border: 0;
+      border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+      border-radius: 0;
       display: flex;
       flex-wrap: wrap;
-      gap: var(--lt-space-6) var(--lt-space-12);
-      margin-bottom: var(--lt-space-12);
-      padding: var(--lt-space-12);
+      gap: var(--lt-space-8) var(--lt-space-16);
+      margin-bottom: 0;
+      padding: var(--lt-space-16) 0;
+    }
+    .document-body table:not(.no-cards) tr:last-child {
+      border-bottom: 0;
     }
     .document-body table:not(.no-cards) td {
       background: none;
@@ -332,8 +339,11 @@
       color: var(--lt-muted-foreground);
       content: attr(data-leaf-col);
       display: inline-block;
+      font-size: 0.75em;
       font-weight: var(--lt-weight-600);
+      letter-spacing: var(--lt-tracking-040);
       margin-right: var(--lt-space-6);
+      text-transform: uppercase;
     }
     .document-body table:not(.no-cards) td:not([data-leaf-col])::before {
       display: none;
@@ -369,13 +379,17 @@
     display: block;
   }
   .document-body table:not(.no-cards) tr {
-    border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-    border-radius: var(--lt-radius-md);
+    border: 0;
+    border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+    border-radius: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: var(--lt-space-6) var(--lt-space-12);
-    margin-bottom: var(--lt-space-12);
-    padding: var(--lt-space-12);
+    gap: var(--lt-space-8) var(--lt-space-16);
+    margin-bottom: 0;
+    padding: var(--lt-space-16) 0;
+  }
+  .document-body table:not(.no-cards) tr:last-child {
+    border-bottom: 0;
   }
   .document-body table:not(.no-cards) td {
     background: none;
@@ -392,8 +406,11 @@
     color: var(--lt-muted-foreground);
     content: attr(data-leaf-col);
     display: inline-block;
+    font-size: 0.75em;
     font-weight: var(--lt-weight-600);
+    letter-spacing: var(--lt-tracking-040);
     margin-right: var(--lt-space-6);
+    text-transform: uppercase;
   }
   .document-body table:not(.no-cards) td:not([data-leaf-col])::before {
     display: none;
@@ -414,13 +431,17 @@
   display: block;
 }
 .document-body table.is-cards tr {
-  border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-  border-radius: var(--lt-radius-md);
+  border: 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+  border-radius: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--lt-space-6) var(--lt-space-12);
-  margin-bottom: var(--lt-space-12);
-  padding: var(--lt-space-12);
+  gap: var(--lt-space-8) var(--lt-space-16);
+  margin-bottom: 0;
+  padding: var(--lt-space-16) 0;
+}
+.document-body table.is-cards tr:last-child {
+  border-bottom: 0;
 }
 .document-body table.is-cards td {
   background: none;
@@ -437,8 +458,11 @@
   color: var(--lt-muted-foreground);
   content: attr(data-leaf-col);
   display: inline-block;
+  font-size: 0.75em;
   font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-040);
   margin-right: var(--lt-space-6);
+  text-transform: uppercase;
 }
 .document-body table.is-cards td:not([data-leaf-col])::before {
   display: none;
@@ -482,7 +506,7 @@
   font-size: var(--lt-text-12);
   line-height: var(--lt-leading-1-5);
 }
-/* Guarded the same way, and for the same reason: the field block keeps its own two-column shape on paper. Every row of the card shape has to be given back, not just the table's own: handing the table `display: table` and stopping left the block's rows still folding into cards and its keys still stacking above their values. */
+/* Guarded the same way, and for the same reason: the field block keeps its own two-column shape on paper. Every row of the card shape has to be given back, not just the table's own: handing the table `display: table` and stopping left the block's rows still folding into cards and its keys still stacking above their values. And every declaration the card row carries, not just its display: with the border, radius, padding, gap and margin left behind, the one table meant to carry no chrome at all wore a rounded box round each of its rows the moment the reader went narrow. */
 @media screen {
   @container (max-width: 720px) {
     .document-body .frontmatter table:not(.no-cards) {
@@ -495,7 +519,13 @@
       display: table-row-group;
     }
     .document-body .frontmatter table:not(.no-cards) tr {
+      border: 0;
+      border-radius: 0;
       display: table-row;
+      flex-wrap: nowrap;
+      gap: 0;
+      margin-bottom: 0;
+      padding: 0;
     }
     .document-body .frontmatter table:not(.no-cards) th,
     .document-body .frontmatter table:not(.no-cards) td {
@@ -514,7 +544,13 @@
     display: table-row-group;
   }
   .document-body .frontmatter table:not(.no-cards) tr {
+    border: 0;
+    border-radius: 0;
     display: table-row;
+    flex-wrap: nowrap;
+    gap: 0;
+    margin-bottom: 0;
+    padding: 0;
   }
   .document-body .frontmatter table:not(.no-cards) th,
   .document-body .frontmatter table:not(.no-cards) td {

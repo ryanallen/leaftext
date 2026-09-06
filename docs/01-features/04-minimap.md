@@ -2,7 +2,7 @@
 
 > Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll; turn the wheel over the rail and the page scrolls just as it does under the pointer.
 
-![The minimap rail down the right edge of the window, showing a scaled clone of the document with recognizable headings, a code block and dense paragraphs, and the viewport indicator box marking the part currently on screen](../../imgs/minimap.png)
+![The minimap rail down the right edge of the window, showing a scaled clone of the document with recognizable headings, rules and dense paragraphs, and the viewport indicator box marking the part currently on screen](../../imgs/minimap.png)
 
 ## Summary
 

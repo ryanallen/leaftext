@@ -722,6 +722,31 @@ export function run() {
       if (/grid-template-columns/.test(row)) {
         throw new Error('a card is back on equal tracks, which hand a one-character column the room a paragraph needs');
       }
+      // The room, read off each copy rather than left to the count above: it is the space around a record that makes a stack read as a list of them, so the card is opened at the step above its column gap and its lines sit at the step below.
+      if (!/gap:\s*var\(--lt-space-8\) /.test(row)) {
+        throw new Error('the lines inside a card sit at some other step, so the room inside it is no longer read against the room around it');
+      }
+      if (!/padding:\s*var\(--lt-space-16\)/.test(row)) {
+        throw new Error('a card is no longer opened top and bottom, so its first line sits on its own edge');
+      }
+      // The edge: one rule between records rather than a box round each, which is what a stack of eighteen boxes down a page came out reading as.
+      if (!/border:\s*0;/.test(row) || !/border-radius:\s*0;/.test(row)) {
+        throw new Error('a card is boxed again, and a stack of them reads as a fence rather than a list');
+      }
+      if (!/border-bottom:\s*var\(--lt-stroke-1\) solid var\(--lt-markdown-table-border\);/.test(row)) {
+        throw new Error('nothing separates one card from the next');
+      }
+      if (!/margin-bottom:\s*0;/.test(row)) {
+        throw new Error('a card is spaced away from the next one as well as ruled off it, so the rule belongs to neither');
+      }
+    }
+    // And the last card in a table is not ruled off something that is not there.
+    const ends = both('tr:last-child {');
+    if (ends.length !== 3) {
+      throw new Error(`the last card's missing rule is written ${ends.length} times; the reader's container query, the width query and the measured class each need it`);
+    }
+    for (const end of ends) {
+      if (!/border-bottom:\s*0;/.test(end)) throw new Error('the last card in a table is followed by a rule with nothing under it');
     }
     for (const cell of cells) {
       if (!/display:\s*block/.test(cell)) throw new Error('a card cell is a flex box again, so every link and comma in it becomes a column of its own');
@@ -733,6 +758,10 @@ export function run() {
     for (const label of labels) {
       if (!/display:\s*inline-block/.test(label)) throw new Error('the label is a flex item again, which is what shredded the value beside it');
       if (!/content:\s*attr\(data-leaf-col\)/.test(label)) throw new Error('the label no longer comes from the column the renderer stamped on the cell');
+      // The eyebrow, held where the label already is: drawn at the value's own size it is only a weight and a shade away from its answer, which is what made a card one run of words.
+      if (!/font-size:\s*0\.75em/.test(label)) throw new Error("a card label is back at the value's own size, so a field's name reads as part of its answer");
+      if (!/text-transform:\s*uppercase/.test(label)) throw new Error("a card label is back in the value's own case");
+      if (!/letter-spacing:\s*var\(--lt-tracking-/.test(label)) throw new Error('a card label is tracked by hand or not at all, and every spacing decision here comes from a token');
     }
     for (const head of heads) {
       if (!/display:\s*none/.test(head)) throw new Error('the heading row is drawn above cards that each carry their own labels');
@@ -767,6 +796,36 @@ export function run() {
     }
     if (!region.includes('table:not(.no-cards) th,')) {
       throw new Error('the frontmatter key cell is never given its display back, so a key stacks above its value');
+    }
+
+    // And every declaration the card row carries, read off the card row itself rather than listed here: with the border, the radius, the padding, the gap and the margin left behind, the one table meant to carry no chrome at all wore a rounded box round each of its rows the moment the reader went narrow. Read this way, a declaration added to the card row later and not to the opt-out stops the build rather than landing on the field block.
+    const propertiesOf = (body) => new Set((body.match(/^\s*([a-z-]+):/gm) || []).map((one) => one.trim().slice(0, -1)));
+    const bodyAt = (selector) => {
+      const opened = css.indexOf(selector);
+      if (opened < 0) throw new Error(`the stylesheet no longer writes ${selector}`);
+      return css.slice(opened, css.indexOf('}', opened));
+    };
+    const carried = propertiesOf(bodyAt('.document-body table.is-cards tr {'));
+    // `border` gives back every side it draws, and nothing else the word starts.
+    const answered = (given, wanted) =>
+      given.has(wanted) ||
+      (given.has('border') && wanted.startsWith('border-') && !/^border-(radius|collapse|spacing)/.test(wanted));
+    for (const opt of ['.document-body .frontmatter table:not(.no-cards) tr {']) {
+      let at = 0;
+      let found = 0;
+      for (;;) {
+        const opened = css.indexOf(opt, at);
+        if (opened < 0) break;
+        found += 1;
+        const given = propertiesOf(css.slice(opened, css.indexOf('}', opened)));
+        for (const one of carried) {
+          if (!answered(given, one)) {
+            throw new Error(`the card row sets ${one} and the field block's opt-out never gives it back, so the one table meant to carry no chrome wears it under the card width`);
+          }
+        }
+        at = opened + opt.length;
+      }
+      if (found !== 2) throw new Error(`the field block's opt-out row is written ${found} times; the container query and the width query both need it`);
     }
   });
 

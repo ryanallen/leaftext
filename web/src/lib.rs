@@ -437,6 +437,25 @@ pub extern "C" fn leaf_buffer_state(handle: u32) -> *mut u8 {
     }
 }
 
+/// The source-view payload for one open buffer: its exact text, language, label and dirty state. The page loads Monaco itself from the browser asset URL already in its boot state.
+#[cfg(feature = "shell")]
+#[no_mangle]
+pub extern "C" fn leaf_buffer_code_view(handle: u32) -> *mut u8 {
+    let Some(payload) = with_buffer(handle, |edit| {
+        let definition = leaftext::source_definition(&edit.path);
+        let language = definition
+            .map(|found| found.language_token)
+            .unwrap_or(edit.format.language_token());
+        let display = definition
+            .map(|found| found.display_name)
+            .unwrap_or(edit.format.display_name());
+        leaftext::code_view_payload(edit.text(), language, display, edit.is_dirty(), None)
+    }) else {
+        return std::ptr::null_mut();
+    };
+    into_length_prefixed(payload)
+}
+
 /// The buffer as the two lines the page already knows how to take: the document itself, then its editing state. What the desktop's own editing arms do in a pair — re-render from the buffer, then let the host decide the Save and Undo buttons off the real dirty and undo state rather than the page's guess.
 ///
 /// One export rather than two, because a page given the first without the second has a redrawn document and stale buttons. The source rides along, since the re-render is what delivers it and the reader's own raw-source editors slice from it.

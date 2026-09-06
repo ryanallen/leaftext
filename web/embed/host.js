@@ -92,8 +92,8 @@ export const COMMANDS = {
   setGraphScope: [REFUSED, 'it remembers how big a map to draw, and an embed draws none'],
   search: [REFUSED, 'it searches the text of a whole vault, and an embed holds one document'],
   loadPager: [ANSWERED],
-  enterCodeView: [LATER, 'leaftext-web-embed'],
-  exitCodeView: [LATER, 'leaftext-web-embed'],
+  enterCodeView: [ANSWERED],
+  exitCodeView: [ANSWERED],
   spliceSource: [ANSWERED],
   updateSource: [ANSWERED],
   saveDocument: [ANSWERED],
@@ -134,14 +134,22 @@ export function answers(command) {
  *
  * `module` is the loaded browser module. `source` is the document, as bytes or as text. `path` is whatever the product calls it — the name is what the page shows and what comes back with the save, and it names nothing on the machine reading it. `save` is called with the document whenever it has to be written, and whatever it throws is what the page is told; leaving it out makes this a reader that can still be typed in and never persists, and a save asked for anyway is refused on screen and reported back as a failed save. `glossary` is a glossary document text, if the product has one, so its terms auto-link the way they do on the desktop. `onEvent` hears everything the product might want to act on.
  */
-export function startLeaftextEmbed({ module, source, path = 'document.md', save = null, glossary = '', onEvent = null }) {
+export function startLeaftextEmbed({ module, page = window, source, path = 'document.md', save = null, glossary = '', onEvent = null }) {
   if (glossary) module.setGlossary(glossary);
   const held = module.buffer.open(source, path);
   if (!held) throw new Error('the module could not read that document');
 
   /** Run a line the host would have injected, the way the web view runs it. */
   const run = (script) => {
-    if (script) new Function(script)();
+    if (!script) return;
+    if (typeof page.__leafRun === 'function') {
+      page.__leafRun(script);
+      return;
+    }
+    const line = page.document.createElement('script');
+    line.textContent = script;
+    page.document.documentElement.appendChild(line);
+    line.remove();
   };
   const tell = (event) => {
     if (typeof onEvent === 'function') onEvent(event);
@@ -193,6 +201,11 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
   // What the page sends the host. A command with no arm here is one this host cannot answer.
   const commands = {
     saveDocument: () => write(),
+    enterCodeView: () => {
+      const state = module.buffer.codeView(held);
+      if (state) run(`window.leafShowCodeView(${JSON.stringify(state)});`);
+    },
+    exitCodeView: () => redraw(),
     editBlock: (command) => {
       // `continuing` marks every splice of a typing run after its first, so one press of undo takes the whole run back however many times it paused. `live` means the reader is still typing in the block: the buffer moves and the document is left standing, because a redraw would take the words out from under the caret — the commit that ends the run is the one that redraws.
       const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell };
@@ -240,7 +253,7 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     openLink: (command) => tell({ kind: 'link', href: String(command.href || ''), newPage: !!command.newPage }),
     openGlossary: (command) => run(module.glossaryScript(command.href)),
     // The browser's own print, which is the only route a page has. What comes out is whatever the product's page holds — the document, and the product's frame around it, since the `@media print` block only takes down Leaftext's own controls. A product that wants more off the paper writes its own print rules the way it writes the rest of its page.
-    exportPdf: () => window.print(),
+    exportPdf: () => page.print(),
     // A waiting state is a promise. The page draws the Previous/Next strip empty and waits for this; an embed has no neighbors, so the answer is an empty strip rather than a skeleton that spins for ever.
     loadPager: (command) => run(`window.leafSetPager(${JSON.stringify({ path: command.path, html: '' })});`),
   };
@@ -289,15 +302,16 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
             ? 'the table says this host answers it, and there is no arm'
             : 'no line in the command table';
     refused.push({ command: command.command, kind: kind || null, reason });
+    tell({ kind: 'refused', command: command.command, reason, detail: command });
     console.info('this host does not answer', command.command, '—', reason);
   }
 
   // What this host can write the page out as. A browser has no save window and no disk, so its one row is the browser's own print — which is what `exportPdf` reaches here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
-  window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }];
-  window.ipc = { postMessage: handle };
+  page.__leafPageExports = [{ id: 'pdf', label: 'PDF' }];
+  page.ipc = { postMessage: handle };
   // Whatever the front end sent while this was still loading.
-  for (const message of window.__leafPending || []) handle(message);
-  window.__leafPending = [];
+  for (const message of page.__leafPending || []) handle(message);
+  page.__leafPending = [];
 
   redraw();
 
@@ -307,6 +321,7 @@ export function startLeaftextEmbed({ module, source, path = 'document.md', save 
     bytes: () => module.buffer.encoded(held),
     state: () => module.buffer.state(held),
     save: write,
+    command: (command, detail = {}) => handle(JSON.stringify({ ...detail, command })),
     /** Let the document go. The frame around it is for the product to take down. */
     close: () => module.buffer.close(held),
     refused,

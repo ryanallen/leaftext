@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaftext embed sample</title>
+<style>
+body { font: 16px system-ui; margin: 0; padding: 24px; }
+header { align-items: center; display: flex; gap: 12px; margin-bottom: 16px; }
+#document { border: 1px solid #aaa; height: 640px; }
+.leaftext-frame { border: 0; height: 100%; width: 100%; }
+#status { color: #555; }
+</style>
+</head>
+<body>
+<header>
+<button id="save" type="button">Save</button>
+<span id="status">Mounting…</span>
+</header>
+<main id="document"></main>
+<script type="module">
+import { createLeaftext } from './api.js';
+
+const source = `---
+title: Embed sample
+done: true
+tags: [one, two]
+---
+
+# Embed sample
+
+Type here.
+
+- [ ] a task
+
+| a | b |
+| - | - |
+| 1 | 2 |
+
+> [!NOTE]
+> An alert.
+
+\`\`\`rust
+fn main() {}
+\`\`\`
+
+A footnote.[^1]
+
+[^1]: The note.
+`;
+const status = document.getElementById('status');
+window.sampleEvents = [];
+try {
+  const leaftext = await createLeaftext({
+    moduleUrl: '../dist/leaftext-embed.wasm',
+    assetBase: '../dist/embed/',
+  });
+  const mounted = await leaftext.editor(document.getElementById('document'), {
+    source,
+    path: 'sample.md',
+    save: ({ text }) => {
+      window.savedText = text;
+      status.textContent = 'Saved';
+    },
+    onEvent: (event) => {
+      window.sampleEvents.push(event);
+      if (event.kind === 'document') status.textContent = event.state.dirty ? 'Edited' : 'Ready';
+    },
+  });
+  document.getElementById('save').addEventListener('click', mounted.save);
+  window.sampleDocument = mounted;
+  status.textContent = 'Ready';
+} catch (error) {
+  window.sampleError = String((error && error.message) || error);
+  status.textContent = window.sampleError;
+}
+</script>
+</body>
+</html>
