@@ -1,6 +1,6 @@
 [package]
 name = "leaftext"
-version = "1.60.22"
+version = "1.60.23"
 edition = "2021"
 
 # The window, the web view, the file dialog, the watcher and SQLite are the desktop's, and none of them builds for a browser. They are optional so the library alone — the renderer, the format table, the editor's maps and the host boundary — compiles for `wasm32`, which is what a browser core is. The binary asks for them by name, so a plain `cargo build` is unchanged.

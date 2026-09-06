@@ -186,7 +186,7 @@
 .update-button-spinner[hidden] {
   display: none;
 }
-/* Every floating surface shares one halftone: four edge ramps multiply a tiled blob before the curve turns surviving coverage into one ink, and a two-layer mask punches the host face out. */
+/* Every floating surface shares one halftone: four edge ramps screen coverage off a tiled blob before the curve turns what survives into one ink, and a five-layer mask fades the band to nothing at its rim and punches the host's own face out. */
 .app-overflow-panel::before,
 .context-menu::before,
 .rename-box::before,

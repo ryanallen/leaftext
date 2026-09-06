@@ -74,7 +74,7 @@ Leaftext holds no account and no password for any of them. **Their app does the 
 
 Only what is really there is added: a client you do not have is not listed, and neither is one whose folder has been deleted. Where a client records having been moved — Dropbox, OneDrive, Nextcloud — that record is what gets read, so a Dropbox living somewhere other than the default is still found. Nothing is scanned to do it; each is a named place, checked.
 
-Remove one and it comes back the next time Leaftext looks. A vault is a row in a list, not a copy of anything, and it is a folder you have — the alternative is remembering a refusal forever to save you a row.
+Remove one and it comes back the next time Leaftext looks, which is when it starts and whenever you come back to its window. A client installed while Leaftext is open is found on that return, because leaving the window is what you did to install it. A vault is a row in a list, not a copy of anything, and it is a folder you have — the alternative is remembering a refusal forever to save you a row.
 
 Google Drive is found on macOS only. On Windows it mounts as a drive letter you choose and records nowhere which one, and guessing would mean offering somebody else's disk — use **New vault…** and pick it.
 
