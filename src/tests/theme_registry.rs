@@ -179,10 +179,10 @@ fn the_action_color_paints_words_and_marks_out_of_the_ink_token() {
         10
     );
 
-    // The inactive window quiets the ink with everything else it quiets. Without this the logomark and the leaf keep their color while the chrome around them steps back, which is the one state where the split can be seen doing the wrong thing.
-    assert_contains(
-        css_block(css, "body.is-window-inactive :is("),
-        "--lt-primary-ink: var(--lt-muted-foreground);",
+    // The inactive window quiets the ink with everything else it quiets, and it does that by filtering the whole surface rather than by naming this token — so what is checked here is that no rule has gone back to naming it, which is how the logomark and the leaf would come to step back on a different beat from the chrome around them.
+    assert!(
+        !css.contains("--lt-primary-ink: var(--lt-muted-foreground)"),
+        "a rule quiets the action ink on its own again, and the whole window already quiets together"
     );
 }
 
@@ -332,45 +332,50 @@ fn web_font_mechanism_fetches_noto_by_default_and_swaps_on_theme_change() {
     ));
 }
 
+/// Every ink a family declares a surface for, paired with that surface. A token here has a partner the family itself wrote down — `primary-foreground` with `primary`, a syntax color with the code background it is read on — which is what makes the pair a fact about the palette rather than a guess about where a rule puts something.
+///
+/// Two gates walk it: the one below at 4.5:1 with the window as it normally is, and the inactive-window gate at 3:1 with the whole window filtered. Neither invents a pair, which is the only way either can say something true about a family added later.
+const READABLE_PAIRS: &[(&str, &str)] = &[
+    ("--lt-foreground", "--lt-background"),
+    ("--lt-muted-foreground", "--lt-background"),
+    ("--lt-primary-foreground", "--lt-primary"),
+    ("--lt-markdown-foreground", "--lt-markdown-background"),
+    ("--lt-markdown-heading", "--lt-markdown-background"),
+    ("--lt-markdown-heading-2", "--lt-markdown-background"),
+    ("--lt-markdown-heading-3", "--lt-markdown-background"),
+    ("--lt-markdown-heading-4", "--lt-markdown-background"),
+    ("--lt-markdown-heading-5", "--lt-markdown-background"),
+    ("--lt-markdown-heading-6", "--lt-markdown-background"),
+    ("--lt-editor-code-foreground", "--lt-editor-code-background"),
+    (
+        "--lt-editor-code-selection-foreground",
+        "--lt-editor-code-selection-background",
+    ),
+    (
+        "--lt-focus-selection-foreground",
+        "--lt-focus-selection-background",
+    ),
+    ("--lt-syntax-foreground", "--lt-syntax-background"),
+    ("--lt-syntax-comment", "--lt-syntax-background"),
+    ("--lt-syntax-keyword", "--lt-syntax-background"),
+    ("--lt-syntax-string", "--lt-syntax-background"),
+    ("--lt-syntax-number", "--lt-syntax-background"),
+    ("--lt-syntax-function", "--lt-syntax-background"),
+    ("--lt-syntax-variable", "--lt-syntax-background"),
+    ("--lt-syntax-type", "--lt-syntax-background"),
+    ("--lt-syntax-operator", "--lt-syntax-background"),
+    ("--lt-syntax-punctuation", "--lt-syntax-background"),
+    ("--lt-syntax-inserted", "--lt-syntax-inserted-background"),
+    ("--lt-syntax-deleted", "--lt-syntax-deleted-background"),
+    ("--lt-syntax-changed", "--lt-syntax-changed-background"),
+];
+
 #[test]
 fn theme_compiler_gates_readable_pairs_for_every_source() {
     let css = reading_mode_css();
 
     for source in theme_sources() {
-        for (foreground, background) in [
-            ("--lt-foreground", "--lt-background"),
-            ("--lt-muted-foreground", "--lt-background"),
-            ("--lt-primary-foreground", "--lt-primary"),
-            ("--lt-markdown-foreground", "--lt-markdown-background"),
-            ("--lt-markdown-heading", "--lt-markdown-background"),
-            ("--lt-markdown-heading-2", "--lt-markdown-background"),
-            ("--lt-markdown-heading-3", "--lt-markdown-background"),
-            ("--lt-markdown-heading-4", "--lt-markdown-background"),
-            ("--lt-markdown-heading-5", "--lt-markdown-background"),
-            ("--lt-markdown-heading-6", "--lt-markdown-background"),
-            ("--lt-editor-code-foreground", "--lt-editor-code-background"),
-            (
-                "--lt-editor-code-selection-foreground",
-                "--lt-editor-code-selection-background",
-            ),
-            (
-                "--lt-focus-selection-foreground",
-                "--lt-focus-selection-background",
-            ),
-            ("--lt-syntax-foreground", "--lt-syntax-background"),
-            ("--lt-syntax-comment", "--lt-syntax-background"),
-            ("--lt-syntax-keyword", "--lt-syntax-background"),
-            ("--lt-syntax-string", "--lt-syntax-background"),
-            ("--lt-syntax-number", "--lt-syntax-background"),
-            ("--lt-syntax-function", "--lt-syntax-background"),
-            ("--lt-syntax-variable", "--lt-syntax-background"),
-            ("--lt-syntax-type", "--lt-syntax-background"),
-            ("--lt-syntax-operator", "--lt-syntax-background"),
-            ("--lt-syntax-punctuation", "--lt-syntax-background"),
-            ("--lt-syntax-inserted", "--lt-syntax-inserted-background"),
-            ("--lt-syntax-deleted", "--lt-syntax-deleted-background"),
-            ("--lt-syntax-changed", "--lt-syntax-changed-background"),
-        ] {
+        for (foreground, background) in READABLE_PAIRS {
             let ratio = contrast_ratio(
                 css_token_for_source(css, source, foreground),
                 css_token_for_source(css, source, background),
@@ -490,28 +495,6 @@ const PAINT_LIST: &[PaintedInk] = &[
         floor: 4.5,
         rule: "src/assets/reading/reader-page.css `.app-toast.is-error`",
     },
-    // The window behind another app: `base.css` re-points primary, danger and warning at the quiet-text ink for the whole of the chrome, so every row above becomes this one ink on the surface it was already standing on. Green on all twenty-two sources today, and these rows are what keeps it that way — a family darkening its quiet text has no other gate over these two surfaces.
-    PaintedInk {
-        what: "the chrome's ink while another app has the window",
-        ink: "--lt-muted-foreground",
-        surface: "--lt-surface",
-        floor: 4.5,
-        rule: "src/assets/reading/base.css `body.is-window-inactive`",
-    },
-    PaintedInk {
-        what: "the chrome's ink while another app has the window",
-        ink: "--lt-muted-foreground",
-        surface: "--lt-surface-elevated",
-        floor: 4.5,
-        rule: "src/assets/reading/base.css `body.is-window-inactive`",
-    },
-    PaintedInk {
-        what: "the chrome's ink while another app has the window",
-        ink: "--lt-muted-foreground",
-        surface: "--lt-background",
-        floor: 4.5,
-        rule: "src/assets/reading/base.css `body.is-window-inactive`",
-    },
 ];
 
 /// Back to the spelling a theme file is written in, so a failure hands over the value somebody has to change rather than three floats.
@@ -566,6 +549,216 @@ fn theme_compiler_gates_every_painted_ink_for_every_source() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+/// The two amounts an inactive window is painted at, read out of the compiled stylesheet so this gate cannot drift from the rule that spends them.
+fn inactive_amounts(css: &str) -> (f64, f64) {
+    let blocks = css_blocks(css, ":root {");
+    let read = |name: &str| {
+        css_token_value(&blocks, name)
+            .parse::<f64>()
+            .unwrap_or_else(|_| panic!("expected {name} to be a plain number"))
+    };
+
+    (
+        read("--lt-inactive-saturation"),
+        read("--lt-inactive-contrast"),
+    )
+}
+
+/// A color as an inactive window paints it: `saturate()` and then `contrast()`, in that order and in sRGB, which is what the browser does with the shorthand in `base.css`.
+///
+/// The saturation matrix is the Filter Effects specification's, and `contrast(c)` is a linear transfer of slope `c` about the 0.5 pivot. Both are here because the filter changes no token value, so every other contrast gate in this file is blind to the whole state: the ink and the paper each come out somewhere they were never written, and the ratio between them is the only one a reader ever sees.
+fn as_an_inactive_window_paints_it(color: Rgb, saturation: f64, contrast: f64) -> Rgb {
+    let saturated = Rgb {
+        red: (0.213 + 0.787 * saturation) * color.red
+            + (0.715 - 0.715 * saturation) * color.green
+            + (0.072 - 0.072 * saturation) * color.blue,
+        green: (0.213 - 0.213 * saturation) * color.red
+            + (0.715 + 0.285 * saturation) * color.green
+            + (0.072 - 0.072 * saturation) * color.blue,
+        blue: (0.213 - 0.213 * saturation) * color.red
+            + (0.715 - 0.715 * saturation) * color.green
+            + (0.072 + 0.928 * saturation) * color.blue,
+    };
+    let pivot = 0.5 - 0.5 * contrast;
+    let transfer = |channel: f64| (channel * contrast + pivot).clamp(0.0, 1.0);
+
+    Rgb {
+        red: transfer(saturated.red),
+        green: transfer(saturated.green),
+        blue: transfer(saturated.blue),
+    }
+}
+
+/// The floor for this one state, and it is not the 4.5:1 the rest of the palette answers.
+///
+/// With nothing applied at all the tightest legible pair in the twenty-two sources reads 4.515:1, so any softening a reader can see drops something under 4.5 — `contrast(0.99)` alone reaches 4.453. 3:1 is the ratio the app already accepts for a border, an icon and large text, and a window another app is holding is a window the reader has stepped away from and is one click from restoring.
+const INACTIVE_FLOOR: f64 = 3.0;
+
+/// Every ink-and-surface pair the tree already declares: `READABLE_PAIRS`, where a family names the surface itself, and `PAINT_LIST`, where a stylesheet rule does.
+///
+/// The inactive-window gate walks these and invents none of its own. A cross product over every ink and every surface reads pairs the app never draws — it puts `--lt-danger` on `--lt-surface-muted`, which no rule paints, and calls three families unreadable on a combination nobody can see.
+fn declared_pairs() -> Vec<(&'static str, &'static str, &'static str)> {
+    READABLE_PAIRS
+        .iter()
+        .map(|(ink, surface)| (*ink, *surface, "the pair the family declares"))
+        .chain(
+            PAINT_LIST
+                .iter()
+                .map(|row| (row.ink, row.surface, row.what)),
+        )
+        .collect()
+}
+
+/// Every one of those pairs that reads under the floor once the window's filter is applied to both halves, as the sentence the failure prints.
+fn inactive_ink_failures(
+    css: &str,
+    source: &ThemeSource,
+    pairs: &[(&str, &str, &str)],
+    floor: f64,
+) -> Vec<String> {
+    let (saturation, contrast) = inactive_amounts(css);
+    let painted = |name: &str| {
+        as_an_inactive_window_paints_it(
+            css_token_for_source(css, source, name),
+            saturation,
+            contrast,
+        )
+    };
+    let mut failures = Vec::new();
+
+    for (ink_name, surface_name, what) in pairs {
+        let ink = painted(ink_name);
+        let surface = painted(surface_name);
+        let ratio = contrast_ratio(ink, surface);
+        if ratio < floor {
+            failures.push(format!(
+                "{} {}: {what} reads {ratio:.2} while another app has the window, wanted {floor:.1} — {ink_name} painted {} on {surface_name} painted {}, at src/assets/reading/base.css `body.is-window-inactive`",
+                source.family,
+                source.appearance.as_str(),
+                hex_of(ink),
+                hex_of(surface)
+            ));
+        }
+    }
+
+    failures
+}
+
+#[test]
+fn the_arithmetic_this_gate_measures_with_is_the_arithmetic_the_window_paints() {
+    // Read off the running window at the shipped amounts, which is the only thing that can say this model is the browser's: the document's darkest pixel, its paper, and the leaf in the app bar.
+    let painted = |color: Rgb| as_an_inactive_window_paints_it(color, 0.5, 0.9);
+    let rgb = |red: u8, green: u8, blue: u8| Rgb {
+        red: red as f64 / 255.0,
+        green: green as f64 / 255.0,
+        blue: blue as f64 / 255.0,
+    };
+
+    for (before, after, what) in [
+        (rgb(21, 24, 28), "#212224", "the document's darkest ink"),
+        (rgb(255, 255, 255), "#f2f2f2", "the document's paper"),
+        (rgb(216, 30, 40), "#8e3a3e", "the leaf in the app bar"),
+    ] {
+        assert_eq!(hex_of(painted(before)), after, "{what}");
+    }
+}
+
+#[test]
+fn every_family_stays_legible_while_another_app_has_the_window() {
+    let css = reading_mode_css();
+    let failures: Vec<String> = theme_sources()
+        .iter()
+        .flat_map(|source| inactive_ink_failures(css, source, &declared_pairs(), INACTIVE_FLOOR))
+        .collect();
+
+    assert!(
+        failures.is_empty(),
+        "{} pairs wash out while another app has the window:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+#[test]
+fn a_family_the_state_would_wash_out_is_named_rather_than_shipped() {
+    // The shipping tree is green on purpose, so this is the only place the rejection half of the gate runs at all. `#8a8f94` on `#ffffff` reads 3.13 untouched and 2.86 once the window has painted both, which is the whole point: a pair that clears the floor before the filter can fail after it.
+    const SELECTOR: &str = ":root[data-leaf-theme=\"test\"][data-leaf-appearance=\"light\"]";
+    let css = format!(
+        "{SELECTOR} {{\n  --lt-background: #ffffff;\n  --lt-foreground: #8a8f94;\n}}\n:root {{\n  --lt-inactive-saturation: 0.5;\n  --lt-inactive-contrast: 0.9;\n}}\n"
+    );
+    let source = ThemeSource {
+        id: "test-light",
+        family: "test",
+        family_name: "Test",
+        appearance: Appearance::Light,
+        selector: SELECTOR,
+        tokens: &[],
+        overrides: &[],
+        font_heading: "",
+        font_body: "",
+        font_code: "",
+        font_google: "",
+        pack: LEAFTEXT_ICON_PACK,
+    };
+
+    let failures = inactive_ink_failures(
+        &css,
+        &source,
+        &[(
+            "--lt-foreground",
+            "--lt-background",
+            "the chrome's own writing",
+        )],
+        INACTIVE_FLOOR,
+    );
+
+    assert_eq!(failures.len(), 1, "{failures:?}");
+    // The family, the half, both painted values, the ratio, the floor and the rule — everything somebody needs to go and change a color without first finding where the token is spent.
+    for part in [
+        "test light",
+        "the chrome's own writing",
+        "wanted 3.0",
+        "--lt-foreground painted",
+        "src/assets/reading/base.css `body.is-window-inactive`",
+    ] {
+        assert_contains(&failures[0], part);
+    }
+}
+
+#[test]
+fn the_state_re_points_no_color_and_the_rail_keeps_no_list_of_its_own() {
+    let css = reading_mode_css();
+
+    // One rule, and one declaration in it. A hand-kept subset of tokens growing back beside the filter is the split this ticket closed: the chrome had eighteen colors and the rail thirty-two, and the document — the thing a reader came for — was in neither.
+    assert_eq!(
+        css.matches("body.is-window-inactive").count(),
+        1,
+        "more than one rule answers a window another app has taken, and the whole state is one filter"
+    );
+    let state = rule_body(
+        css,
+        "body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-paper-picture) .app-surface {",
+    );
+    assert!(
+        !state.lines().any(|line| line.trim_start().starts_with("--lt-")),
+        "the inactive state re-points a color again, so the document and the frame can part company: {state}"
+    );
+
+    // The rail draws its miniature in the document's own tokens, and under one filter over the whole surface that is what makes the two resolve to the same painted value for the same source color. A token re-pointed on the rail is the two lists coming back.
+    for rule in css.split(".reader-minimap") {
+        let Some(body) = rule.strip_prefix(" {").or_else(|| rule.strip_prefix(",")) else {
+            continue;
+        };
+        let body = &body[..body.find('}').unwrap_or(body.len())];
+        assert!(
+            !body.contains("--lt-markdown")
+                && !body.contains("--lt-syntax")
+                && !body.contains("--lt-editor"),
+            "the rail re-points a document color, so its miniature and the page it copies no longer paint alike: {body}"
+        );
+    }
 }
 
 /// A source built here rather than a family that happens to sit near a floor today, so the rule is pinned at its boundary in both directions and a re-tint cannot move what the check means.

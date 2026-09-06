@@ -375,7 +375,7 @@ body:has(#readerToolbar:not([hidden])) {
   font-weight: var(--lt-weight-600);
 }
 .reader-tool-save:hover {
-  filter: brightness(1.08);
+  filter: brightness(var(--lt-hover-lift));
 }
 /* `display` on a class beats the user agent's `[hidden] { display: none }`, so every one of these has to turn itself off explicitly. Without the first rule the bar ignored `hidden` entirely and sat over the home screen. */
 .reader-toolbar[hidden],

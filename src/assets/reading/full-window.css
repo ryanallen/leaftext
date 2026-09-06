@@ -83,7 +83,7 @@
   min-width: 7ch;
 }
 .table-sheet-grid th {
-  background: var(--lt-markdown-table-header-background);
+  background: var(--lt-markdown-table-row-background);
   color: var(--lt-markdown-heading);
   font-weight: var(--lt-weight-600);
 }

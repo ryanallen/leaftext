@@ -102,6 +102,8 @@ body.frameless.is-fullscreen {
   /* The reading card's two bottom corners, likewise decided here rather than in the six rules that draw them. It travels down to them as a variable because the card's corner and the window's have to move together — a card left at 6px inside a deeper window pinches the band between the two arcs. */
   --reader-card-radius: var(--lt-radius-md);
   border-radius: var(--app-window-radius);
+  /* Both directions of the inactive fade, written on the element rather than inside the state's own rule so leaving and returning each animate, and so the Reduce Motion blanket at the foot of this file zeroes both by existing. */
+  transition: filter var(--lt-duration-200) var(--lt-ease);
 }
 /* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. Above the flush rule below so a browser, which ties this on specificity, still wins. */
 body.mac-frame .app-surface {
@@ -154,69 +156,9 @@ body.frameless:not(.mac-frame).is-maximized::before,
 body.frameless.is-fullscreen::before {
   content: none;
 }
-/* Another app has the window: the color goes out of what the frame holds, and nothing else moves at all. This rule paints nothing — it only re-points the color tokens the chrome draws with at the quiet-text ink, so every surface, every border and every text color keeps the value its family gave it. Neither `filter` nor `opacity` may come back. `opacity` composites the bar's own shade with the page behind it, so the top of the window read as see-through and every tab edge, divider and panel seam that shade had been covering came out as a line; `filter: grayscale` would take a tinted family's shade off the bar and leave the card beside it tinted, which is a seam of the same kind. Everything colored in the frame follows the tokens by existing — the leaf, an unsaved tab's dot, the update button, the sync count, a pressed tool, the danger button, the minimap's viewport ring — because a value in this stylesheet has to come from a token, so a control added later is gray here without being listed. The `-foreground` halves are left alone: each is what prints on a fill, and graying both would take the contrast with them. Outside the scope and full color on purpose: the document, and the minimap's clone of it, which draws in the document's own tokens. Every floating part is named rather than swept with `.app-surface > *`, because that sweep would take `.diagram-print` and `.picture-print`, which a printed or exported page is rendered out of, and bake an inactive window into a file somebody keeps. Nothing here makes a stacking context, so `.library-pane` is named whole and the arc that turns the bar's divider down into the card's border is not at risk from this rule at all. A custom property carries no transition, and the state wants none: a window's color arrives with the click that brought it forward. */
-body.is-window-inactive :is(.app-bar, .library-pane, .reader-toolbar, .reader-minimap, .find-bar, .selection-toolbar, .app-toast, .hint-bubble, .leaf-sheet, .flow-sheet, .confirm-dialog) {
-  /* The ink as well as the color, or the state is one grayed logo among chrome that never moved. Every tab label, the breadcrumb, the pane's rows and headings and the window controls' glyphs write in this token, and an icon is a mask painted by `currentColor`, so they all step back together. It is the one token here that a rule elsewhere also mixes a surface from — a pressed subtool's fill is 12% of it — so that chip quiets with the chrome rather than staying lit, which is the state doing its job rather than the background moving under it. */
-  --lt-foreground: var(--lt-muted-foreground);
-  --lt-primary: var(--lt-muted-foreground);
-  /* Both halves of the role, or the logomark and the leaf beside a file name keep their color while the chrome around them steps back. */
-  --lt-primary-ink: var(--lt-muted-foreground);
-  --lt-accent: var(--lt-muted-foreground);
-  --lt-danger: var(--lt-muted-foreground);
-  --lt-warning: var(--lt-muted-foreground);
-  --lt-success: var(--lt-muted-foreground);
-  --lt-done: var(--lt-muted-foreground);
-  --lt-link: var(--lt-muted-foreground);
-  --lt-link-hover: var(--lt-muted-foreground);
-  --lt-focus-ring: var(--lt-muted-foreground);
-  /* A chrome button under the pointer, the tab's close cross included: a window can be pointed at while another one holds it, and a colored chip is the loudest thing left if this one is missed. */
-  --lt-navigation-button-hover-background: var(--lt-muted-foreground);
-  --lt-minimap-viewport-border: var(--lt-muted-foreground);
-  /* The viewport's fill is a wash of its own border color, so it is mixed here rather than dropped: the ring alone would leave the reader's place on the rail harder to find than an active window makes it. */
-  --lt-minimap-viewport-background: color-mix(in srgb, var(--lt-muted-foreground) 14%, transparent);
-  /* The hairlines step back with the ink, so the frame reads as one quiet surface rather than quiet writing inside full-strength boxes. The weighted line drops to the ordinary one — the two are the same kind of value and the quieter is already named, so nothing is mixed here — and the three inset edges built from it follow, along with the two built from the ink above. The ordinary hairline itself stays: every neutral below it is a surface, and a line drawn in one of those is a line gone, which changes the shape of the frame rather than quieting it. */
-  --lt-border-strong: var(--lt-border);
-  /* What every hover fill is mixed from. A window nobody is in still gets pointed at on the way past, and a full-strength wash under the pointer is the loudest thing left once everything else has stepped back. */
-  --lt-hover-tint: var(--lt-border-strong);
-}
-/* The rail holds a clone of the document drawn in the document's own colors, so the tokens above never reach it and without this it is a bright picture beside quiet chrome. It is chrome — a picture of the page rather than the page — so its ink goes quiet with everything else the frame holds. Ink only: every background, fill and paper color is left exactly where the family put it, so nothing behind the miniature moves. The document itself is untouched, and reading it is what the window is for. */
-body.is-window-inactive .reader-minimap {
-  --lt-markdown-foreground: var(--lt-muted-foreground);
-  --lt-markdown-heading: var(--lt-muted-foreground);
-  --lt-markdown-heading-2: var(--lt-muted-foreground);
-  --lt-markdown-heading-3: var(--lt-muted-foreground);
-  --lt-markdown-heading-4: var(--lt-muted-foreground);
-  --lt-markdown-heading-5: var(--lt-muted-foreground);
-  --lt-markdown-heading-6: var(--lt-muted-foreground);
-  --lt-markdown-rule: var(--lt-border);
-  --lt-markdown-link: var(--lt-muted-foreground);
-  --lt-markdown-blockquote-border: var(--lt-border);
-  --lt-markdown-blockquote-foreground: var(--lt-muted-foreground);
-  --lt-markdown-alert-note: var(--lt-muted-foreground);
-  --lt-markdown-alert-tip: var(--lt-muted-foreground);
-  --lt-markdown-alert-important: var(--lt-muted-foreground);
-  --lt-markdown-alert-warning: var(--lt-muted-foreground);
-  --lt-markdown-alert-caution: var(--lt-muted-foreground);
-  --lt-markdown-badge-foreground: var(--lt-muted-foreground);
-  --lt-markdown-table-border: var(--lt-border);
-  --lt-markdown-thematic-break: var(--lt-border);
-  --lt-markdown-keyboard-border: var(--lt-border);
-  --lt-editor-inline-code-foreground: var(--lt-muted-foreground);
-  --lt-editor-code-foreground: var(--lt-muted-foreground);
-  --lt-editor-code-border: var(--lt-border);
-  --lt-syntax-foreground: var(--lt-muted-foreground);
-  --lt-syntax-comment: var(--lt-muted-foreground);
-  --lt-syntax-keyword: var(--lt-muted-foreground);
-  --lt-syntax-string: var(--lt-muted-foreground);
-  --lt-syntax-number: var(--lt-muted-foreground);
-  --lt-syntax-function: var(--lt-muted-foreground);
-  --lt-syntax-variable: var(--lt-muted-foreground);
-  --lt-syntax-type: var(--lt-muted-foreground);
-  --lt-syntax-operator: var(--lt-muted-foreground);
-  --lt-syntax-punctuation: var(--lt-muted-foreground);
-  --lt-syntax-inserted: var(--lt-muted-foreground);
-  --lt-syntax-deleted: var(--lt-muted-foreground);
-  --lt-syntax-changed: var(--lt-muted-foreground);
+/* Another app has the window: everything the app draws steps back together, by one amount, in one paint. Every visible part of the page is inside `.app-surface` — the chrome and its leaf, the document, the source view, a Mermaid diagram, a raster picture, the sheets and the rail's miniature — so a filter here is the only treatment that reaches all of them at once, which is the whole of what stops the leaf and the rail reading as two different effects. It is a filter rather than a list of re-pointed color tokens because only one of the two can fade: a custom property is not an animatable type, and with a transition on it the ink was watched answering its new value at every frame from the first, where the filter was watched interpolating frame by frame over the same window. A filter also reaches a raster picture inside the document, which no token can. Neither `opacity` nor `grayscale` may come back: `opacity` composites the bar's own shade with the page behind it, so the top of the window read as see-through and every tab edge, divider and panel seam that shade had been covering came out as a line; `grayscale` takes a tinted family's shade off the bar and leaves the card beside it tinted, which is a seam of the same kind. This makes no new paint group — the surface is already `position: fixed` with `contain: paint`, so it is already a stacking context and already the fixed containing block for the overlays inside it. The three paper classes cancel the rule, because `.diagram-print` and `.picture-print` are children of this same surface and a printed or exported page rendered through them would otherwise bake an inactive window into a file somebody keeps. The two amounts, and the 3:1 floor they were chosen against, are rows in design/tokens.md. */
+body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-paper-picture) .app-surface {
+  filter: saturate(var(--lt-inactive-saturation)) contrast(var(--lt-inactive-contrast));
 }
 ::selection {
   background: var(--lt-focus-selection-background);

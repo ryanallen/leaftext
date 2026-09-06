@@ -742,19 +742,25 @@ $proc = $null
 $buttonDown = $false
 $heldAsk = $null
 $offScreen = $false
+# Whether the window being driven stands on no monitor, which is where a copy `just probe-copy` launched sits. Nothing about it can be seen, so nothing about it may be taken: the focus and the parked pointer below are both skipped, and a batch of pictures then runs beside somebody working without moving their cursor or their keyboard once.
+$unseen = $false
 try {
   if ($Attach) {
     $hwnd = $running.MainWindowHandle
+    $unseen = Test-OffEveryMonitor $hwnd
     # Foreground, and no more: a wheel notch and a key press go to the window that
     # has focus, not the one under the pointer. No restore and no move — those would
-    # un-maximize and shove somebody's window to take its picture.
-    Take-Foreground $hwnd $running.Id
+    # un-maximize and shove somebody's window to take its picture. Skipped where the
+    # window is on no monitor: the keyboard reaches such a copy through no step this
+    # takes, so the focus would be taken off whatever the owner is typing in and
+    # spent on nothing.
+    if (-not $unseen) { Take-Foreground $hwnd $running.Id }
     # Refused rather than reported as done: SetForegroundWindow fails when the caller
     # is not already foreground, and a wheel notch then lands in whatever is. Clicks
     # and drags carry their own position, so they do not need this.
     # A point on no monitor is clamped onto the desktop, so a mouse gesture cannot reach a copy nobody can see. A pointer step is played into the page through the app's own gesture ask instead — no cursor, no focus and no place on screen — while a key step is refused, because the ask carries no keys.
     $gestures = @($plan | Where-Object { $_.Kind -ne 'wait' })
-    $offScreen = [bool]($gestures.Count -and (Test-OffEveryMonitor $hwnd))
+    $offScreen = [bool]($gestures.Count -and $unseen)
     if ($offScreen) {
       $keys = @($plan | Where-Object { $_.Kind -in 'type', 'key' })
       if ($keys.Count) {
@@ -798,10 +804,15 @@ try {
   }
 
   # Before the settle rather than after it, so whatever the pointer was over has
-  # the same time to drop its hover as the page has to draw.
-  $parked = New-Object LeafShot+RECT
-  [void][LeafShot]::GetWindowRect($hwnd, [ref]$parked)
-  Park-Pointer $parked
+  # the same time to drop its hover as the page has to draw. A window on no monitor
+  # is never under the pointer, so there is nothing to park it off — and the last
+  # spot Park-Pointer falls back to is the desktop's own corner, which would throw
+  # the owner's cursor across the screen once per picture for nothing.
+  if (-not $unseen) {
+    $parked = New-Object LeafShot+RECT
+    [void][LeafShot]::GetWindowRect($hwnd, [ref]$parked)
+    Park-Pointer $parked
+  }
 
   Start-Sleep -Milliseconds $SettleMs
 

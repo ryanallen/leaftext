@@ -221,6 +221,15 @@ Every transition and animation length, in milliseconds. `0.12s` and `120ms` were
 | lt-transition-hover-reveal-arrive | `opacity var(--lt-duration-120) var(--lt-ease-decelerate)` | The opacity leg on the rule that shows it. |
 | lt-transition-hover-reveal-leave | `opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300)` | The opacity leg on the rule that holds it at nothing: held for 300ms, then gone over 100ms. |
 
+## Inactive window
+
+**One amount the whole window steps back by while another app holds it.** Every visible part of the app sits inside one element, so the state is a single `filter` on that element rather than a list of re-pointed colors — which is what makes the leaf, the document, a picture inside the page and the minimap move by the same amount on the same beat. It is also the only form that can fade at all: a custom property is not an animatable type and was watched jumping straight to its new value, where the filter was watched interpolating frame by frame over the same window. The floor for this one state is 3:1 rather than the 4.5:1 everything else is held to, because the palette's tightest legible pair is already 4.515:1 and any visible softening drops under that — a window another app is holding is one the reader has stepped away from and is one click from restoring. At the two amounts below the tightest pair the tree declares, across all 22 theme sources and with the filter applied to both halves of it, is 3.42 and nothing reads under 3 — both amounts were chosen from that table rather than by eye.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| lt-inactive-saturation | 0.5 | How much color the window keeps while another app has it. Half: enough that a red is still plainly red, little enough that the whole frame reads as stepped back. |
+| lt-inactive-contrast | 0.9 | How far that window's blacks and whites come toward each other, so black text goes less dark and the paper comes down to meet it. |
+
 ## Layers
 
 Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or less order siblings inside one component and stay literal — they mean nothing outside it.
@@ -309,6 +318,7 @@ One fill for everything under the pointer — a menu row, a toolbar button, a fi
 | Token | Value | What it is for |
 | --- | --- | --- |
 | lt-wash-hover | `color-mix(in srgb, var(--lt-hover-tint) 16%, transparent)` | Every hover and expanded-state fill in the app. The ink is [`hover-tint`](colors.md), which a family may set and otherwise copies its quiet-text color. |
+| lt-hover-lift | 1.08 | The one hover that lifts its own fill instead of washing over it: the Save button, which is already drawn in the accent, so a wash over it would only mud the color it is there to carry. |
 
 ## Inset edges
 

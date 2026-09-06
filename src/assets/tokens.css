@@ -143,6 +143,9 @@
   /* Hover reveal */
   --lt-transition-hover-reveal-arrive: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
   --lt-transition-hover-reveal-leave: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+  /* Inactive window */
+  --lt-inactive-saturation: 0.5;
+  --lt-inactive-contrast: 0.9;
   /* Layers */
   --lt-z-below: -1;
   --lt-z-20: 20;
@@ -188,6 +191,7 @@
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   /* The hover wash */
   --lt-wash-hover: color-mix(in srgb, var(--lt-hover-tint) 16%, transparent);
+  --lt-hover-lift: 1.08;
   /* Inset edges */
   --lt-shadow-edge-strong: inset 0 0 0 1px var(--lt-border-strong);
   --lt-shadow-edge-accent: inset 0 0 0 2px var(--lt-accent);

@@ -98,6 +98,37 @@ fn reduce_motion_is_answered_once_and_won_back_by_name() {
 }
 
 #[test]
+fn the_whole_window_fades_both_ways_when_another_app_takes_it() {
+    let css = reading_mode_css();
+
+    // The fade is written on the element, not inside the state that turns it on: a transition living in the state's own rule animates the way out and snaps the way back, because the rule stops matching the instant the class goes — and the way back is the half a reader is looking at, since it lands with the click that brought the window forward.
+    let surface = rule_body(css, ".app-surface {");
+    assert_contains(
+        surface,
+        "transition: filter var(--lt-duration-200) var(--lt-ease);",
+    );
+
+    let inactive = rule_body(
+        css,
+        "body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-paper-picture) .app-surface {",
+    );
+    assert!(
+        !inactive.contains("transition"),
+        "the fade is timed inside the state, so the window snaps back to full color the moment it returns: {inactive}"
+    );
+
+    // An ordinary rule and never a block of its own under a media query, which is the whole reason the Reduce Motion blanket at the foot of the file covers it by existing.
+    assert!(
+        !css.contains("@media (prefers-reduced-motion: reduce)")
+            || !css[css
+                .find("@media (prefers-reduced-motion: reduce)")
+                .expect("the blanket rule is in the file")..]
+                .contains("transition: filter"),
+        "the inactive fade wins itself back from Reduce Motion, and a whole window moving is exactly what that setting is for"
+    );
+}
+
+#[test]
 fn anything_that_folds_slides_to_its_new_height_from_one_shared_rule() {
     let css = reading_mode_css();
 

@@ -80,7 +80,8 @@ fn reading_mode_css_consumes_theme_tokens_for_high_impact_surfaces() {
         "color: var(--lt-markdown-blockquote-foreground);",
         "border-left-color: var(--lt-markdown-alert-warning);",
         "border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);",
-        "background: var(--lt-markdown-table-header-background);",
+        // The heading row draws in the alternating row's own fill, so the grid reads as one even rhythm with the labels as its darkest band. The header fill every family still declares is spent by nothing in this stylesheet.
+        "background: var(--lt-markdown-table-row-background);",
         "background: var(--lt-markdown-thematic-break);",
         "background: var(--lt-editor-code-background);",
         "background-clip: padding-box;",

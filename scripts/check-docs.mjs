@@ -118,7 +118,9 @@ function roleSelfTest() {
 }
 
 // Somebody else's writing, kept to read. Nothing here edits it, so a dead link in it is not a build failure.
-const LINK_SKIP = ['learn/'];
+//
+// `tests/` is there for the opposite reason: those files are documents to open in the app rather than pages anybody reads here, and one of them links to a file deliberately not made, because a link with nothing behind it is what draws the wavy underline the picture of typing help is of. A dead link there is the fixture.
+const LINK_SKIP = ['learn/', 'tests/'];
 
 // Every document link a page makes that opens nothing. Only a target ending `.md`: `theme-color-reference.md` writes `[button 1](src)` on purpose because that page is meant to be rendered, and a picture is `doc-images.mjs`'s job.
 //

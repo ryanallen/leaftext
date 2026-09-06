@@ -1,9 +1,6 @@
 // The three window buttons: what the middle one asks for on each platform, what it calls itself, and the state the host puts on the page when another app takes the window.
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-import { check, fakePage, readingCss, record, root, runShell, source } from './shared.mjs';
+import { check, fakePage, readingCss, record, runShell, source } from './shared.mjs';
 
 export function run() {
   if (!record.booted) return;
@@ -49,190 +46,81 @@ export function run() {
   }
 
 
-  // ---- what an inactive window quiets ----------------------------------------
+  // ---- what an inactive window steps back by ---------------------------------
 
-  /** The selector of the one rule `body.is-window-inactive` grays, as the stylesheet spells it. */
+  /** The stylesheet with its comments taken out, so what follows reads rules rather than sentences about them. */
+  function statedCss() {
+    return readingCss().replace(/\/\*[\s\S]*?\*\//g, '');
+  }
+
+  /** The selector of the one rule an inactive window hangs off, as the stylesheet spells it. */
   function inactiveSelector() {
-    const css = readingCss();
-    const at = css.indexOf('body.is-window-inactive ');
+    const css = statedCss();
+    const at = css.indexOf('body.is-window-inactive');
     if (at < 0) throw new Error('no rule in the stylesheet answers a window that went behind another app');
-    const opened = css.indexOf('{', at);
-    return css.slice(at, opened).trim();
+    return css.slice(at, css.indexOf('{', at)).trim();
   }
 
-  /** The declarations of that same rule, as the stylesheet spells them. */
+  /** The declarations of that same rule, one per entry, as the stylesheet spells them. */
   function inactiveBody() {
-    const css = readingCss();
-    const at = css.indexOf('body.is-window-inactive ');
+    const css = statedCss();
+    const at = css.indexOf('body.is-window-inactive');
     if (at < 0) throw new Error('no rule in the stylesheet answers a window that went behind another app');
     const opened = css.indexOf('{', at);
-    return css.slice(opened + 1, css.indexOf('}', opened)).replace(/\/\*[\s\S]*?\*\//g, '');
+    return css
+      .slice(opened + 1, css.indexOf('}', opened))
+      .split(';')
+      .map((line) => line.trim())
+      .filter(Boolean);
   }
 
-  /** The declarations of the rule that quiets the minimap's clone of the document, as the stylesheet spells them. */
-  function minimapInkBody() {
-    const css = readingCss();
-    const at = css.indexOf('body.is-window-inactive .reader-minimap');
-    if (at < 0) throw new Error("nothing in the stylesheet quiets the rail's clone of the document, so it stays a bright picture beside quiet chrome");
-    const opened = css.indexOf('{', at);
-    return css.slice(opened + 1, css.indexOf('}', opened)).replace(/\/\*[\s\S]*?\*\//g, '');
-  }
-
-  /** Every color name a family is drawn from, out of the sections asked for, in the file that is the list of them. */
-  function colorNames(wanted) {
-    const page = readFileSync(join(root, 'design', 'colors.md'), 'utf8');
-    const names = [];
-    for (const heading of wanted) {
-      const at = page.indexOf(`${heading}\n`);
-      if (at < 0) throw new Error(`design/colors.md no longer has a ${heading} section, so this check is reading the wrong list`);
-      const end = page.indexOf('\n## ', at + heading.length);
-      const section = page.slice(at, end < 0 ? page.length : end);
-      for (const line of section.split('\n')) {
-        const row = /^\| ([a-z][a-z0-9-]*) +\|/.exec(line);
-        if (row) names.push(row[1]);
-      }
-    }
-    if (names.length < 2) throw new Error(`only ${names.length} color names read out of ${wanted.join(', ')} in design/colors.md, so the table shape moved under this check`);
-    return names;
-  }
-
-  check('the inactive state paints nothing and only takes the color out', () => {
+  check('an inactive window steps back as one thing, and one filter is the whole of it', () => {
+    const css = statedCss();
     const selector = inactiveSelector();
-    const body = inactiveBody();
+    const declarations = inactiveBody();
 
-    // `opacity` composites the bar's own shade with the page behind it, so the top of the window reads as see-through and every tab edge, divider and panel seam that shade covers comes out as a line; `filter: grayscale` takes a tinted family's shade off the bar and leaves the card beside it tinted. Neither may come back, and the general form of the rule is what holds it: a declaration here is a custom property or it is painting something.
-    for (const line of body.split(';')) {
-      const declaration = line.trim();
-      if (!declaration) continue;
-      if (!declaration.startsWith('--lt-')) {
-        throw new Error(`the inactive rule paints instead of re-pointing a token, which is what made the window see-through and drew lines across it: ${declaration}`);
+    // One rule, never a treatment beside a list of hand-kept tokens. Two of those is what made the leaf and the rail read as different effects, and a list can never fade at all: a custom property is not an animatable type, so it jumps where a filter interpolates.
+    const hangingOff = css.split('body.is-window-inactive').length - 1;
+    if (hangingOff !== 1) {
+      throw new Error(`${hangingOff} rules hang off body.is-window-inactive, and one filter over the whole window is the whole state`);
+    }
+
+    // One declaration, and its two amounts spent from the rows in design/tokens.md rather than typed in here, where nothing measures either against the floor they were chosen for.
+    const wanted = 'filter: saturate(var(--lt-inactive-saturation)) contrast(var(--lt-inactive-contrast))';
+    if (declarations.length !== 1 || declarations[0] !== wanted) {
+      throw new Error(`the inactive rule says ${declarations.join('; ') || 'nothing'} rather than ${wanted}`);
+    }
+
+    // `opacity` composites the bar's own shade with the page behind it, so the top of the window reads as see-through and every tab edge, divider and panel seam that shade covers comes out as a line; `grayscale` takes a tinted family's shade off the bar and leaves the card beside it tinted. Neither may come back, in the selector or in the body.
+    for (const refused of ['opacity', 'grayscale']) {
+      if (selector.includes(refused) || declarations.join(';').includes(refused)) {
+        throw new Error(`the inactive state reaches for ${refused}, which is what made the window read as see-through and drew lines across it`);
       }
     }
 
-    // A stacking context on the pane severs its corner arc, and nothing in the rule makes one, so both roots are named whole and the arc is out of this rule's reach entirely.
-    if (selector.includes('> *')) {
-      throw new Error(`the inactive rule still reaches a root's children, which nothing here needs any more: ${selector}`);
-    }
-    for (const named of ['.app-bar', '.library-pane']) {
-      if (!selector.includes(named)) throw new Error(`the inactive rule no longer names ${named}: ${selector}`);
-    }
-    if (readingCss().includes('transition: filter var(--lt-duration-120)')) {
-      throw new Error('the stylesheet still times the inactive state as a filter, and the state no longer has one');
-    }
-
-    // The document is what a reader came for, and the two print boxes are what an exported or printed page is rendered out of — quieting one of those would bake an inactive window into a file somebody keeps. The scrim carries no color and its whole job is how much document shows through.
-    for (const kept of ['.document-body', '.document-code', '.lt-backdrop', '.diagram-print', '.picture-print']) {
-      if (selector.includes(kept)) {
-        throw new Error(`the inactive rule reaches ${kept}, which must stay exactly as it was: ${selector}`);
+    // A printed or exported page is rendered out of children of this same surface, so a guard missing here bakes an inactive window into a file somebody keeps.
+    for (const guard of [':not(.leaf-paper)', ':not(.leaf-paper-diagram)', ':not(.leaf-paper-picture)']) {
+      if (!selector.includes(guard)) {
+        throw new Error(`the inactive rule is missing ${guard}, so it reaches a page being printed or exported: ${selector}`);
       }
     }
   });
 
-  check('every color a chrome family is drawn from either goes gray or is written down as staying', () => {
-    const body = inactiveBody();
-
-    // Re-pointed, because each one is a hue or the ink the frame draws with: the text and every `currentColor` icon, the leaf and the pressed tool, a matched hit, the danger button, the warning and success marks, a finished bar, a link in the interface, the ring around whatever holds the keyboard, a hovered chrome button, and the minimap's viewport box. Both halves of the action color are here — the fill and the ink — or the logomark keeps its color while the chrome around it steps back.
-    const grayed = [
-      'foreground', 'border-strong', 'hover-tint',
-      'primary', 'primary-ink', 'accent', 'danger', 'warning', 'success', 'done', 'link', 'link-hover', 'focus-ring',
-      'navigation-button-hover-background', 'minimap-viewport-border', 'minimap-viewport-background',
-    ];
-    // Left exactly as the family wrote it, each for its own reason: the window and its chrome surfaces, because a state that moves a background is the state the owner threw out; the ordinary hairline, because every neutral below it is a surface and a line drawn in one of those is a line gone, which changes the frame's shape rather than quieting it; the quiet-text color, because it is what everything else here is re-pointed at, and every neutral under it is unreadable as text; every `-foreground`, because it is what prints on a fill and graying both takes the contrast with them; the selection pair, because selected text stays selected; and the home screen's own rows and a disabled button's grays, which carry no hue to take.
-    const kept = [
-      'background', 'surface', 'surface-elevated', 'surface-muted', 'surface-sunken',
-      'border', 'muted-foreground',
-      'primary-foreground', 'accent-foreground', 'danger-foreground', 'success-foreground',
-      'focus-selection-background', 'focus-selection-foreground',
-      'navigation-button-disabled-background', 'navigation-button-disabled-foreground',
-      'navigation-recent-border', 'navigation-recent-item-foreground', 'navigation-recent-item-hover-foreground',
-    ];
-
-    const undecided = colorNames(['## Core', '## Navigation', '## Minimap']).filter((name) => !grayed.includes(name) && !kept.includes(name));
-    if (undecided.length) {
-      throw new Error(`${undecided.join(', ')} is a color the chrome is drawn from that an inactive window neither grays nor keeps — re-point it in base.css or say here why it stays`);
-    }
-    const missing = grayed.filter((name) => !body.includes(`--lt-${name}:`));
-    if (missing.length) {
-      throw new Error(`${missing.join(', ')} still carries its hue on an inactive window`);
-    }
-    const wrong = kept.filter((name) => new RegExp(`--lt-${name}:`).test(body));
-    if (wrong.length) {
-      throw new Error(`${wrong.join(', ')} is moved by the inactive state, and moving one of those is what made the window read as see-through`);
-    }
-  });
-
-  check("the rail's clone of the document goes quiet with the chrome, and its paper does not", () => {
-    const body = minimapInkBody();
-
-    // Every declaration here is a custom property too: the rail is chrome and the state paints no more of it than it paints of the bar.
-    for (const line of body.split(';')) {
-      const declaration = line.trim();
-      if (!declaration) continue;
-      if (!declaration.startsWith('--lt-')) {
-        throw new Error(`the rail's rule paints instead of re-pointing a token: ${declaration}`);
-      }
-    }
-
-    // Ink, all of it: the miniature is the largest block of text the frame holds, and left out it is a bright picture beside quiet chrome.
-    const grayed = [
-      'markdown-foreground', 'markdown-heading', 'markdown-heading-2', 'markdown-heading-3', 'markdown-heading-4',
-      'markdown-heading-5', 'markdown-heading-6', 'markdown-rule', 'markdown-link', 'markdown-blockquote-border',
-      'markdown-blockquote-foreground', 'markdown-alert-note', 'markdown-alert-tip', 'markdown-alert-important',
-      'markdown-alert-warning', 'markdown-alert-caution', 'markdown-badge-foreground', 'markdown-table-border',
-      'markdown-thematic-break', 'markdown-keyboard-border',
-      'editor-inline-code-foreground', 'editor-code-foreground', 'editor-code-border',
-      'syntax-foreground', 'syntax-comment', 'syntax-keyword', 'syntax-string', 'syntax-number', 'syntax-function',
-      'syntax-variable', 'syntax-type', 'syntax-operator', 'syntax-punctuation',
-      'syntax-inserted', 'syntax-deleted', 'syntax-changed',
-    ];
-    // Every paper, fill and tint the miniature is drawn on, left exactly where the family put it: moving one of those is moving a background, which is the thing this whole state is written not to do. The selection pairs stay for the same reason selected text stays selected.
-    const kept = [
-      'markdown-background', 'markdown-badge-background', 'markdown-table-header-background',
-      'markdown-table-row-background',
-      'markdown-math-inline-background', 'markdown-keyboard-background',
-      'editor-inline-code-background', 'editor-code-background',
-      'editor-code-selection-background', 'editor-code-selection-foreground',
-      'syntax-background', 'syntax-inserted-background', 'syntax-deleted-background', 'syntax-changed-background',
-    ];
-
-    const undecided = colorNames(['## Document', '## Code', '## Syntax']).filter((name) => !grayed.includes(name) && !kept.includes(name));
-    if (undecided.length) {
-      throw new Error(`${undecided.join(', ')} is a color the rail's miniature is drawn from that an inactive window neither grays nor keeps — re-point it in base.css or say here why it stays`);
-    }
-    const missing = grayed.filter((name) => !body.includes(`--lt-${name}:`));
-    if (missing.length) {
-      throw new Error(`${missing.join(', ')} is still drawn at full strength on the rail of an inactive window`);
-    }
-    const wrong = kept.filter((name) => new RegExp(`--lt-${name}:`).test(body));
-    if (wrong.length) {
-      throw new Error(`${wrong.join(', ')} is a background the rail's rule moves, and this state moves no background anywhere`);
-    }
-  });
-
-  check('nothing the page is built with can be dropped in and quietly stay bright', () => {
+  check('the one filter is over the app itself, so nothing can be added beside it and stay vivid', () => {
     const selector = inactiveSelector();
     const { byId } = fakePage();
     const surface = byId.get('appSurface');
     if (!surface || !surface.children.length) throw new Error('the app surface holds nothing, so this check is reading the wrong element');
 
-    // The library shell holds the pane the rule names, and every chrome descendant under it inherits the re-pointed tokens from there.
-    const throughChildren = ['app-bar', 'library-shell'];
-    // Out on purpose, each for its own reason: the card stands before the page is drawn at all, the scrims carry no color, and the two print boxes are what a saved page is rendered out of.
-    const leftBright = ['startup-card', 'lt-backdrop', 'diagram-print', 'picture-print'];
-
-    const missed = [];
-    for (const child of surface.children) {
-      const classes = String(child.className || '').split(/\s+/).filter(Boolean);
-      if (!classes.length) {
-        missed.push(child.id || child.tagName);
-        continue;
-      }
-      if (classes.some((name) => throughChildren.includes(name) || leftBright.includes(name))) continue;
-      if (classes.some((name) => selector.includes(`.${name}`))) continue;
-      missed.push(child.id || classes.join('.'));
+    // The state names one element and it is the app itself. Naming anything narrower is how the chrome, the document and the rail came to be three treatments; naming something outside it would leave a part of the window at full color with nothing saying so.
+    const painted = selector.slice(selector.lastIndexOf(' ') + 1);
+    if (painted !== '.app-surface') {
+      throw new Error(`the inactive rule paints ${painted} rather than the app surface alone: ${selector}`);
     }
-    if (missed.length) {
-      throw new Error(`${missed.join(', ')} sits over the app and neither grays with the rest of it nor is written down as staying bright — add it to the inactive rule in base.css or say here why it is out`);
+
+    // And everything the page is built with really is inside it, or the rule reaches all of the window only on paper.
+    if (!surface.children.some((child) => String(child.className || '').split(/\s+/).includes('app-bar'))) {
+      throw new Error('the app bar is not inside the app surface, so the one filter does not reach the chrome');
     }
   });
 

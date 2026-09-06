@@ -28,7 +28,7 @@ export function run() {
       throw new Error('the full-window table header no longer borrows the app bar drag rule');
     }
     const css = readingCss();
-    for (const rule of ['.table-sheet-grid th,', 'border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);', 'background: var(--lt-markdown-table-header-background);', '.table-sheet-grid tr:nth-child(2n) td']) {
+    for (const rule of ['.table-sheet-grid th,', 'border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);', 'background: var(--lt-markdown-table-row-background);', 'color: var(--lt-markdown-heading);', 'font-weight: var(--lt-weight-600);', '.table-sheet-grid tr:nth-child(2n) td']) {
       if (!css.includes(rule)) throw new Error(`the table sheet no longer carries the page table treatment: ${rule}`);
     }
     // The copy takes the room the sheet has, never its content's, and only `anywhere` shrinks a column — `break-word` reads as the fix and never enters a column's smallest width.

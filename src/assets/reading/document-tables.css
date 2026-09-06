@@ -228,7 +228,7 @@
   padding: 0.375em 0.8125em;
 }
 .document-body th {
-  background: var(--lt-markdown-table-header-background);
+  background: var(--lt-markdown-table-row-background);
   color: var(--lt-markdown-heading);
   font-weight: var(--lt-weight-600);
 }

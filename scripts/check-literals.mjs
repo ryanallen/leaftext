@@ -3,7 +3,7 @@
 //
 //   node scripts/check-literals.mjs   report every hit and exit non-zero (`just verify`)
 //
-// What is checked is the *categories* phase 6 tokenized: color, spacing, interface text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow and z-index. Three things are deliberately not:
+// What is checked is the *categories* phase 6 tokenized: color, spacing, interface text size, weight, stroke, line height, letter spacing, opacity, duration, easing, shadow, filter strength and z-index. Three things are deliberately not:
 //
 //   - Widths, heights and positional offsets. They are one component's geometry, not
 //     a scale — 56 distinct values, each used once. A token per one-off buys a name
@@ -90,6 +90,12 @@ const RULES = [
     (value) => /(?<![\w.-])\d*\.?\d+m?s\b/.test(value) || /(?<![\w-])(?:ease(?:-in|-out|-in-out)?|linear|cubic-bezier)(?![\w-])/.test(value),
   ],
   ['a shadow', /box-shadow\s*:\s*([^;]+);/g, (value) => !/^(?:var\(|none|inherit)/.test(value.trim())],
+  [
+    // How hard a filter is spent. A number typed into one of these is a strength nobody chose, and the inactive window's two are measured against a floor written down beside them. `filter: none` and a filter written from `var()`s are the two ways past it; the lookbehind keeps `backdrop-filter` out, which nothing in this stylesheet uses.
+    'a filter amount',
+    /(?<![-\w])filter\s*:\s*([^;]+);/g,
+    (value) => /\b(?:saturate|contrast|brightness|grayscale|sepia|invert|opacity|blur|hue-rotate)\(\s*[\d.]/.test(value),
+  ],
   ['a layer', /z-index\s*:\s*(\d+)\s*;/g, (value) => Number(value) >= 20],
 ];
 
@@ -181,6 +187,10 @@ const PROPERTY_FIXTURE = [
   ['.a {\n  font: inherit;\n}', 0, 'font: inherit'],
   ['.a {\n  font-size: 13px;\n}', 1, 'a longhand size typed in'],
   ['.a {\n  --app-font: sans-serif;\n}', 0, 'the font custom property'],
+  ['.a {\n  filter: saturate(0.5) contrast(0.9);\n}', 1, 'a filter strength typed in'],
+  ['.a {\n  filter: brightness(1.08);\n}', 1, 'a single filter strength typed in'],
+  ['.a {\n  filter: saturate(var(--lt-inactive-saturation)) contrast(var(--lt-inactive-contrast));\n}', 0, 'a filter spent from tokens'],
+  ['.a {\n  filter: var(--lt-grain-shadow-curve);\n}', 0, 'a whole filter recipe held in one token'],
 ];
 for (const [source, want, label] of PROPERTY_FIXTURE) {
   const got = propertyHits(strip(source)).length;
