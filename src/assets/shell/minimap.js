@@ -28,8 +28,6 @@ var minimapBuiltSlack;
 var minimapPendingSlack;
 // The quiet turn a narrow rebuild books behind itself to put the slack back.
 var minimapWidenTimer;
-// One rebuild the rail owes itself, withheld while a hand is on the wheel or the position box. The whole of a rebuild is the browser laying a fresh slice out, and on a frame the gesture is moving that is the stutter the reader feels — so the standing thumbnail is left up and the debt is paid once the gesture stops, at the position it stopped at. One answer and not one a movement: a fling passes hundreds of positions and only the last of them is looked at.
-var minimapPreviewOwed;
 // Rail geometry, cached for the scroll path: scrolling changes none of it, and re-measuring per wheel click forces a fresh layout of the whole document.
 var minimapScrollMetrics;
 // The last position the column's scroll wrote onto the reader. The two mirror each other, so without it the reader's answering event would carry the column straight back — and a plain flag cannot do the job: a scroll event lands a frame after the write that caused it, by which time the gliding column has moved again and would spend the flag on its own real move. A value is the whole of what has to be recognized.
@@ -66,7 +64,6 @@ function initializeMinimapState() {
   minimapBuiltSlack = -1;
   minimapPendingSlack = 0;
   minimapWidenTimer = 0;
-  minimapPreviewOwed = false;
   minimapScrollMetrics = null;
   minimapMirroredScrollTop = -1;
   minimapMirroredColumnScrollTop = -1;
@@ -334,9 +331,9 @@ function bindDocumentMinimap() {
     const minimap = track.closest('.document-minimap');
     if (minimap) {
       placeMinimapViewport(minimap, metrics, boundedScrollTop);
-      // A drag can cross the whole document, so the window is left behind almost at once. Laying the next slice out here is 12 to 63ms on the frame the hand is moving, and the drag crosses every position between its ends — so the debt is remembered and endDrag pays it where the box was let go.
+      // A drag can cross the whole document, so the window is left behind almost at once. Waiting for the release left the track empty for 95 frames of one drag, so the slice is laid out on the moving frame — asked for a quarter of a screen either side, which is 19.9ms of layout against the 31ms a whole screen costs here.
       if (!minimapWindowCoversView(metrics, boundedScrollTop)) {
-        noteMinimapPreviewOwed();
+        scheduleMinimapPreviewUpdate(MINIMAP_GESTURE_SLACK);
       }
     } else {
       updateMinimapViewport();
@@ -873,12 +870,12 @@ function resumeMinimapPreview() {
 }
 // Extra document to keep either side of the visible slice, as a multiple of it. One each way means a whole rail's worth of scrolling before a rebuild.
 const MINIMAP_WINDOW_SLACK = 1;
+// What a rebuild asks for while the hand is still moving. A rebuild is priced by the rows the browser lays out, so the cost rises with the slack while the number of rebuilds falls with it: a whole screen is 31ms a rebuild inside a drag, and none at all is 63 rebuilds across a 40,000px scroll for a 90th-percentile frame three times the shipped one. A quarter is where both hold — 13 rebuilds across that scroll at the shipped frame profile, and 19.9ms a rebuild in the drag.
+const MINIMAP_GESTURE_SLACK = 0.25;
 // How long the rail waits for the typing to stop before it puts the slack back. Longer than a gap between two keystrokes, or the widening lands in the middle of a sentence and is thrown away by the next word.
 const MINIMAP_WIDEN_REST_MS = 400;
 // How much slack the rebuild is asked for, rather than a constant it reads where it stands: the whole of a rebuild is the browser laying the slice out, and that falls with the rows in it. Three screens is 13.7ms on a long config and one screen about 5, so a change to the words asks for none of it.
 function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {
-  // Whatever raised it, a rebuild going ahead is the rebuild a withheld gesture was owed.
-  minimapPreviewOwed = false;
   minimapPendingSlack = Math.max(minimapPendingSlack, slack);
   if (minimapPreviewFrame || minimapPreviewHolds) {
     return;
@@ -889,10 +886,6 @@ function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {
     minimapPendingSlack = 0;
     updateDocumentMinimapPreview(asked);
   });
-}
-// A gesture left the built window. Remember that one rebuild is owed rather than starting it here: the reader is holding the wheel or the box, and the slice this would lay out is left behind by the next movement anyway.
-function noteMinimapPreviewOwed() {
-  minimapPreviewOwed = true;
 }
 function cancelMinimapWiden() {
   if (minimapWidenTimer) {
@@ -1396,9 +1389,11 @@ function updateMinimapViewport() {
   }
   const metrics = measureDocumentMinimap(track);
   placeMinimapViewport(minimap, metrics, null);
-  // A jump (a rail click, a drag landing, a restored anchor) can leave the slice the clone was built for; rebuild for where the rail now points. This is also where a gesture's withheld rebuild is paid — settleReaderScroll and endDrag both end here, so the wheel and the position box need no timer of their own. The debt is asked as well as the coverage, because the gesture answered coverage off the cached scroll geometry and this reads it fresh.
-  if (minimapPreviewOwed || !minimapWindowCoversView(metrics, metrics.scrollTop)) {
-    scheduleMinimapPreviewUpdate();
+  // A jump (a rail click, a drag landing, a restored anchor) can leave the slice the clone was built for; rebuild for where the rail now points, answered off a fresh measure rather than the cached scroll geometry.
+  //
+  // Every rebuild ends here, so this is the third door a gesture's ask comes through and it has to be as narrow as the other two: a rebuild takes long enough that the hand is usually past the slice it just laid out, and answering that with a rest's whole screen put a 129.2ms layout back on a moving frame. The settle and the drag's release both drop their flag before they call this, so the slice for where a gesture stopped is still the full one.
+  if (!minimapWindowCoversView(metrics, metrics.scrollTop)) {
+    scheduleMinimapPreviewUpdate(readerScrolling || minimapDragging ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
   }
 }
 // The scroll handler's version: cached geometry and CSS-variable writes only, so a wheel click never forces a layout. A scroll past the clone's window schedules a rebuild off this path, leaving the existing clone up until it lands.
@@ -1415,12 +1410,8 @@ function updateMinimapViewportFromScroll() {
   const scrollTop = app.scrollTop;
   placeMinimapViewport(minimap, metrics, scrollTop);
   if (!minimapWindowCoversView(metrics, scrollTop)) {
-    // A fling leaves the window on its first notches and would rebuild on every one of them after that — 120 to 184ms a rebuild on a long document, five of them in one drive. The debt waits for settleReaderScroll; a scroll that has already stopped rebuilds where it stands.
-    if (readerScrolling) {
-      noteMinimapPreviewOwed();
-    } else {
-      scheduleMinimapPreviewUpdate();
-    }
+    // A fling leaves the window on its first notches, and withholding the rebuild until the wheel stopped left the track holding the position box and nothing else for every frame of a 40,000px scroll. So the rebuild happens on the moving frame, asked for a quarter of a screen either side rather than the whole one a rest asks for: a fifth of the layout, and the widening turn behind it puts the rest back once the hand stops.
+    scheduleMinimapPreviewUpdate(readerScrolling ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
   }
 }
 // Place the viewport box and, on tall documents, slide the thumbnail inside the rail. Position is driven by the exact reader scroll and the box height is the viewport at thumbnail scale, so it tracks the visible region at any length. scrollTopOverride pins to a specific offset (a drag); null reads live scrollTop. Mirrors site/minimap.js's updateViewport().
@@ -1477,8 +1468,6 @@ function cancelReaderScrollSettle() {
     readerScrollSettleTimer = 0;
   }
   readerScrolling = false;
-  // The settle that was going to pay the withheld rebuild has gone with the document it was scrolling, so the debt goes too — paid on the next page it would clone a slice for a position the reader is no longer at.
-  minimapPreviewOwed = false;
 }
 // A wheel over the rail moves the page the way a wheel over the page moves it, because the rail's column is a scroller and the web view is the one doing the scrolling. Nothing of ours is on that path: a notch answered by writing the reader's position outright lands as one whole jump where the page glides.
 //

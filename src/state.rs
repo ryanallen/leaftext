@@ -16,7 +16,7 @@ pub struct RecentFiles {
 
 impl RecentFiles {
     pub fn record(&mut self, path: PathBuf) {
-        let path = normalize_recent_path(&path);
+        let path = normalize_document_path(&path);
         self.files.retain(|existing| existing != &path);
         self.files.insert(0, path);
         self.files.truncate(MAX_RECENT_FILES);
@@ -24,7 +24,7 @@ impl RecentFiles {
 
     /// Drop `path` from the list (e.g. it no longer exists, so it should stop being offered). Returns whether it was present.
     pub fn forget(&mut self, path: &Path) -> bool {
-        let path = normalize_recent_path(path);
+        let path = normalize_document_path(path);
         let before = self.files.len();
         self.files.retain(|existing| existing != &path);
         before != self.files.len()
@@ -34,7 +34,7 @@ impl RecentFiles {
     pub(crate) fn normalize_entries(&mut self) {
         let mut normalized: Vec<PathBuf> = Vec::with_capacity(self.files.len());
         for path in self.files.drain(..) {
-            let path = normalize_recent_path(&path);
+            let path = normalize_document_path(&path);
             if !normalized.contains(&path) {
                 normalized.push(path);
             }
@@ -72,7 +72,7 @@ impl Favorites {
     /// Favorite `favorite`, at the end of the list. Returns whether it was added; marking something twice is not an error and never moves it.
     pub fn add(&mut self, favorite: Favorite) -> bool {
         let favorite = Favorite {
-            path: normalize_recent_path(&favorite.path),
+            path: normalize_document_path(&favorite.path),
             ..favorite
         };
         if self.entries.iter().any(|one| one.path == favorite.path) {
@@ -84,14 +84,14 @@ impl Favorites {
 
     /// Unfavorite `path`. Returns whether it was there, so the save is skipped when nothing changed.
     pub fn remove(&mut self, path: &Path) -> bool {
-        let path = normalize_recent_path(path);
+        let path = normalize_document_path(path);
         let before = self.entries.len();
         self.entries.retain(|one| one.path != path);
         before != self.entries.len()
     }
 
     pub fn contains(&self, path: &Path) -> bool {
-        let path = normalize_recent_path(path);
+        let path = normalize_document_path(path);
         self.entries.iter().any(|one| one.path == path)
     }
 
@@ -107,8 +107,8 @@ impl Favorites {
 
     /// Point the favorite at `from` at `to`, keeping its place in the list. Returns whether `from` was there — a path the list does not hold changes nothing, so an answer about a row that has since been unfavorited cannot put one back. `remove` then `add` would land it at the end instead, which loses the order the user set. The vault is the registry's answer about the new path, not the old entry's: a file that really moved to another vault belongs to that vault's group.
     pub fn repoint(&mut self, from: &Path, to: &Path, vault_id: Option<i64>) -> bool {
-        let from = normalize_recent_path(from);
-        let to = normalize_recent_path(to);
+        let from = normalize_document_path(from);
+        let to = normalize_document_path(to);
         let Some(at) = self.entries.iter().position(|one| one.path == from) else {
             return false;
         };
@@ -129,13 +129,13 @@ impl Favorites {
 
     /// Move the favorite at `path` so it sits directly before the one at `before`, or last when there is none. Paths rather than positions, because the list the page draws is grouped by vault and can still be drawing a row that has left the store — so a drawn index is not one of these. Either path being absent changes nothing.
     pub fn move_before(&mut self, path: &Path, before: Option<&Path>) -> bool {
-        let path = normalize_recent_path(path);
+        let path = normalize_document_path(path);
         let Some(from) = self.entries.iter().position(|one| one.path == path) else {
             return false;
         };
         let to = match before {
             Some(before) => {
-                let before = normalize_recent_path(before);
+                let before = normalize_document_path(before);
                 let Some(at) = self.entries.iter().position(|one| one.path == before) else {
                     return false;
                 };
@@ -163,7 +163,7 @@ impl Favorites {
         let mut normalized: Vec<Favorite> = Vec::with_capacity(self.entries.len());
         for entry in self.entries.drain(..) {
             let entry = Favorite {
-                path: normalize_recent_path(&entry.path),
+                path: normalize_document_path(&entry.path),
                 ..entry
             };
             if !normalized.iter().any(|one| one.path == entry.path) {
@@ -174,8 +174,8 @@ impl Favorites {
     }
 }
 
-/// Resolve `.` and `..` in `path` lexically (not via the filesystem) so two spellings of the same file collapse to one entry in Recent or in the favorites. Lexical rather than canonicalized keeps the path human-readable (no `\\?\` prefix) and usable by OS file-reveal commands.
-fn normalize_recent_path(path: &Path) -> PathBuf {
+/// Resolve `.` and `..` in `path` lexically (not via the filesystem), and rebuild it with this platform's own separator, so two spellings of one file are one string everywhere the app compares paths. Recents, favorites and a tab's history all come through here, because the page decides whether a tab's heart is filled by comparing those strings exactly. Lexical rather than canonicalized keeps the path human-readable (no `\\\\?\\` prefix) and usable by OS file-reveal commands.
+pub fn normalize_document_path(path: &Path) -> PathBuf {
     use std::path::Component;
 
     let mut normalized = PathBuf::new();

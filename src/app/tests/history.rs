@@ -254,3 +254,22 @@ fn edit_buffer_belongs_to_one_document_and_reseeds_after_navigation() {
     let edit = tab.edit_buffer(&second, SourceText::utf8(String::new()));
     assert_eq!(edit.text(), "# Bee\n");
 }
+
+/// The page fills a tab's heart by comparing the tab path with a favorite exactly, so a document opened from the command line with forward slashes has to enter history spelled the way the favorite store keeps it.
+#[test]
+fn a_tab_records_the_same_path_spelling_as_a_favorite() {
+    let typed = PathBuf::from("docs/./01-features/04-minimap.md");
+
+    let mut history = DocumentHistory::default();
+    history.record(typed.clone());
+
+    let mut favorites = Favorites::default();
+    assert!(favorites.add(Favorite {
+        vault_id: None,
+        path: typed.clone(),
+        kind: FavoriteKind::Document,
+    }));
+
+    assert_eq!(history.current(), Some(&favorites.entries[0].path));
+    assert!(favorites.contains(history.current().expect("the visit just recorded")));
+}

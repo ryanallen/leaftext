@@ -374,7 +374,7 @@ export function run() {
             + 'minimapBuiltPreviewWidth = -1; minimapBuiltFrameWidth = -1; minimapBuiltRange = null;'
             + "minimapBuiltFirstRow = -1; minimapBuiltLastRow = -1; minimapBuiltRowPath = '';"
             + 'minimapBuiltSlack = -1; minimapPendingSlack = 0; minimapWidenTimer = 0;'
-            + 'minimapPreviewOwed = false; minimapDragging = false; minimapDragMetrics = null;'
+            + 'minimapDragging = false; minimapDragMetrics = null;'
             + 'minimapPointerId = null; minimapPointerOffsetY = null; readerScrolling = false;',
           booted,
         );
@@ -423,27 +423,38 @@ export function run() {
   });
 
 
-  // The rail withholding its rebuild for the length of a gesture, watched through what it schedules. Coverage is answered by a stand rather than the real comparison, because what is held here is when a rebuild is laid out and not which slice it picks; the schedule is watched through the shipped one, so a rebuild that is asked for still really happens.
+  // The rail rebuilding through a gesture, watched through what it asks for. Coverage is answered by a stand rather than the real comparison, because what is held here is when a rebuild is laid out and how wide, not which slice it picks; the schedule is watched through the shipped one, so a rebuild that is asked for still really happens.
   const railThroughAGesture = (geometry) => {
     const stand = railOverARowedDocument(geometry);
     const was = {
       covers: booted.minimapWindowCoversView,
       schedule: booted.scheduleMinimapPreviewUpdate,
+      build: booted.updateDocumentMinimapPreview,
     };
     const asks = [];
+    // What each rebuild that actually ran was asked for. The frame queue cannot answer this: placing the box and warming the thumbnail book frames of their own, so a count of frames counts those too.
+    const builds = [];
     const state = { covers: false };
     // The stand’s own restore, held before this one takes its name: put the page back the way it found it, then hand the rowed stand its own turn.
     const restoreStand = stand.restore;
-    booted.minimapWindowCoversView = () => state.covers;
+    // Held either as an answer — the coverage this check wants, whatever is on the track — or as the check's own comparison, for one that has to be answered off the slice really built.
+    booted.minimapWindowCoversView = (metrics, scrollTop) => (typeof state.covers === 'function' ? state.covers(metrics, scrollTop) : state.covers);
     booted.scheduleMinimapPreviewUpdate = (slack) => {
       asks.push(slack === undefined ? vm.runInContext('MINIMAP_WINDOW_SLACK', booted) : slack);
       return was.schedule(slack);
     };
+    booted.updateDocumentMinimapPreview = (slack) => {
+      builds.push(slack === undefined ? vm.runInContext('MINIMAP_WINDOW_SLACK', booted) : slack);
+      return was.build(slack);
+    };
     return Object.assign(stand, {
       asks,
+      builds,
       state,
-      owed: () => vm.runInContext('minimapPreviewOwed', booted),
+      // The shipped comparison, for a check whose coverage has to be the built slice's own answer rather than a flag.
+      reallyCovers: was.covers,
       frame: () => vm.runInContext('minimapPreviewFrame', booted),
+      gestureSlack: vm.runInContext('MINIMAP_GESTURE_SLACK', booted),
       // A wheel notch: the reader moves, the scroll listener has already said a gesture is running, and the rail answers on the frame behind it.
       notch: (scrollTop) => {
         vm.runInContext('app', booted).scrollTop = scrollTop;
@@ -454,53 +465,67 @@ export function run() {
       restore: () => {
         booted.minimapWindowCoversView = was.covers;
         booted.scheduleMinimapPreviewUpdate = was.schedule;
+        booted.updateDocumentMinimapPreview = was.build;
         restoreStand();
       },
     });
   };
 
-  // The whole of the fault, in the one place the reader feels it: a fling leaves the built window on its first notches and every notch after that laid a fresh slice out on the frame the wheel was on — five rebuilds of 120 to 184ms in one driven fling, and the worst frame gap 246ms. The standing thumbnail is left up instead and the rebuild waits for the wheel to stop.
-  check('a wheel out of the built window rebuilds nothing until the scroll settles', () => {
+  // The whole of the fault, in the one place the reader feels it: waiting for the wheel to stop left the track holding the position box and nothing beside it for all 399 frames of a 40,000px scroll. The slice is laid out on the moving frame now, narrow — a quarter of a screen either side is a fifth of the layout a rest asks for, which is what makes it affordable there.
+  check('a wheel out of the built window rebuilds where the wheel is, asking a quarter of a screen either side', () => {
     const stand = railThroughAGesture();
     try {
       stand.notch(400);
-      if (stand.asks.length !== 0) throw new Error(`the wheel was still turning and the rail asked for ${stand.asks.length} rebuilds`);
-      if (stand.frame() !== 0) throw new Error('the wheel was still turning and the rail booked a frame to rebuild on');
-      if (!stand.owed()) throw new Error('the rail left the built window and remembered no rebuild, so the settle has nothing to pay');
+      if (stand.asks.length !== 1) throw new Error(`the wheel left the built window and the rail asked for ${stand.asks.length} rebuilds rather than the one it draws with`);
+      if (stand.asks[0] !== stand.gestureSlack) throw new Error(`the moving wheel asked for ${stand.asks[0]} screens either side rather than the gesture's quarter`);
+      if (stand.gestureSlack >= 1) throw new Error('a gesture asks for as much as a rest does, so nothing here is narrow');
+      if (!stand.frame()) throw new Error('the rail asked for a rebuild and booked no frame to lay it out on');
+      stand.state.covers = true;
+      booted.__frames.drain();
+      if (stand.read('minimapBuiltSlack') !== stand.gestureSlack) throw new Error(`the moving wheel laid out a slice ${stand.read('minimapBuiltSlack')} screens wide rather than the quarter it asked for`);
 
+      // The wheel stops somewhere the narrow slice does not reach, which is where the full one is laid out.
+      stand.state.covers = false;
       booted.settleReaderScroll();
-      if (stand.asks.length !== 1) throw new Error(`the scroll settled and the rail asked for ${stand.asks.length} rebuilds rather than one`);
-      if (stand.asks[0] !== 1) throw new Error(`the settled rebuild asked for ${stand.asks[0]} screens either side rather than the full one`);
-      if (stand.owed()) throw new Error('the settle rebuilt and the rail still owes itself another');
+      if (stand.asks.length !== 2) throw new Error(`the scroll settled and the rail had asked for ${stand.asks.length} rebuilds rather than the gesture's and the settle's`);
+      if (stand.asks[1] !== 1) throw new Error(`the settled rebuild asked for ${stand.asks[1]} screens either side rather than the full one`);
     } finally {
       stand.restore();
     }
   });
 
-  // A fling passes hundreds of positions and only the last of them is looked at, so the debt is one answer rather than one a movement. The settle then reads where the scroll actually stopped: a rebuild kept per position would clone a slice for ground the reader has already gone past.
-  check('a fling of notches leaves one owed rebuild, and it is built for where the scroll stopped', () => {
+  // A fling passes hundreds of positions and lays out none of them: three notches inside one frame ask three times and the frame the rail booked lays out the last of them, so the reader is never shown a slice they have already gone past. The narrow ask is what makes that affordable — the whole screen a rest asks for is five times the layout on a frame the wheel is on.
+  check('a fling of notches lays out one narrow slice, for where the scroll got to', () => {
     const stand = railThroughAGesture();
     try {
       stand.notch(200);
       stand.notch(700);
       stand.notch(1300);
-      if (stand.asks.length !== 0) throw new Error(`three notches asked for ${stand.asks.length} rebuilds`);
-      if (!stand.owed()) throw new Error('three notches out of the window and the rail owes itself nothing');
+      if (stand.asks.length !== 3) throw new Error(`three notches out of the window asked for ${stand.asks.length} rebuilds`);
+      const wide = stand.asks.filter((slack) => slack !== stand.gestureSlack);
+      if (wide.length) throw new Error(`a notch asked for ${wide.join(', ')} screens either side rather than the gesture's quarter`);
+      // The slice the frame lays out holds where the fling got to, which is what the built rail then answers.
+      stand.state.covers = true;
+      booted.__frames.drain();
+      if (stand.builds.length !== 1) throw new Error(`three notches inside one frame laid ${stand.builds.length} slices out rather than the one they coalesce into`);
+      if (stand.builds[0] !== stand.gestureSlack) throw new Error(`the fling's one rebuild ran at ${stand.builds[0]} screens either side rather than the gesture's quarter`);
+      // A quarter either side of the 700px the track shows is 175px, so the slice starts at 1,125 — row 56 — where a whole screen either side would reach back to row 30.
+      const built = [stand.read('minimapBuiltFirstRow'), stand.read('minimapBuiltLastRow')];
+      if (built[0] !== 56 || built[1] !== 99) throw new Error(`the fling's rebuild sliced rows ${built[0]} to ${built[1]} rather than the 56 to 99 a quarter either side of where it stopped reaches`);
+      if (stand.read('minimapBuiltSlack') !== stand.gestureSlack) throw new Error('the fling laid out a slice wider than the gesture asked for');
 
-      // The fresh measure at the settle can disagree with the cached geometry the gesture answered on, so the debt is asked as well as the coverage — or the withheld rebuild is dropped and the rail keeps a thumbnail of ground nobody is on.
+      // The fresh measure at the settle can disagree with the cached geometry the gesture answered on, so a settle over a covered view asks for nothing at all.
       stand.state.covers = true;
       booted.settleReaderScroll();
       booted.__frames.drain();
-      if (stand.asks.length !== 1) throw new Error(`the scroll settled and the rail asked for ${stand.asks.length} rebuilds rather than the one it owed`);
-      const built = [stand.read('minimapBuiltFirstRow'), stand.read('minimapBuiltLastRow')];
-      if (built[0] !== 30 || built[1] !== 99) throw new Error(`the settled rebuild sliced rows ${built[0]} to ${built[1]} rather than the 30 to 99 the foot of the document reaches`);
+      if (stand.asks.length !== 3) throw new Error('the scroll settled over a slice that already holds the reader and the rail rebuilt anyway');
     } finally {
       stand.restore();
     }
   });
 
-  // The owner's own gesture: one drag of the position box down the rail asked for nine rebuilds of 12 to 63ms, on the same pointer path the drag already refuses to re-measure on for exactly that reason. Held here through the real handlers, because what is proved is which of them pays.
-  check('a held position box rebuilds nothing until it is let go', () => {
+  // The owner's own gesture, and the one the fault was reported on: 95 frames of one drag with no part of the thumbnail on the track. Every move that leaves the built slice draws it again now, narrowly, and the release still lays the full slice out for where the box was let go. Held here through the real handlers, because what is proved is which of them asks and for how much.
+  check('a held position box rebuilds as it is dragged, asking a quarter of a screen either side', () => {
     // A track three times the box's height, so the box travels inside it rather than the thumbnail sliding under a full-height box — a drag has nothing to map a pointer through otherwise.
     const stand = railThroughAGesture({
       trackRect: { top: 0, bottom: 200, height: 200, width: 80 },
@@ -525,31 +550,106 @@ export function run() {
 
       press(pointer(10));
       for (let step = 20; step <= 100; step += 10) move(pointer(step));
-      if (stand.asks.length !== 0) throw new Error(`the box was still held and the rail asked for ${stand.asks.length} rebuilds`);
-      if (stand.frame() !== 0) throw new Error('the box was still held and the rail booked a frame to rebuild on');
-      if (!stand.owed()) throw new Error('the drag crossed the built window and remembered no rebuild');
+      // The press maps the pointer through too, so the ten asks are its own and the nine moves behind it.
+      if (stand.asks.length !== 10) throw new Error(`the box crossed the built window ten times and the rail asked for ${stand.asks.length} rebuilds`);
+      const wide = stand.asks.filter((slack) => slack !== stand.gestureSlack);
+      if (wide.length) throw new Error(`the held box asked for ${wide.join(', ')} screens either side rather than the gesture's quarter`);
+      if (!stand.frame()) throw new Error('the drag crossed the built window and the rail booked no frame to rebuild on');
       const landed = vm.runInContext('app', booted).scrollTop;
       if (landed !== 900) throw new Error(`the drag left the reader at ${landed} rather than the 900 the pointer maps to`);
 
       release(pointer(100));
-      if (stand.asks.length !== 1) throw new Error(`the box was let go and the rail asked for ${stand.asks.length} rebuilds rather than one`);
-      if (stand.asks[0] !== 1) throw new Error(`the released rebuild asked for ${stand.asks[0]} screens either side rather than the full one`);
-      if (stand.owed()) throw new Error('the release rebuilt and the rail still owes itself another');
+      if (stand.asks.length !== 11) throw new Error(`the box was let go and the rail asked for ${stand.asks.length - 10} rebuilds rather than the one full slice for where it landed`);
+      if (stand.asks[10] !== 1) throw new Error(`the released rebuild asked for ${stand.asks[10]} screens either side rather than the full one`);
     } finally {
       stand.restore();
     }
   });
 
-  // A render places the reader deliberately, and the settle that was going to pay the debt is dropped with the document it was scrolling. The debt goes with it: paid on the next page it would clone a slice for a position that page was never at.
-  check('a render drops the rebuild the outgoing document’s scroll was owed', () => {
+  // The narrow slice leaves the rail a quarter of a screen to scroll into either way, so the room a rest has has to come back on its own. Nothing is added for it: a clone built short of the full slack books the quiet turn already, the way the words landing do, and each movement pushes that turn back — so the wide slice lands once the hand stops rather than on a frame it is moving through.
+  check('a gesture’s narrow rebuild books the turn that widens it back', () => {
+    const stand = railThroughAGesture();
+    try {
+      // Coverage answered off the slice really built, so each notch past it is a real miss and the rebuild behind it a real rebuild.
+      stand.state.covers = (metrics, scrollTop) => !!stand.read('minimapBuiltRange') && stand.reallyCovers(metrics, scrollTop);
+      stand.notch(400);
+      booted.__frames.drain();
+      if (stand.read('minimapBuiltSlack') !== stand.gestureSlack) throw new Error('the gesture laid out a slice that was not narrow, so this proves nothing');
+      if (stand.turns.booked.length !== 1) throw new Error(`the narrow rebuild booked ${stand.turns.booked.length} quiet turns rather than the one that puts the room back`);
+
+      // A second notch rebuilds and books its own turn behind itself, dropping the one the notch before it left: the rail never widens onto a position the reader has gone past.
+      stand.notch(900);
+      booted.__frames.drain();
+      if (!stand.turns.cleared.includes(stand.turns.booked[0])) throw new Error('the second notch left the first notch’s turn standing, so the rail can widen onto where the gesture began');
+      if (stand.read('minimapWidenTimer') !== stand.turns.booked[stand.turns.booked.length - 1]) throw new Error('the rail is waiting on a turn that is not the one its last rebuild booked');
+
+      stand.turns.run.get(stand.read('minimapWidenTimer'))();
+      booted.__frames.drain();
+      if (stand.read('minimapBuiltSlack') !== 1) throw new Error(`the quiet turn came round and left the thumbnail ${stand.read('minimapBuiltSlack')} screens wide rather than the full one`);
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // Every rebuild ends by asking the coverage question again, and a rebuild takes long enough that the hand is usually past the slice it just laid out. Answered at a rest's whole screen that put a 129.2ms layout back on a moving frame — the exact cost the narrow ask exists to keep out of a gesture — so the closing ask is the gesture's own while a hand is still on the wheel or the box.
+  check('the ask a rebuild ends with is the gesture’s own while the hand is still moving', () => {
+    const stand = railThroughAGesture();
+    try {
+      stand.notch(400);
+      booted.__frames.drain();
+      // The slice that just landed does not hold where the hand has got to by now, which is what the closing ask answers.
+      const gestureAsks = stand.asks.slice(1);
+      if (!gestureAsks.length) throw new Error('the rebuild never asked again on its way out, so this proves nothing');
+      const wide = gestureAsks.filter((slack) => slack !== stand.gestureSlack);
+      if (wide.length) throw new Error(`a rebuild landing mid-gesture asked for ${wide.join(', ')} screens either side rather than the gesture's quarter`);
+
+      // The settle drops the flag before it asks, so the slice for where the gesture stopped is still the full one.
+      const before = stand.asks.length;
+      booted.settleReaderScroll();
+      if (stand.asks.length !== before + 1) throw new Error(`the scroll settled and the rail asked for ${stand.asks.length - before} rebuilds rather than the one full slice`);
+      if (stand.asks[before] !== 1) throw new Error(`the settled rebuild asked for ${stand.asks[before]} screens either side rather than the full one`);
+    } finally {
+      stand.restore();
+    }
+  });
+
+  // The same closing door, read through the flag the position box raises rather than the wheel's. It is the half of that condition nothing else here reaches, and the box is the gesture the fault was reported on: dropped, every rebuild a moving drag asks for hands a whole screen's layout straight back to the frame the hand is still crossing.
+  check('the ask a rebuild ends with is the gesture’s own while the position box is held', () => {
+    const stand = railThroughAGesture();
+    try {
+      // The box is down and the wheel is not turning, so the closing ask has only the drag's flag to read.
+      vm.runInContext('minimapDragging = true; readerScrolling = false;', booted);
+      stand.state.covers = false;
+      booted.updateDocumentMinimapPreview(stand.gestureSlack);
+      if (!stand.asks.length) throw new Error('the rebuild never asked again on its way out, so this proves nothing');
+      const wide = stand.asks.filter((slack) => slack !== stand.gestureSlack);
+      if (wide.length) throw new Error(`a rebuild landing under a held box asked for ${wide.join(', ')} screens either side rather than the gesture's quarter`);
+
+      // endDrag drops the flag before it calls the same door, so the slice for where the box was let go is the full one.
+      vm.runInContext('minimapDragging = false', booted);
+      const before = stand.asks.length;
+      booted.updateMinimapViewport();
+      if (stand.asks.length !== before + 1) throw new Error(`the box was let go and the rail asked for ${stand.asks.length - before} rebuilds rather than the one full slice`);
+      if (stand.asks[before] !== 1) throw new Error(`the rebuild for where the box landed asked for ${stand.asks[before]} screens either side rather than the full one`);
+    } finally {
+      vm.runInContext('minimapDragging = false', booted);
+      stand.restore();
+    }
+  });
+
+  // A render places the reader deliberately, so a slice the outgoing document's scroll asked for must never land on the new one — it would clone a picture of words that have gone, for a position this page was never at. The gesture's rebuild is a booked frame rather than a remembered debt now, so what drops it is the teardown canceling that frame.
+  check('a render drops the rebuild the outgoing document’s scroll asked for', () => {
     const stand = railThroughAGesture();
     try {
       stand.notch(700);
-      if (!stand.owed()) throw new Error('the notch out of the window left nothing owed to drop');
+      if (!stand.frame()) throw new Error('the notch out of the window booked no frame to drop');
+      if (stand.builds.length !== 0) throw new Error('the notch laid its slice out before the frame it booked came round');
 
-      booted.cancelReaderScrollSettle();
-      if (stand.owed()) throw new Error('the render took the document away and the rail still owes it a rebuild');
-      if (stand.asks.length !== 0) throw new Error('the render rebuilt the rail for a document that has gone');
+      booted.disconnectMinimapPreviewObservers();
+      if (stand.frame()) throw new Error('the render took the document away and the rail is still holding a frame to rebuild on');
+      if (stand.read('minimapPendingSlack') !== 0) throw new Error('the render took the document away and the rail is still holding what the gone document asked for');
+      booted.__frames.drain();
+      if (stand.builds.length !== 0) throw new Error('the frame the outgoing document booked laid its slice out anyway');
     } finally {
       stand.restore();
     }
@@ -571,10 +671,10 @@ export function run() {
     };
     return {
       metrics,
-      // Build the thumbnail for a reader sitting at this offset, the way a scroll past the built slice does.
-      buildAt: (offset) => {
+      // Build the thumbnail for a reader sitting at this offset, the way a scroll past the built slice does. Written with a slack, the way a gesture asks for one narrower than a rest's.
+      buildAt: (offset, slack) => {
         move(offset);
-        booted.updateDocumentMinimapPreview();
+        booted.updateDocumentMinimapPreview(slack);
       },
       coversAt: (offset) => {
         move(offset);
@@ -674,6 +774,30 @@ export function run() {
       // The block’s own head is 1,000. Anything above it and below the document’s own top is a carried row before the block.
       if (head.top <= 0 || head.top > 1000) throw new Error(`the slice says it starts at ${head.top}, which is neither the block’s own head nor a row above it`);
       if (stand.coversAt(0)) throw new Error('a reader at the top of the document was told the thumbnail already holds where they are');
+    } finally {
+      stand.restore();
+    }
+  });
+
+
+  // The same slice asked for the quarter a gesture asks for, which is where a fast scroll's rebuilds are now laid out. A narrow ask lands wholly inside a block this tall, so both ends of the slice are cut rows rather than the block's own edges — and the range still has to say where the clone really stops, or the rail is back to answering yes over ground it holds no row for.
+  check('a narrow slice cut inside a long block still says where its rows really stop', () => {
+    const stand = railOverABlockedDocument();
+    const quarter = vm.runInContext('MINIMAP_GESTURE_SLACK', booted);
+    try {
+      // Sitting mid-block: the 700px the track shows plus a quarter either side is 2,825 to 3,875, which is 3,000px inside a block spanning 1,000 to 6,000.
+      stand.buildAt(3000, quarter);
+      if (stand.read('minimapBuiltRowPath') !== '10') throw new Error(`the search stopped at path ${stand.read('minimapBuiltRowPath')} rather than descending into the block, so this proves nothing`);
+      if (stand.read('minimapBuiltSlack') !== quarter) throw new Error('the slice was not built for the quarter a gesture asks for, so this proves nothing');
+      const range = stand.read('minimapBuiltRange');
+      if (range.top <= 1000 || range.bottom >= 6000) throw new Error(`the narrow slice says it runs ${range.top} to ${range.bottom}, which claims ground outside the block it was cut from`);
+      if (range.top !== 2800 || range.bottom !== 3900) throw new Error(`the narrow slice says it runs ${range.top} to ${range.bottom} rather than the 2,800 to 3,900 its own cut lines stand at`);
+      const lines = [stand.read('minimapBuiltFirstRow'), stand.read('minimapBuiltLastRow')];
+      if (lines[0] !== 18 || lines[1] !== 28) throw new Error(`the narrow slice cut lines ${lines[0]} to ${lines[1]} rather than the 18 to 28 a quarter either side reaches`);
+      // The whole point of the number: a reader a screen further down is outside the narrow clone, so the rail asks for one that holds where they are.
+      if (stand.coversAt(4600)) throw new Error('a reader below the narrow slice was told the thumbnail already holds where they are');
+      if (stand.coversAt(1400)) throw new Error('a reader above the narrow slice was told the thumbnail already holds where they are');
+      if (!stand.coversAt(3000)) throw new Error('a reader inside the narrow slice was told to rebuild anyway');
     } finally {
       stand.restore();
     }

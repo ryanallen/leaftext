@@ -25,7 +25,7 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
     workspace.open_path(PathBuf::from("/docs/c.md"));
     assert_eq!(workspace.active, Some(2));
 
-    // Drag the first tab to the last slot: [b, c, a].
+    // Drag the first tab to the last slot: [b, c, a]. A tab wears the platform spelling a favorite is kept under, so the order is read against that rather than against the slashes typed here.
     assert!(workspace.move_tab(0, 2));
     let paths: Vec<String> = workspace
         .tab_summaries()
@@ -35,9 +35,15 @@ fn move_tab_reorders_and_keeps_active_document_selected() {
     assert_eq!(
         paths,
         vec![
-            PathBuf::from("/docs/b.md").display().to_string(),
-            PathBuf::from("/docs/c.md").display().to_string(),
-            PathBuf::from("/docs/a.md").display().to_string(),
+            normalize_document_path(Path::new("/docs/b.md"))
+                .display()
+                .to_string(),
+            normalize_document_path(Path::new("/docs/c.md"))
+                .display()
+                .to_string(),
+            normalize_document_path(Path::new("/docs/a.md"))
+                .display()
+                .to_string(),
         ]
     );
     // The active document (c) followed its slot from index 2 to index 1.

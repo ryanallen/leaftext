@@ -85,7 +85,9 @@ impl DocumentHistory {
         }
     }
 
+    /// Add a visit to this tab, under the one spelling the favorites and recents are kept in. Normalized here rather than at each caller because a path arrives from the command line spelled however it was typed, and the page decides whether the tab wears a filled heart by comparing that string with a favorite exactly.
     pub(crate) fn record(&mut self, path: PathBuf) {
+        let path = normalize_document_path(&path);
         if self.current() == Some(&path) {
             return;
         }
