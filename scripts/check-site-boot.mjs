@@ -839,7 +839,7 @@ const frontPage = await check('the front page boots', async () => {
 });
 
 await check('a stored theme the menu no longer offers comes back as one it does', async () => {
-  // The panel offers three names; a copy stored before it came down to three holds a fourth. `select.value` set to a name with no option behind it selects nothing at all, so the reader opens the panel to a Theme control showing an empty box and cannot tell what they are reading in. The stored key is rewritten on read instead, and this is a boot from a store that already holds the old name.
+  // A stored name with no option behind it selects nothing at all, so the reader opens the panel to an empty Theme control and cannot tell what they are reading in. The stored key is rewritten on read instead, and this boots from a store holding such a name.
   const store = storeStandIn();
   store.setItem('leaf.theme', 'dracula');
   const page = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES, { store });

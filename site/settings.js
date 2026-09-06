@@ -101,7 +101,7 @@ export function installSettings({ hasLibrary = false } = {}) {
   // Idempotent: the docs reader is a single-page app and may call this more than once across re-renders, but the menu should exist exactly once.
   if (document.getElementById('siteSettings')) return;
 
-  // A copy stored before the menu came down to three names holds one the panel no longer offers, and `select.value` set to a name with no option selects nothing at all — so the stored key is rewritten to the one the reader falls through to.
+  // A stored name the panel does not offer selects nothing at all when it is handed to `select.value`, so the reader opens to an empty Theme control. The stored key is rewritten to the name they fall through to instead.
   let themeMode = readStore(STORE_THEME, 'system');
   if (themeMode !== 'system' && themeMode !== 'light' && themeMode !== 'dark') {
     themeMode = 'system';

@@ -511,7 +511,7 @@ fn the_normal_width_library_toggle_rides_the_motion_rail() {
         "animation: leaf-library-open-arrive var(--lt-duration-260) var(--lt-ease);",
     );
     assert_contains(fade_in, "body.is-library-opening .library-scroll {");
-    // The pane owns that keyframe: the reader arrival fade it used to share is gone, so a name only the reader defined would animate nothing.
+    // The pane owns that keyframe outright, so a name only the reader defines would animate nothing.
     assert_contains(css, "@keyframes leaf-library-open-arrive {");
     assert!(!css.contains("leaf-document-arrive"));
 
