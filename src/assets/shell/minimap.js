@@ -331,7 +331,7 @@ function bindDocumentMinimap() {
     const minimap = track.closest('.document-minimap');
     if (minimap) {
       placeMinimapViewport(minimap, metrics, boundedScrollTop);
-      // A drag can cross the whole document, so the window is left behind almost at once. Waiting for the release left the track empty for 95 frames of one drag, so the slice is laid out on the moving frame — asked for a quarter of a screen either side, which is 19.9ms of layout against the 31ms a whole screen costs here.
+      // A drag can cross the whole document, so the window is left behind almost at once. Waiting for the release leaves the track empty for 95 frames of one drag, so the slice is laid out on the moving frame — asked for a quarter of a screen either side, which is 19.9ms of layout against the 31ms a whole screen costs here.
       if (!minimapWindowCoversView(metrics, boundedScrollTop)) {
         scheduleMinimapPreviewUpdate(MINIMAP_GESTURE_SLACK);
       }
@@ -1391,7 +1391,7 @@ function updateMinimapViewport() {
   placeMinimapViewport(minimap, metrics, null);
   // A jump (a rail click, a drag landing, a restored anchor) can leave the slice the clone was built for; rebuild for where the rail now points, answered off a fresh measure rather than the cached scroll geometry.
   //
-  // Every rebuild ends here, so this is the third door a gesture's ask comes through and it has to be as narrow as the other two: a rebuild takes long enough that the hand is usually past the slice it just laid out, and answering that with a rest's whole screen put a 129.2ms layout back on a moving frame. The settle and the drag's release both drop their flag before they call this, so the slice for where a gesture stopped is still the full one.
+  // Every rebuild ends here, so this is the third door a gesture's ask comes through and it has to be as narrow as the other two: a rebuild takes long enough that the hand is usually past the slice it just laid out, and answering that with a rest's whole screen puts a 129.2ms layout back on a moving frame. The settle and the drag's release both drop their flag before they call this, so the slice for where a gesture stopped is still the full one.
   if (!minimapWindowCoversView(metrics, metrics.scrollTop)) {
     scheduleMinimapPreviewUpdate(readerScrolling || minimapDragging ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
   }
@@ -1410,7 +1410,7 @@ function updateMinimapViewportFromScroll() {
   const scrollTop = app.scrollTop;
   placeMinimapViewport(minimap, metrics, scrollTop);
   if (!minimapWindowCoversView(metrics, scrollTop)) {
-    // A fling leaves the window on its first notches, and withholding the rebuild until the wheel stopped left the track holding the position box and nothing else for every frame of a 40,000px scroll. So the rebuild happens on the moving frame, asked for a quarter of a screen either side rather than the whole one a rest asks for: a fifth of the layout, and the widening turn behind it puts the rest back once the hand stops.
+    // A fling leaves the window on its first notches, and withholding the rebuild until the wheel stops leaves the track holding the position box and nothing else for every frame of a 40,000px scroll. So the rebuild happens on the moving frame, asked for a quarter of a screen either side rather than the whole one a rest asks for: a fifth of the layout, and the widening turn behind it puts the rest back once the hand stops.
     scheduleMinimapPreviewUpdate(readerScrolling ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
   }
 }

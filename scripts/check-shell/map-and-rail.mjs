@@ -591,7 +591,7 @@ export function run() {
     }
   });
 
-  // Every rebuild ends by asking the coverage question again, and a rebuild takes long enough that the hand is usually past the slice it just laid out. Answered at a rest's whole screen that put a 129.2ms layout back on a moving frame — the exact cost the narrow ask exists to keep out of a gesture — so the closing ask is the gesture's own while a hand is still on the wheel or the box.
+  // Every rebuild ends by asking the coverage question again, and a rebuild takes long enough that the hand is usually past the slice it just laid out. Answering it at a rest's whole screen puts a 129.2ms layout back on a moving frame — the exact cost the narrow ask exists to keep out of a gesture — so the closing ask is the gesture's own while a hand is still on the wheel or the box.
   check('the ask a rebuild ends with is the gesture’s own while the hand is still moving', () => {
     const stand = railThroughAGesture();
     try {
