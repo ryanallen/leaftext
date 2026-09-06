@@ -133,8 +133,6 @@ const A_NEUTRAL = /var\(--lt-(?:foreground|muted-foreground|background|surface|s
 // The other legal fill: the app's own dot lattice, for a target too big to take a flat tint. Only this exact shape counts, and only in the one ink a hover has — a lattice in the chrome's own grain, or any other image, is a strength nobody chose.
 const A_LATTICE = /^radial-gradient\(circle,\s*var\(--lt-grain-dot\)\s+0\s+0\.6px,\s*transparent\s+0\.7px\)$/;
 const A_HOVER_INK = 'var(--lt-grain-hover)';
-// The wash written as an image, which is how a control keeps a fill of its own underneath it — the destructive button's red.
-const A_WASH_IMAGE = /^linear-gradient\(var\(--lt-wash-hover\),\s*var\(--lt-wash-hover\)\)$/;
 
 function hoverFills(lines) {
   const out = [];
@@ -145,7 +143,6 @@ function hoverFills(lines) {
   let images = [];
   const close = () => {
     for (const image of images) {
-      if (A_WASH_IMAGE.test(image.value)) continue;
       if (!A_LATTICE.test(image.value)) out.push({ n: image.n, why: 'fills with an image of its own', value: image.value });
       else if (ink !== A_HOVER_INK) out.push({ n: image.n, why: 'draws the lattice in another ink', value: ink || 'no --lt-grain-dot of its own' });
     }
@@ -215,7 +212,7 @@ const FIXTURE = [
   ['.a:hover {\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 1, 'the lattice in whatever ink was inherited'],
   ['.a:hover {\n  --lt-grain-dot: var(--lt-grain-dark);\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 1, 'the lattice in the chrome ink'],
   ['.a:hover {\n  --lt-grain-dot: var(--lt-grain-hover);\n  background-image: linear-gradient(var(--lt-grain-dot), transparent);\n}', 1, 'an image that is not the lattice'],
-  ['.a:hover {\n  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));\n}', 0, 'the wash laid over a fill of its own'],
+  ['.a:hover {\n  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));\n}', 1, 'the wash written as an image, which arrives whole on the first frame'],
   ['.a {\n  --lt-grain-dot: var(--reader-surface-grain);\n  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 0.6px, transparent 0.7px);\n}', 0, 'a grained surface at rest'],
 ];
 for (const [source, want, label] of FIXTURE) {

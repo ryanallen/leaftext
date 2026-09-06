@@ -168,8 +168,8 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
   background: var(--lt-focus-selection-background);
   color: var(--lt-focus-selection-foreground);
 }
-:root[data-theme="dark"] {
-  /* Dark themes use a darker grain so the surface reads as speckled darker, not lighter — needs a heavier alpha than light mode to show against the already-dark surface. */
+:root[data-leaf-appearance="dark"] {
+  /* Dark appearances use a darker grain so the surface reads as speckled darker, not lighter — needs a heavier alpha than light mode to show against the already-dark surface. */
   --app-bar-grain: var(--lt-grain-dark);
   --library-header-grain: var(--lt-grain-dark-heavy);
   /* Light, not dark — the one grain in the app that goes the other way. This row is the darkest surface there is, so darkening it has nowhere to go: black at any alpha shifts `#0d1117` by ~10 and `#2a2d3d` by ~32, faint and uneven across families. Lifting instead moves every dark theme by a steady ~15. */

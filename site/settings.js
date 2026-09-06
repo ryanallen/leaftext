@@ -5,7 +5,7 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 // The web settings menu: a gear button pinned to the top-right of the page, just to the left of the minimap rail (never a full-width header above it). Opening it reveals a small panel — the same idea as the desktop app's settings menu, ported to the static site.
 //
 // It controls five things:
-//   - Theme: System / Light / Dark / Dracula (mirrors the desktop app).
+//   - Theme: System / Light / Dark (the appearance names the desktop app uses).
 //   - Speed Reader: quiet links, regularized emphasis, and lead anchors.
 //   - Show minimap: hide the side-rail overview and reclaim its space.
 //   - Line numbers: hide the gutter permalink number beside each block (the
@@ -18,7 +18,7 @@ import { applySpeedReaderIfEnabled } from './speed-reader.js';
 // adds the UI and keeps the stored choice and the live page in sync.
 // ---------------------------------------------------------------------------
 
-const STORE_THEME = 'leaf.theme'; // 'system' | 'light' | 'dark' | 'dracula'
+const STORE_THEME = 'leaf.theme'; // 'system' | 'light' | 'dark'
 const STORE_SPEED_READER = 'leaf.speedReader'; // '1' (on) | '0' (off)
 const STORE_MINIMAP = 'leaf.minimap'; // '1' (show) | '0' (hide)
 const STORE_LINE_NUMBERS = 'leaf.lineNumbers'; // '1' (show) | '0' (hide)
@@ -51,15 +51,14 @@ function writeStore(key, value) {
 
 // 'system' resolves to the device preference; the three explicit modes pass through. Keep this in lockstep with the inline <head> bootstrap in each page.
 function resolveTheme(mode) {
-  if (mode === 'light' || mode === 'dark' || mode === 'dracula') return mode;
+  if (mode === 'light' || mode === 'dark') return mode;
   return darkQuery && darkQuery.matches ? 'dark' : 'light';
 }
 
-// The document itself is painted by the app's own stylesheet, which is keyed on a theme family and an appearance rather than on the three names this menu offers — so each choice names the family it is drawn with. Light and Dark are GitHub's, which is where the site's own two came from; Dracula has no family of its own and takes Nightshade, the nearest of the eleven. Keep this in lockstep with the inline <head> bootstrap in each page.
+// The document itself is painted by the app's own stylesheet, which is keyed on a theme family and an appearance rather than on the two names this menu resolves to — so each choice names the family it is drawn with. Light and Dark are GitHub's, which is where the site's own two came from. Keep this in lockstep with the inline <head> bootstrap in each page.
 const LEAF_THEMES = {
   light: ['github', 'light'],
   dark: ['github', 'dark'],
-  dracula: ['nightshade', 'dark'],
 };
 
 function applyTheme(mode) {
@@ -102,7 +101,12 @@ export function installSettings({ hasLibrary = false } = {}) {
   // Idempotent: the docs reader is a single-page app and may call this more than once across re-renders, but the menu should exist exactly once.
   if (document.getElementById('siteSettings')) return;
 
-  const themeMode = readStore(STORE_THEME, 'system');
+  // A copy stored before the menu came down to three names holds one the panel no longer offers, and `select.value` set to a name with no option selects nothing at all — so the stored key is rewritten to the one the reader falls through to.
+  let themeMode = readStore(STORE_THEME, 'system');
+  if (themeMode !== 'system' && themeMode !== 'light' && themeMode !== 'dark') {
+    themeMode = 'system';
+    writeStore(STORE_THEME, themeMode);
+  }
   const speedReaderOn = readStore(STORE_SPEED_READER, '0') === '1';
   const minimapOn = readStore(STORE_MINIMAP, '1') !== '0';
   const lineNumbersOn = readStore(STORE_LINE_NUMBERS, '0') !== '0';
@@ -122,7 +126,6 @@ export function installSettings({ hasLibrary = false } = {}) {
     '<option value="system">System</option>' +
     '<option value="light">Light</option>' +
     '<option value="dark">Dark</option>' +
-    '<option value="dracula">Dracula</option>' +
     '</select>' +
     '<span class="site-setting-help">System follows your device preference.</span>' +
     '</label>';

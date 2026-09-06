@@ -6,51 +6,52 @@
 
    This file loads after the app's, so where both have a rule for the same thing this one wins. That is deliberate: the markup under these classes is the site's.
 
-   EVERYTHING you would normally want to tweak lives in the :root block right below as named "tokens" (CSS variables). Change a value there and the page around the document updates.
+   EVERYTHING you would normally want to tweak lives in the :root block right below as named "tokens" (CSS variables). Each color and face there reads the app's own token for whichever family the document is drawn in, so the chrome and the words are painted from one palette; the value written beside it is the fallback, and it is what paints when the app's stylesheet did not arrive. Change what a name reads and the page around the document updates.
 
-   The default values are GitHub's dark theme: a near-black canvas, near-white text, and blue links.
+   The fallbacks are GitHub's dark theme: a near-black canvas, near-white text, and blue links. They are also what the eleven families resolve to on these two pages today, because GitHub is the family both bootstraps name.
    ========================================================================== */
 
 :root {
   /* ---- Colors -------------------------------------------------------- */
-  --bg: #0d1117; /* page background (the canvas) */
-  --bg-elevated: #161b22; /* code blocks, table header rows */
+  /* Every color here reads the app's own token for the family the document is drawn in, so the chrome and the words beside it are painted from one palette rather than two. The value after the comma is what paints when the app's stylesheet did not arrive — it is a plain <link> with nothing watching it, and a bare var() on a page that never got it paints the chrome out of existence. Those fallbacks are GitHub's dark theme, which is what this block held before. */
+  --bg: var(--lt-background, #0d1117); /* page background (the canvas) */
+  --bg-elevated: var(--lt-surface-muted, #161b22); /* code blocks, table header rows */
 
-  --text: #e6edf3; /* main body text, near white */
-  --text-muted: #9198a1; /* captions, quotes, footnotes */
+  --text: var(--lt-foreground, #e6edf3); /* main body text, near white */
+  --text-muted: var(--lt-muted-foreground, #9198a1); /* captions, quotes, footnotes */
 
-  --link: #4493f8; /* links, blue */
-  --link-hover: #6cb0ff; /* link color on hover */
-  --action-hover-bg: #238636; /* hover fill for icon actions */
-  --action-hover-fg: #ffffff; /* hover icon color for icon actions */
+  --link: var(--lt-link, #4493f8); /* links, blue */
+  --link-hover: var(--lt-link-hover, #6cb0ff); /* link color on hover */
+  --action-hover-bg: var(--lt-primary, #238636); /* hover fill for icon actions */
+  --action-hover-fg: var(--lt-primary-foreground, #ffffff); /* hover icon color for icon actions */
 
-  --border: #30363d; /* lines: rules, table borders, quote bar */
-  --border-strong: #3d444d; /* slightly stronger border when needed */
+  --border: var(--lt-border, #30363d); /* lines: rules, table borders, quote bar */
+  --border-strong: var(--lt-border-strong, #3d444d); /* slightly stronger border when needed */
 
 
   /* ---- Syntax highlighting ------------------------------------------ */
-  /* Colors for highlighted code blocks (highlight.js, loaded lazily by reader.js). These mirror GitHub's dark "prettylights" palette, the same scheme the desktop app uses, so fenced code reads the same in both. */
-  --syntax-comment: #9198a1; /* comments */
-  --syntax-keyword: #ff7b72; /* keywords, storage, types (red) */
-  --syntax-string: #a5d6ff; /* strings, regexps (light blue) */
-  --syntax-constant: #79c0ff; /* numbers, literals, attrs (blue) */
-  --syntax-entity: #d2a8ff; /* function / class names (purple) */
-  --syntax-tag: #7ee787; /* HTML/XML tags, selectors (green) */
-  --syntax-variable: #ffa657; /* built-ins, symbols (orange) */
-  --syntax-section: #4493f8; /* markdown headings (blue) */
-  --syntax-bullet: #f2cc60; /* markdown list bullets (yellow) */
-  --syntax-added-text: #aff5b4; /* diff additions */
-  --syntax-added-bg: #033a16;
-  --syntax-deleted-text: #ffdcd7; /* diff deletions */
-  --syntax-deleted-bg: #67060c;
+  /* Colors for highlighted code blocks (highlight.js, loaded lazily by reader.js). highlight.js names three roles the app's palette does not, and each of those takes the nearest role the app does draw as a stand-in, said on its own line. */
+  --syntax-comment: var(--lt-syntax-comment, #9198a1); /* comments */
+  --syntax-keyword: var(--lt-syntax-keyword, #ff7b72); /* keywords, storage, types (red) */
+  --syntax-string: var(--lt-syntax-string, #a5d6ff); /* strings, regexps (light blue) */
+  --syntax-constant: var(--lt-syntax-number, #79c0ff); /* numbers, literals, attrs (blue) */
+  --syntax-entity: var(--lt-syntax-function, #d2a8ff); /* function / class names (purple) */
+  --syntax-tag: var(--lt-syntax-type, #7ee787); /* HTML/XML tags, selectors. A stand-in: the app draws no tag color, and a type name is the nearest role it has. */
+  --syntax-variable: var(--lt-syntax-variable, #ffa657); /* built-ins, symbols (orange) */
+  --syntax-section: var(--lt-markdown-heading, #4493f8); /* markdown headings. A stand-in: the app has no syntax color for a heading, and this is what it paints a real one with. */
+  --syntax-bullet: var(--lt-syntax-punctuation, #f2cc60); /* markdown list bullets. A stand-in: the app draws no bullet color, and a bullet is the punctuation around the words. */
+  --syntax-added-text: var(--lt-syntax-inserted, #aff5b4); /* diff additions */
+  --syntax-added-bg: var(--lt-syntax-inserted-background, #033a16);
+  --syntax-deleted-text: var(--lt-syntax-deleted, #ffdcd7); /* diff deletions */
+  --syntax-deleted-bg: var(--lt-syntax-deleted-background, #67060c);
 
   /* ---- Type --------------------------------------------------------- */
-  /* Noto first (bundled in site/noto-fonts.css), then system fallbacks. Mirrors the desktop app's font stacks. --font-heading is Noto Serif, available if you want the headings in the app's display face. */
-  --font-body: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
-    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-  --font-heading: 'Noto Serif', Georgia, Cambria, 'Times New Roman', serif;
-  --font-mono: 'Noto Sans Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
-    Consolas, 'Liberation Mono', monospace;
+  /* The family's own faces, so the chrome is set in the same type as the document beside it. The fallbacks are what this file asked for before the app's stylesheet was there to ask: Noto first (bundled in site/noto-fonts.css), then system faces. */
+  --font-body: var(--reading-font, 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji');
+  --font-heading: var(--heading-font, 'Noto Serif', Georgia, Cambria, 'Times New Roman', serif);
+  --font-mono: var(--code-font, 'Noto Sans Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
+    Consolas, 'Liberation Mono', monospace);
 
   /* Hand-tuned heading scale, matching the desktop app. --type-base is the body size; it grows with the viewport above 1280px so wide windows scale up like the native app. Headings are multiples of it (overridden smaller at the breakpoints below). */
   --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
@@ -74,88 +75,51 @@
   --minimap-padding-inline: 8px; /* gap on each side of the thumbnail */
   --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
   --minimap-border: var(--border); /* the rail's left divider */
-  --minimap-viewport-border: var(--link); /* outline of the "you are here" box */
-  --minimap-viewport-background: rgba(110, 118, 129, 0.16); /* its subtle fill */
+  --minimap-viewport-border: var(--lt-minimap-viewport-border, var(--link)); /* outline of the "you are here" box */
+  --minimap-viewport-background: var(--lt-minimap-viewport-background, rgba(110, 118, 129, 0.16)); /* its subtle fill */
 
   color-scheme: dark;
 }
 
 /* ==== Themes =============================================================
-   The :root block above is the default (GitHub dark). The settings menu (site/settings.js) writes data-theme="light" | "dark" | "dracula" onto <html> ("System" resolves to light or dark at runtime); each block below re-skins the COLOR tokens only. Type, layout, and minimap geometry are shared, so a theme is purely a palette swap. The palettes mirror the desktop app's themes.
+   The :root block above is the dark side. The settings menu (site/settings.js) writes data-theme="light" | "dark" onto <html> and data-leaf-appearance beside it ("System" resolves to one of the two at runtime); the block below is keyed on the appearance, which is what the app's own stylesheet is keyed on, and re-skins the COLOR fallbacks only. Type, layout, and minimap geometry are shared, so a theme is purely a palette swap. Both sets of fallbacks are GitHub's, the family both bootstraps name.
    ========================================================================== */
 
 /* ---- Light (GitHub light) ------------------------------------------- */
-:root[data-theme='light'] {
+/* Keyed on the appearance the app's stylesheet is keyed on, not on the menu's own attribute, so the chrome follows whichever family the document is drawn in. Only the fallbacks differ from the block above: the token each name reads is the same one, and it already answers per family. */
+:root[data-leaf-appearance='light'] {
   color-scheme: light;
 
-  --bg: #ffffff;
-  --bg-elevated: #f6f8fa;
+  --bg: var(--lt-background, #ffffff);
+  --bg-elevated: var(--lt-surface-muted, #f6f8fa);
 
-  --text: #1f2328;
-  --text-muted: #59636e;
+  --text: var(--lt-foreground, #1f2328);
+  --text-muted: var(--lt-muted-foreground, #59636e);
 
-  --link: #0969da;
-  --link-hover: #0860c9;
-  --action-hover-bg: #1f883d;
-  --action-hover-fg: #ffffff;
+  --link: var(--lt-link, #0969da);
+  --link-hover: var(--lt-link-hover, #0860c9);
+  --action-hover-bg: var(--lt-primary, #1f883d);
+  --action-hover-fg: var(--lt-primary-foreground, #ffffff);
 
-  --border: #d1d9e0;
-  --border-strong: #afb8c1;
-
-
-  --syntax-comment: #59636e;
-  --syntax-keyword: #cf222e;
-  --syntax-string: #0a3069;
-  --syntax-constant: #0550ae;
-  --syntax-entity: #8250df;
-  --syntax-tag: #116329;
-  --syntax-variable: #953800;
-  --syntax-section: #0550ae;
-  --syntax-bullet: #953800;
-  --syntax-added-text: #1f2328;
-  --syntax-added-bg: #dafbe1;
-  --syntax-deleted-text: #82071e;
-  --syntax-deleted-bg: #ffebe9;
-
-  --minimap-viewport-background: rgba(31, 35, 40, 0.1);
-}
-
-/* ---- Dracula (ported from the desktop app's Dracula palette) -------- */
-:root[data-theme='dracula'] {
-  color-scheme: dark;
-
-  --bg: #282a36;
-  --bg-elevated: #343746;
-
-  --text: #f8f8f2;
-  --text-muted: #d6d6d0;
-
-  --link: #8be9fd;
-  --link-hover: #f1fa8c;
-  --action-hover-bg: #bd93f9;
-  --action-hover-fg: #1e2029;
-
-  --border: #6272a4;
-  --border-strong: #bdc6f4;
+  --border: var(--lt-border, #d1d9e0);
+  --border-strong: var(--lt-border-strong, #afb8c1);
 
 
-  --syntax-comment: #d6d6d0;
-  --syntax-keyword: #ff79c6;
-  --syntax-string: #f1fa8c;
-  --syntax-constant: #bd93f9;
-  --syntax-entity: #50fa7b;
-  --syntax-tag: #ff79c6;
-  --syntax-variable: #8be9fd;
-  --syntax-section: #bd93f9;
-  --syntax-bullet: #f1fa8c;
-  --syntax-added-text: #50fa7b;
-  --syntax-added-bg: #1e3928;
-  --syntax-deleted-text: #ff8f8f;
-  --syntax-deleted-bg: #4a252f;
+  --syntax-comment: var(--lt-syntax-comment, #59636e);
+  --syntax-keyword: var(--lt-syntax-keyword, #cf222e);
+  --syntax-string: var(--lt-syntax-string, #0a3069);
+  --syntax-constant: var(--lt-syntax-number, #0550ae);
+  --syntax-entity: var(--lt-syntax-function, #8250df);
+  --syntax-tag: var(--lt-syntax-type, #116329); /* the stand-in named in the block above */
+  --syntax-variable: var(--lt-syntax-variable, #953800);
+  --syntax-section: var(--lt-markdown-heading, #0550ae); /* the stand-in named in the block above */
+  --syntax-bullet: var(--lt-syntax-punctuation, #953800); /* the stand-in named in the block above */
+  --syntax-added-text: var(--lt-syntax-inserted, #1f2328);
+  --syntax-added-bg: var(--lt-syntax-inserted-background, #dafbe1);
+  --syntax-deleted-text: var(--lt-syntax-deleted, #82071e);
+  --syntax-deleted-bg: var(--lt-syntax-deleted-background, #ffebe9);
 
-  --minimap-border: #6272a4;
-  --minimap-viewport-border: #8be9fd;
-  --minimap-viewport-background: rgba(110, 118, 129, 0.14);
+  --minimap-viewport-background: var(--lt-minimap-viewport-background, rgba(31, 35, 40, 0.1));
 }
 
 /* ---- Base ----------------------------------------------------------- */

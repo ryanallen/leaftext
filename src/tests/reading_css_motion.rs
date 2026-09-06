@@ -1095,30 +1095,25 @@ fn a_control_that_writes_its_own_fade_names_every_color_it_changes() {
 fn a_hover_wash_that_has_to_sit_over_a_fill_is_painted_on_a_layer_that_fades() {
     // A control that has to keep its own fill under the wash — a plate over a picture, a red that says which answer is destructive — cannot replace it, so the obvious answer is a gradient written on top of it. A background image is not an interpolable value: it goes from `none` to the picture in one frame however the control is timed, and no `transition` on that control reaches it. The wash goes on a layer of its own instead, whose background color fades like any other.
     const WASH_IMAGE: &str = "linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover))";
-    // The one control left wearing it, with its own ticket: the-warning-buttons-red-plate-lights-up-in-one-frame.
-    const STILL_AN_IMAGE: &str = "is-danger";
     let css = reading_mode_css();
     let plain = without_prose(css);
     let rules = css_rules(&plain);
 
     for rule in &rules {
-        if !rule.body.contains(WASH_IMAGE) {
-            continue;
-        }
-        for subject in faded_subjects(rule.selector) {
-            assert_eq!(
-                subject, STILL_AN_IMAGE,
-                "{subject} paints its hover wash as a background image, which cannot be faded from nothing however it is timed: {} {{{}}}",
-                rule.selector, rule.body
-            );
-        }
+        assert!(
+            !rule.body.contains(WASH_IMAGE),
+            "{} paints its hover wash as a background image, which cannot be faded from nothing however it is timed: {{{}}}",
+            rule.selector,
+            rule.body
+        );
     }
 
-    // The three corner buttons are the ones that moved. Each keeps a surface of its own — the picture shows through where it is replaced — so the wash is a layer over it, and that layer names the leg that fades it.
+    // Every control that keeps a fill under the wash. The three corner buttons keep a picture the wash would otherwise be replaced by, and the warning's destructive answer keeps the red that says which answer it is; each lays the wash on a layer over that fill, and that layer names the leg that fades it.
     for control in [
         ".table-sheet-open",
         ".image-sheet-open",
         ".image-export-open",
+        ".is-danger",
     ] {
         let layer = rules
             .iter()
@@ -1171,5 +1166,19 @@ fn the_corner_buttons_wash_layer_is_held_by_its_button_and_paints_under_its_glyp
             ".table-sheet-open .lt-icon,\n.image-sheet-open .lt-icon,\n.image-export-open .lt-icon {",
         ),
         "position: relative;",
+    );
+}
+
+#[test]
+fn the_warning_buttons_wash_layer_is_isolated_and_paints_under_its_word() {
+    // The corner buttons lift their icon above a layer painted after everything in flow. The warning's destructive answer has a bare text node instead, which nothing can be given a place of its own without a wrapper, so its layer goes under the content rather than the content over the layer: the button isolates, and the layer sits at a negative depth inside it — above the button's own red background, below its word, and stopping at the button rather than dropping behind the dialog. All three look removable and none of them shows in a value a hover reads.
+    let css = reading_mode_css();
+
+    let button = rule_body(&css, ".confirm-dialog-button.is-danger {");
+    assert_contains(button, "position: relative;");
+    assert_contains(button, "isolation: isolate;");
+    assert_contains(
+        rule_body(&css, ".confirm-dialog-button.is-danger::before {"),
+        "z-index: var(--lt-z-below);",
     );
 }

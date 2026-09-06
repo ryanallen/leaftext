@@ -92,16 +92,28 @@
   border-color: var(--lt-border-strong);
   background: var(--lt-wash-hover);
 }
-/* The destructive one, in the color the menu item it came from already wears. */
+/* The destructive one, in the color the menu item it came from already wears. It holds the wash layer below, and isolates so that layer's negative depth stops at the button rather than dropping behind the dialog itself. */
 .confirm-dialog-button.is-danger {
+  position: relative;
+  isolation: isolate;
   border-color: transparent;
   background: var(--lt-danger);
   color: var(--lt-danger-foreground);
   font-weight: var(--lt-weight-700);
 }
-/* The app's own hover wash, laid over the red rather than replacing it: the wash is transparent and mixed from the family's ink, so it deepens a light theme and lifts a dark one without a second red to keep in step. */
-.confirm-dialog-button.is-danger:hover {
-  background-image: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover));
+/* The app's own hover wash, laid over the red rather than replacing it: the wash is transparent and mixed from the family's ink, so it deepens a light theme and lifts a dark one without a second red to keep in step. It is a layer of its own rather than a gradient on the button, because a background image cannot be interpolated between `none` and a gradient however it is timed — so written on the button the wash arrived whole on the first frame beside an edge and an ink that fade. Below the button's own content and above its red, so the word is never washed over. */
+.confirm-dialog-button.is-danger::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: var(--lt-z-below);
+  border-radius: inherit;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.confirm-dialog-button.is-danger:hover::before {
+  background: var(--lt-wash-hover);
 }
 .leaf-sheet {
   left: 0;

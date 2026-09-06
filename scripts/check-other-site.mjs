@@ -63,7 +63,7 @@ const FOLDERS = [
 
 // Lines the two sites differ on for a reason, each with the reason. A shared file is allowed exactly these and nothing else, so the next real difference still fails.
 const ALLOWED = [
-  ['site/styles.css', /^(Arial,|'Segoe UI Emoji';)/, 'the other site sets Chinese faces in its body stack, which wraps that one declaration differently'],
+  ['site/styles.css', /^(Arial,|'Segoe UI Emoji'\);)/, 'the other site sets Chinese faces in its body stack, which wraps that one declaration differently'],
 ];
 
 /** What a file says, with comments, blank lines and line endings taken out. */

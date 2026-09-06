@@ -430,6 +430,62 @@ for (const [, whole] of stylesheet.matchAll(/^([^{}]*\bbody\b[^{}]*?)\{\s*paddin
   );
 }
 
+// The theme a reader gets is answered twice — once in the shared menu's resolver, once inline in each entry page's head so the first paint is not a flash — and the two are written out separately, so a name taken out of one and left in the other ships a page that paints from a family the menu cannot name. The names each one passes through are read back and held to each other.
+
+/** The theme names a resolver passes through, read off the comparisons it makes against its own mode. */
+function passedThrough(source, variable) {
+  return [...source.matchAll(new RegExp('\\b' + variable + "\\s*===\\s*'([a-z]+)'", 'g'))].map((found) => found[1]).sort();
+}
+
+// The extractor on made-up input, so a matcher that quietly stopped matching cannot pass every page by finding nothing anywhere.
+{
+  const stand = "if (mode === 'light' || mode === 'dark') return mode;";
+  const found = passedThrough(stand, 'mode').join(',');
+  if (found !== 'dark,light') problems.push(`the theme-name reader answered '${found}' on a stand-in resolver naming light and dark, so what it reads off the real pages says nothing`);
+  if (passedThrough(stand, 'm').length) problems.push('the theme-name reader answered on a variable the stand-in resolver never compares, so it is matching a name rather than the comparison');
+}
+
+const menu = read('site/settings.js');
+const resolver = /function resolveTheme\(mode\) \{([\s\S]*?)\n\}/.exec(menu);
+if (!resolver) {
+  problems.push('site/settings.js no longer has a resolveTheme every page can be held to, so nothing says which theme names the site offers');
+} else {
+  const offered = passedThrough(resolver[1], 'mode');
+  if (!offered.length) problems.push("site/settings.js resolves no theme name at all, so every stored choice falls through to the device preference");
+  for (const page of PAGES) {
+    const head = /<script>([\s\S]*?)<\/script>/.exec(read(page));
+    if (!head) {
+      problems.push(`${page} carries no inline bootstrap, so its first paint is whatever the stylesheet defaults to until the menu loads`);
+      continue;
+    }
+    const inline = passedThrough(head[1], 'm');
+    if (inline.join(',') !== offered.join(',')) {
+      problems.push(`${page} paints its first frame from [${inline.join(', ')}] where the menu resolves [${offered.join(', ')}] — a name in one and not the other is a page drawn in a family nobody can choose`);
+    }
+  }
+  // The panel's own list, which is the resolver's names plus the one that follows the device.
+  const options = [...menu.matchAll(/<option value="([a-z]+)">/g)].map((found) => found[1]).sort();
+  const expected = ['system', ...offered].sort();
+  if (options.join(',') !== expected.join(',')) {
+    problems.push(`the settings menu offers [${options.join(', ')}] where its own resolver takes [${expected.join(', ')}] — an option the resolver drops falls through to the device preference, and a name it takes with no option cannot be chosen`);
+  }
+}
+
+// The chrome around the document is painted from the app's own tokens, so the sidebar, panel and rail follow whichever family the words beside them are drawn in. A misspelled token name is invisible: `var()` falls through to the hex written beside it, which is GitHub's, which is the family both bootstraps name — so the page looks right today and the whole indirection quietly does nothing. Every name the stylesheet reads is held against the ones the app actually writes.
+const APP_WRITES = new Set([
+  ...[...read('src/theme.rs').matchAll(/--(?:lt-[a-z0-9-]+|reading-font|heading-font|code-font|app-font)/g)].map((found) => found[0]),
+  ...[...read('src/assets/tokens.css').matchAll(/--lt-[a-z0-9-]+/g)].map((found) => found[0]),
+]);
+if (APP_WRITES.size < 100) {
+  problems.push(`only ${APP_WRITES.size} token names were read out of the app, so the list the site is held against is too thin to refuse anything`);
+} else {
+  for (const [, name] of stylesheet.matchAll(/var\((--(?:lt-[a-z0-9-]+|reading-font|heading-font|code-font|app-font))/g)) {
+    if (!APP_WRITES.has(name)) {
+      problems.push(`site/styles.css paints the chrome from ${name}, which the app writes nowhere — the value beside it paints instead, so the chrome silently stops following the family`);
+    }
+  }
+}
+
 /** Whether `.gitignore` refuses a path, by the folder rules it actually writes rather than by matching the whole name. */
 function gitIgnores(path) {
   const rules = readFileSync(join(root, '.gitignore'), 'utf8')

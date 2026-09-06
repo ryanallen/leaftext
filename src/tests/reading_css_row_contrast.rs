@@ -108,7 +108,7 @@ fn row_lightness(page: Rgb, fill: Option<Fill>, grain: Fill) -> f64 {
 fn grain(css: &str, appearance: Appearance, name: &str) -> Fill {
     let mut blocks = Vec::new();
     if appearance == Appearance::Dark {
-        blocks.extend(css_blocks(css, "[data-theme=\"dark\"] {"));
+        blocks.extend(css_blocks(css, ":root[data-leaf-appearance=\"dark\"] {"));
     }
     blocks.extend(css_blocks(css, ":root {"));
     parse_fill(&css_token_value(&blocks, name))

@@ -297,7 +297,7 @@ function standInAddress(start) {
 }
 
 /** Everything the site's files reach for on a global, installed for one boot. */
-function installGlobals({ document, window, fetch, wasm }) {
+function installGlobals({ document, window, fetch, wasm, store }) {
   const held = {
     document,
     window,
@@ -305,7 +305,7 @@ function installGlobals({ document, window, fetch, wasm }) {
     location: window.location,
     fetch,
     WebAssembly: wasm,
-    localStorage: storeStandIn(),
+    localStorage: store || storeStandIn(),
     navigator: { userAgent: 'leaftext-check', clipboard: undefined },
     matchMedia: window.matchMedia,
     getComputedStyle: window.getComputedStyle,
@@ -806,13 +806,13 @@ async function settled(done, said) {
 let boots = 0;
 
 /** One reader, booted against its own page. Every import carries a fresh query, because Node keys its module cache on the resolved URL: without one a second boot returns the first instance, runs nothing, and reports a boot that never happened. */
-async function bootReader(file, page, address, files, { wrap = null, markup = null, from = root, mermaid = null } = {}) {
+async function bootReader(file, page, address, files, { wrap = null, markup = null, from = root, mermaid = null, store = null } = {}) {
   const document = standInPage(markup || read(page), address);
   const window = standInWindow(document, standInAddress(address));
   if (mermaid) window.mermaid = mermaid;
   const fetch = wrap ? wrap(standInFetch(address, files), address) : standInFetch(address, files);
   const module_ = standInModule();
-  installGlobals({ document, window, fetch, wasm: standInWebAssembly(module_) });
+  installGlobals({ document, window, fetch, wasm: standInWebAssembly(module_), store });
   boots += 1;
   await import(pathToFileURL(join(from, file)).href + `?boot=${boots}`);
   return { document, window, fetch, module_ };
@@ -837,6 +837,21 @@ const frontPage = await check('the front page boots', async () => {
   want(document.querySelector('.document-minimap'), 'the minimap rail was never built');
   return page;
 });
+
+await check('a stored theme the menu no longer offers comes back as one it does', async () => {
+  // The panel offers three names; a copy stored before it came down to three holds a fourth. `select.value` set to a name with no option behind it selects nothing at all, so the reader opens the panel to a Theme control showing an empty box and cannot tell what they are reading in. The stored key is rewritten on read instead, and this is a boot from a store that already holds the old name.
+  const store = storeStandIn();
+  store.setItem('leaf.theme', 'dracula');
+  const page = await bootReader('site/reader.js', 'index.html', 'https://leaf.test/', SITE_FILES, { store });
+  await settled(() => page.document.getElementById('siteSettingsTheme'), 'the settings menu was never built, so nothing read the stored choice at all');
+
+  const offered = [...read('site/settings.js').matchAll(/<option value="([a-z]+)">/g)].map((found) => found[1]);
+  const held = store.getItem('leaf.theme');
+  want(offered.includes(held), `a stored theme the panel no longer offers is still ${JSON.stringify(held)}, so the next visit reads it again and the control goes on showing nothing`);
+  const control = page.document.getElementById('siteSettingsTheme');
+  want(offered.includes(control.value), `the Theme control came up on ${JSON.stringify(control.value)}, which is not one of [${offered.join(', ')}] — in a browser that is an empty box`);
+});
+
 
 /** The one picture the front page's fixture carries, on the page a boot drew. */
 const pictureOn = (page) => page.document.getElementById('content').querySelector('img');

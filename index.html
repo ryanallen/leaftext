@@ -92,14 +92,14 @@
             s = window.localStorage;
           var m = s.getItem('leaf.theme') || 'system';
           var t =
-            m === 'light' || m === 'dark' || m === 'dracula'
+            m === 'light' || m === 'dark'
               ? m
               : matchMedia('(prefers-color-scheme: dark)').matches
                 ? 'dark'
                 : 'light';
           d.dataset.theme = t;
           // The document's own paint comes from the app's stylesheet, which keys on a theme family and an appearance.
-          d.dataset.leafTheme = t === 'dracula' ? 'nightshade' : 'github';
+          d.dataset.leafTheme = 'github';
           d.dataset.leafAppearance = t === 'light' ? 'light' : 'dark';
           if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
           if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';

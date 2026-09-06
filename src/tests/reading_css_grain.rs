@@ -37,8 +37,12 @@ fn table_rows_are_grained_on_both_stripes_with_the_darker_row_darker() {
         .find("--reader-row-grain: var(--lt-grain-lift);")
         .expect("dark themes set the row grain");
     let dark_block = css
-        .find("[data-theme=\"dark\"]")
-        .expect("the dark override block");
+        .find(":root[data-leaf-appearance=\"dark\"] {")
+        .expect("the shared dark-appearance override block");
+    assert!(
+        !css.contains(":root[data-theme=\"dark\"] {"),
+        "the dark override must follow appearance rather than a theme name"
+    );
     assert!(light < dark_block, "the zeroed value is the light default");
     assert!(dark > dark_block, "the lifted value is the dark override");
 
