@@ -103,7 +103,7 @@
 .image-lane-corner {
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .table-sheet-open .lt-icon,
 .image-sheet-open .lt-icon,
@@ -117,6 +117,7 @@
 .image-lane-corner:focus-within {
   opacity: 1;
   pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive);
 }
 /* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
 .table-sheet-open:hover,
@@ -560,10 +561,15 @@
   background: none;
   color: var(--lt-muted-foreground);
   opacity: 0;
+  /* Its own reveal, so the shared hover fade at the top of base.css never reaches it: the colors it changes under its own pointer are named here instead. */
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 .document-body .frontmatter tr:hover .frontmatter-remove,
 .frontmatter-remove:focus-visible {
   opacity: 1;
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 .frontmatter-remove:hover {
   background: var(--lt-wash-hover);

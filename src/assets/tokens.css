@@ -140,6 +140,9 @@
   --lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
   --lt-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --lt-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Hover reveal */
+  --lt-transition-hover-reveal-arrive: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
+  --lt-transition-hover-reveal-leave: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
   /* Layers */
   --lt-z-below: -1;
   --lt-z-20: 20;

@@ -146,12 +146,13 @@
 .image-sheet-close {
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .image-sheet-corner:hover .image-sheet-close,
 .image-sheet-close:focus-visible {
   opacity: 1;
   pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive);
 }
 /* A `pre.mermaid` like the block in the page, and deliberately outside any .document-body: what it is for is the room the reading column does not have. */
 .diagram-stage {

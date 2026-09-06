@@ -62,15 +62,15 @@ fn the_close_cross_waits_until_you_reach_the_tab() {
         close.contains("background: var(--tab-corner-fill, var(--lt-surface));"),
         "the cross needs a wash to read over the name: {close}"
     );
-    // In decelerating, out accelerating after a hold — the heart's timing in the opposite corner, every value a token. The colors ride behind the opacity leg; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
+    // Both ends of the fade are the recipe every control revealed under a pointer spends — the heart's timing in the opposite corner, and the same one the diagram tools and the front-matter cross now take; `every_control_that_appears_under_the_pointer_leaves_the_same_way` holds them together. The colors ride behind the opacity leg; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
     assert_contains(
         &close.to_string(),
-        "transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
+        "transition: var(--lt-transition-hover-reveal-arrive),",
     );
     // The pointed state stands in for a hover the pointer never made again: the strip is rewritten whole under a still hand, and the cross is on a new element.
     assert_contains(
         css,
-        ".tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {\n  opacity: 0;\n  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);\n}",
+        ".tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {\n  opacity: 0;\n  transition: var(--lt-transition-hover-reveal-leave);\n}",
     );
     // Keyed on the tab, not on the modified tab: the narrow rule this generalizes must not survive beside it.
     assert!(
@@ -231,17 +231,17 @@ fn a_marked_tab_is_the_width_of_an_unmarked_one() {
         !mark.contains("margin"),
         "an out-of-flow heart has no margin to push the row with: {mark}"
     );
-    // Never drawn at rest, and every value of the fade a token: in decelerating, then a hold, then a shorter exit that accelerates. The colors ride behind the opacity leg in both rules; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
+    // Never drawn at rest, and both ends of the fade the shared reveal recipe: in decelerating, then a hold, then a shorter exit that accelerates, which is what every control revealed under a pointer spends — `every_control_that_appears_under_the_pointer_leaves_the_same_way` holds them together. The colors ride behind the opacity leg in both rules; `a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot` holds those.
     //
     // The pointed state is the third way in: the strip is rewritten whole when a mark is made, so the control under a still hand is a new element the pointer has never crossed, and without this the heart a reader just filled fades out under their finger.
     assert!(mark.contains("opacity: 0;"));
     assert_contains(
         &mark.to_string(),
-        "transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300),",
+        "transition: var(--lt-transition-hover-reveal-leave),",
     );
     assert_contains(
         css,
-        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite,\n.tab.is-pointed .tab-favorite {\n  opacity: 1;\n  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate),",
+        ".tab:hover .tab-favorite,\n.tab:focus-within .tab-favorite,\n.tab.is-pointed .tab-favorite {\n  opacity: 1;\n  transition: var(--lt-transition-hover-reveal-arrive),",
     );
     // A mark adds nothing to the tab's own padding, which is even: it is out of flow, and so is the cross in the opposite corner.
     let tab = rule_body(css, ".tab {");

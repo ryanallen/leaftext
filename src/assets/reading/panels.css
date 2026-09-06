@@ -250,11 +250,12 @@
 /* The one host on that list sitting inside the document rather than over it, which makes one line of the shared rule wrong for it: `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. The mask's punch layer still takes the card's own face out, which is what keeps a dot off the words. */
 .document-body .docs-pager a::before {
   z-index: 0;
-  /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. The fade matches the shared hover fade, so the ring arrives with the fill rather than snapping over it. */
+  /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. It takes the reveal recipes every control drawn at nothing spends, so the ring waits with the rest of them rather than snapping over a fill that is still fading. */
   opacity: 0;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {
   opacity: var(--lt-grain-shadow-opacity);
+  transition: var(--lt-transition-hover-reveal-arrive);
 }

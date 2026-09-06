@@ -754,7 +754,7 @@ body.library-resizing button {
   background: transparent;
   opacity: 0;
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here and in the row's own hover below. */
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
   color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
 }
@@ -765,7 +765,7 @@ body.library-resizing button {
 .crumb-menu-row:hover .crumb-menu-edit,
 .crumb-menu-row:focus-within .crumb-menu-edit {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
 }
 .crumb-menu-row:hover .crumb-menu-edit {

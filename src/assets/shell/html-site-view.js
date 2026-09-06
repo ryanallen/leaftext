@@ -15,6 +15,65 @@ const siteFrameScrollTops = new Map();
 let siteFrameListening = null;
 // Which document the frame on screen is showing, so a scroll is remembered against the right file.
 let siteFramePath = null;
+// A frame's document disappears on reload, so its delayed drawing pass belongs to that one document only.
+let containedPageMermaidPage = null;
+let containedPageMermaidGeneration = 0;
+
+function containedPageMermaidIsVisible(diagram, page) {
+  const frame = documentSiteFrame();
+  const box = frame && frame.getBoundingClientRect ? frame.getBoundingClientRect() : null;
+  const rect = diagram.getBoundingClientRect ? diagram.getBoundingClientRect() : null;
+  if (!box || !rect) return true;
+  return rect.bottom >= box.top && rect.top <= box.bottom;
+}
+
+function containedPageMermaidStillCurrent(page, generation) {
+  return generation === containedPageMermaidGeneration && containedPageMermaidPage === page && siteFrameDocument() === page;
+}
+
+function drawContainedPageMermaid(page, generation) {
+  const waiting = Array.from(page.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"])'));
+  if (!waiting.length) return Promise.resolve();
+  const visible = waiting.filter((diagram) => containedPageMermaidIsVisible(diagram, page));
+  const later = waiting.filter((diagram) => !visible.includes(diagram));
+  return new Promise((resolve) => window.requestAnimationFrame(resolve))
+    .then(() => loadMermaid())
+    .then(async (mermaid) => {
+      if (!containedPageMermaidStillCurrent(page, generation)) return;
+      registerMermaidIcons(mermaid);
+      mermaid.initialize(mermaidRuntimeConfig());
+      const batches = [visible, later];
+      for (const diagrams of batches) {
+        for (let at = 0; at < diagrams.length; at += MERMAID_BATCH_SIZE) {
+          if (!containedPageMermaidStillCurrent(page, generation)) return;
+          const batch = diagrams.slice(at, at + MERMAID_BATCH_SIZE).filter((diagram) => diagram.isConnected);
+          if (!batch.length) continue;
+          for (const diagram of batch) {
+            const source = diagram.textContent;
+            const drawable = await mermaidDrawableSource(source);
+            if (drawable != null && drawable !== source) diagram.textContent = drawable;
+          }
+          try {
+            await mermaid.run({ nodes: batch });
+          } catch (error) {
+            console.error(error);
+            for (const diagram of batch) {
+              if (diagram.querySelector('.error-icon') || !diagram.querySelector('svg')) diagram.dataset.mermaidRender = 'failed';
+            }
+          }
+          if (diagrams === later) await new Promise((resolve) => window.setTimeout(resolve, MERMAID_WARM_REST_MS));
+        }
+      }
+    })
+    .catch((error) => console.error(error));
+}
+
+function scheduleContainedPageMermaid(page) {
+  if (containedPageMermaidPage === page) return;
+  containedPageMermaidPage = page;
+  const generation = containedPageMermaidGeneration;
+  drawContainedPageMermaid(page, generation);
+}
 
 // The frame the open document is drawn in, or nothing where the document is not a whole page.
 function documentSiteFrame(root = app) {
@@ -208,6 +267,7 @@ function siteFrameReady() {
     page.addEventListener('scroll', rememberSiteFrameScroll, { passive: true });
   }
   restoreSiteFrameScroll();
+  scheduleContainedPageMermaid(page);
   // The keyboard scrolls whatever has focus, and the shell underneath the frame does not scroll at all — so the page is where the keys have to land for Page Down to mean what it means in a browser tab.
   if (page.body.focus) {
     page.body.tabIndex = -1;
@@ -235,6 +295,8 @@ function fillContainedPageBase(frame) {
 
 // Called by the renderer once the document is on the page. A frame that is not there clears the record, so a Markdown note after an HTML page is not read as a contained one.
 function bindDocumentSiteFrame(path) {
+  containedPageMermaidGeneration += 1;
+  containedPageMermaidPage = null;
   document.documentElement.style.removeProperty('--tab-page-fill');
   document.documentElement.style.removeProperty('--tab-page-ink');
   const frame = documentSiteFrame();

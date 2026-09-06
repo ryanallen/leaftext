@@ -256,7 +256,7 @@
   background: var(--tab-corner-fill, var(--lt-surface));
   color: var(--tab-corner-ink, var(--lt-muted-foreground));
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here instead. */
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .tab-close .lt-icon {
@@ -267,7 +267,7 @@
 /* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. The pointed state is the strip saying the hand is still on this tab across a redraw that replaced it: a control that vanishes the instant it is pressed reads as a press that did nothing. */
 .tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {
   opacity: 0;
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .tab-close:hover {
   background: var(--lt-navigation-button-hover-background);
@@ -294,7 +294,7 @@
   color: var(--tab-corner-ink, var(--lt-muted-foreground));
   /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. The colors ride along for the reason written on the close button. */
   opacity: 0;
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .tab-favorite .lt-icon {
@@ -307,7 +307,7 @@
 .tab:focus-within .tab-favorite,
 .tab.is-pointed .tab-favorite {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 /* A hollow heart is an offer; a filled one is a fact, so it is drawn in full ink. */
@@ -329,7 +329,7 @@
 .library-crumb-trail:hover > .tab-favorite,
 .library-crumb-trail:focus-within > .tab-favorite {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 /* Back and forward are one paired control, so they sit at the tight gap the window buttons use rather than the bar's 16px between groups. */

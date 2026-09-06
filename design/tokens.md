@@ -212,6 +212,15 @@ Every transition and animation length, in milliseconds. `0.12s` and `120ms` were
 | lt-ease-sheet | `cubic-bezier(0.32, 0.72, 0, 1)` | A sheet rising: fast off the mark, settling slowly. Emphasized-decelerate drawn by hand against a real drag, and kept because that is what it was tuned on. |
 | lt-ease-overshoot | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Something arriving with spring in it: runs about a tenth past its mark and settles back. The library pane's open. |
 
+## Hover reveal
+
+**A control drawn at nothing and shown under the pointer leaves one way.** Every one of them waits a beat before it starts to go, so a hand crossing a row of them does not strobe a mark on and off at each one it passes, and it leaves faster than it arrived because you have already stopped caring about it. Two recipes rather than a duration and a curve at each site: nine of these were written four different ways before this. Other legs — a fill, a border, a color — sit beside the recipe in the same shorthand.
+
+| Token | Value | What it is for |
+| --- | --- | --- |
+| lt-transition-hover-reveal-arrive | `opacity var(--lt-duration-120) var(--lt-ease-decelerate)` | The opacity leg on the rule that shows it. |
+| lt-transition-hover-reveal-leave | `opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300)` | The opacity leg on the rule that holds it at nothing: held for 300ms, then gone over 100ms. |
+
 ## Layers
 
 Every `z-index` of 20 or more is a page layer and takes a token. Values of 11 or less order siblings inside one component and stay literal — they mean nothing outside it.

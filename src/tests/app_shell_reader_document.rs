@@ -292,8 +292,6 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         "function loadMermaid() {",
         "function renderMermaidDiagrams() {",
         "securityLevel: 'strict'",
-        "await mermaid.run({ nodes: batch });",
-        "diagram.dataset.mermaidRender = 'failed';",
         // Nearest the reader first, a few at a time: a page of sixty diagrams must not freeze the window while they are drawn.
         "diagrams.sort((a, b) => mermaidReaderDistance(a) - mermaidReaderDistance(b));",
         "const MERMAID_BATCH_SIZE = 3;",
@@ -341,6 +339,16 @@ fn app_shell_loads_mermaid_and_renders_diagram_fences_after_document_insert() {
         &html,
         "function drawMermaidBatches(diagrams, generation, warming) {",
         "mermaid.initialize(mermaidRuntimeConfig())",
+    );
+    assert_in(
+        &html,
+        "function drawMermaidBatches(diagrams, generation, warming) {",
+        "await mermaid.run({ nodes: batch });",
+    );
+    assert_in(
+        &html,
+        "function drawMermaidBatches(diagrams, generation, warming) {",
+        "diagram.dataset.mermaidRender = 'failed';",
     );
 
     // Mermaid and KaTeX are served from the bundled-asset protocol, never a CDN.

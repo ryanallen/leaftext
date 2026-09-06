@@ -331,7 +331,7 @@
   pointer-events: auto;
   cursor: crosshair;
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the fill is named here instead. */
-  transition: opacity var(--lt-duration-100) var(--lt-ease), background-color var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease);
 }
 .flow-bud.is-up {
   left: 50%;
@@ -353,6 +353,7 @@
 .flow-node-tools.is-selected .flow-bud,
 .flow-bud:focus-visible {
   opacity: 1;
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease);
 }
 .flow-bud:hover {
   background: var(--lt-link-hover);

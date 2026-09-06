@@ -2130,6 +2130,9 @@
   --lt-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
   --lt-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --lt-ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Hover reveal */
+  --lt-transition-hover-reveal-arrive: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
+  --lt-transition-hover-reveal-leave: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
   /* Layers */
   --lt-z-below: -1;
   --lt-z-20: 20;
@@ -3494,7 +3497,7 @@ body.is-window-inactive .reader-minimap {
   background: var(--tab-corner-fill, var(--lt-surface));
   color: var(--tab-corner-ink, var(--lt-muted-foreground));
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here instead. */
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .tab-close .lt-icon {
@@ -3505,7 +3508,7 @@ body.is-window-inactive .reader-minimap {
 /* Never there at rest, so a strip of tabs is a row of names and the cross costs the tab no room. Focus counts as reaching, so the keyboard still gets to it. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival — the heart opposite goes the same way. The pointed state is the strip saying the hand is still on this tab across a redraw that replaced it: a control that vanishes the instant it is pressed reads as a press that did nothing. */
 .tab:not(:hover):not(:focus-within):not(.is-pointed) .tab-close {
   opacity: 0;
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .tab-close:hover {
   background: var(--lt-navigation-button-hover-background);
@@ -3532,7 +3535,7 @@ body.is-window-inactive .reader-minimap {
   color: var(--tab-corner-ink, var(--lt-muted-foreground));
   /* Never there at rest, marked or not, so a strip of tabs carries nothing extra to read. Leaving waits a beat, so crossing the strip does not strobe, and is quicker than the arrival that matched it. The colors ride along for the reason written on the close button. */
   opacity: 0;
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .tab-favorite .lt-icon {
@@ -3545,7 +3548,7 @@ body.is-window-inactive .reader-minimap {
 .tab:focus-within .tab-favorite,
 .tab.is-pointed .tab-favorite {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 /* A hollow heart is an offer; a filled one is a fact, so it is drawn in full ink. */
@@ -3567,7 +3570,7 @@ body.is-window-inactive .reader-minimap {
 .library-crumb-trail:hover > .tab-favorite,
 .library-crumb-trail:focus-within > .tab-favorite {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 /* Back and forward are one paired control, so they sit at the tight gap the window buttons use rather than the bar's 16px between groups. */
@@ -4033,13 +4036,14 @@ body.is-maximized #winMaximize .wc-restore {
 /* The one host on that list sitting inside the document rather than over it, which makes one line of the shared rule wrong for it: `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. The mask's punch layer still takes the card's own face out, which is what keeps a dot off the words. */
 .document-body .docs-pager a::before {
   z-index: 0;
-  /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. The fade matches the shared hover fade, so the ring arrives with the fill rather than snapping over it. */
+  /* Drawn at rest and revealed, never written under `:hover`: the lattice gate refuses a background image inside a hovered rule in any ink but the hover ink, and this one is the shadow ink. It takes the reveal recipes every control drawn at nothing spends, so the ring waits with the rest of them rather than snapping over a fill that is still fading. */
   opacity: 0;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {
   opacity: var(--lt-grain-shadow-opacity);
+  transition: var(--lt-transition-hover-reveal-arrive);
 }
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the turn are here; a site keeps only its own size and colors, because those are what differ — a 12px ring in a settings row, a 34px one on an empty reader. */
 .lt-spinner {
@@ -4957,7 +4961,7 @@ body.library-resizing button {
   background: transparent;
   opacity: 0;
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the colors are named here and in the row's own hover below. */
-  transition: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
   color: color-mix(in srgb, var(--lt-muted-foreground) 75%, transparent);
 }
@@ -4968,7 +4972,7 @@ body.library-resizing button {
 .crumb-menu-row:hover .crumb-menu-edit,
 .crumb-menu-row:focus-within .crumb-menu-edit {
   opacity: 1;
-  transition: opacity var(--lt-duration-120) var(--lt-ease-decelerate), background-color var(--lt-duration-120) var(--lt-ease),
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
 }
 .crumb-menu-row:hover .crumb-menu-edit {
@@ -7497,7 +7501,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .image-lane-corner {
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .table-sheet-open .lt-icon,
 .image-sheet-open .lt-icon,
@@ -7511,6 +7515,7 @@ body.is-block-dragging .document-body [data-src-start] {
 .image-lane-corner:focus-within {
   opacity: 1;
   pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive);
 }
 /* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
 .table-sheet-open:hover,
@@ -7954,10 +7959,15 @@ body.is-block-dragging .document-body [data-src-start] {
   background: none;
   color: var(--lt-muted-foreground);
   opacity: 0;
+  /* Its own reveal, so the shared hover fade at the top of base.css never reaches it: the colors it changes under its own pointer are named here instead. */
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 .document-body .frontmatter tr:hover .frontmatter-remove,
 .frontmatter-remove:focus-visible {
   opacity: 1;
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 .frontmatter-remove:hover {
   background: var(--lt-wash-hover);
@@ -9810,7 +9820,7 @@ body.is-home-row-dragging .home-list-scroll li {
   pointer-events: auto;
   cursor: crosshair;
   /* Its own reveal, so the shared hover fade at the top of the file never reaches it: the fill is named here instead. */
-  transition: opacity var(--lt-duration-100) var(--lt-ease), background-color var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave), background-color var(--lt-duration-120) var(--lt-ease);
 }
 .flow-bud.is-up {
   left: 50%;
@@ -9832,6 +9842,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .flow-node-tools.is-selected .flow-bud,
 .flow-bud:focus-visible {
   opacity: 1;
+  transition: var(--lt-transition-hover-reveal-arrive), background-color var(--lt-duration-120) var(--lt-ease);
 }
 .flow-bud:hover {
   background: var(--lt-link-hover);
@@ -10121,7 +10132,7 @@ body.is-home-row-dragging .home-list-scroll li {
   right: 6px;
   display: flex;
   opacity: 0;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .mermaid-tools {
   bottom: 6px;
@@ -10140,6 +10151,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .mermaid-tools:focus-within,
 .mermaid-view-controls:focus-within {
   opacity: 1;
+  transition: var(--lt-transition-hover-reveal-arrive);
 }
 .mermaid-export,
 .mermaid-tool,
@@ -10332,12 +10344,13 @@ body.is-home-row-dragging .home-list-scroll li {
 .image-sheet-close {
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--lt-duration-120) var(--lt-ease);
+  transition: var(--lt-transition-hover-reveal-leave);
 }
 .image-sheet-corner:hover .image-sheet-close,
 .image-sheet-close:focus-visible {
   opacity: 1;
   pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive);
 }
 /* A `pre.mermaid` like the block in the page, and deliberately outside any .document-body: what it is for is the room the reading column does not have. */
 .diagram-stage {
@@ -10790,7 +10803,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 170 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 172 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -10810,7 +10823,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>170</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>172</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>65</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>75</b></button>
 </div>
@@ -10915,7 +10928,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">170 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">172 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -11066,6 +11079,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-ease-accelerate</code><code>cubic-bezier(0.3, 0, 0.8, 0.15)</code></div>
 <div class="value"><code>lt-ease-sheet</code><code>cubic-bezier(0.32, 0.72, 0, 1)</code></div>
 <div class="value"><code>lt-ease-overshoot</code><code>cubic-bezier(0.34, 1.56, 0.64, 1)</code></div>
+</div>
+<h3>Hover reveal</h3><div class="wall wide">
+<div class="value"><code>lt-transition-hover-reveal-arrive</code><code>opacity var(--lt-duration-120) var(--lt-ease-decelerate)</code></div>
+<div class="value"><code>lt-transition-hover-reveal-leave</code><code>opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300)</code></div>
 </div>
 <h3>Layers</h3><div class="wall wide">
 <div class="value"><code>lt-z-below</code><code>-1</code></div>

@@ -1,7 +1,7 @@
 // A whole HTML file drawn as the page its own CSS makes: what the reader gets, and what the reader's own features do about a document that is not in this page at all.
 
 import vm from 'node:vm';
-import { check, readingCss, record, runShell, source } from './shared.mjs';
+import { check, checkSettled, readingCss, record, runShell, settle, source } from './shared.mjs';
 
 const PAGE = '<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body><h1>A saved page</h1><h2>Its second heading</h2><p>Words in somebody else\'s document.</p><a href="./next.html">Onward</a></body></html>';
 
@@ -33,7 +33,15 @@ function containedDocument(context, frame, options = {}) {
   inside.textContent = 'The next screen';
   const picture = make('img');
   picture.setAttribute('src', 'assets/diagram.png');
-  [first, second, words, link, inside, picture].forEach((child) => body.appendChild(child));
+  const ordinaryPre = options.ordinaryPre ? make('pre') : null;
+  if (ordinaryPre) ordinaryPre.textContent = 'ordinary source';
+  const diagrams = (options.diagrams || []).map((source, at) => {
+    const diagram = make('pre', 'mermaid');
+    diagram.textContent = source;
+    diagram.getBoundingClientRect = () => ({ top: at ? 1600 : 80, bottom: at ? 1660 : 140, height: 60 });
+    return diagram;
+  });
+  [first, second, words, link, inside, picture, ordinaryPre, ...diagrams].filter(Boolean).forEach((child) => body.appendChild(child));
   body.scrollHeight = 4000;
   body.clientHeight = 800;
   body.scrollTop = 0;
@@ -82,6 +90,7 @@ function containedDocument(context, frame, options = {}) {
 function bootContainedPage(options = {}) {
   const sent = [];
   const context = runShell(source, { ipc: { postMessage: (text) => sent.push(JSON.parse(text)) } });
+  if (options.mermaid) context.window.mermaid = options.mermaid;
   const app = context.document.getElementById('app');
   const path = 'C:\\Notes\\saved.html';
   context.window.leafSetState({
@@ -271,6 +280,86 @@ export function run() {
     if (!rows.includes('A saved page') || !rows.includes('Its second heading')) {
       throw new Error(`the outline read ${rows || 'nothing'} out of the contained page`);
     }
+  });
+
+  checkSettled('a contained page draws visible diagrams first and warms the rest without reader controls', async () => {
+    const calls = [];
+    const mermaid = {
+      initialize: () => {},
+      run: async ({ nodes }) => {
+        calls.push(nodes.map((node) => node.textContent).join('|'));
+        for (const node of nodes) {
+          node.innerHTML = '<svg><style>.node { fill: red }</style></svg>';
+          node.dataset.processed = 'true';
+        }
+      },
+    };
+    const { context, page } = bootContainedPage({ diagrams: ['flowchart TD\nA-->B', 'flowchart TD\nB-->C'], mermaid });
+    context.__frames.drain();
+    await settle();
+    await settle();
+    const warming = context.__timers.armed().find((timer) => timer.delay === 50);
+    if (!warming) throw new Error('the later diagram was not left to warm');
+    context.__timers.run(warming.id);
+    await settle();
+    await settle();
+    if (calls.length !== 2 || !calls[0].includes('A-->B') || !calls[1].includes('B-->C')) {
+      throw new Error(`the contained diagrams drew in ${JSON.stringify(calls)}`);
+    }
+    const diagrams = page.querySelectorAll('pre.mermaid');
+    if (diagrams.some((diagram) => diagram.dataset.processed !== 'true')) throw new Error('a contained diagram stayed as source');
+    if (!diagrams[0].innerHTML.includes('<style>')) throw new Error('the contained SVG lost its own style');
+    if (page.querySelector('.mermaid-tools')) throw new Error('the contained page gained reader diagram controls');
+  });
+
+  checkSettled('a contained page leaves ordinary source and a Mermaid refusal in place, then drops work for a replaced frame', async () => {
+    const mermaid = {
+      initialize: () => {},
+      run: async ({ nodes }) => {
+        for (const node of nodes) {
+          node.innerHTML = 'Mermaid could not draw this';
+          node.querySelector = (selector) => selector === '.error-icon' ? {} : null;
+        }
+        throw new Error('bad diagram');
+      },
+    };
+    const { context, frame, page } = bootContainedPage({ diagrams: ['not Mermaid'], ordinaryPre: true, mermaid });
+    context.__frames.drain();
+    await settle();
+    await settle();
+    const diagram = page.querySelector('pre.mermaid');
+    if (diagram.dataset.mermaidRender !== 'failed' || diagram.innerHTML !== 'Mermaid could not draw this') {
+      throw new Error('a Mermaid refusal did not stay in its own block');
+    }
+    if (page.querySelector('pre:not(.mermaid)').textContent !== 'ordinary source') throw new Error('an ordinary pre was changed');
+    if (page.querySelector('.mermaid-tools')) throw new Error('a refused diagram gained reader controls');
+
+    let oldCalls = 0;
+    const old = bootContainedPage({ diagrams: ['flowchart TD\nA-->B'], mermaid: { initialize: () => {}, run: async () => { oldCalls += 1; } } });
+    old.frame.contentDocument = null;
+    vm.runInContext('bindDocumentSiteFrame(activeDocumentPath())', old.context);
+    old.context.__frames.drain();
+    await settle();
+    if (oldCalls) throw new Error('a replaced frame kept drawing its old page');
+    if (frame.contentDocument !== page) throw new Error('the refusal changed the frame that holds it');
+  });
+
+  // The window reaches this twice for one page — once from the frame's load and once because the page was already complete before the listener went on — and the second call lands before the first pass has drawn a thing, so without the guard one block is handed to Mermaid twice.
+  checkSettled('a page that is ready before its load event is drawn once', async () => {
+    let runs = 0;
+    const mermaid = {
+      initialize: () => {},
+      run: async ({ nodes }) => {
+        runs += 1;
+        for (const node of nodes) node.dataset.processed = 'true';
+      },
+    };
+    const { context } = bootContainedPage({ diagrams: ['flowchart TD\nA-->B'], mermaid });
+    vm.runInContext('siteFrameReady()', context);
+    context.__frames.drain();
+    await settle();
+    await settle();
+    if (runs !== 1) throw new Error(`the one diagram was drawn ${runs} times`);
   });
 
   // A link inside the file goes where every other link in the app goes: the host decides between a document and the machine's browser. The frame itself never navigates, which is why the click is canceled first.

@@ -852,14 +852,14 @@ fn a_hover_fades_from_one_shared_rule_and_by_name_where_it_cannot() {
         "the pager fades off the shared rule now that it fills flat: {pager}"
     );
 
-    // Its halftone is the exception, and it says so by name: the shared rule covers three colors and this is an opacity, so without its own clock the ring would snap in under a fill that was still fading.
+    // Its halftone is the exception, and it says so by name: the shared rule covers three colors and this is an opacity, so without its own clock the ring would snap in under a fill that was still fading. It is drawn at nothing until the pointer reaches the card, which makes it one of the reveals `every_control_that_appears_under_the_pointer_leaves_the_same_way` holds to the shared recipes.
     assert_contains(
         rule_body(
             css,
             ".document-body .docs-pager a::before {
   z-index: 0;",
         ),
-        "transition: opacity var(--lt-duration-120) var(--lt-ease);",
+        "transition: var(--lt-transition-hover-reveal-leave);",
     );
 
     // A plain link is the opposite: its ink fades off the shared rule, and the underline it also gains is not a color and still switches.
@@ -884,10 +884,8 @@ fn a_site_trail_places_and_reveals_the_shared_favorite_heart() {
         ".library-crumb-trail:hover > .tab-favorite,\n.library-crumb-trail:focus-within > .tab-favorite {",
     );
     assert_contains(revealed, "opacity: 1;");
-    assert_contains(
-        revealed,
-        "opacity var(--lt-duration-120) var(--lt-ease-decelerate)",
-    );
+    // The heart in the trail is the same heart the tab corner draws, so it arrives on the recipe every control revealed under a pointer spends; `every_control_that_appears_under_the_pointer_leaves_the_same_way` holds the pair together.
+    assert_contains(revealed, "var(--lt-transition-hover-reveal-arrive)");
 }
 
 #[test]

@@ -266,11 +266,10 @@ fn every_move_is_drawn_on_the_curve_its_direction_asks_for() {
         "the drag exemption must follow .open to win the tie"
     );
 
-    // A hover has no direction, so it keeps the symmetric curve. Anything that started saying `ease-emphasized` here would be claiming a hover arrives.
+    // A hover that only changes a color has no direction, so it keeps the symmetric curve. Anything that started saying `ease-emphasized` here would be claiming a hover arrives. A control drawn at nothing until the pointer reaches it is the other kind and does have one, so it is held to the two shared recipes by the reveal test at the foot of this file instead.
     for hover in [
         ".block-gutter .block-insert-option {",
         ".document-body pre > .code-copy {",
-        ".mermaid-view-controls {\n  position: absolute;",
     ] {
         assert_contains(rule_body(css, hover), "var(--lt-ease)");
     }
@@ -746,4 +745,199 @@ fn a_hover_moves_nothing_and_never_swaps_an_icons_drawing() {
             );
         }
     }
+}
+
+/// One rule of the assembled stylesheet: its selector and its declarations.
+struct CssRule<'a> {
+    selector: &'a str,
+    body: &'a str,
+}
+
+/// The sheet with the prose about it taken out. A rule's comment is not part of it: a comma or a full stop inside one would read as another selector or another class, and a brace inside one would close a rule that is still open.
+fn without_prose(css: &str) -> String {
+    let mut plain = String::with_capacity(css.len());
+    let mut rest = css;
+    while let Some(at) = rest.find("/*") {
+        plain.push_str(&rest[..at]);
+        rest = match rest[at + 2..].find("*/") {
+            Some(end) => &rest[at + 2 + end + 2..],
+            None => "",
+        };
+    }
+    plain.push_str(rest);
+    plain
+}
+
+/// Every rule in the sheet, walking into `@media` and `@supports` so a reveal written inside one is read the same as a reveal outside it. Hand it `without_prose`, never the sheet itself.
+fn css_rules(css: &str) -> Vec<CssRule<'_>> {
+    let mut out = Vec::new();
+    let bytes = css.as_bytes();
+    let (mut start, mut at) = (0, 0);
+    while at < bytes.len() {
+        match bytes[at] {
+            b'{' => {
+                let selector = css[start..at].trim();
+                let mut depth = 1usize;
+                let mut end = at + 1;
+                while end < bytes.len() && depth > 0 {
+                    match bytes[end] {
+                        b'{' => depth += 1,
+                        b'}' => depth -= 1,
+                        _ => {}
+                    }
+                    end += 1;
+                }
+                let body = &css[at + 1..end.saturating_sub(1)];
+                if selector.starts_with('@') {
+                    out.extend(css_rules(body));
+                } else {
+                    out.push(CssRule { selector, body });
+                }
+                at = end;
+                start = end;
+            }
+            b'}' => {
+                at += 1;
+                start = at;
+            }
+            _ => at += 1,
+        }
+    }
+    out
+}
+
+/// The selector with every `:not(…)` taken out, so the classes and states a rule refuses do not read as ones it wants.
+fn without_refusals(selector: &str) -> String {
+    let mut out = String::with_capacity(selector.len());
+    let mut rest = selector;
+    while let Some(at) = rest.find(":not(") {
+        out.push_str(&rest[..at]);
+        let mut depth = 0usize;
+        let mut end = at + 4;
+        for (offset, ch) in rest[at + 4..].char_indices() {
+            match ch {
+                '(' => depth += 1,
+                ')' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        end = at + 4 + offset + 1;
+                        break;
+                    }
+                }
+                _ => {}
+            }
+        }
+        rest = &rest[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// What each comma-separated selector is actually about: the last class named in it. `.tab.is-pointed .tab-favorite` is about the heart, not the tab.
+fn subjects(selector: &str) -> Vec<String> {
+    without_refusals(selector)
+        .split(',')
+        .filter_map(|one| {
+            let at = one.rfind('.')?;
+            let name: String = one[at + 1..]
+                .chars()
+                .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+                .collect();
+            (!name.is_empty()).then_some(name)
+        })
+        .collect()
+}
+
+/// The one opacity value that means "not drawn". Anything else, a token included, is a shown state.
+fn rests_at_nothing(body: &str) -> bool {
+    body.contains("opacity: 0;")
+}
+
+fn reaches_for_it(selector: &str) -> bool {
+    let wanted = without_refusals(selector);
+    wanted.contains(":hover")
+        || wanted.contains(":focus-within")
+        || wanted.contains(":focus-visible")
+}
+
+#[test]
+fn every_control_that_appears_under_the_pointer_leaves_the_same_way() {
+    // Nine families of small control are drawn at nothing and shown when the pointer or the keyboard reaches what they belong to. They used to leave four different ways — three waited a beat and faded, four went at once over 120ms, the flowchart buds went at once over 100ms, and the front-matter row's cross snapped out with no fade at all — so one hand crossing the window got four answers to the same gesture. Both ends are a named recipe now, and this finds a later reveal that names neither rather than leaving it to be noticed on screen.
+    const ARRIVE: &str = "var(--lt-transition-hover-reveal-arrive)";
+    const LEAVE: &str = "var(--lt-transition-hover-reveal-leave)";
+    let css = reading_mode_css();
+    let plain = without_prose(css);
+    let rules = css_rules(&plain);
+
+    // A subject is a hover reveal when something holds it at nothing and something else shows it under a pointer or a focus — or when the holding rule is itself written as "while nobody is reaching for this", which is how the tab's close cross is spelled.
+    let shown: Vec<(&str, Vec<String>)> = rules
+        .iter()
+        .filter(|rule| {
+            reaches_for_it(rule.selector)
+                && rule.body.contains("opacity:")
+                && !rests_at_nothing(rule.body)
+        })
+        .map(|rule| (rule.body, subjects(rule.selector)))
+        .collect();
+    let mut reveals: Vec<String> = Vec::new();
+    for rule in &rules {
+        if !rests_at_nothing(rule.body) {
+            continue;
+        }
+        let while_unreached =
+            rule.selector.contains(":not(:hover)") || rule.selector.contains(":not(:focus");
+        for subject in subjects(rule.selector) {
+            let met = while_unreached || shown.iter().any(|(_, theirs)| theirs.contains(&subject));
+            if met && !reveals.contains(&subject) {
+                reveals.push(subject);
+            }
+        }
+    }
+    // The count is the guard on the finder itself: a change that stops it seeing a family would otherwise pass by having nothing left to check. Eleven controls in the nine families — the diagram's two tool groups are one family, and so are the table's corner and the picture's.
+    assert!(
+        reveals.len() >= 11,
+        "the controls this holds have gone from eleven to {}: {reveals:?}",
+        reveals.len()
+    );
+
+    for rule in &rules {
+        let mine = subjects(rule.selector);
+        if !mine.iter().any(|subject| reveals.contains(subject)) {
+            continue;
+        }
+        if rests_at_nothing(rule.body) {
+            assert!(
+                rule.body.contains(LEAVE),
+                "a control held at nothing leaves on its own timing instead of the shared one: {} {{{}}}",
+                rule.selector,
+                rule.body
+            );
+        }
+        if reaches_for_it(rule.selector) && rule.body.contains("opacity:") {
+            assert!(
+                rule.body.contains(ARRIVE),
+                "a control shown under the pointer arrives on its own timing instead of the shared one: {} {{{}}}",
+                rule.selector,
+                rule.body
+            );
+        }
+    }
+
+    // The close cross is the one family whose arrival is written on its resting rule rather than on a hover, so the two checks above never read it. Every family owes an arrival somewhere.
+    for subject in &reveals {
+        assert!(
+            rules.iter().any(|rule| {
+                subjects(rule.selector).contains(subject) && rule.body.contains(ARRIVE)
+            }),
+            "{subject} is revealed with no arrival recipe anywhere, so it lands in one frame"
+        );
+    }
+
+    // The code block's copy button is the deliberate exception: it rests at half strength with its whole box drawn, so it brightens rather than appears and stays findable once the pointer has gone.
+    let copy = rule_body(css, ".document-body pre > .code-copy {");
+    assert_contains(copy, "opacity: var(--lt-opacity-50);");
+    assert!(
+        !copy.contains(LEAVE),
+        "the copy button never disappears, so it owes no leave recipe"
+    );
 }
