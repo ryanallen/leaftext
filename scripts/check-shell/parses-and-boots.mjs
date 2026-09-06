@@ -14,6 +14,7 @@ import {
   runShell,
   selectorParts,
   source,
+  strippedSource,
   topLevelNames,
   writeOnlyNames,
 } from './shared.mjs';
@@ -59,6 +60,25 @@ export function run() {
 
   check('the page boots', () => {
     record.booted = runShell(source);
+  });
+
+  // ---- 2b. and so does the copy a browser downloads ---------------------------
+  //
+  // The desktop is served the fragments as written; the browser modules are served them with their comments taken out, which is 154 KB of the embed module every embedded document waits behind. The strip reads the source as JavaScript rather than as text, so its way of being wrong is to take out something that was never a comment — a `//` inside a pattern, a string or a template literal — and the page that reaches a product then throws where the desktop's does not. Booting the real one is the only thing that catches that, and it is asked of the app so this is the script a host actually serves rather than a second strip written here.
+
+  check('the script a browser downloads parses and boots', () => {
+    const downloaded = strippedSource();
+    new vm.Script(downloaded, { filename: 'app-shell-downloaded.js' });
+    const page = runShell(downloaded);
+    if (!page.document.getElementById('appSurface')) throw new Error('the stripped script booted without drawing the app');
+
+    // The front end's own first line, so a strip that silently did nothing fails here rather than passing as a saving nobody made.
+    if (downloaded.includes("The page's own errors, on their way to the app's log file.")) {
+      throw new Error('the downloaded script still carries the front end own comments');
+    }
+    if (downloaded.length * 3 >= source.length * 2) {
+      throw new Error(`the strip took out ${source.length - downloaded.length} of ${source.length} bytes, which is not the third the module was measured saving`);
+    }
   });
   // From here every check is handed the page the boot made, whatever the check before it did to it.
   const booted = record.booted;

@@ -67,6 +67,21 @@ CREATE INDEX remote_files_by_path ON remote_files (vault_id, local_path);
 const MIGRATION_8_SQL: &str =
     "ALTER TABLE vaults ADD COLUMN git_auto_sync INTEGER NOT NULL DEFAULT 0;";
 
+/// Migration 9: named views belong to one vault and disappear with it.
+#[cfg(feature = "desktop")]
+const MIGRATION_9_SQL: &str = r#"
+CREATE TABLE saved_views (
+    id             INTEGER PRIMARY KEY,
+    vault_id       INTEGER NOT NULL REFERENCES vaults(id) ON DELETE CASCADE,
+    position       INTEGER NOT NULL,
+    name           TEXT NOT NULL,
+    query          TEXT NOT NULL,
+    shape          TEXT NOT NULL DEFAULT 'list',
+    shape_settings TEXT NOT NULL DEFAULT '{"version":1}'
+);
+CREATE INDEX saved_views_vault_position ON saved_views(vault_id, position, id);
+"#;
+
 /// Open (creating if needed) the database, apply PRAGMAs, and migrate.
 #[cfg(feature = "desktop")]
 pub fn open_db(data_dir: &Path) -> DbResult<Connection> {
@@ -153,6 +168,17 @@ fn run_migrations(conn: &mut Connection) -> DbResult<()> {
         tx.execute_batch(MIGRATION_8_SQL).map_err(to_err)?;
         tx.execute(
             "INSERT INTO schema_migrations (version, applied_at) VALUES (8, ?1)",
+            params![now_secs()],
+        )
+        .map_err(to_err)?;
+        tx.commit().map_err(to_err)?;
+    }
+
+    if current < 9 {
+        let tx = conn.transaction().map_err(to_err)?;
+        tx.execute_batch(MIGRATION_9_SQL).map_err(to_err)?;
+        tx.execute(
+            "INSERT INTO schema_migrations (version, applied_at) VALUES (9, ?1)",
             params![now_secs()],
         )
         .map_err(to_err)?;

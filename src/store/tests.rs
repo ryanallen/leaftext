@@ -1189,3 +1189,141 @@ fn a_file_is_owned_by_the_innermost_vault_that_holds_it() {
     drop(conn);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+// ---------------------------------------------------------------------------
+// Saved views
+// ---------------------------------------------------------------------------
+
+#[test]
+fn saved_views_keep_their_words_and_leave_with_their_vault() {
+    let dir = unique_dir("saved-views");
+    let conn = open_db(&dir).expect("db opens");
+    let first =
+        add_vault(&conn, Path::new(r"C:\One"), "One", VaultKind::Folder).expect("first vault");
+    let second =
+        add_vault(&conn, Path::new(r"C:\Two"), "Two", VaultKind::Folder).expect("second vault");
+    let other = save_view(
+        &conn,
+        second.id,
+        "Theirs",
+        "status:done",
+        "list",
+        r#"{"version":1}"#,
+    )
+    .expect("other view saves");
+    // A filter is somebody's own words: the quotes are part of the query and the accent is part of the name.
+    let view = save_view(
+        &conn,
+        first.id,
+        "mañana \"open\"",
+        "status:open",
+        "list",
+        r#"{"version":1}"#,
+    )
+    .expect("view saves");
+    assert_eq!(
+        list_saved_views(&conn, first.id).expect("views"),
+        vec![view]
+    );
+
+    remove_vault(&conn, first.id).expect("vault removes");
+    assert!(list_saved_views(&conn, first.id)
+        .expect("gone views")
+        .is_empty());
+    // The other vault's view is untouched, so a removal takes only what belonged to the folder that left.
+    assert_eq!(
+        list_saved_views(&conn, second.id).expect("other views"),
+        vec![other]
+    );
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn saved_views_keep_the_order_they_were_made_in_across_a_reopen() {
+    let dir = unique_dir("saved-views-order");
+    let conn = open_db(&dir).expect("db opens");
+    let vault = add_vault(
+        &conn,
+        Path::new(r"C:\Ordered"),
+        "Ordered",
+        VaultKind::Folder,
+    )
+    .expect("vault");
+    let names = ["Today", "Open", "Waiting"];
+    for name in names {
+        save_view(
+            &conn,
+            vault.id,
+            name,
+            "status:open",
+            "list",
+            r#"{"version":1}"#,
+        )
+        .expect("view saves");
+    }
+    let listed: Vec<String> = list_saved_views(&conn, vault.id)
+        .expect("views")
+        .into_iter()
+        .map(|view| view.name)
+        .collect();
+    assert_eq!(listed, names);
+
+    // The order is a column, not the order rows happen to come back in, so it survives the database being closed and opened again.
+    drop(conn);
+    let conn = open_db(&dir).expect("db reopens");
+    let reopened = list_saved_views(&conn, vault.id).expect("views");
+    assert_eq!(
+        reopened
+            .iter()
+            .map(|view| view.name.clone())
+            .collect::<Vec<_>>(),
+        names
+    );
+    assert_eq!(
+        reopened
+            .iter()
+            .map(|view| view.position)
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2]
+    );
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_migration_8_database_keeps_its_vaults_and_gains_somewhere_to_keep_a_view() {
+    let dir = unique_dir("migrate-9");
+    // Stand in for an installed copy caught up to migration 8: the vaults are there and nothing has ever named a view.
+    {
+        let conn = Connection::open(manifest_path(&dir)).expect("db created");
+        conn.execute_batch(
+            r"CREATE TABLE schema_migrations (version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
+             CREATE TABLE vaults (id INTEGER PRIMARY KEY, name TEXT NOT NULL, root_path TEXT NOT NULL UNIQUE, added_at INTEGER NOT NULL, kind TEXT NOT NULL DEFAULT 'folder', remote_id TEXT, account TEXT, git_auto_sync INTEGER NOT NULL DEFAULT 0);
+             CREATE TABLE app_state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+             CREATE TABLE remote_files (vault_id INTEGER NOT NULL REFERENCES vaults(id) ON DELETE CASCADE, remote_id TEXT NOT NULL, local_path TEXT NOT NULL, version TEXT, PRIMARY KEY (vault_id, remote_id));
+             INSERT INTO vaults (name, root_path, added_at, kind) VALUES ('Notes', 'C:\Notes', 10, 'folder'), ('Site', 'C:\Site', 20, 'git');
+             INSERT INTO schema_migrations (version, applied_at) VALUES (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 0);",
+        )
+        .expect("migration 8 schema created");
+    }
+
+    let conn = open_db(&dir).expect("db opens and migrates");
+    let vaults = list_vaults(&conn).expect("listed");
+    assert_eq!(
+        vaults
+            .iter()
+            .map(|vault| vault.name.clone())
+            .collect::<Vec<_>>(),
+        vec!["Notes", "Site"]
+    );
+    assert!(table_exists(&conn, "saved_views"));
+    assert!(list_saved_views(&conn, vaults[0].id)
+        .expect("views")
+        .is_empty());
+
+    drop(conn);
+    let _ = std::fs::remove_dir_all(&dir);
+}

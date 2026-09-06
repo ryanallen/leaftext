@@ -25,6 +25,7 @@ mod vault_git;
 mod vault_remote;
 mod vault_search;
 mod vaults;
+mod view_cmds;
 mod watch;
 mod window_cmds;
 mod workspace;

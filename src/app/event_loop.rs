@@ -1229,6 +1229,22 @@ pub(crate) fn run_event_loop(event_loop: EventLoop<UserEvent>, ctx: AppCtx) -> !
                     let typed = TypedQuery::new(query, today.as_deref());
                     request_vault_search(&mut vault_state, &proxy, typed);
                 }
+                IpcCommand::SaveView { name, query } => {
+                    view_cmds::save(&mut vault_state, reader.page(), name, query)
+                }
+                IpcCommand::DeleteView { id } => {
+                    view_cmds::delete(&mut vault_state, reader.page(), id)
+                }
+                IpcCommand::MoveView { id, position } => {
+                    view_cmds::move_view(&mut vault_state, reader.page(), id, position)
+                }
+                IpcCommand::RunView { id } => view_cmds::run(&vault_state, reader.page(), id),
+                IpcCommand::WriteViewField {
+                    path,
+                    field,
+                    value,
+                    fingerprint,
+                } => view_cmds::write_refused(reader.page(), path, field, value, fingerprint),
                 IpcCommand::LoadPager { path } => vaults::load_pager_page(&proxy, path),
                 IpcCommand::UpdateChecked { version } => {
                     settings.update_last_checked = leaftext::now_unix();

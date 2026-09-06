@@ -127,6 +127,12 @@ fn main() {
         return;
     }
 
+    // Behind `just check-shell`: the front end as a browser downloads it, comments taken out. Only the app can produce it — the strip is `src/shell_comments.rs` — and a node script growing a second one would boot a script no host serves. Opens no window.
+    if argv.len() >= 2 && argv[1] == "--dump-shell-script" {
+        print!("{}", leaftext::app_shell_script_without_comments());
+        return;
+    }
+
     if let Err(error) = run_app() {
         let message = startup_failure_message(error.as_ref());
         eprintln!("{message}");
@@ -269,7 +275,7 @@ fn front_end_asset_for(asked: Option<&str>) -> &'static str {
 const FRONT_END_EVALUATION_ENV: &str = "LEAFTEXT_FRONT_END_EVALUATION";
 
 fn run_app() -> Result<(), Box<dyn Error>> {
-    // First, so everything below has somewhere to print. Not in the tool modes above (`--squeeze-png`, `--dump-css`): those are run from a terminal that is already watching stderr.
+    // First, so everything below has somewhere to print. Not in the tool modes above (`--squeeze-png`, `--dump-css`, `--dump-shell-script`): those are run from a terminal that is already watching stderr.
     journal::start();
 
     // A file passed on the command line. Used to hand off to a running instance, or to open on boot if we're the first instance.

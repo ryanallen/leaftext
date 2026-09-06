@@ -182,6 +182,22 @@ pub struct VaultCorpus {
     pub skipped: Vec<String>,
 }
 
+/// One document a named view draws. Unlike a search hit, it is never expanded into snippets and a document can occur only once.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewRow {
+    pub abs_path: String,
+    pub title: String,
+}
+
+/// A bounded answer for a saved view.
+#[derive(Debug, Clone, Default, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ViewResults {
+    pub rows: Vec<ViewRow>,
+    pub truncated: bool,
+}
+
 /// One slice of a read, as it lands. `documents` are the new ones only unless `replaces` says otherwise, so whoever is collecting them grows what it holds rather than replacing it.
 pub struct CorpusSlice {
     pub documents: Vec<CorpusDocument>,
@@ -432,6 +448,33 @@ impl VaultCorpus {
     pub fn search(&self, query: &str) -> SearchResults {
         self.search_until(&Query::parse(query, crate::utc_today()), None, &|| false)
             .unwrap_or_default()
+    }
+
+    /// Match a saved filter against the held corpus. Views deliberately do not borrow search ranking or snippets: each matching document is one row.
+    pub fn view(&self, query: &str) -> ViewResults {
+        const VIEW_LIMIT: usize = 1_000;
+        let query = Query::parse(query, crate::utc_today());
+        let mut rows = Vec::new();
+        for document in &self.documents {
+            let candidate = DocumentCandidate::new(document);
+            if !query.matches(&candidate) {
+                continue;
+            }
+            if rows.len() == VIEW_LIMIT {
+                return ViewResults {
+                    rows,
+                    truncated: true,
+                };
+            }
+            rows.push(ViewRow {
+                abs_path: document.path.clone(),
+                title: document.label.clone(),
+            });
+        }
+        ViewResults {
+            rows,
+            truncated: false,
+        }
     }
 
     /// The whole search: a document passes the parsed filter, then scores on the words in it. Hits are ranked name-first, then by how often those words appear. Scanning a few megabytes of RAM beats a round trip to SQLite, and it can never be out of step with the disk.

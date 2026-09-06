@@ -1681,3 +1681,89 @@ fn a_field_gained_lost_appearing_or_deleted_moves_the_vaults_field_names() {
 
     fs::remove_dir_all(&dir).expect("test directory is removed");
 }
+
+// ---------------------------------------------------------------------------
+// Saved views
+// ---------------------------------------------------------------------------
+
+/// A vault of documents that all carry the same word, small enough that a thousand of them is a test rather than a wait.
+fn view_corpus(count: usize) -> VaultCorpus {
+    VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents: (0..count)
+            .map(|index| CorpusDocument {
+                path: format!("/vault/note-{index}.md"),
+                label: format!("note-{index}"),
+                aliases: Vec::new(),
+                text: "open\n".into(),
+            })
+            .collect(),
+        truncated: false,
+        skipped: Vec::new(),
+    }
+}
+
+#[test]
+fn a_view_keeps_one_row_for_each_matching_document() {
+    let corpus = VaultCorpus {
+        root: PathBuf::from("/vault"),
+        documents: vec![
+            CorpusDocument {
+                path: "/vault/one.md".into(),
+                label: "one".into(),
+                aliases: Vec::new(),
+                text: "open\nopen\nopen\n".into(),
+            },
+            CorpusDocument {
+                path: "/vault/two.md".into(),
+                label: "two".into(),
+                aliases: Vec::new(),
+                text: "shut\n".into(),
+            },
+        ],
+        truncated: false,
+        skipped: Vec::new(),
+    };
+
+    // Search would draw a row per appearance; a view is a list of documents, so three matching lines are still one document.
+    assert_eq!(corpus.search("open").hits.len(), 3);
+    let result = corpus.view("open");
+    assert_eq!(
+        result
+            .rows
+            .iter()
+            .map(|row| row.title.clone())
+            .collect::<Vec<_>>(),
+        vec!["one"]
+    );
+    assert_eq!(result.rows[0].abs_path, "/vault/one.md");
+    assert!(!result.truncated);
+
+    // A view reads the vault it was run over and writes nothing back into it — the board that moves a field is the only thing that touches a document.
+    assert_eq!(corpus.documents[0].text, "open\nopen\nopen\n");
+    assert_eq!(corpus.documents[1].text, "shut\n");
+}
+
+#[test]
+fn a_view_keeps_the_matches_a_search_would_have_cut() {
+    // Search stops at fifty files and says so. A view is a list somebody saved to work from, so the sixty documents that match are the sixty it draws.
+    let corpus = view_corpus(60);
+    assert!(corpus.search("open").truncated);
+
+    let result = corpus.view("open");
+    assert_eq!(result.rows.len(), 60);
+    assert!(!result.truncated);
+}
+
+#[test]
+fn a_view_says_when_it_cut_its_list_at_a_thousand_documents() {
+    let cut = view_corpus(1_001).view("open");
+    assert_eq!(cut.rows.len(), 1_000);
+    assert!(cut.truncated, "a list that was cut did not say so");
+
+    // Exactly at the cap is a whole answer, and so is anything under it.
+    let whole = view_corpus(1_000).view("open");
+    assert_eq!(whole.rows.len(), 1_000);
+    assert!(!whole.truncated);
+    assert!(!view_corpus(3).view("open").truncated);
+}

@@ -46,6 +46,7 @@ import { run as runScrollEdgesAndBars } from './check-shell/scroll-edges-and-bar
 import { run as runFavorites } from './check-shell/favorites.mjs';
 import { run as runLibraryRows } from './check-shell/library-rows.mjs';
 import { run as runWhatAVaultIs } from './check-shell/what-a-vault-is.mjs';
+import { run as runSavedViews } from './check-shell/saved-views.mjs';
 import { run as runThePagesOwnErrors } from './check-shell/the-pages-own-errors.mjs';
 import { run as runBrowserHost } from './check-shell/browser-host.mjs';
 import { run as runEmbedHost } from './check-shell/embed-host.mjs';
@@ -108,6 +109,7 @@ runScrollEdgesAndBars();
 runFavorites();
 runLibraryRows();
 runWhatAVaultIs();
+runSavedViews();
 runThePagesOwnErrors();
 runBrowserHost();
 runEmbedHost();

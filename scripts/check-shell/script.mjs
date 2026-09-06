@@ -2,6 +2,7 @@
 //
 // Reached through `shared.mjs`, never imported by a subject file directly.
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -36,6 +37,21 @@ function shellSource() {
 // ---- the script the whole suite is read against -----------------------------
 
 export const { names, source } = shellSource();
+
+// ---- the script a browser downloads ------------------------------------------
+
+/** The same front end with its comments taken out, which is the copy the browser modules answer `leaf_script` with. Asked of the app rather than assembled here: the strip is `src/shell_comments.rs`, and a second one written in this folder would boot a script no host serves. Run on the first call, so a subject that never asks for it pays nothing. */
+let downloaded = null;
+export function strippedSource() {
+  if (downloaded === null) {
+    downloaded = execFileSync('cargo', ['run', '--quiet', '--', '--dump-shell-script'], {
+      cwd: root,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    });
+  }
+  return downloaded;
+}
 
 // ---- what crosses a file boundary by assignment ------------------------------
 //

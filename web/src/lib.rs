@@ -180,7 +180,7 @@ pub extern "C" fn leaf_page() -> *mut u8 {
     into_length_prefixed(leaftext::app_shell_html_for_host(&WebHost).into_bytes())
 }
 
-/// The app's own front end, the same ordered fragments the desktop serves as `app.js`.
+/// The app's own front end, the same ordered fragments the desktop serves as `app.js` — with their comments taken out, because this copy is downloaded before an embedded document can open and 552 KB of it is prose no engine runs. Taken out as the module was compiled rather than here: the fragments reach a binary through `include_str!`, so a strip on this line would leave the prose in the module and hand out a shorter copy of it.
 #[cfg(feature = "shell")]
 #[no_mangle]
 pub extern "C" fn leaf_script() -> *mut u8 {

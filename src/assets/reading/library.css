@@ -540,6 +540,17 @@ body.library-resizing button {
   height: 12px;
   margin: auto;
 }
+.saved-views { padding: var(--lt-space-4) var(--lt-space-6); border-bottom: var(--lt-stroke-1) solid var(--lt-border); }
+.saved-views-title { margin: 0 0 var(--lt-space-2); color: var(--lt-muted-foreground); font-size: var(--lt-text-11); line-height: var(--lt-leading-1-4); font-weight: var(--lt-weight-semibold); }
+.saved-view-row { display: flex; align-items: center; gap: var(--lt-space-2); }
+.saved-view-open { flex: 1 1 auto; min-width: 0; padding: var(--lt-space-2); border: 0; background: transparent; color: inherit; text-align: left; font: inherit; }
+.saved-view-delete { flex: 0 0 auto; padding: var(--lt-space-2); border: 0; background: transparent; color: var(--lt-muted-foreground); }
+/* The pane's own wash, named here because the app-wide button hover outranks a rule that only clears the fill at rest. */
+.saved-view-open:hover,
+.saved-view-delete:hover { background: var(--lt-wash-hover); }
+.saved-view-delete .lt-icon { display: block; width: 12px; height: 12px; }
+.saved-view-name { box-sizing: border-box; width: 100%; margin-bottom: var(--lt-space-2); padding: var(--lt-space-2); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-xs); background: var(--lt-surface); color: inherit; font: inherit; }
+.saved-view-surface { padding: var(--lt-space-6); }
 /* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
 .library-search::-webkit-search-cancel-button {
   display: none;

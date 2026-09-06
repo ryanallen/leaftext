@@ -660,3 +660,87 @@ fn a_search_payload_carries_the_document_ceiling_the_search_cut_it_at() {
         "the ceiling sent is not the one the answer was cut at: {script}"
     );
 }
+
+/// A fragment written the way the front end writes: comments to drop, and four places a `//` is not one.
+const SLASHES: &str = r##"// the opening line
+const url = "https://example.com//path"; // and a trailing one
+const shape = `a // b ${"c // d"} e`;
+const pattern = /https?:\/\//g;
+/* a block comment
+   over two lines */
+const share = total / count; // a divide, not a pattern
+const sum = 1 /* an inline aside */ + 2;
+"##;
+
+#[test]
+fn the_browser_script_drops_comments_and_keeps_every_other_slash() {
+    let stripped = crate::shell_comments::without_comments(SLASHES);
+
+    // The four places a `//` survives: a string, a template literal, a string inside that template's substitution, and a pattern.
+    assert!(
+        stripped.contains(r#""https://example.com//path""#),
+        "a URL in a string lost its slashes: {stripped}"
+    );
+    assert!(
+        stripped.contains(r#"`a // b ${"c // d"} e`"#),
+        "a template literal lost its slashes: {stripped}"
+    );
+    assert!(
+        stripped.contains(r"/https?:\/\//g"),
+        "a pattern lost its slashes: {stripped}"
+    );
+    assert!(
+        stripped.contains("total / count"),
+        "a divide was read as a pattern: {stripped}"
+    );
+
+    for comment in [
+        "the opening line",
+        "and a trailing one",
+        "a block comment",
+        "over two lines",
+        "a divide, not a pattern",
+        "an inline aside",
+    ] {
+        assert!(
+            !stripped.contains(comment),
+            "the comment {comment:?} is still in the script: {stripped}"
+        );
+    }
+
+    // A block comment that spanned lines leaves its line break, so a statement relying on it for a semicolon still gets one; one that did not leaves a space, so `1/**/+ 2` cannot become `1+ 2` with its tokens run together.
+    assert!(
+        stripped.contains("const sum = 1   + 2;"),
+        "an inline block comment did not leave a space: {stripped}"
+    );
+    assert_eq!(
+        stripped.lines().count(),
+        SLASHES.lines().count(),
+        "the strip moved a line boundary: {stripped}"
+    );
+}
+
+#[test]
+fn the_desktop_script_keeps_the_comments_the_browser_one_downloads_without() {
+    let written = app_shell_script();
+    let stripped = app_shell_script_without_comments();
+
+    // The front end's first line, which the design pass found sitting in the embed module's bytes verbatim.
+    let opening = "The page's own errors, on their way to the app's log file.";
+    assert!(
+        written.contains(opening),
+        "the desktop script is meant to be the fragments as written"
+    );
+    assert!(
+        !stripped.contains(opening),
+        "the browser script still carries the front end's prose"
+    );
+
+    // The saving is the whole point: a third of the front end is comment text, and it is what an embedded document waits behind.
+    assert!(
+        stripped.len() * 3 < written.len() * 2,
+        "the strip took out {} of {} bytes, which is not the third the module was measured saving",
+        written.len() - stripped.len(),
+        written.len()
+    );
+}

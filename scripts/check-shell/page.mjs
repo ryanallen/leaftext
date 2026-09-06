@@ -431,13 +431,15 @@ export function fakeElement(id = '') {
       };
       drop(this);
     },
-    // Four names over one store, and each of the four that has a home of its own is written to that home rather than kept twice: an id, a class set both names write, the hidden flag the page spells bare, and the dataset. The store still records the name, because the order it arrived in is the order the markup says it back.
+    // Five names over one store, and each of the five that has a home of its own is written to that home rather than kept twice: an id, a class set both names write, the hidden flag the page spells bare, the dataset, and the starting text a field is drawn carrying. The store still records the name, because the order it arrived in is the order the markup says it back.
     setAttribute(key, value) {
       const name = String(key);
       attributes.set(name, String(value));
       if (name === 'id') this.id = String(value);
       else if (name === 'class') this.className = String(value);
       else if (name === 'hidden') this.hidden = true;
+      // What a browser does with a field's `value` attribute: it is the text the field starts holding, so a box drawn with one and never typed into reads back as already filled.
+      else if (name === 'value') this.value = String(value);
       else if (name.startsWith('data-')) this.dataset[datasetName(name)] = String(value);
     },
     removeAttribute(key) {
@@ -446,6 +448,7 @@ export function fakeElement(id = '') {
       if (name === 'id') this.id = '';
       else if (name === 'class') this.className = '';
       else if (name === 'hidden') this.hidden = false;
+      else if (name === 'value') this.value = '';
       else if (name.startsWith('data-')) delete this.dataset[datasetName(name)];
     },
     getAttribute(key) {

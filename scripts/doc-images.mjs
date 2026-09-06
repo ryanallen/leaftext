@@ -25,6 +25,16 @@ function markdownFiles(dir) {
   return out;
 }
 
+function pictureFiles(dir = 'imgs') {
+  const out = [];
+  for (const name of readdirSync(join(root, dir))) {
+    const rel = posix.join(dir, name);
+    if (statSync(join(root, rel)).isDirectory()) out.push(...pictureFiles(rel));
+    else if (name.endsWith('.png')) out.push(rel);
+  }
+  return out;
+}
+
 /** Every page the site serves as a document, front page first. */
 export function documentationPages() {
   return ['README.md', ...markdownFiles('docs')];
@@ -64,6 +74,11 @@ export function referencesIn(page, text) {
   return out;
 }
 
+export function unpublishedPictures(references, pictures) {
+  const published = new Set(references.map(({ path }) => path));
+  return pictures.filter((path) => !published.has(path));
+}
+
 // The two exports above are what `scripts/site-images.mjs` imports, so nothing below runs when it does.
 if (process.argv[1] && fileURLToPath(import.meta.url) === join(process.argv[1])) {
   main();
@@ -88,6 +103,12 @@ function main() {
     if (!only || placed.slice(only.start, only.end) !== 'imgs/leaftext.png') {
       problems.push('the address a reference was found at did not sit where the scanner said, and the publish rewrites a page by those two numbers');
     }
+    if (unpublishedPictures([{ path: 'imgs/leaftext.png' }], ['imgs/leaftext.png']).length) {
+      problems.push('a published picture was called unpublished');
+    }
+    if (unpublishedPictures([{ path: 'imgs/leaftext.png' }], ['imgs/leaftext.png', 'imgs/not-published.png']).join() !== 'imgs/not-published.png') {
+      problems.push('an unpublished picture went uncounted');
+    }
     if (problems.length) {
       console.error('the scanner cannot be trusted to find a missing picture:');
       for (const problem of problems) console.error(`  ${problem}`);
@@ -99,6 +120,7 @@ function main() {
   const references = documentationPages().flatMap((page) => referencesIn(page, readFileSync(join(root, page), 'utf8')));
 
   const missing = references.filter((r) => !r.there);
+  const unpublished = unpublishedPictures(references, pictureFiles());
 
   if (process.argv.includes('--missing')) {
     for (const { page, src, path } of missing) console.log(`${page}\t${src}\t${path}`);
@@ -113,7 +135,11 @@ function main() {
       console.log(`  ${page}`);
       for (const { src, path } of rows) console.log(`    ${src}  ->  ${path}`);
     }
+    if (unpublished.length) {
+      console.log(`${unpublished.length} pictures are not published`);
+      for (const path of unpublished) console.log(`  ${path}`);
+    }
   }
 
-  if (process.argv.includes('--check') && missing.length) process.exit(1);
+  if (process.argv.includes('--check') && (missing.length || unpublished.length)) process.exit(1);
 }

@@ -48,6 +48,7 @@ mod minimap;
 pub use minimap::{html_has_visible_content, markdown_has_visible_content};
 mod assets;
 pub(crate) use assets::*;
+mod shell_comments;
 pub use assets::{
     app_shell_evaluation_script, bundled_asset_response, source_payload_url, BundledAsset,
     APP_SHELL_EVALUATION_SCRIPT_ASSET, APP_SHELL_SCRIPT_ASSET, KATEX_CSS, KATEX_FONTS,
@@ -146,9 +147,23 @@ const APP_SHELL_HTML: &str = include_str!("assets/app-shell.html");
 /// One fragment of the front end: the path it is included from, and its source. The path is the name [`app_shell_evaluation_script`] marks that fragment's boundaries with, so a measurement names a file somebody can open.
 pub(crate) type ShellFragment = (&'static str, &'static str);
 
+/// Where a fragment's text comes from. The desktop takes the file as written: it downloads nothing, and a thrown error there has to report a line somebody can open. A browser module takes the copy `build.rs` wrote with the comments off, because 552 KB of the front end's 1,312 KB is prose no engine runs and it is 154 KB of the module every embedded document waits behind. Taking it off later does not work — `include_str!` puts the text in the module whether or not anything hands it out.
+#[cfg(not(target_arch = "wasm32"))]
+macro_rules! shell_fragment_source {
+    ($path:literal) => {
+        include_str!($path)
+    };
+}
+#[cfg(target_arch = "wasm32")]
+macro_rules! shell_fragment_source {
+    ($path:literal) => {
+        include_str!(concat!(env!("OUT_DIR"), "/shell-stripped/src/", $path))
+    };
+}
+
 /// Writes the fragment list from one path per file. Both halves of a [`ShellFragment`] come out of that single literal, so the name a measurement carries can never drift from the source it stands for.
 macro_rules! shell_fragments {
-    ($($path:literal,)*) => { &[$(($path, include_str!($path)),)*] };
+    ($($path:literal,)*) => { &[$(($path, shell_fragment_source!($path)),)*] };
 }
 
 /// The front-end script as ordered fragments, concatenated into one script sharing one scope — the page has no module loader. Order is load-bearing: the last fragment ends with the bootstrap call that must run after everything else.
@@ -182,6 +197,7 @@ pub(crate) const APP_SHELL_SCRIPT_PARTS: &[ShellFragment] = shell_fragments![
     "assets/shell/graph.js",
     "assets/shell/graph-scene.js",
     "assets/shell/library-search.js",
+    "assets/shell/saved-views.js",
     "assets/shell/updater.js",
     "assets/shell/theme.js",
     "assets/shell/render-state.js",
@@ -225,6 +241,17 @@ pub fn app_shell_script() -> &'static str {
         APP_SHELL_SCRIPT_PARTS
             .iter()
             .map(|(_, source)| *source)
+            .collect()
+    })
+}
+
+/// The same front end with its comments taken out, for a host that downloads it. 552 KB of the 1,312 KB above is prose no engine runs, and it is 154 KB of the embed module compressed — which every embedded document waits behind. The desktop keeps [`app_shell_script`] instead, so a thrown error there still reports a line matching its fragment file, and [`app_shell_evaluation_script`] keeps reading the fragments as written for the same reason.
+pub fn app_shell_script_without_comments() -> &'static str {
+    static SCRIPT: OnceLock<String> = OnceLock::new();
+    SCRIPT.get_or_init(|| {
+        APP_SHELL_SCRIPT_PARTS
+            .iter()
+            .map(|(_, source)| shell_comments::without_comments(source))
             .collect()
     })
 }

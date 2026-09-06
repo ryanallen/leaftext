@@ -453,6 +453,21 @@ pub(crate) enum IpcCommand {
         #[serde(default)]
         today: Option<String>,
     },
+    #[serde(rename = "saveView")]
+    SaveView { name: String, query: String },
+    #[serde(rename = "deleteView")]
+    DeleteView { id: i64 },
+    #[serde(rename = "moveView")]
+    MoveView { id: i64, position: i64 },
+    #[serde(rename = "runView")]
+    RunView { id: i64 },
+    #[serde(rename = "writeViewField")]
+    WriteViewField {
+        path: String,
+        field: String,
+        value: String,
+        fingerprint: String,
+    },
     /// Compute Previous/Next pager links without blocking the initial render.
     #[serde(rename = "loadPager")]
     LoadPager { path: PathBuf },

@@ -21,8 +21,15 @@ const target = 'wasm32-unknown-unknown';
 const built = join(root, 'target', target, 'release', 'leaftext_web.wasm');
 const out = join(root, 'web', 'dist');
 
-// What a page may pay before a word appears. The core measured 631 KB the day it was first built; this leaves room for the renderer to grow without leaving room for the highlighter to creep back in.
-const CORE_CEILING_BROTLI = 800 * 1024;
+// What each module may pay before a word appears. Every one of them is downloaded whole before the page it is behind draws anything, and a ceiling is what keeps that cost a decision rather than a drift: the embed module grew 181 KB compressed in a single month with nothing here reading its size against anything.
+//
+// The core keeps the 800 KB it was given the day it first measured 631 KB, which leaves room for the renderer to grow without leaving room for the highlighter to creep back in. The other three are an eighth above what the build measured on 6 September 2026, 2:31pm — core 778 KB, with colors 1,891, embed 970, whole app 2,079. An eighth because it is a little under the 181 KB that went unnoticed, so a repeat of that month stops the build while an ordinary month of renderer growth does not.
+const CEILINGS_BROTLI = {
+  core: 800 * 1024,
+  highlight: 2128 * 1024,
+  embed: 1092 * 1024,
+  app: 2339 * 1024,
+};
 
 const check = process.argv.includes('--check');
 
@@ -402,6 +409,31 @@ if (buffers.memoryBytes() !== settledMemory) {
   problems.push(`60 documents opened and closed grew the module's memory from ${kb(settledMemory)} to ${kb(buffers.memoryBytes())}`);
 }
 
+// ---- the front end arrives without its comments -----------------------------
+//
+// A browser downloads the front end before an embedded document can open, and a third of it is prose no engine runs — 154 KB of this module compressed. `build.rs` takes it off as the module is compiled, because the fragments reach a binary through `include_str!` and a strip that runs when the page asks for the script leaves the text in the module either way. That failure is invisible: the module builds, the page boots, and the only thing that moved is a number nobody was reading. So the bytes are asked directly.
+
+const journal = readFileSync(join(root, 'src/assets/shell/journal.js'), 'utf8');
+const openingComment = journal.split('\n')[0].replace(/^\/\/\s*/, '').trim();
+if (!openingComment || journal.startsWith(openingComment)) {
+  problems.push('the front end no longer opens on a comment, so this check has nothing to look for — point it at one that is there');
+}
+// Something the front end does rather than says, so a strip that took the whole file out fails here instead of passing.
+const frontEndCode = 'requestActiveVaultStatus';
+for (const [name, module_] of [['embed', embed], ['whole-app', app]]) {
+  const bytes = readFileSync(module_.file);
+  if (bytes.includes(openingComment)) {
+    problems.push(`the ${name} module still carries the front end's comments, so the strip is not reaching what ships`);
+  }
+  if (!bytes.includes(frontEndCode)) {
+    problems.push(`the ${name} module carries no front end at all`);
+  }
+}
+const coreBytes = readFileSync(core.file);
+if (coreBytes.includes(openingComment) || coreBytes.includes(frontEndCode)) {
+  problems.push('the core module carries the front end, which is the whole reason the other two are their own builds');
+}
+
 if (problems.length) {
   console.error('the browser modules do not do what they are for:');
   for (const problem of problems) console.error(`  ${problem}`);
@@ -415,9 +447,20 @@ console.log(`embed      ${kb(embed.raw)} raw, ${kb(embed.gzip)} gzip, ${kb(embed
 console.log(`whole app  ${kb(app.raw)} raw, ${kb(app.gzip)} gzip, ${kb(app.brotli)} brotli`);
 console.log(`all four in ${out}`);
 
-if (core.brotli > CORE_CEILING_BROTLI) {
+// One row per module rather than a second copy of the condition, so the module nobody thought to guard is guarded by having a row at all.
+const ceilings = [
+  { key: 'core', name: 'The core module', built: core, waits: 'A page pays this before it can draw anything. Either something heavy joined the core, or the highlighter has crept back into it.' },
+  { key: 'highlight', name: 'The module with colors', built: highlight, waits: 'A document with a fence in it waits for this on top of the core.' },
+  { key: 'embed', name: 'The embed module', built: embed, waits: "A product's embedded reader cannot open until the whole of this has arrived." },
+  { key: 'app', name: 'The whole-app module', built: app, waits: 'A reader of the published site waits for this before a word is drawn.' },
+];
+
+const overweight = ceilings.filter((module_) => module_.built.brotli > CEILINGS_BROTLI[module_.key]);
+if (overweight.length) {
   console.error('');
-  console.error(`The core module is ${kb(core.brotli)} compressed, over its ${kb(CORE_CEILING_BROTLI)} ceiling.`);
-  console.error('A page pays this before it can draw anything. Either something heavy joined the core, or the highlighter has crept back into it.');
+  for (const module_ of overweight) {
+    console.error(`${module_.name} is ${kb(module_.built.brotli)} compressed, over its ${kb(CEILINGS_BROTLI[module_.key])} ceiling.`);
+    console.error(`  ${module_.waits}`);
+  }
   process.exit(1);
 }
