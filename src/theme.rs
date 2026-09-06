@@ -88,6 +88,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
     "--lt-primary-ink",
     "--lt-accent",
     "--lt-accent-foreground",
+    "--lt-accent-ink",
     "--lt-danger",
     "--lt-danger-foreground",
     "--lt-warning",
@@ -164,6 +165,7 @@ pub(crate) const LEAF_SEMANTIC_TOKEN_CONTRACT: &[&str] = &[
 pub(crate) const LEAF_SEMANTIC_TOKEN_DEFAULTS: &[(&str, &str)] = &[
     ("--lt-hover-tint", "--lt-muted-foreground"),
     ("--lt-primary-ink", "--lt-primary"),
+    ("--lt-accent-ink", "--lt-accent"),
     ("--lt-markdown-table-row-background", "--lt-surface-sunken"),
 ];
 // END GENERATED

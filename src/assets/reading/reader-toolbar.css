@@ -74,7 +74,7 @@ body:has(#readerToolbar:not([hidden])) {
   border: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--lt-accent) 16%, transparent);
-  color: var(--lt-accent);
+  color: var(--lt-accent-ink);
   font-size: var(--lt-text-11);
   font-variant-numeric: tabular-nums;
 }
@@ -134,7 +134,7 @@ body:has(#readerToolbar:not([hidden])) {
   margin-left: 0;
 }
 .crumb-menu-actions .crumb-menu-action.is-primary {
-  color: var(--lt-accent);
+  color: var(--lt-accent-ink);
 }
 .crumb-menu-note.is-danger {
   color: var(--lt-danger);
@@ -341,7 +341,7 @@ body:has(#readerToolbar:not([hidden])) {
 .reader-tool.is-active,
 .reader-tool.is-active:hover {
   background: transparent;
-  color: var(--lt-markdown-background);
+  color: var(--lt-accent-foreground);
 }
 /* The active glyph is drawn a touch heavier than its resting outline, so the selected view reads as bolder as well as brighter. A mask has no strokes to thicken, so it swaps to the bolder drawing, which `just bundle-icons` writes from the same file at stroke-width 2.25. */
 .reader-tool.is-active .lt-icon-document {
@@ -369,7 +369,7 @@ body:has(#readerToolbar:not([hidden])) {
   border: 0;
   border-radius: var(--lt-radius-md);
   background: var(--lt-accent);
-  color: var(--lt-markdown-background);
+  color: var(--lt-accent-foreground);
   font-family: inherit;
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);

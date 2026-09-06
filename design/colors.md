@@ -31,6 +31,7 @@ The window, its chrome, and the roles a control can take.
 | primary-ink | primary | The same action color when it is words or a thin mark rather than a fill — the start screen's list headings, a sheet's title, the heart on a favorite, the leaf beside a file name. A fill wants the color light enough to print dark text on and an ink wants it dark enough to read on the page, and on some families those two demands do not overlap; set it to give the role a second value, leave it out and the fill's own value is copied in. |
 | accent |  | A second highlight for state that is not an action — a matched search hit, a selected row. |
 | accent-foreground |  | What prints on `accent`. |
+| accent-ink | accent | The same state color when it is words or a thin mark rather than a fill — a sync count, a selected row's tick, an active formatting mark. Set it when the fill is too light or dark to read on the surface; leave it out and the fill's own value is copied in. |
 | danger |  | Destructive and failed: a delete, an error line, a broken link. |
 | danger-foreground |  | What prints on `danger`. |
 | warning |  | Something needs attention but nothing has failed. |

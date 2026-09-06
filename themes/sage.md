@@ -114,6 +114,7 @@
 | primary                                 | `#3f7aa8`                |
 | primary-ink                             | `#3c75a1`                |
 | accent                                  | `#3f7aa8`                |
+| accent-ink                              | `#366890`                |
 | done                                    | `#3f7aa8`                |
 | link                                    | `#3f7aa8`                |
 | link-hover                              | `#33648c`                |

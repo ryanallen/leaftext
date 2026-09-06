@@ -59,7 +59,7 @@
 .block-gutter .block-grip:hover,
 .block-gutter .block-add:hover,
 .block-gutter .block-insert-option:hover {
-  color: var(--lt-accent, var(--lt-markdown-foreground));
+  color: var(--lt-accent-ink);
   border-color: var(--lt-accent, var(--lt-border));
 }
 .block-add-close {
@@ -93,7 +93,7 @@
 }
 .block-insert-choose:hover {
   border-color: var(--lt-accent, var(--lt-border));
-  color: var(--lt-accent, var(--lt-markdown-foreground));
+  color: var(--lt-accent-ink);
 }
 .block-insert-url {
   flex: 1 1 auto;

@@ -34,6 +34,7 @@
 | primary-ink                             | `#9a6800`                          |
 | accent                                  | `#f0b400`                          |
 | accent-foreground                       | `#1c1a15`                          |
+| accent-ink                              | `#8f5c00`                          |
 | danger                                  | `#c0392b`                          |
 | danger-foreground                       | `#ffffff`                          |
 | warning                                 | `#8a6000`                          |

@@ -147,9 +147,9 @@ The semantic token set covers:
 - code surfaces and syntax colors
 - minimap colors
 - focus and selection styling
-- the hover ink, which is the one color a family may leave out
+- the hover ink, plus separate foreground and ink colors for action and state fills
 
-If a theme source misses one required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
+An action or state fill can be bright while its words and thin marks stay readable: the foreground prints on the solid fill, and the ink carries the same role over a page or panel. A family may omit either ink when its fill already reads on every surface, in which case Leaftext copies the fill value into the compiled theme. If a theme source misses any other required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
 
 ### What is under the pointer
 
@@ -180,7 +180,7 @@ The theme picker links to the project on GitHub for making your own theme. A the
 
 ## See them all
 
-[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 84 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
+[**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) draws every theme on one page — all 85 colors, every icon, and every part of the interface — with a switcher for the family and for light or dark. It is built from the same files the app is, by `just bundle-gallery`, so it cannot show you a theme the app does not have.
 
 ## CSS
 

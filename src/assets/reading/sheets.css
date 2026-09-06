@@ -563,7 +563,7 @@
   width: 16px;
   height: 16px;
   display: none;
-  color: var(--lt-accent);
+  color: var(--lt-accent-ink);
   pointer-events: none;
 }
 .theme-item.is-active .theme-item-check {

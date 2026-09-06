@@ -32,6 +32,7 @@
 | primary-foreground                      | `#ffffff`                                      |
 | accent                                  | `#0969da`                                      |
 | accent-foreground                       | `#ffffff`                                      |
+| accent-ink                              | `#0963cf`                                      |
 | danger                                  | `#d1242f`                                      |
 | danger-foreground                       | `#ffffff`                                      |
 | warning                                 | `#9a6700`                                      |
@@ -118,7 +119,7 @@
 | primary-foreground                      | `#ffffff`                                      |
 | primary-ink                             | `#258f3a`                                      |
 | accent                                  | `#4493f8`                                      |
-| accent-foreground                       | `#ffffff`                                      |
+| accent-foreground                       | `#0d1117`                                      |
 | danger                                  | `#f85149`                                      |
 | danger-foreground                       | `#ffffff`                                      |
 | warning                                 | `#d29922`                                      |

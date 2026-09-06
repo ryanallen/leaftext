@@ -125,7 +125,7 @@
 }
 /* Lit for a format the highlighted words already carry — the bar says what they are as much as what they could be. */
 .selection-format.is-active {
-  color: var(--lt-accent, var(--lt-foreground));
+  color: var(--lt-accent-ink);
 }
 .selection-format-divider {
   width: 1px;

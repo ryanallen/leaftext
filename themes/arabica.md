@@ -32,6 +32,7 @@
 | primary-foreground                      | `#ffffff`                          |
 | accent                                  | `#8839ef`                          |
 | accent-foreground                       | `#ffffff`                          |
+| accent-ink                              | `#6e12e5`                          |
 | danger                                  | `#c0392b`                          |
 | danger-foreground                       | `#ffffff`                          |
 | warning                                 | `#8a5a12`                          |

@@ -35,6 +35,7 @@
 | primary-foreground                      | `#ffffff`                         |
 | accent                                  | `#086ddd`                         |
 | accent-foreground                       | `#ffffff`                         |
+| accent-ink                              | `#0764cc`                         |
 | danger                                  | `#d3243a`                         |
 | danger-foreground                       | `#ffffff`                         |
 | warning                                 | `#8a6d00`                         |
@@ -224,6 +225,7 @@
 | primary-foreground                      | `#ffffff`                          |
 | accent                                  | `#8839ef`                          |
 | accent-foreground                       | `#ffffff`                          |
+| accent-ink                              | `#6e12e5`                          |
 | danger                                  | `#c0392b`                          |
 | danger-foreground                       | `#ffffff`                          |
 | warning                                 | `#8a5a12`                          |
@@ -413,6 +415,7 @@
 | primary-foreground                      | `#ffffff`                         |
 | accent                                  | `#d81e28`                         |
 | accent-foreground                       | `#ffffff`                         |
+| accent-ink                              | `#c61c25`                         |
 | danger                                  | `#b81420`                         |
 | danger-foreground                       | `#ffffff`                         |
 | warning                                 | `#8a6100`                         |
@@ -677,6 +680,7 @@
 | --------------------------------------- | ------------------------- |
 | primary                                 | `#1a7f37`                 |
 | accent                                  | `#1a7f37`                 |
+| accent-ink                              | `#187734`                 |
 | done                                    | `#1a7f37`                 |
 | link                                    | `#1a7f37`                 |
 | link-hover                              | `#0f5a27`                 |
@@ -839,6 +843,7 @@
 | primary-ink                             | `#b5461a`                          |
 | accent                                  | `#f0662e`                          |
 | accent-foreground                       | `#2b1e14`                          |
+| accent-ink                              | `#ac3a0c`                          |
 | danger                                  | `#c0392b`                          |
 | danger-foreground                       | `#ffffff`                          |
 | warning                                 | `#8a5e12`                          |
@@ -1028,6 +1033,7 @@
 | primary-foreground                      | `#ffffff`                                      |
 | accent                                  | `#0969da`                                      |
 | accent-foreground                       | `#ffffff`                                      |
+| accent-ink                              | `#0963cf`                                      |
 | danger                                  | `#d1242f`                                      |
 | danger-foreground                       | `#ffffff`                                      |
 | warning                                 | `#9a6700`                                      |
@@ -1114,7 +1120,7 @@
 | primary-foreground                      | `#ffffff`                                      |
 | primary-ink                             | `#258f3a`                                      |
 | accent                                  | `#4493f8`                                      |
-| accent-foreground                       | `#ffffff`                                      |
+| accent-foreground                       | `#0d1117`                                      |
 | danger                                  | `#f85149`                                      |
 | danger-foreground                       | `#ffffff`                                      |
 | warning                                 | `#d29922`                                      |
@@ -1233,6 +1239,7 @@
 | primary-ink                             | `#9a6800`                          |
 | accent                                  | `#f0b400`                          |
 | accent-foreground                       | `#1c1a15`                          |
+| accent-ink                              | `#8f5c00`                          |
 | danger                                  | `#c0392b`                          |
 | danger-foreground                       | `#ffffff`                          |
 | warning                                 | `#8a6000`                          |
@@ -1423,6 +1430,7 @@
 | primary-foreground                      | `#ffffff`                         |
 | accent                                  | `#086ddd`                         |
 | accent-foreground                       | `#ffffff`                         |
+| accent-ink                              | `#0764cc`                         |
 | danger                                  | `#d3243a`                         |
 | danger-foreground                       | `#ffffff`                         |
 | warning                                 | `#8a6d00`                         |
@@ -1612,6 +1620,7 @@
 | primary-foreground                      | `#ffffff`                            |
 | accent                                  | `#0c6f8c`                            |
 | accent-foreground                       | `#ffffff`                            |
+| accent-ink                              | `#0c6a86`                            |
 | danger                                  | `#cf2e3f`                            |
 | danger-foreground                       | `#ffffff`                            |
 | warning                                 | `#956600`                            |
@@ -1801,6 +1810,7 @@
 | primary-foreground                      | `#ffffff`                         |
 | accent                                  | `#0a6fe0`                         |
 | accent-foreground                       | `#ffffff`                         |
+| accent-ink                              | `#085fbe`                         |
 | danger                                  | `#d70015`                         |
 | danger-foreground                       | `#ffffff`                         |
 | warning                                 | `#a05a00`                         |
@@ -1887,6 +1897,7 @@
 | primary-foreground                      | `#10233a`                        |
 | accent                                  | `#4a9eff`                        |
 | accent-foreground                       | `#10233a`                        |
+| accent-ink                              | `#63acff`                        |
 | danger                                  | `#ff5c52`                        |
 | danger-foreground                       | `#1c1c1e`                        |
 | warning                                 | `#ffb340`                        |
@@ -2072,6 +2083,7 @@
 | primary                                 | `#3f7aa8`                |
 | primary-ink                             | `#3c75a1`                |
 | accent                                  | `#3f7aa8`                |
+| accent-ink                              | `#366890`                |
 | done                                    | `#3f7aa8`                |
 | link                                    | `#3f7aa8`                |
 | link-hover                              | `#33648c`                |

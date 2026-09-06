@@ -729,7 +729,7 @@ body.library-resizing button {
   width: 13px;
   height: 13px;
   margin-left: auto;
-  color: var(--lt-accent);
+  color: var(--lt-accent-ink);
 }
 /* A vault row switches to it; its button opens that vault's settings. */
 .crumb-menu-row {
@@ -843,7 +843,7 @@ body.library-resizing button {
   width: 12px;
   height: 12px;
   border-radius: 6px;
-  background: var(--lt-surface);
+  background: var(--lt-accent-foreground);
   transition: transform var(--lt-duration-120) var(--lt-ease);
 }
 .crumb-menu-item[role="switch"][aria-checked="true"] .crumb-menu-switch {

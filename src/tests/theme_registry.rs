@@ -75,12 +75,13 @@ fn defaulted_colors_compile_to_a_copied_value_not_a_pointer() {
     // A `Default` in design/colors.md lets a family leave a row out. What it gets is the named row's *value*, written into its own block as a hex: a `var()` there would be a second name for that color, which src/tests/reading_css_tokens.rs refuses, and it would make a family's compiled block a mix of colors and indirection to read.
     let css = reading_mode_css();
 
-    // The rows themselves, so dropping one from design/colors.md fails here rather than leaving the walk below with nothing to walk. `primary-ink` is the one that would go quietly: the stylesheet would still name a token nobody compiles, and every word and mark the role paints would fall back to nothing.
+    // Pin the defaulted rows so a stylesheet token cannot silently lose its compiled value.
     assert_eq!(
         LEAF_SEMANTIC_TOKEN_DEFAULTS,
         [
             ("--lt-hover-tint", "--lt-muted-foreground"),
             ("--lt-primary-ink", "--lt-primary"),
+            ("--lt-accent-ink", "--lt-accent"),
             ("--lt-markdown-table-row-background", "--lt-surface-sunken"),
         ]
     );
@@ -157,26 +158,51 @@ fn a_family_that_names_a_defaulted_color_keeps_its_own_value() {
 }
 
 #[test]
-fn the_action_color_paints_words_and_marks_out_of_the_ink_token() {
-    // `--lt-primary` is a fill, a wash and a border; `--lt-primary-ink` is what the same role looks like as words or a thin mark. A family whose two demands do not overlap — Goldenrod's gold is light enough to print `#1c1a15` on and far too light to read as a heading — can only be fixed by the two being separate tokens, so a rule that goes back to spending the fill as `color:` puts the family back under its floor with nothing to say so. Written against the composed sheet rather than the parts, because that is what the web view is handed.
+fn the_action_and_accent_colors_paint_words_and_marks_out_of_ink_tokens() {
+    // A fill and an ink pull a bright role in opposite directions, so the composed sheet may never spend either role's fill as `color:`.
     let css = reading_mode_css();
 
     for (number, line) in css.lines().enumerate() {
-        assert!(
-            !line.trim_start().starts_with("color: var(--lt-primary)"),
-            "line {} paints the role's fill as ink; spend --lt-primary-ink: {line}",
-            number + 1
+        for (fill, ink) in [
+            ("color: var(--lt-primary)", "--lt-primary-ink"),
+            ("color: var(--lt-accent)", "--lt-accent-ink"),
+        ] {
+            assert!(
+                !line.trim_start().starts_with(fill),
+                "line {} paints the role's fill as ink; spend {ink}: {line}",
+                number + 1
+            );
+        }
+    }
+
+    for (ink, count) in [
+        ("color: var(--lt-primary-ink)", 10),
+        ("color: var(--lt-accent-ink)", 7),
+    ] {
+        assert_eq!(
+            css.lines()
+                .filter(|line| line.trim_start().starts_with(ink))
+                .count(),
+            count,
+            "the composed sheet spends {ink} in every guarded rule"
         );
     }
 
-    // And the ink is really spent, so the check above cannot pass on a sheet that dropped the token altogether. Ten rules: the start screen's headings, Show all, the heart and a document's buttons in `home.css`, the folded sheet's title, the outline and ghost buttons, the app-bar logomark, the startup card's mark and the leaf beside a file name.
     assert_eq!(
         css.lines()
             .filter(|line| line
                 .trim_start()
-                .starts_with("color: var(--lt-primary-ink)"))
+                .starts_with("color: var(--lt-accent-foreground)"))
             .count(),
-        10
+        2
+    );
+    assert_eq!(
+        css.lines()
+            .filter(|line| line
+                .trim_start()
+                .starts_with("background: var(--lt-accent-foreground)"))
+            .count(),
+        1
     );
 
     // The inactive window quiets the ink with everything else it quiets, and it does that by filtering the whole surface rather than by naming this token — so what is checked here is that no rule has gone back to naming it, which is how the logomark and the leaf would come to step back on a different beat from the chrome around them.
@@ -339,6 +365,7 @@ const READABLE_PAIRS: &[(&str, &str)] = &[
     ("--lt-foreground", "--lt-background"),
     ("--lt-muted-foreground", "--lt-background"),
     ("--lt-primary-foreground", "--lt-primary"),
+    ("--lt-accent-foreground", "--lt-accent"),
     ("--lt-markdown-foreground", "--lt-markdown-background"),
     ("--lt-markdown-heading", "--lt-markdown-background"),
     ("--lt-markdown-heading-2", "--lt-markdown-background"),
@@ -389,13 +416,21 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
     }
 }
 
-/// One thing the reader is meant to read, the surface the rule that paints it puts it on, the floor that rule owes, and the rule itself.
-///
-/// The three gates beside this one pair a token with its own partner — `primary-foreground` with `primary`. These inks have no partner: what an ink sits on is decided by a rule in a stylesheet, and what floor it owes by whether that rule paints words or a drawing. So a row is ink, surface, floor and the rule that pairs them, and the rule travels into the failure, because a token name leaves whoever reads it hunting for where the color is spent.
+#[derive(Clone, Copy)]
+enum PaintedSurface {
+    Token(&'static str),
+    Mix {
+        ink: &'static str,
+        percent: f64,
+        under: &'static str,
+    },
+}
+
+/// One thing the reader is meant to read, its painted surface, the floor it owes, and the rule that pairs them.
 struct PaintedInk {
     what: &'static str,
     ink: &'static str,
-    surface: &'static str,
+    surface: PaintedSurface,
     floor: f64,
     rule: &'static str,
 }
@@ -407,95 +442,179 @@ const PAINT_LIST: &[PaintedInk] = &[
     PaintedInk {
         what: "a link in the document",
         ink: "--lt-markdown-link",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/document.css `.document-body a`",
     },
     PaintedInk {
         what: "the Note label",
         ink: "--lt-markdown-alert-note",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/document-code.css `.markdown-alert-note::before`",
     },
     PaintedInk {
         what: "the Tip label",
         ink: "--lt-markdown-alert-tip",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/document-code.css `.markdown-alert-tip::before`",
     },
     PaintedInk {
         what: "the Important label",
         ink: "--lt-markdown-alert-important",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/document-code.css `.markdown-alert-important::before`",
     },
     PaintedInk {
         what: "the Warning label",
         ink: "--lt-markdown-alert-warning",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/document-code.css `.markdown-alert-warning::before`",
     },
     PaintedInk {
         what: "the Caution label",
         ink: "--lt-markdown-alert-caution",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/document-code.css `.markdown-alert-caution::before`",
     },
     PaintedInk {
         what: "the start screen's list headings, Show all, Repair and a document's buttons",
         ink: "--lt-primary-ink",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 4.5,
         rule: "src/assets/reading/home.css `.recent h2`",
     },
     PaintedInk {
         what: "the heart on a favorite row",
         ink: "--lt-primary-ink",
-        surface: "--lt-markdown-background",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
         floor: 3.0,
         rule: "src/assets/reading/home.css `.home-row-heart`",
     },
     PaintedInk {
         what: "the folded list sheet's title",
         ink: "--lt-primary-ink",
-        surface: "--lt-background",
+        surface: PaintedSurface::Token("--lt-background"),
         floor: 4.5,
         rule: "src/assets/reading/sheets.css `.home-sheet-title`",
     },
     PaintedInk {
         what: "the startup card's mark",
         ink: "--lt-primary-ink",
-        surface: "--lt-background",
+        surface: PaintedSurface::Token("--lt-background"),
         floor: 3.0,
         rule: "src/assets/reading/base.css `.startup-card-mark`",
     },
     PaintedInk {
         what: "the leaf beside a file name and the app-bar logomark",
         ink: "--lt-primary-ink",
-        surface: "--lt-surface",
+        surface: PaintedSurface::Token("--lt-surface"),
         floor: 3.0,
         rule: "src/assets/reading/library.css `.library-file > .lt-icon` and app-bar.css `.app-brand-mark`",
     },
     PaintedInk {
         what: "the warning under a filter naming a field nobody set",
         ink: "--lt-warning",
-        surface: "--lt-surface",
+        surface: PaintedSurface::Token("--lt-surface"),
         floor: 4.5,
         rule: "src/assets/reading/library.css `.library-search-unknown`",
     },
     PaintedInk {
         what: "the failed save, the breadcrumb note, a failed diagram and Delete",
         ink: "--lt-danger",
-        surface: "--lt-surface-elevated",
+        surface: PaintedSurface::Token("--lt-surface-elevated"),
         floor: 4.5,
         rule: "src/assets/reading/reader-page.css `.app-toast.is-error`",
     },
+    PaintedInk {
+        what: "the vault sync count",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Mix {
+            ink: "--lt-accent",
+            percent: 0.16,
+            under: "--lt-surface",
+        },
+        floor: 4.5,
+        rule: "src/assets/reading/reader-toolbar.css `.library-sync`",
+    },
+    PaintedInk {
+        what: "the selected folder action",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Token("--lt-surface-elevated"),
+        floor: 4.5,
+        rule: "src/assets/reading/reader-toolbar.css `.crumb-menu-action.is-primary`",
+    },
+    PaintedInk {
+        what: "the selected folder tick",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Token("--lt-surface-elevated"),
+        floor: 3.0,
+        rule: "src/assets/reading/library.css `.crumb-menu-check`",
+    },
+    PaintedInk {
+        what: "the selected theme tick",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Token("--lt-background"),
+        floor: 3.0,
+        rule: "src/assets/reading/sheets.css `.theme-item-check`",
+    },
+    PaintedInk {
+        what: "the selected formatting icon",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Token("--lt-surface-elevated"),
+        floor: 3.0,
+        rule: "src/assets/reading/selection-toolbar.css `.selection-format.is-active`",
+    },
+    PaintedInk {
+        what: "the block gutter's hovered icons",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
+        floor: 3.0,
+        rule: "src/assets/reading/block-gutter.css `.block-grip:hover`",
+    },
+    PaintedInk {
+        what: "the block gutter's Image word",
+        ink: "--lt-accent-ink",
+        surface: PaintedSurface::Token("--lt-markdown-background"),
+        floor: 4.5,
+        rule: "src/assets/reading/block-gutter.css `.block-insert-choose:hover`",
+    },
 ];
+
+fn painted_surface(css: &str, source: &ThemeSource, surface: PaintedSurface) -> Rgb {
+    match surface {
+        PaintedSurface::Token(name) => css_token_for_source(css, source, name),
+        PaintedSurface::Mix {
+            ink,
+            percent,
+            under,
+        } => {
+            let ink_color = css_token_for_source(css, source, ink);
+            let under_color = css_token_for_source(css, source, under);
+            let mixed = Rgb {
+                red: ink_color.red * percent + under_color.red * (1.0 - percent),
+                green: ink_color.green * percent + under_color.green * (1.0 - percent),
+                blue: ink_color.blue * percent + under_color.blue * (1.0 - percent),
+            };
+            mixed
+        }
+    }
+}
+
+fn painted_surface_name(surface: PaintedSurface) -> String {
+    match surface {
+        PaintedSurface::Token(name) => name.to_owned(),
+        PaintedSurface::Mix {
+            ink,
+            percent,
+            under,
+        } => format!("{:.0}% {ink} over {under}", percent * 100.0),
+    }
+}
 
 /// Back to the spelling a theme file is written in, so a failure hands over the value somebody has to change rather than three floats.
 fn hex_of(color: Rgb) -> String {
@@ -513,7 +632,7 @@ fn painted_ink_failures(css: &str, source: &ThemeSource, list: &[PaintedInk]) ->
 
     for row in list {
         let ink = css_token_for_source(css, source, row.ink);
-        let surface = css_token_for_source(css, source, row.surface);
+        let surface = painted_surface(css, source, row.surface);
         let ratio = contrast_ratio(ink, surface);
         if ratio < row.floor {
             failures.push(format!(
@@ -524,7 +643,7 @@ fn painted_ink_failures(css: &str, source: &ThemeSource, list: &[PaintedInk]) ->
                 row.floor,
                 row.ink,
                 hex_of(ink),
-                row.surface,
+                painted_surface_name(row.surface),
                 hex_of(surface),
                 row.rule
             ));
@@ -599,10 +718,16 @@ const INACTIVE_FLOOR: f64 = 3.0;
 /// Every ink-and-surface pair the tree already declares: `READABLE_PAIRS`, where a family names the surface itself, and `PAINT_LIST`, where a stylesheet rule does.
 ///
 /// The inactive-window gate walks these and invents none of its own. A cross product over every ink and every surface reads pairs the app never draws — it puts `--lt-danger` on `--lt-surface-muted`, which no rule paints, and calls three families unreadable on a combination nobody can see.
-fn declared_pairs() -> Vec<(&'static str, &'static str, &'static str)> {
+fn declared_pairs() -> Vec<(&'static str, PaintedSurface, &'static str)> {
     READABLE_PAIRS
         .iter()
-        .map(|(ink, surface)| (*ink, *surface, "the pair the family declares"))
+        .map(|(ink, surface)| {
+            (
+                *ink,
+                PaintedSurface::Token(*surface),
+                "the pair the family declares",
+            )
+        })
         .chain(
             PAINT_LIST
                 .iter()
@@ -615,7 +740,7 @@ fn declared_pairs() -> Vec<(&'static str, &'static str, &'static str)> {
 fn inactive_ink_failures(
     css: &str,
     source: &ThemeSource,
-    pairs: &[(&str, &str, &str)],
+    pairs: &[(&str, PaintedSurface, &str)],
     floor: f64,
 ) -> Vec<String> {
     let (saturation, contrast) = inactive_amounts(css);
@@ -628,9 +753,10 @@ fn inactive_ink_failures(
     };
     let mut failures = Vec::new();
 
-    for (ink_name, surface_name, what) in pairs {
+    for (ink_name, surface_kind, what) in pairs {
         let ink = painted(ink_name);
-        let surface = painted(surface_name);
+        let surface = painted_surface(css, source, *surface_kind);
+        let surface = as_an_inactive_window_paints_it(surface, saturation, contrast);
         let ratio = contrast_ratio(ink, surface);
         if ratio < floor {
             failures.push(format!(
@@ -638,7 +764,8 @@ fn inactive_ink_failures(
                 source.family,
                 source.appearance.as_str(),
                 hex_of(ink),
-                hex_of(surface)
+                hex_of(surface),
+                surface_name = painted_surface_name(*surface_kind)
             ));
         }
     }
@@ -708,7 +835,7 @@ fn a_family_the_state_would_wash_out_is_named_rather_than_shipped() {
         &source,
         &[(
             "--lt-foreground",
-            "--lt-background",
+            PaintedSurface::Token("--lt-background"),
             "the chrome's own writing",
         )],
         INACTIVE_FLOOR,
@@ -787,11 +914,27 @@ fn a_source_painting(ink: &str) -> (String, ThemeSource) {
     )
 }
 
+#[test]
+fn a_mixed_paint_surface_matches_the_visible_composite() {
+    let (css, source) = a_source_painting("#000000");
+    let surface = PaintedSurface::Mix {
+        ink: "--lt-markdown-link",
+        percent: 0.16,
+        under: "--lt-markdown-background",
+    };
+
+    assert_eq!(hex_of(painted_surface(&css, &source, surface)), "#d6d6d6");
+    assert_eq!(
+        painted_surface_name(surface),
+        "16% --lt-markdown-link over --lt-markdown-background"
+    );
+}
+
 /// The one row the two boundary tests measure: words at 4.5:1, which is where every failing pair in the list sits.
 const ONE_LINK_ROW: &[PaintedInk] = &[PaintedInk {
     what: "a link in the document",
     ink: "--lt-markdown-link",
-    surface: "--lt-markdown-background",
+    surface: PaintedSurface::Token("--lt-markdown-background"),
     floor: 4.5,
     rule: "src/assets/reading/document.css `.document-body a`",
 }];
@@ -835,7 +978,7 @@ fn a_paint_row_naming_a_surface_no_source_declares_fails_loudly() {
     const MISTYPED: &[PaintedInk] = &[PaintedInk {
         what: "a link in the document",
         ink: "--lt-markdown-link",
-        surface: "--lt-not-a-token",
+        surface: PaintedSurface::Token("--lt-not-a-token"),
         floor: 4.5,
         rule: "src/assets/reading/document.css `.document-body a`",
     }];
