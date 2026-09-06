@@ -188,6 +188,7 @@ fn the_action_and_accent_colors_paint_words_and_marks_out_of_ink_tokens() {
         );
     }
 
+    // The three controls that print on a solid accent fill take its declared foreground rather than a page or surface color, which no gate pairs with the fill under it: two paint a word or a glyph, and the switch thumb is a filled dot.
     assert_eq!(
         css.lines()
             .filter(|line| line
@@ -416,6 +417,7 @@ fn theme_compiler_gates_readable_pairs_for_every_source() {
     }
 }
 
+/// What a rule puts its ink on: a token, or the fixed-percentage wash a rule mixes, which is the surface the eye meets and no token holds.
 #[derive(Clone, Copy)]
 enum PaintedSurface {
     Token(&'static str),
@@ -916,6 +918,7 @@ fn a_source_painting(ink: &str) -> (String, ThemeSource) {
 
 #[test]
 fn a_mixed_paint_surface_matches_the_visible_composite() {
+    // Black at 16% over white is #d6d6d6, so a drifted mix shows up as a color rather than as a ratio nobody can check by eye.
     let (css, source) = a_source_painting("#000000");
     let surface = PaintedSurface::Mix {
         ink: "--lt-markdown-link",

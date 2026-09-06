@@ -1,6 +1,6 @@
 # Colors
 
-> The 84 color names a theme is drawn from. This file is the list; the values live in `themes/`, one file per family.
+> The 85 color names a theme is drawn from. This file is the list; the values live in `themes/`, one file per family.
 
 A color is **themed**: 11 families each give it a value in light and in dark, so this file names them and says what each is for and never holds a value. Everything that is one value for the whole app — radii, the type scale, shadows — is in [tokens.md](tokens.md) instead.
 
