@@ -26,7 +26,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Open a link in a new page](#opening-a-link-in-a-new-page) | Ctrl-click, middle-click or right-click a link to open it behind what you are reading |
 | [Pager](#pager) | Previous / Next buttons at the bottom of each document for reading a folder in order, filling with the theme's color under the pointer and throwing a dotted shadow around themselves |
 | [Single window](#tabs) | A second launch opens the file as a tab in the running window instead of a new copy |
-| [When another app is in front](#when-another-app-is-in-front) | Leaftext's own chrome goes gray and quiet the moment the window falls behind another app, while the document and a saved site's page-colored selected tab stay exactly as they were |
+| [When another app is in front](#when-another-app-is-in-front) | The whole window settles together the moment it falls behind another app — chrome, document, pictures and the little picture of the page all keep some color at half strength, with black text going less dark, faded in and out over the same beat |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
 
@@ -107,9 +107,9 @@ The app bar doubles as the title bar on both platforms, and Leaftext draws the w
 
 ### When another app is in front
 
-Click into another app and Leaftext's chrome steps back: the window buttons, the tabs and their names, the [library pane](03-library.md), the [floating toolbar](#the-floating-toolbar), the [find bar](#find-in-this-document), the [minimap](04-minimap.md) and its little picture of the page all drop to the quiet gray the theme already uses for text that is not the main text. A selected tab joined to a saved site's page keeps that page color and its readable name and corner buttons, for the same reason the document itself stays full strength. Click back and the quiet chrome's color returns.
+Click into another app and the whole window steps back at once: the leaf, the window buttons, the tabs and their names, the [library pane](03-library.md), the [floating toolbar](#the-floating-toolbar), the [find bar](#find-in-this-document), the [minimap](04-minimap.md) and its little picture of the page, and the document under all of them — its words, its code, its diagrams and any picture inside it — all keep half their color and come a little closer together in contrast, so black text goes less dark and the paper comes down to meet it. It is not gray: a red is still plainly red, and a tinted theme stays tinted. Click back and every part of it returns together.
 
-The document does not move. Its words, its code, its diagrams, its pictures, the card it sits on, that card's border and its rounded corners are all left exactly as they were, because reading is what the window is for and a window nobody is typing in is still a window somebody is reading. Nothing goes see-through and no background changes, so a tinted theme stays tinted and no line appears that an active window does not draw.
+It fades rather than switches, over about a fifth of a second, leaving and returning both — and Reduce Motion takes the fade away and leaves the state, so somebody who has asked for less movement still gets the quieter window without the travel. Nothing goes see-through and no background is swapped, so no line appears that an active window does not draw, and the band the window casts on the desktop keeps its full strength because it is drawn outside the app rather than inside it. A page exported or printed while the window is behind another app comes out at full strength, since the state is the window's rather than the document's.
 
 It follows the window rather than the page. Clicking another tab in a browser showing an [exported page](#export-the-page) or the published documentation leaves that page alone: only the app's own window has a front and a back to tell apart.
 

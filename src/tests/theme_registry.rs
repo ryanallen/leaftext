@@ -731,7 +731,7 @@ fn a_family_the_state_would_wash_out_is_named_rather_than_shipped() {
 fn the_state_re_points_no_color_and_the_rail_keeps_no_list_of_its_own() {
     let css = reading_mode_css();
 
-    // One rule, and one declaration in it. A hand-kept subset of tokens growing back beside the filter is the split this ticket closed: the chrome had eighteen colors and the rail thirty-two, and the document — the thing a reader came for — was in neither.
+    // One rule, and one declaration in it. A hand-kept subset of tokens growing back beside the filter is the split coming back: it cost the chrome eighteen colors and the rail thirty-two, and the document — the thing a reader came for — was in neither.
     assert_eq!(
         css.matches("body.is-window-inactive").count(),
         1,

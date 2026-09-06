@@ -192,7 +192,7 @@ The three gates above pair a token with its own partner — `--lt-primary-foregr
 
 **Words owe 4.5:1 and a drawing owes 3:1**, the same split the diagram gate uses row by row: a leaf mark beside a file name is graphics under WCAG 1.4.11, and holding it to the text floor would make this the tightest number in the tree with nothing to point at.
 
-**A new rule that spends `--lt-markdown-link`, one of the five alert colors, `--lt-primary-ink`, `--lt-warning` or `--lt-danger` as `color:`, `fill:` or `stroke:` owes a row.** The list also carries the inactive window, where `base.css` re-points the role colors at `--lt-muted-foreground` for the whole of the chrome — the same surfaces, a different ink.
+**A new rule that spends `--lt-markdown-link`, one of the five alert colors, `--lt-primary-ink`, `--lt-warning` or `--lt-danger` as `color:`, `fill:` or `stroke:` owes a row.** The list is also what the inactive window is measured through: that state re-points no color at all — it is one `filter` on the app surface — so the gate puts both halves of every row here, and of every readable pair, through the same saturation and contrast the browser applies and reads the ratio after, against a floor of 3:1 for that one state.
 
 ### `--lt-primary` is a fill and `--lt-primary-ink` is an ink
 
