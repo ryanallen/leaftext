@@ -316,6 +316,8 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
 }
 .reader-tool {
+  /* This changes the view without going anywhere, so the pointer stays an arrow. Beats the shared hand by being one class. */
+  cursor: default;
   position: relative;
   display: inline-flex;
   align-items: center;

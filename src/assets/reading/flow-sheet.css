@@ -444,6 +444,8 @@
   margin-top: 0;
 }
 .flow-menu-item {
+  /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
+  cursor: default;
   display: flex;
   align-items: center;
   gap: var(--lt-space-6);

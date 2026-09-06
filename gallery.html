@@ -3775,6 +3775,8 @@ body.is-maximized #winMaximize .wc-restore {
   display: none;
 }
 .context-menu-item {
+  /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
+  cursor: default;
   display: block;
   width: 100%;
   padding: var(--lt-space-8) var(--lt-space-12);
@@ -4743,6 +4745,8 @@ body.library-resizing button {
   display: none;
 }
 .filter-menu-item {
+  /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
+  cursor: default;
   display: block;
   width: 100%;
   padding: var(--lt-space-2) var(--lt-space-6);
@@ -4851,6 +4855,8 @@ body.library-resizing button {
 }
 /* The vault switcher, left of the trail. Its own control rather than the first crumb: that crumb is a place, and clicking a place should go there. This is the only thing in the pane that changes which root the trail is even about, so it sits outside the trail and reads as chrome. */
 .library-vault-switch {
+  /* This changes the pane's root without going anywhere, so the pointer stays an arrow. Beats the shared hand by being one class. */
+  cursor: default;
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -4924,6 +4930,8 @@ body.library-resizing button {
   min-width: 0;
 }
 .crumb-menu-edit {
+  /* A menu control acts here without going anywhere, so the pointer stays an arrow. */
+  cursor: default;
   flex: none;
   display: inline-flex;
   align-items: center;
@@ -5550,6 +5558,8 @@ body:has(#readerToolbar:not([hidden])) {
   display: inline-flex;
 }
 .reader-tool {
+  /* This changes the view without going anywhere, so the pointer stays an arrow. Beats the shared hand by being one class. */
+  cursor: default;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -9939,6 +9949,8 @@ body.is-home-row-dragging .home-list-scroll li {
   margin-top: 0;
 }
 .flow-menu-item {
+  /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
+  cursor: default;
   display: flex;
   align-items: center;
   gap: var(--lt-space-6);

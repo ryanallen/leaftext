@@ -14,6 +14,8 @@
   display: none;
 }
 .context-menu-item {
+  /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
+  cursor: default;
   display: block;
   width: 100%;
   padding: var(--lt-space-8) var(--lt-space-12);

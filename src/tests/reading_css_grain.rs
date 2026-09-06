@@ -147,12 +147,12 @@ fn the_history_buttons_fill_with_the_theme_rather_than_uncovering_the_bar() {
     );
 }
 #[test]
-fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
+fn the_hand_is_not_on_controls_that_go_nowhere() {
     // The hand says "this can be pressed", so an enabled button wears it and the shared `button` rule is where it is written — a control added later takes it without anybody remembering. The rule is deliberately weak: a single-class rule still beats it, which is what leaves a control whose gesture is a drag or a draw wearing its own shape, and what leaves the app's own furniture at the top of the window wearing the arrow.
     let css = reading_mode_css();
 
     assert_contains(rule_body(&css, "button {"), "cursor: pointer;");
-    // And the hand is still handed out from there rather than named control by control: the exception below is three rules, not the hand being withdrawn. The shared rule stays the bare element with no class or id on it and no `!important`, or the eight would need one of their own to win.
+    // And the hand is still handed out from there rather than named control by control. The shared rule stays the bare element with no class or id on it and no `!important`, or every exception would need one of its own to win.
     let shared = rule_body(&css, "button {");
     assert!(
         !shared.contains('!'),
@@ -202,7 +202,26 @@ fn enabled_buttons_use_the_hand_and_disabled_buttons_keep_the_arrow() {
     for selector in [".export-button {", ".window-control {", ".library-open {"] {
         assert_contains(rule_body(&css, selector), "cursor: default;");
     }
-    // And nothing wider than those three says it, or the arrow would reach the find bar's eleven icon controls, the leaf and the two history buttons — the controls the owner keeps the hand on.
+    // The view buttons and vault switcher change what is shown without taking the reader somewhere, so their own rules take the shared hand back.
+    for selector in [".reader-tool {", ".library-vault-switch {"] {
+        assert_contains(rule_body(&css, selector), "cursor: default;");
+    }
+    assert!(
+        !rule_body(&css, ".library-crumb {").contains("cursor:"),
+        "a folder-path step goes somewhere, so it keeps the shared hand"
+    );
+    // The menu rows act on what is already here. Read their class names from the front end as well as the stylesheet so this list cannot protect selectors the page no longer assigns.
+    let shell = app_shell_script();
+    for (selector, assigned_class) in [
+        (".context-menu-item {", "className = 'context-menu-item'"),
+        (".crumb-menu-edit {", "className = 'crumb-menu-edit'"),
+        (".filter-menu-item {", "class=\"filter-menu-item${picked}\""),
+        (".flow-menu-item {", "className = 'flow-menu-item'"),
+    ] {
+        assert_contains(rule_body(&css, selector), "cursor: default;");
+        assert_contains(&shell, assigned_class);
+    }
+    // Nothing broader says it, or the arrow would reach the find bar's eleven icon controls, the leaf and the two history buttons — the controls the owner keeps the hand on.
     for selector in [
         ".icon-button {",
         ".brand-button {",
