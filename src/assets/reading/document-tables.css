@@ -86,7 +86,7 @@
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
 }
-/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. It is a layer of its own rather than a gradient on the button, because a background image cannot be interpolated between `none` and a picture however it is timed — so written on the button the wash arrived whole on the first frame beside an edge and an ink that faded. */
+/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. It is a layer of its own rather than a gradient on the button, because a background image cannot be interpolated between `none` and a picture however it is timed — so written on the button the wash arrives whole on the first frame beside an edge and an ink that fade. */
 .table-sheet-open::before,
 .image-sheet-open::before,
 .image-export-open::before {

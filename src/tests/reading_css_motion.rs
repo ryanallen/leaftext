@@ -1093,7 +1093,7 @@ fn a_control_that_writes_its_own_fade_names_every_color_it_changes() {
 
 #[test]
 fn a_hover_wash_that_has_to_sit_over_a_fill_is_painted_on_a_layer_that_fades() {
-    // A control that has to keep its own fill under the wash — a plate over a picture, a red that says which answer is destructive — cannot replace it, so the wash used to be written as a gradient on top. A background image is not an interpolable value: it goes from `none` to the picture in one frame however the control is timed, and no `transition` could ever have reached it. The wash goes on a layer of its own instead, whose background color fades like any other.
+    // A control that has to keep its own fill under the wash — a plate over a picture, a red that says which answer is destructive — cannot replace it, so the obvious answer is a gradient written on top of it. A background image is not an interpolable value: it goes from `none` to the picture in one frame however the control is timed, and no `transition` on that control reaches it. The wash goes on a layer of its own instead, whose background color fades like any other.
     const WASH_IMAGE: &str = "linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover))";
     // The one control left wearing it, with its own ticket: the-warning-buttons-red-plate-lights-up-in-one-frame.
     const STILL_AN_IMAGE: &str = "is-danger";
