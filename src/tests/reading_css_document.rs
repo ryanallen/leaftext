@@ -124,7 +124,7 @@ fn a_record_table_is_carded_by_the_same_rules() {
             "the field block's opt-out is not written for both the container query and the width query: {selector}"
         );
     }
-    // And what those selectors hold, not just that they are written: the card row's box is the part that was never handed back, so every row of the one table meant to carry no chrome at all wore a rounded box the moment the reader went narrow.
+    // And what those selectors hold, not just that they are written: the card row's box is the part the opt-out has to hand back, or every row of the one table meant to carry no chrome at all wears a rounded box the moment the reader goes narrow.
     let mut given_back = 0;
     let mut at = 0;
     while let Some(opened) = css[at..].find(".document-body .frontmatter table:not(.no-cards) tr {")
@@ -155,7 +155,7 @@ fn a_record_table_is_carded_by_the_same_rules() {
     );
 }
 
-/// The card label is an eyebrow, and it is the whole of what tells a field's name from its answer: drawn at the value's own size, weight and shade were all a reader had, and a card read as one run of words. Held in all three copies, because a card drawn in the window, on the two published sites and on paper is one design.
+/// The card label is the whole of what tells a field's name from its answer: drawn at the value's own size, weight and shade are all a reader has, and a card reads as one run of words. Held in all three copies, because a card drawn in the window, on the two published sites and on paper is one design.
 #[test]
 fn a_card_label_is_a_small_tracked_eyebrow_in_every_copy() {
     let css = reading_mode_css();
@@ -207,7 +207,7 @@ fn a_card_label_scales_with_the_readers_own_text() {
     );
 }
 
-/// A stack of cards reads as separate records only if the room around one is bigger than the room inside it. Drawn at one number for both, eighteen of them down a page were one continuous block of words broken by hairlines.
+/// A stack of cards reads as separate records only if the room around one is bigger than the room inside it. Drawn at one number for both, eighteen of them down a page are one continuous block of words broken by hairlines.
 #[test]
 fn a_card_is_opened_wider_than_the_lines_inside_it() {
     let css = reading_mode_css();
