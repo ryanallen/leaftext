@@ -164,6 +164,18 @@ bundle-devs-with:
 check-footprints:
     node scripts/plan-footprints.mjs --check
 
+# Write `Blocked by` and `Blocks` into every row of the running order next door, off the `Waits on`
+# cell of each step under `docs/tracks/`. Never written by hand: a hand-written cell is why all 93
+# rows once said nothing stood in front of them while a family's trunk sat twelve rows below its
+# own dependents. It runs before `bundle-devs-with`, which orders its own cells by position.
+bundle-waits:
+    node scripts/plan-waits.mjs --write
+
+# Prove the wait reader, the resolver and both cells on made-up tracks, before either column is
+# trusted over the real running order.
+check-waits:
+    node scripts/plan-waits.mjs --check
+
 # Fail on a running-order Status cell that is not what its ticket's own dated lines say. A
 # cell typed in by hand makes the running order a shared file every build writes, while the
 # column beside it tells two agents in this checkout they share no file. Derived, a build
@@ -614,7 +626,7 @@ check-unused-names:
 check-file-sizes:
     node scripts/check-file-sizes.mjs --check
 
-verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-web-fixtures check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-grain-in-a-picture check-compose-shots
+verify: format-check check check-web check-installer check-web-commands check-doc-commands check-doc-modules test check-rust-docs check-source-not-read-as-text check-rule-not-split-by-hand check-vendor check-themes check-tokens check-icons check-icon-grid check-icon-audit check-gallery check-design-docs check-classes check-literals check-page-frame check-minimap-breakpoint check-hover-fills check-scratch-names check-temporary-code check-growl-words check-app-formats check-web-fixtures check-format-prose check-release check-verify check-dev-task-toggle check-suite-callers check-justfile-quotes check-build-jobs check-version-rule check-unused-names check-file-sizes check-spelling check-docs check-doc-images check-footprints check-waits check-plan check-plan-stage check-giveaway check-learn-snapshots check-shared-rules check-wrapping check-ascii-art check-site check-site-images check-site-boot check-other-site check-export-pictures check-read-export check-shell check-identity check-hooks check-release-package check-workflow-installs check-workflow-permissions check-mcp check-agent-settings check-driver check-probe-evaluation check-shot-edges check-grain-in-a-picture check-compose-shots
 
 # Put the work in this checkout on main right now: staged by name, committed, pushed. No
 # gate, no version, no tag. It is the first thing a release does, so the work stops sitting

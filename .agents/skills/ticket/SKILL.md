@@ -37,6 +37,8 @@ Add a measured wireframe for visible work or a Mermaid flow for an ordered mecha
 
 Write the ticket's one owned index row and place it as one numbered step of exactly one subject.
 
+**The step's [`Waits on`](../../../../docs/GLOSSARY.md#waits-on) cell is written in the same edit as the step.** It is the one place a wait is declared and the only thing the running order reads a track's order out of, so a step added with the cell left blank is a ticket that will be offered above what it cannot be built without. Name the step numbers of its own track, or link a live ticket on another track; write `—` where nothing has to be built first, which is the honest answer for most steps and leaves the row ranked on cost exactly as it is today.
+
 **A ticket carrying `> **Performance finding.**` is always the next step of the Performance track**, whatever subject folder holds its code. `nothing-files-a-performance-finding` stays the track's unmarked first step because it builds this route rather than recording a slow path, and its owner-chosen place in the running order is not changed by this rule.
 
 ### 7. Run /pm

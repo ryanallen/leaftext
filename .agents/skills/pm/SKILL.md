@@ -1,6 +1,6 @@
 ---
 name: pm
-description: Rank every live ticket into ../docs/PLAN.md and keep the shipped, canceled and on-hold folders true. Wrong today first, then dependencies, then cost; only the owner moves work on or off hold. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
+description: Rank every live ticket into ../docs/PLAN.md and keep the shipped, canceled and on-hold folders true. Wrong today first, then dependencies, then how much a row unblocks; only the owner moves work on or off hold. Use when the user says "what should I build next", "rank the tickets", "make a plan", "priorities", or hands over the plan folder to be brought up to date.
 argument-hint: "[optional: a subject to rank within]"
 user-invocable: true
 ---
@@ -27,17 +27,17 @@ Open the README, the four plan files, the tracks, the glossary and every live an
 
 Read dated lines and boxes from each ticket and rebuild the status cells.
 
-### 3. Rank wrong work, dependencies and cost
+### 3. Rank wrong work, dependencies and what a row unblocks
 
-Apply the three tests in order and file anything that cannot honestly be ranked.
+Apply the three tests in order, reading each track's declared waits as the dependency test, and file anything that cannot honestly be ranked.
 
 ### 4. Put every row in its tier and sub-band
 
-Use the tier definitions and the phase count; held work is not a tier.
+Use the tier definitions and each row's own `Blocked by` cell; held work is not a tier.
 
 ### 5. Rewrite the live table
 
-Write one numbered row per live ticket with its blocks, track and one-sentence reason.
+Write one numbered row per live ticket with its track and one-sentence reason; the two blocker columns and `Devs with` are computed in step 10.
 
 ### 6. Keep the glossary and tracks true
 
@@ -57,7 +57,7 @@ Walk both folders and write one row for every ticket there.
 
 ### 10. Rebuild derived cells and check all six files
 
-Bundle status and `Devs with`, stamp the ranking and run the plan checks.
+Bundle status, the two blocker columns and `Devs with`, in that order, then stamp the ranking and run the plan checks.
 
 ### 11. Hand back
 
@@ -96,20 +96,22 @@ What reading cannot settle is a tier 0 row, not a guess.
 ## 3. Rank on three things, in this order
 
 1. **Is something wrong today** — a bug, a panic, a vault opening incorrectly, or a rule the work runs under saying something untrue. Incorrect outranks incomplete.
-2. **Is it built twice if it goes second** — a piece two or more rows want, and smaller than they are, is built once here or several times below. A root *bigger* than the rows under it saves nothing by going first: that is a subject's order, which is the track's own file's, not a tier.
-3. **What it costs** — the cheaper of two rows that tie goes first.
+2. **Is it built twice if it goes second** — a piece two or more rows want is built once here or several times below.
+
+**The dependency test reads the declared waits and nothing else.** A step's [`Waits on`](../../../../docs/GLOSSARY.md#waits-on) cell under [`../docs/tracks/`](../../../../docs/tracks/) is the one place a wait is written down, so a row waits on exactly what its steps' cells name and on nothing a track merely lists above it. A step writing `—` is a preference the track never claims, and its row is placed on the two tests either side of this one. Read them before placing a row: they are what `Blocked by` is computed from, and no row sits above what its cell names.
+3. **How much it unblocks** — of two rows that tie, the one more live rows are stuck behind goes first, read off its `Blocks` cell.
 
 The tests pick the tier in that order, then run again inside it, which is what makes a row arguable rather than a matter of taste.
 
-**Cost never moves a row between tiers.** It orders rows inside one. Joining it to test 1 is what once left every expensive fault sitting in the middle of the features.
+**How many phases a ticket has plays no part in the ranking at all.** Not a tier, not a heading, not the order of two rows that tie. It used to be the third test and the cut a long band was made on, and it was answering a question nobody reading the running order asks: they are asking what to pick up now, and a cheap row nobody can start is a worse answer than a dear one they can. Nothing here counts a `### Phase` heading, and `scripts/check-plan.mjs` counts none either.
 
 **Not counted:** absent is not wrong, so missing capability never reaches tier 1; a missing test is a risk, not the app being wrong; a dependency counts only where the waiting ticket names it, and a shipped ticket is not a dependency at all.
 
-**Unrankable, because the cost is unknown.** The ticket stays `Ready` with the reason in its row: it changes the window and has no drawn `What it looks like` section, or its phases carry no test box. Check both over every ticket while walking the folders.
+**Unrankable, because nobody can say what the work is.** The ticket stays `Ready` with the reason in its row: it changes the window and has no drawn `What it looks like` section, or its phases carry no test box. Check both over every ticket while walking the folders.
 
-**A ticket carrying two jobs is split before it is ranked.** This is the only pass that reads every live ticket in one sitting, so it is the one that can see a file has become two — its summary sentence needs an *and* to stay true, its phases answer more than one question, or its cost is two costs, which is what makes it unrankable rather than merely large. Split it at the seam with [`/ticket`](../ticket/SKILL.md): each half keeps a name of its own, a README row and a row here, and each names the other. Size alone is not the test — a big swing is a tier, not a split.
+**A ticket carrying two jobs is split before it is ranked.** This is the only pass that reads every live ticket in one sitting, so it is the one that can see a file has become two — its summary sentence needs an *and* to stay true, or its phases answer more than one question. Split it at the seam with [`/ticket`](../ticket/SKILL.md): each half keeps a name of its own, a README row and a row here, and each names the other. Size alone is not the test — a big swing is a tier, not a split.
 
-**Build upkeep is held, not ranked, and this pass is what enforces it.** A plan whose written footprint is entirely `app/scripts/`, `app/.agents/`, `app/Justfile`, `AGENTS.md` or the plan tree changes how the work gets done rather than what the app does, and the owner holds every one of them on a standing word — the ranking is for the app, and a list of the machinery's own faults crowds out the work somebody using Leaftext would notice. So a live one found at `Ready` or `Designed` is moved to `../docs/on-hold/` in this pass by the rule below, and one already at `Dev` or `Released` is left alone, because holding a build somebody is in the middle of loses it. The only thing filed live off that footprint is a bug in the app itself, where the machinery is merely how it was found.
+**Build upkeep is held, not ranked, and this pass is what enforces it.** A plan whose written footprint is entirely `app/scripts/`, `app/.agents/`, `app/Justfile`, `AGENTS.md` or the plan tree changes how the work gets done rather than what the app does, and the owner holds every one of them on a standing word — the ranking is for the app, and a list of the machinery's own faults crowds out the work somebody using Leaftext would notice. So a live one found at `Ready` or `Designed` is moved to `../docs/on-hold/` in this pass by the rule below, and one already at `Dev` or `Released` is left alone, because holding a build somebody is in the middle of loses it. **A picked row is left alone too, at any stage**: the owner has already said this one goes first, and a standing word cannot overrule the word they just gave. The only thing filed live off that footprint is a bug in the app itself, where the machinery is merely how it was found.
 
 **Anything this pass turns up that is not a row gets a ticket** — a gap nothing covers, a fault nobody has filed, a rule the tree is running under that is untrue. Write it with [`/ticket`](../ticket/SKILL.md), give it its README row, rank it here in the same pass. Never a sentence in the hand-back: reading eighty tickets against the code is the pass most likely to find something, and a finding with no file is one nobody sees again.
 
@@ -121,31 +123,32 @@ The tests pick the tier in that order, then run again inside it, which is what m
 
 | Tier | What is in it |
 | --- | --- |
-| **0** | Somebody reading the code to settle a claim the rest of the list rests on, or a ticket carrying `> **Performance finding.**`. Cost orders marked findings inside tier 0; they are never compared against features below it |
-| **1** | **Wrong today.** Whatever the app, or a rule the work runs under, does incorrectly — at whatever it costs |
-| **2** | **The shared piece.** Two or more rows wait on it and it is smaller than they are, so it is built once here or several times below |
-| **3** | The features people would name, cheapest first — and the work behind them nobody would name: how the repo is built, and the published pages, where neither is wrong today, a shared piece, nor a big swing |
-| **4** | Big swings, each absorbing the time all of tiers 1 to 3 take together. **On its own size** — a small row behind one is put here by the blocker rule below, not by this definition |
+| **0** | Somebody reading the code to settle a claim the rest of the list rests on, or a ticket carrying `> **Performance finding.**`. Marked findings are ordered inside tier 0 and never compared against features below it |
+| **1** | **Wrong today.** Whatever the app, or a rule the work runs under, does incorrectly, however long it takes to put right |
+| **2** | **The shared piece.** Two or more rows wait on it, so it is built once here or several times below |
+| **3** | The features people would name, most-unblocking first — and the work behind them nobody would name: how the repo is built, and the published pages, where neither is wrong today, a shared piece, nor a big swing |
+| **4** | Big swings, each absorbing the time all of tiers 1 to 3 take together. **On its own account** — a row behind one is put here by the blocker rule below, not by this definition |
 
-Tier 0 comes first, because the list is only as good as the statuses under it and performance findings accumulate before planned features. Readings keep the claim they must settle; marked performance findings are ordered cheapest first inside tier 0 and never against a lower-tier feature. **Held work has no tier or position**: move it to `../docs/on-hold/<subject>/`, move its README row under `## On hold`, keep its track step linked to the new path, and record its stage, return folder and the owner's reason in `../docs/on-hold/PLAN.md`. On restoration, reverse those moves and rank it from the rules rather than from its old position. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days.
+**Above every tier sits `## Picked by the owner`, the mirror of Hold.** Hold is the owner saying not yet; this is the owner saying now. **Only the owner's word puts a row in it or takes one out** — no pass picks work because it looks urgent, and none unpicks work because it looks big. Its rows are in the order the owner named them, each carrying a `Picked` column with the day and the time of the pick, and [positions](../../../../docs/GLOSSARY.md#position) run straight through the band the way they run through a sub-band. A picked row is outside the tier definitions the way a held one is: a feature can sit there, and so can a plan whose whole footprint is build upkeep. What it costs the file is real and it is the owner's to spend: a picked row outranks *wrong today*, so one can sit above a fault somebody is meeting right now. A pick ends when its ticket retires, which is [`/done`](../done/SKILL.md)'s to clear. `scripts/check-plan.mjs` refuses the band below tier 1, a pick with no time on its date, and a picked row naming work that is not live.
+
+Tier 0 comes first, because the list is only as good as the statuses under it and performance findings accumulate before planned features. Readings keep the claim they must settle; marked performance findings are ordered inside tier 0 and never against a lower-tier feature. **Held work has no tier or position**: move it to `../docs/on-hold/<subject>/`, move its README row under `## On hold`, keep its track step linked to the new path, and record its stage, return folder and the owner's reason in `../docs/on-hold/PLAN.md`. On restoration, reverse those moves and rank it from the rules rather than from its old position. **A tier with no rows is deleted, heading and all**, and comes back when it has one. **No estimate anywhere** — no minutes, no hours, no days.
 
 **No row sits in a tier above its own blocker.** It is the one rule that outranks the three tests: a shared piece behind a big swing goes with the swing, and a one-line row behind one stays behind it, because a row somebody cannot start is worse than a row somebody has to scroll to.
 
-**A long band is cut into sub-bands on cost**, because the band is already ordered cheapest first and the reader's question is how big the run under a heading is. A row's cost is the number of `### Phase` headings in its ticket — the slices it ships in — or, where the `Ticket` cell ranks a named run (`**phases 1–4**`, `**phase 1**`), the length of that run.
+**A long band is cut into two sub-bands on the reader's own question — can I start this.** The heading is read off the row's own `Blocked by` cell, so it is computed rather than judged and it cannot say anything untrue about the row under it.
 
-| Sub-band | Phases |
+| Sub-band | What is under it |
 | --- | --- |
-| `### One or two phases` | 1–2 |
-| `### Three or four phases` | 3–4 |
-| `### Five phases or more` | 5 and up |
+| `### Nothing is in front of these` | `Blocked by` is `—`: start any one of them today |
+| `### Each of these waits on a row above` | `Blocked by` names a live row, and that row is above |
 
-- **A blocked row sits in its blocker's sub-band where that is the dearer of the two.** The blocker rule, one level down: a one-phase row behind an eight-phase one is not something anybody picks up cheaply.
-- **A `###` heading, never a numbered band.** The number on a band says which of the three tests placed the row, and cost is the test that never moves a row between bands. Each sub-band gets its own table; [positions](../../../../docs/GLOSSARY.md#position) run straight through, because a sub-band holds none of its own.
-- **A sub-band with no rows is not written**, the way a tier with no rows is deleted heading and all.
-- **Inside a sub-band, cheapest first as everywhere else**, except that a row never precedes what it waits on.
-- **A band over half the file, holding rows of more than one size, must be cut.** `scripts/check-plan.mjs` counts the phases itself: it refuses a band that should be cut and is not, a row left above the first heading, and a row under a heading its count does not name.
+- **A family splits across the two, and that is the honest shape.** The trunk sits in the first and its dependents in the second; every dependent's `Blocked by` cell names the trunk and the trunk is guaranteed above it, so the chain is still readable and the two rows go on answering different questions for somebody choosing what to start.
+- **A `###` heading, never a numbered band.** The number on a band says which of the three tests placed the row, and this cut moves nothing between tiers. Each sub-band gets its own table; [positions](../../../../docs/GLOSSARY.md#position) run straight through, because a sub-band holds none of its own.
+- **A sub-band with no rows is not written**, the way a tier with no rows is deleted heading and all — so a band whose rows all answer the question the same way carries no heading at all.
+- **Inside a sub-band, most-unblocking first as everywhere else**, except that a row never precedes what it waits on.
+- **A band over half the file, holding rows on both sides of that question, must be cut.** `scripts/check-plan.mjs` reads the cells itself: it refuses a band that should be cut and is not, a row left above the first heading, and a row under the heading its own cell does not name.
 
-**Inside tier 1, what stops somebody using the app comes before what looks wrong.** A machine that cannot install it outranks a shadow drawn the wrong way however the two compare on cost.
+**Inside tier 1, what stops somebody using the app comes before what looks wrong.** A machine that cannot install it outranks a shadow drawn the wrong way, whatever either of them takes to build.
 
 **Size is not a test.** A tier holding most of the list is what a tree of mostly-features looks like, and no count makes a definition wrong. What makes one wrong is **asking for two unrelated things at once**, or **asking for something no row can satisfy** — three tiers emptied that way once, and the file went on calling itself ranked on three tests while sorting on one. Read the words of a definition, never the count under it.
 
@@ -160,13 +163,13 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 
 | # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |
 
-## Tier 3 — the features people would name, cheapest first
+## Tier 3 — the features people would name, most-unblocking first
 
-### One or two phases
+### Nothing is in front of these
 
 | # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |
 
-### Three or four phases
+### Each of these waits on a row above
 
 | # | Ticket | Status | Blocks | Blocked by | Track | Devs with | Why |
 ```
@@ -175,16 +178,16 @@ It opens with its title, `# Leaftext Plan Log`, and the first work table is the 
 - **`Why` is the problem and what answers it** — what the app does wrong, or cannot do yet, in the words of somebody using it, and where it helps, the thing that puts it right. It is the ticket's own `## Why` in one sentence. **Never why the row sits where it does**: the heading above it has already said which of the three tests placed it, and a placement is worth no words at all. One sentence a cell, 200 characters at the outside; `scripts/check-plan.mjs` counts every one and refuses a longer one.
 - **Never a neighbor.** No `behind the row above`, no `ahead of everything under it`, no `top of the band`, no `last of the tier`, no position, and no argument for the tier the row landed in. A cell written about where a row sits is made untrue by the next reorder and nobody comes back to rewrite a hundred of them — which is how this column grew to two thirds of the file, 153 cells averaging 352 characters with the longest at 956. The check refuses those words.
 - **Never a date.** When it was found, asked for or designed is the ticket's own record, and a second copy here goes stale the moment the ticket moves on. The check refuses one.
-- **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no cost breakdown, no account of what it will build, no restating what the README already says the ticket is.
+- **Nothing that belongs to the ticket** — no citation, no phase count, no box count, no account of how long it takes, no account of what it will build, no restating what the README already says the ticket is.
 - **No preamble under a heading, no method, no record, no picture.** How rows are ranked is this skill; what an earlier ranking got wrong is `done/PLAN.md`'s.
 - **Every ticket name is a link**, in every cell and every line of prose, using the path from the README. A bare name is a ranking error.
-- **`Blocks` is `Blocked by` read the other way** — every live row whose `Blocked by` names this one, linked, or `—`. It carries no claim of its own: the waiting ticket's cell is the source, and this one exists so a row being weighed says what sits behind it without reading the whole file. `scripts/check-plan.mjs` holds the two columns to each other.
-- **`Blocked by` holds live blockers only**, linked, or `—`. A ticket that has shipped does not block anything, so naming one there reads as a wait that is over.
+- **Both blocker columns are computed, never authored.** `Blocked by` is the live tickets this row's steps declare a wait on, linked, or `—`; `Blocks` is that read the other way — the three highest-ranked live rows whose `Blocked by` names this one, then the total in brackets where there are more, the way `Devs with` is bounded, because the Progress trunk blocks eighteen tickets and eighteen links is not a cell anybody reads. Both come out of the `Waits on` cells under `../docs/tracks/`, so a wait is corrected there and never here: `just bundle-waits` writes both columns and `scripts/check-plan.mjs` refuses a cell the writer would not have written. Hand-written, these were the fault — 93 rows all saying `—` while a family's trunk sat twelve rows below its own dependents, with the rule that would have refused it fed nothing.
+- **`Blocked by` holds live blockers only.** A ticket that has shipped or is on hold does not block anything, so the writer drops it — which is what lets a track keep its own shipped steps in the same table the ranking reads.
 - **`Track` names the subject order a row sits in** — the track's own file under [`../docs/tracks/`](../../../../docs/tracks/), linked as `tracks/<anchor>.md`, with the step or steps the ticket is there as. **Every live row carries one, and `—` is not an answer**: a subject with one ticket is a track with one step, so a ticket with nowhere to sit means the track has not been written yet, never that the cell is empty. Write it in this pass — a new file under `../docs/tracks/` named by the subject's anchor, opening with the subject as its title, one line saying what the subject is, and the step — then its row in [`TRACKS.md`](../../../../docs/TRACKS.md)'s index and its node and `click` line in the map at the top of that file. **A step table never goes in the index**: `check-plan` refuses one and names the track. The step numbers are read out of that file in this pass, never remembered or copied from an older row, and the `Why` cell does not repeat them: a track named in one cell is one cell to fix when its steps renumber.
 - **A row with no track is how a subject climbs the tiers unnoticed.** Twice now a run of build-machinery rows has been ranked with an empty cell, read as loose faults on their own words, and walked up one pass at a time until they sat above the app's own work. `scripts/check-plan.mjs` refuses an empty cell, a track no heading in that file spells, and a track the ticket is not a step of — the last being the one a reader cannot see, since the link opens a real table their ticket is nowhere in. So the pass that writes a row writes its track in the same edit.
 - **`Devs with` is computed, never written.** It names the three highest-ranked live rows this one shares no file with, then the total in brackets where there are more, and `—` where there are none — read off each ticket's own [`## What it writes`](../../../../docs/GLOSSARY.md#footprint) section. **This pass does not derive it the way it derives `Blocks`**: a wait is a handful of rows across the whole tree and this is 153 set comparisons a row, 11,781 in all, which is not a pass anybody makes carefully twice. So the pass runs `just bundle-devs-with` after the rows are in their final order and reads the result rather than composing it, and `scripts/check-plan.mjs` refuses a cell the bundler would not have written, one naming a ticket that is not live, and one naming a row whose footprint it shares a file with.
-- **The order the two run in is the order they are written in.** The bundler orders every cell by position, so running it before the rows are settled writes 153 cells against the old numbering. Rank, then bundle, then read the file back.
-- **A track is its own file's.** The `Track` cell says which step a row is and nothing more, and the ranking does not import the track's order — most steps are a preference the track says so about, and only a real block moves a row. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is one track, not two**, so a subject the ranking is carrying in three separate cells gets one written instead — and a ticket is a step of exactly one track, named in one cell, however many other tracks mention it in their prose.
+- **The order the three run in is the order they are written in.** Rank, then `just bundle-waits`, then `just bundle-devs-with`, then read the file back. Both bundlers order their cells by position, so running either before the rows are settled writes every cell against the old numbering — and the waits come first because the pairing drops a pair where one waits on the other, which it can only see once `Blocked by` is filled.
+- **A track is its own file's, and its declared waits are what the ranking imports.** The `Track` cell says which step a row is and nothing more. A step's [`Waits on`](../../../../docs/GLOSSARY.md#waits-on) cell is the one place a wait is written down, so a step naming one is a real block and moves the row, and a step writing `—` is a preference the track never claims and moves nothing — which is why importing the whole track order was refused: 69 of the 83 out-of-order pairs in the Progress family are order nobody declared, and reading them as waits would be the ranking inventing them. So the dependency test in step 3 is the declared wait, and the two columns it feeds are computed by `just bundle-waits` rather than written here. Where this pass proves a block the other way round, the steps are swapped there in the same edit, because a track saying build this first while the ranking says it cannot be built yet is how somebody starts the blocked one. **Two live tickets on one subject is one track, not two**, so a subject the ranking is carrying in three separate cells gets one written instead — and a ticket is a step of exactly one track, named in one cell, however many other tracks mention it in their prose.
 - **Every parked workflow ticket is a step of [`Process upkeep`](../../../../docs/tracks/process-upkeep.md), under `on-hold/workflow/`, and belongs nowhere else.** None returns to the live list because a pass found one urgent — only the owner restores one. A held plan about a check or the gate that already sits on a track of its own keeps it, under `on-hold/repo/`.
 - **Off the list** — a sentence, with what would put it back. Off with a reason beats bottom of the list.
 - **The last line stamps the pass with the date and the time** — `**Last ranked 16 August 2026, 8:49pm.**`, then the three counts. The file is rewritten in place, so that stamp is the only thing telling a reader which pass they are holding, and a date alone cannot answer it on the one day it matters: rank twice in an afternoon and both stamps read the same. Take both off this machine's clock and write them as they come — it keeps Mountain Standard Time, which is what Arizona keeps all year, so there is no daylight saving to correct for and no zone to convert. `scripts/check-plan.mjs` refuses a stamp with no time on it. **Every other date this pass writes carries a time the same way** — a retired row's `Status` cell, a refused row's date — because a day is not an answer to when in a tree that fills one; `AGENTS.md` holds the rule and `just check-docs` refuses a date written from `2026-08-19` on with no time after it.
