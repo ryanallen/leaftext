@@ -11,7 +11,7 @@ A ticket is followed months later by somebody with none of the conversation in t
 
 **Nothing is designed on a guess** — step 1a. A cause is watched happening in a running copy, or the ticket carries the smallest earlier phase that makes it watchable. Everything below is a way of being wrong more slowly; this is the way of not solving the wrong problem at all.
 
-**Every ticket comes out of this pass with a picture in it** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead. A supplied screenshot is that picture for the state it shows: keep it inline and do not redraw it.
+**Every ticket comes out of this pass with a picture in it, and the picture is in situ** — step 6a. A plan handed on as prose alone is one where whoever builds it draws it in their own head instead, and a plan drawn as panels floating on a card is one where they build the panels. A supplied screenshot is that picture for the state it shows: keep it inline and do not redraw it.
 
 **Never run git.** **Never edit app code.** A wrong plan is fixed in the plan. If the ticket turns out to describe a shipping bug in its own subject, it stays a box in the ticket — fixing it is a separate job with its own `/check`. Work this pass finds that makes the ticket's own change work belongs in an earlier phase of this ticket — step 5b.
 
@@ -41,7 +41,7 @@ Fix the phase order, test boxes, owner's box and footprint from the code and sui
 
 ### 6. Complete the ticket and draw it
 
-Hold the seven parts to their jobs and leave a wireframe or flow diagram that matches the phases.
+Hold the seven parts to their jobs and leave a wireframe drawn inside the real window, or a flow diagram, that matches the phases.
 
 ### 7. Make the file read cleanly
 
@@ -188,13 +188,25 @@ Then check the three middle headings answer one question each and stop. A paragr
 
 **Anything the running order should not be carrying belongs here.** A row in `../docs/PLAN.md` is two sentences; if this ticket's row has grown past that, move the words into this file and shorten the row in the same pass.
 
-## 6a. Every ticket leaves this pass with a picture in it, and the owner says yes to a drawn interface
+## 6a. Every ticket leaves this pass with a picture in it, drawn in situ, and the owner says yes to a drawn interface
 
 **No ticket this skill touches ends without a picture.** A supplied screenshot stays inline and is used as the visual record for its state; never draw an equivalent wireframe. Otherwise, where the phases touch the window, photograph a wireframe under `## What it looks like`; where they touch nothing a reader sees, draw the flow in step 6b — a Mermaid block in `## How it is built`. A ticket carrying a picture still has it opened against the code here rather than taken on trust.
 
 **A ticket whose phases touch the window and has neither a supplied screenshot nor `## What it looks like` is one this pass draws.** Sketch it as HTML under `../docs/imgs/wireframes/` and photograph it with `node scripts/wireframe.mjs`, with the markup and the `design/components.md` row each new control will take. Never box characters — `just check-ascii-art` fails on one anywhere in the tree. See [ticket](../ticket/SKILL.md) for the command and the shape of a sketch.
 
-**Every position in the drawing is traced, never invented.** Before a line of the sketch is written, read where each control actually sits — the markup in `src/assets/app-shell.html`, the zones in `src/assets/reading/`, and, when a copy is up, `leaftext_eval` for the real rectangles. Then draw at those numbers and say on the picture that they are measured. A drawing that puts an existing control somewhere it does not live is worse than no drawing: it reads as a decision somebody made, so the next person builds the move as if it were the fix. A sketch drawn from memory of what the bar "looks like" is the same fault with a nicer excuse.
+### The drawing is the app, with the change in it
+
+**A wireframe is a picture of the window, not a picture of the idea.** The reader is holding the app; the only question they have is what is different in it. So the drawing opens on what they already see and shows the change landing inside it — the tab strip, the pane, the crumbs, the document surface, the view bar, all in their real places, with the new thing in the one place it goes. Two controls floating on a beige card answer a question nobody asked, and what gets built from them is two floating controls.
+
+**Start from a photograph of the running app, not from a blank sketch.** A copy is up or `just probe-copy <document>` puts one up; open the document that makes the case, `leaftext_eval` for the real rectangles, `just drive <out>.png` for the shot, and keep it beside the sketch under `../docs/imgs/wireframes/`. `scripts/wireframe.mjs` loads the sketch over `file://`, so `<img src="the-shot.png">` in the sketch draws the real window as the ground and the proposal goes on top of it, at the coordinates the page just reported. That is a drawing nobody has to trust: everything under the change is what the app does today, because it is a photograph of the app doing it.
+
+**Where the app cannot yet be photographed in that state, the sketch draws the whole window anyway.** The frame, the bars and the surrounding controls are traced from `src/assets/app-shell.html`, the zones in `src/assets/reading/`, and the rectangles a running copy reports — then the change is drawn in it. A cropped panel with no window around it is the fault this rule exists for, and it is the same fault whether the crop is of something real or something invented.
+
+**One frame is the answer; two frames is a before and an after of the same window.** Never one frame per idea laid out side by side like a catalog — that is a comparison of designs, and this pass has already made the choice. Today's window and tomorrow's window, the same size, the same place, so the difference is the only thing that moves.
+
+**Every position in the drawing is traced, never invented.** A drawing that puts an existing control somewhere it does not live is worse than no drawing: it reads as a decision somebody made, so the next person builds the move as if it were the fix. A sketch drawn from memory of what the bar "looks like" is the same fault with a nicer excuse.
+
+**Say on the picture where the numbers came from** — the window size the shot was taken at, and that the surrounding controls are the app's own. A reader who cannot tell the traced part from the proposed part reads the whole thing as proposed.
 
 **A fix is the mechanism that is already there.** Where a ticket is a bug, the drawing shows the app's own behavior reaching one more case — the same controls, in the same places, with whatever will not fit going into the container that already holds spillover. Rearranging the window is not a candidate answer to a bug and is never drawn as one. If the sketch has moved something the bug did not move, the sketch is wrong.
 
@@ -277,7 +289,7 @@ Fix the small stuff in place without a line in the record — a stale line numbe
 
 The whole reply is the owner's message, word for word. The ticket is a file in `../docs/`; nothing in the app moved, so there is nothing to verify and nothing to bundle. The tree stays dirty.
 
-Four things have to be on the file when this ends: the dated line at the top, a watched cause in the measured table, a picture in the body — a photographed wireframe or a Mermaid flow — and the record at the bottom. Missing the first or the last, nothing downstream can tell a checked plan from an unchecked one; missing the picture, the plan is four paragraphs somebody has to hold in their head, and what they build instead is whatever they pictured; missing the cause, the whole file is a confident answer to a question nobody asked the app.
+Four things have to be on the file when this ends: the dated line at the top, a watched cause in the measured table, a picture in the body — a wireframe drawn inside the real window, or a Mermaid flow — and the record at the bottom. Missing the first or the last, nothing downstream can tell a checked plan from an unchecked one; missing the picture, the plan is four paragraphs somebody has to hold in their head, and what they build instead is whatever they pictured; missing the cause, the whole file is a confident answer to a question nobody asked the app. A picture that is panels on a card rather than the app with the change in it counts as missing, because what gets built from it is the panels.
 
 **A pass stopped at step 1a hands back differently**: no dated line, the ticket's status untouched, and the tooling ticket now in front of it written rather than named in a sentence. That is a finished pass, not a failed one — it is the pass finding that the next piece of work is the ability to see.
 
