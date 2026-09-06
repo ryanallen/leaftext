@@ -862,7 +862,7 @@ fn reaches_for_it(selector: &str) -> bool {
 
 #[test]
 fn every_control_that_appears_under_the_pointer_leaves_the_same_way() {
-    // Nine families of small control are drawn at nothing and shown when the pointer or the keyboard reaches what they belong to. They used to leave four different ways — three waited a beat and faded, four went at once over 120ms, the flowchart buds went at once over 100ms, and the front-matter row's cross snapped out with no fade at all — so one hand crossing the window got four answers to the same gesture. Both ends are a named recipe now, and this finds a later reveal that names neither rather than leaving it to be noticed on screen.
+    // Nine families of small control are drawn at nothing and shown when the pointer or the keyboard reaches what they belong to, and one hand crossing the window has to get one answer to the same gesture rather than one per family. Both ends of the fade are a named recipe, so a later reveal that names neither is found here rather than on screen.
     const ARRIVE: &str = "var(--lt-transition-hover-reveal-arrive)";
     const LEAVE: &str = "var(--lt-transition-hover-reveal-leave)";
     let css = reading_mode_css();
