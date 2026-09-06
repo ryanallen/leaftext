@@ -53,6 +53,10 @@
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
+/* The published sites name families in data-theme, so the shared light-page strength follows the appearance they all name alike. */
+:root[data-leaf-appearance="light"] {
+  --lt-grain-shadow-opacity-inside: var(--lt-grain-shadow-opacity-inside-light);
+}
 /* The shadow's blob is in here too, because its tile is the chrome's and follows it up. A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
 @media (resolution <= 1dppx) {
   :root {
@@ -117,7 +121,7 @@ body.frameless.is-fullscreen .app-surface {
   border: 0;
   --app-window-radius: 0px;
 }
-/* The window uses the same shrinking-dot halftone without a punch layer because the app surface paints over its middle. */
+/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. */
 body::before {
   content: '';
   position: fixed;

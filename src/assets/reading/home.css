@@ -374,6 +374,7 @@
   z-index: var(--lt-z-50);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-md);
+  --lt-shadow-host-border: 0;
   border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   pointer-events: none;
@@ -463,4 +464,3 @@ body.is-home-row-dragging .home-list-scroll li {
     --minimap-preview-width: 38px;
   }
 }
-

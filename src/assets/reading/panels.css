@@ -208,8 +208,9 @@
   content: '';
   position: absolute;
   z-index: var(--lt-z-below);
+  /* Absolute children start from the host's padding box, so the punch is cut one stroke inside the outline and the innermost dot row prints on the border. The stroke comes off the padding rather than being added to the inset, which lands the content box on the border box while leaving the band's outer edge exactly where it was: the lattice is anchored to the window rather than to this box, so an edge moved one pixel re-phases every dot row against it, and at 100% — where a tile is three device pixels and the band holds four rows — that costs the faintest row at the rim. The pixel the band gives up is the one that was being drawn under an opaque border. */
   inset: calc(-1 * var(--lt-shadow-spread));
-  padding: var(--lt-shadow-spread);
+  padding: calc(var(--lt-shadow-spread) - var(--lt-shadow-host-border));
   /* The outside corner is the surface's own plus the spread, which strikes both arcs from one center; each host declares the one number its own border already reads. */
   border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread));
   pointer-events: none;
@@ -226,7 +227,7 @@
   background-attachment: scroll, scroll, scroll, scroll, fixed;
   background-blend-mode: screen, screen, screen, screen, multiply;
   filter: var(--lt-grain-shadow-curve);
-  opacity: var(--lt-grain-shadow-opacity);
+  opacity: var(--lt-grain-shadow-opacity-inside);
   /* The punch that takes the host's own face out, over four ramps that take the band's ink from full against that face to nothing at the rim. The ramps run here as well as in the background stack because the two do different things: the background pair shrinks the dot, and these fade what is left, so the band reaches true zero at its outer edge rather than stopping on the faintest row it still draws. The punch is the top layer and subtracts; the four below it intersect, which multiplies their alpha the way a corner needs. */
   -webkit-mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
     linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
@@ -256,6 +257,6 @@
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {
-  opacity: var(--lt-grain-shadow-opacity);
+  opacity: var(--lt-grain-shadow-opacity-inside);
   transition: var(--lt-transition-hover-reveal-arrive);
 }

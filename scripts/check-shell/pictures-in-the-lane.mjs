@@ -80,25 +80,35 @@ export function run() {
     if (!render.includes('laneWidePictures();')) throw new Error('nothing calls laneWidePictures on a render');
   });
 
-  // The one place in the app where the hover wash sits on something other than the page. It is a 16% tint over transparent, so a rule that hands it the whole background takes the control's own surface away — beside a table that reads as a tint on the page and is nearly invisible, and over a picture it is a see-through square with the picture showing through it.
+  // The one place in the app where the hover wash sits on something other than the page. It is a 16% tint over transparent, so a rule that hands it the whole background takes the control's own surface away — beside a table that reads as a tint on the page and is nearly invisible, and over a picture it is a see-through square with the picture showing through it. It rides on a layer of its own, laid over the button's surface rather than written on it, because a background image cannot be faded from nothing however the control is timed.
   check('the pointer never takes a corner opener s surface away', () => {
     const css = readingCss();
-    const at = css.indexOf('.table-sheet-open:hover,');
-    if (at < 0) throw new Error('the two corner openers no longer share one hover rule');
+    const at = css.indexOf('.table-sheet-open:hover::before,');
+    if (at < 0) throw new Error('the two corner openers no longer share one hover wash');
     const rule = css.slice(at, css.indexOf('}', at));
-    if (!rule.includes('.image-sheet-open:hover')) throw new Error('the picture opener no longer shares the table opener s hover');
+    if (!rule.includes('.image-sheet-open:hover::before')) throw new Error('the picture opener no longer shares the table opener s hover wash');
+    if (!rule.includes('.image-export-open:hover::before')) throw new Error('the picture export button no longer shares the corner opener s hover wash');
     const fill = /background:\s*([^;]+);/.exec(rule);
     if (!fill) throw new Error('the corner opener paints nothing under the pointer');
-    if (!fill[1].includes('var(--lt-surface-elevated)')) {
-      throw new Error('the wash replaces the opener s own surface, so a picture shows through the control');
-    }
     if (!fill[1].includes('var(--lt-wash-hover)')) throw new Error('the corner opener answers the pointer with something other than the one wash');
-    // And the surface it is painted over is the one the button rests on, or the hover is a different color from the button.
-    const rest = css.slice(css.indexOf('.table-sheet-open,\n.image-sheet-open,\n.image-export-open {'), css.indexOf('.table-sheet-open .lt-icon'));
+    // The layer covers the button and starts at nothing, so the wash is a tint over the surface rather than a fill instead of it.
+    const layerAt = css.indexOf('.table-sheet-open::before,');
+    if (layerAt < 0) throw new Error('the wash has no layer of its own to be tinted on');
+    const layer = css.slice(layerAt, css.indexOf('}', layerAt));
+    for (const declaration of ['position: absolute', 'inset: 0', 'background: transparent']) {
+      if (!layer.includes(declaration)) throw new Error(`the wash layer no longer covers the button it tints from nothing: ${declaration}`);
+    }
+    // The button's own hover writes no fill of its own, or the tint is back on top of the surface as a picture that cannot fade.
+    const ownAt = css.indexOf('.table-sheet-open:hover,');
+    if (ownAt < 0) throw new Error('the three corner openers no longer share one hover rule');
+    if (/background(-color)?:/.test(css.slice(ownAt, css.indexOf('}', ownAt)))) {
+      throw new Error('the corner opener paints a fill on itself again, so the wash cannot fade in');
+    }
+    // And the surface the layer is laid over is the one the button rests on, or the hover is a different color from the button.
+    const rest = css.slice(css.indexOf('.table-sheet-open,\n.image-sheet-open,\n.image-export-open {'), layerAt);
     if (!rest.includes('background: var(--lt-surface-elevated);')) {
       throw new Error('the opener no longer rests on the surface its hover is painted over');
     }
-    if (!rule.includes('.image-export-open:hover')) throw new Error('the picture export button no longer shares the corner opener s hover');
   });
 
   // Two controls in one corner, so the corner is what is placed and what appears — a second button pinned at the same top and right would sit on top of the first.
@@ -117,12 +127,12 @@ export function run() {
     const shape = ruleBody('.table-sheet-open,\n.image-sheet-open,\n.image-export-open {');
     if (/position:\s*absolute/.test(shape)) throw new Error('a corner control places itself again, so the pair stack on one another');
     // Held at the corner rather than at each button, or one of the two would be the only thing that ever showed.
-    const hidden = ruleBody('.table-sheet-open,\n.image-lane-corner {');
-    if (!/opacity:\s*0/.test(hidden)) throw new Error('the picture corner is drawn over the picture before the pointer asks for it');
-    const shown = ruleBody('.table-lane:hover .table-sheet-open,');
-    if (!shown.includes('.image-lane:hover .image-lane-corner') || !shown.includes('.image-lane-corner:focus-within')) {
-      throw new Error('pointing at a widened picture, or reaching its corner by keyboard, no longer reveals both controls');
+    if (!/opacity:\s*0/.test(corner)) throw new Error('the picture corner is drawn over the picture before the pointer asks for it');
+    const shown = ruleBody('.image-lane:hover .image-lane-corner,');
+    if (!shown.includes('.image-lane-corner:focus-within')) {
+      throw new Error('reaching a widened picture s corner by keyboard no longer reveals both controls');
     }
+    if (!/opacity:\s*1/.test(shown)) throw new Error('pointing at a widened picture no longer reveals both controls');
   });
 
   // The full-window picture is a reader and nothing else: it shows an element the page already holds, so no route from opening or closing it reaches the document buffer, and none of it needs a host.

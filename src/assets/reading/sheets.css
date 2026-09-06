@@ -118,6 +118,7 @@
   max-height: var(--sheet-ceiling);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-2xl);
+  --lt-shadow-host-border: 0;
   border-top-left-radius: var(--lt-shadow-host-radius);
   border-top-right-radius: var(--lt-shadow-host-radius);
   transform: translateY(100%);

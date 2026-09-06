@@ -158,8 +158,9 @@
   --lt-z-45: 45;
   --lt-z-50: 50;
   --lt-z-51: 51;
-  /* Shadow spread */
+  /* Shadow band geometry */
   --lt-shadow-spread: 12px;
+  --lt-shadow-host-border: var(--lt-stroke-1);
   /* Strokes, rings and one recess */
   --lt-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
   --lt-shadow-hairline: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent);
@@ -179,6 +180,8 @@
   --lt-grain-shadow-mid: rgba(255, 255, 255, 0.365);
   --lt-grain-shadow-curve: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone");
   --lt-grain-shadow-opacity: 1;
+  --lt-grain-shadow-opacity-inside: 1;
+  --lt-grain-shadow-opacity-inside-light: 0.2;
   /* Fixed colors */
   --lt-mask-opaque: #000;
   --lt-white: #ffffff;

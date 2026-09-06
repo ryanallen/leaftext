@@ -74,6 +74,8 @@
 .image-sheet-open,
 .image-export-open {
   z-index: 1;
+  /* The wash below hangs off this box, so each of the three has to be the layer's containing block. The table's own is placed absolutely a rule down, which does the same job. */
+  position: relative;
   display: grid;
   place-items: center;
   width: 28px;
@@ -84,11 +86,32 @@
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
 }
-/* One control, so the table's own sits in the corner itself. */
+/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. It is a layer of its own rather than a gradient on the button, because a background image cannot be interpolated between `none` and a picture however it is timed — so written on the button the wash arrived whole on the first frame beside an edge and an ink that faded. */
+.table-sheet-open::before,
+.image-sheet-open::before,
+.image-export-open::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.table-sheet-open:hover::before,
+.image-sheet-open:hover::before,
+.image-export-open:hover::before {
+  background: var(--lt-wash-hover);
+}
+/* One control, so the table's own sits in the corner itself. Its own reveal, so the shared hover fade at the top of the file never reaches it — a `transition` shorthand replaces that one outright rather than merging with it — which is why the edge and the ink are named here and on the rule that shows it below. */
 .table-sheet-open {
   position: absolute;
   top: var(--lt-space-6);
   right: var(--lt-space-6);
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--lt-transition-hover-reveal-leave), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 /* A picture has two, so the corner is a row they sit in and the space between them is a gap rather than an offset somebody measured — the way the diagram's own pair sits. */
 .image-lane-corner {
@@ -98,33 +121,38 @@
   z-index: 1;
   display: flex;
   gap: var(--lt-space-6);
-}
-.table-sheet-open,
-.image-lane-corner {
   opacity: 0;
   pointer-events: none;
+  /* The reveal alone: this is a box holding the two buttons and changes no color of its own, so a color leg here would time nothing. */
   transition: var(--lt-transition-hover-reveal-leave);
 }
 .table-sheet-open .lt-icon,
 .image-sheet-open .lt-icon,
 .image-export-open .lt-icon {
+  /* Above the wash: an absolutely placed layer with no depth of its own paints after the content in the box, so left static the glyph would sit under the tint rather than over it. */
+  position: relative;
   width: 16px;
   height: 16px;
 }
-.table-lane:hover .table-sheet-open,
-.table-sheet-open:focus-visible,
 .image-lane:hover .image-lane-corner,
 .image-lane-corner:focus-within {
   opacity: 1;
   pointer-events: auto;
   transition: var(--lt-transition-hover-reveal-arrive);
 }
-/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
+/* The colors ride along here too, for the reason written on the resting rule: the shorthand that reveals the button is the whole of its transition, so a fade it does not name is a fade it does not get. */
+.table-lane:hover .table-sheet-open,
+.table-sheet-open:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
+/* The edge and the ink; the fill is the layer above. */
 .table-sheet-open:hover,
 .image-sheet-open:hover,
 .image-export-open:hover {
   border-color: var(--lt-border-strong);
-  background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
 /* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The first layer is the app's own lattice and the second is the wash, which is what the paired `fixed, scroll` says; nothing between here and the app surface is transformed, so the dots fall in phase with the page the band dissolves into. */

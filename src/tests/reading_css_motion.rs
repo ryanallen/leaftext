@@ -972,3 +972,204 @@ fn every_control_that_appears_under_the_pointer_leaves_the_same_way() {
         "the copy button never disappears, so it owes no leave recipe"
     );
 }
+
+/// Every declaration in a rule body, as the property and what it is set to.
+fn declarations(body: &str) -> Vec<(&str, &str)> {
+    body.split(';')
+        .filter_map(|one| one.split_once(':'))
+        .map(|(name, value)| (name.trim(), value.trim()))
+        .filter(|(name, _)| {
+            !name.is_empty()
+                && name
+                    .chars()
+                    .all(|c| c.is_ascii_lowercase() || c == '-' || c.is_ascii_digit())
+        })
+        .collect()
+}
+
+/// The color a declaration changes, under the name the shared hover fade times it by. The shorthand counts: `background: <a wash>` moves the same paint `background-color` would.
+fn color_changed(name: &str) -> Option<&'static str> {
+    match name {
+        "background" | "background-color" => Some("background-color"),
+        "border-color" => Some("border-color"),
+        "color" => Some("color"),
+        _ => None,
+    }
+}
+
+/// What one comma-separated selector fades, read as an element rather than as a control: the last class in it, the bare type at its end where the last compound carries no class, and the pseudo-element where one is drawn. Both tails matter here and nowhere else — `.docs-pager a` is the link inside the box rather than the box, and a `::before` is its own paint layer, so a transition written on either never reaches the other.
+fn faded_subjects(selector: &str) -> Vec<String> {
+    without_refusals(selector)
+        .split(',')
+        .filter_map(|one| {
+            let one = one.trim();
+            let (rest, pseudo) = match one.find("::") {
+                Some(at) => (&one[..at], &one[at..]),
+                None => (one, ""),
+            };
+            let class_at = rest.rfind('.')?;
+            let mut who: String = rest[class_at + 1..]
+                .chars()
+                .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
+                .collect();
+            if who.is_empty() {
+                return None;
+            }
+            let tail = rest[class_at..].split_whitespace().last().unwrap_or("");
+            if !tail.starts_with('.') {
+                who.push(' ');
+                who.push_str(tail.split(':').next().unwrap_or(tail));
+            }
+            who.push_str(pseudo);
+            Some(who)
+        })
+        .collect()
+}
+
+/// The properties a `transition` shorthand names for itself, under the same names the color side reads: `background` is the shorthand for the fill and `all` is every one of them. A leg written as one of the reveal recipes is opacity and nothing else, so it names no color.
+fn transition_legs(body: &str) -> Vec<&'static str> {
+    declarations(body)
+        .into_iter()
+        .filter(|(name, _)| *name == "transition")
+        .flat_map(|(_, value)| value.split(','))
+        .filter_map(|leg| leg.trim().split_whitespace().next())
+        .filter_map(|leg| match leg {
+            "all" => Some("all"),
+            "opacity" => Some("opacity"),
+            other => color_changed(other),
+        })
+        .collect()
+}
+
+#[test]
+fn a_control_that_writes_its_own_fade_names_every_color_it_changes() {
+    // The shared hover fade at the top of the sheet is written with `:where()` and so carries no specificity: a `transition` shorthand on the element replaces it outright rather than merging with it. So a control that writes one to reveal itself, and then changes a color when the pointer arrives, has nothing left to fade that color with — it lands in one frame while every other button in the window takes a tenth of a second. Five controls answer that by naming their color legs by hand, and this is what stops the sixth forgetting.
+    let css = reading_mode_css();
+    let plain = without_prose(css);
+    let rules = css_rules(&plain);
+
+    // What each control times for itself, gathered across every rule about it: its resting rule, the rule that shows it, and the layer it paints its wash on all speak for the same control.
+    let mut named: Vec<(String, Vec<&str>)> = Vec::new();
+    for rule in &rules {
+        let legs = transition_legs(rule.body);
+        if !rule.body.contains("transition:") {
+            continue;
+        }
+        for subject in faded_subjects(rule.selector) {
+            match named.iter_mut().find(|(who, _)| *who == subject) {
+                Some((_, mine)) => mine.extend(legs.iter().copied()),
+                None => named.push((subject, legs.clone())),
+            }
+        }
+    }
+
+    for rule in &rules {
+        if !reaches_for_it(rule.selector) {
+            continue;
+        }
+        let changed: Vec<&str> = declarations(rule.body)
+            .into_iter()
+            .filter_map(|(name, _)| color_changed(name))
+            .collect();
+        if changed.is_empty() {
+            continue;
+        }
+        for subject in faded_subjects(rule.selector) {
+            let Some((_, legs)) = named.iter().find(|(who, _)| *who == subject) else {
+                // It writes no fade of its own, so the shared one still reaches it and times all three.
+                continue;
+            };
+            for color in &changed {
+                assert!(
+                    legs.contains(color) || legs.contains(&"all"),
+                    "{subject} writes its own transition, so the shared hover fade never reaches it, and it changes {color} without naming a leg for it: {} {{{}}}",
+                    rule.selector,
+                    rule.body
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn a_hover_wash_that_has_to_sit_over_a_fill_is_painted_on_a_layer_that_fades() {
+    // A control that has to keep its own fill under the wash — a plate over a picture, a red that says which answer is destructive — cannot replace it, so the wash used to be written as a gradient on top. A background image is not an interpolable value: it goes from `none` to the picture in one frame however the control is timed, and no `transition` could ever have reached it. The wash goes on a layer of its own instead, whose background color fades like any other.
+    const WASH_IMAGE: &str = "linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover))";
+    // The one control left wearing it, with its own ticket: the-warning-buttons-red-plate-lights-up-in-one-frame.
+    const STILL_AN_IMAGE: &str = "is-danger";
+    let css = reading_mode_css();
+    let plain = without_prose(css);
+    let rules = css_rules(&plain);
+
+    for rule in &rules {
+        if !rule.body.contains(WASH_IMAGE) {
+            continue;
+        }
+        for subject in faded_subjects(rule.selector) {
+            assert_eq!(
+                subject, STILL_AN_IMAGE,
+                "{subject} paints its hover wash as a background image, which cannot be faded from nothing however it is timed: {} {{{}}}",
+                rule.selector, rule.body
+            );
+        }
+    }
+
+    // The three corner buttons are the ones that moved. Each keeps a surface of its own — the picture shows through where it is replaced — so the wash is a layer over it, and that layer names the leg that fades it.
+    for control in [
+        ".table-sheet-open",
+        ".image-sheet-open",
+        ".image-export-open",
+    ] {
+        let layer = rules
+            .iter()
+            .find(|rule| {
+                faded_subjects(rule.selector).contains(&format!("{}::before", &control[1..]))
+                    && rule.body.contains("background:")
+                    && !rule.body.contains("var(--lt-wash-hover)")
+            })
+            .unwrap_or_else(|| panic!("{control} paints its hover wash on nothing of its own"));
+        assert!(
+            transition_legs(layer.body).contains(&"background-color"),
+            "{control}'s wash layer names no leg to fade its fill with: {{{}}}",
+            layer.body
+        );
+        let hovered = rules
+            .iter()
+            .find(|rule| {
+                rule.selector.contains(&format!("{control}:hover::before"))
+                    && rule.body.contains("var(--lt-wash-hover)")
+            })
+            .unwrap_or_else(|| panic!("{control} never puts the wash on its layer"));
+        assert!(
+            !hovered.body.contains("gradient"),
+            "{control} is back to a wash that cannot fade: {{{}}}",
+            hovered.body
+        );
+    }
+}
+
+#[test]
+fn the_corner_buttons_wash_layer_is_held_by_its_button_and_paints_under_its_glyph() {
+    // The wash the test above puts on a layer of its own is placed absolutely, so it is drawn against whatever box holds it and painted after everything in flow. Both are load-bearing and both look removable: without the buttons' own placement the layer hangs off some ancestor and the tint is drawn at the wrong size and in the wrong corner, and without the glyph's the 16% wash is laid over the icon rather than under it. Neither shows in a value a hover reads, which is why they are named here.
+    let css = reading_mode_css();
+
+    assert_contains(
+        rule_body(
+            &css,
+            ".table-sheet-open,\n.image-sheet-open,\n.image-export-open {",
+        ),
+        "position: relative;",
+    );
+    // The table's own is placed absolutely a rule further down, which holds the layer the same way; what matters is that none of the three is left static.
+    assert_contains(
+        rule_body(&css, ".table-sheet-open {"),
+        "position: absolute;",
+    );
+    assert_contains(
+        rule_body(
+            &css,
+            ".table-sheet-open .lt-icon,\n.image-sheet-open .lt-icon,\n.image-export-open .lt-icon {",
+        ),
+        "position: relative;",
+    );
+}

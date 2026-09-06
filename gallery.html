@@ -2148,8 +2148,9 @@
   --lt-z-45: 45;
   --lt-z-50: 50;
   --lt-z-51: 51;
-  /* Shadow spread */
+  /* Shadow band geometry */
   --lt-shadow-spread: 12px;
+  --lt-shadow-host-border: var(--lt-stroke-1);
   /* Strokes, rings and one recess */
   --lt-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
   --lt-shadow-hairline: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent);
@@ -2169,6 +2170,8 @@
   --lt-grain-shadow-mid: rgba(255, 255, 255, 0.365);
   --lt-grain-shadow-curve: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone");
   --lt-grain-shadow-opacity: 1;
+  --lt-grain-shadow-opacity-inside: 1;
+  --lt-grain-shadow-opacity-inside-light: 0.2;
   /* Fixed colors */
   --lt-mask-opaque: #000;
   --lt-white: #ffffff;
@@ -2979,6 +2982,10 @@
   --reading-font: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --code-font: "Noto Sans Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
 }
+/* The published sites name families in data-theme, so the shared light-page strength follows the appearance they all name alike. */
+:root[data-leaf-appearance="light"] {
+  --lt-grain-shadow-opacity-inside: var(--lt-grain-shadow-opacity-inside-light);
+}
 /* The shadow's blob is in here too, because its tile is the chrome's and follows it up. A display at 100% is the only one the shipped lattice comes back flat at. The tile is 2 device pixels there and all four of them sit 0.7071px from the dot's center, just outside its 0.7px edge, so not one is ever painted and a code block, a table head and the outline read as flat washes. A bigger dot in the same tile cannot help — all four pixels are equidistant, so the dot either misses every one or covers every one. These are the shipped numbers multiplied by 1.5, which makes a 100% display draw the device-pixel pattern a 150% display draws today. 1.05dppx already dithers, so the condition is exactly 1dppx and there is no band of weak scales below it. */
 @media (resolution <= 1dppx) {
   :root {
@@ -3043,7 +3050,7 @@ body.frameless.is-fullscreen .app-surface {
   border: 0;
   --app-window-radius: 0px;
 }
-/* The window uses the same shrinking-dot halftone without a punch layer because the app surface paints over its middle. */
+/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. */
 body::before {
   content: '';
   position: fixed;
@@ -3940,8 +3947,9 @@ body.is-maximized #winMaximize .wc-restore {
   content: '';
   position: absolute;
   z-index: var(--lt-z-below);
+  /* Absolute children start from the host's padding box, so the punch is cut one stroke inside the outline and the innermost dot row prints on the border. The stroke comes off the padding rather than being added to the inset, which lands the content box on the border box while leaving the band's outer edge exactly where it was: the lattice is anchored to the window rather than to this box, so an edge moved one pixel re-phases every dot row against it, and at 100% — where a tile is three device pixels and the band holds four rows — that costs the faintest row at the rim. The pixel the band gives up is the one that was being drawn under an opaque border. */
   inset: calc(-1 * var(--lt-shadow-spread));
-  padding: var(--lt-shadow-spread);
+  padding: calc(var(--lt-shadow-spread) - var(--lt-shadow-host-border));
   /* The outside corner is the surface's own plus the spread, which strikes both arcs from one center; each host declares the one number its own border already reads. */
   border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread));
   pointer-events: none;
@@ -3958,7 +3966,7 @@ body.is-maximized #winMaximize .wc-restore {
   background-attachment: scroll, scroll, scroll, scroll, fixed;
   background-blend-mode: screen, screen, screen, screen, multiply;
   filter: var(--lt-grain-shadow-curve);
-  opacity: var(--lt-grain-shadow-opacity);
+  opacity: var(--lt-grain-shadow-opacity-inside);
   /* The punch that takes the host's own face out, over four ramps that take the band's ink from full against that face to nothing at the rim. The ramps run here as well as in the background stack because the two do different things: the background pair shrinks the dot, and these fade what is left, so the band reaches true zero at its outer edge rather than stopping on the faintest row it still draws. The punch is the top layer and subtracts; the four below it intersect, which multiplies their alpha the way a corner needs. */
   -webkit-mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
     linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
@@ -3988,7 +3996,7 @@ body.is-maximized #winMaximize .wc-restore {
 }
 .document-body .docs-pager a:hover::before,
 .document-body .docs-pager a:focus-visible::before {
-  opacity: var(--lt-grain-shadow-opacity);
+  opacity: var(--lt-grain-shadow-opacity-inside);
   transition: var(--lt-transition-hover-reveal-arrive);
 }
 /* Every spinner in the app: a ring with one lit edge, turning. The shape and the turn are here; a site keeps only its own size and colors, because those are what differ — a 12px ring in a settings row, a 34px one on an empty reader. */
@@ -6672,6 +6680,7 @@ body:has(#readerToolbar:not([hidden])) {
   margin-left: calc(var(--lt-space-10) * -1);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-lg);
+  --lt-shadow-host-border: 0;
   border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   opacity: var(--lt-opacity-92);
@@ -7418,6 +7427,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .image-sheet-open,
 .image-export-open {
   z-index: 1;
+  /* The wash below hangs off this box, so each of the three has to be the layer's containing block. The table's own is placed absolutely a rule down, which does the same job. */
+  position: relative;
   display: grid;
   place-items: center;
   width: 28px;
@@ -7428,11 +7439,32 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
 }
-/* One control, so the table's own sits in the corner itself. */
+/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. It is a layer of its own rather than a gradient on the button, because a background image cannot be interpolated between `none` and a picture however it is timed — so written on the button the wash arrived whole on the first frame beside an edge and an ink that faded. */
+.table-sheet-open::before,
+.image-sheet-open::before,
+.image-export-open::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.table-sheet-open:hover::before,
+.image-sheet-open:hover::before,
+.image-export-open:hover::before {
+  background: var(--lt-wash-hover);
+}
+/* One control, so the table's own sits in the corner itself. Its own reveal, so the shared hover fade at the top of the file never reaches it — a `transition` shorthand replaces that one outright rather than merging with it — which is why the edge and the ink are named here and on the rule that shows it below. */
 .table-sheet-open {
   position: absolute;
   top: var(--lt-space-6);
   right: var(--lt-space-6);
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--lt-transition-hover-reveal-leave), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
 }
 /* A picture has two, so the corner is a row they sit in and the space between them is a gap rather than an offset somebody measured — the way the diagram's own pair sits. */
 .image-lane-corner {
@@ -7442,33 +7474,38 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 1;
   display: flex;
   gap: var(--lt-space-6);
-}
-.table-sheet-open,
-.image-lane-corner {
   opacity: 0;
   pointer-events: none;
+  /* The reveal alone: this is a box holding the two buttons and changes no color of its own, so a color leg here would time nothing. */
   transition: var(--lt-transition-hover-reveal-leave);
 }
 .table-sheet-open .lt-icon,
 .image-sheet-open .lt-icon,
 .image-export-open .lt-icon {
+  /* Above the wash: an absolutely placed layer with no depth of its own paints after the content in the box, so left static the glyph would sit under the tint rather than over it. */
+  position: relative;
   width: 16px;
   height: 16px;
 }
-.table-lane:hover .table-sheet-open,
-.table-sheet-open:focus-visible,
 .image-lane:hover .image-lane-corner,
 .image-lane-corner:focus-within {
   opacity: 1;
   pointer-events: auto;
   transition: var(--lt-transition-hover-reveal-arrive);
 }
-/* The wash is a tint over whatever is behind, and here that is a picture, so it goes on top of the button's own surface rather than instead of it: replacing it leaves a see-through square with the picture showing through the control. */
+/* The colors ride along here too, for the reason written on the resting rule: the shorthand that reveals the button is the whole of its transition, so a fade it does not name is a fade it does not get. */
+.table-lane:hover .table-sheet-open,
+.table-sheet-open:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
+/* The edge and the ink; the fill is the layer above. */
 .table-sheet-open:hover,
 .image-sheet-open:hover,
 .image-export-open:hover {
   border-color: var(--lt-border-strong);
-  background: linear-gradient(var(--lt-wash-hover), var(--lt-wash-hover)), var(--lt-surface-elevated);
   color: var(--lt-foreground);
 }
 /* The page's own edge fade turned on its side and laid over the table's cut, which is 62px inside the page's edge where the reader's own side bands cannot reach. Same depth, same hold, same wash under the same dot screen — but both in one box here, ramped once by one mask, because a side band has no parent of its own to carry the wash. The first layer is the app's own lattice and the second is the wash, which is what the paired `fixed, scroll` says; nothing between here and the app surface is transformed, so the dots fall in phase with the page the band dissolves into. */
@@ -8553,6 +8590,7 @@ body.leaf-web .document-minimap-track::after {
   z-index: var(--lt-z-50);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-md);
+  --lt-shadow-host-border: 0;
   border-radius: var(--lt-shadow-host-radius);
   background: var(--lt-markdown-background);
   pointer-events: none;
@@ -8642,7 +8680,6 @@ body.is-home-row-dragging .home-list-scroll li {
     --minimap-preview-width: 38px;
   }
 }
-
 /* ---- Glossary bottom sheet ---------------------------------------------
    A glossary link opens the term here, sliding up over the reading view; the document keeps its place underneath. The body reuses .document-body so the entry is styled like ordinary Markdown. See window.leafShowGlossary. */
 /* ---- the bottom sheet, once ------------------------------------------------
@@ -8763,6 +8800,7 @@ body.is-home-row-dragging .home-list-scroll li {
   max-height: var(--sheet-ceiling);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-2xl);
+  --lt-shadow-host-border: 0;
   border-top-left-radius: var(--lt-shadow-host-radius);
   border-top-right-radius: var(--lt-shadow-host-radius);
   transform: translateY(100%);
@@ -10749,7 +10787,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </style>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 175 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 65 icons, and all 75 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -10769,7 +10807,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>175</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>178</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>65</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>75</b></button>
 </div>
@@ -10874,7 +10912,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">175 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">178 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -11047,8 +11085,9 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-z-50</code><code>50</code></div>
 <div class="value"><code>lt-z-51</code><code>51</code></div>
 </div>
-<h3>Shadow spread</h3><div class="wall wide">
+<h3>Shadow band geometry</h3><div class="wall wide">
 <div class="value"><code>lt-shadow-spread</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-spread)"></i><code>12px</code></div>
+<div class="value"><code>lt-shadow-host-border</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-host-border)"></i><code>var(--lt-stroke-1)</code></div>
 </div>
 <h3>Strokes, rings and one recess</h3><div class="wall wide">
 <div class="value"><code>lt-shadow-inset</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-inset)"></i><code>inset 0 1px 2px rgba(0, 0, 0, 0.35)</code></div>
@@ -11070,6 +11109,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-grain-shadow-mid</code><code>rgba(255, 255, 255, 0.365)</code></div>
 <div class="value"><code>lt-grain-shadow-curve</code><code>url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone")</code></div>
 <div class="value"><code>lt-grain-shadow-opacity</code><code>1</code></div>
+<div class="value"><code>lt-grain-shadow-opacity-inside</code><code>1</code></div>
+<div class="value"><code>lt-grain-shadow-opacity-inside-light</code><code>0.2</code></div>
 </div>
 <h3>Fixed colors</h3><div class="wall wide">
 <div class="value"><code>lt-mask-opaque</code><code>#000</code></div>

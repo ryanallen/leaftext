@@ -448,7 +448,7 @@ fn the_pagers_halftone_sits_above_the_reading_page_rather_than_below_it() {
             css,
             ".document-body .docs-pager a:hover::before,\n.document-body .docs-pager a:focus-visible::before {",
         ),
-        "opacity: var(--lt-grain-shadow-opacity);",
+        "opacity: var(--lt-grain-shadow-opacity-inside);",
     );
 }
 
@@ -474,6 +474,57 @@ fn the_shared_halftone_list_still_holds_every_floating_surface() {
         assert_contains(css, surface);
     }
     assert_contains(css, ".document-body .docs-pager a::before {");
+}
+
+#[test]
+fn window_and_inside_shadow_bands_keep_separate_strengths() {
+    let css = reading_mode_css();
+    let window = rule_body(&css, "body::before {");
+    let inside = rule_body(&css, ".app-overflow-panel::before,");
+    let pager = rule_body(
+        &css,
+        ".document-body .docs-pager a:hover::before,\n.document-body .docs-pager a:focus-visible::before {",
+    );
+
+    assert!(
+        window.contains("opacity: var(--lt-grain-shadow-opacity);"),
+        "the window band keeps the desktop strength"
+    );
+    for (name, band) in [("floating surfaces", inside), ("the pager reveal", pager)] {
+        assert!(
+            band.contains("opacity: var(--lt-grain-shadow-opacity-inside);"),
+            "{name} must use the inside strength so the desktop shadow cannot return to the page"
+        );
+    }
+}
+
+#[test]
+fn light_appearance_points_inside_shadows_at_the_light_token() {
+    let css = reading_mode_css();
+    let light = rule_body(&css, ":root[data-leaf-appearance=\"light\"] {");
+
+    assert_contains(
+        light,
+        "--lt-grain-shadow-opacity-inside: var(--lt-grain-shadow-opacity-inside-light);",
+    );
+    assert!(
+        !light.contains("data-theme") && !light.contains(": 0.2"),
+        "the light override follows the shared appearance and reads the token instead of a family name or number"
+    );
+}
+
+#[test]
+fn light_inside_shadow_override_leaves_the_window_band_unchanged() {
+    let css = reading_mode_css();
+    let window = rule_body(&css, "body::before {");
+    let inside = rule_body(&css, ".app-overflow-panel::before,");
+
+    assert!(
+        window.contains("opacity: var(--lt-grain-shadow-opacity);")
+            && !window.contains("opacity: var(--lt-grain-shadow-opacity-inside);"),
+        "the light-page override must not reach the shadow falling on the desktop"
+    );
+    assert_contains(inside, "opacity: var(--lt-grain-shadow-opacity-inside);");
 }
 
 #[test]
@@ -542,7 +593,7 @@ fn every_floating_surface_throws_the_dot_halftone() {
         !halftone.contains("contrast(") && !halftone.contains("brightness("),
         "a color filter cannot cut a dot out of the band: it leaves every pixel opaque"
     );
-    assert_contains(halftone, "opacity: var(--lt-grain-shadow-opacity);");
+    assert_contains(halftone, "opacity: var(--lt-grain-shadow-opacity-inside);");
     assert_contains(halftone, "mask-composite: subtract,");
     assert_contains(halftone, "-webkit-mask-composite: source-out,");
     assert!(
@@ -596,9 +647,12 @@ fn the_halftone_is_four_ramps_over_one_spread_with_a_rounded_punch() {
         halftone,
         "background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);",
     );
-    // The layer takes the spread as padding, which makes its content box the host's own box; the punch is clipped to that box, so the browser derives the ring's inner curve from its outer one instead of cutting a rectangle through it.
-    assert_contains(halftone, "padding: var(--lt-shadow-spread);");
+    // The inset holds the band's outer edge one spread out and the padding gives the host border back, which lands the punch on the outline rather than a stroke inside it — an absolute child's containing block starts at the padding box. It has to be this way round rather than the inset carrying the correction: the lattice is anchored to the window, so an outer edge moved one pixel re-phases every dot row against it, and at 100% that costs the faintest row at the rim.
     assert_contains(halftone, "inset: calc(-1 * var(--lt-shadow-spread));");
+    assert_contains(
+        halftone,
+        "padding: calc(var(--lt-shadow-spread) - var(--lt-shadow-host-border));",
+    );
     // The punch is clipped to the host's own box and every ramp to the band's whole box, which is what derives the ring's inner curve from its outer one instead of cutting a rectangle through it.
     for property in [
         "mask-origin",
@@ -696,6 +750,67 @@ fn every_shadow_host_declares_one_radius_and_no_shadow_of_its_own() {
         !pager.contains("mask-image") && !pager.contains("inset:"),
         "the pager card overrides only its layer: {pager}"
     );
+}
+
+#[test]
+fn borderless_shadow_hosts_remove_the_default_border_punch() {
+    let css = reading_mode_css();
+
+    for host in [".leaf-sheet", ".block-drag-ghost", ".home-row-ghost"] {
+        assert!(
+            rule_bodies(css, &format!("{host} {{"))
+                .into_iter()
+                .any(|body| {
+                body.contains("--lt-shadow-host-radius:")
+                    && body.contains("--lt-shadow-host-border: 0;")
+                }),
+            "{host} has no border, so the default stroke would leave a hairline gap between its face and shadow"
+        );
+    }
+}
+
+#[test]
+fn every_shadow_host_answers_the_border_punch() {
+    const BORDERLESS: &[&str] = &[".leaf-sheet", ".block-drag-ghost", ".home-row-ghost"];
+    const BORDERED: &[&str] = &[
+        ".app-overflow-panel",
+        ".context-menu",
+        ".rename-box",
+        ".update-panel",
+        ".app-toast",
+        ".flow-menu",
+        ".link-hover-tip",
+        ".find-bar",
+        ".confirm-dialog",
+        ".reader-toolbar",
+        ".reader-tool-tray",
+        ".selection-toolbar",
+        ".filter-menu",
+        ".hint-bubble",
+        ".document-body .docs-pager a",
+    ];
+    let css = reading_mode_css();
+    assert_contains(css, "--lt-shadow-host-border: var(--lt-stroke-1);");
+    let list = rule_at(css, ".app-overflow-panel::before,");
+    let selectors = &css[list..list + css[list..].find('{').expect("the shared rule opens")];
+    let hosts: Vec<&str> = selectors
+        .split(',')
+        .map(str::trim)
+        .filter(|one| !one.is_empty())
+        .map(|one| one.trim_end_matches("::before"))
+        .collect();
+
+    assert_eq!(
+        hosts.len(),
+        BORDERED.len() + BORDERLESS.len(),
+        "a host joined the shared shadow without answering whether its punch crosses a border"
+    );
+    for host in hosts {
+        assert!(
+            BORDERED.contains(&host) || BORDERLESS.contains(&host),
+            "{host} joined the shared shadow without choosing the default border or declaring none"
+        );
+    }
 }
 
 #[test]
