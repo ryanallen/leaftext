@@ -136,7 +136,7 @@ Type `[[` and your notes are listed, by file name and by any [other name](docs/0
 
 ### Point it at a folder and it becomes a vault
 
-![The library pane open beside a document, showing the vault switcher, the folder breadcrumb, the search box, and a file list of one folder](imgs/library.png)
+![The library pane open beside a document, showing the vault switcher, the folder breadcrumb, the search box, and a file list showing three folders first and then the files beside them](imgs/library.png)
 
 A side pane that browses one folder at a time, with a breadcrumb that always says where you are. Name a folder a **vault** and it becomes the thing search and syncing work over; the same switcher over the start screen takes you back from Library. Nothing is crawled, and nothing is written into your folder. **[Library →](docs/01-features/03-library.md#vaults)**
 
