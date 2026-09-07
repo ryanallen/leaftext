@@ -1,0 +1,108 @@
+name: Publish the site
+
+# leaftext.com, with the app's own renderer served beside its pages.
+#
+# This repository has no source in it, so it compiles nothing. The renderer is
+# built where the source lives and committed here by that repository's
+# `build-renderer.yml`, which is the one thing that crosses the seam between the
+# two. What is left here is the site's own: move the pictures, bake the front
+# page, upload, deploy.
+#
+# The pictures go the same way. The repository keeps 61 PNG masters, because
+# the screenshot tool, the shot composer, the edge check and the app's own three
+# hand-written PNG codecs all read them; the publish writes a lossless WebP
+# beside each one and moves the pages onto it, so a reader is served 3,318 KB
+# rather than the 5,336 KB the masters weigh, and not a pixel of it changes.
+#
+# A failure here leaves the last successful deployment standing: the site stops
+# updating rather than going dark, and nothing a reader touches waits on this
+# build. `scripts/site-assets.mjs` asks the module to render before it writes
+# anything, so a build that produced nothing worth serving stops the run before
+# the upload rather than replacing the pages with ones that cannot draw.
+#
+# Emptyguru rides on the result. It has no Rust and no app source, so its pages
+# fetch these same files across origins — which is why the paths are a table in
+# one script rather than written out here.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Only what Pages needs. This workflow publishes the site; it never touches a
+# release or a tag.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One publish at a time, and a newer commit wins: a queued deployment of an
+# older tree would land after the newer one and put the site back.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Deploy the pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # The WebP an earlier run already paid for. Full effort costs two and a
+      # half minutes across the set, and the key is the contents of the masters,
+      # so a restored picture is always the one this run would have written and
+      # a publish that changed no picture pays none of it.
+      - name: Cache the converted pictures
+        uses: actions/cache@v4
+        with:
+          path: imgs
+          key: ${{ runner.os }}-webp-${{ hashFiles('imgs/**/*.png') }}
+
+      # libwebp, installed rather than borrowed from whatever the runner image
+      # happens to carry: a tool that is there today because the image ships it
+      # is a tool that leaves without notice, and the failure would be the
+      # site's pictures rather than a red build.
+      - name: Install the picture encoder
+        run: sudo apt-get install -y webp
+
+      # The site serves 5,336 KB of paletted PNG; the same pixels as lossless
+      # WebP weigh 3,318 KB, and all 61 decode back identical. The masters stay
+      # PNG in the repository — this writes a WebP beside each one and moves the
+      # pages onto it in the workspace the upload step below takes. It refuses
+      # to move a page onto a picture nobody wrote, which is what stops a broken
+      # frame reaching the deploy.
+      #
+      # Ahead of the bake below on purpose: the front page's document is the
+      # README, and it draws 25 of these pictures. Baked first, the one page
+      # every visitor lands on would go on serving the PNGs while every page
+      # behind it served the WebP.
+      - name: Write the pictures as WebP and move the pages onto them
+        run: node scripts/site-images.mjs --write
+
+      # The front page's own document, written into it here so a cold visitor
+      # reads the words out of the first response rather than after a 2.8 MB
+      # module and a second fetch. It draws it through the renderer already
+      # committed beside the pages, and refuses a module that does not render or
+      # a page baked with nothing in it — which is what stops a hand-over that
+      # went wrong reaching the deploy step below.
+      - name: Bake the front page through the renderer beside the pages
+        run: node scripts/site-assets.mjs --bake
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

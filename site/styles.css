@@ -1,0 +1,888 @@
+/* styles.css
+   ==========================================================================
+   What draws the page around the document.
+
+   **The document itself is not this file's.** It is painted by the app's own stylesheet, linked ahead of this one in each page's head and built when the site publishes — so a page here looks like a document in Leaftext rather than like a second design of one. Headings, text, lists, code, tables, alerts, footnotes, TEI and the diagrams all come from there. What is left here is everything around it: the canvas, the reading column, the outline, the code-block chrome, the gutter line numbers, the highlighter's token colors, the minimap rail, the settings menu, the glossary sheet and the link tooltip — every one of them drawn by this site's own scripts, which is why they are still styled here.
+
+   This file loads after the app's, so where both have a rule for the same thing this one wins. That is deliberate: the markup under these classes is the site's.
+
+   EVERYTHING you would normally want to tweak lives in the :root block right below as named "tokens" (CSS variables). Each color and face there reads the app's own token for whichever family the document is drawn in, so the chrome and the words are painted from one palette; the value written beside it is the fallback, and it is what paints when the app's stylesheet did not arrive. Change what a name reads and the page around the document updates.
+
+   The fallbacks are GitHub's dark theme: a near-black canvas, near-white text, and blue links. They are also what the eleven families resolve to on these two pages today, because GitHub is the family both bootstraps name.
+   ========================================================================== */
+
+:root {
+  /* ---- Colors -------------------------------------------------------- */
+  /* Every color here reads the app's own token for the family the document is drawn in, so the chrome and the words beside it are painted from one palette rather than two. The value after the comma is what paints when the app's stylesheet did not arrive — it is a plain <link> with nothing watching it, and a bare var() on a page that never got it paints the chrome out of existence. Those fallbacks are GitHub's dark theme, which is what this block held before. */
+  --bg: var(--lt-background, #0d1117); /* page background (the canvas) */
+  --bg-elevated: var(--lt-surface-muted, #161b22); /* code blocks, table header rows */
+
+  --text: var(--lt-foreground, #e6edf3); /* main body text, near white */
+  --text-muted: var(--lt-muted-foreground, #9198a1); /* captions, quotes, footnotes */
+
+  --link: var(--lt-link, #4493f8); /* links, blue */
+  --link-hover: var(--lt-link-hover, #6cb0ff); /* link color on hover */
+  --action-hover-bg: var(--lt-primary, #238636); /* hover fill for icon actions */
+  --action-hover-fg: var(--lt-primary-foreground, #ffffff); /* hover icon color for icon actions */
+
+  --border: var(--lt-border, #30363d); /* lines: rules, table borders, quote bar */
+  --border-strong: var(--lt-border-strong, #3d444d); /* slightly stronger border when needed */
+
+
+  /* ---- Syntax highlighting ------------------------------------------ */
+  /* Colors for highlighted code blocks (highlight.js, loaded lazily by reader.js). highlight.js names three roles the app's palette does not, and each of those takes the nearest role the app does draw as a stand-in, said on its own line. */
+  --syntax-comment: var(--lt-syntax-comment, #9198a1); /* comments */
+  --syntax-keyword: var(--lt-syntax-keyword, #ff7b72); /* keywords, storage, types (red) */
+  --syntax-string: var(--lt-syntax-string, #a5d6ff); /* strings, regexps (light blue) */
+  --syntax-constant: var(--lt-syntax-number, #79c0ff); /* numbers, literals, attrs (blue) */
+  --syntax-entity: var(--lt-syntax-function, #d2a8ff); /* function / class names (purple) */
+  --syntax-tag: var(--lt-syntax-type, #7ee787); /* HTML/XML tags, selectors. A stand-in: the app draws no tag color, and a type name is the nearest role it has. */
+  --syntax-variable: var(--lt-syntax-variable, #ffa657); /* built-ins, symbols (orange) */
+  --syntax-section: var(--lt-markdown-heading, #4493f8); /* markdown headings. A stand-in: the app has no syntax color for a heading, and this is what it paints a real one with. */
+  --syntax-bullet: var(--lt-syntax-punctuation, #f2cc60); /* markdown list bullets. A stand-in: the app draws no bullet color, and a bullet is the punctuation around the words. */
+  --syntax-added-text: var(--lt-syntax-inserted, #aff5b4); /* diff additions */
+  --syntax-added-bg: var(--lt-syntax-inserted-background, #033a16);
+  --syntax-deleted-text: var(--lt-syntax-deleted, #ffdcd7); /* diff deletions */
+  --syntax-deleted-bg: var(--lt-syntax-deleted-background, #67060c);
+
+  /* ---- Type --------------------------------------------------------- */
+  /* The family's own faces, so the chrome is set in the same type as the document beside it. The fallbacks are what this file asked for before the app's stylesheet was there to ask: Noto first (bundled in site/noto-fonts.css), then system faces. */
+  --font-body: var(--reading-font, 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+    Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji');
+  --font-heading: var(--heading-font, 'Noto Serif', Georgia, Cambria, 'Times New Roman', serif);
+  --font-mono: var(--code-font, 'Noto Sans Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
+    Consolas, 'Liberation Mono', monospace);
+
+  /* Hand-tuned heading scale, matching the desktop app. --type-base is the body size; it grows with the viewport above 1280px so wide windows scale up like the native app. Headings are multiples of it (overridden smaller at the breakpoints below). */
+  --type-base: max(0.875rem, calc(1rem + (100vw - 1280px) / 140));
+  --type-spacing: calc(var(--type-base) * 1.5);
+  --font-size: var(--type-base);
+  --line-height: 1.6;
+
+  /* ---- Layout ------------------------------------------------------- */
+  /* The reading column: 75 characters, the app's own measure from `type-measure-body` in design/tokens.md. It is in `ch` because the type above grows with the window and a pixel width does not — at 1012px the line ran 104 characters on a 1280-wide window and 66 on a 2530. The padding is added back because `.page` is a border box: a bare 75ch leaves 68 characters for words. */
+  --content-width: calc(75ch + var(--content-pad) * 2);
+  --content-pad: 32px; /* space between text and the window edge */
+  --radius: 6px; /* rounded corners on code blocks, etc. */
+  --scroll-offset: 16px; /* gap above a heading you jumped to */
+
+  /* ---- Speed reader ------------------------------------------------- */
+  --speed-reader-dim: color-mix(in srgb, var(--text) 80%, var(--bg));
+
+  /* ---- Minimap ------------------------------------------------------ */
+  /* The scaled side-rail document overview that replaces the scrollbar. */
+  --minimap-preview-width: 68px; /* width of the shrunk document thumbnail */
+  --minimap-padding-inline: 8px; /* gap on each side of the thumbnail */
+  --minimap-width: calc(var(--minimap-preview-width) + (var(--minimap-padding-inline) * 2));
+  --minimap-border: var(--border); /* the rail's left divider */
+  --minimap-viewport-border: var(--lt-minimap-viewport-border, var(--link)); /* outline of the "you are here" box */
+  --minimap-viewport-background: var(--lt-minimap-viewport-background, rgba(110, 118, 129, 0.16)); /* its subtle fill */
+
+  color-scheme: dark;
+}
+
+/* ==== Themes =============================================================
+   The :root block above is the dark side. The settings menu (site/settings.js) writes data-theme="light" | "dark" onto <html> and data-leaf-appearance beside it ("System" resolves to one of the two at runtime); the block below is keyed on the appearance, which is what the app's own stylesheet is keyed on, and re-skins the COLOR fallbacks only. Type, layout, and minimap geometry are shared, so a theme is purely a palette swap. Both sets of fallbacks are GitHub's, the family both bootstraps name.
+   ========================================================================== */
+
+/* ---- Light (GitHub light) ------------------------------------------- */
+/* Keyed on the appearance the app's stylesheet is keyed on, not on the menu's own attribute, so the chrome follows whichever family the document is drawn in. Only the fallbacks differ from the block above: the token each name reads is the same one, and it already answers per family. */
+:root[data-leaf-appearance='light'] {
+  color-scheme: light;
+
+  --bg: var(--lt-background, #ffffff);
+  --bg-elevated: var(--lt-surface-muted, #f6f8fa);
+
+  --text: var(--lt-foreground, #1f2328);
+  --text-muted: var(--lt-muted-foreground, #59636e);
+
+  --link: var(--lt-link, #0969da);
+  --link-hover: var(--lt-link-hover, #0860c9);
+  --action-hover-bg: var(--lt-primary, #1f883d);
+  --action-hover-fg: var(--lt-primary-foreground, #ffffff);
+
+  --border: var(--lt-border, #d1d9e0);
+  --border-strong: var(--lt-border-strong, #afb8c1);
+
+
+  --syntax-comment: var(--lt-syntax-comment, #59636e);
+  --syntax-keyword: var(--lt-syntax-keyword, #cf222e);
+  --syntax-string: var(--lt-syntax-string, #0a3069);
+  --syntax-constant: var(--lt-syntax-number, #0550ae);
+  --syntax-entity: var(--lt-syntax-function, #8250df);
+  --syntax-tag: var(--lt-syntax-type, #116329); /* the stand-in named in the block above */
+  --syntax-variable: var(--lt-syntax-variable, #953800);
+  --syntax-section: var(--lt-markdown-heading, #0550ae); /* the stand-in named in the block above */
+  --syntax-bullet: var(--lt-syntax-punctuation, #953800); /* the stand-in named in the block above */
+  --syntax-added-text: var(--lt-syntax-inserted, #1f2328);
+  --syntax-added-bg: var(--lt-syntax-inserted-background, #dafbe1);
+  --syntax-deleted-text: var(--lt-syntax-deleted, #82071e);
+  --syntax-deleted-bg: var(--lt-syntax-deleted-background, #ffebe9);
+
+  --minimap-viewport-background: var(--lt-minimap-viewport-background, rgba(31, 35, 40, 0.1));
+}
+
+/* ---- Base ----------------------------------------------------------- */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* The minimap replaces the scrollbar, so hide the native one (Firefox). */
+  scrollbar-width: none;
+}
+/* Hide the native scrollbar in WebKit/Blink too. */
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  -webkit-font-smoothing: antialiased;
+  word-wrap: break-word;
+  /* Reserve the rail's footprint so the centered column never slides under it. */
+  padding-right: var(--minimap-width);
+}
+
+/* The front page has no left-hand chrome, so reserving the rail on the right alone leaves the column half a rail left of center. The docs reader is left out: it spends that side on its sidebar. */
+body.front-page {
+  padding-left: var(--minimap-width);
+}
+
+.page {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: var(--content-pad);
+}
+
+/* The note a page shows when something failed. It says nothing while a document is on its way: a page cannot promise an end to a wait it cannot see the end of. */
+.status {
+  color: var(--text-muted);
+  font-size: 0.95em;
+}
+
+/* Anything we jumped to should not hide under the top of the window. */
+.markdown-body :target {
+  scroll-margin-top: var(--scroll-offset);
+}
+[id] {
+  scroll-margin-top: var(--scroll-offset);
+}
+
+/* ---- Outline (table of contents) ------------------------------------ */
+/* A collapsed <details> built from the document's headings, sitting just under the title (see site/outline.js). Closed by default so it never crowds the top; open it to jump to any heading. */
+.markdown-body .document-outline {
+  margin: var(--type-spacing) 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+}
+.markdown-body .document-outline-summary {
+  cursor: pointer;
+  padding: 0.5em 0.9em;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+  user-select: none;
+}
+/* Draw our own disclosure triangle so it sits inline with the label in every engine (Safari/WebKit hides the default marker when list-style is none). */
+.markdown-body .document-outline-summary::-webkit-details-marker {
+  display: none;
+}
+.markdown-body .document-outline-summary::before {
+  content: '';
+  display: inline-block;
+  width: 0;
+  height: 0;
+  margin-right: 0.55em;
+  border-left: 0.4em solid currentColor;
+  border-top: 0.32em solid transparent;
+  border-bottom: 0.32em solid transparent;
+  vertical-align: middle;
+  transition: transform 0.15s ease;
+}
+.markdown-body .document-outline[open] > .document-outline-summary::before {
+  transform: rotate(90deg);
+}
+.markdown-body .document-outline-summary:hover {
+  color: var(--link-hover);
+}
+/* The document's total line count, stamped in after the numbering pass. */
+.markdown-body .document-outline-count {
+  margin-left: 0.45em;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+/* Bulleted, not numbered: a deep outline runs a counter into the hundreds and the wide markers overflow the panel's left edge. */
+.markdown-body .document-outline > ul {
+  margin: 0;
+  padding: 0 1.4em 0.7em 2.4em;
+}
+.markdown-body .document-outline ul {
+  margin: 0;
+  padding-left: 1.6em;
+  list-style: disc;
+}
+.markdown-body .document-outline li {
+  margin: 0.15em 0;
+  color: var(--text-muted);
+}
+.markdown-body .document-outline-link {
+  color: var(--text-muted);
+}
+.markdown-body .document-outline-link:hover {
+  color: var(--link-hover);
+}
+
+:root[data-speed-reader='true'] .markdown-body {
+  color: var(--speed-reader-dim);
+  font-weight: 400;
+}
+:root[data-speed-reader='true'] .markdown-body h1,
+:root[data-speed-reader='true'] .markdown-body h2,
+:root[data-speed-reader='true'] .markdown-body h3,
+:root[data-speed-reader='true'] .markdown-body h4,
+:root[data-speed-reader='true'] .markdown-body h5,
+:root[data-speed-reader='true'] .markdown-body h6,
+:root[data-speed-reader='true'] .markdown-body strong,
+:root[data-speed-reader='true'] .markdown-body b,
+:root[data-speed-reader='true'] .markdown-body .github-mention,
+:root[data-speed-reader='true'] .markdown-body .markdown-alert::before {
+  color: var(--speed-reader-dim);
+  font-weight: 400;
+}
+:root[data-speed-reader='true'] .markdown-body em,
+:root[data-speed-reader='true'] .markdown-body i {
+  font-style: italic;
+  font-weight: 400;
+}
+:root[data-speed-reader='true'] .markdown-body a,
+:root[data-speed-reader='true'] .markdown-body .github-ref,
+:root[data-speed-reader='true'] .markdown-body .github-mention {
+  color: inherit;
+  /* Quiet, dim underline so links stay findable without competing with the bold lead anchors. */
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 0.18em;
+}
+:root[data-speed-reader='true'] .markdown-body a:hover,
+:root[data-speed-reader='true'] .markdown-body a:focus-visible,
+:root[data-speed-reader='true'] .markdown-body .github-ref:hover,
+:root[data-speed-reader='true'] .markdown-body .github-mention:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+:root[data-speed-reader='true'] .markdown-body .speed-reader-anchor {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Glossary term links read as a quiet dotted underline in every theme and mode (including speed reader). They take the surrounding text's color — not the accent link color — and the underline is a dimmed wash of that same color, so an expandable term stays discoverable without standing out from the prose it sits in. Because the dim is relative to currentColor, prose that is already muted (blockquotes, captions) gets a fainter underline still. Matches both the `glossary:slug` shorthand and a real `…/GLOSSARY.md#slug` relative link. Placed last so it wins ties against the generic link and hover rules above (in every state, including :hover). */
+.markdown-body a[href^="glossary:" i],
+.markdown-body a[href*="GLOSSARY.md#" i],
+.markdown-body a[href^="glossary:" i]:hover,
+.markdown-body a[href*="GLOSSARY.md#" i]:hover,
+:root[data-speed-reader='true'] .markdown-body a[href^="glossary:" i],
+:root[data-speed-reader='true'] .markdown-body a[href*="GLOSSARY.md#" i] {
+  color: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.18em;
+}
+
+/* ---- Code block chrome (language label + copy button) --------------- */
+/* Mirrors the desktop app: a languaged block (<pre class="highlight">) shows its language in the top-right, and every code block gets a "copy all" button. */
+.markdown-body pre.highlight::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 8px;
+  right: 44px; /* clear of the copy button in the corner */
+  color: var(--text-muted);
+  font: 700 11px var(--font-body);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+/* Always present but muted at rest, brightening on hover/focus; swaps to a check mark for a moment after a successful copy. */
+.markdown-body pre > .code-copy {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-elevated) 65%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease,
+    border-color 0.12s ease;
+}
+.markdown-body pre:hover > .code-copy,
+.markdown-body pre > .code-copy:focus-visible {
+  opacity: 1;
+}
+.markdown-body pre > .code-copy:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text);
+}
+.markdown-body pre > .code-copy.is-copied {
+  opacity: 1;
+  color: var(--syntax-tag); /* green check */
+}
+.code-copy-mark {
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.code-copy-check {
+  display: none;
+}
+.code-copy.is-copied .code-copy-copy {
+  display: none;
+}
+.code-copy.is-copied .code-copy-check {
+  display: block;
+}
+
+/* ---- Anchor links (gutter line numbers) ----------------------------- */
+/* Every anchorable block shows its line number in the left gutter as faint monospace text, like a code editor's line gutter. It lives in the gutter so it never shifts the text; it is hidden until its block (or the number itself) is hovered on pointer devices — always shown on touch or narrow viewports (see the media query below) — and clicking it copies the deep link.
+
+   The anchor inherits the block's font metrics (font-size / line-height), so its first line box is exactly as tall as the block's first line. The small number inside then sits on that line's baseline (.anchor-link-num), i.e. flush with the bottom of the text rather than floating up like a superscript on a tall heading. */
+.markdown-body .has-anchor-link {
+  position: relative;
+}
+.markdown-body .anchor-link {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  display: block;
+  width: 40px;
+  padding-right: 8px;
+  font-size: inherit;
+  line-height: inherit;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text-muted);
+  opacity: 0;
+  user-select: none;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+/* The visible glyph: a fixed small monospace number, baseline-aligned onto the block's first-line baseline by the inherited line box above. */
+.markdown-body .anchor-link-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  vertical-align: baseline;
+}
+/* The digit is drawn from a data attribute, never a DOM text node, so a crawler rendering the page can't scrape the gutter number into a search snippet. */
+.markdown-body .anchor-link-num::before {
+  content: attr(data-locus-num);
+}
+/* The "Line numbers" setting (off) hides the gutter permalink numbers. Blocks keep their ids and hidden locus aliases, so #locus deep links still resolve — only the visible number goes away. */
+:root[data-line-numbers="off"] .markdown-body .anchor-link {
+  display: none;
+}
+/* A zero-size alias that carries a heading's #locus without disturbing its layout (the heading keeps its slug id for the table of contents). */
+.markdown-body .locus-alias {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+/* Anchorable blocks nest (a list item lives inside its parent list item, a paragraph inside its blockquote), so hovering a deep block also hovers every ancestor block — without the :not(:has(...)) guard each ancestor would light up its own button and, since they all share one gutter column, stack as ghost buttons above the one you are pointing at. Reveal only the innermost hovered (or focused) block's button: the one that contains no other hovered/focused block. */
+.markdown-body .has-anchor-link:hover:not(:has(.has-anchor-link:hover)) > .anchor-link,
+.markdown-body .has-anchor-link:focus-within:not(:has(.has-anchor-link:focus-within)) > .anchor-link,
+.markdown-body .has-anchor-link > .anchor-link:hover,
+.markdown-body .has-anchor-link > .anchor-link:focus-visible {
+  opacity: 1;
+  color: var(--link);
+}
+.markdown-body .anchor-link:hover,
+.markdown-body .anchor-link:focus-visible {
+  color: var(--link);
+  text-decoration: none;
+}
+/* Brief confirmation that a click copied the deep link: hold the gutter number lit for the timeout decorateAnchorLinks sets, even after the jump scrolls. */
+.markdown-body .anchor-link.is-copied {
+  opacity: 1;
+  color: var(--link);
+}
+/* A narrow viewport (and any touch device) has little left margin to host the number gutter, so tuck the numbers tighter to the content edge and shrink them. They stay always-visible here (opacity restored) — there is no hover to reveal them — so a single direct tap copies the deep link (and jumps) with no reveal step to swallow the first tap. */
+@media (hover: none), (max-width: 600px) {
+  .markdown-body .anchor-link {
+    padding-right: 3px;
+    opacity: 0.4;
+  }
+  .markdown-body .anchor-link-num {
+    font-size: 0.62rem;
+  }
+}
+
+/* ---- Syntax highlighting (highlight.js tokens) ---------------------- */
+/* reader.js lazily runs highlight.js over fenced code blocks, which wraps tokens in <span class="hljs-…"> elements. These rules color those tokens using the --syntax-* tokens above. Class names follow highlight.js's scope naming; the groupings mirror GitHub's github-dark theme. */
+.markdown-body .hljs-doctag,
+.markdown-body .hljs-keyword,
+.markdown-body .hljs-meta .hljs-keyword,
+.markdown-body .hljs-template-tag,
+.markdown-body .hljs-template-variable,
+.markdown-body .hljs-type,
+.markdown-body .hljs-variable.language_ {
+  color: var(--syntax-keyword);
+}
+.markdown-body .hljs-title,
+.markdown-body .hljs-title.class_,
+.markdown-body .hljs-title.class_.inherited__,
+.markdown-body .hljs-title.function_ {
+  color: var(--syntax-entity);
+}
+.markdown-body .hljs-attr,
+.markdown-body .hljs-attribute,
+.markdown-body .hljs-literal,
+.markdown-body .hljs-meta,
+.markdown-body .hljs-number,
+.markdown-body .hljs-operator,
+.markdown-body .hljs-variable,
+.markdown-body .hljs-selector-attr,
+.markdown-body .hljs-selector-class,
+.markdown-body .hljs-selector-id {
+  color: var(--syntax-constant);
+}
+.markdown-body .hljs-regexp,
+.markdown-body .hljs-string,
+.markdown-body .hljs-meta .hljs-string {
+  color: var(--syntax-string);
+}
+.markdown-body .hljs-built_in,
+.markdown-body .hljs-symbol {
+  color: var(--syntax-variable);
+}
+.markdown-body .hljs-comment,
+.markdown-body .hljs-code,
+.markdown-body .hljs-formula {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+.markdown-body .hljs-name,
+.markdown-body .hljs-quote,
+.markdown-body .hljs-selector-tag,
+.markdown-body .hljs-selector-pseudo {
+  color: var(--syntax-tag);
+}
+.markdown-body .hljs-subst {
+  color: var(--text);
+}
+.markdown-body .hljs-section {
+  color: var(--syntax-section);
+  font-weight: 700;
+}
+.markdown-body .hljs-bullet {
+  color: var(--syntax-bullet);
+}
+.markdown-body .hljs-emphasis {
+  font-style: italic;
+}
+.markdown-body .hljs-strong {
+  font-weight: 700;
+}
+.markdown-body .hljs-addition {
+  color: var(--syntax-added-text);
+  background-color: var(--syntax-added-bg);
+}
+.markdown-body .hljs-deletion {
+  color: var(--syntax-deleted-text);
+  background-color: var(--syntax-deleted-bg);
+}
+
+/* ---- Minimap -------------------------------------------------------- */
+/* A fixed rail on the right holding a shrunk thumbnail of the whole document (built in minimap.js) and a rectangle marking the visible part. Clicking or dragging it scrolls the window. It stands in for the hidden scrollbar. */
+
+.document-minimap {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 5;
+  width: var(--minimap-width);
+  /* The rail wraps the track, which minimap.js sizes to the thumbnail (capped at the viewport). A short document gets a short rail, not a full-height one with the overview stranded at the top. */
+  max-height: 100vh;
+  background: var(--bg);
+}
+.document-minimap-track {
+  position: relative;
+  width: 100%;
+  /* height is set in px by minimap.js (= thumbnail height, capped at viewport) */
+  overflow: hidden;
+  cursor: default;
+  opacity: 0.92;
+  touch-action: none;
+  user-select: none;
+}
+.document-minimap-content {
+  position: absolute;
+  top: 0;
+  left: var(--minimap-padding-inline);
+  right: var(--minimap-padding-inline);
+  overflow: visible;
+  pointer-events: none;
+}
+/* The cloned document, shrunk by minimap.js with a transform. */
+.document-minimap-preview {
+  margin: 0 !important;
+  padding: 0 !important;
+  transform-origin: 0 0;
+}
+.document-minimap-preview,
+.document-minimap-preview * {
+  pointer-events: none !important;
+}
+.document-minimap-viewport {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  z-index: 1;
+  height: 100%;
+  min-height: 22px;
+  border: 1px solid var(--minimap-viewport-border);
+  background: var(--minimap-viewport-background);
+  pointer-events: none;
+}
+
+/* ==== Settings menu (site/settings.js) ===================================
+   A gear button fixed at the top-right of the page, sitting just to the LEFT of the minimap rail (its right edge stops at the rail), never a header above it. Clicking it drops a small panel with the theme picker and the show/hide toggles. Mirrors the desktop app's settings menu look.
+   ========================================================================== */
+
+.site-settings {
+  position: fixed;
+  top: 6px;
+  /* Park it beside the rail: right edge at the rail's left edge. */
+  right: calc(var(--minimap-width) + 6px);
+  z-index: 20;
+  font-family: var(--font-body);
+}
+/* With the minimap hidden (toggle off, or the narrow breakpoint), the rail's footprint is gone, so tuck the gear into the corner. */
+:root[data-minimap='off'] .site-settings {
+  right: 6px;
+}
+
+.site-settings-button {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  /* A faint page-colored fill so the icon stays legible over any content it floats above, without reading as a heavy button at rest. */
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+}
+.site-settings-button::-webkit-details-marker {
+  display: none;
+}
+.site-settings-button:hover {
+  background: var(--action-hover-bg);
+  color: var(--action-hover-fg);
+}
+.site-settings-button svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.site-settings-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 21;
+  display: grid;
+  gap: 14px;
+  width: min(280px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+.site-setting {
+  display: grid;
+  gap: 6px;
+}
+.site-setting-label {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.site-setting-help {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.site-setting-inline {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
+}
+.site-setting-inline input {
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--link);
+}
+.site-setting-inline .site-setting-help {
+  grid-column: 2;
+}
+.site-setting select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: 600 13px var(--font-body);
+}
+
+/* ---- Show / hide toggles -------------------------------------------- */
+/* The settings checkboxes write these attributes onto <html>. Hiding a panel also reclaims the space styles.css (and docs.css) reserved for it. The attribute selectors out-rank the plain `body` padding rules regardless of source order, so they win over docs.css too. */
+
+:root[data-minimap='off'] .document-minimap {
+  display: none;
+}
+:root[data-minimap='off'] body {
+  padding-right: 0;
+}
+/* The front page reserves the rail on both sides, so both come back when it goes. */
+:root[data-minimap='off'] body.front-page {
+  padding-left: 0;
+}
+
+/* "Show library" hides the docs navigation (the sidebar and its mobile select). These elements only exist on the /docs reader; on the plain README site the selectors simply match nothing. */
+:root[data-library='off'] .docs-sidebar,
+:root[data-library='off'] .docs-mobile-nav {
+  display: none;
+}
+@media (min-width: 901px) {
+  /* Reclaiming the sidebar is the docs reader's alone; on the front page that side is the rail's reserve, and taking it draws the column off center. */
+  :root[data-library='off'] body:not(.front-page) {
+    padding-left: 0;
+  }
+}
+
+/* ---- Medium screens: a narrower rail -------------------------------- */
+
+@media (max-width: 900px) {
+  :root {
+    --minimap-preview-width: 46px;
+  }
+}
+
+/* ---- Small screens: drop the minimap, reclaim its space ------------- */
+/* Held to the exported page's own rule by just check-minimap-breakpoint: that one shows the rail one pixel above this. */
+
+@media (max-width: 720px) {
+  body {
+    padding-right: 0;
+  }
+  body.front-page {
+    padding-left: 0;
+  }
+  .document-minimap {
+    display: none;
+  }
+  /* The rail is gone here whatever the toggle says, so tuck the gear in. */
+  .site-settings {
+    right: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --content-pad: 16px;
+  }
+}
+
+/* ==== Glossary bottom sheet ==============================================
+   Shared by the README reader and the /docs site (see site/glossary.js). A glossary link opens here, sliding up over the reading view; the doc keeps its place underneath. The body reuses .document-body so entries are styled like ordinary Markdown.
+   ========================================================================== */
+
+/* Hidden state must win over the display:flex below, or the sheet sits off-screen with its shadow peeking up from the bottom edge. */
+.glossary-backdrop[hidden],
+.glossary-sheet[hidden] {
+  display: none;
+}
+
+.glossary-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 40;
+}
+.glossary-backdrop.open {
+  opacity: 1;
+}
+
+.glossary-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  max-height: 78vh;
+  background: var(--bg);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+  transform: translateY(100%);
+  transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.glossary-sheet.open {
+  transform: translateY(0);
+}
+
+/* ==== Link hover tooltip =================================================
+   Desktop-only helper for ordinary links. JS creates the element only on fine hover pointers, so mobile/touch gets no new UI.
+   ========================================================================== */
+
+.link-hover-tip {
+  position: fixed;
+  z-index: 60;
+  max-width: min(34rem, calc(100vw - 24px));
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 92%, black);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  color: var(--text);
+  pointer-events: none;
+}
+.link-hover-tip-kind {
+  font: 700 0.78rem/1.2 var(--font-body);
+}
+.link-hover-tip-detail {
+  margin-top: 3px;
+  color: var(--text-muted);
+  font: 0.76rem/1.3 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+/* Line count of the linked document (only shown for document links). */
+.link-hover-tip-lines {
+  margin-top: 4px;
+  color: var(--text);
+  font: 600 0.74rem/1.2 var(--font-body);
+}
+
+.glossary-sheet-grip {
+  flex: none;
+  width: 36px;
+  height: 4px;
+  margin: 10px auto 2px;
+  border-radius: 2px;
+  background: var(--border-strong);
+}
+.glossary-sheet-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  display: flex;
+  padding: 6px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.glossary-sheet-close svg {
+  width: 22px;
+  height: 22px;
+}
+.glossary-sheet-close:hover {
+  color: var(--text);
+  background: var(--bg-elevated);
+}
+.glossary-sheet-body {
+  /* Fill the sheet width so the scrollbar sits at the right edge (under the close button) rather than inset by the reading-column measure. */
+  width: auto;
+  max-width: none;
+  margin: 0;
+  overflow-y: auto;
+  padding: 6px 16px 4px 28px;
+}
+.glossary-sheet-body > :first-child {
+  margin-top: 0;
+}
+/* The sheet body is .document-body, not .markdown-body, so the reader's link color does not reach it. Match it here, or term links fall back to the dull browser-default link color. */
+.glossary-sheet-body a {
+  color: var(--link);
+  text-decoration: none;
+}
+.glossary-sheet-body a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+.glossary-sheet-status {
+  color: var(--text-muted);
+}
+.glossary-sheet-footer {
+  flex: none;
+  padding: 12px 28px 20px;
+  border-top: 1px solid var(--border);
+}
+.glossary-sheet-fulllink {
+  font-size: 0.85rem;
+  color: var(--link);
+  text-decoration: none;
+}
+.glossary-sheet-fulllink:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+/* Centered, width-capped card on wider viewports. */
+@media (min-width: 760px) {
+  .glossary-sheet {
+    left: 50%;
+    right: auto;
+    width: min(680px, 92vw);
+    transform: translateX(-50%) translateY(100%);
+  }
+  .glossary-sheet.open {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Skip-to-content link: the first thing a keyboard or screen-reader user reaches. Off-screen until focused, then it drops into the top-left so the user can jump straight past the navigation to the article. Hidden visually has no effect on the page's normal appearance. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 1000;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--bg-elevated, #161b22);
+  color: var(--link, #2f81f7);
+  border: 1px solid var(--border, #30363d);
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 8px;
+  outline: 2px solid var(--link, #2f81f7);
+  outline-offset: 2px;
+}

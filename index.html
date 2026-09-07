@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Leaftext — refine your mind. Your thoughts, secure and free.</title>
+    <meta
+      name="description"
+      content="A free desktop app for reading and writing your own documents on Mac and Windows. Your files stay on your device, in plain Markdown and XML you own. No account, no cloud, no telemetry."
+    />
+    <link rel="canonical" href="https://leaftext.com/" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0d1117" />
+    <!-- Favicon / app icon: the green leaf mark shown in the browser tab and in
+         search results. Absolute path so it resolves the same from /docs/. -->
+    <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/leaf-icon.png" />
+    <!-- The page renders this Markdown file client-side; expose it as the
+         machine-readable alternate so crawlers and AI fetchers read the text
+         without running JavaScript. -->
+    <link rel="alternate" type="text/markdown" href="README.md" />
+    <!-- The two AI indexes: every page of the site as a raw Markdown address.
+         A fetcher that lands here needs one link to reach all of it. -->
+    <link rel="alternate" type="text/plain" href="llms.txt" title="AI index — every page as Markdown" />
+    <link rel="alternate" type="text/plain" href="llms-full.txt" title="AI index, with a description per page" />
+    <!-- Open Graph (link previews on social and chat apps). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Leaftext" />
+    <meta property="og:title" content="Leaftext — refine your mind." />
+    <meta property="og:description" content="Your thoughts, secure and free. A free desktop app for reading and writing your own documents on Mac and Windows — they never leave your device." />
+    <meta property="og:url" content="https://leaftext.com/" />
+    <meta property="og:image" content="https://leaftext.com/imgs/leaftext.png" />
+    <meta property="og:locale" content="en_US" />
+    <!-- Twitter / X card. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Leaftext — refine your mind." />
+    <meta name="twitter:description" content="Your thoughts, secure and free. A free desktop app for reading and writing your own documents on Mac and Windows — they never leave your device." />
+    <meta name="twitter:image" content="https://leaftext.com/imgs/leaftext.png" />
+    <!-- Structured data: the site, its publisher, and the app it documents. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://leaftext.com/#website",
+            "url": "https://leaftext.com/",
+            "name": "Leaftext",
+            "description": "Refine your mind. Your thoughts, secure and free.",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://leaftext.com/#org",
+            "name": "Leaftext",
+            "url": "https://leaftext.com/",
+            "logo": "https://leaftext.com/assets/leaf-icon.png",
+            "sameAs": ["https://github.com/ryanallen/leaftext"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Leaftext",
+            "applicationCategory": "Productivity",
+            "operatingSystem": "Windows, macOS",
+            "url": "https://leaftext.com/",
+            "downloadUrl": "https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe",
+            "image": "https://leaftext.com/assets/leaf-icon.png",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "A free desktop app for reading and writing your own Markdown and XML documents on macOS and Windows. Everything stays on your device."
+          }
+        ]
+      }
+    </script>
+    <!-- Bundled Noto fonts (Noto Sans / Noto Sans Mono / Noto Serif), embedded as
+         data URLs so the site is self-contained — same fonts as the desktop app. -->
+    <link rel="stylesheet" href="site/noto-fonts.css" />
+    <!-- KaTeX stylesheet, vendored locally (math is rendered by reader.js when present). -->
+    <link rel="stylesheet" href="site/vendor/katex/katex.min.css" />
+    <!-- Where the app's own renderer is served from, and the stylesheet it draws
+         a document with. Both are built when this site publishes and never
+         committed; another site can name this one here instead. -->
+    <meta name="leaftext-renderer" content="/assets/leaftext/" />
+    <link rel="stylesheet" href="/assets/leaftext/leaftext.css" />
+    <!-- What draws the page around the document: edit the tokens at the top of it. -->
+    <link rel="stylesheet" href="site/styles.css" />
+    <!-- Apply the saved theme and panel toggles before first paint (no flash).
+         Keys mirror site/settings.js; "System" resolves to the device theme. -->
+    <script>
+      (function () {
+        try {
+          var d = document.documentElement,
+            s = window.localStorage;
+          var m = s.getItem('leaf.theme') || 'system';
+          var t =
+            m === 'light' || m === 'dark'
+              ? m
+              : matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          d.dataset.theme = t;
+          // The document's own paint comes from the app's stylesheet, which keys on a theme family and an appearance.
+          d.dataset.leafTheme = 'github';
+          d.dataset.leafAppearance = t === 'light' ? 'light' : 'dark';
+          if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
+          if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';
+          if (s.getItem('leaf.speedReader') === '1') d.dataset.speedReader = 'true';
+          // Gutter line numbers default OFF (matching the desktop app) so the
+          // landing page stays clean and crawlers never scrape a block's number.
+          if (s.getItem('leaf.lineNumbers') !== '1') d.dataset.lineNumbers = 'off';
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="front-page">
+    <a class="skip-link" href="#content">Skip to content</a>
+    <main class="page">
+      <!-- reader.js fills this with the rendered README. -->
+      <article class="markdown-body" id="content" tabindex="-1"></article>
+      <!-- The status line speaks only when something failed. It carries no waiting
+           text: a page that cannot say when it will finish should not promise
+           that it will. -->
+      <p class="status" id="status" hidden></p>
+      <!-- Nothing here is drawn when the script runs. Without it the page is
+           empty, so say where the text actually is. -->
+      <noscript>
+        <p class="status">
+          This page is drawn from Markdown. Its source is
+          <a href="README.md">README.md</a>, beside this page. Every page of the site as Markdown:
+          <a href="llms.txt">llms.txt</a>, <a href="llms-full.txt">llms-full.txt</a>,
+          <a href="sitemap.xml">sitemap.xml</a>.
+        </p>
+      </noscript>
+    </main>
+    <!-- site/reader.js loads the README beside this page and draws it with the
+         app's own renderer (leaftext-core.js), then builds the minimap
+         (minimap.js, the side-rail document overview). -->
+    <script type="module" src="site/reader.js"></script>
+    <script type="module">
+      // The README links to docs/*.md by their real repo paths so they stay
+      // clickable on GitHub. On this site those raw .md paths only serve plain
+      // markdown, so intercept them and hand off to the docs reader, which renders
+      // the file at its #/route. Strip the .md and route to docs/#/<path>. Works
+      // at any nesting depth (docs/a/b/c.md) and preserves an optional #anchor.
+      document.getElementById('content').addEventListener('click', (event) => {
+        const link = event.target.closest('a');
+        if (!link) return;
+        const href = link.getAttribute('href');
+        if (!href) return;
+        // Relative docs link, any depth: docs/<path>.md(#anchor). Absolute URLs
+        // (http://…/docs/x.md) start with a scheme and are left alone.
+        const m = href.match(/^docs[/\\](.+?)\.md(?:#(.*))?$/i);
+        if (!m) return;
+        event.preventDefault();
+        const route = m[1].replace(/\\/g, '/');
+        const anchor = m[2] || '';
+        location.href = 'docs/#/' + route + (anchor ? '#' + anchor : '');
+      });
+    </script>
+  </body>
+</html>

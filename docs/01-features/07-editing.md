@@ -1,0 +1,472 @@
+# Editing
+
+> Write where you read. Click into a sentence and type, or drop to the raw source — both write back to the same file, and nothing saves until you say so.
+
+Leaftext is reading-first, but it is also editable. You can edit **in the reading view itself** — click into a sentence and type, toggle a checkbox — and the change is written back into the source at exactly that spot. When you would rather work in the raw text, the **code view** swaps the page for the file's actual source, for every format the app opens. Both paths share one source of truth and one green **Save** button. There is no autosave for text edits: nothing touches your file until you say so — the one exception is ticking a checkbox, which saves on the spot.
+
+![The same document twice: on the left the rendered page mid-edit with a caret in a paragraph and the green Save button showing, on the right the same file in the code view as raw Markdown](../../imgs/editing.png)
+
+## Summary
+
+| Feature | What it means |
+| --- | --- |
+| [New document](#new-document) | The **+** in the app bar (and on the home screen) starts a blank page, its reading view unlocked and ready to type |
+| [Save As](#new-document) | A new document has no file until its first save, which asks where to put it |
+| [Inline editing](#inline-editing-the-reading-view) | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
+| [Typing in a Word file or a spreadsheet](#formats) | Type into a paragraph of a `.docx`, `.docm` or `.odt`, or a cell of an `.xlsx`, `.xlsm` or `.ods`, where it is drawn — and everything the app never read stays byte for byte what it was on save |
+| [Typing on XML as words](#inline-editing-the-reading-view) | Press a sentence in an [XML](01-rendering.md#xml) document and type on it where it is drawn, with the tags left alone; a block whose drawn words are not the file's own bytes opens its source instead and says why |
+| [Typing in a cell of an XML table](#inline-editing-the-reading-view) | Press a value and type on it where it is drawn — one of two values joined by a comma as readily as a cell holding one — and press a column heading to rename that element in every record at once; the rest of the file is untouched, and the grid never swaps for markup |
+| [Typing on a value inside an XML tag](#inline-editing-the-reading-view) | Press a value written inside a tag — in the element's own list, in a table cell, as one of several drawn together, or as the lone value an empty element is drawn by — and type on it where it is drawn; only what sits between the quotes is written, and the quote that closes it is refused |
+| [Block editing](#inline-editing-the-reading-view) | `Enter` splits a block or starts a new one; `Backspace` at the start merges into the block above |
+| [Taking a block away](#deleting) | Clear a paragraph or heading of its text and the whole line goes — no bare `##` left standing |
+| [Taking several away](#deleting) | Highlight across blocks and `Delete` removes the lot; whatever survives at each end joins into one block |
+| [Picking a section](#deleting) | `Ctrl+A` with the caret in a block widens a step per press: the block, then the heading and everything under it, then the page |
+| [The fields at the top](#the-fields-at-the-top-of-a-note) | Click a value in a note's field block and change it, pick a date, tick a box, add and drop tag chips, rename a key, add a field or take one away — and start a block on a note that has none |
+| [Renaming from the heading](#renaming-from-the-heading) | A document that names no title of its own is headed with its file name; press that heading to rename the file |
+| [Renaming a config key or section](#editing-data-files) | Press the name to the left of a value in an [INI](01-rendering.md#ini-files) file, or a `[section]` heading, and type the new name where it is drawn; only that word is rewritten, and the brackets and the spacing around a key stay as the file had them |
+| [The title a data file names](#editing-data-files) | A [JSON, YAML](01-rendering.md#data-files-json-and-yaml) or [INI](01-rendering.md#ini-files) file that names its own title heads the page with it; press that heading and the value itself opens for editing, quotes and all |
+| [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
+| [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
+| [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
+| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
+| [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
+| [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
+| [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
+| [Exporting a diagram](#export) | The diagram's own corner, and the flowchart sheet, write it out as its own file — Markdown, PNG, WebP, PDF or JPEG |
+| [The format bar](#the-format-bar) | Highlight words and a bar appears over them: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code and link as well, then text, bigger/smaller heading and quote for the whole block |
+| [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
+| [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
+| [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
+| [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits, a word at a time while you are typing; a Redo button beside it (and `Ctrl+Y` or `Ctrl+Shift+Z`) brings back what you took back |
+| [When the app cannot write it](#when-the-app-cannot-write-it) | A file that has gone takes the tab dot, Save and Undo down and raises a message naming it; the flowchart editor keeps the drawing and the image box keeps the address you typed, rather than closing over them |
+| [The padlock](#the-padlock) | Two padlocks, one for the reading view and one for the source, each remembered. Both start locked, except in a [new document](#new-document) — and checkboxes toggle either way |
+| [Replacing text](02-navigation.md#find-in-this-document) | The find bar's Replace and All write through the same padlock as typing does — in the reading view as one edit carrying only the blocks that changed, so one Undo puts it all back |
+| [Code view](#code-view) | Toggle the rendered page to the raw source and back |
+| [A source view that will not open](#code-view) | Where the editor cannot be brought up, the app says so and puts you back on the document at the place you were reading, and pressing the button again is a fresh attempt |
+| [Your place is kept](#code-view) | Toggling between the two views holds your position, and toggling back and forth returns you to the exact spot |
+| [Highlighting](#code-view) | The source is colored in the active [theme](06-themes.md)'s syntax colors — Markdown, HTML, XML, YAML, JSON, and the XML of the part an [Office file](01-rendering.md#office-and-opendocument-files) is anchored to; raw [email](01-rendering.md#email-eml), [plain text](01-rendering.md#plain-text-files), [INI](01-rendering.md#ini-files) and [source files](01-rendering.md#source-files) show as uncolored text |
+| [Color squares](#code-view) | A color written in the source carries a small square of itself in the line beside it — hex, `rgb()` or `hsl()` |
+| [Line numbers](#code-view) | A gutter numbers each source line, staying pinned when long lines wrap |
+| [Wrapped lines](#code-view) | Long lines wrap; the code view never scrolls sideways |
+| [Minimap](04-minimap.md#the-code-views-minimap) | The editor's own minimap rail, drawn on the window's chrome beside the page |
+| [Pinned headings](#pinned-headings) | In Markdown source, the headings you are reading under stay at the top edge as you scroll; click one to jump to it |
+| [Editing the source](#editing-the-source) | Type directly; undo/redo, selection, clipboard, and IME all work, and `Tab` indents instead of moving focus. A multi-megabyte file stays responsive |
+| [Typing help](#typing-help) | Monaco's IntelliSense, answered from your own notes: type `[[` to see them, `#` for headings, hover a wikilink for a preview — and broken links get a wavy underline |
+| [Save](#save) | A green **Save** button (or `Ctrl+S` / `Cmd+S`) appears from the first keystroke, and writes the words on screen without clicking out of them |
+| [Unsaved marker](#save) | A tab with unsaved edits shows a dot beside its name, from the first keystroke |
+
+## New document
+
+The **+** beside Open in the app bar starts a blank document in a new tab. The home screen carries the same button beside **Choose file**.
+
+- It opens in the reading view, whose [padlock](#the-padlock) is turned off for you, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
+- It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing reaches your folders until you say so. Closing the window with words in it keeps them in the [saved session](05-settings.md#unsaved-edits) rather than losing them, and the next launch puts the note back under the same name with its dot lit; a note you never typed into does not come back, because there is nothing in it to keep.
+- The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. On Windows that dialog lists every format the app reads; on a Mac it shows none of them, so a short menu asks which one first and the dialog then suggests a name already ending in it. Close the dialog without choosing and nothing is written.
+- Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and you can keep typing — the padlock is a setting, not something the new name resets.
+
+## Writing in the page
+
+### Inline editing (the reading view)
+
+The rendered page is a live editor. The **source stays the single source of truth** — every edit is anchored to the exact byte range of the source it came from and spliced back there, so what you see and what is saved never drift apart. Editing is intentional per block and never rewrites parts of the file you did not touch.
+
+- **Click into a sentence and type.** Paragraphs, headings, **lists, tables, and block quotes** edit in place with their styling intact — bold stays bold, links stay links, table pipes, list markers, and `>` prefixes are rewritten for you — and your change is written back into the Markdown at that spot. Interactive **checkboxes** toggle their `[ ]` / `[x]` marker in the source, in task lists and [table cells](01-rendering.md#tables) alike. A checkbox is a quick action rather than an edit: it saves to disk immediately, records no undo step, and stays clickable even when reading-view editing is turned off.
+- **A table keeps the spacing you gave it.** Type in one cell and that cell's own text is what changes — every other row, and the `| --- |` divider under the header, is left exactly as you wrote it, so a table you lined up by hand stays lined up. The cell keeps its own padding too: the pipe to its left never moves, and the one to its right moves only by however much longer or shorter your text is. Clicking a checkbox in a cell works the same way. An edit that changes the table's *shape* — adding or dropping a column — still rewrites the whole thing, and the `:---` / `:---:` / `---:` alignment markers survive that rewrite, rebuilt from the alignment each column is already drawn with. See [Tables](01-rendering.md#tables).
+- **A table opens on the whole window.** Hover its top-right expand button to give a wide table the room it needs; the larger copy keeps the original cells' borders, fills and spacing, and does not change the file. It takes the room the window has rather than the room its longest cell wants, so every column stays on screen and a long cell folds inside its own column instead of pushing the later columns off the right edge — the columns are still shared out by how much each one asks for, so the column holding sentences keeps most of the width. A heading is never broken mid-word, and no column is drawn narrower than about seven characters, so a short cell like a weekday or a year reads as one word rather than as two pieces. Where something in a cell cannot fold at all, such as a picture, hold `Ctrl` or `Cmd` while using the wheel to scroll it sideways. Its links are followed the way the page's are: a [glossary](02-navigation.md#glossary) word slides its term up over the table, dims the table behind it the way every [bottom sheet](../GLOSSARY.md#bottom-sheet) dims what it covers, and leaves the table standing — so closing the term, by its close button or by clicking the dimmed table, puts you back on the table, and closing the table takes the term with it rather than leaving it over a page it did not come from. Anything that leaves the document — another page, an address away from it, a jump to a heading — closes the table first and then opens. Hold `Ctrl` or `Cmd`, or use the middle button, and the page opens behind the one you are reading with the table left exactly where it is. Press `Escape`, click the dimmed page, or use the close button to return to the document. The header still moves or double-clicks the window on a custom title bar.
+- **Blocks behave like a block editor.** `Enter` splits a block at the caret — a split heading stays a heading at the same level — or starts a fresh paragraph when pressed at the end (keep pressing to keep writing). `Shift+Enter` inserts a line break, and `Backspace` at the very start of a block merges it into the one above, with the caret staying put. In a list, `Enter` adds an item and `Backspace` joins items.
+- **Every other block edits its exact source.** Code blocks, [alerts](01-rendering.md#blockquotes-and-alerts), loose lists, blocks with images, footnotes, or math, and blocks containing raw HTML tags outside a small safe set (links, line breaks, bold, italic, strikethrough, inline code, and the inline HTML tags Leaftext can rebuild exactly — `<abbr>`, `<kbd>`, `<mark>`, `<ins>`, `<sub>`, `<sup>`, `<span>`, and `<div>`) open their raw source in place when you click them, then splice back on the way out.
+- **[XML](01-rendering.md#xml) types on its words wherever the words are the file's own bytes.** Press a sentence and a caret lands in it: what you type is spliced between that element's own tags, and the tags are never part of the edit. Where the drawn words are not the file's bytes — inline markup the page flattened into text, an entity the file spells another way, spacing the renderer tidied — the block opens its exact source instead, the way it always did, and a line says why the markup appeared. `Enter` ends the element at the caret and carries on in another of the same one, its tags and attributes included; pressed at the end of the words it opens a blank line inside another of the same element. A section heading and a document's alternate-language title line take a caret but no `Enter`, because a second one of either is not drawn.
+- **A cell of an XML table types on its words as well.** A table drawn from a run of records — a sitemap's addresses and dates, a feed's entries — takes a caret in any cell whose words are one element's own bytes, and what you type is written into that element alone: no other row of the file moves. Where a record holds several elements of one name the cell draws them joined by a comma, and each value takes a caret of its own: type on one and the others stay exactly as they were, while the comma between them belongs to neither and answers a press with nothing. A cell drawn from a value inside a tag types the same way, on the bytes between that value's quotes. A column a record has nothing for is not the file's own words, so it answers a press with nothing.
+- **A column heading renames that element in every record.** The words across the top are not in the file anywhere — they are the tag spelled out, so `lastmod` reads as "Last modified" — and there is no way back from the one to the other. So pressing a heading puts the tag the file actually holds under the caret in place of the label, and typing a new name over it renames that element in every record of the table at once, with one press of undo to take the whole thing back. Every other byte of those records comes back exactly as it was, the comment and the spacing included, and a folded column renames each of the elements folded into it. Leaving without typing puts the label back and writes nothing, and a name no XML element could carry is refused where you typed it. A heading over a column drawn from a value inside a tag has no element to rename, so it takes no caret. The table itself is never swapped for its markup, whatever you press — the whole file's text is in the code view.
+- **A value written inside a tag types on its words as well.** An XML file keeps much of what it says inside the tags — `<entry id="chapter-4" updated="2026-08-13">` — and the page draws every one of those values: under the element's own heading, as a column of a table, where several are drawn together in one line, and on its own where an empty element carrying one attribute is drawn by that value alone, the way a feed's `<link href="…"/>` reads as `Link: https://leaftext.com/`. Press any of them and a caret lands where it is drawn; what you type is written between that value's quotes alone, and the tag around it — the name, the equals sign and both quotes — is never part of the edit. A value the page did not draw exactly as the file spells it, because the spacing was tidied or the file writes it with an entity, cannot be written back without putting bytes in the file that were never there — so pressing it raises a line naming the source view rather than a caret. The quote that closes the value is the one thing it cannot hold, so typing one is refused with a line saying so and the words go back, the way two dashes in a comment already are. A lone value drawn as an address is pressed to type on it rather than followed while the page is unlocked, and the blank part of its row still opens the element's whole markup; the address's right-click menu still offers Open, and a locked page follows the link as it always did.
+- **A comment types on its words too.** The [fold](01-rendering.md#xml) holding a note in an XML file takes a caret in the words themselves, with the `<!--` and `-->` marks left off the page and untouched in the file. Nothing is escaped either way, so an ampersand you type is an ampersand in the file. Two dashes in a row would end the comment early and stop the file opening, so typing them — or leaving a dash at the end — is refused, with a line saying so, and the words go back to what the file has.
+- **A code block hands you the code, not the fences.** Click into one and you get what is inside the ``` ``` ``` lines; the fences and the language tag stay out of reach, so there is no way to backspace through them and lose the block. Delete every line and you still have an empty code block. An indented code block has no fences to hide, and neither does an unterminated one — those open whole, as before.
+- **A diagram edits as its diagram.** A rendered [Mermaid diagram](01-rendering.md#mermaid-diagrams) carries two buttons in its corner, shown on hover: one swaps it for the Mermaid behind it, on the same code tint as any other source block, and the other opens it in [the flowchart editor](#the-flowchart-editor). Click away from the source and it is drawn again. A press on the drawing itself moves it — see [zoom and pan](01-rendering.md#mermaid-diagrams) — which is why the source opens from a button rather than from a click.
+- **The field block at the top edits too**, in its own way — see [the fields at the top of a note](#the-fields-at-the-top-of-a-note). It is drawn by the reader rather than being a block of the document, so it takes no caret and no gutter handle; every paragraph, heading, list and table below it edits exactly as it would in a note with no fields.
+- **A right-click asks, it does not edit.** Only the left button opens a block for typing. Right-click a picture, a code block or any other block that shows its source and the block stays drawn, with the menu over the thing you pointed at — see [Right-click a picture](03-library.md#right-click-a-picture).
+- **Nothing is ever mangled.** A block only edits WYSIWYG when its rendered form can be turned back into the identical source; anything else edits its source directly. Either way the edit is a precise splice, and the [live reload](02-navigation.md#reload) watcher recognizes your own save so it never fights it.
+- **Nothing is drawn around the line you are typing in.** No ring, no box. The caret says where you are, and a page whose whole point is that it is a page should not turn into a form when you touch it. A block showing its raw source is the exception: its code tint is what says *this is source*. It is set in the [theme](06-themes.md#tokens)’s own code face, the one every other code surface on the page uses, so a fenced block does not change face under the click that opens it.
+- Edits raise the same green **Save** button and unsaved-dot as the code view, and save the same way — from your first keystroke, without clicking out of what you are typing in. **Save**, **Undo** and `Ctrl+S` all act on the words on screen, and the typing itself reaches the document at every pause, so an outside change arriving mid-sentence no longer takes it away.
+- The reading view opens **locked**: clicks do not enter edit mode until you say so. See [The padlock](#the-padlock).
+
+### Renaming from the heading
+
+A document that names no title of its own — a sitemap, a feed, a `package.json`, an [email](01-rendering.md#email-eml) with no subject — is headed with its file name, because there is nothing else to head it with. That heading is the file's name, so pressing it opens the same rename box the [library pane](03-library.md#file-actions) opens, anchored over the heading and holding the real file name with everything before the extension already selected. `Enter` renames the file; `Escape` leaves it alone. An empty name, one already taken, and one carrying a folder separator are all refused, exactly as they are in the pane.
+
+The heading, the tab and the pane all move to the new name, unsaved typing stays where it was, and every [history step](02-navigation.md#history) standing on that file follows it too. With the [source view](#code-view) open, it stays at the place you were reading rather than going back to line one. A heading the document does write for itself — an XML `<title>`, a message's `Subject`, a [JSON, YAML or INI](#editing-data-files) `title` or `name` key — is not a file name, so pressing it edits that value instead of opening the rename box. The XML and email ones take a caret in the words; a data file's opens the value's own source, the way every other value in one does.
+
+### Editing an email
+
+An [email](01-rendering.md#email-eml) edits where you read it too, wherever the file says the same words the page draws. That is most of an ordinary message: the subject, each row of the header card, and every paragraph of a plain-text body.
+
+- **Click a header value or a paragraph and type.** The words stay as they are drawn and take a caret, exactly as a note's paragraph does, and what you type is written over that part of the message and nothing else. Line endings survive: a message written the Windows way stays written that way.
+- **`Enter` splits a paragraph** and leaves a blank line between the halves, and `Shift`+`Enter` adds one more line to the same paragraph. A header value is one line of the file, so it takes neither.
+- **The margin handle moves a paragraph** within one plain-text body, and the **+** on an empty line adds another paragraph. Neither is offered on a header row: a header's value sits inside a labeled line, so moving it would leave the label behind.
+- **What cannot be opened says why.** A body coded into the file, and a header folded over two lines or written as an encoded word, are drawn but not editable here; clicking one says so and points at the [code view](#code-view), which edits the whole message as it stands.
+- **A message that can prove nothing has no reading padlock at all** — see [The padlock](#the-padlock).
+- **There is no bar over selected text.** Its buttons write Markdown, and Markdown in a message is just characters, so it stays hidden here.
+
+### The fields at the top of a note
+
+A note's [field block](01-rendering.md#frontmatter) — the `title`, `status`, `due` and `tags` between the two `---` lines — is edited where you read it, with the reading padlock open. There is no save button of its own: a change raises the same green **Save** as any other edit in the page, and `Ctrl+Z` steps back through them.
+
+![A note's field block with the pointer on one row: nothing is painted behind the value and a small cross has appeared at the row's end, a checkbox is a real tick box, the tags are chips each with a cross and a plus after them, and an Add a field row sits under the last field](../../imgs/frontmatter-fields.png)
+
+- **Click a value and type.** `Enter` keeps it, `Escape` abandons it, and clicking away keeps it. `Ctrl+S` from inside the box keeps it and saves the file with it.
+- **The control matches the field.** A date opens a calendar. A checkbox is a real box you tick. A list draws one chip per item, each with a cross, and a `+` for the next one. Everything else is a plain box. The app never guesses a control for a value it cannot read — a field pinned as a date but holding `sometime` keeps its plain box rather than opening a picker that would blank it.
+- **Click a field's name to rename it.** The value, its quoting and its place in the block all stay where they were. A name the block already uses is refused, since two fields of one name is a note that half reads.
+- **A cross at the end of a row takes the field away**, shown when you point at the row. `Ctrl+Z` puts it back.
+- **"Add a field" under the last row** asks for a name and a value side by side. Four names are offered as you type — `aliases`, `cssclasses`, `tags` and `leaftext-types`, the four the app itself reads — and anything else is still typed freely.
+- **A note with no fields can start one.** Rest the pointer in the strip above the first line and the [gutter](#the-block-gutter)'s plus appears, reading *Add frontmatter*. Press it and the same name-and-value pair opens; filling it writes the two `---` lines and the first field together, and leaving it empty writes nothing at all.
+- **A chip can hold a comma.** Type `Smith, John` and it is one chip and one name. On a list written `[a, b]` the app puts quotes around it so it reads back as one, leaving the other items exactly as they were; the one thing it will not write there is an item carrying a comma *and* both a `"` and a `'`, which no quote can wrap — put that one in a list written a line each.
+- **Your file keeps its shape.** Every change is a splice over that one field's own bytes, so comments, blank lines, the order of the fields, the case of each key and the quotes around a value all survive exactly as they were. A list stays in the form it was written in: `[a, b]` stays on one line, and a `- item` list keeps its own indent. Removing the last field takes the two `---` lines with it rather than leaving an empty pair.
+- **A locked page shows none of it** — no edit box, no cross, no add row, and the block reads exactly as it did before.
+
+### Deleting
+
+Taking something out of a document is not the same as emptying it of words. Clear the text out of a paragraph and there should be no paragraph left — not an empty one, and certainly not the leftovers of the one that was there.
+
+- **An emptied block goes.** Delete the last word out of a paragraph or a heading, click away, and the whole line is removed from the file along with the blank line that separated it from the next one. A heading does not leave its `##` behind. The blank lines either side do not stack up: the two neighbors end up exactly one apart, and an extra blank line somebody had put above the block stays where it was.
+- **A highlight can cross blocks.** Drag from one paragraph into the next and the selection follows, through headings, code blocks and tables alike — so it can be copied or deleted in one go. A block only becomes typable when you click into it, which is what lets the drag leave it; click into one and it is an editor again, and the page around it goes back to being selectable when you click away.
+- **`Delete` and `Backspace` work across blocks.** Highlight from the middle of one paragraph to the middle of another and press either: everything between them goes, and the two surviving halves join into one block. It keeps the kind of whichever end kept its own words, so a heading cut part way is still a heading. The caret lands at the join.
+- **Anything that cannot be cut in half goes whole.** A code block, a table, a list, a picture, a diagram — a selection that touches one takes all of it rather than leaving a half the app cannot write back. That is what somebody dragging across a code block means anyway.
+- **It is one edit.** However many blocks the highlight covered, one press of [Undo](#undo) — the button or `Ctrl+Z` — puts all of it back.
+- **The whole document can go.** Empty the last block and the file is empty, and the page comes back as a blank one — a title and a line to type on, the same as a [new document](#new-document).
+- **Selecting a section takes two presses.** With the caret in a block, `Ctrl+A` (`Cmd+A`) widens a step at a time: the first press selects the block you are in, the second the **section** — the nearest heading at or above you and everything under it, down to the next heading of any size — and the third the whole page. Move the caret and the next press starts at the block again. From outside a block it is one press and the whole page, as it always was.
+- **A code block's inside is not a block.** Clear the code out of a fence and you have an empty fence, not a missing one — see [above](#inline-editing-the-reading-view).
+- Deleting is behind the same [padlock](#the-padlock) as typing. A locked page can still be selected, copied, [highlighted and annotated](#the-format-bar), and `Ctrl+A` on one selects the page in one press.
+
+### The block gutter
+
+![One block lifted out of a document mid-drag, floating over the page while its neighbors slide together to close the gap it left](../../imgs/block-gutter.png)
+
+Hover a block and two controls appear in the page's left margin: a **handle** to drag it by, and a **plus** for adding one. They act through the same source ranges every other edit uses, so this is a view onto your file rather than a second idea of the document — which is why one gutter serves every format that qualifies.
+
+- **The margin is live.** Run the pointer down the gutter strip itself and the controls follow whichever line you are level with, blocks and the spaces between them alike. You never have to hover the words first and slide left.
+- **Drag to reorder.** Take the handle and the block lifts off the page and follows the pointer, while its neighbors slide aside to open the gap it will land in. Drop it there. `Escape` puts it back. Only the blocks' own text moves through their own slots — the blank lines, indentation and punctuation between them stay where they are.
+- **It stays available while you write.** Hover any other block mid-edit and its handle is there; the margin reaches the line you are typing in too, so that one can be dragged as well. Drag after typing and the line you were on is saved first, then moved — one gesture, both edits.
+- **Markdown and XML only.** A block can only be moved when its recorded range is the whole block. In JSON and YAML a range covers a *value* and not its key, so moving one would leave the key behind — those formats get no gutter at all, only the click-to-edit they already had.
+
+### Adding a block
+
+![The insert row fanned out over an empty line: a row of buttons for text, heading, list, quote, code block, table, image, flowchart and divider, each drawn with its own icon](../../imgs/insert-row.png)
+
+The plus stands on empty lines, never on a line that already says something — beside a written line it would be offering to write over it. So:
+
+- **On a blank line**, the plus is right there.
+- **While you are typing**, it waits on the line below. Press it to save the line you are on and choose what the next one is, in one go — no `Enter`, no clicking out first. Clicking that empty space instead just starts typing there, as body text.
+- **Between any two blocks**, hover the space and the plus appears in it. Clicking the space starts a line there too.
+- **Never over something the page drew.** The pager is not part of your document, so no clickable space is offered across it.
+
+Press it and a row of kinds fans out over the empty line, unfurling rather than appearing — the same motion as [everything else that folds open](01-rendering.md#collapsible-sections):
+
+| | What you get |
+| --- | --- |
+| Text | An empty paragraph |
+| Heading | An empty `##` heading |
+| List | An empty list item |
+| Quote | An empty block quote |
+| Code block | An empty fence, edited as source |
+| Table | A two-column table with empty cells |
+| Image | [The image box](#images) |
+| Flowchart | [The flowchart editor](#the-flowchart-editor) |
+| Divider | A horizontal rule |
+
+The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
+
+In [XML](01-rendering.md#xml) the row offers what the renderer drawing your file can draw, so a TEI document and every other kind of XML get different lists — one has verse and no tables, the other tables and no verse, and offering a kind the page will not draw is how a click lands nothing.
+
+| | TEI | Every other XML |
+| --- | --- | --- |
+| Text | A paragraph | An element under the name of the block you pressed the plus beside |
+| Heading | A section with its heading | A section with its heading |
+| Row | — | One more record on the table above, when the plus is under one |
+| Verse | A line of verse | — |
+| Comment | A comment | A comment |
+
+Every one of them but the comment **opens** a line to type on, the way the first four above do: what you type is committed inside the tags on your first keystroke, and typing nothing writes nothing. `Enter` carries on with whatever comes next there — another verse line, another row, another element of the same name, and a paragraph under a heading. A heading is written as the section its own heading names, because that is the only shape either renderer draws as a heading. Row is offered only under a table, and writes another record of the kind already in it with your words in its first column; a table whose columns are all attributes is offered no row, since there is nothing in it to type into. The comment is written straight in and drawn as [a comment fold](01-rendering.md#xml).
+
+#### Images
+
+The image button does not write a placeholder path for you to correct. It asks:
+
+- **Choose file** opens your operating system's picker, filtered to what a page can draw.
+- Or paste an **address** for a picture on the web and press `Enter`. Where the app [cannot write the line](#when-the-app-cannot-write-it), the box comes back with the address still in it.
+
+A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
+
+**Taking a picture out again is a right-click on the picture.** While the padlock is open, a picture on a line of its own carries a **Delete picture** row: it removes the picture from the document as one press of undo, writes nothing until you save, and leaves the picture on your disk exactly where it is. A picture inside a sentence has no such row, because the only piece of source it belongs to is the sentence around it. See [Picture actions](03-library.md#right-click-a-picture).
+
+### The format bar
+
+![A highlighted heading with the format bar floating above it: bold, italic, strikethrough, code and link, then the text, bigger heading, smaller heading and quote buttons, with one lit up and one grayed out, and copy, highlight and annotate at the end](../../imgs/format-bar.png)
+
+![The same highlighted heading on a locked page, with the bar over it holding three buttons only: copy, highlight and annotate](../../imgs/format-bar-locked.png)
+
+Highlight words in a Markdown page and a small bar appears over them. What it holds follows the [padlock](#the-padlock): three buttons that read the words out or mark them up on any page, and the formatting buttons in front of those once the page is unlocked.
+
+- **Bold**, *italic*, ~~strikethrough~~, `code`, and **link** apply to the highlighted words. A button lights up when the words already carry that format, so the bar says what they are as much as what they could be — press it again to take it off. **The light is about the whole highlight**: drag past the end of a bold phrase into the plain words beside it and Bold goes out, because those words are not all bold and the press would be adding the format rather than taking it off.
+- **Coding out of a code span leaves one code span.** Highlight from inside `code` into the plain words beside it and the two runs join, so the file carries one span rather than two touching ones — and only the words you chose stay highlighted.
+- **Taking a format off leaves the same words highlighted**, wherever the phrase sits in its sentence, so the bar goes on answering for them and a third press puts the format back. Nothing has to be highlighted again by hand.
+- **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away, and the words stay highlighted. `Escape`, or a press anywhere off the box, leaves the link as it was.
+- **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
+- These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
+- The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.
+- On body text or a quote, the bigger H makes it a `##` heading — the ordinary section heading, with `#` one more press away. The smaller H grays out there, since body text has no size to shrink.
+- **Copy** puts the highlighted words on the clipboard as they read, not as the Markdown behind them.
+- **Highlight** washes the words in the [theme](06-themes.md)'s own warning color, so a marked passage reads the same in every family and in both modes. Press it on words already marked and the highlight comes off.
+- **Highlighting out of a highlight leaves one highlight.** Drag from the middle of marked words into the plain ones beside them and press it: the whole run comes back one even wash rather than a darker patch where the two overlap, and a second press takes the run off in one go.
+- **Annotate** opens a box for a note. `Enter` writes it as a footnote — a marker after the highlighted words, the note itself at the foot of the document — and `Escape`, or a press anywhere off the box, leaves it alone. Press **Annotate** again on a passage that already carries a marker and the marker and its note come off together.
+- **A note hangs off words, and only off words.** Highlight the passage the marker should follow and press **Annotate**; a click on its own leaves the page alone, so nothing stands over the pointer on a page you have not unlocked.
+- **A note goes when the last marker pointing at it goes**, however the marker went — backspacing over it, deleting the block or the passage it sat in, or a [Replace All](02-navigation.md#find-in-this-document) that rewrote the words around it. The note's own line at the foot of the document leaves in the same edit, so one press of [Undo](#undo) brings both halves back. A note something else still points at stays where it is.
+- **These three write into the document and wait for Save**, like any other edit, and each goes in as one press of [Undo](#undo) — a note's marker and its own line included, though they sit at opposite ends of the file. None of them opens a block for typing, which is why they are offered with the padlock shut.
+- `Ctrl+B` / `Cmd+B`, `Ctrl+I` / `Cmd+I` and `Ctrl+K` / `Cmd+K` do bold, italic and the link box without the bar, on an unlocked page. `Escape` dismisses it.
+
+The formatting is written into the page as you would expect it in Markdown — `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``, `[text](address)`, a highlight as `<mark>…</mark>` and a note as a [footnote](01-rendering.md#footnotes) — and saved with the block, by the same splice as any other inline edit. **Code holding backticks of its own is fenced with a longer run of them**, so the file still reads as the one span you were looking at: code containing a single backtick is written between two, and code that begins or ends with one takes a space inside each end, which the next render takes back off. **A formatted phrase emptied of its words leaves nothing behind** — delete everything inside bold, italic, strikethrough or code and the file keeps no stranded delimiters for the next read to draw as text.
+
+### The padlock
+
+Whether a document can be typed into is a padlock in the recess that rides in the tray above the button of the view you are in, on the [floating toolbar](02-navigation.md#the-floating-toolbar). A shut padlock means read-only; an open one means you can type.
+
+- **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
+- **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
+- **Checkboxes toggle either way**, and so do copy, highlight and annotate on the [format bar](#the-format-bar). Ticking a box is a quick action that auto-saves and records no undo; the other three are ordinary edits that wait for Save. What the shut padlock refuses is typing, not marking the words up.
+- **The reading view's padlock is absent on a page nothing can be typed into.** An [email](01-rendering.md#email-eml) whose every part is coded into the file proves nothing to open, so the button leaves the recess rather than standing there answering a press with nothing. The source keeps its padlock on every document.
+- Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
+- Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
+
+The recess holds the tools of the view you are in, and it stands in the tray over that view's own button rather than beside the buttons — the padlock in both editable views, the [speed reader](05-settings.md#speed-reader) in the reading view, the [typing help](#typing-help) wand in the source, and how big a graph to draw on the [graph](03-library.md#graph). It is there only while it holds something, so a view whose every tool has stood down loses the tray and the nub it stands as. None of them is filled in the accent color: that treatment means "this is the view you are in", and a setting inside a view must not wear it.
+
+### Undo
+
+Reading-view edits are undoable, step by step.
+
+- Every inline edit — a typed change, a block split or merge — records one undo step, and a run of typing is one step however long you pause in the middle of it. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. A **Redo** button appears beside it whenever an undo has left an edit to bring back, and goes as soon as there is nothing waiting. (Checkbox toggles are the exception: they auto-save and are not undoable.)
+- Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. With the caret in a block you are typing in, the keystroke takes back a word at a time rather than a letter: a group ends at a space or a punctuation mark, when you move the caret somewhere else, and after two seconds of stillness. `Ctrl+Y` or `Ctrl+Shift+Z` (`Cmd+Shift+Z`) walks those groups forward again, up to the newest words you typed; typing something new drops whatever was ahead. Once a block's groups are spent each key means a whole edit: `Ctrl+Z` takes the last one back, including a [delete](#deleting) that removed several blocks, and `Ctrl+Y` or `Ctrl+Shift+Z` brings back the edit an undo took. The **Undo** and **Redo** buttons always mean a whole edit, so Undo pressed mid-sentence takes back the whole run of typing.
+- A successful **Save** makes the current text the new baseline and clears the history in both directions, so Undo only ever steps back through edits made since your last save — it never walks you below saved text — and there is nothing left to redo.
+- [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
+- A file you just deleted from the [library pane](03-library.md#deleting-asks-first-and-can-be-taken-back) takes the key first, while the message offering it back is still on screen. That is a file coming out of the Recycle Bin, not a text edit, and it is the only thing here that does not touch the document you are reading.
+
+## The flowchart editor
+
+![The flowchart editor open as a full-window sheet: the diagram on the canvas at left, the matching Mermaid text in the pane at right, and the Flow direction control along the top](../../imgs/flowchart-editor.png)
+
+A flowchart is a [Mermaid](01-rendering.md#mermaid-diagrams) block like any other, and it can always be written as text. It can also be drawn. There are two ways in:
+
+- The **flowchart** button in the [insert row](#adding-a-block), which starts a new one.
+- The **flowchart button** on a diagram already in the page, shown when you hover it. The button beside it opens the same diagram as Mermaid text instead.
+
+Either opens a full-window sheet with two panes: a **canvas** on the left and the **Mermaid text** on the right. They are peers over one diagram — draw on the canvas and the text follows; type in the text and the canvas follows. Drag the bar between them to give either pane more room; arrow keys move it too, and a double-click puts it back. The canvas keeps a minimum width however the window moves, so making the window smaller takes the room out of the text pane rather than out of the picture, and the width you dragged to comes back when you widen the window again. **Nothing is written until Save**, which writes the whole block as one edit, so the document's [Undo](#undo) puts the diagram back in one press. **Cancel writes nothing.** Save asks where the diagram goes at the moment you press it, not when the sheet opened, so a change to the same file underneath you moves the write with it; where the place it was going has gone entirely — the block the sheet was opened over, or the line the plus stood on — Save says so and leaves the sheet standing, with the text pane still holding everything you drew.
+
+The canvas is Mermaid's own drawing of your diagram, not a second picture of it — the same renderer the page uses, so what you are working on is exactly what the document will show. Selection rings and **+** handles are laid over it. When Mermaid refuses a diagram it says why under the canvas, which is the one place this differs from a page: a document marks a failed diagram and moves on, an editor has to tell you.
+
+### Drawing
+
+Everything is done on the canvas itself.
+
+- **Double-click empty space** to add a box. The picker slides up from the bottom of the sheet, a quarter of the editor tall so the diagram behind it stays readable, over a dimmed editor: a field for the name, then every shape under a heading for what it is for — basics, steps, start and stop, in and out, by hand, data, documents, notes — alphabetical inside each. Pull its grab bar up for more of the list at once, or push it down to park it; either height lasts as long as the sheet is open. Type the name first or leave it and rename later; picking a shape never overwrites what you typed. A press on the dimmed part puts the sheet away — empty canvas, the text pane, the line above it — while the sheet's own header and the bar between the panes go on doing their jobs with it standing, since zooming and widening the text pane are working the diagram rather than leaving it.
+- **Hover a box** for its **+** handles. Click one and the same picker opens; the box you choose arrives already joined on that side. Drag a handle onto another box instead and it connects the two — or back onto the box you started from for a line from that box to itself, which is what a retry or a poll looks like. The box you are over lights up either way, so a drop is never a guess.
+- **Select a box or a line** and the picker opens on it, holding its name and every shape it could be instead — the same sheet, so choosing a shape and changing one read the same way. A box's other three fields — where clicking it goes, the icon on it and the picture in it — sit beside its name in one form at the top of the sheet, above the shapes rather than buried among them. Drag the sheet's grab bar down to park it out of the way, or close it with the **X**.
+- **Double-click a box** — or press `Enter` with it selected — to rename it in place.
+- **Drag a box onto a line** to move it into that line: `A → B` becomes `A → this → B`, and the chain it came from closes up behind it. Drop it on another box to move it beside that one, inside a group's box to put it in that group, or outside one to take it out.
+- **Point at a line** and it brightens. A drawn line is a hair of ink, so each one carries a wide invisible copy of itself: a click, a hover and a drop all land anywhere along it rather than only on the ink. **Select** one and both its ends become handles: drag either onto a different box to point it somewhere else.
+- **Right-click anything** for the same actions in words, plus duplicate, flip a line, take a box out of its chain, and everything to do with groups: put a box in a new one, move it to another, take it out, rename the group, or remove the group and keep the boxes.
+- **Delete** removes whatever is selected. `Ctrl+Z` / `Cmd+Z` steps back inside the sheet, and `Ctrl+Shift+Z` or `Ctrl+Y` steps forward — separate from the document's own undo, which only sees the finished diagram.
+
+A line at the top of the pane says what the thing under your pointer is for, and what letting go of a drag would do.
+
+### Which way it runs
+
+A chart has one direction, and the first box is what decides it: while there is only one box it carries **four** + handles, and the one you take sets the chart running that way. From the second box on it carries **two** — the next step and the one before — so nothing can spin a settled diagram round by accident. **Flow** at the top of the sheet turns it after that.
+
+### Where the boxes go
+
+**Nothing about position is stored in your document**, so Mermaid lays the diagram out fresh every time. Dragging a box still moves it under your pointer and still means something — it changes where the box sits in the order — but it settles back into place on release rather than staying where you dropped it. Since Mermaid does the placing here and in the page, what you see is what the document will draw.
+
+The canvas fits the diagram when it opens and centers it. Drag empty space to move it — any diagram, not only one too big for the pane, so a picture can be pushed out from under the picker — and use the zoom buttons or `Ctrl` + scroll. They are the same lens, frame and lens buttons a [drawn diagram](01-rendering.md#mermaid-diagrams) carries in the page, and the middle one puts it back where it started.
+
+The sheet is the whole window, so its header stands in for the app bar while it is open: drag empty space along it to move the window, double-click to maximize.
+
+### Export
+
+**Export** at the top of the sheet writes the diagram out as a file of its own. It never touches the document you opened it from — Save is still the only thing that writes into the page — and it asks where the file goes: on Windows the save window offers Markdown, PNG, WebP, PDF and JPEG and the ending on the name you give is the format it writes, and on a Mac a short menu asks first, since that window shows none of them. **The name you type is the last word on both.** Pick one format and then type an ending for another and you get the one you typed; the format picked before the window only decides the name it suggests. Markdown answers to `.md`, `.markdown` and `.mdown`, and a name with no ending at all comes out `.md`. Not `.mdc`: Leaftext [opens](03-library.md#file-types) a Cursor rule, and what this window writes is an ordinary document with no field block, so a rule is never what comes out of it. An ending it does not write — `.svg`, say — writes nothing and says which five it does. A quiet note in the bottom-right corner names the file when it is written, and the name is a press that opens it. The same button is in the corner of every [drawn diagram](01-rendering.md#mermaid-diagrams) in a page, with no need to open this sheet and with the padlock shut.
+
+- **Markdown** — the Mermaid text in a `mermaid` fence, as a document of its own.
+- **PNG** — the drawing as a picture, at twice life size, on the page color behind it. The page hands the host raw pixels and the host writes the file.
+- **WebP** — the same picture at about half the file, which is what a chat, a slide or a web page wants. The page writes this one itself and hands over finished bytes. It is lossy, and a drawing over 16,383 pixels a side is more than the format holds, so that one is refused out loud and the PNG row takes it.
+- **PDF** — the drawing printed on a page of its own, at its own size, so the lines and the lettering stay sharp however far you zoom in. That is what a slide, a projector or a print wants. What gets printed is a freshly drawn copy, the same one the picture rows use, so a diagram you have zoomed or dragged still comes out whole.
+- **JPEG** — the same picture again, for anything that will not take a WebP: an older presentation program, an upload form that lists `.jpg` and nothing else. It is the biggest of the three pictures on a drawing and the only lossy one that shows it, so pick it for reach rather than for size. Either spelling of the ending works, `.jpg` or `.jpeg`, and a drawing over 65,500 pixels a side is more than this window can encode, so that one is refused out loud and the PNG row takes it.
+
+There is no SVG. Mermaid's SVG is a web page in an SVG's clothing — a stylesheet keyed to a generated id, labels that are really HTML, a font list full of CSS keywords no font is named after — and drawing programs read those as instructions they cannot follow.
+
+### What it can draw
+
+The canvas models the whole of Mermaid's flowchart language:
+
+- **Forty-seven shapes** — the fourteen the brackets spell, and the thirty-three only `A@{ shape: … }` can reach. The picker groups them by what they are for and hovering one says what it means. Both spellings are read, along with every other name Mermaid answers to for a shape, and a box is written back the shorter of its two ways.
+- **Connectors** — solid, dotted, thick or invisible, with an arrow, nothing, a circle or a cross at the end, or the same at both ends. Any of them can carry a label, be stretched to push a box further down the layout (`A ---> B`), be given a name, and be animated. A line can leave a box and come straight back to it, drawn as an arc over the box, and it selects, takes a label and deletes like any other.
+- **Subgraphs** — nesting, a `direction` of their own, and arrows pointing at the group itself. A box says which group it is in, so reordering never moves it out of one.
+- **Labels** — quoted, unquoted, with Markdown inside the quotes, and broken across two lines.
+- **Color** — `classDef`, `class`, `:::name`, `style` and `linkStyle` are read onto the box or the line they paint and written back off it, so deleting a box takes its color with it. The canvas has no color picker; it carries what your diagram already says.
+- **A link, an icon or a picture on a box** — a selected box has a field for each. The link is where clicking the box goes, written back as `click A "…"`; the icon is one of the app's own drawings by name (`leaf:back`); the picture is a file beside the document or an address. A box carrying a link wears a dotted ring on the canvas, because a link is the one of the three that shows nothing.
+- **Front matter, `%%{init}%%` directives and comments** written in the block are carried through a save untouched.
+
+### What it refuses
+
+The canvas fails closed: a diagram it cannot fully model opens with the canvas switched off, and the **text pane still edits it normally**. It never quietly drops the half it did not understand, and one unmodeled line switches the canvas off for the whole diagram rather than half of it. One thing does that:
+
+| In the diagram | Example |
+| --- | --- |
+| A box given a size or a place of its own | `A@{ shape: rect, w: 40, h: 20 }`, `A@{ pos: "t" }` |
+
+The canvas does not keep a layout, so a save would drop those two silently. `click A call fn()` is the other thing it will not act on: it is read, written back, and does nothing — the page renders diagrams at Mermaid's strict level with no `unsafe-eval`, so a document cannot name a function inside the app and have it run. When the canvas does switch off it names the line that stopped it and what on that line did, rather than leaving you to find it.
+
+**Every other kind of Mermaid diagram** — sequence, class, state, pie, Gantt and the rest — opens the same sheet as a **live preview** beside its text: drawn as you type, pannable and zoomable, but without handles, because the canvas draws flowcharts. Export works on all of them.
+
+> [!NOTE]
+> Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, every box declared on its own line, and each shape spelled the shorter of its two ways. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied. The sheet says so above the text pane.
+
+## Working in the source
+
+### Code view
+
+![The code view showing a Markdown file as raw source: line numbers down the left, headings and list markers colored in the theme's own syntax colors, and the editor's minimap rail standing on the window chrome at the right](../../imgs/code-view.png)
+
+The toggle is the code-brackets button on the [floating toolbar](02-navigation.md#the-floating-toolbar) under the page, beside reading and the [graph](03-library.md#graph). Click it and the rendered page is replaced by the file's raw source; click the reading button to come back.
+
+Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
+
+- The source is colored in the active [theme](06-themes.md#tokens)'s own syntax colors, so the code view looks like the rest of the app rather than like a foreign editor dropped into it: headings and list markers in the keyword color and bold, bold and italic text at their real weight and slant, inline and fenced code in the string color, links in the link color, block quotes in the comment color. [HTML](01-rendering.md#html-files) and [XML](01-rendering.md#xml) files show their tags and attribute names in their own colors, and a [YAML](01-rendering.md#data-files-json-and-yaml) file its keys, values and punctuation. A [JSON](01-rendering.md#data-files-json-and-yaml) file is colored the same way YAML is — the same color for a key in both, because they sit in the same view — and its `//` and `/* */` comments are colored too, even though JSON has no comments: a file carrying one is exactly the file the reading view refuses to parse, so this is where its author lands. The editor carries grammars for those five and no others, so every other format Leaftext reads opens here as uncolored text — raw [email](01-rendering.md#email-eml), [plain text](01-rendering.md#plain-text-files), [INI](01-rendering.md#ini-files), and every [source file](01-rendering.md#source-files), which the reading view does color. They all still edit, wrap, and get the rail and the line numbers. Switching theme or flipping light/dark re-colors the open source in place.
+- **A color carries a small square of itself**, drawn in the line immediately before the value, so a palette can be read as colors rather than as six characters at a time. Hex in its three-, four-, six- and eight-digit forms, and `rgb()`, `rgba()`, `hsl()` and `hsla()` written with commas or with spaces. Two things deliberately draw nothing: a word that happens to name a color, because "red", "gold" and "orange" are ordinary English and a square beside every one of them in prose is noise; and a three- or four-digit hex made only of digits, because `#123` in a Markdown file is an [issue reference](01-rendering.md#github-references). The square is a mark, not a button — there is no color picker behind it, and a value is changed by typing it.
+- Long lines wrap instead of scrolling sideways, and the gutter numbers *source* lines — a wrapped line keeps one number, pinned to its first row. The gutter widens to fit the highest number in the file, and the numbers stand clear of the page's left border rather than against it.
+- **Where it cannot be opened, it says so and gives the document back.** The editor is brought up the first time you ask for the source, and if that fails the app says the source view could not be opened and puts you back on the document you were reading, at the place you were reading it, rather than on an empty page. Pressing the button again is a fresh attempt rather than the same refusal.
+- The rail on the right is the editor's own [minimap](04-minimap.md#the-code-views-minimap): a scaled drawing of the source, with the same viewport box the reading view's rail uses. Drag the box or click the rail to move. It stands on the window's textured chrome, not on the page — the page's right border is the line between them.
+- Toggling keeps your place: the code view opens on the source line of the block you were reading, and toggling back lands the reading view on that same block. Switching to another tab and back does too — a tab left in the code view comes back in the code view, scrolled to where you left it.
+- **Toggling back and forth stays put.** Working out where you are in the other view can only be approximate — the two views wrap the same file to different heights, so a position has to be rounded to the nearest block or line, and rounding the same place twice does not return it unchanged. So when you toggle away and straight back without scrolling in between, the view you return to takes back the exact position it handed over, rather than a position worked out a second time. Scroll while you are there and the block-for-line landing takes over again, which is what you want then.
+
+### Editing the source
+
+The code view is a real editor surface: unlock it with the [padlock](#the-padlock), then click anywhere and type. It is Monaco — the editor Visual Studio Code is built on — compiled into the app rather than fetched from anywhere, and loaded the first time you open the source view. That first toggle spends a moment on the spinner; every one after it is immediate.
+
+- Locked, it still scrolls, selects and copies — it only refuses the typing, and says so in the corner rather than letting the keystroke vanish.
+- Selection, caret movement, undo and redo (`Ctrl+Z` / `Cmd+Z`, `Ctrl+Y` / `Cmd+Shift+Z`), clipboard (`Ctrl+C` / `X` / `V`), and your platform's IME are the editor's own. `Tab` indents at the caret rather than moving focus.
+- Color follows your typing: the source is tokenized as you go, so a construct takes its color the moment you finish typing it.
+- A multi-megabyte file types and scrolls like a short one, because only the lines on screen are ever drawn. Earlier versions carried a hand-built surface to manage that; the editor does it now.
+- What reaches the host is the edit, not the file: the offset, how much was removed, and what was typed. Sending a multi-megabyte buffer on every pause in typing cost a fifth of a second of it. The message carries the buffer's new length too, so if the host's copy ever disagreed it would ask for the whole text again rather than splice into a buffer it no longer understood.
+- Each tab keeps its own edit buffer: switching tabs, toggling back to the reading view, or closing the window never loses unsaved work. Closing carries the words into the [saved session](05-settings.md#example) and the next launch puts them back, with one press of undo standing between them and the file as you last saved it. A [new document](#new-document) that never got a file comes back the same way, and its one press of undo takes it back to the empty page it started as. Where the file has gone from the disk in the meantime, the words come back as a note with no file under the name it had, undo still standing between them and that file as you last saved it, and nothing is written to the old place unless you choose it. Following a link out of the document you were typing in keeps the buffer too — press Back and the words are there again — and closing the window in that state brings the tab back on the document holding the words rather than on the page it had walked to.
+- The reading view renders the *buffer*, not the disk — toggle back before saving and you see your edits rendered.
+
+### Pinned headings
+
+![The Markdown code view scrolled into a subsection, with two heading rows pinned at the top edge — the parent heading above the current one, each showing its own line number and syntax colors](../../imgs/pinned-headings.png)
+
+Scroll a Markdown file in the [code view](#code-view) and the heading you are under stays at the top edge instead of scrolling away, so you can always see where you are.
+
+- A **deeper** heading stacks below the one above it: inside `## Why this exists` under `# Architectural opportunities`, both are pinned, in that order — the trail down to where you are. A heading at the **same level or above** replaces the one it matches rather than stacking, so the trail never repeats itself. Five rows is the limit.
+- Each row is the source line itself — its own line number, its own syntax colors — so what is pinned reads exactly as it does in the file. As a section ends, its row is pushed up and off by the next heading arriving beneath it.
+- **Click a row to jump to it.** The heading lands where its row was standing, so the line you clicked does not move.
+- The rows sit above the page's top fade, with a soft dissolve of their own for the text sliding under them.
+- Markdown only. [XML, JSON, and YAML](01-rendering.md#xml) have no headings, and their structure is nesting rather than a trail.
+
+### Typing help
+
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link further down the file](../../imgs/typing-help.png)
+
+While you type Markdown in the code view, the editor can offer what Leaftext already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
+
+This is **IntelliSense** — the completion popup, hover card and squiggly underline [Monaco](#editing-the-source) brings from Visual Studio Code. Monaco draws them; Leaftext supplies the answers, and they are your notes rather than code. The docs call it *typing help* because that is what it does for prose.
+
+- **Type `[[`** and a popup lists your notes — the whole vault, or the folder beside the document. A note's [other names](03-library.md#other-names) are listed too, each saying which file it opens. Keep typing to filter; pick one and the link closes itself.
+- **Type `[[Note#`** for that note's headings, or **`](#`** for the open document's own anchors. Anchors are the exact ones the [reading view](01-rendering.md#headings) gives its headings, so a completed link always lands.
+- **Hover a `[[wikilink]]`** for a card with the note's opening lines.
+- **Broken links get a wavy underline** — a moment after you stop typing, links whose file does not exist and wiki names no note answers to are marked, with a plain-words message on hover. The same underline says when two notes answer to one name, and when a note lists more [other names](03-library.md#other-names) than are used.
+
+It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-floating-toolbar) — in the recess above the code view's own button, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
+
+## Saving
+
+### Save
+
+Saving is always explicit.
+
+- With no unsaved changes there is no save control at all. From your first keystroke, a green **Save** button appears on the [floating toolbar](02-navigation.md#the-floating-toolbar) without moving the view buttons beside it, and the tab shows a dot beside its name — typing in the page counts, with nothing clicked out of. Take that typing back to where it started and both go out again.
+- Click **Save** or press `Ctrl+S` (`Cmd+S` on macOS) to write the buffer to disk. Whatever you are typing goes in first, so what is written is the words on screen. The button and dot clear on success.
+- Where the disk refuses the write — a read-only file, a folder that has gone, another program holding the file — the message in the corner names the file, says it was not saved and why, and says your edits are still here. The **Save** button and the tab's dot stay up, because nothing was lost. A refusal that arrives with no reason attached still raises that message, saying no reason was given, so a save that did not happen is never a silent one.
+- A [new document](#new-document) has no file yet, so its first save asks where to put it before writing anything — and on a Mac which format, since that dialog shows none. That menu opens under the **Save** button whichever way you asked, so the keyboard shortcut and the button land in the same place.
+- Closing the window does not save, and does not throw the edits away either: they travel in the [saved session](05-settings.md#example) and are back, with the dot, at the next launch. Only the close carries them — a window left open writes nothing of what you have typed.
+- A save does not bounce the view: the file watcher recognizes the app's own write and skips the [live reload](02-navigation.md#reload) it would otherwise trigger.
+- A file is written in the [encoding it was read in](01-rendering.md#file-encodings). A UTF-16 document stays UTF-16; a file with no byte order mark does not gain one.
+
+### When the app cannot write it
+
+A file can go while its document is open — deleted, its folder moved, a drive unplugged, a permission changed. The first thing you type after that cannot be written, and the app says so rather than letting it look as though it worked.
+
+- **A message in the corner names the file and says nothing was changed**, with the reason beside it. Your words stay on screen: they are the only copy left, and taking them away would lose them.
+- **The dot on the tab, Save and Undo all go down**, because the app is holding nothing for that document — a lit Save button over a file nothing reached is a promise there is nothing behind.
+- **Pressing Save then says the same thing** rather than answering with silence.
+- **A checkbox says it too, and comes back off.** A box the app cannot write raises the message the same way, in a list or in a table cell — and the tick the browser drew the moment you clicked is taken back off, so the box is not left ticked beside a message saying nothing was changed. A tick the app *did* take and only failed to write to disk keeps its tick instead: that change is real and unsaved, so the box stays on, the dot and Save stay up, and the message says it was changed and not saved.
+- **[The flowchart editor](#the-flowchart-editor) keeps the drawing.** Its Save waits for the app to say the write landed, so a refused one leaves the sheet open with the diagram in it and the message beside it, instead of closing over minutes of work.
+- **[The image box](#images) keeps the address you typed.** An address is the only copy of itself while it sits in that field, so pressing `Enter` waits for the app to say the write landed; a refused one puts the box back on the same line with the address still in it and the message beside it. Where the line it was going onto has gone as well, the message carries the address itself, so it is still there to copy. A picture chosen through the file picker needs none of this — the picker opens again.
+
+### External changes
+
+The [live reload](02-navigation.md#reload) watcher keeps working alongside editing:
+
+- With a **clean** buffer, an outside change reloads as usual — and if the code view is open, the source refreshes at the place you were reading rather than at line one.
+- With a **clean** buffer on a tab that is **not** the one in front, the change is picked up the moment you switch back to it, in the reading view and the source view alike.
+- A **[Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files)** takes the whole archive with it when it reloads, not only the part on screen, so a save after an outside change writes the file that arrived rather than the one it replaced.
+- A **[new document](#new-document)** has no file, so no change on disk is a change to it — including a change to a file of the same name in the folder Leaftext was started in.
+- With **unsaved edits**, an outside change never clobbers the buffer: your edits stay, and saving writes them over the file. Typing in the page is an unsaved edit as you type it, so a change landing mid-sentence leaves your words alone.
+
+## Formats
+
+The [code view](#code-view) edits every format Leaftext opens, as the whole-file source editor: Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`), [HTML](01-rendering.md#html-files) (`.html`, `.htm`), [XML](01-rendering.md#xml) (`.xml`), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) (`.json`, `.yaml`, `.yml`), [plain text](01-rendering.md#plain-text-files) (`.txt`), [INI](01-rendering.md#ini-files) (`.ini`), [email](01-rendering.md#email-eml) (`.eml`, `.mht`, `.mhtml`), and every [source file](01-rendering.md#source-files). A [Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files) (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`) is the one exception to *whole-file*: it is a zip rather than one text file, so the code view shows the XML of the part the page is anchored to, and a save rewrites that part and copies every other one byte for byte.
+
+What the *reading view* offers differs by format, because a block can only be edited in place when the app knows the exact bytes it came from:
+
+| Format | In the reading view |
+|---|---|
+| Markdown text blocks | Edit WYSIWYG — type in the rendered page, styling intact. [Block gutter](#the-block-gutter) and [format bar](#the-format-bar) |
+| Markdown blocks that cannot round-trip losslessly | Edit their exact source in place. [Block gutter](#the-block-gutter) |
+| Markdown blocks the page never draws — an HTML comment, a `<script>` or `<style>` block | Nothing is drawn for them, so there is nothing to click; edited in the code view. Every other block in the document stays editable around them |
+| HTML | Read-only, and the page carries no padlock: sanitizing rewrites the markup before it is drawn, so no block can prove the bytes it came from. Edited in the code view |
+| XML blocks whose drawn words are the file's own bytes | Type on the words where they are drawn; the edit is spliced between the element's own tags. A comment is the same, between its `<!--` marks. [Block gutter](#the-block-gutter) |
+| An XML table's cells and column headings | Type on any value whose words are the file's own bytes, including one of several joined by a comma and one drawn from inside a tag; a column heading opens onto the tag itself and renames that element in every record |
+| A value written inside an XML tag | Type on the words where they are drawn, including the lone value an empty element is drawn by; only the bytes between that value's quotes are written, and the quote that closes it is refused |
+| Every other XML block | Edit its exact source in place, with a line saying why the markup appeared. [Block gutter](#the-block-gutter) |
+| An XML field name, a section heading with no element behind it, and a value the page cannot place | Read-only, and a press says why; edited in the code view |
+| JSON values | Edit their exact source in place; names stay read-only because their humanized labels are not the file's bytes |
+| YAML plain and quoted values | Edit their exact source in place — a quoted one with its quotes, the way a JSON string opens |
+| YAML lists, tables, block scalars, and a quoted value the file spells another way | Read-only, and a press says why; edited in the code view |
+| YAML aliases (`*name`) and keys with no value | Read-only, and a press says why; edited in the code view |
+| INI values, key names and section headings | Edit their exact source in place — a key opens without the spacing around it, and a section opens without its brackets |
+| A paragraph, heading or list item in a Word or OpenDocument text file | Edit its exact source in place, spliced into the part it came from. Everything the app never read — styles, themes, comments, tracked changes, charts, macros — is copied across untouched |
+| A cell in a spreadsheet | Type on the words where they are drawn. Excel keeps almost every cell's text in one shared table, so what is written is the cell itself carrying its own words, and a cell that shared that text with another one stops sharing it while the other reads what it always read |
+| A slide's text, and any block in a workbook or deck beyond the first sheet or slide | Read-only in the page; edited in the code view, which shows the part the page is anchored to |
+| Email lines and paragraphs the page can write back byte for byte | Type on the words where they are drawn |
+| Every other part of a message — a packed body, a folded or coded header line | Read-only in the page, and a press says so; edited in the code view |
+
+### Editing data files
+
+A data file is edited as *source*, never as rendered text. Click a JSON value in the reading view and you get the real thing — `"0.1.380"` with its quotes — which is what keeps an edit from turning a string into something the file no longer parses as.
+
+The big heading is one of those values wherever the file names its own title with a root `title` or `name` key. That key is left out of the body, so the heading is the only place its value appears, and pressing it opens that value's source exactly as pressing a field does. A YAML title written in quotes opens the same way, quotes and all; one written as a block scalar stays read-only, like the value itself. A heading standing in for a file that names no title of its own is the file's name instead — pressing that one [renames the file](#renaming-from-the-heading).
+
+That only works where the byte range is certain, so Leaftext offers it only where it is:
+
+- **JSON values** — everywhere. The reader knows precisely where each value begins and ends, so every value is click-to-edit. A name stays read-only because the humanized label on the page is not the file's own bytes.
+- **[INI](01-rendering.md#ini-files)** — every drawn value, key name and section heading. The reader holds the exact bytes after the `=`, around the key without its spacing, and inside the section's brackets; nothing is unquoted, unescaped, joined or relabeled on the way to the page, so what you see is what the file says. A key with nothing after it is not drawn, so there is nothing there to press.
+- **YAML plain and quoted values** — where proven. A scalar's source text is checked character-for-character against the value it parsed to — for a quoted one, against the value with its own quotes around it; when they match, the range is exact and the value is editable. The quotes are part of what opens, exactly as they are for a JSON string.
+- **Everything else in YAML** — read-only in the reading view. A block scalar (`|`, `>`) carries an indicator and an indent its value does not; a quoted value holding an escape, a doubled quote, or a run of lines is spelled differently in the file from the value it means; and nothing can prove where a YAML list or mapping *ends* — its closing position points at whatever token came next. Rather than splice an edit over a guessed range and corrupt the file, Leaftext offers no inline editor and leaves these to the code view.
+- **An alias, and a key with nothing after it** — read-only for the same reason. `b: *x` shows the value written up at `&x`, so the only text an edit could replace is on the anchor's line, not the alias's. And a key with no value has no text at all: typing into the gap after `key:` would write `key:x`, which is one scalar rather than a key and a value.
+- **A press on any of those says why.** Rather than answering with nothing, the page raises a line naming the source view: that the file does not say where a list or table ends, that a JSON or YAML heading's words come from the file, that a JSON or YAML name comes from the file, or that a value is written a way the page cannot place. A value written as two quotes with nothing between them is not drawn at all, the way every empty value is, so there is nothing there to press.
+- **No [block gutter](#the-block-gutter) in any data file.** Its ranges name bytes that can be typed over, not standalone pieces of the surrounding syntax, so dragging or inserting around one would split a key from its value or land outside the syntax that gives it meaning.
+
+> [!NOTE]
+> This is a deliberate floor, not a gap to work around: a range that is off by one byte writes an edit into the wrong place silently. Where the range cannot be proved, the code view edits the file with the full source in front of you.
+
+## Next
+
+- [Rendering](01-rendering.md) for what the saved Markdown renders as
+- [Navigation](02-navigation.md) for tabs, history, and live reload
+- [Minimap](04-minimap.md#the-code-views-minimap) for the rail beside the source

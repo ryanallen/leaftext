@@ -1,0 +1,187 @@
+# Arabica
+
+![Arabica — the same document in the light and dark variants](../imgs/themes/arabica.png)
+
+**Family ID:** `arabica`
+
+**Pack:** `remix`
+
+## Fonts
+
+| Role    | Stack |
+| ------- | ----- |
+| Heading | `"Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif` |
+| Body    | `"Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
+| Code    | `"JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
+| Google  | `https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Rubik:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap` |
+
+## Light
+
+| Token                                   | Value                              |
+| --------------------------------------- | ---------------------------------- |
+| background                              | `#f5ece0`                          |
+| foreground                              | `#3d2f26`                          |
+| surface                                 | `#ece0d0`                          |
+| surface-elevated                        | `#faf4ec`                          |
+| surface-muted                           | `#ece0d0`                          |
+| surface-sunken                          | `#e2d3c0`                          |
+| border                                  | `#dbcab4`                          |
+| border-strong                           | `#c0a888`                          |
+| muted-foreground                        | `#6f5847`                          |
+| primary                                 | `#8839ef`                          |
+| primary-foreground                      | `#ffffff`                          |
+| accent                                  | `#8839ef`                          |
+| accent-foreground                       | `#ffffff`                          |
+| accent-ink                              | `#6e12e5`                          |
+| danger                                  | `#c0392b`                          |
+| danger-foreground                       | `#ffffff`                          |
+| warning                                 | `#8a5a12`                          |
+| success                                 | `#46671f`                          |
+| success-foreground                      | `#ffffff`                          |
+| done                                    | `#245f50`                          |
+| link                                    | `#8839ef`                          |
+| link-hover                              | `#7526d6`                          |
+| editor-inline-code-background           | `#ece0d0`                          |
+| editor-inline-code-foreground           | `#3d2f26`                          |
+| editor-code-background                  | `#ece0d0`                          |
+| editor-code-foreground                  | `#3d2f26`                          |
+| editor-code-border                      | `#dbcab4`                          |
+| editor-code-selection-background        | `#ead6bd`                          |
+| editor-code-selection-foreground        | `#3d2f26`                          |
+| markdown-background                     | `#f5ece0`                          |
+| markdown-foreground                     | `#3d2f26`                          |
+| markdown-heading                        | `#8839ef`                          |
+| markdown-heading-2                      | `#4a3627`                          |
+| markdown-heading-3                      | `#b5442f`                          |
+| markdown-heading-4                      | `#8a5a12`                          |
+| markdown-heading-5                      | `#46671f`                          |
+| markdown-heading-6                      | `#6f5847`                          |
+| markdown-rule                           | `#dbcab4`                          |
+| markdown-link                           | `#8839ef`                          |
+| markdown-blockquote-border              | `#8839ef`                          |
+| markdown-blockquote-foreground          | `#6f5847`                          |
+| markdown-alert-note                     | `#35529c`                          |
+| markdown-alert-tip                      | `#46671f`                          |
+| markdown-alert-important                | `#8839ef`                          |
+| markdown-alert-warning                  | `#8a5a12`                          |
+| markdown-alert-caution                  | `#b5442f`                          |
+| markdown-badge-background               | `#ece0d0`                          |
+| markdown-badge-foreground               | `#3d2f26`                          |
+| markdown-table-border                   | `#dbcab4`                          |
+| markdown-thematic-break                 | `#dbcab4`                          |
+| markdown-math-inline-background         | `#ece0d0`                          |
+| markdown-keyboard-background            | `#f5ece0`                          |
+| markdown-keyboard-border                | `#c0a888`                          |
+| minimap-viewport-border                 | `#8839ef`                          |
+| minimap-viewport-background             | `rgba(136, 57, 239, 0.14)`         |
+| navigation-button-hover-background      | `#9d5cf0`                          |
+| navigation-button-disabled-background   | `#ece0d0`                          |
+| navigation-button-disabled-foreground   | `#a8927b`                          |
+| navigation-recent-border                | `#dbcab4`                          |
+| navigation-recent-item-foreground       | `#3d2f26`                          |
+| navigation-recent-item-hover-foreground | `#8839ef`                          |
+| focus-ring                              | `#8839ef`                          |
+| focus-selection-background              | `#ead6bd`                          |
+| focus-selection-foreground              | `#3d2f26`                          |
+| syntax-background                       | `#ece0d0`                          |
+| syntax-foreground                       | `#3d2f26`                          |
+| syntax-comment                          | `#6f5847`                          |
+| syntax-keyword                          | `#7526d6`                          |
+| syntax-string                           | `#46671f`                          |
+| syntax-number                           | `#7d5010`                          |
+| syntax-function                         | `#35529c`                          |
+| syntax-variable                         | `#3d2f26`                          |
+| syntax-type                             | `#245f50`                          |
+| syntax-operator                         | `#9a2f57`                          |
+| syntax-punctuation                      | `#6f5847`                          |
+| syntax-inserted                         | `#2f6b1a`                          |
+| syntax-inserted-background              | `#dceccd`                          |
+| syntax-deleted                          | `#a83226`                          |
+| syntax-deleted-background               | `#f4ddd6`                          |
+| syntax-changed                          | `#7d5a12`                          |
+| syntax-changed-background               | `#f1e6c8`                          |
+
+## Dark
+
+| Token                                   | Value                            |
+| --------------------------------------- | -------------------------------- |
+| background                              | `#241c17`                        |
+| foreground                              | `#ece0d2`                        |
+| surface                                 | `#1d1611`                        |
+| surface-elevated                        | `#33271f`                        |
+| surface-muted                           | `#1d1611`                        |
+| surface-sunken                          | `#160f0a`                        |
+| border                                  | `#3a2d23`                        |
+| border-strong                           | `#55463a`                        |
+| muted-foreground                        | `#b09a86`                        |
+| primary                                 | `#cba6f7`                        |
+| primary-foreground                      | `#241c17`                        |
+| accent                                  | `#cba6f7`                        |
+| accent-foreground                       | `#241c17`                        |
+| danger                                  | `#e8917f`                        |
+| danger-foreground                       | `#241c17`                        |
+| warning                                 | `#e8c07a`                        |
+| success                                 | `#b7d38a`                        |
+| success-foreground                      | `#241c17`                        |
+| done                                    | `#8fd0bc`                        |
+| link                                    | `#cba6f7`                        |
+| link-hover                              | `#b4befe`                        |
+| editor-inline-code-background           | `#33271f`                        |
+| editor-inline-code-foreground           | `#ece0d2`                        |
+| editor-code-background                  | `#1d1611`                        |
+| editor-code-foreground                  | `#ece0d2`                        |
+| editor-code-border                      | `#3a2d23`                        |
+| editor-code-selection-background        | `#4a3a2e`                        |
+| editor-code-selection-foreground        | `#ece0d2`                        |
+| markdown-background                     | `#241c17`                        |
+| markdown-foreground                     | `#ece0d2`                        |
+| markdown-heading                        | `#cba6f7`                        |
+| markdown-heading-2                      | `#fbf3ea`                        |
+| markdown-heading-3                      | `#e8917f`                        |
+| markdown-heading-4                      | `#e8c07a`                        |
+| markdown-heading-5                      | `#b7d38a`                        |
+| markdown-heading-6                      | `#b09a86`                        |
+| markdown-rule                           | `#3a2d23`                        |
+| markdown-link                           | `#cba6f7`                        |
+| markdown-blockquote-border              | `#cba6f7`                        |
+| markdown-blockquote-foreground          | `#c9b6a4`                        |
+| markdown-alert-note                     | `#8fb3e6`                        |
+| markdown-alert-tip                      | `#b7d38a`                        |
+| markdown-alert-important                | `#cba6f7`                        |
+| markdown-alert-warning                  | `#e8c07a`                        |
+| markdown-alert-caution                  | `#e8917f`                        |
+| markdown-badge-background               | `#33271f`                        |
+| markdown-badge-foreground               | `#ece0d2`                        |
+| markdown-table-border                   | `#3a2d23`                        |
+| markdown-thematic-break                 | `#3a2d23`                        |
+| markdown-math-inline-background         | `#33271f`                        |
+| markdown-keyboard-background            | `#33271f`                        |
+| markdown-keyboard-border                | `#55463a`                        |
+| minimap-viewport-border                 | `#cba6f7`                        |
+| minimap-viewport-background             | `rgba(203, 166, 247, 0.14)`      |
+| navigation-button-hover-background      | `#b4befe`                        |
+| navigation-button-disabled-background   | `#33271f`                        |
+| navigation-button-disabled-foreground   | `#6b5949`                        |
+| navigation-recent-border                | `#3a2d23`                        |
+| navigation-recent-item-foreground       | `#ece0d2`                        |
+| navigation-recent-item-hover-foreground | `#cba6f7`                        |
+| focus-ring                              | `#cba6f7`                        |
+| focus-selection-background              | `#4a3a2e`                        |
+| focus-selection-foreground              | `#ece0d2`                        |
+| syntax-background                       | `#1d1611`                        |
+| syntax-foreground                       | `#ece0d2`                        |
+| syntax-comment                          | `#a1846e`                        |
+| syntax-keyword                          | `#cba6f7`                        |
+| syntax-string                           | `#b7d38a`                        |
+| syntax-number                           | `#e8b57a`                        |
+| syntax-function                         | `#8fb3e6`                        |
+| syntax-variable                         | `#ece0d2`                        |
+| syntax-type                             | `#e8c07a`                        |
+| syntax-operator                         | `#f0b8d8`                        |
+| syntax-punctuation                      | `#c9b6a4`                        |
+| syntax-inserted                         | `#b7d38a`                        |
+| syntax-inserted-background              | `#24331e`                        |
+| syntax-deleted                          | `#e8917f`                        |
+| syntax-deleted-background               | `#3a211b`                        |
+| syntax-changed                          | `#e8c07a`                        |
+| syntax-changed-background               | `#3a3018`                        |

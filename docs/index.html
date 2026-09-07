@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Leaftext — Documentation</title>
+    <meta name="description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
+    <!-- Canonical + alternate are updated per page by docs.js as the route
+         changes; these are the defaults for the docs home. -->
+    <link rel="canonical" href="https://leaftext.com/docs/" />
+    <!-- The Markdown this page renders. docs.js repoints this one at the current
+         route's own file as the reader navigates. -->
+    <link rel="alternate" type="text/markdown" href="README.md" />
+    <!-- The two AI indexes, plus the full list of Markdown addresses — a fetcher
+         that lands here reaches every page from these three. -->
+    <link rel="alternate" type="text/plain" href="../llms.txt" title="AI index — every page as Markdown" />
+    <link rel="alternate" type="text/plain" href="../llms-full.txt" title="AI index, with a description per page" />
+    <link rel="alternate" type="text/plain" href="../sitemap-md.txt" title="Every page's Markdown address" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0d1117" />
+    <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/leaf-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Leaftext" />
+    <meta property="og:title" content="Leaftext — Documentation" />
+    <meta property="og:description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
+    <meta property="og:url" content="https://leaftext.com/docs/" />
+    <meta property="og:image" content="https://leaftext.com/imgs/leaftext.png" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Leaftext — Documentation" />
+    <meta name="twitter:description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
+    <meta name="twitter:image" content="https://leaftext.com/imgs/leaftext.png" />
+    <!-- Same bundled Noto fonts, KaTeX stylesheet, and reader look as the root
+         site. They live one level up under site/, so the docs page reuses them
+         verbatim — no second copy. -->
+    <link rel="stylesheet" href="../site/noto-fonts.css" />
+    <link rel="stylesheet" href="../site/vendor/katex/katex.min.css" />
+    <!-- Where the app's own renderer is served from, and the stylesheet it draws
+         a document with. Both are built when this site publishes and never
+         committed; another site can name this one here instead. -->
+    <meta name="leaftext-renderer" content="/assets/leaftext/" />
+    <link rel="stylesheet" href="/assets/leaftext/leaftext.css" />
+    <link rel="stylesheet" href="../site/styles.css" />
+    <!-- Docs-only chrome: the left navigation sidebar and the page pager. -->
+    <link rel="stylesheet" href="docs.css" />
+    <!-- Apply the saved theme and panel toggles before first paint (no flash).
+         Keys mirror ../site/settings.js; "System" resolves to the device theme. -->
+    <script>
+      (function () {
+        try {
+          var d = document.documentElement,
+            s = window.localStorage;
+          var m = s.getItem('leaf.theme') || 'system';
+          var t =
+            m === 'light' || m === 'dark'
+              ? m
+              : matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          d.dataset.theme = t;
+          // The document's own paint comes from the app's stylesheet, which keys on a theme family and an appearance.
+          d.dataset.leafTheme = 'github';
+          d.dataset.leafAppearance = t === 'light' ? 'light' : 'dark';
+          if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
+          if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';
+          if (s.getItem('leaf.speedReader') === '1') d.dataset.speedReader = 'true';
+          if (s.getItem('leaf.lineNumbers') !== '1') d.dataset.lineNumbers = 'off';
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <!-- docs.js fills the sidebar from its NAV table and the article from the
+         current doc page (chosen by the #/route in the URL). -->
+    <nav class="docs-sidebar" id="sidebar" aria-label="Documentation"></nav>
+    <main class="page">
+      <select class="docs-mobile-nav" id="mobileNav" aria-label="Documentation pages"></select>
+      <article class="markdown-body" id="content" tabindex="-1"></article>
+      <!-- The status line speaks only when something failed. It carries no waiting
+           text: a page that cannot say when it will finish should not promise
+           that it will. -->
+      <p class="status" id="status" hidden></p>
+      <!-- Nothing here is drawn when the script runs. Without it the page is
+           empty, so say where the text actually is. -->
+      <noscript>
+        <p class="status">
+          These pages are drawn from Markdown by a script. The full text of this one is
+          <a href="README.md">README.md</a>. Every page of the documentation as Markdown:
+          <a href="../sitemap-md.txt">sitemap-md.txt</a>, <a href="../llms.txt">llms.txt</a>,
+          <a href="../llms-full.txt">llms-full.txt</a>.
+        </p>
+      </noscript>
+    </main>
+    <!-- docs.js draws the document with the app's own renderer
+         (../site/leaftext-core.js) and builds the minimap (../site/minimap.js).
+         The Previous/Next strip is part of what the renderer draws, filled from
+         the sidebar's order. -->
+    <script type="module" src="docs.js"></script>
+  </body>
+</html>
