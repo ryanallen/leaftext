@@ -5212,7 +5212,8 @@ body.library-resizing button {
   --reader-toolbar-space: 0px;
   --reader-toolbar-edits: 0px;
 }
-body:has(#readerToolbar:not([hidden])) {
+/* An embedded host hides the bar with a rule, which :has() cannot see; a plain body rule cannot outrank this selector. */
+body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
   --reader-toolbar-space: 52px;
 }
 .reader-toolbar {
