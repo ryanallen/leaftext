@@ -23,6 +23,26 @@ name: Publish the site
 # Emptyguru rides on the result. It has no Rust and no app source, so its pages
 # fetch these same files across origins — which is why the paths are a table in
 # one script rather than written out here.
+#
+# **This file lives in both repositories, and the `if:` on the job below is what
+# makes it right in each.** The source is private and this deploy belongs to the
+# public one, so `build-renderer.yml` carries this file across with the rest of the
+# site; a push to the private repository's `main` therefore starts a run of it
+# there too. Guarded, that run is skipped before a runner is allocated: gray, no
+# minutes, and the list stays readable — where an unguarded one died at the bake
+# with no renderer to draw the front page with, 17 times in 15 hours, teaching
+# whoever watched it to ignore the color.
+#
+# Two other shapes were weighed. A `paths:` filter answers which files moved, not
+# which repository the job is in, so it cannot say this. Taking the file out of the
+# private tree is not open either: `check-published-source.mjs` reads it there to
+# prove the deploy's own scripts are on the public side, and the hand-over is what
+# puts it here — a file that has left cannot be carried.
+#
+# The address is written out rather than read from `env`, because a job-level `if:`
+# cannot see the `env` context at all; every other workflow keeps it in a
+# `PUBLIC_REPO` variable and `check-release-targets.mjs` holds the two build
+# workflows to that, this one excepted for exactly this reason.
 
 on:
   push:
@@ -46,6 +66,10 @@ concurrency:
 jobs:
   publish:
     name: Deploy the pages
+    # The site is this repository's; a run of this file anywhere else is skipped
+    # before a runner is allocated. Written out because a job-level if: cannot read
+    # the env context — see the header above.
+    if: github.repository == 'ryanallen/leaftext'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
