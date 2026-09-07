@@ -2231,6 +2231,7 @@
   --lt-icon-table: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M12 3v18M3 12h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-divider: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
   --lt-icon-comment: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-workflow: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='13' y='13' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-zoom-in: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M21 21l-4.35-4.35M8 11h6M11 8v6' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -2373,6 +2374,7 @@
   --lt-icon-table: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-table-2' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18' /%3E%3C/svg%3E");
   --lt-icon-image: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-image' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2' /%3E%3Ccircle cx='9' cy='9' r='2' /%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21' /%3E%3C/svg%3E");
   --lt-icon-divider: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-minus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M5 12h14' /%3E%3C/svg%3E");
+  --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
   --lt-icon-comment: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-message-square' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z' /%3E%3C/svg%3E");
   --lt-icon-workflow: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-workflow' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='8' height='8' x='3' y='3' rx='2' /%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4' /%3E%3Crect width='8' height='8' x='13' y='13' rx='2' /%3E%3C/svg%3E");
   --lt-icon-zoom-in: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-zoom-in' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='11' cy='11' r='8' /%3E%3Cline x1='21' x2='16.65' y1='21' y2='16.65' /%3E%3Cline x1='11' x2='11' y1='8' y2='14' /%3E%3Cline x1='8' x2='14' y1='11' y2='11' /%3E%3C/svg%3E");
@@ -2781,6 +2783,10 @@
 .lt-icon-divider {
   -webkit-mask-image: var(--lt-icon-divider);
   mask-image: var(--lt-icon-divider);
+}
+.lt-icon-tag {
+  -webkit-mask-image: var(--lt-icon-tag);
+  mask-image: var(--lt-icon-tag);
 }
 .lt-icon-comment {
   -webkit-mask-image: var(--lt-icon-comment);
@@ -6192,6 +6198,42 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body strong {
   font-weight: var(--lt-weight-600);
 }
+/* A badge: a state word an author writes as {green: Shipped}, drawn as a small outlined label so a status list can be scanned down its left edge instead of read. Outlined rather than filled or washed, because the role inks were tuned to sit just over 4.5:1 against the page and any tint under one puts it back below — the edge takes the same ink as the words, so the one pair the theme gate already proves is the only pair a badge makes. Sized in em so it follows the reader's own text rather than a fixed interface size. */
+/* Keyed on the app's own surface as well as on a document, because the two controls that offer a tone draw a real badge to say what the tone looks like, and they stand in the bar and the gutter rather than in the page. Scoped to the document alone, all five presses drew one word in the toolbar's own ink and a reader picking a color had nothing to look at. `:is()` takes its most specific arm, so the pair weighs exactly what the single key weighed. */
+:is(.document-body, .app-surface) .doc-badge {
+  display: inline-block;
+  border: var(--lt-stroke-1) solid currentColor;
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-markdown-background);
+  padding: 0 0.4em;
+  font-family: var(--app-font);
+  font-size: 0.8em;
+  font-weight: var(--lt-weight-600);
+  /* A badge can sit inside an italic run of a document. */
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
+  /* The words are a label, so a long one stays one badge rather than breaking across two lines. */
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+/* `.doc-badge` is the base a tag is drawn from as well, and the two differ in exactly the two things that carry meaning: a tag swaps the corner for `--lt-radius-pill` and takes the press that finds every note carrying it, because a pill says press me and a square says read me. Everything else — the box, the em sizing, the hairline edge in `currentColor`, the page behind it — is shared, so the pair reads as one family. The tag's own class is `tags`'s to ship; this rule is what it takes. */
+/* The four tones, each one a role color eleven families already set, so retinting a badge is editing a theme. Gray is a class of its own rather than the bare rule's color: the renderer then has one name to emit whether the author wrote the tone or left it out. A tag has no state, so it takes the gray tone: green is `--lt-success` and would say shipped about every subject somebody files under. */
+:is(.document-body, .app-surface) .doc-badge--green {
+  color: var(--lt-success);
+}
+:is(.document-body, .app-surface) .doc-badge--amber {
+  color: var(--lt-warning);
+}
+:is(.document-body, .app-surface) .doc-badge--red {
+  color: var(--lt-danger);
+}
+:is(.document-body, .app-surface) .doc-badge--gray {
+  color: var(--lt-muted-foreground);
+}
+/* The fifth tone is the theme's own action color rather than a fifth fixed color, so it is whatever the family the reader picked is recognized by and it moves when they change families. `primary-ink` rather than `primary`: the fill wants to be light enough to print dark words on it, and a badge is words on the page. */
+:is(.document-body, .app-surface) .doc-badge--primary {
+  color: var(--lt-primary-ink);
+}
 /* A highlight, washed the way a search match is washed in find.css — the warning role, which is the yellow-amber every family carries in both modes, so it lands beside a search hit (the accent) and an action (the primary) without being either. Left alone the browser paints a fixed yellow with black ink over it, which reads as a foreign object in every dark family. The words keep the body's own ink, so nothing has to be picked per family for them to stay readable. */
 .document-body mark {
   background-color: color-mix(in srgb, var(--lt-warning) 45%, transparent);
@@ -6473,6 +6515,27 @@ body:has(#readerToolbar:not([hidden])) {
 .document-body li > ol {
   margin: 0.25em 0 0;
 }
+/* A list whose item opens with a badge is a status list rather than prose, so it is drawn as one: the badge is lifted out of the flow into a column of its own on the left and the row's own indent is what places everything beside it. Lifted rather than laid out in a grid or a flex row, because a row is a title, a run of links and a paragraph — every one of them a child, and every child of a grid takes a cell of its own. Nothing here reaches an item the author did not open with a badge, so an ordinary list is never converted. */
+.document-body li:has(> .doc-badge:first-child) {
+  position: relative;
+  /* The badge is the marker. */
+  list-style: none;
+  /* Back onto the text column, out of the indent the marker was given. */
+  margin-left: -2em;
+  margin-top: 0;
+  padding: 0.5em 0 0.5em 11em;
+}
+/* One width for every badge in the column, so a badge that is a whole sentence — the `Conflicts with #205` case — leaves every title beside it on the same left edge. Over that width it wraps inside its own column rather than reaching into the row. */
+.document-body li:has(> .doc-badge:first-child) > .doc-badge:first-child {
+  position: absolute;
+  left: 0;
+  max-width: 10em;
+  white-space: normal;
+}
+/* A hairline between rows and none above the first, which is what makes a run of them read as a table of states. */
+.document-body li:has(> .doc-badge:first-child) + li:has(> .doc-badge:first-child) {
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
 /* Ordered lists follow the classic outline sequence by depth (I, A, 1, a, i) rather than restarting at decimal each level. */
 .document-body ol {
   list-style-type: upper-roman;
@@ -6626,6 +6689,19 @@ body:has(#readerToolbar:not([hidden])) {
 .block-gutter .block-insert-option:hover {
   color: var(--lt-accent-ink);
   border-color: var(--lt-accent, var(--lt-border));
+}
+/* A tone press in the plus's row is a word, not a mark, so it takes the shape of the badge it puts in rather than the circle every other option wears: the box grows to the word, the corner is the badge's own, and nothing is clipped or spilled at any of the four names. Its own rule for that reason — the circle beside it is drawn for a 24-unit mask and a word does not fit in one. */
+.block-gutter .block-insert-tone {
+  width: auto;
+  height: auto;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: none;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.block-gutter .block-insert-tone:hover {
+  background: var(--lt-hover-wash);
 }
 .block-add-close {
   display: none;
@@ -6785,10 +6861,37 @@ body.is-block-dragging .document-body [data-src-start] {
   justify-content: center;
   gap: var(--lt-space-2);
 }
-/* The one input in the bar wears two hats — a link, and a note — and either of them puts the buttons away while it is being typed into. Two classes rather than one and a flag, because the class is what says which of the two Enter is finishing. */
+/* The one input in the bar wears two hats — a link, and a note — and either of them puts the buttons away while it is being typed into. Two classes rather than one and a flag, because the class is what says which of the two Enter is finishing. The badge's tone row is a third state of the same bar and puts the buttons away the same way. */
 .selection-toolbar.is-linking .selection-format-row,
-.selection-toolbar.is-noting .selection-format-row {
+.selection-toolbar.is-noting .selection-format-row,
+.selection-toolbar.is-toning .selection-format-row {
   display: none;
+}
+/* Four tones and nothing to type, so this is a row of presses rather than the field above. Each press is drawn as a badge of its own tone, so the choice is made by looking at the color rather than by reading a name for it. */
+.selection-tone-row {
+  display: none;
+  gap: var(--lt-space-4);
+  align-items: center;
+  padding: 0 var(--lt-space-4);
+}
+.selection-toolbar.is-toning .selection-tone-row {
+  display: flex;
+}
+.selection-tone {
+  display: grid;
+  place-items: center;
+  padding: var(--lt-space-2) var(--lt-space-4);
+  border: none;
+  border-radius: var(--lt-radius-sm);
+  background: none;
+  cursor: pointer;
+}
+.selection-tone:hover {
+  background: var(--lt-hover-wash);
+}
+.selection-tone:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+  outline-offset: var(--lt-space-2);
 }
 .selection-link-row {
   display: none;
@@ -8086,12 +8189,12 @@ body.is-block-dragging .document-body [data-src-start] {
   min-width: 0;
   width: auto;
 }
-/* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; `max-content` is the picture's own width, so a small one is left where it was, and the centering is a percentage transform because CSS cannot read a used width. */
+/* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; the width is the one the renderer stamped on the tag, falling back to `max-content` for a picture nothing could measure, so a small one is left where it was and an undecoded one still has its box, and the centering is a percentage transform because CSS cannot read a used width. */
 .document-body > p.image-lane {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
-  width: max-content;
+  width: var(--picture-width, max-content);
   max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
 }
 /* A percentage cap resolves against the box being measured, so `max-width: 100%` below holds the paragraph at the very measure it is escaping; a percentage width does not, so the paragraph sizes to the picture and the picture fills it. */
