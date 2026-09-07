@@ -11,7 +11,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Core Markdown | Headings, paragraphs, lists, links, images, blockquotes, rules, inline code |
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
-| Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces |
+| Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces; [badges](#badges-leaf-extension) — a color name and some words wrapped in braces |
 | Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width, opening on the whole window, and saving out as a PNG, a WebP, a JPEG, a PDF or a Markdown document |
 | Safety | Sanitized HTML allowlist |
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
@@ -297,6 +297,45 @@ Each is just a normal `[label](url)` link with braces around the whole thing. Th
 {{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext)}}}
 
 The marks a document may wear are a short list, not the whole icon set: a document that could name any of them could wear any part of the app's own interface. A name that is not on the list is not a button at all — the whole thing stays as you wrote it, so a typo shows rather than drawing a button with a blank where its mark should be.
+
+### Badges (Leaf extension)
+
+Another Leaftext addition. Write a color name and some words inside braces and the words are drawn as a small badge in that color, so a list of states can be scanned down its left edge instead of read:
+
+| Syntax | Looks like |
+| --- | --- |
+| `{green: Shipped}` | {green: Shipped} |
+| `{amber: Next press, on hold}` | {amber: Next press, on hold} |
+| `{red: Conflicts with #205}` | {red: Conflicts with #205} |
+| `{gray: Backlog}`, or `{: Backlog}` | {gray: Backlog} |
+| `{primary: In review}` | {primary: In review} |
+
+Four named colors, and no more of those, because the [theme families](06-themes.md) each carry one accent and a fifth named color could not be told from the other four in all of them. Each one takes a color its family already sets, so a badge follows the theme without anything being chosen per family, and every one of them was measured against every family's page at better than the readable floor.
+
+`primary` is the fifth and it is not a color you pick — it is whatever color the theme you are in is recognized by, so the same badge is green on one family and violet on the next. That is also why it is the one tone allowed to land on top of a named one: on a family whose action color is its green, `{primary: …}` and `{green: …}` are the same color, because the family really is green.
+
+The words are yours and the color is the app's. A color name the app does not know is not a badge at all — `{foo: bar}` stays exactly as you wrote it, so a typo shows rather than drawing a badge in no color — and a document cannot name a color of its own, which is what keeps a badge looking like part of the theme rather than part of the file. Written inside code, in a span or a fenced block, the syntax stays literal, so this page can show it without drawing one.
+
+**A badge is not a tag.** They are drawn from the same base on purpose, and they differ in the two things that mean something: a badge wears a square corner and cannot be pressed, because it is a label saying what state a thing is in; a [tag chip](07-editing.md#the-fields-at-the-top-of-a-note) wears a fully rounded corner and carries its `#`.
+
+**A list whose items begin with a badge is drawn as a status list**: the badges take a column of their own so every title beside them starts on one left edge, with a hairline between the rows. A badge that is a whole sentence keeps its column rather than pushing the titles along. An item that does not begin with a badge keeps the ordinary list drawing, so a shopping list is never converted.
+
+- {green: Shipped} **The release went out** — both installers published and the download page moved.
+- {red: Conflicts with #205} **The pager** — a badge that is a whole sentence keeps its own column.
+- {gray: Backlog} **Nothing is waiting on this**
+
+**A badge can wear a mark.** Name one inside the braces, before the words, and it is drawn at the front of the badge in the badge's own color:
+
+| Syntax | Looks like |
+| --- | --- |
+| `{green: icon:check Shipped}` | {green: icon:check Shipped} |
+| `{amber: icon:update Waiting on review}` | {amber: icon:update Waiting on review} |
+| `{red: icon:close Turned down}` | {red: icon:close Turned down} |
+| `{gray: icon:tag Filed}` | {gray: icon:tag Filed} |
+
+Four marks, and they are the app's list rather than yours — the same reason a button's marks are a short list. A name that is not on it is not a badge at all: the whole thing stays as you wrote it, so a typo shows rather than drawing a badge with a blank where its mark should be. A mark with no words after it is not a badge either.
+
+You do not have to type any of it. Choose words in the reading view and the [bar over them](07-editing.md) offers Badge, which asks which of the five colors and wraps exactly the words you chose; press it again over a badge and its color changes rather than a second badge appearing. On an empty line the [plus in the margin](07-editing.md) offers Badge too: pick a color, and a box asks what the badge says and offers the four marks, drawing the badge beside the field as you type it. Nothing is written into the note until there is something to draw. Both rows draw each color's name in that color, so the choice is made by looking rather than by reading.
 
 ### Images
 

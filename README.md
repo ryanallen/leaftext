@@ -106,7 +106,7 @@ Split a paragraph with `Enter`, join it back with `Backspace` — the change lan
 
 ![A highlighted heading with the format bar floating above it, showing bold, italic, strikethrough, code and link, the heading and quote buttons, and copy, highlight and annotate at the end](imgs/format-bar.png)
 
-Highlight words and a small bar appears over them: bold, italic, strikethrough, code, link — then text, a bigger or smaller heading, and quote for the whole block — and copy, highlight and annotate at the end. A button with nowhere to go grays out. The last three are offered on a locked document too, so a passage can be marked up or annotated without unlocking the file. **[The format bar →](docs/01-features/07-editing.md#the-format-bar)**
+Highlight words and a small bar appears over them: bold, italic, strikethrough, code, link, badge — then text, a bigger or smaller heading, and quote for the whole block — and copy, highlight and annotate at the end. A button with nowhere to go grays out. The last three are offered on a locked document too, so a passage can be marked up or annotated without unlocking the file. **[The format bar →](docs/01-features/07-editing.md#the-format-bar)**
 
 ### Reach into the margin to move a block
 

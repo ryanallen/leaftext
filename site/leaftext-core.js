@@ -66,6 +66,11 @@ async function load(url) {
       api.leaf_free(name, nameLen);
       return answer ? JSON.parse(answer) : null;
     },
+    setImageSizes(sizes) {
+      const [body, bodyLen] = write(JSON.stringify(sizes || {}));
+      api.leaf_set_image_sizes(body, bodyLen);
+      api.leaf_free(body, bodyLen);
+    },
     formats: () => (read(api.leaf_formats()) || '').split(' ').filter(Boolean),
   };
 }
@@ -88,5 +93,7 @@ export async function createLeaftext() {
     formats,
     opens: (path) => pattern.test(String(path).split(/[?#]/)[0]),
     render: (source, path) => module_.render(source, path || 'document.md'),
+    // Carried through rather than left on the loaded module: the reader holds what this answers with and nothing else, so a door the module has and this does not is a door the page calls and throws on, which took the whole boot down before a word was drawn.
+    setImageSizes: (sizes) => module_.setImageSizes(sizes),
   };
 }

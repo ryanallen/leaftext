@@ -48,6 +48,16 @@ export function asWebp(path) {
   return path.replace(/\.png$/, '.webp');
 }
 
+/** Every published picture's intrinsic box, keyed exactly as the rendered page names its WebP. */
+export function imageSizes() {
+  return Object.fromEntries(
+    pictures().map((path) => {
+      const bytes = readFileSync(join(root, path));
+      return [asWebp(path), [bytes.readUInt32BE(16), bytes.readUInt32BE(20)]];
+    })
+  );
+}
+
 /**
  * One page with every convertible reference moved onto its WebP, and the references that moved.
  *
@@ -170,6 +180,18 @@ function writePublished() {
 function selfTest() {
   const problems = [];
   const rewrite = (text) => rewritePage('README.md', text).text;
+
+  const sizes = imageSizes();
+  const found = pictures();
+  if (Object.keys(sizes).length !== found.length) {
+    problems.push(`the picture-size map has ${Object.keys(sizes).length} rows for ${found.length} published pictures`);
+  }
+  for (const picture of found) {
+    const size = sizes[asWebp(picture)];
+    if (!Array.isArray(size) || size.length !== 2 || !size.every((value) => Number.isInteger(value) && value > 0 && value <= 100000)) {
+      problems.push(`the picture-size map has no bounded positive size for ${asWebp(picture)}`);
+    }
+  }
 
   const plain = rewrite('![a](imgs/leaftext.png)\n');
   if (plain !== '![a](imgs/leaftext.webp)\n') problems.push(`a picture the page draws was not moved onto its WebP: ${JSON.stringify(plain)}`);

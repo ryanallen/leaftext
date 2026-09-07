@@ -5,7 +5,7 @@
 // This file is intentionally short. The interesting work is in the renderer, which is the app's own, fetched as a module (leaftext-core.js) — plus minimap.js (the side-rail overview) and styles.css (what draws the page around the document).
 // ---------------------------------------------------------------------------
 
-import { createLeaftext } from './leaftext-core.js';
+import { createLeaftext, rendererBase } from './leaftext-core.js';
 import { fetchWatched } from './fetches.js';
 import { fillPager } from './pager.js';
 import { initMinimap } from './minimap.js';
@@ -24,6 +24,11 @@ const statusEl = document.getElementById('status');
 
 // The renderer. On a page the publish baked the document into it arrives after the words are already readable, so a glossary link pressed in that moment says so rather than throwing.
 let leaf = null;
+async function setImageSizes(renderer) {
+  const response = await fetchWatched(new URL('image-sizes.json', rendererBase()));
+  if (!response.ok) throw new Error(`HTTP ${response.status} fetching the picture sizes`);
+  renderer.setImageSizes(await response.json());
+}
 const renderDocument = (body, path) => {
   if (!leaf) throw new Error('the reader has not arrived yet');
   const drawn = leaf.render(body, path);
@@ -203,7 +208,7 @@ async function main() {
     createLeaftext()
       .then((loaded) => {
         leaf = loaded;
-        linkGlossaryTerms();
+        return setImageSizes(leaf).then(linkGlossaryTerms);
       })
       .catch((err) => {
         console.error('The reader could not be loaded, so the glossary links are not drawn:', err);
@@ -212,6 +217,7 @@ async function main() {
   }
   try {
     leaf = await createLeaftext();
+    await setImageSizes(leaf);
   } catch (err) {
     showStatus(
       'The reader could not be loaded (' +

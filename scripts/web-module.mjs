@@ -73,6 +73,11 @@ export async function instantiateCore(file) {
       api.leaf_set_image_base(at, length);
       api.leaf_free(at, length);
     },
+    setImageSizes: (sizes) => {
+      const [at, length] = write(JSON.stringify(sizes || {}));
+      api.leaf_set_image_sizes(at, length);
+      api.leaf_free(at, length);
+    },
     render: (source, path) => JSON.parse(withStrings(api.leaf_render, source, path) || 'null'),
     /** The same render over a document's own bytes, which is the only way a packaged format can arrive: a Word, Excel, PowerPoint or OpenDocument file is a zip, so there is no string to hand across. `null` back means the bytes are not a document that format can read. */
     renderBytes: (bytes, path) => {

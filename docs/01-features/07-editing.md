@@ -28,12 +28,12 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
 | [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
-| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider |
+| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, badge |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
 | [Exporting a diagram](#export) | The diagram's own corner, and the flowchart sheet, write it out as its own file — Markdown, PNG, WebP, PDF or JPEG |
-| [The format bar](#the-format-bar) | Highlight words and a bar appears over them: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code and link as well, then text, bigger/smaller heading and quote for the whole block |
+| [The format bar](#the-format-bar) | Highlight words and a bar appears over them: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code, link and badge as well, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
 | [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
@@ -171,6 +171,7 @@ Press it and a row of kinds fans out over the empty line, unfurling rather than 
 | Image | [The image box](#images) |
 | Flowchart | [The flowchart editor](#the-flowchart-editor) |
 | Divider | A horizontal rule |
+| Badge | [The badge box](#badges) |
 
 The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
 
@@ -197,6 +198,14 @@ A picked file is **never copied anywhere** — the picture stays where you keep 
 
 **Taking a picture out again is a right-click on the picture.** While the padlock is open, a picture on a line of its own carries a **Delete picture** row: it removes the picture from the document as one press of undo, writes nothing until you save, and leaves the picture on your disk exactly where it is. A picture inside a sentence has no such row, because the only piece of source it belongs to is the sentence around it. See [Picture actions](03-library.md#right-click-a-picture).
 
+#### Badges
+
+The badge button asks before it writes anything. Press it and the row swaps for the tones — green, amber, red, gray and the theme's own primary — each drawn as a badge of that color rather than named in plain words.
+
+- Pick a tone and a box opens for the words the badge carries, with a live badge of that tone beside the field, so what is being written is on screen while it is typed. `Enter` writes it; `Enter` with nothing typed writes nothing.
+- The box also offers a **mark** — a check, a cross, a tag or an update arrow — drawn as itself; picking one puts it in the badge beside the words, and pressing the one already on takes it off.
+- What lands is one [badge](01-rendering.md#badges-leaf-extension) on the line, and never a list item: a status list is a list you write as a list.
+
 ### The format bar
 
 ![A highlighted heading with the format bar floating above it: bold, italic, strikethrough, code and link, then the text, bigger heading, smaller heading and quote buttons, with one lit up and one grayed out, and copy, highlight and annotate at the end](../../imgs/format-bar.png)
@@ -209,6 +218,7 @@ Highlight words in a Markdown page and a small bar appears over them. What it ho
 - **Coding out of a code span leaves one code span.** Highlight from inside `code` into the plain words beside it and the two runs join, so the file carries one span rather than two touching ones — and only the words you chose stay highlighted.
 - **Taking a format off leaves the same words highlighted**, wherever the phrase sits in its sentence, so the bar goes on answering for them and a third press puts the format back. Nothing has to be highlighted again by hand.
 - **Link** opens a box for the address, filled in with the link already there if there is one. `Enter` applies it; an empty box takes the link away, and the words stay highlighted. `Escape`, or a press anywhere off the box, leaves the link as it was.
+- **Badge** turns the highlighted words into a [badge](01-rendering.md#badges-leaf-extension). The bar swaps in a row of tones, each press drawn as a badge of its own color, so the choice is made by looking at it; pressing a tone on words that already carry a badge re-tones that badge rather than wrapping it again. It appears only on an unlocked page, beside the inline formats.
 - **Text**, a **bigger** and a **smaller** heading, and **Quote** act on the whole block the highlight sits in. They appear only where the block is a paragraph, heading, or quote.
 - These don't toggle — **a button with nowhere to go grays out**, so every press is a straight answer. **Text** is the way out of a heading or a quote, and grays out on body text.
 - The two **H**s are the same glyph at two sizes, and they move **one level per press**: `######` → `#####` → … → `#`. All six levels are reachable, so a document can carry as many `#` headings as you want. The bigger H grays out at `#` and the smaller at `######`.

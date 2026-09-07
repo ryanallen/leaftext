@@ -17,6 +17,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
+import { imageSizes } from './site-images.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -31,8 +32,9 @@ export const STYLES_PATH = `${ASSET_DIR}/leaftext.css`;
 
 /** Which build a page is reading through, so a reader of either site can tell how old its renderer is. */
 export const VERSION_PATH = `${ASSET_DIR}/version.json`;
+export const IMAGE_SIZES_PATH = `${ASSET_DIR}/image-sizes.json`;
 
-export const PUBLISHED = [MODULE_PATH, STYLES_PATH, VERSION_PATH];
+export const PUBLISHED = [MODULE_PATH, STYLES_PATH, VERSION_PATH, IMAGE_SIZES_PATH];
 
 /** The build these are cut from. Not published itself — it is what `just build-web` leaves behind. The local preview draws the front page through this one too, so there is one answer to which module the site is read against. */
 export const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-core.wasm');
@@ -72,6 +74,7 @@ export function publishedAssets(leaf, moduleBytes) {
     [MODULE_PATH, moduleBytes],
     [STYLES_PATH, leaf.styles()],
     [VERSION_PATH, `${JSON.stringify({ version: appVersion() }, null, 2)}\n`],
+    [IMAGE_SIZES_PATH, `${JSON.stringify(imageSizes())}\n`],
   ]);
 }
 
