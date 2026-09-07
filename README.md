@@ -12,7 +12,7 @@ Free · Windows 10+ and macOS Universal · **[Windows `.msi`](https://github.com
 
 > **Read this if you're on a Mac.** macOS refuses the first launch of any app Apple hasn't been paid to vouch for, and Leaftext is free, so it hasn't. Nothing was scanned and nothing was found. Let it through once — **System Settings → Privacy & Security → Open Anyway** — and it opens normally from then on. [The four clicks, spelled out →](docs/02-installation.md#mac-blocks-the-first-launch)
 
-**[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[View the project on GitHub →](https://github.com/ryanallen/leaftext)**
+**[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[This site on GitHub →](https://github.com/ryanallen/leaftext)**
 
 ---
 
