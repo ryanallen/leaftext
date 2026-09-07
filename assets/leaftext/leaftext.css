@@ -6834,6 +6834,19 @@ body.is-block-dragging .document-body [data-src-start] {
   transform: rotate(45deg);
   pointer-events: none;
 }
+/* Under the words instead of over them, where there was no room above — selection-toolbar.js places the bar off the highlight's bottom edge for this, so the bar keeps its own height rather than being pulled up through it. */
+.selection-toolbar.is-below {
+  transform: translate(-50%, 0);
+}
+/* The same rotated corner, hung off the top edge and struck from the other two sides of it. */
+.selection-toolbar.is-below .selection-toolbar-point {
+  top: -5px;
+  bottom: auto;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: var(--lt-stroke-1) solid var(--lt-border);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
 .selection-format-row {
   display: flex;
   flex-wrap: wrap;
