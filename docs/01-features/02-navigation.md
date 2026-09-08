@@ -61,7 +61,7 @@ flowchart LR
 | Select the page — or, with the caret in a block, [a step wider per press](07-editing.md#deleting) | `Ctrl+A` | `Cmd+A` |
 | Copy the words highlighted in the document | `Ctrl+C` | `Cmd+C` |
 | [Delete](07-editing.md#deleting) a selection that crosses blocks | `Delete` or `Backspace` | `Delete` or `Backspace` |
-| [Find](#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
+| [Find](#find-in-this-document) in this document, or across [all files](03-library.md#search) | `Ctrl+F` | `Cmd+F` |
 | [Find and replace](#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
 | [Put a cursor on every match](#find-in-this-document), from the find field | `Alt+Enter` | `Alt+Enter` |
 | [Add a cursor where you click](#find-in-this-document), in the source view | `Ctrl`+click | `Cmd`+click |
@@ -253,10 +253,12 @@ Where your machine is set to always show scrollbars — the accessibility settin
 
 ### Find in this document
 
-`Ctrl+F` opens one find bar at the top right of the page, over whichever view is on screen — the rendered document or the [source](07-editing.md#code-view). `Ctrl+H` opens it with the replace row already down. Pressing the replace button slides that row down under the bar rather than snapping it there — see [collapsible sections](01-rendering.md#collapsible-sections), which is the same motion everything that folds open uses.
+`Ctrl+F` opens one find bar at the top right of the page, over whichever view is on screen — the rendered document or the [source](07-editing.md#code-view). It works on the start screen too, where there is no document: the bar comes up on **All files** rather than letting the key through to the web view's own find box. `Ctrl+H` opens it with the replace row already down. Pressing the replace button slides that row down under the bar rather than snapping it there — see [collapsible sections](01-rendering.md#collapsible-sections), which is the same motion everything that folds open uses.
+
+**One bar, two searches.** At the left end of the field, inside the same well, a small menu says what is being searched: **This file** or **All files**. It opens on This file over a document and on All files on the start screen, and picking the other one keeps what you have typed. All files is the same [vault search](03-library.md#search) the pane used to carry its own box for — the same filters, the same completion menu, the same ranked results, which now hang under the bar that asked for them, so the [pane](03-library.md#browsing) keeps showing your files or your [outline](#the-documents-outline) either way. Under All files the document's own controls — the toggles, the steps, the cursors and replace — stay in the row and go quiet, so nothing you have learned the place of moves. Closing the bar takes the results with it. With no vault, All files says a notes folder is needed rather than answering nothing.
 
 - The field opens with whatever you had highlighted, and the counter beside it reads **3 of 41** as you type. Past 999 matches it says `999+`.
-- `Enter` steps to the next match, `Shift+Enter` to the previous, and `Escape` closes the bar and hands the keyboard back to the document.
+- `Enter` steps to the next match, `Shift+Enter` to the previous, and `Escape` closes the bar and hands the keyboard back to the document. With the scope menu open, the first `Escape` puts that menu away and the bar stands.
 - Every match is washed in the theme's accent color; the one you are on takes the primary, so stepping through is a mark that moves rather than a page of identical stripes.
 - Four toggles: **Aa** match case (`Alt+C`), **ab|** whole word (`Alt+W`), **.\*** regular expression (`Alt+R`), and find inside the text you had highlighted (`Alt+L`). A half-typed expression reads `Bad expression` rather than `No results`.
 - **Find inside the text you had highlighted narrows to the last thing you highlighted**, not to what is highlighted at the moment you press it — opening the bar puts the cursor in the field, which takes the page's own highlight away, so the page remembers it instead. Highlight a few paragraphs, press `Ctrl+F`, then the toggle, and the counter answers for those paragraphs rather than for the whole document. Highlight something else and the toggle follows it; clear the highlight and it says to highlight some text first.
@@ -282,7 +284,6 @@ Open a document and the [library pane](03-library.md) swaps its file list for th
 - **The page's own title is the first row**, so every section below it hangs under something you can see, and it is counted with them.
 - **The levels look like levels.** The shallowest headings read largest and boldest; each level in is a step smaller and lighter, and from the third level in they sit in the page's quieter ink. So the shape of a document shows in the type as well as in the indenting, which matters most in a narrow pane where the indents run out.
 - Clicking a row jumps to that heading, and the jump joins scroll history, so Back returns to where you were reading. The row you clicked is the row that lights, with its heading still on screen — the lit row is read from the line a document is read from, under the app bar, rather than from the top edge of the reader behind it.
-- Typing in the pane's [search box](03-library.md#search) replaces the outline with the results; clearing the box brings it back.
 - It is built from the rendered headings, so it behaves the same for Markdown, [XML](01-rendering.md#xml), [JSON or YAML](01-rendering.md#data-files-json-and-yaml), and [email](01-rendering.md#email-eml).
 - It appears whenever a document has a title plus at least one more heading; a document with only a title leaves the file list showing.
 - **A very long outline opens as fast as a short one.** However many headings a document holds, only the rows in the pane and a pane's worth either side are drawn, and the rest are drawn as you reach them — so the count, the scrollbar and every jump still cover the whole document while nothing waits on thousands of rows. With a row focused, the arrow keys step a heading at a time, Page Up and Page Down move a pane, and Home and End go to the first and last heading; Enter or Space jumps to the one you land on.

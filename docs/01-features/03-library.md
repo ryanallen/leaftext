@@ -15,10 +15,10 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out; every folder you open appears at once |
 | [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, the page's own title first and the heading you are reading lit; a back row puts the files back |
-| [Breadcrumb](#file-tree) | The folder path above the search box; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
-| [Search](#search) | Filename and content search across the active vault |
+| [Breadcrumb](#file-tree) | The folder path under the app bar; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
+| [Search](#search) | Filename and content search across the active vault, from the [find bar](02-navigation.md#find-in-this-document)'s **All files** |
 | [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
-| [Filtering](#filtering) | More than words in the search box: `#work status:open due:<friday -draft` |
+| [Filtering](#filtering) | More than words in the search field: `#work status:open due:<friday -draft` |
 | [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
@@ -88,7 +88,7 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 
 - Click a folder row — or its `›` chevron — to go into it. The folder you open is on screen in one frame, with nothing fading and nothing sliding.
 - The row above the list steps back out one level. So does a crumb.
-- The **breadcrumb** above the search box is the path you are on: `Fieldwork › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
+- The **breadcrumb** under the app bar is the path you are on: `Fieldwork › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
 - Folders sort before files, each alphabetized. Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
 - Pointing at a row washes it and nothing else — no shadow, no change of shape, nothing sliding — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint instead, so what is open still reads as open.
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
@@ -102,7 +102,6 @@ Opening a document swaps the file list for that document's [outline](02-navigati
 
 - A back row above the list wears the folder's name and puts the files back, the same way the row above a folder listing steps out of it.
 - Under that row, **On this page** names the list, with how many headings it holds at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
-- Typing in the [search box](#search) replaces the outline with the results; clearing the box brings it back.
 - A document with only a title, or none, has no outline, so the files stay where they are.
 
 ### File types
@@ -210,9 +209,9 @@ Copying a whole folder is not supported; a folder can be pasted only as a move (
 
 ![Search results in the library pane: a filename match ranked at the top, then content matches each showing the document name and a snippet with the search terms highlighted in context](../../imgs/search.png)
 
-Search covers the active vault. With no vault the field is hidden rather than left to return nothing — a box that looks like it works and does not is worse than no box.
+Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, the field says a notes folder is needed rather than looking like a box that works and does not.
 
-Once you have typed, a cross at the field's right end clears the search and brings the file tree back. Escape does the same after you have opened a result; if [Find in this document](02-navigation.md#find-in-this-document) is open, its first Escape closes that bar instead.
+`Escape` closes the bar and takes the results with it. Nothing about the pane changes either way — it is not where the answer lands.
 
 | Search type | Behavior |
 | --- | --- |
@@ -232,15 +231,15 @@ Opening a result lands on the line the match is on. Documents whose source the p
 
 Asking the same thing twice costs nothing: the last answer is kept and handed straight back while the query and the vault's text are both unchanged, which is what happens when you walk the folder tree with a search still in the box. Typing one more letter costs almost nothing either — only the files that matched the shorter word can match the longer one, so those are the only ones read again. Anything else, including a letter deleted or a file saved while you type, reads the vault afresh.
 
-To search **inside** the document you are reading rather than across the vault, see [Find in this document](02-navigation.md#find-in-this-document).
+To search **inside** the document you are reading rather than across the vault, switch the same bar to **This file** — see [Find in this document](02-navigation.md#find-in-this-document).
 
 The text search reads is the same copy the [graph](#graph) reads: one pass over the vault, held in memory, patched a file at a time when you save the note you are reading, tick a box in it, or the [watcher](#live-updates) sees another file change, and dropped when you move to a different folder or quit. A read still running is stopped at the same moment, so leaving a big folder hands the machine straight back rather than finishing a pass nobody is waiting on, and the vault you switched to starts reading right away. Naming the folder you are already in — **New vault…** on a folder that is already a vault, or **Change folder…** accepting the folder it already shows — is not moving, so that vault keeps what it has read and a read still running carries on. There is no index on disk, so nothing can go stale relative to your files.
 
-That pass starts as you arrive in the vault rather than waiting to be asked, so the field names under the search box are ready before you type — and a search made while it is still running is the one that pays for the rest of it. Arriving while another vault is still being read starts it too: only one vault is read at a time, so the arrival waits, and the moment the vault you left gives up its read the one you are in takes it up without being asked again. How long that takes is your disk rather than the matching — a vault read once already answers in milliseconds, and the same vault untouched since the machine started can take a minute. So the first one answers as it reads. Even the folder listing that has to finish before the vault can be read smallest-first no longer holds everything up: the first handful of documents the listing walks past are read straight away, so matches can be on screen before Leaftext has finished finding out what is in the folder. Those early rows are a taste rather than an answer, and one of them can vanish when the settled list arrives. A line above the results carries a turning ring while the vault is still being read, matches appear underneath as batches of documents land, and the count says what it has so far. Rows already on screen keep their place while more arrive, and keep being the same rows: a match that is still a match is left where it is rather than rebuilt, so a press half-way through it lands and the keyboard focus ring stays on the row you put it on instead of falling back out of the list. Only the rows the answer actually changed are redrawn. The list never grows past what a single answer can hold: while the vault is still being read it stops at the first fifty documents, the same ceiling every answer is ranked and cut at, so the count climbs to that ceiling and stays there instead of past it. The ranking is settled once, on the last answer, which is when the ring goes. A search you run while an older query's results are still up is marked the same way, so the pane never shows you an answer to a question you have moved on from. The [map](#graph) still waits for the whole read, because a picture redrawn three times a second is not one anybody can look at.
+That pass starts as you arrive in the vault rather than waiting to be asked, so the field names offered under the search field are ready before you type — and a search made while it is still running is the one that pays for the rest of it. Arriving while another vault is still being read starts it too: only one vault is read at a time, so the arrival waits, and the moment the vault you left gives up its read the one you are in takes it up without being asked again. How long that takes is your disk rather than the matching — a vault read once already answers in milliseconds, and the same vault untouched since the machine started can take a minute. So the first one answers as it reads. Even the folder listing that has to finish before the vault can be read smallest-first no longer holds everything up: the first handful of documents the listing walks past are read straight away, so matches can be on screen before Leaftext has finished finding out what is in the folder. Those early rows are a taste rather than an answer, and one of them can vanish when the settled list arrives. A line above the results carries a turning ring while the vault is still being read, matches appear underneath as batches of documents land, and the count says what it has so far. Rows already on screen keep their place while more arrive, and keep being the same rows: a match that is still a match is left where it is rather than rebuilt, so a press half-way through it lands and the keyboard focus ring stays on the row you put it on instead of falling back out of the list. Only the rows the answer actually changed are redrawn. The list never grows past what a single answer can hold: while the vault is still being read it stops at the first fifty documents, the same ceiling every answer is ranked and cut at, so the count climbs to that ceiling and stays there instead of past it. The ranking is settled once, on the last answer, which is when the ring goes. A search you run while an older query's results are still up is marked the same way, so the pane never shows you an answer to a question you have moved on from. The [map](#graph) still waits for the whole read, because a picture redrawn three times a second is not one anybody can look at.
 
 ## Filtering
 
-The search box takes more than words.
+The search field takes more than words.
 
 | You type | You get |
 | --- | --- |

@@ -4283,12 +4283,11 @@ body.is-library-settling .app-bar::after {
   overflow-y: hidden;
 }
 .library-pane {
-  /* Positioning context for the overlays it stacks (.library-scroll, .library-crumbs, .library-header). The pane itself doesn't scroll or clip; the inner .library-scroll owns the scroll. */
+  /* Positioning context for the overlays it stacks (.library-scroll, .library-crumbs). The pane itself doesn't scroll or clip; the inner .library-scroll owns the scroll. */
   --library-app-bar: var(--app-bar-height);
-  --library-header-height: 40px;
-  /* The breadcrumb band between the app bar and the search row. Fixed height whatever the path is, so entering a folder never shifts the list. */
+  /* The breadcrumb band under the app bar. Fixed height whatever the path is, so entering a folder never shifts the list. */
   --library-crumbs-height: 28px;
-  --library-chrome-height: calc(var(--library-app-bar) + var(--library-crumbs-height) + var(--library-header-height));
+  --library-chrome-height: calc(var(--library-app-bar) + var(--library-crumbs-height));
   /* Down the whole window, through the reader's bottom gutter row: the rail runs to the frame, only the page is held off it. */
   grid-column: 1;
   grid-row: 1 / -1;
@@ -4372,23 +4371,19 @@ body.is-library-settling .app-bar::after {
 .library-shell.library-closed .library-divider {
   display: none;
 }
-.library-shell.library-closed .library-header,
 .library-shell.library-closed .library-crumbs {
-  /* Hide the header bands when snapped shut, or the unclipped pane would bleed them past the 0px column and show them behind the reader. */
+  /* Hide the pinned band when snapped shut, or the unclipped pane would bleed it past the 0px column and show it behind the reader. */
   display: none;
 }
 /* Fading with the travel: everything in the pane leaves 100% opaque and thins out over the close — riding visible to the seat reads as a ghost over the page, and vanishing on the first frame reads as a glitch. The pane itself keeps its surface, and the corner arc riding its edge never fades. */
-body.is-library-closing .library-header,
 body.is-library-closing .library-crumbs,
 body.is-library-closing .library-scroll,
-body.is-library-settling .library-header,
 body.is-library-settling .library-crumbs,
 body.is-library-settling .library-scroll {
   opacity: 0;
   transition: opacity var(--lt-duration-260) var(--lt-ease);
 }
 /* And back in at the same pace on open. An animation, not a transition: these were display:none while closed, and a freshly displayed element renders at its final value instead of transitioning. */
-body.is-library-opening .library-header,
 body.is-library-opening .library-crumbs,
 body.is-library-opening .library-scroll {
   animation: leaf-library-open-arrive var(--lt-duration-260) var(--lt-ease);
@@ -4398,8 +4393,7 @@ body.is-library-opening .library-scroll {
     opacity: 0;
   }
 }
-/* Except as a sheet, which is "closed" only to the grid — it is off-screen when shut, so there is nothing to bleed, and with these hidden it opened onto a blank band where the path and the search box belong. */
-.library-shell.library-narrow .library-header,
+/* Except as a sheet, which is "closed" only to the grid — it is off-screen when shut, so there is nothing to bleed, and with this hidden it opened onto a blank band where the path belongs. */
 .library-shell.library-narrow .library-crumbs {
   display: flex;
 }
@@ -4657,67 +4651,7 @@ body.library-resizing button {
   color: inherit;
   border-radius: var(--lt-radius-xs);
 }
-/* The search box fills the rest of the pinned header, beside the view chip; its min-width floors the controls so a narrow pane clips them (see .library-header) rather than squashing the field away. */
-.library-search-wrap {
-  flex: 1 1 auto;
-  min-width: 72px;
-  display: flex;
-  align-items: center;
-  height: 24px;
-  box-sizing: border-box;
-  padding: 0 var(--lt-space-8);
-  border-radius: var(--lt-radius-md);
-  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 25%, transparent);
-  /* The chrome shade again, but flat: the border is what reads as the field, and an ungrained fill keeps dots out from behind the search text. */
-  background-color: var(--lt-surface);
-}
-.library-search-wrap:focus-within {
-  /* A neutral white focus border rather than the accent, which is a strong color of its own in most families. */
-  border-color: color-mix(in srgb, var(--lt-white) 85%, transparent);
-}
-:root[data-theme="light"] .library-search-wrap:focus-within {
-  /* White vanishes on the light field, so key the focus off the ink instead. */
-  border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
-}
-.library-search {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 100%;
-  box-sizing: border-box;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-family: inherit;
-  font-size: var(--lt-text-12);
-}
-.library-search:focus {
-  outline: none;
-}
-.library-search-clear {
-  flex: 0 0 17px;
-  width: 17px;
-  height: 17px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--lt-radius-sm);
-  background: transparent;
-  color: var(--lt-muted-foreground);
-}
-.library-search-clear:hover {
-  background: var(--lt-wash-hover);
-}
-.library-search-clear .lt-icon {
-  display: block;
-  width: 12px;
-  height: 12px;
-  margin: auto;
-}
-/* The platform's own clear button, in the platform's own blue. Escape already clears the field, and nothing else in the app wears a color nobody chose. */
-.library-search::-webkit-search-cancel-button {
-  display: none;
-}
-/* What you can type next, under the search box and placed from it: the header clips at its own height, so the menu cannot live inside it. */
+/* What you can type next, under the search field and placed from it: the field is one line tall, so the menu cannot live inside it. */
 .filter-menu {
   position: absolute;
   z-index: var(--lt-z-50);
@@ -4750,16 +4684,8 @@ body.library-resizing button {
 .filter-menu-item:hover {
   background: var(--lt-wash-hover);
 }
-/* Search reads the active vault's text, so with no vault there is nothing for it to read: the row collapses and the list starts where the field was. */
-.library-pane[data-searchable="false"] {
-  --library-header-height: 0px;
-}
-.library-pane[data-searchable="false"] .library-header {
-  display: none;
-}
-/* The two pinned bands: the breadcrumb directly under the app bar, the search row under that. Both absolute against the pane (not sticky) so neither drifts with the list, which slides up behind them. Same treatment on both — the pane's own surface and grain, on the same lattice — so the chrome is one continuous texture. Opaque, so the list never shows through. */
-.library-crumbs,
-.library-header {
+/* The pinned band: the breadcrumb directly under the app bar. Absolute against the pane (not sticky) so it does not drift with the list, which slides up behind it. The pane's own surface and grain, on the same lattice, so the chrome is one continuous texture. Opaque, so the list never shows through. */
+.library-crumbs {
   position: absolute;
   left: 0;
   right: 0;
@@ -4781,14 +4707,6 @@ body.library-resizing button {
   /* Tight against the trail: the button and the root crumb read as one group, the way a toolbar's control sits against what it acts on. */
   gap: var(--lt-space-2);
   padding: 0 var(--lt-space-6) 0 var(--lt-space-8);
-}
-.library-header {
-  top: calc(var(--library-app-bar) + var(--library-crumbs-height));
-  height: var(--library-header-height);
-  justify-content: flex-start;
-  gap: var(--lt-space-8);
-  padding: 0 var(--lt-space-12);
-  font-weight: var(--lt-weight-600);
 }
 .library-crumb-trail {
   flex: 1 1 auto;
@@ -10634,6 +10552,29 @@ body.is-home-row-dragging .home-list-scroll li {
 .find-field:focus-within {
   border-color: var(--lt-focus-ring);
 }
+/* What the field searches, in the well's own left end. It takes its width from the field rather than from the row, so adding it grew the bar by nothing: the field gave up the 7px it needed. The hairline down its right-hand side is what makes it read as part of the well rather than as another control beside it. */
+.find-scope {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  padding: 0 var(--lt-space-8) 0 0;
+  border: 0;
+  border-right: var(--lt-stroke-1) solid var(--lt-border);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: inherit;
+  font-size: var(--lt-text-11);
+  white-space: nowrap;
+}
+.find-scope:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+.find-scope-caret {
+  font-size: var(--lt-text-10);
+}
 /* 30px, so the field's own hairline brings it to the 32px the buttons beside it are: the field takes its height from what is typed into it. */
 .find-input {
   flex: 1 1 auto;
@@ -10687,8 +10628,8 @@ body.is-home-row-dragging .home-list-scroll li {
   padding: 0 var(--lt-space-10);
   border-color: var(--lt-border);
 }
-.find-flag:hover,
-.find-step:hover,
+.find-flag:hover:not(:disabled),
+.find-step:hover:not(:disabled),
 .find-action:hover:not(:disabled) {
   background: var(--lt-wash-hover);
 }
@@ -10697,13 +10638,27 @@ body.is-home-row-dragging .home-list-scroll li {
   border-color: var(--lt-border-strong);
   background: var(--lt-surface-sunken);
 }
+/* Under All files the document's own controls are disabled where they stand rather than taken out of the row, so switching scope changes what is pressable without moving anything the reader has learned the place of. */
+.find-flag:disabled,
+.find-step:disabled,
 .find-action:disabled {
   color: var(--lt-muted-foreground);
   cursor: default;
 }
+.find-input:disabled {
+  color: var(--lt-muted-foreground);
+}
 /* Next and previous are the same chevron, one of them turned over: two drawings of one arrow would be two files to keep in step. */
 .find-step-back {
   transform: rotate(180deg);
+}
+/* The all-file answer, under the bar that asked for it. Its own scrollport, so a long list grows the bar to a ceiling and no further: the bar floats over the page it is searching, and one that ran to the bottom of the window would cover the reading it is for. The rows themselves are the pane's, drawn by library-search.js. */
+.find-results {
+  max-height: 320px;
+  overflow-y: auto;
+}
+.find-bar .library-results {
+  padding: 0;
 }
 /* At a phone's width the bar spans the page instead of floating in the corner, held off both edges by the same 8px. The reader's own breakpoint, so there is one number and not two. */
 @media (max-width: 600px) {
