@@ -67,7 +67,7 @@
 | markdown-alert-caution                  | `#d1242f`                                      |
 | markdown-badge-background               | `#f6f8fa`                                      |
 | markdown-badge-foreground               | `#25292e`                                      |
-| markdown-table-border                   | `#d1d9e0`                                      |
+| markdown-table-border                   | `#8a9097`                                      |
 | markdown-thematic-break                 | `#d1d9e0b3`                                    |
 | markdown-math-inline-background         | `#f6f8fa`                                      |
 | markdown-keyboard-background            | `#ffffff`                                      |
@@ -153,7 +153,7 @@
 | markdown-alert-caution                  | `#f85149`                                      |
 | markdown-badge-background               | `#212830`                                      |
 | markdown-badge-foreground               | `#f0f6fc`                                      |
-| markdown-table-border                   | `#3d444d`                                      |
+| markdown-table-border                   | `#566078`                                      |
 | markdown-thematic-break                 | `#3d444db3`                                    |
 | markdown-math-inline-background         | `#212830`                                      |
 | markdown-keyboard-background            | `#0d1117`                                      |
@@ -196,6 +196,6 @@
 | editor-code-border         | `#39435f`   |
 | markdown-rule              | `#39435fb3` |
 | markdown-blockquote-border | `#39435f`   |
-| markdown-table-border      | `#39435f`   |
+| markdown-table-border      | `#566078`   |
 | markdown-thematic-break    | `#39435fb3` |
 | markdown-keyboard-border   | `#39435f`   |

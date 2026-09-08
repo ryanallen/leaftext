@@ -67,7 +67,7 @@
 | markdown-alert-caution                  | `#cf2e3f`                            |
 | markdown-badge-background               | `#e7e0f5`                            |
 | markdown-badge-foreground               | `#26222e`                            |
-| markdown-table-border                   | `#d8d0e6`                            |
+| markdown-table-border                   | `#868092`                            |
 | markdown-thematic-break                 | `#d8d0e6`                            |
 | markdown-math-inline-background         | `#e7e0f5`                            |
 | markdown-keyboard-background            | `#ffffff`                            |

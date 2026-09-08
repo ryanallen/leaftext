@@ -144,6 +144,7 @@ The semantic token set covers:
 - document text
 - headings (a base color plus a per-level color for `h2`–`h6`, so a theme can tint deeper headings) and links
 - blockquotes and alerts
+- [table](01-rendering.md#tables) bands and a grid that stays distinct from both neighboring row fills
 - code surfaces and syntax colors
 - minimap colors
 - focus and selection styling

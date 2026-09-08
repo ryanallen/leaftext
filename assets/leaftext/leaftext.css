@@ -47,7 +47,7 @@
   --lt-markdown-alert-caution: #d3243a;
   --lt-markdown-badge-background: #eeeeee;
   --lt-markdown-badge-foreground: #222222;
-  --lt-markdown-table-border: #e0e0e0;
+  --lt-markdown-table-border: #8a8a8a;
   --lt-markdown-table-row-background: #f0f0f0;
   --lt-markdown-thematic-break: #e0e0e0;
   --lt-markdown-math-inline-background: #eeeeee;
@@ -134,7 +134,7 @@
   --lt-markdown-alert-caution: #fb464c;
   --lt-markdown-badge-background: #2a2a2a;
   --lt-markdown-badge-foreground: #dadada;
-  --lt-markdown-table-border: #363636;
+  --lt-markdown-table-border: #696969;
   --lt-markdown-table-row-background: #181818;
   --lt-markdown-thematic-break: #363636;
   --lt-markdown-math-inline-background: #2a2a2a;
@@ -221,7 +221,7 @@
   --lt-markdown-alert-caution: #b5442f;
   --lt-markdown-badge-background: #ece0d0;
   --lt-markdown-badge-foreground: #3d2f26;
-  --lt-markdown-table-border: #dbcab4;
+  --lt-markdown-table-border: #857566;
   --lt-markdown-table-row-background: #e2d3c0;
   --lt-markdown-thematic-break: #dbcab4;
   --lt-markdown-math-inline-background: #ece0d0;
@@ -308,7 +308,7 @@
   --lt-markdown-alert-caution: #e8917f;
   --lt-markdown-badge-background: #33271f;
   --lt-markdown-badge-foreground: #ece0d2;
-  --lt-markdown-table-border: #3a2d23;
+  --lt-markdown-table-border: #73675b;
   --lt-markdown-table-row-background: #160f0a;
   --lt-markdown-thematic-break: #3a2d23;
   --lt-markdown-math-inline-background: #33271f;
@@ -395,7 +395,7 @@
   --lt-markdown-alert-caution: #b81420;
   --lt-markdown-badge-background: #eef2f6;
   --lt-markdown-badge-foreground: #15181c;
-  --lt-markdown-table-border: #dde5ec;
+  --lt-markdown-table-border: #82888e;
   --lt-markdown-table-row-background: #e8edf2;
   --lt-markdown-thematic-break: #dde5ec;
   --lt-markdown-math-inline-background: #eef2f6;
@@ -482,7 +482,7 @@
   --lt-markdown-alert-caution: #ff5f63;
   --lt-markdown-badge-background: #1c242e;
   --lt-markdown-badge-foreground: #dfe6ee;
-  --lt-markdown-table-border: #28323d;
+  --lt-markdown-table-border: #59636d;
   --lt-markdown-table-row-background: #0a0e13;
   --lt-markdown-thematic-break: #28323d;
   --lt-markdown-math-inline-background: #1c242e;
@@ -569,7 +569,7 @@
   --lt-markdown-alert-caution: #d3243a;
   --lt-markdown-badge-background: #eeeeee;
   --lt-markdown-badge-foreground: #222222;
-  --lt-markdown-table-border: #e0e0e0;
+  --lt-markdown-table-border: #8a8a8a;
   --lt-markdown-table-row-background: #f0f0f0;
   --lt-markdown-thematic-break: #e0e0e0;
   --lt-markdown-math-inline-background: #eeeeee;
@@ -656,7 +656,7 @@
   --lt-markdown-alert-caution: #fb464c;
   --lt-markdown-badge-background: #2a2a2a;
   --lt-markdown-badge-foreground: #dadada;
-  --lt-markdown-table-border: #363636;
+  --lt-markdown-table-border: #696969;
   --lt-markdown-table-row-background: #181818;
   --lt-markdown-thematic-break: #363636;
   --lt-markdown-math-inline-background: #2a2a2a;
@@ -743,7 +743,7 @@
   --lt-markdown-alert-caution: #c0395a;
   --lt-markdown-badge-background: #f2e9db;
   --lt-markdown-badge-foreground: #43382e;
-  --lt-markdown-table-border: #e6dac6;
+  --lt-markdown-table-border: #8b7f71;
   --lt-markdown-table-row-background: #ece0d0;
   --lt-markdown-thematic-break: #e6dac6;
   --lt-markdown-math-inline-background: #f2e9db;
@@ -830,7 +830,7 @@
   --lt-markdown-alert-caution: #f3898f;
   --lt-markdown-badge-background: #33374a;
   --lt-markdown-badge-foreground: #c6ceef;
-  --lt-markdown-table-border: #414559;
+  --lt-markdown-table-border: #71768f;
   --lt-markdown-table-row-background: #21242f;
   --lt-markdown-thematic-break: #414559;
   --lt-markdown-math-inline-background: #33374a;
@@ -917,7 +917,7 @@
   --lt-markdown-alert-caution: #d1242f;
   --lt-markdown-badge-background: #f6f8fa;
   --lt-markdown-badge-foreground: #25292e;
-  --lt-markdown-table-border: #d1d9e0;
+  --lt-markdown-table-border: #8a9097;
   --lt-markdown-table-row-background: #f6f8fa;
   --lt-markdown-thematic-break: #d1d9e0b3;
   --lt-markdown-math-inline-background: #f6f8fa;
@@ -1004,7 +1004,7 @@
   --lt-markdown-alert-caution: #f85149;
   --lt-markdown-badge-background: #212830;
   --lt-markdown-badge-foreground: #f0f6fc;
-  --lt-markdown-table-border: #39435f;
+  --lt-markdown-table-border: #566078;
   --lt-markdown-table-row-background: #010409;
   --lt-markdown-thematic-break: #39435fb3;
   --lt-markdown-math-inline-background: #212830;
@@ -1091,7 +1091,7 @@
   --lt-markdown-alert-caution: #b5442f;
   --lt-markdown-badge-background: #f2ead8;
   --lt-markdown-badge-foreground: #1c1a15;
-  --lt-markdown-table-border: #e6ddc6;
+  --lt-markdown-table-border: #8b8577;
   --lt-markdown-table-row-background: #efe9d8;
   --lt-markdown-thematic-break: #e6ddc6;
   --lt-markdown-math-inline-background: #f2ead8;
@@ -1178,7 +1178,7 @@
   --lt-markdown-alert-caution: #f0857a;
   --lt-markdown-badge-background: #201e18;
   --lt-markdown-badge-foreground: #eceae2;
-  --lt-markdown-table-border: #2b2820;
+  --lt-markdown-table-border: #636159;
   --lt-markdown-table-row-background: #090805;
   --lt-markdown-thematic-break: #2b2820;
   --lt-markdown-math-inline-background: #201e18;
@@ -1265,7 +1265,7 @@
   --lt-markdown-alert-caution: #d3243a;
   --lt-markdown-badge-background: #eef1f4;
   --lt-markdown-badge-foreground: #222222;
-  --lt-markdown-table-border: #e6e9ee;
+  --lt-markdown-table-border: #898a8d;
   --lt-markdown-table-row-background: #eef0f2;
   --lt-markdown-thematic-break: #e6e9ee;
   --lt-markdown-math-inline-background: #eef1f4;
@@ -1352,7 +1352,7 @@
   --lt-markdown-alert-caution: #fb464c;
   --lt-markdown-badge-background: #2a2f37;
   --lt-markdown-badge-foreground: #dadada;
-  --lt-markdown-table-border: #353b44;
+  --lt-markdown-table-border: #666b71;
   --lt-markdown-table-row-background: #171b20;
   --lt-markdown-thematic-break: #353b44;
   --lt-markdown-math-inline-background: #2a2f37;
@@ -1439,7 +1439,7 @@
   --lt-markdown-alert-caution: #cf2e3f;
   --lt-markdown-badge-background: #e7e0f5;
   --lt-markdown-badge-foreground: #26222e;
-  --lt-markdown-table-border: #d8d0e6;
+  --lt-markdown-table-border: #868092;
   --lt-markdown-table-row-background: #e8e2f0;
   --lt-markdown-thematic-break: #d8d0e6;
   --lt-markdown-math-inline-background: #e7e0f5;
@@ -1613,7 +1613,7 @@
   --lt-markdown-alert-caution: #d70015;
   --lt-markdown-badge-background: #ececef;
   --lt-markdown-badge-foreground: #1d1d1f;
-  --lt-markdown-table-border: #d8d8dd;
+  --lt-markdown-table-border: #87878b;
   --lt-markdown-table-row-background: #ececef;
   --lt-markdown-thematic-break: #d8d8dd;
   --lt-markdown-math-inline-background: #f2f2f4;
@@ -1700,7 +1700,7 @@
   --lt-markdown-alert-caution: #ff453a;
   --lt-markdown-badge-background: #2c2c2e;
   --lt-markdown-badge-foreground: #f5f5f7;
-  --lt-markdown-table-border: #3a3a3c;
+  --lt-markdown-table-border: #676769;
   --lt-markdown-table-row-background: #161618;
   --lt-markdown-thematic-break: #3a3a3c;
   --lt-markdown-math-inline-background: #2c2c2e;
@@ -1787,7 +1787,7 @@
   --lt-markdown-alert-caution: #d3243a;
   --lt-markdown-badge-background: #eeece8;
   --lt-markdown-badge-foreground: #222222;
-  --lt-markdown-table-border: #e0e0e0;
+  --lt-markdown-table-border: #838383;
   --lt-markdown-table-row-background: #e7e5e0;
   --lt-markdown-thematic-break: #e0e0e0;
   --lt-markdown-math-inline-background: #eeece8;
@@ -1874,7 +1874,7 @@
   --lt-markdown-alert-caution: #fb464c;
   --lt-markdown-badge-background: #2a2a2a;
   --lt-markdown-badge-foreground: #dadada;
-  --lt-markdown-table-border: #363636;
+  --lt-markdown-table-border: #666664;
   --lt-markdown-table-row-background: #181818;
   --lt-markdown-thematic-break: #363636;
   --lt-markdown-math-inline-background: #2a2a2a;
