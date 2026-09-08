@@ -12,6 +12,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
+| [Refresh](#history) | Draw the open file from disk again, dropping page-only state such as a folded block or dragged table column |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it — or stays drawn the whole time, where your machine is set to always show scrollbars |
 | [Live reload](#reload) | Reload a changed file without losing your place |
@@ -77,9 +78,11 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![The Leaftext app bar across the top of the window: the leaf mark, the library button, Back and Forward, the tab strip, then the theme palette, Open, plus and Export at the right](../../imgs/navigation.png)
+![The Leaftext app bar: the leaf mark, then the theme palette, Open, plus and Export at the right](../../imgs/navigation.png)
 
-The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back and Forward, then the tab strip, and at the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-the-page). Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
+At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-a-pdf).
+
+The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back, Refresh and Forward, then the tab strip. Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
 **Open reaches any file, on either platform.** On Windows the dialog carries a list of the [formats the reader opens](03-library.md#file-types), with **All files** at the end for anything else. A Mac dialog has no such list, so it simply shows everything — which is the same answer, since a file whose ending Leaftext does not know is [read as Markdown](01-rendering.md) rather than refused.
 
@@ -152,11 +155,11 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 #### When the bar runs out of room
 
-Tabs are never squeezed to make space for the toolbar. As the strip fills — or as the bar itself runs wider than the window, which is what happens on a narrow window with nothing open — the app bar's buttons fold into a chevron menu one at a time, right to left: the trailing actions first, then Back and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Once a group has gone entirely — the theme, open and new buttons, or Back and Forward — the row closes up over it rather than holding a gap where it stood. Widening the window puts each one back where it came from.
+Tabs are never squeezed to make space for the toolbar. As the strip fills — or as the bar itself runs wider than the window, which is what happens on a narrow window with nothing open — the app bar's buttons fold into a chevron menu one at a time, right to left: the trailing actions first, then Back, Refresh and Forward, then the window controls. Two never fold — the leaf, which is the way home, and the [library](03-library.md#layout) button, which on a narrow window is the only way to reach the library at all. Once a group has gone entirely — the theme, open and new buttons, or Back, Refresh and Forward — the row closes up over it rather than holding a gap where it stood. Widening the window puts each one back where it came from.
 
 Both halves of that matter on a small window. Closing your last document empties the tab strip, and an empty strip has nothing to run out of — so the bar is measured on its own account as well, and the window's own close, minimize and maximize buttons stay drawn inside the window with the chevron holding whatever will not fit beside them.
 
-The menu reads in its own order, not the order things folded into it: Back, Forward, Themes, Open, New, then the window buttons at the foot. So the controls you open it for are at the top, and close is not the first thing under the pointer. On a Mac that means the three dots stack at the bottom with the green one above and close at the very foot — the reverse of how they read across the bar, since stacked they run top to bottom.
+The menu reads in its own order, not the order things folded into it: Back, Refresh, Forward, Themes, Open, New, then the window buttons at the foot. So the controls you open it for are at the top, and close is not the first thing under the pointer. On a Mac that means the three dots stack at the bottom with the green one above and close at the very foot — the reverse of how they read across the bar, since stacked they run top to bottom.
 
 While the [library sheet](03-library.md#narrow-windows) is up it covers the page, so the tab strip goes with it.
 
@@ -167,6 +170,8 @@ While the [library sheet](03-library.md#narrow-windows) is up it covers the page
 **Files.** Open `README.md`, then click a link to `docs/guide.md`. Back returns to `README.md`, at the paragraph you left rather than the top of the page. Forward returns to `docs/guide.md`, at the place you left that one.
 
 **Jumps.** Jump from `#intro` to `#api` inside the same document. Back returns to the earlier reading position instead of switching files.
+
+**Refresh.** Press the circular arrow between Back and Forward to read the open file again and redraw it from scratch. It resets page-only state, including folded blocks and dragged table columns, and picks up a picture or stylesheet an HTML page draws from beside itself. A file with unsaved edits asks first: press **Refresh anyway** to discard those edits, or leave the notice alone to keep them.
 
 **A renamed file.** [Rename a file](03-library.md#file-actions) and every step that was standing on it follows the new name, in every tab and forward as well as back — so pressing Back onto a document you had already read once lands on it rather than on a message saying it could not be opened. Each step keeps the place you were reading at.
 
