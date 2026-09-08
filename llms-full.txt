@@ -70,7 +70,7 @@
 ## Design system
 - Page: https://leaftext.com/docs/02-development/05-design-system.md
 - Markdown: https://leaftext.com/docs/02-development/05-design-system.md
-- Summary: Four files under design/ are the source. Each is plain Markdown, so Leaftext opens them.
+- Summary: Return to Architecture, the private development account's hub.
 
 ## Screenshots
 - Page: https://leaftext.com/docs/02-development/06-screenshots.md
