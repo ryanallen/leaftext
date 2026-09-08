@@ -114,6 +114,12 @@ Highlight words and a small bar appears over them: bold, italic, strikethrough, 
 
 Take the handle and a block lifts off the page; drop it where its neighbors have opened a gap. Press the plus on an empty line and [a row of block kinds](docs/01-features/07-editing.md#adding-a-block) fans out — text, heading, list, quote, code, table, image, flowchart, divider. **[The block gutter →](docs/01-features/07-editing.md#the-block-gutter)**
 
+### Restructure a table without typing a pipe
+
+![A reading list table in the page, with a grip standing above the Title column, another beside the Arctic Dreams row, and that row's menu open beside it offering Add row above, Add row below and Delete row](imgs/table-controls.png)
+
+Point at a table and a grip appears beside the row and above the column. Add a row or a column, delete one, drag either to reorder it, align a column left, center or right, or sort by it — numbers and dates by value, everything else as text. `Tab` and `Enter` walk the cells, and `Tab` at the last one writes the next row. The same actions are on a right-click, and the corner copies the whole table as CSV. **[Editing a table →](docs/01-features/07-editing.md#editing-a-table)**
+
 ### Draw a flowchart instead of typing one
 
 ![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)

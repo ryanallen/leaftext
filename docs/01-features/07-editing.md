@@ -36,6 +36,11 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them, or under them where there is no room above: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code, link and badge as well, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [A table keeps its spacing](#inline-editing-the-reading-view) | Type in one cell and only that cell is rewritten, so a table you lined up by hand stays lined up |
+| [Walking a table's cells](#editing-a-table) | `Tab` and `Shift+Tab` step through the cells of an open table and `Enter` drops one row down; `Tab` at the last cell writes one more row and lands in it |
+| [Row and column handles](#editing-a-table) | Point at a table and a grip appears beside the row and above the column: add, delete, drag to reorder, align a column left, center or right, or sort by it |
+| [Sorting a column](#editing-a-table) | Sort the body rows by any column, A to Z or Z to A — numbers and ISO dates by value, everything else as text; the header and the divider never move |
+| [The table's right-click menu](#editing-a-table) | Right-click a cell for the same row and column actions the handles carry |
+| [Copy as CSV](#editing-a-table) | The table's second corner button copies it as a spreadsheet reads it, on a locked page as readily as an unlocked one |
 | [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits, a word at a time while you are typing; a Redo button beside it (and `Ctrl+Y` or `Ctrl+Shift+Z`) brings back what you took back |
 | [When the app cannot write it](#when-the-app-cannot-write-it) | A file that has gone takes the tab dot, Save and Undo down and raises a message naming it; the flowchart editor keeps the drawing and the image box keeps the address you typed, rather than closing over them |
@@ -205,6 +210,22 @@ The badge button asks before it writes anything. Press it and the row swaps for 
 - Pick a tone and a box opens for the words the badge carries, with a live badge of that tone beside the field, so what is being written is on screen while it is typed. `Enter` writes it; `Enter` with nothing typed writes nothing.
 - The box also offers a **mark** — a check, a cross, a tag or an update arrow — drawn as itself; picking one puts it in the badge beside the words, and pressing the one already on takes it off.
 - What lands is one [badge](01-rendering.md#badges-leaf-extension) on the line, and never a list item: a status list is a list you write as a list.
+
+### Editing a table
+
+![A reading list table in the page, with a grip standing above the Title column, another beside the Arctic Dreams row, and that row's menu open beside it offering Add row above, Add row below and Delete row](../../imgs/table-controls.png)
+
+A safe Markdown table — one the app can write back out whole — is more than a block you can type in. Point at it and its own controls appear, so a table in a note can be restructured without typing a pipe.
+
+- **The keyboard walks the cells.** Click into a table and `Tab` moves to the next cell, `Shift+Tab` to the previous, and `Enter` one row down in the same column. Each end stands still rather than wrapping round to the other, so the caret never lands somewhere off screen — except `Tab` at the very last cell, which writes one more body row and puts the caret in its first cell. Arriving in a cell leaves the caret at the end of the words already there rather than selecting them, so passing through a cell cannot wipe it, and it closes off the last cell's typing as its own undo step.
+- **A grip beside the row and above the column.** Run the pointer over a table and one handle stands at the body row you are level with and one above the column you are in. Click either for its actions: add above or below and delete for a row; add left or right, delete, align, and sort for a column. The header row has no grip of its own — the pipes are keyed off it.
+- **Drag a grip to reorder.** Take the row grip and drop it on another body row to move the row there; take the column grip and drop it on a cell of another column to move the column. A release anywhere outside that table cancels, leaving it exactly as it was, so a drag that wanders into the document never moves a row out of the table.
+- **Align a column.** Left, center and right write the `:---`, `:---:` and `---:` markers into the divider row and nothing else; every other line of the table is left as you wrote it.
+- **Sort by a column, and it writes the file.** A cell that is entirely a number sorts as a number and one that is entirely an ISO date sorts as a date, so 9 comes before 10 and last March before this one; everything else sorts as text, and equal cells keep the order you wrote them in. The header and the divider never move. Sorting is labeled as a write because it is one — it changes the document rather than the view — and sorting a column already in that order writes nothing at all.
+- **The same actions on a right-click.** Right-click any cell of an open table and the menu carries every row and column action the handles do, acting on the cell you right-clicked.
+- **The last row and the last column stay.** Deleting either is refused: a table with nothing under its header, or with no header cell, has nothing left to point at.
+- **Copy as CSV.** The table's top-right corner carries a second button beside the [full-window opener](#inline-editing-the-reading-view): it copies the table as a spreadsheet reads it, quoting a cell only where it holds a comma, a quote or a line break. It only reads, so it is there on a locked page too, and it copies the words as they are drawn rather than the Markdown behind them.
+- **Markdown only, and only unlocked.** The handles, the keys and the menu appear on a safe Markdown table with the [reading padlock](#the-padlock) lifted. A table the app could not write back keeps the editor it already had, and a locked page keeps everything but Copy as CSV out of the way.
 
 ### The format bar
 
@@ -439,6 +460,7 @@ What the *reading view* offers differs by format, because a block can only be ed
 | Format | In the reading view |
 |---|---|
 | Markdown text blocks | Edit WYSIWYG — type in the rendered page, styling intact. [Block gutter](#the-block-gutter) and [format bar](#the-format-bar) |
+| A safe Markdown table | Type in any cell, and restructure it from its own handles or its right-click menu: rows and columns added, deleted and dragged, a column aligned or sorted, the whole table copied as CSV. [Editing a table](#editing-a-table) |
 | Markdown blocks that cannot round-trip losslessly | Edit their exact source in place. [Block gutter](#the-block-gutter) |
 | Markdown blocks the page never draws — an HTML comment, a `<script>` or `<style>` block | Nothing is drawn for them, so there is nothing to click; edited in the code view. Every other block in the document stays editable around them |
 | HTML | Read-only, and the page carries no padlock: sanitizing rewrites the markup before it is drawn, so no block can prove the bytes it came from. Edited in the code view |
