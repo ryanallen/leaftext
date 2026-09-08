@@ -441,7 +441,7 @@ audience: [readers, testers]       # inline array → a list
 tags:                              # block list → a list
   - markdown
   - demo
-created: 2026-06-14                # a real date; 2026-13-45 is text
+created: 2026-06-14                # a real date, and 06/14/2026 is the same one; 2026-13-45 is text
 pinned: true                       # a checkbox
 version: "1.0"                     # quoted, so text — bare 1.0 is a number
 ---
@@ -452,6 +452,8 @@ version: "1.0"                     # quoted, so text — bare 1.0 is a number
 <div class="frontmatter"><table><tbody><tr><th>Author</th><td>Ada Lovelace</td></tr><tr><th>status</th><td>draft</td></tr><tr><th>audience</th><td><ul><li>readers</li><li>testers</li></ul></td></tr><tr><th>tags</th><td><ul><li>markdown</li><li>demo</li></ul></td></tr><tr><th>created</th><td>2026-06-14</td></tr><tr><th>pinned</th><td><input type="checkbox" disabled checked></td></tr><tr><th>version</th><td>1.0</td></tr></tbody></table></div>
 
 **Six types, the same six Obsidian uses:** text, list, number, checkbox, date, and date and time. A field's type comes from four places, and the later ones win: the quoting the file already carries, then the value's own shape, then the vault's own `.obsidian/types.json` if it has one, then a `leaftext-types` line in the note itself — `leaftext-types: [phone=text, due=date]`, one `key=type` per item. `aliases`, `cssclasses` and `tags` are always lists, so `tags: one` is a list of one.
+
+**A date is written in either order.** `2026-06-14` and `06/14/2026` are the same day, and both are typed as a date, so a note that writes its dates the American way answers the [filter](03-library.md#filtering) `due:<friday` exactly as a year-first one does. Ten characters either way: `6/14/26` and `06-14-2026` stay text rather than have a century or a separator guessed for them, and a date and time keeps the year-first shapes it has always had.
 
 **What a note may ask for by name.** `cssclasses: [wide]` gives the page the reader's whole lane. That is the only style so far, under the names `wide` and `full-width`; a name the app does not have changes nothing and says so.
 
