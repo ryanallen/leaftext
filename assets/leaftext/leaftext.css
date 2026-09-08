@@ -2260,6 +2260,11 @@
   --lt-icon-favorite-off: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%23000'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z' /%3E%3C/svg%3E");
   --lt-icon-favorite-on: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M11.645 20.91a.75.75 0 0 0 .71 0c1.2-.65 9.145-5.16 9.145-12.66 0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.5 7.945 12.01 9.145 12.66Z'/%3E%3C/svg%3E");
   --lt-icon-back: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-align-left: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 6h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 10h9' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 14h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 18h9' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-align-center: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 6h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M7.5 10h9' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 14h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M7.5 18h9' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-align-right: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 6h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M11 10h9' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 14h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M11 18h9' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-sort-ascending: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h7' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 12h11' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 17h15' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-sort-descending: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h15' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 12h11' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 17h7' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-trash: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-copy: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-highlighter: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m9 11-6 6v3h9l3-3' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -2901,6 +2906,26 @@
 .lt-icon-back {
   -webkit-mask-image: var(--lt-icon-back);
   mask-image: var(--lt-icon-back);
+}
+.lt-icon-align-left {
+  -webkit-mask-image: var(--lt-icon-align-left);
+  mask-image: var(--lt-icon-align-left);
+}
+.lt-icon-align-center {
+  -webkit-mask-image: var(--lt-icon-align-center);
+  mask-image: var(--lt-icon-align-center);
+}
+.lt-icon-align-right {
+  -webkit-mask-image: var(--lt-icon-align-right);
+  mask-image: var(--lt-icon-align-right);
+}
+.lt-icon-sort-ascending {
+  -webkit-mask-image: var(--lt-icon-sort-ascending);
+  mask-image: var(--lt-icon-sort-ascending);
+}
+.lt-icon-sort-descending {
+  -webkit-mask-image: var(--lt-icon-sort-descending);
+  mask-image: var(--lt-icon-sort-descending);
 }
 .lt-icon-trash {
   -webkit-mask-image: var(--lt-icon-trash);
@@ -7515,6 +7540,54 @@ body.is-block-dragging .document-body [data-src-start] {
   transition: var(--lt-transition-hover-reveal-leave), border-color var(--lt-duration-120) var(--lt-ease),
     color var(--lt-duration-120) var(--lt-ease);
 }
+/* The second corner action: the same shape and the same reveal, one button-width further in. Written out rather than folded into the lists above, which are each read as one selector by a test that names them; a row box like the picture lane's would be the other way to place two, and this is one block against restructuring the lane for a control that never moves. */
+.table-copy-csv {
+  z-index: 1;
+  position: absolute;
+  top: var(--lt-space-6);
+  right: calc(var(--lt-space-6) + 34px);
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--lt-transition-hover-reveal-leave), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
+.table-copy-csv::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: transparent;
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.table-copy-csv:hover::before {
+  background: var(--lt-wash-hover);
+}
+.table-copy-csv .lt-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+.table-lane:hover .table-copy-csv,
+.table-copy-csv:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive), border-color var(--lt-duration-120) var(--lt-ease),
+    color var(--lt-duration-120) var(--lt-ease);
+}
+.table-copy-csv:hover {
+  border-color: var(--lt-border-strong);
+  color: var(--lt-foreground);
+}
 /* A picture has two, so the corner is a row they sit in and the space between them is a gap rather than an offset somebody measured — the way the diagram's own pair sits. */
 .image-lane-corner {
   position: absolute;
@@ -8149,6 +8222,155 @@ body.is-block-dragging .document-body [data-src-start] {
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);
   margin-block-start: 0;
+}
+
+/* ---- A table's own row handle -------------------------------------------
+   The grip a body row is moved, added or deleted by. Inside .table-lane rather than in the block gutter: the gutter already stands in that margin and it means the whole block, so a row control beside it would read as another way to drag the table. Being in the lane is also what makes it travel with a wide table's sideways scroll instead of hanging over a column it no longer points at.
+
+   It stands on the row's own middle, which the script writes as `top`; everything else is the component's own geometry. */
+.table-row-handle[hidden] {
+  display: none;
+}
+.table-row-handle {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  transform: translate(-100%, -50%);
+}
+.table-row-grip {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-6);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-muted);
+  cursor: grab;
+  opacity: var(--lt-opacity-70);
+  transition: opacity var(--lt-duration-fast) var(--lt-ease-standard), color var(--lt-duration-fast) var(--lt-ease-standard);
+}
+.table-row-grip:hover,
+.table-row-grip:focus-visible {
+  color: var(--lt-markdown-text);
+  opacity: var(--lt-opacity-100);
+}
+.table-row-grip:active {
+  cursor: grabbing;
+}
+.table-row-menu[hidden] {
+  display: none;
+}
+/* Beside the grip rather than under it: a row is one line tall, so a menu dropped below it covers the row it is about. */
+.table-row-menu {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  /* The halftone reads this too, and adds its spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-8);
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-surface-elevated);
+  white-space: nowrap;
+}
+.table-row-action {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  margin: 0;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-6);
+  background: none;
+  color: var(--lt-markdown-text);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  text-align: left;
+  cursor: pointer;
+}
+.table-row-action:hover,
+.table-row-action:focus-visible {
+  background: var(--lt-markdown-table-row-background);
+}
+
+/* ---- A table's own column handle -----------------------------------------
+   The grip a column is moved, added, deleted and aligned from. In .table-lane like the row handle, and for the same reason: the lane owns the sideways scroll, so a handle in it travels with its column instead of hanging over a neighbor once a wide table is scrolled. Its place along the lane is the column's middle, which the script writes as `left`. */
+.table-column-handle[hidden] {
+  display: none;
+}
+.table-column-handle {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-4);
+  transform: translate(-50%, -100%);
+}
+.table-column-grip {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: var(--lt-space-2);
+  border: 0;
+  border-radius: var(--lt-radius-6);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-muted);
+  cursor: grab;
+  opacity: var(--lt-opacity-70);
+  transform: rotate(90deg);
+  transition: opacity var(--lt-duration-fast) var(--lt-ease-standard), color var(--lt-duration-fast) var(--lt-ease-standard);
+}
+.table-column-grip:hover,
+.table-column-grip:focus-visible {
+  color: var(--lt-markdown-text);
+  opacity: var(--lt-opacity-100);
+}
+.table-column-grip:active {
+  cursor: grabbing;
+}
+.table-column-menu[hidden] {
+  display: none;
+}
+/* Below the grip, because a column handle stands above the table with the page over it and a menu opened upwards would leave the reader. */
+.table-column-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--lt-space-4);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  /* The halftone reads this too, and adds its spread to it, so the ring outside the corner is struck from the corner’s own center. */
+  --lt-shadow-host-radius: var(--lt-radius-8);
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-surface-elevated);
+  white-space: nowrap;
+}
+.table-column-action {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  margin: 0;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-6);
+  background: none;
+  color: var(--lt-markdown-text);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  text-align: left;
+  cursor: pointer;
+}
+.table-column-action:hover,
+.table-column-action:focus-visible {
+  background: var(--lt-markdown-table-row-background);
 }
 /* Lives in the shell's own column, outside the page — so no bleed and nothing to out-stack: it never overlaps the bar or the card.
 
