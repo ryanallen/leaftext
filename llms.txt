@@ -12,6 +12,7 @@
 - [Settings](https://leaftext.com/docs/01-features/05-settings.md)
 - [Themes](https://leaftext.com/docs/01-features/06-themes.md)
 - [Editing](https://leaftext.com/docs/01-features/07-editing.md)
+- [Relational tables](https://leaftext.com/docs/01-features/08-relational-tables.md)
 - [Meet Leaftext](https://leaftext.com/docs/01-introduction.md)
 - [Architecture](https://leaftext.com/docs/02-development/01-architecture.md)
 - [Building](https://leaftext.com/docs/02-development/02-building.md)

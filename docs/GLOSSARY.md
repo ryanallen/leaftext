@@ -122,6 +122,10 @@ A `[^name]` reference in the text with its definition collected at the foot of t
 
 The small bar that appears over words you highlight: copy, highlight and annotate for the words on any page, and on an unlocked one bold, italic, strikethrough, code and link in front of those, then text, a bigger or smaller heading, and quote for the whole [block](GLOSSARY.md#block). A button with nowhere to go grays out. What it holds follows the [padlock](GLOSSARY.md#padlock), because marking a passage up needs no block opened for typing. See [Editing](01-features/07-editing.md#the-format-bar).
 
+## Formula line
+
+A commented line under a table saying how one or more of its cells get their values — `<!-- TBLFM: @>$4=sum(@2..@-1) -->` — in the syntax org-mode uses. Leaftext keeps every cell it names right as the rows around them change, marks each one with a thin bar on its leading edge, and holds a row whose cells are all kept that way out of a [sort](01-features/07-editing.md#editing-a-table). It is an ordinary HTML comment, so a file carrying one stays a plain Markdown file. Right-clicking a cell writes one without typing it. See [Editing](01-features/07-editing.md#a-table-that-adds-itself-up).
+
 ## Frontmatter
 
 A leading `--- … ---` block of metadata at the top of a file. Leaftext renders it as a table above the document, drawing each field as the thing it is — a checkbox as a checkbox, a list as items — and keeping the case the key was written in. Only the first block counts; a later `---` is a horizontal rule. Nesting is not part of it: an indented `key: value` is refused rather than read as a field of its own. See [Rendering](01-features/01-rendering.md#frontmatter).
@@ -277,6 +281,10 @@ The rendered document — the view Leaftext is for. Its two companions on the [f
 ## Reduce Motion
 
 Your system's accessibility setting for cutting animation, which Leaftext follows. Turn it on and nothing in the app slides, rises or fades — [sheets](GLOSSARY.md#bottom-sheet), the [library pane](GLOSSARY.md#library-pane), menus, the [find bar](01-features/02-navigation.md#find-in-this-document), the [tab](GLOSSARY.md#tab) strip, anything that [folds open](01-features/01-rendering.md#collapsible-sections) and a document opening all arrive in place, and a control you point at takes its highlight in one frame instead of over a beat. Spinners keep turning more slowly, a [wide table](01-features/01-rendering.md#tables)'s edge marks stay, and a loading placeholder stays dim, because stopping any of the three would say something untrue. There is no control for it in the app. See [Settings](01-features/05-settings.md#reduce-motion).
+
+## Relational table
+
+An ordinary Markdown table with a temporary RDB view over it: cards, a board, a list, sorting, filtering and relations to rows in another table. The table stays as plain Markdown, and only an optional description comment is written. See [Relational tables](01-features/08-relational-tables.md).
 
 ## Recent files
 

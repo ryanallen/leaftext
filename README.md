@@ -120,6 +120,16 @@ Take the handle and a block lifts off the page; drop it where its neighbors have
 
 Point at a table and a grip appears beside the row and above the column. Add a row or a column, delete one, drag either to reorder it, align a column left, center or right, or sort by it — numbers and dates by value, everything else as text. `Tab` and `Enter` walk the cells, and `Tab` at the last one writes the next row. The same actions are on a right-click, and the corner copies the whole table as CSV. **[Editing a table →](docs/01-features/07-editing.md#editing-a-table)**
 
+### A table that adds itself up
+
+Right-click the cell a total belongs in and ask for the sum, average, count, smallest or largest of the rows above it. The number goes into the file with a [formula line](docs/GLOSSARY.md#formula-line) under the table saying what that cell is, and Leaftext keeps it right as the rows under it change — one press of undo takes an edit and its totals back together. **[A table that adds itself up →](docs/01-features/07-editing.md#a-table-that-adds-itself-up)**
+
+### Read a table as cards, a board or a list
+
+![The same records drawn as a board in three columns headed FINISHED, READING and REFERENCE, each card led by its id with its fields listed under it, and Board marked in the quiet bar above](imgs/relational-board.png)
+
+Point at a table with a header row and a few body rows and a quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**. Leaftext works out what each column holds — numbers, dates, checkboxes, short repeated values, pictures, links into another table — and a cell's link can pull in the row it points at. Nothing is written: the file stays an ordinary Markdown table, and reopening it restores the table as you wrote it. **[Relational tables →](docs/01-features/08-relational-tables.md)**
+
 ### Draw a flowchart instead of typing one
 
 ![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
@@ -298,6 +308,7 @@ New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a coup
 | [Settings](docs/01-features/05-settings.md) | Every preference, its default, and where it is stored |
 | [Themes](docs/01-features/06-themes.md) | The eleven families, appearance, fonts, diagram colors |
 | [Editing](docs/01-features/07-editing.md) | Inline editing, the block gutter, the flowchart editor, code view, save |
+| [Relational tables](docs/01-features/08-relational-tables.md) | RDB views, relations, sorting, filtering and optional table descriptions |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
 
 The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaftext itself.

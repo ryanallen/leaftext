@@ -3959,6 +3959,8 @@ body.is-maximized #winMaximize .wc-restore {
 /* Every floating surface shares one halftone: four edge ramps screen coverage off a tiled blob before the curve turns what survives into one ink, and a five-layer mask fades the band to nothing at its rim and punches the host's own face out. */
 .app-overflow-panel::before,
 .context-menu::before,
+.table-row-menu::before,
+.table-column-menu::before,
 .rename-box::before,
 .update-panel::before,
 .app-toast::before,
@@ -3973,6 +3975,7 @@ body.is-maximized #winMaximize .wc-restore {
 .reader-tool-tray::before,
 .selection-toolbar::before,
 .filter-menu::before,
+.table-lens-menu::before,
 .hint-bubble::before,
 .document-body .docs-pager a::before {
   content: '';
@@ -7763,8 +7766,8 @@ body.is-block-dragging .document-body [data-src-start] {
 /* On a screen and never on paper. The reader is a query container on the printed sheet too, and a printed lane is written as a pixel width off the chosen paper — narrower than this number on most of them — so an unguarded container query cards every table in an export or a print, which is the one place a grid has all the room it needs. The media rule under it already says `screen and` for the same reason. */
 /* The cell is a block, never a flex box. A flex container makes every child its own item, so a cell of three links and the words between them came out as six columns side by side, each one broken a word-piece per line; and a flex item cannot shrink under its longest unbreakable word, so a path ran clean out of the card. As a block the whole cell is one run of words, the label an inline box at the head of it, and `overflow-wrap: anywhere` is what lets a path break rather than overhang. */
 /* The row wraps rather than gridding, which is what puts a `#` beside a `Ticket` and leaves a paragraph a line of its own: equal grid tracks handed both the same room. A cell is laid out at its own width and the browser breaks the line where the next one stops fitting, so nothing here reads a cell to decide how long it is. */
-/* No box round a card. Eighteen boxes down a page read as a picket fence rather than as a list of records, so one rule between records does the separating and the room either side of it does the rest — and the card takes back the measure the box was spending, which is what pays for the wider column gap above. The last card carries no rule, because a table already ends where it ends. */
-/* The room a card holds and the room around it move apart rather than together: it is the space between two records that makes a stack read as a list of them rather than as one long page. So the card is opened top and bottom to the step above its column gap, and the lines inside it sit at the step below. */
+/* The table is the one lane and every row a card standing on it, which is the shape the RDB board already draws a record in: the lane takes the reading view's tinted panel, the card takes the page it is printed on, and the room down the lane is what separates one record from the next. The board's own classes describe different markup, so the tokens travel and the selectors do not. */
+/* A column whose middle value cannot share a card line takes a line of its own, led by a rule — the one place a rule does work, since the card edge is what separates the records. Which columns those are is the renderer's answer, off the whole table, because no field name or cell position holds across documents; `data-leaf-long` is what it writes. A marked cell that opens a card draws no rule, because the card edge above it has already made the break. */
 /* The label is an eyebrow, which is the whole difference between a card that reads as a run of words and one whose fields can be found without reading them. Three quarters of the value rather than four fifths: at the reader's 14 pixels that is the 10.5 the app's own muted headings are already drawn at, and the narrower label packs one more field onto a card's first line. Relative rather than a token, because a document's text scales with the reader's setting and the label has to scale with it. */
 @media screen {
   @container (max-width: 720px) {
@@ -7779,25 +7782,28 @@ body.is-block-dragging .document-body [data-src-start] {
       max-width: none;
       overflow: visible;
       width: 100%;
+      background: var(--lt-surface-muted);
+      border: var(--lt-stroke-1) solid var(--lt-border);
+      border-radius: var(--lt-radius-lg);
+      padding: var(--lt-space-8);
     }
     .document-body table:not(.no-cards) thead {
       display: none;
     }
     .document-body table:not(.no-cards) tbody {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      gap: var(--lt-space-8);
     }
     .document-body table:not(.no-cards) tr {
-      border: 0;
-      border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-      border-radius: 0;
+      background: var(--lt-markdown-background);
+      border: var(--lt-stroke-1) solid var(--lt-border);
+      border-radius: var(--lt-radius-md);
       display: flex;
       flex-wrap: wrap;
       gap: var(--lt-space-8) var(--lt-space-16);
       margin-bottom: 0;
-      padding: var(--lt-space-16) 0;
-    }
-    .document-body table:not(.no-cards) tr:last-child {
-      border-bottom: 0;
+      padding: var(--lt-space-12);
     }
     .document-body table:not(.no-cards) td {
       background: none;
@@ -7823,6 +7829,15 @@ body.is-block-dragging .document-body [data-src-start] {
     .document-body table:not(.no-cards) td:not([data-leaf-col])::before {
       display: none;
     }
+    .document-body table:not(.no-cards) td[data-leaf-long] {
+      border-top: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+      flex-basis: 100%;
+      padding-top: var(--lt-space-8);
+    }
+    .document-body table:not(.no-cards) td[data-leaf-long]:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
     /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
     .document-body > .table-bay:has(table:not(.no-cards)) {
       width: 100%;
@@ -7846,25 +7861,28 @@ body.is-block-dragging .document-body [data-src-start] {
     max-width: none;
     overflow: visible;
     width: 100%;
+    background: var(--lt-surface-muted);
+    border: var(--lt-stroke-1) solid var(--lt-border);
+    border-radius: var(--lt-radius-lg);
+    padding: var(--lt-space-8);
   }
   .document-body table:not(.no-cards) thead {
     display: none;
   }
   .document-body table:not(.no-cards) tbody {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: var(--lt-space-8);
   }
   .document-body table:not(.no-cards) tr {
-    border: 0;
-    border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-    border-radius: 0;
+    background: var(--lt-markdown-background);
+    border: var(--lt-stroke-1) solid var(--lt-border);
+    border-radius: var(--lt-radius-md);
     display: flex;
     flex-wrap: wrap;
     gap: var(--lt-space-8) var(--lt-space-16);
     margin-bottom: 0;
-    padding: var(--lt-space-16) 0;
-  }
-  .document-body table:not(.no-cards) tr:last-child {
-    border-bottom: 0;
+    padding: var(--lt-space-12);
   }
   .document-body table:not(.no-cards) td {
     background: none;
@@ -7890,6 +7908,15 @@ body.is-block-dragging .document-body [data-src-start] {
   .document-body table:not(.no-cards) td:not([data-leaf-col])::before {
     display: none;
   }
+  .document-body table:not(.no-cards) td[data-leaf-long] {
+    border-top: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+    flex-basis: 100%;
+    padding-top: var(--lt-space-8);
+  }
+  .document-body table:not(.no-cards) td[data-leaf-long]:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
 }
 .document-body table.is-cards {
   border-collapse: separate;
@@ -7898,25 +7925,28 @@ body.is-block-dragging .document-body [data-src-start] {
   max-width: none;
   overflow: visible;
   width: 100%;
+  background: var(--lt-surface-muted);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  padding: var(--lt-space-8);
 }
 .document-body table.is-cards thead {
   display: none;
 }
 .document-body table.is-cards tbody {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
 }
 .document-body table.is-cards tr {
-  border: 0;
-  border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-  border-radius: 0;
+  background: var(--lt-markdown-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
   display: flex;
   flex-wrap: wrap;
   gap: var(--lt-space-8) var(--lt-space-16);
   margin-bottom: 0;
-  padding: var(--lt-space-16) 0;
-}
-.document-body table.is-cards tr:last-child {
-  border-bottom: 0;
+  padding: var(--lt-space-12);
 }
 .document-body table.is-cards td {
   background: none;
@@ -7941,6 +7971,15 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .document-body table.is-cards td:not([data-leaf-col])::before {
   display: none;
+}
+.document-body table.is-cards td[data-leaf-long] {
+  border-top: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
+  flex-basis: 100%;
+  padding-top: var(--lt-space-8);
+}
+.document-body table.is-cards td[data-leaf-long]:first-child {
+  border-top: 0;
+  padding-top: 0;
 }
 /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
 .document-body > .table-bay:has(table.is-cards) {
@@ -7985,7 +8024,11 @@ body.is-block-dragging .document-body [data-src-start] {
 @media screen {
   @container (max-width: 720px) {
     .document-body .frontmatter table:not(.no-cards) {
+      background: none;
+      border: 0;
+      border-radius: 0;
       display: table;
+      padding: 0;
       max-width: 100%;
       overflow: auto;
       width: max-content;
@@ -7994,6 +8037,7 @@ body.is-block-dragging .document-body [data-src-start] {
       display: table-row-group;
     }
     .document-body .frontmatter table:not(.no-cards) tr {
+      background: none;
       border: 0;
       border-radius: 0;
       display: table-row;
@@ -8010,7 +8054,11 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 @media screen and (max-width: 720px) {
   .document-body .frontmatter table:not(.no-cards) {
+    background: none;
+    border: 0;
+    border-radius: 0;
     display: table;
+    padding: 0;
     max-width: 100%;
     overflow: auto;
     width: max-content;
@@ -8019,6 +8067,7 @@ body.is-block-dragging .document-body [data-src-start] {
     display: table-row-group;
   }
   .document-body .frontmatter table:not(.no-cards) tr {
+    background: none;
     border: 0;
     border-radius: 0;
     display: table-row;
@@ -8371,6 +8420,297 @@ body.is-block-dragging .document-body [data-src-start] {
 .table-column-action:hover,
 .table-column-action:focus-visible {
   background: var(--lt-markdown-table-row-background);
+}
+/* A number the app keeps right off the document's own hidden formula line wears a quiet bar on its leading edge, so it is not mistaken for one somebody typed. It is a mark and not a second copy of the value — the number in the cell is the number in the file — and it sits on the edge a right-aligned number never reaches, which is why it can never collide with the digits. */
+.document-body .table-cell-computed {
+  position: relative;
+}
+.document-body .table-cell-computed::before {
+  content: '';
+  position: absolute;
+  inset-block: var(--lt-space-4);
+  inset-inline-start: 0;
+  width: var(--lt-stroke-1-5);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-muted-foreground);
+  opacity: var(--lt-opacity-46);
+}
+/* The lens bar over a table, and the one menu it opens.
+ *
+ * Quiet by default and drawn only when the table is being aimed at, the way the two corner actions beside it are: a document with a table on every second screen must not read as a page of toolbars. It sits above the lane rather than in it, because the lane is the table's own scrollport and a bar inside it would scroll away sideways with a wide table. */
+.table-lens-bar {
+  display: flex;
+  position: relative;
+  /* Tight inside a group; the space between groups is written on the button that starts the next one. Four layouts and the one control about whichever is drawn, then the two that are about the table however it is laid out, then the one that writes — a row of seven evenly spaced pills says none of that and leaves the reader to work out from a button appearing and disappearing which of them belongs to what. */
+  gap: var(--lt-space-2);
+  align-items: center;
+  margin-inline: auto;
+  margin-block-end: var(--lt-space-4);
+  width: max-content;
+  max-width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--lt-transition-hover-reveal-leave);
+}
+/* The whole bay, not the lane: the bar is above the table, so a pointer moving onto it from the table has already left the lane. */
+.table-bay:hover > .table-lens-bar,
+.table-lens-bar:focus-within,
+.table-lens-bar.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transition: var(--lt-transition-hover-reveal-arrive);
+}
+/* A lens that answered nothing stays visible and says so: a control that vanished under the press is a control nobody can ask about. */
+.table-lens-bar.is-refused {
+  opacity: 1;
+  pointer-events: auto;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+.table-lens-bar.is-waiting {
+  opacity: var(--lt-opacity-60);
+  pointer-events: none;
+}
+
+.table-lens-button {
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-500);
+  line-height: var(--lt-leading-1-3);
+  transition: background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease),
+    border-color var(--lt-duration-120) var(--lt-ease);
+}
+.table-lens-button.is-group-start {
+  margin-inline-start: var(--lt-space-16);
+}
+.table-lens-button:hover {
+  background: var(--lt-wash-hover);
+  color: var(--lt-foreground);
+}
+/* The control that is only ever about the layout beside it. Drawn without a pill of its own so it hangs off the layout group rather than standing in the row as a seventh equal: a reader who meets it next to Sort and Filter reads it as another thing you can ask the table, and it is not — it changes which column leads a card, carries its picture or groups a board, and it is gone the moment the table is a table again. */
+.table-lens-attached {
+  border-color: transparent;
+  background: transparent;
+}
+/* A control that clears its own fill has to say what the pointer paints, or the app-wide `button:hover` lands primary purple under this one's quiet ink. The same wash every other button on the bar takes, and the border stays cleared so hovering it does not grow the pill it was drawn without. */
+.table-lens-attached:hover {
+  background: var(--lt-wash-hover);
+}
+/* A lens that is doing something says so on the button that is doing it, so a reader coming back to the document knows the rows are not the file's order. */
+.table-lens-button.is-on {
+  border-color: var(--lt-primary);
+  color: var(--lt-primary-ink);
+}
+
+/* The one menu the bar has open. Placed against the bar rather than the page so it travels with a table that scrolls. It floats, so it takes the app's one shadow — the dot halftone every floating surface throws, grouped in `panels.css` — rather than a blur of its own. */
+.table-lens-menu {
+  position: absolute;
+  z-index: var(--lt-z-40);
+  top: 100%;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-1);
+  margin-block-start: var(--lt-space-4);
+  padding: var(--lt-space-4);
+  /* As wide as its longest row and no wider. Written `hidden auto` rather than `overflow-y: auto` alone: a box that scrolls on one axis makes the other axis scroll too, so a menu sized to its own words still drew a sideways bar under them. */
+  width: max-content;
+  max-width: 320px;
+  max-height: 320px;
+  overflow: hidden auto;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  /* Handed to the shared shadow, so the ring it strikes is cut from this box's own corner rather than from a square one outside it. */
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-surface-elevated);
+}
+/* A row is a line in a panel, not a control of its own. Written out because a `button` that names no border takes the system's, so every row in this menu came up as its own outlined box inside the one rounded surface. */
+.table-lens-menu-item {
+  display: flex;
+  border: 0;
+  gap: var(--lt-space-8);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lt-space-4) var(--lt-space-6);
+  border-radius: var(--lt-radius-sm);
+  background: transparent;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12-5);
+  text-align: start;
+}
+.table-lens-menu-item:hover {
+  background: var(--lt-wash-hover);
+}
+.table-lens-menu-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* What a row is doing, in words at the end of it. The sort direction was three stacked lines and nothing else, which says which way a sort points only to somebody who already knows the mark. */
+.table-lens-menu-trail {
+  flex: none;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+}
+.table-lens-menu-check {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--lt-primary-ink);
+}
+/* The last row of a filter's own panel, held apart from the values above it so it cannot be pressed by somebody aiming at the bottom one. It keeps the rounded corners every other row has: a square hover box at the foot of a rounded panel is what makes the rounding read as broken. */
+.table-lens-menu-clear {
+  margin-block-start: var(--lt-space-4);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  padding-block-start: var(--lt-space-6);
+  color: var(--lt-muted-foreground);
+}
+
+.table-lens-range {
+  display: flex;
+  gap: var(--lt-space-4);
+}
+.table-lens-input {
+  padding: var(--lt-space-4) var(--lt-space-6);
+  min-width: 0;
+  width: 100%;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12-5);
+}
+.table-lens-input:focus-visible {
+  border-color: var(--lt-primary);
+  box-shadow: var(--lt-shadow-focus);
+  outline: none;
+}
+
+/* The board and the list are drawn beside the table rather than out of it: neither is a shape a `table` can be made into, and both are read-only pictures of the model, so the table itself is hidden while one stands and comes back untouched. */
+.table-lens-board {
+  display: flex;
+  gap: var(--lt-space-12);
+  overflow-x: auto;
+  align-items: flex-start;
+  /* Centered in the reader's lane, the way every other block in the document is. A board of two lanes hanging off the left edge under centered prose reads as a mistake. `safe` so a board wider than the lane still scrolls to its first column rather than clipping it off the front. */
+  justify-content: safe center;
+}
+/* The lane a card stands in. Its fill is the reading view's own tinted panel and the cards on it are the page's paper, so the two read as cards on a lane rather than as one flat field. */
+.table-lens-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-8);
+  min-width: 220px;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-muted);
+}
+.table-lens-column-head {
+  margin: 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+}
+.table-lens-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-markdown-background);
+}
+.table-lens-card-picture {
+  border-radius: var(--lt-radius-sm);
+  width: 100%;
+  height: auto;
+}
+.table-lens-card-title {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13-5);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-3);
+}
+.table-lens-card-field {
+  display: flex;
+  gap: var(--lt-space-6);
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-4);
+}
+/* The column's own name in front of the value, because a card takes the row out of the grid that was labeling it. */
+.table-lens-card-name {
+  flex: none;
+  color: var(--lt-muted-foreground);
+}
+.table-lens-list {
+  display: flex;
+  flex-direction: column;
+}
+.table-lens-line {
+  display: flex;
+  gap: var(--lt-space-8);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--lt-space-6) var(--lt-space-2);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+}
+.table-lens-line-title {
+  font-weight: var(--lt-weight-500);
+}
+.table-lens-line-trail {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+
+/* Cards are the table itself, so which cell leads a card is said on the cell. The label the card drawing writes in front of every value is taken off the two that are the card's own heading and picture. */
+.document-body table.is-cards td.is-lens-title {
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13-5);
+  font-weight: var(--lt-weight-600);
+}
+.document-body table.is-cards td.is-lens-title::before,
+.document-body table.is-cards td.is-lens-picture::before {
+  content: '';
+  display: none;
+}
+
+/* A cell that points at a row of another table. It is a link, and it stays looking like one: the words are the document's own and so is the shape, because a lens that turns every link in a column into an outlined pill has redrawn the reader's document to say something the document did not say. What the lens adds is what it found on the other end, which hovering answers — and, where it found nothing, which kind of nothing. */
+.document-body .table-lens-chip.is-missing,
+.document-body .table-lens-chip.is-unread {
+  text-decoration-style: dotted;
+  text-underline-offset: var(--lt-space-2);
+}
+/* Read whole, and it is not there: a broken link, drawn as one. */
+.document-body .table-lens-chip.is-missing {
+  color: var(--lt-danger);
+  text-decoration-color: var(--lt-danger);
+}
+/* The read ran past its cap, so this may be perfectly fine and simply unlooked-at. A different problem, and it must not be drawn as the one above. */
+.document-body .table-lens-chip.is-unread {
+  color: var(--lt-muted-foreground);
+  text-decoration-color: var(--lt-muted-foreground);
+}
+
+/* The picker over one cell. It hangs off the cell rather than off the page, so a table scrolled sideways carries it. */
+.document-body td.is-lens-picking {
+  position: relative;
+}
+.table-lens-picker {
+  top: 100%;
+  left: 0;
+  margin-block-start: var(--lt-space-1);
 }
 /* Lives in the shell's own column, outside the page — so no bleed and nothing to out-stack: it never overlaps the bar or the card.
 

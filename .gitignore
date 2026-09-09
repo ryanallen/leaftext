@@ -9,3 +9,5 @@
 .agents/settings.local.json
 # The pictures the publish writes beside their PNG masters. Never committed: the repo keeps one format so nothing that takes, joins or checks a picture learns a second.
 /imgs/**/*.webp
+# The Windows installer this machine cannot build, fetched by `just fetch-bridge` and carried into the release beside the two it does build. Never committed: a 10 MB binary belongs in no repository's history, and the newest release always holds a copy to fetch again.
+/carried

@@ -3,9 +3,9 @@ name: Publish the site
 # leaftext.com, with the app's own renderer served beside its pages.
 #
 # This repository has no source in it, so it compiles nothing. The renderer is
-# built where the source lives and committed here by that repository's
-# `build-renderer.yml`, which is the one thing that crosses the seam between the
-# two. What is left here is the site's own: move the pictures, bake the front
+# built where the source lives and committed here by that repository's own
+# `hand-over-site` recipe, which is the one thing that crosses the seam between
+# the two. What is left here is the site's own: move the pictures, bake the front
 # page, upload, deploy.
 #
 # The pictures go the same way. The repository keeps 61 PNG masters, because
@@ -26,7 +26,7 @@ name: Publish the site
 #
 # **This file lives in both repositories, and the `if:` on the job below is what
 # makes it right in each.** The source is private and this deploy belongs to the
-# public one, so `build-renderer.yml` carries this file across with the rest of the
+# public one, so `hand-over-site` carries this file across with the rest of the
 # site; a push to the private repository's `main` therefore starts a run of it
 # there too. Guarded, that run is skipped before a runner is allocated: gray, no
 # minutes, and the list stays readable — where an unguarded one died at the bake
