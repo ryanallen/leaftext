@@ -192,7 +192,7 @@ The leaf at the left of the [app bar](GLOSSARY.md#app-bar). Click it to return t
 
 ## Library pane
 
-The pane down the left side: a [vault switcher](GLOSSARY.md#vault-switcher), a [breadcrumb](GLOSSARY.md#breadcrumb), a search box, and the [file tree](GLOSSARY.md#file-tree). Toggle it with the panel button in the [app bar](GLOSSARY.md#app-bar). See [Library](01-features/03-library.md).
+The pane down the left side: a [vault switcher](GLOSSARY.md#vault-switcher), a [breadcrumb](GLOSSARY.md#breadcrumb), and the [file tree](GLOSSARY.md#file-tree). Vault-wide search is the [find bar](GLOSSARY.md#find-bar)'s **All files** scope. Toggle the pane with the panel button in the [app bar](GLOSSARY.md#app-bar). See [Library](01-features/03-library.md).
 
 ## Library sheet
 

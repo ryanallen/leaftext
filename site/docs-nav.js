@@ -56,6 +56,34 @@ const isReadme = (name) => /^readme\./i.test(name) && isDocument(name);
 // A glossary is a bottom-sheet target reached by `GLOSSARY.md#term` links, not a standalone page. Like README, it is never listed as an ordinary nav page (left in, it sorts alphabetically to the very top and leads the sidebar ahead of the Introduction). It is reported beside the nav as `glossary` instead, because the reader that draws these pages runs on sites that keep their glossary here and on sites that keep it above this folder, and the tree is what tells the two apart.
 const isGlossary = (name) => /^glossary\./i.test(name) && isDocument(name);
 const isPageFile = (name) => !isReadme(name) && !isGlossary(name);
+
+// The reader's own files are not pages it lists. A folder holding the documentation also holds the script and stylesheet that draw it and the index a server answers a bare folder address with, and the renderer reads JavaScript, CSS and HTML — so left alone the sidebar offers its own front end beside the guide, twice under one name. Which files those are is asked of the page already standing rather than written down: the same-folder `src` and stylesheet `href` it loaded, plus the file the address it was served at names. Nothing is fetched, no second extension list exists, and a document of the same name inside a folder below the root stays a page.
+function shellOwnedRootFiles() {
+  const owned = new Set();
+  if (typeof document === 'undefined' || typeof location === 'undefined') return owned;
+  const here = new URL('./', location.href);
+  const claim = (raw) => {
+    if (!raw) return;
+    let resolved;
+    try {
+      resolved = new URL(raw, location.href);
+    } catch (e) {
+      return;
+    }
+    if (resolved.origin !== here.origin || !resolved.pathname.startsWith(here.pathname)) return;
+    const rest = decodeURIComponent(resolved.pathname.slice(here.pathname.length));
+    if (!rest || rest.includes('/')) return; // below the root, so it is a page like any other
+    owned.add(rest.toLowerCase());
+  };
+  document.querySelectorAll('script[src]').forEach((el) => claim(el.getAttribute('src')));
+  document.querySelectorAll('link[href]').forEach((el) => {
+    if (/\bstylesheet\b/i.test(el.getAttribute('rel') || '')) claim(el.getAttribute('href'));
+  });
+  // The served page itself, which no element on it names: a folder address is answered by its index.
+  const served = new URL(location.href).pathname.split('/').pop();
+  owned.add(served ? decodeURIComponent(served).toLowerCase() : 'index.html');
+  return owned;
+}
 const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 
 // ---- shared builder --------------------------------------------------------
@@ -70,11 +98,13 @@ const byName = (a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' });
 //   { group, items }                     a folder heading with no index README
 //   { group, route, path, items }        a folder heading that links to its README
 function buildNav(relPaths) {
+  const shellOwned = shellOwnedRootFiles();
   const root = { dirs: new Map(), files: [] };
 
   for (const path of relPaths) {
     const parts = path.split('/').filter(Boolean);
     if (!parts.length) continue;
+    if (parts.length === 1 && shellOwned.has(parts[0].toLowerCase())) continue;
     let node = root;
     for (let i = 0; i < parts.length - 1; i++) {
       const seg = parts[i];
