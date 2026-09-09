@@ -19,11 +19,6 @@ flowchart LR
     D --> J[Themes]
     D --> K[Editing]
     K --> Q[Relational tables]
-    C --> L[Development]
-    L --> M[Architecture]
-    L --> N[Building]
-    L --> O[Releasing]
-    L --> P[Theming]
 ```
 
 ## Start here
@@ -69,21 +64,6 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | How do updates work? | [Settings → Updates](01-features/05-settings.md#updates) |
 | How do I change the look? | [Themes → Choose](01-features/06-themes.md#choose) |
 | What do the themes actually look like? | [leaftext.com/gallery.html](https://leaftext.com/gallery.html) — every theme, color, icon and control on one page |
-
-## Development
-
-For anyone building, extending, or releasing Leaftext:
-
-| Page | What it covers |
-| --- | --- |
-| [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML, JSON/YAML, and email renderers, the IPC bridge, the vault registry, the git integration, and every source file's role |
-| [Building](02-development/02-building.md) | Toolchain prerequisites, platform WebView dependencies, and the `just verify` suite |
-| [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, both installers built on the machines here, the tag push, the publish and the site hand-over |
-| [Theming](02-development/04-theming.md) | The startup-validated contract of 84 `--lt-*` CSS custom properties, of which 80 of the 84 are required, the theme sources, and how the CSS is compiled and validated |
-| [Design system](02-development/05-design-system.md) | Where every value in the interface comes from: the four files under `design/`, the icons, the components, the gallery, and the checks that fail the build on a hand-written value |
-| [Screenshots](02-development/06-screenshots.md) | One row per picture in `imgs/`: what it shows and what takes it, so a fault common to all of them can be fixed as a batch |
-| [Workflow](02-development/07-workflow.md) | How a change moves from a written plan to a release: the skills that carry it, the test every phase owes, where each test lives, and the gate before it ships |
-| [Hostile documents](02-development/08-security.md) | What every format reader owes untrusted bytes: bounded claims and work, errors instead of panics, passive content, least authority, and the current limits of all fifteen readers |
 
 ## Shared reference
 

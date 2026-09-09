@@ -150,7 +150,7 @@ The semantic token set covers:
 - focus and selection styling
 - the hover ink, plus separate foreground and ink colors for action and state fills
 
-An action or state fill can be bright while its words and thin marks stay readable: the foreground prints on the solid fill, and the ink carries the same role over a page or panel. A family may omit either ink when its fill already reads on every surface, in which case Leaftext copies the fill value into the compiled theme. If a theme source misses any other required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors. See [Theming](../02-development/04-theming.md#the-token-contract) for the full contract.
+An action or state fill can be bright while its words and thin marks stay readable: the foreground prints on the solid fill, and the ink carries the same role over a page or panel. A family may omit either ink when its fill already reads on every surface, in which case Leaftext copies the fill value into the compiled theme. If a theme source misses any other required token, Leaftext fails the contract check instead of silently rendering with broken fallback colors.
 
 ### What is under the pointer
 
@@ -177,7 +177,7 @@ One known rough edge: a **mindmap** can clip a long node label. Mermaid sizes th
 
 ## Add your own
 
-The theme picker links to the project on GitHub for making your own theme. A theme is pure data — a map of contract tokens to values, a font block and the name of an [icon set](#icons) — authored as a file under `themes/` and compiled into the bundle, so it can be validated against the contract without injecting third-party CSS. See [Theming → Adding a theme](../02-development/04-theming.md#adding-a-theme) for the full recipe.
+The theme picker links to the project on GitHub for making your own theme. A theme is pure data — a map of contract tokens to values, a font block and the name of an [icon set](#icons) — authored as a file under `themes/` and compiled into the bundle, so it can be validated against the contract without injecting third-party CSS.
 
 ## See them all
 
@@ -191,7 +191,7 @@ The compiled stylesheet is assembled in this order:
 2. The stylesheet's own `:root` block — the radius scale, the type scale, the layout metrics: one value each, whatever theme is on
 3. App CSS for layout and components
 
-Every palette is pure data, compiled from [`themes.md`](../02-development/04-theming.md#palettes-are-data-themesmd); the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
+Every palette is pure data, compiled from the theme sources; the font *files* still load separately from Google Fonts per the active theme. The ordering keeps one stable semantic layer so the app can swap themes quickly.
 
 The app's own copy carries every family's [icon pack](#icons), since a theme can be changed at any moment. A page [written out as a web page](02-navigation.md#export-the-page) pins one theme and has no picker, so the stylesheet beside it carries that theme's drawings alone.
 
@@ -206,4 +206,3 @@ On a Mac the app bar reaches the top of the window too. The title strip goes emp
 ## Next
 
 - [Settings](05-settings.md)
-- [Theming](../02-development/04-theming.md)

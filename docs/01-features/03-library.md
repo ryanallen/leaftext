@@ -471,4 +471,3 @@ The sheet is not saved. It describes the current view rather than a preference, 
 
 - [Settings](05-settings.md)
 - [Navigation](02-navigation.md#the-floating-toolbar)
-- [Architecture](../02-development/01-architecture.md)

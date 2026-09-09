@@ -726,4 +726,3 @@ Most text files are UTF-8, and those need no thought. Leaftext reads the others 
 
 - [Navigation](02-navigation.md)
 - [Themes](06-themes.md)
-- [Architecture](../02-development/01-architecture.md)

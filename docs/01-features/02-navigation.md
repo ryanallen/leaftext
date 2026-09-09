@@ -453,4 +453,3 @@ Key details:
 - [Quickstart](../03-quickstart.md) if you want the basics first
 - [Library](03-library.md) if you want browsing and search
 - [Editing](07-editing.md) if you want to write in the page
-- [Architecture](../02-development/01-architecture.md) if you want the implementation details

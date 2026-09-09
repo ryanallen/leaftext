@@ -304,7 +304,7 @@ A plain JSON file on your machine, not a panel: there is nowhere to open. Every 
 
 ## Sheet
 
-A panel that slides up from the bottom edge over the whole window, dimming the page behind it and standing until you dismiss it: the [glossary](GLOSSARY.md#glossary), the [theme picker](GLOSSARY.md#theme-picker), the start screen's file list, and the flowchart editor with the shape picker inside it. Drag its top edge down to put it away. It wears the same [dot grain](02-development/04-theming.md#surface-grain) as the [app bar](GLOSSARY.md#app-bar), tiled from its own top edge because it moves, and while one is up a first-launch [bubble](GLOSSARY.md#bubble) steps aside.
+A panel that slides up from the bottom edge over the whole window, dimming the page behind it and standing until you dismiss it: the [glossary](GLOSSARY.md#glossary), the [theme picker](GLOSSARY.md#theme-picker), the start screen's file list, and the flowchart editor with the shape picker inside it. Drag its top edge down to put it away. It wears the same dot grain as the [app bar](GLOSSARY.md#app-bar), tiled from its own top edge because it moves, and while one is up a first-launch [bubble](GLOSSARY.md#bubble) steps aside.
 
 ## Single window
 

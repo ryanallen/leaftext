@@ -315,35 +315,15 @@ The pages are plain Markdown under [`docs/`](docs/) — the same format the app 
 
 ## Development
 
-See [Building](docs/02-development/02-building.md), [Architecture](docs/02-development/01-architecture.md), [Security](docs/02-development/08-security.md), [Theming](docs/02-development/04-theming.md), [Design system](docs/02-development/05-design-system.md), [Releasing](docs/02-development/03-releasing.md), and [Workflow](docs/02-development/07-workflow.md) for the full developer docs.
+Leaftext's source is not public. What is published is this site: every theme drawn on one page at **[leaftext.com/gallery.html](https://leaftext.com/gallery.html)** — all 83 colors, every icon and every part of the interface, in light and dark — the [documentation](docs/README.md), the [glossary](docs/GLOSSARY.md), the [themes](themes/README.md) the app reads, and the crawler files below.
 
-Every theme is drawn on one page at **[leaftext.com/gallery.html](https://leaftext.com/gallery.html)** — all 83 colors, every icon and every part of the interface, in light and dark.
+### Every written file this site publishes
 
-Run the full verification suite before handing work back:
-
-```sh
-just verify
-```
-
-Other [`Justfile`](Justfile) tasks:
-
-| Task | Command |
-|:--|:--|
-| Cut a release | `just release <version>` |
-| Finish a release GitHub would not publish | `just publish-installers <tag>` |
-
-`just release` builds the Windows installer here and the macOS DMG over a Mac on the network, then commits the version bump, tags, pushes, publishes the release both installers hang on, and hands the site across. Nothing runs on GitHub Actions. `just publish-installers` publishes the files already built, for the case where only the release to hang them on was refused; it builds nothing and moves no tag, so no second version number is spent. See [Releasing](docs/02-development/03-releasing.md#finishing-a-release-github-refused).
-
-### Every written file in the repo
-
-The prose, the design sources, and the guidance an agent reads — each of these links onward to the rest of its own set, so nothing in the tree is reachable only by knowing it is there.
+Each of these links onward to the rest of its own set, so nothing published here is reachable only by knowing it is there.
 
 | Where | What is in it |
 |:--|:--|
 | [Documentation](docs/README.md) | Every page published at [leaftext.com/docs](https://leaftext.com/docs), listed above |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
-| [Agent guide](AGENTS.md) | The standing rules for anyone — person or agent — changing this repo. `CLAUDE.md` and `CODEX.md` are the same file. Its tables link the fifteen [skills](.agents/skills/) and the [hook settings](.agents/settings.json), and [Workflow](docs/02-development/07-workflow.md) is the published account of how they fit together |
-| [Design sources](docs/02-development/05-design-system.md) | [Colors](design/colors.md), [tokens](design/tokens.md), [icons](design/icons.md) and [components](design/components.md) — the four files every value in the interface is compiled from |
-| [Themes](themes/README.md) | The eleven families, one Markdown file each, with the colors they set and the icon set they wear. `just bundle-themes` compiles them into [one bundle](src/assets/themes.md) the app reads at startup |
-| Third-party notices | [Feather](src/assets/Feather-MIT.md), [Heroicons](src/assets/Heroicons-MIT.md), [KaTeX](src/assets/KaTeX-MIT.md), [Lucide](src/assets/Lucide-ISC.md), [Noto](src/assets/Noto-OFL.md), [Phosphor](src/assets/Phosphor-MIT.md), [Remix Icon](src/assets/Remix-Apache.md), [Simple Icons](src/assets/SimpleIcons-CC0.md), [Tabler](src/assets/Tabler-MIT.md) — the licenses of what is vendored into the app |
-| Crawler files | [`robots.txt`](robots.txt), [`sitemap.xml`](sitemap.xml), [`sitemap-md.txt`](sitemap-md.txt), [`llms.txt`](llms.txt), [`llms-full.txt`](llms-full.txt) — generated from this file and `docs/` by `scripts/seo-gen.mjs` |
+| [Themes](themes/README.md) | The eleven families, one Markdown file each, with the colors they set and the icon set they wear |
+| Crawler files | [`robots.txt`](robots.txt), [`sitemap.xml`](sitemap.xml), [`sitemap-md.txt`](sitemap-md.txt), [`llms.txt`](llms.txt), [`llms-full.txt`](llms-full.txt) — generated from this file and `docs/` |

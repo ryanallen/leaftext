@@ -1,3 +1,11 @@
+<!doctype html>
+<!-- Generated from design/ by `just bundle-gallery`. Do not edit. -->
+<html lang="en" data-leaf-theme="fern" data-leaf-appearance="light" data-theme="light">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaftext themes — every color, value, icon and component</title>
+<meta name="description" content="Every theme Leaftext ships, drawn: all 84 colors, the type and spacing scales, every icon and every part of the interface, in light and dark.">
+<style>
 /* Leaf semantic theme compiler output. */
 :root[data-leaf-theme="amaranth"][data-leaf-appearance="light"] {
   --lt-theme-source: amaranth-light;
@@ -11445,3 +11453,848 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 .picture-print img {
   display: block;
 }
+</style>
+<style>
+  html, body { overflow: visible; height: auto; }
+  body { margin: 0; padding: 0 24px 48px; background: var(--lt-background); color: var(--lt-foreground); font-family: var(--app-font); }
+  header.top { position: sticky; top: 0; z-index: 2; padding: 16px 0 12px; background: var(--lt-background); border-bottom: var(--lt-stroke-1) solid var(--lt-border); }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 32px 0 4px; scroll-margin-top: 140px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 2px; margin: 14px 0 -13px; }
+  .tabs button { font: inherit; font-size: var(--lt-text-13); font-weight: var(--lt-weight-600); padding: var(--lt-space-8) var(--lt-space-14); border: var(--lt-stroke-1) solid transparent; border-bottom: 0; border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0; background: transparent; color: var(--lt-muted-foreground); cursor: pointer; }
+  .tabs button b { font-weight: var(--lt-weight-400); opacity: var(--lt-opacity-60); margin-left: var(--lt-space-4); }
+  .tabs button:hover { color: var(--lt-foreground); background: var(--lt-surface-muted); }
+  .tabs button[aria-selected="true"] { color: var(--lt-foreground); background: var(--lt-background); border-color: var(--lt-border); box-shadow: 0 var(--lt-stroke-1) 0 0 var(--lt-background); }
+  .panel h2 { margin-top: 20px; }
+  h3 { font-size: 12px; margin: 20px 0 6px; color: var(--lt-muted-foreground); font-weight: var(--lt-weight-600); }
+  p.lead { margin: 0 0 8px; color: var(--lt-muted-foreground); font-size: var(--lt-text-12); max-width: 70ch; }
+  .pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .pick button { font: inherit; font-size: var(--lt-text-12); padding: var(--lt-space-4) var(--lt-space-10); border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-pill); background: var(--lt-surface); color: var(--lt-muted-foreground); cursor: pointer; }
+  .pick button[aria-pressed="true"] { background: var(--lt-primary); border-color: var(--lt-primary); color: var(--lt-primary-foreground); }
+  .wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: 10px 12px; align-items: start; }
+  .wall.wide { grid-template-columns: repeat(auto-fill, minmax(224px, 1fr)); }
+  .wall.packs { grid-template-columns: 152px repeat(7, 1fr); gap: 0; align-items: center; }
+  .wall.packs .glyph { padding: 6px 4px; }
+  .wall.packs .packs-head code { opacity: 0.7; }
+  .swatch i { display: block; height: 40px; border-radius: var(--lt-radius-md); border: var(--lt-stroke-1) solid var(--lt-border-strong); }
+  .swatch code, .value code { font-family: var(--code-font); font-size: var(--lt-text-10); color: var(--lt-muted-foreground); overflow-wrap: anywhere; }
+  .value code { display: block; }
+  .value .demo { display: block; margin: 2px 0 5px; color: var(--lt-foreground); font-family: var(--app-font); font-style: normal; }
+  .value .tile { width: 44px; height: 26px; background: var(--lt-primary); }
+  .value .shade { width: 64px; height: 34px; margin: 8px 0 12px; background: var(--lt-surface-elevated); }
+  .value .bar { height: 10px; min-width: var(--lt-stroke-1); background: var(--lt-accent); }
+  .value .rule { width: 60px; background: var(--lt-foreground); }
+  .value .lines { max-width: 190px; }
+  .stage a.jump { display: inline-flex; align-items: center; gap: var(--lt-space-8); color: var(--lt-link); font-size: var(--lt-text-13); }
+  .glyph { width: 84px; text-align: center; }
+  .glyph .lt-icon { width: 24px; height: 24px; }
+  .glyph code { display: block; }
+  .part { border: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--lt-radius-lg); padding: 12px; margin: 0 0 12px; isolation: isolate; }
+  .part > header { display: flex; gap: 8px; align-items: baseline; margin-bottom: 10px; flex-wrap: wrap; }
+  .part h3 { margin: 0; }
+  .part .built { color: var(--lt-muted-foreground); font-size: var(--lt-text-10); }
+  .stage { position: relative; overflow: hidden; min-height: 40px; padding: 18px 22px; }
+  .stage > * { position: relative !important; inset: auto !important; margin: 0 !important; max-width: 100%; max-height: 260px !important; }
+  .stage > *:not(.lt-spinner) { transform: none !important; }
+  .stage > * + * { margin-top: 8px !important; }
+  .stage > :is(button, a, span, code, i, svg) { margin: 0 8px 0 0 !important; }
+</style>
+<header class="top">
+<h1>Leaftext themes, drawn</h1>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 83 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<div class="pick" id="familyPick">
+<button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
+<button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
+<button type="button" data-family="bloodleaf" aria-pressed="false">Bloodleaf</button>
+<button type="button" data-family="fern" aria-pressed="true">Fern</button>
+<button type="button" data-family="ginger" aria-pressed="false">Ginger</button>
+<button type="button" data-family="github" aria-pressed="false">GitHub</button>
+<button type="button" data-family="goldenrod" aria-pressed="false">Goldenrod</button>
+<button type="button" data-family="halcyon" aria-pressed="false">Halcyon</button>
+<button type="button" data-family="nightshade" aria-pressed="false">Nightshade</button>
+<button type="button" data-family="pippin" aria-pressed="false">Pippin</button>
+<button type="button" data-family="sage" aria-pressed="false">Sage</button>
+</div>
+<div class="pick" id="appearancePick">
+<button type="button" data-appearance="light" aria-pressed="true">Light</button>
+<button type="button" data-appearance="dark" aria-pressed="false">Dark</button>
+</div>
+<div class="tabs" role="tablist">
+<button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>178</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>83</b></button>
+</div>
+</header>
+<section class="panel" id="colors" role="tabpanel">
+<p class="lead">84 names. The theme picked above gives each one its value; a family that changed one would change it everywhere at once.</p>
+<h3>Core</h3><div class="wall">
+<div class="swatch"><i style="background: var(--lt-background)"></i><code>background</code></div>
+<div class="swatch"><i style="background: var(--lt-foreground)"></i><code>foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-surface)"></i><code>surface</code></div>
+<div class="swatch"><i style="background: var(--lt-surface-elevated)"></i><code>surface-elevated</code></div>
+<div class="swatch"><i style="background: var(--lt-surface-muted)"></i><code>surface-muted</code></div>
+<div class="swatch"><i style="background: var(--lt-surface-sunken)"></i><code>surface-sunken</code></div>
+<div class="swatch"><i style="background: var(--lt-border)"></i><code>border</code></div>
+<div class="swatch"><i style="background: var(--lt-border-strong)"></i><code>border-strong</code></div>
+<div class="swatch"><i style="background: var(--lt-muted-foreground)"></i><code>muted-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-hover-tint)"></i><code>hover-tint</code></div>
+<div class="swatch"><i style="background: var(--lt-primary)"></i><code>primary</code></div>
+<div class="swatch"><i style="background: var(--lt-primary-foreground)"></i><code>primary-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-primary-ink)"></i><code>primary-ink</code></div>
+<div class="swatch"><i style="background: var(--lt-accent)"></i><code>accent</code></div>
+<div class="swatch"><i style="background: var(--lt-accent-foreground)"></i><code>accent-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-accent-ink)"></i><code>accent-ink</code></div>
+<div class="swatch"><i style="background: var(--lt-danger)"></i><code>danger</code></div>
+<div class="swatch"><i style="background: var(--lt-danger-foreground)"></i><code>danger-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-warning)"></i><code>warning</code></div>
+<div class="swatch"><i style="background: var(--lt-success)"></i><code>success</code></div>
+<div class="swatch"><i style="background: var(--lt-success-foreground)"></i><code>success-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-done)"></i><code>done</code></div>
+<div class="swatch"><i style="background: var(--lt-link)"></i><code>link</code></div>
+<div class="swatch"><i style="background: var(--lt-link-hover)"></i><code>link-hover</code></div>
+<div class="swatch"><i style="background: var(--lt-focus-ring)"></i><code>focus-ring</code></div>
+<div class="swatch"><i style="background: var(--lt-focus-selection-background)"></i><code>focus-selection-background</code></div>
+<div class="swatch"><i style="background: var(--lt-focus-selection-foreground)"></i><code>focus-selection-foreground</code></div>
+</div>
+<h3>Document</h3><div class="wall">
+<div class="swatch"><i style="background: var(--lt-markdown-background)"></i><code>markdown-background</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-foreground)"></i><code>markdown-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-heading)"></i><code>markdown-heading</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-heading-2)"></i><code>markdown-heading-2</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-heading-3)"></i><code>markdown-heading-3</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-heading-4)"></i><code>markdown-heading-4</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-heading-5)"></i><code>markdown-heading-5</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-heading-6)"></i><code>markdown-heading-6</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-rule)"></i><code>markdown-rule</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-link)"></i><code>markdown-link</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-blockquote-border)"></i><code>markdown-blockquote-border</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-blockquote-foreground)"></i><code>markdown-blockquote-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-alert-note)"></i><code>markdown-alert-note</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-alert-tip)"></i><code>markdown-alert-tip</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-alert-important)"></i><code>markdown-alert-important</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-alert-warning)"></i><code>markdown-alert-warning</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-alert-caution)"></i><code>markdown-alert-caution</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-badge-background)"></i><code>markdown-badge-background</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-badge-foreground)"></i><code>markdown-badge-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-table-border)"></i><code>markdown-table-border</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-table-row-background)"></i><code>markdown-table-row-background</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-thematic-break)"></i><code>markdown-thematic-break</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-math-inline-background)"></i><code>markdown-math-inline-background</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-keyboard-background)"></i><code>markdown-keyboard-background</code></div>
+<div class="swatch"><i style="background: var(--lt-markdown-keyboard-border)"></i><code>markdown-keyboard-border</code></div>
+</div>
+<h3>Code</h3><div class="wall">
+<div class="swatch"><i style="background: var(--lt-editor-inline-code-background)"></i><code>editor-inline-code-background</code></div>
+<div class="swatch"><i style="background: var(--lt-editor-inline-code-foreground)"></i><code>editor-inline-code-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-editor-code-background)"></i><code>editor-code-background</code></div>
+<div class="swatch"><i style="background: var(--lt-editor-code-foreground)"></i><code>editor-code-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-editor-code-border)"></i><code>editor-code-border</code></div>
+<div class="swatch"><i style="background: var(--lt-editor-code-selection-background)"></i><code>editor-code-selection-background</code></div>
+<div class="swatch"><i style="background: var(--lt-editor-code-selection-foreground)"></i><code>editor-code-selection-foreground</code></div>
+</div>
+<h3>Syntax</h3><div class="wall">
+<div class="swatch"><i style="background: var(--lt-syntax-background)"></i><code>syntax-background</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-foreground)"></i><code>syntax-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-comment)"></i><code>syntax-comment</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-keyword)"></i><code>syntax-keyword</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-string)"></i><code>syntax-string</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-number)"></i><code>syntax-number</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-function)"></i><code>syntax-function</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-variable)"></i><code>syntax-variable</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-type)"></i><code>syntax-type</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-operator)"></i><code>syntax-operator</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-punctuation)"></i><code>syntax-punctuation</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-inserted)"></i><code>syntax-inserted</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-inserted-background)"></i><code>syntax-inserted-background</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-deleted)"></i><code>syntax-deleted</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-deleted-background)"></i><code>syntax-deleted-background</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-changed)"></i><code>syntax-changed</code></div>
+<div class="swatch"><i style="background: var(--lt-syntax-changed-background)"></i><code>syntax-changed-background</code></div>
+</div>
+<h3>Navigation</h3><div class="wall">
+<div class="swatch"><i style="background: var(--lt-navigation-button-hover-background)"></i><code>navigation-button-hover-background</code></div>
+<div class="swatch"><i style="background: var(--lt-navigation-button-disabled-background)"></i><code>navigation-button-disabled-background</code></div>
+<div class="swatch"><i style="background: var(--lt-navigation-button-disabled-foreground)"></i><code>navigation-button-disabled-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-navigation-recent-border)"></i><code>navigation-recent-border</code></div>
+<div class="swatch"><i style="background: var(--lt-navigation-recent-item-foreground)"></i><code>navigation-recent-item-foreground</code></div>
+<div class="swatch"><i style="background: var(--lt-navigation-recent-item-hover-foreground)"></i><code>navigation-recent-item-hover-foreground</code></div>
+</div>
+<h3>Minimap</h3><div class="wall">
+<div class="swatch"><i style="background: var(--lt-minimap-viewport-border)"></i><code>minimap-viewport-border</code></div>
+<div class="swatch"><i style="background: var(--lt-minimap-viewport-background)"></i><code>minimap-viewport-background</code></div>
+</div>
+</section>
+<section class="panel" id="values" role="tabpanel" hidden>
+<p class="lead">178 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<h3>Corners</h3><div class="wall wide">
+<div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
+<div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
+<div class="value"><code>lt-radius-md</code><i class="demo tile" style="border-radius:var(--lt-radius-md)"></i><code>6px</code></div>
+<div class="value"><code>lt-radius-lg</code><i class="demo tile" style="border-radius:var(--lt-radius-lg)"></i><code>8px</code></div>
+<div class="value"><code>lt-radius-xl</code><i class="demo tile" style="border-radius:var(--lt-radius-xl)"></i><code>10px</code></div>
+<div class="value"><code>lt-radius-2xl</code><i class="demo tile" style="border-radius:var(--lt-radius-2xl)"></i><code>14px</code></div>
+<div class="value"><code>lt-radius-pill</code><i class="demo tile" style="border-radius:var(--lt-radius-pill)"></i><code>999px</code></div>
+<div class="value"><code>lt-radius-full</code><i class="demo tile" style="border-radius:var(--lt-radius-full)"></i><code>50%</code></div>
+<div class="value"><code>lt-radius-window</code><i class="demo tile" style="border-radius:var(--lt-radius-window)"></i><code>20px</code></div>
+<div class="value"><code>lt-radius-window-inner</code><i class="demo tile" style="border-radius:var(--lt-radius-window-inner)"></i><code>12px</code></div>
+</div>
+<h3>Document type</h3><div class="wall wide">
+<div class="value"><code>type-base</code><code>max(0.875rem, calc(1rem + (100vw - 1280px) / 140))</code></div>
+<div class="value"><code>type-measure-body</code><code>75ch</code></div>
+<div class="value"><code>type-spacing</code><code>calc(var(--type-base) * 1.5)</code></div>
+<div class="value"><code>type-spacing-sm</code><code>var(--type-base)</code></div>
+<div class="value"><code>type-body-size</code><i class="demo type" style="font-size:var(--type-body-size)">Ag</i><code>var(--type-base)</code></div>
+<div class="value"><code>type-display-size</code><i class="demo type" style="font-size:var(--type-display-size)">Ag</i><code>calc(var(--type-base) * 3.2)</code></div>
+<div class="value"><code>type-h1-size</code><i class="demo type" style="font-size:var(--type-h1-size)">Ag</i><code>calc(var(--type-base) * 2.2)</code></div>
+<div class="value"><code>type-h2-size</code><i class="demo type" style="font-size:var(--type-h2-size)">Ag</i><code>calc(var(--type-base) * 2)</code></div>
+<div class="value"><code>type-h3-size</code><i class="demo type" style="font-size:var(--type-h3-size)">Ag</i><code>calc(var(--type-base) * 1.8)</code></div>
+<div class="value"><code>type-h4-size</code><i class="demo type" style="font-size:var(--type-h4-size)">Ag</i><code>calc(var(--type-base) * 1.6)</code></div>
+<div class="value"><code>type-h5-size</code><i class="demo type" style="font-size:var(--type-h5-size)">Ag</i><code>calc(var(--type-base) * 1.4)</code></div>
+<div class="value"><code>type-h6-size</code><i class="demo type" style="font-size:var(--type-h6-size)">Ag</i><code>calc(var(--type-base) * 1.2)</code></div>
+<div class="value"><code>type-caption-size</code><i class="demo type" style="font-size:var(--type-caption-size)">Ag</i><code>calc(var(--type-base) * 0.8125)</code></div>
+<div class="value"><code>type-display-line</code><i class="demo type lines" style="line-height:var(--type-display-line)">Two lines of it, so the gap shows</i><code>1.2</code></div>
+<div class="value"><code>type-h1-line</code><i class="demo type lines" style="line-height:var(--type-h1-line)">Two lines of it, so the gap shows</i><code>1.25</code></div>
+<div class="value"><code>type-h2-line</code><i class="demo type lines" style="line-height:var(--type-h2-line)">Two lines of it, so the gap shows</i><code>1.25</code></div>
+<div class="value"><code>type-h3-line</code><i class="demo type lines" style="line-height:var(--type-h3-line)">Two lines of it, so the gap shows</i><code>1.25</code></div>
+<div class="value"><code>type-h4-line</code><i class="demo type lines" style="line-height:var(--type-h4-line)">Two lines of it, so the gap shows</i><code>1.25</code></div>
+<div class="value"><code>type-body-line</code><i class="demo type lines" style="line-height:var(--type-body-line)">Two lines of it, so the gap shows</i><code>1.6</code></div>
+<div class="value"><code>type-caption-line</code><i class="demo type lines" style="line-height:var(--type-caption-line)">Two lines of it, so the gap shows</i><code>1.6</code></div>
+<div class="value"><code>type-display-weight</code><i class="demo type" style="font-weight:var(--type-display-weight)">Ag</i><code>900</code></div>
+<div class="value"><code>type-h1-weight</code><i class="demo type" style="font-weight:var(--type-h1-weight)">Ag</i><code>850</code></div>
+<div class="value"><code>type-h2-weight</code><i class="demo type" style="font-weight:var(--type-h2-weight)">Ag</i><code>800</code></div>
+<div class="value"><code>type-h3-weight</code><i class="demo type" style="font-weight:var(--type-h3-weight)">Ag</i><code>750</code></div>
+<div class="value"><code>type-h4-weight</code><i class="demo type" style="font-weight:var(--type-h4-weight)">Ag</i><code>700</code></div>
+<div class="value"><code>type-h5-weight</code><i class="demo type" style="font-weight:var(--type-h5-weight)">Ag</i><code>650</code></div>
+<div class="value"><code>type-h6-weight</code><i class="demo type" style="font-weight:var(--type-h6-weight)">Ag</i><code>600</code></div>
+</div>
+<h3>Interface text</h3><div class="wall wide">
+<div class="value"><code>lt-text-9</code><i class="demo type" style="font-size:var(--lt-text-9)">Ag</i><code>9px</code></div>
+<div class="value"><code>lt-text-10</code><i class="demo type" style="font-size:var(--lt-text-10)">Ag</i><code>10px</code></div>
+<div class="value"><code>lt-text-10-5</code><i class="demo type" style="font-size:var(--lt-text-10-5)">Ag</i><code>10.5px</code></div>
+<div class="value"><code>lt-text-11</code><i class="demo type" style="font-size:var(--lt-text-11)">Ag</i><code>11px</code></div>
+<div class="value"><code>lt-text-11-5</code><i class="demo type" style="font-size:var(--lt-text-11-5)">Ag</i><code>11.5px</code></div>
+<div class="value"><code>lt-text-12</code><i class="demo type" style="font-size:var(--lt-text-12)">Ag</i><code>12px</code></div>
+<div class="value"><code>lt-text-12-5</code><i class="demo type" style="font-size:var(--lt-text-12-5)">Ag</i><code>12.5px</code></div>
+<div class="value"><code>lt-text-13</code><i class="demo type" style="font-size:var(--lt-text-13)">Ag</i><code>13px</code></div>
+<div class="value"><code>lt-text-13-5</code><i class="demo type" style="font-size:var(--lt-text-13-5)">Ag</i><code>13.5px</code></div>
+<div class="value"><code>lt-text-14</code><i class="demo type" style="font-size:var(--lt-text-14)">Ag</i><code>14px</code></div>
+<div class="value"><code>lt-text-15</code><i class="demo type" style="font-size:var(--lt-text-15)">Ag</i><code>15px</code></div>
+<div class="value"><code>lt-text-16</code><i class="demo type" style="font-size:var(--lt-text-16)">Ag</i><code>16px</code></div>
+<div class="value"><code>lt-text-18</code><i class="demo type" style="font-size:var(--lt-text-18)">Ag</i><code>18px</code></div>
+</div>
+<h3>Interface weight</h3><div class="wall wide">
+<div class="value"><code>lt-weight-400</code><i class="demo type" style="font-weight:var(--lt-weight-400)">Ag</i><code>400</code></div>
+<div class="value"><code>lt-weight-500</code><i class="demo type" style="font-weight:var(--lt-weight-500)">Ag</i><code>500</code></div>
+<div class="value"><code>lt-weight-600</code><i class="demo type" style="font-weight:var(--lt-weight-600)">Ag</i><code>600</code></div>
+<div class="value"><code>lt-weight-700</code><i class="demo type" style="font-weight:var(--lt-weight-700)">Ag</i><code>700</code></div>
+<div class="value"><code>lt-weight-800</code><i class="demo type" style="font-weight:var(--lt-weight-800)">Ag</i><code>800</code></div>
+</div>
+<h3>Stroke</h3><div class="wall wide">
+<div class="value"><code>lt-stroke-1</code><i class="demo rule" style="height:var(--lt-stroke-1)"></i><code>1px</code></div>
+<div class="value"><code>lt-stroke-1-5</code><i class="demo rule" style="height:var(--lt-stroke-1-5)"></i><code>1.5px</code></div>
+<div class="value"><code>lt-stroke-2</code><i class="demo rule" style="height:var(--lt-stroke-2)"></i><code>2px</code></div>
+<div class="value"><code>lt-stroke-3</code><i class="demo rule" style="height:var(--lt-stroke-3)"></i><code>3px</code></div>
+<div class="value"><code>lt-stroke-4</code><i class="demo rule" style="height:var(--lt-stroke-4)"></i><code>4px</code></div>
+<div class="value"><code>lt-stroke-6</code><i class="demo rule" style="height:var(--lt-stroke-6)"></i><code>6px</code></div>
+</div>
+<h3>Line height</h3><div class="wall wide">
+<div class="value"><code>lt-leading-1</code><i class="demo type lines" style="line-height:var(--lt-leading-1)">Two lines of it, so the gap shows</i><code>1</code></div>
+<div class="value"><code>lt-leading-1-04</code><i class="demo type lines" style="line-height:var(--lt-leading-1-04)">Two lines of it, so the gap shows</i><code>1.04</code></div>
+<div class="value"><code>lt-leading-1-2</code><i class="demo type lines" style="line-height:var(--lt-leading-1-2)">Two lines of it, so the gap shows</i><code>1.2</code></div>
+<div class="value"><code>lt-leading-1-25</code><i class="demo type lines" style="line-height:var(--lt-leading-1-25)">Two lines of it, so the gap shows</i><code>1.25</code></div>
+<div class="value"><code>lt-leading-1-3</code><i class="demo type lines" style="line-height:var(--lt-leading-1-3)">Two lines of it, so the gap shows</i><code>1.3</code></div>
+<div class="value"><code>lt-leading-1-35</code><i class="demo type lines" style="line-height:var(--lt-leading-1-35)">Two lines of it, so the gap shows</i><code>1.35</code></div>
+<div class="value"><code>lt-leading-1-4</code><i class="demo type lines" style="line-height:var(--lt-leading-1-4)">Two lines of it, so the gap shows</i><code>1.4</code></div>
+<div class="value"><code>lt-leading-1-45</code><i class="demo type lines" style="line-height:var(--lt-leading-1-45)">Two lines of it, so the gap shows</i><code>1.45</code></div>
+<div class="value"><code>lt-leading-1-5</code><i class="demo type lines" style="line-height:var(--lt-leading-1-5)">Two lines of it, so the gap shows</i><code>1.5</code></div>
+<div class="value"><code>lt-leading-1-55</code><i class="demo type lines" style="line-height:var(--lt-leading-1-55)">Two lines of it, so the gap shows</i><code>1.55</code></div>
+<div class="value"><code>lt-leading-1-6</code><i class="demo type lines" style="line-height:var(--lt-leading-1-6)">Two lines of it, so the gap shows</i><code>1.6</code></div>
+</div>
+<h3>Letter spacing</h3><div class="wall wide">
+<div class="value"><code>lt-tracking-020</code><i class="demo type" style="letter-spacing:var(--lt-tracking-020)">Spacing</i><code>0.02em</code></div>
+<div class="value"><code>lt-tracking-040</code><i class="demo type" style="letter-spacing:var(--lt-tracking-040)">Spacing</i><code>0.04em</code></div>
+<div class="value"><code>lt-tracking-060</code><i class="demo type" style="letter-spacing:var(--lt-tracking-060)">Spacing</i><code>0.06em</code></div>
+<div class="value"><code>lt-tracking-120</code><i class="demo type" style="letter-spacing:var(--lt-tracking-120)">Spacing</i><code>0.12em</code></div>
+<div class="value"><code>lt-tracking-tight-005</code><i class="demo type" style="letter-spacing:var(--lt-tracking-tight-005)">Spacing</i><code>-0.005em</code></div>
+<div class="value"><code>lt-tracking-tight-01</code><i class="demo type" style="letter-spacing:var(--lt-tracking-tight-01)">Spacing</i><code>-0.01em</code></div>
+</div>
+<h3>Opacity</h3><div class="wall wide">
+<div class="value"><code>lt-opacity-35</code><i class="demo tile" style="opacity:var(--lt-opacity-35)"></i><code>0.35</code></div>
+<div class="value"><code>lt-opacity-38</code><i class="demo tile" style="opacity:var(--lt-opacity-38)"></i><code>0.38</code></div>
+<div class="value"><code>lt-opacity-40</code><i class="demo tile" style="opacity:var(--lt-opacity-40)"></i><code>0.4</code></div>
+<div class="value"><code>lt-opacity-45</code><i class="demo tile" style="opacity:var(--lt-opacity-45)"></i><code>0.45</code></div>
+<div class="value"><code>lt-opacity-46</code><i class="demo tile" style="opacity:var(--lt-opacity-46)"></i><code>0.46</code></div>
+<div class="value"><code>lt-opacity-50</code><i class="demo tile" style="opacity:var(--lt-opacity-50)"></i><code>0.5</code></div>
+<div class="value"><code>lt-opacity-55</code><i class="demo tile" style="opacity:var(--lt-opacity-55)"></i><code>0.55</code></div>
+<div class="value"><code>lt-opacity-60</code><i class="demo tile" style="opacity:var(--lt-opacity-60)"></i><code>0.6</code></div>
+<div class="value"><code>lt-opacity-75</code><i class="demo tile" style="opacity:var(--lt-opacity-75)"></i><code>0.75</code></div>
+<div class="value"><code>lt-opacity-78</code><i class="demo tile" style="opacity:var(--lt-opacity-78)"></i><code>0.78</code></div>
+<div class="value"><code>lt-opacity-85</code><i class="demo tile" style="opacity:var(--lt-opacity-85)"></i><code>0.85</code></div>
+<div class="value"><code>lt-opacity-92</code><i class="demo tile" style="opacity:var(--lt-opacity-92)"></i><code>0.92</code></div>
+</div>
+<h3>Spacing</h3><div class="wall wide">
+<div class="value"><code>lt-space-1</code><i class="demo bar" style="width:var(--lt-space-1)"></i><code>1px</code></div>
+<div class="value"><code>lt-space-2</code><i class="demo bar" style="width:var(--lt-space-2)"></i><code>2px</code></div>
+<div class="value"><code>lt-space-4</code><i class="demo bar" style="width:var(--lt-space-4)"></i><code>4px</code></div>
+<div class="value"><code>lt-space-6</code><i class="demo bar" style="width:var(--lt-space-6)"></i><code>6px</code></div>
+<div class="value"><code>lt-space-8</code><i class="demo bar" style="width:var(--lt-space-8)"></i><code>8px</code></div>
+<div class="value"><code>lt-space-10</code><i class="demo bar" style="width:var(--lt-space-10)"></i><code>10px</code></div>
+<div class="value"><code>lt-space-12</code><i class="demo bar" style="width:var(--lt-space-12)"></i><code>12px</code></div>
+<div class="value"><code>lt-space-14</code><i class="demo bar" style="width:var(--lt-space-14)"></i><code>14px</code></div>
+<div class="value"><code>lt-space-16</code><i class="demo bar" style="width:var(--lt-space-16)"></i><code>16px</code></div>
+<div class="value"><code>lt-space-20</code><i class="demo bar" style="width:var(--lt-space-20)"></i><code>20px</code></div>
+<div class="value"><code>lt-space-24</code><i class="demo bar" style="width:var(--lt-space-24)"></i><code>24px</code></div>
+<div class="value"><code>lt-space-32</code><i class="demo bar" style="width:var(--lt-space-32)"></i><code>32px</code></div>
+<div class="value"><code>lt-space-48</code><i class="demo bar" style="width:var(--lt-space-48)"></i><code>48px</code></div>
+</div>
+<h3>Duration</h3><div class="wall wide">
+<div class="value"><code>lt-duration-0</code><code>0ms</code></div>
+<div class="value"><code>lt-duration-100</code><code>100ms</code></div>
+<div class="value"><code>lt-duration-120</code><code>120ms</code></div>
+<div class="value"><code>lt-duration-140</code><code>140ms</code></div>
+<div class="value"><code>lt-duration-150</code><code>150ms</code></div>
+<div class="value"><code>lt-duration-160</code><code>160ms</code></div>
+<div class="value"><code>lt-duration-200</code><code>200ms</code></div>
+<div class="value"><code>lt-duration-220</code><code>220ms</code></div>
+<div class="value"><code>lt-duration-260</code><code>260ms</code></div>
+<div class="value"><code>lt-duration-280</code><code>280ms</code></div>
+<div class="value"><code>lt-duration-300</code><code>300ms</code></div>
+<div class="value"><code>lt-duration-400</code><code>400ms</code></div>
+<div class="value"><code>lt-duration-700</code><code>700ms</code></div>
+<div class="value"><code>lt-duration-800</code><code>800ms</code></div>
+<div class="value"><code>lt-duration-1100</code><code>1100ms</code></div>
+<div class="value"><code>lt-duration-1250</code><code>1250ms</code></div>
+<div class="value"><code>lt-duration-1600</code><code>1600ms</code></div>
+<div class="value"><code>lt-duration-2400</code><code>2400ms</code></div>
+</div>
+<h3>Easing</h3><div class="wall wide">
+<div class="value"><code>lt-ease</code><code>ease</code></div>
+<div class="value"><code>lt-ease-linear</code><code>linear</code></div>
+<div class="value"><code>lt-ease-in-out</code><code>ease-in-out</code></div>
+<div class="value"><code>lt-ease-emphasized</code><code>cubic-bezier(0.2, 0, 0, 1)</code></div>
+<div class="value"><code>lt-ease-decelerate</code><code>cubic-bezier(0.05, 0.7, 0.1, 1)</code></div>
+<div class="value"><code>lt-ease-accelerate</code><code>cubic-bezier(0.3, 0, 0.8, 0.15)</code></div>
+<div class="value"><code>lt-ease-sheet</code><code>cubic-bezier(0.32, 0.72, 0, 1)</code></div>
+<div class="value"><code>lt-ease-overshoot</code><code>cubic-bezier(0.34, 1.56, 0.64, 1)</code></div>
+</div>
+<h3>Hover reveal</h3><div class="wall wide">
+<div class="value"><code>lt-transition-hover-reveal-arrive</code><code>opacity var(--lt-duration-120) var(--lt-ease-decelerate)</code></div>
+<div class="value"><code>lt-transition-hover-reveal-leave</code><code>opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300)</code></div>
+</div>
+<h3>Inactive window</h3><div class="wall wide">
+<div class="value"><code>lt-inactive-saturation</code><code>0.5</code></div>
+<div class="value"><code>lt-inactive-contrast</code><code>0.9</code></div>
+</div>
+<h3>Layers</h3><div class="wall wide">
+<div class="value"><code>lt-z-below</code><code>-1</code></div>
+<div class="value"><code>lt-z-20</code><code>20</code></div>
+<div class="value"><code>lt-z-30</code><code>30</code></div>
+<div class="value"><code>lt-z-40</code><code>40</code></div>
+<div class="value"><code>lt-z-41</code><code>41</code></div>
+<div class="value"><code>lt-z-42</code><code>42</code></div>
+<div class="value"><code>lt-z-43</code><code>43</code></div>
+<div class="value"><code>lt-z-44</code><code>44</code></div>
+<div class="value"><code>lt-z-45</code><code>45</code></div>
+<div class="value"><code>lt-z-50</code><code>50</code></div>
+<div class="value"><code>lt-z-51</code><code>51</code></div>
+</div>
+<h3>Shadow band geometry</h3><div class="wall wide">
+<div class="value"><code>lt-shadow-spread</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-spread)"></i><code>12px</code></div>
+<div class="value"><code>lt-shadow-host-border</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-host-border)"></i><code>var(--lt-stroke-1)</code></div>
+</div>
+<h3>Strokes, rings and one recess</h3><div class="wall wide">
+<div class="value"><code>lt-shadow-inset</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-inset)"></i><code>inset 0 1px 2px rgba(0, 0, 0, 0.35)</code></div>
+<div class="value"><code>lt-shadow-hairline</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-hairline)"></i><code>inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 12%, transparent)</code></div>
+<div class="value"><code>lt-shadow-hairline-strong</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-hairline-strong)"></i><code>inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent)</code></div>
+<div class="value"><code>lt-shadow-focus</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-focus)"></i><code>0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent)</code></div>
+<div class="value"><code>lt-shadow-ring</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-ring)"></i><code>0 0 0 2px var(--lt-surface)</code></div>
+</div>
+<h3>Grain</h3><div class="wall wide">
+<div class="value"><code>lt-grain-light</code><code>rgba(0, 0, 0, 0.1)</code></div>
+<div class="value"><code>lt-grain-heavy</code><code>rgba(0, 0, 0, 0.3)</code></div>
+<div class="value"><code>lt-grain-dark</code><code>rgba(0, 0, 0, 0.35)</code></div>
+<div class="value"><code>lt-grain-dark-heavy</code><code>rgba(0, 0, 0, 0.72)</code></div>
+<div class="value"><code>lt-grain-lift</code><code>rgba(255, 255, 255, 0.07)</code></div>
+<div class="value"><code>lt-grain-hover</code><code>rgba(0, 0, 0, 0.55)</code></div>
+<div class="value"><code>lt-grain-shadow-base</code><code>#ffffff</code></div>
+<div class="value"><code>lt-grain-shadow-blob</code><code>#000000</code></div>
+<div class="value"><code>lt-grain-shadow-rim</code><code>rgba(255, 255, 255, 0.6)</code></div>
+<div class="value"><code>lt-grain-shadow-mid</code><code>rgba(255, 255, 255, 0.365)</code></div>
+<div class="value"><code>lt-grain-shadow-curve</code><code>url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone")</code></div>
+<div class="value"><code>lt-grain-shadow-opacity</code><code>1</code></div>
+<div class="value"><code>lt-grain-shadow-opacity-inside</code><code>1</code></div>
+<div class="value"><code>lt-grain-shadow-opacity-inside-light</code><code>0.2</code></div>
+</div>
+<h3>Fixed colors</h3><div class="wall wide">
+<div class="value"><code>lt-mask-opaque</code><code>#000</code></div>
+<div class="value"><code>lt-white</code><code>#ffffff</code></div>
+<div class="value"><code>lt-window-close</code><code>#e81123</code></div>
+<div class="value"><code>lt-window-close-foreground</code><code>#ffffff</code></div>
+<div class="value"><code>lt-checkbox-accent</code><code>#6e7681</code></div>
+</div>
+<h3>Fixed tints</h3><div class="wall wide">
+<div class="value"><code>lt-tint-recess</code><code>rgba(0, 0, 0, 0.16)</code></div>
+<div class="value"><code>lt-tint-backdrop</code><code>rgba(0, 0, 0, 0.45)</code></div>
+<div class="value"><code>lt-grain-dot-strong</code><code>rgba(0, 0, 0, 0.55)</code></div>
+</div>
+<h3>The hover wash</h3><div class="wall wide">
+<div class="value"><code>lt-wash-hover</code><code>color-mix(in srgb, var(--lt-hover-tint) 16%, transparent)</code></div>
+<div class="value"><code>lt-hover-lift</code><code>1.08</code></div>
+</div>
+<h3>Inset edges</h3><div class="wall wide">
+<div class="value"><code>lt-shadow-edge-strong</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-strong)"></i><code>inset 0 0 0 1px var(--lt-border-strong)</code></div>
+<div class="value"><code>lt-shadow-edge-accent</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-accent)"></i><code>inset 0 0 0 2px var(--lt-accent)</code></div>
+<div class="value"><code>lt-shadow-edge-link</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-link)"></i><code>inset 0 0 0 1px var(--lt-link)</code></div>
+</div>
+</section>
+<section class="panel" id="icons" role="tabpanel" hidden>
+<p class="lead">72 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
+<div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div><div class="glyph packs-head"><code>leaftext</code></div><div class="glyph packs-head"><code>feather</code></div><div class="glyph packs-head"><code>lucide</code></div><div class="glyph packs-head"><code>tabler</code></div><div class="glyph packs-head"><code>remix</code></div><div class="glyph packs-head"><code>phosphor</code></div><div class="glyph packs-head"><code>heroicons</code></div></div>
+<div class="wall packs"><div class="glyph"><code>back-long</code></div><div class="glyph"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back-long"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>forward-long</code></div><div class="glyph"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-forward-long"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>settings</code></div><div class="glyph"><span class="lt-icon lt-icon-settings"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-settings"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-settings"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-settings"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-settings"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-settings"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-settings"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>update</code></div><div class="glyph"><span class="lt-icon lt-icon-update"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-update"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-update"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-update"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-update"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-update"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-update"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>open-library</code></div><div class="glyph"><span class="lt-icon lt-icon-open-library"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-open-library"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-open-library"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-open-library"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-open-library"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-open-library"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-open-library"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>open</code></div><div class="glyph"><span class="lt-icon lt-icon-open"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-open"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-open"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-open"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-open"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-open"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-open"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>new</code></div><div class="glyph"><span class="lt-icon lt-icon-new"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-new"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-new"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-new"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-new"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-new"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-new"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>code-view</code></div><div class="glyph"><span class="lt-icon lt-icon-code-view"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-code-view"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-code-view"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-code-view"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-code-view"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-code-view"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-code-view"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>document</code></div><div class="glyph"><span class="lt-icon lt-icon-document"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-document"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-document"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-document"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-document"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-document"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-document"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>graph</code></div><div class="glyph"><span class="lt-icon lt-icon-graph"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-graph"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-graph"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-graph"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-graph"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-graph"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-graph"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>sync</code></div><div class="glyph"><span class="lt-icon lt-icon-sync"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-sync"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-sync"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-sync"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-sync"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-sync"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-sync"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>refresh</code></div><div class="glyph"><span class="lt-icon lt-icon-refresh"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-refresh"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-refresh"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-refresh"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-refresh"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-refresh"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-refresh"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>lock-closed</code></div><div class="glyph"><span class="lt-icon lt-icon-lock-closed"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-lock-closed"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-lock-closed"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-lock-closed"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-lock-closed"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-lock-closed"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-lock-closed"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>lock-open</code></div><div class="glyph"><span class="lt-icon lt-icon-lock-open"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-lock-open"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-lock-open"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-lock-open"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-lock-open"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-lock-open"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-lock-open"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>speed-reader-on</code></div><div class="glyph"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-speed-reader-on"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>speed-reader-off</code></div><div class="glyph"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-speed-reader-off"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>wand</code></div><div class="glyph"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-wand"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>cloud</code></div><div class="glyph"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-cloud"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>export</code></div><div class="glyph"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-export"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>computer</code></div><div class="glyph"><span class="lt-icon lt-icon-computer"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-computer"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-computer"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-computer"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-computer"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-computer"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-computer"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>package-open</code></div><div class="glyph"><span class="lt-icon lt-icon-package-open"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-package-open"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-package-open"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-package-open"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-package-open"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-package-open"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-package-open"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>package</code></div><div class="glyph"><span class="lt-icon lt-icon-package"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-package"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-package"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-package"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-package"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-package"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-package"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>folder</code></div><div class="glyph"><span class="lt-icon lt-icon-folder"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-folder"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-folder"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-folder"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-folder"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-folder"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-folder"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>grip</code></div><div class="glyph"><span class="lt-icon lt-icon-grip"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-grip"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-grip"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-grip"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-grip"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-grip"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-grip"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>close</code></div><div class="glyph"><span class="lt-icon lt-icon-close"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-close"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-close"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-close"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-close"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-close"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-close"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>text</code></div><div class="glyph"><span class="lt-icon lt-icon-text"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-text"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-text"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-text"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-text"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-text"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-text"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>heading</code></div><div class="glyph"><span class="lt-icon lt-icon-heading"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-heading"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-heading"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-heading"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-heading"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-heading"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-heading"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>list</code></div><div class="glyph"><span class="lt-icon lt-icon-list"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-list"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-list"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-list"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-list"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-list"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-list"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>quote</code></div><div class="glyph"><span class="lt-icon lt-icon-quote"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-quote"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-quote"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-quote"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-quote"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-quote"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-quote"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>table</code></div><div class="glyph"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-table"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>image</code></div><div class="glyph"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-image"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>divider</code></div><div class="glyph"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-divider"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>tag</code></div><div class="glyph"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-tag"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>comment</code></div><div class="glyph"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-comment"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>workflow</code></div><div class="glyph"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-workflow"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>zoom-in</code></div><div class="glyph"><span class="lt-icon lt-icon-zoom-in"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-zoom-in"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-zoom-in"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-zoom-in"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-zoom-in"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-zoom-in"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-zoom-in"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>zoom-out</code></div><div class="glyph"><span class="lt-icon lt-icon-zoom-out"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-zoom-out"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-zoom-out"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-zoom-out"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-zoom-out"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-zoom-out"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-zoom-out"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>fit</code></div><div class="glyph"><span class="lt-icon lt-icon-fit"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-fit"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-fit"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-fit"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-fit"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-fit"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-fit"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>expand</code></div><div class="glyph"><span class="lt-icon lt-icon-expand"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-expand"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-expand"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-expand"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-expand"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-expand"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-expand"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>bold</code></div><div class="glyph"><span class="lt-icon lt-icon-bold"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-bold"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-bold"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-bold"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-bold"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-bold"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-bold"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>italic</code></div><div class="glyph"><span class="lt-icon lt-icon-italic"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-italic"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-italic"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-italic"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-italic"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-italic"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-italic"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>strikethrough</code></div><div class="glyph"><span class="lt-icon lt-icon-strikethrough"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-strikethrough"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-strikethrough"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-strikethrough"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-strikethrough"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-strikethrough"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-strikethrough"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>link</code></div><div class="glyph"><span class="lt-icon lt-icon-link"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-link"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-link"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-link"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-link"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-link"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-link"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>undo</code></div><div class="glyph"><span class="lt-icon lt-icon-undo"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-undo"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-undo"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-undo"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-undo"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-undo"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-undo"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>missing-image</code></div><div class="glyph"><span class="lt-icon lt-icon-missing-image"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-missing-image"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-missing-image"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-missing-image"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-missing-image"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-missing-image"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-missing-image"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>chevron-down</code></div><div class="glyph"><span class="lt-icon lt-icon-chevron-down"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-chevron-down"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-chevron-down"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-chevron-down"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-chevron-down"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-chevron-down"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-chevron-down"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>replace</code></div><div class="glyph"><span class="lt-icon lt-icon-replace"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-replace"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-replace"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-replace"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-replace"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-replace"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-replace"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>select-all</code></div><div class="glyph"><span class="lt-icon lt-icon-select-all"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-select-all"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-select-all"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-select-all"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-select-all"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-select-all"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-select-all"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>theme</code></div><div class="glyph"><span class="lt-icon lt-icon-theme"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-theme"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-theme"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-theme"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-theme"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-theme"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-theme"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>redo</code></div><div class="glyph"><span class="lt-icon lt-icon-redo"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-redo"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-redo"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-redo"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-redo"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-redo"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-redo"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>window-minimize</code></div><div class="glyph"><span class="lt-icon lt-icon-window-minimize"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-window-minimize"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-window-minimize"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-window-minimize"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-window-minimize"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-window-minimize"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-window-minimize"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>window-maximize</code></div><div class="glyph"><span class="lt-icon lt-icon-window-maximize"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-window-maximize"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-window-maximize"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-window-maximize"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-window-maximize"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-window-maximize"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-window-maximize"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>window-restore</code></div><div class="glyph"><span class="lt-icon lt-icon-window-restore"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-window-restore"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-window-restore"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-window-restore"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-window-restore"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-window-restore"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-window-restore"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>window-close</code></div><div class="glyph"><span class="lt-icon lt-icon-window-close"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-window-close"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-window-close"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-window-close"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-window-close"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-window-close"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-window-close"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>check</code></div><div class="glyph"><span class="lt-icon lt-icon-check"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-check"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-check"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-check"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-check"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-check"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-check"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>check-circle</code></div><div class="glyph"><span class="lt-icon lt-icon-check-circle"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-check-circle"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-check-circle"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-check-circle"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-check-circle"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-check-circle"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-check-circle"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>tab-close</code></div><div class="glyph"><span class="lt-icon lt-icon-tab-close"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-tab-close"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-tab-close"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-tab-close"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-tab-close"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-tab-close"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-tab-close"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>favorite-off</code></div><div class="glyph"><span class="lt-icon lt-icon-favorite-off"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-favorite-off"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-favorite-off"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-favorite-off"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-favorite-off"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-favorite-off"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-favorite-off"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>favorite-on</code></div><div class="glyph"><span class="lt-icon lt-icon-favorite-on"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-favorite-on"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-favorite-on"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-favorite-on"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-favorite-on"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-favorite-on"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-favorite-on"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>back</code></div><div class="glyph"><span class="lt-icon lt-icon-back"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>align-left</code></div><div class="glyph"><span class="lt-icon lt-icon-align-left"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-align-left"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-align-left"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-align-left"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-align-left"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-align-left"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-align-left"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>align-center</code></div><div class="glyph"><span class="lt-icon lt-icon-align-center"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-align-center"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-align-center"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-align-center"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-align-center"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-align-center"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-align-center"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>align-right</code></div><div class="glyph"><span class="lt-icon lt-icon-align-right"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-align-right"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-align-right"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-align-right"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-align-right"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-align-right"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-align-right"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>sort-ascending</code></div><div class="glyph"><span class="lt-icon lt-icon-sort-ascending"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-sort-ascending"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-sort-ascending"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-sort-ascending"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-sort-ascending"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-sort-ascending"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-sort-ascending"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>sort-descending</code></div><div class="glyph"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-sort-descending"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>trash</code></div><div class="glyph"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-trash"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>copy</code></div><div class="glyph"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-copy"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>highlighter</code></div><div class="glyph"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-highlighter"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>footnote</code></div><div class="glyph"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-footnote"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>leaf</code></div><div class="glyph"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-leaf"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>windows</code></div><div class="glyph"><span class="lt-icon lt-icon-windows"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-windows"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-windows"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-windows"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-windows"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-windows"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-windows"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
+</section>
+<section class="panel" id="interface" role="tabpanel" hidden>
+<p class="lead">83 parts, each drawn here exactly as the app draws it.</p>
+<section class="part">
+<header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
+<div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
+</section>
+<section class="part">
+<header><h3>Startup screen</h3><code class="built">.startup-card</code><span class="built">app-shell.html, taken off by render-document.js when the host says the window has grown</span></header>
+<div class="stage"><div class="startup-card" style="position:static;height:200px"><span class="lt-icon lt-icon-leaf startup-card-mark"></span><span class="lt-spinner startup-card-spinner"></span><span class="startup-card-name">Leaftext</span></div></div>
+</section>
+<section class="part">
+<header><h3>App bar</h3><code class="built">.app-bar</code><span class="built">app-shell.html, with overflow.js folding it and code-view.js measuring it</span></header>
+<div class="stage"><div class="app-bar" style="position:static"><span class="app-bar-lead"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Tab strip</h3><code class="built">.tab</code><span class="built">dom.js, render-state.js</span></header>
+<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-label">A note.md</button><span class="tab-dirty-dot"></span><button type="button" class="tab-close" style="opacity:1"><span class="lt-icon lt-icon-tab-close"></span></button></span><span class="tab"><button type="button" class="tab-label">Another note.json</button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Tab favorite heart</h3><code class="built">.tab-favorite</code><span class="built">render-state.js</span></header>
+<div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-favorite" style="opacity:1"><span class="lt-icon lt-icon-favorite-off"></span></button><button type="button" class="tab-label">A note.md</button></span><span class="tab"><button type="button" class="tab-favorite is-on" style="opacity:1"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="tab-label">A favorite note.md</button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Overflow menu</h3><code class="built">.app-actions</code><span class="built">app-shell.html, driven by overflow.js</span></header>
+<div class="stage"><div class="app-actions"><button type="button" class="icon-button open-button"><span class="lt-icon lt-icon-open"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Icon button</h3><code class="built">.icon-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="icon-button history-button"><span class="lt-icon lt-icon-back-long"></span></button></div>
+</section>
+<section class="part">
+<header><h3>Brand button</h3><code class="built">.brand-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></div>
+</section>
+<section class="part">
+<header><h3>History button</h3><code class="built">.history-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="icon-button history-button"><span class="lt-icon lt-icon-back-long"></span></button> <button type="button" class="icon-button history-button" disabled><span class="lt-icon lt-icon-forward-long"></span></button></div>
+</section>
+<section class="part">
+<header><h3>Theme button</h3><code class="built">.theme-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="icon-button theme-button"><span class="lt-icon lt-icon-theme"></span></button></div>
+</section>
+<section class="part">
+<header><h3>Open button</h3><code class="built">.open-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="icon-button open-button"><span class="lt-icon lt-icon-open"></span></button></div>
+</section>
+<section class="part">
+<header><h3>New-document button</h3><code class="built">.new-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="icon-button new-button"><span class="lt-icon lt-icon-new"></span></button></div>
+</section>
+<section class="part">
+<header><h3>Export button</h3><code class="built">.export-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="icon-button export-button"><span class="lt-icon lt-icon-export"></span></button></div>
+</section>
+<section class="part">
+<header><h3>Theme mode button</h3><code class="built">.theme-mode-btn</code><span class="built">theme.js, app-shell.html</span></header>
+<div class="stage"><button type="button" class="theme-mode-btn is-active">Light</button> <button type="button" class="theme-mode-btn">Dark</button></div>
+</section>
+<section class="part">
+<header><h3>Document button</h3><code class="built">.leaf-md-button</code><span class="built">markdown/events.rs, from {[Label](url)} in a document</span></header>
+<div class="stage"><div class="document-body"><a class="leaf-md-button" href="#">Primary</a> <a class="leaf-md-button leaf-md-button--secondary" href="#">Secondary</a> <a class="leaf-md-button" href="#"><span class="lt-icon lt-icon-windows"></span>Download for Windows</a></div></div>
+</section>
+<section class="part">
+<header><h3>Document badge</h3><code class="built">.doc-badge</code><span class="built">markdown/events.rs, from {green: Shipped} in a document</span></header>
+<div class="stage"><div class="document-body"><p><span class="doc-badge doc-badge--green">Shipped</span> <span class="doc-badge doc-badge--amber">Next press, on hold</span> <span class="doc-badge doc-badge--red">Conflicts with #205</span> <span class="doc-badge doc-badge--gray">Backlog</span> <span class="doc-badge doc-badge--primary">In review</span></p><p>A badge and a tag are one drawing off this base, differing in the two things that mean something: <span class="doc-badge doc-badge--green">Shipped</span> says what state a thing is in, wears the square corner and cannot be pressed, and <a href="#" class="doc-badge doc-badge--gray" style="border-radius:var(--lt-radius-pill);text-decoration:none;cursor:pointer">#work</a> is a word the author wrote, wears the pill corner and takes the press that finds every note carrying it. The tag keeps the gray tone, because a tone means a state and a subject has none.</p><ul><li><span class="doc-badge doc-badge--green">Shipped</span> <strong>The release went out</strong><br>Both installers published and the download page moved.</li><li><span class="doc-badge doc-badge--red">Conflicts with #205</span> <strong>The pager</strong><br>A badge that is a whole sentence keeps its own column, so every title beside it stays on one left edge.</li><li><span class="doc-badge doc-badge--gray">Backlog</span> <strong>Nothing is waiting on this</strong></li></ul></div></div>
+</section>
+<section class="part">
+<header><h3>Flowchart sheet</h3><code class="built">.flow-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js</span></header>
+<div class="stage"><div class="leaf-sheet flow-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="flow-sheet-head"><span class="flow-sheet-title">Flowchart</span><div class="flow-sheet-tools"><div class="flow-zoom"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div><div class="flow-sheet-actions"><button type="button" class="flow-sheet-cancel">Cancel</button><button type="button" class="flow-sheet-save">Save</button></div></div><div class="flow-sheet-panes"><section class="flow-pane flow-pane-canvas"><div class="flow-canvas" style="height:72px"></div></section></div></div></div>
+</section>
+<section class="part">
+<header><h3>Theme sheet</h3><code class="built">.theme-sheet</code><span class="built">app-shell.html, driven by theme.js</span></header>
+<div class="stage"><div class="leaf-sheet theme-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="theme-sheet-head"><span class="theme-sheet-title">Themes</span></div><ul class="theme-sheet-grid"><li><button type="button" class="theme-item" aria-pressed="true"><span class="theme-item-name">Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-surface);--sw-dark:var(--lt-surface)"></span><span class="theme-swatch" style="--sw-light:var(--lt-background);--sw-dark:var(--lt-background)"></span></span></button></li></ul></div></div>
+</section>
+<section class="part">
+<header><h3>Glossary sheet</h3><code class="built">.glossary-sheet</code><span class="built">glossary.js</span></header>
+<div class="stage"><div class="leaf-sheet glossary-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="glossary-sheet-title">A term</div><div class="glossary-sheet-body document-body"><p>What the term means, read out of the vault's glossary.</p><pre class="mermaid" data-language="mermaid">flowchart TD A --&gt; B</pre><p>And the sentence the entry reads on with.</p></div></div></div>
+</section>
+<section class="part">
+<header><h3>Context menu</h3><code class="built">.context-menu</code><span class="built">context-menu.js</span></header>
+<div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item">Open</button><button type="button" class="context-menu-item is-danger">Delete</button></div></div>
+</section>
+<section class="part">
+<header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js</span></header>
+<div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:280px"><div class="library-tree"><button type="button" class="library-file is-selected"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js, under the find bar</span></header>
+<div class="stage"><div class="library-results find-results" style="max-height:none"><p class="library-results-count"><span class="lt-spinner library-results-spinner"></span>Searching…</p><p class="library-results-count">14 results</p><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div></div>
+</section>
+<section class="part">
+<header><h3>File type badge</h3><code class="built">.file-type-badge</code><span class="built">render-state.js</span></header>
+<div class="stage"><button class="library-file"><span class="library-file-label"><span class="file-name-stem">A note</span><span class="file-type-badge">JSON</span></span></button><button class="library-hit"><span class="library-hit-title"><span class="file-name-stem">A note<span class="library-hit-alias">Its other name</span></span><span class="file-type-badge">YML</span></span></button><button class="home-row-open"><span class="home-row-name"><span class="file-name-stem">A note</span><span class="file-type-badge">MHTML</span></span></button></div>
+</section>
+<section class="part">
+<header><h3>Filter completion</h3><code class="built">.filter-menu</code><span class="built">library-search.js, off the vault's own field names</span></header>
+<div class="stage"><div class="filter-menu" style="position:static"><button type="button" class="filter-menu-item is-active" role="option">status:</button><button type="button" class="filter-menu-item" role="option">due:</button></div></div>
+</section>
+<section class="part">
+<header><h3>Understood filter</h3><code class="built">.library-search-note</code><span class="built">library-search.js</span></header>
+<div class="stage"><p class="library-search-note"><span class="library-search-read">tagged work, status is open, due before 2026-08-07, not draft</span><span class="library-search-unknown">No field called “duee”</span></p></div>
+</section>
+<section class="part">
+<header><h3>Breadcrumbs</h3><code class="built">.library-crumb</code><span class="built">library.js</span></header>
+<div class="stage"><div class="library-crumbs" style="position:static"><button type="button" class="library-vault-switch" aria-haspopup="menu" aria-expanded="true"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-package-open"></span></button><nav class="library-crumb-trail"><button type="button" class="library-crumb">Vault</button><span class="library-crumb-sep" aria-hidden="true">›</span><button type="button" class="library-crumb">Folder</button></nav></div></div>
+</section>
+<section class="part">
+<header><h3>Minimap rail</h3><code class="built">.document-minimap</code><span class="built">minimap.js</span></header>
+<div class="stage"><aside class="document-minimap" style="height:120px"><div class="document-minimap-track"><div class="document-minimap-content"></div><div class="document-minimap-fade" data-edge="top"></div><div class="document-minimap-fade" data-edge="bottom"></div><div class="document-minimap-viewport"></div></div></aside></div>
+</section>
+<section class="part">
+<header><h3>Outline</h3><code class="built">.document-outline</code><span class="built">site/outline.js, on the published sites</span></header>
+<div class="stage"><div class="document-body"><details class="document-outline" open><summary class="document-outline-summary"><span>Outline</span><span class="document-outline-count">(131 lines)</span></summary><ul><li><a class="document-outline-link" href="#">A heading</a></li></ul></details></div></div>
+</section>
+<section class="part">
+<header><h3>Contained page</h3><code class="built">.document-site</code><span class="built">html.rs, driven by html-site-view.js</span></header>
+<div class="stage"><div class="document-body document-body-site" style="height:180px"><iframe class="document-site" sandbox="allow-same-origin" title="A saved page" srcdoc="&lt;style&gt;body{margin:0;font:16px/1.5 system-ui;background:%23123456;color:%23ffcc00}.hero{padding:24px}.card{border:3px solid %23ff0000;border-radius:12px;padding:12px;margin:0 24px 24px}&lt;/style&gt;&lt;div class=&quot;hero&quot;&gt;&lt;h1&gt;A page its own CSS draws&lt;/h1&gt;&lt;p&gt;Its colors, its type, its layout.&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;card&quot;&gt;And a box the page drew itself.&lt;/div&gt;"></iframe></div></div>
+</section>
+<section class="part">
+<header><h3>Pager</h3><code class="built">.docs-pager</code><span class="built">library.js, reading-blocks.js</span></header>
+<div class="stage"><div class="document-body"><nav class="docs-pager"><a class="docs-pager-prev" href="#"><span class="docs-pager-label">Previous</span>Gauge Maintenance</a><a class="docs-pager-next" href="#"><span class="docs-pager-label">Next</span>Weir Crest Survey</a></nav></div></div>
+</section>
+<section class="part">
+<header><h3>Table corner actions</h3><code class="built">.table-sheet-open</code><span class="built">table-sheet.js</span></header>
+<div class="stage"><div style="position:relative;height:40px;background:var(--lt-markdown-background)"><button type="button" class="table-copy-csv" style="opacity:1;pointer-events:auto"><span class="lt-icon lt-icon-copy"></span></button><button type="button" class="table-sheet-open" style="opacity:1;pointer-events:auto"><span class="lt-icon lt-icon-expand"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Table row handle</h3><code class="built">.table-row-handle</code><span class="built">table-controls.js</span></header>
+<div class="stage"><div class="table-row-handle" style="position:static;transform:none"><button type="button" class="table-row-grip"><span class="lt-icon lt-icon-grip"></span></button><div class="table-row-menu" style="position:static"><button type="button" class="table-row-action"><span class="lt-icon lt-icon-new"></span>Add row above</button><button type="button" class="table-row-action"><span class="lt-icon lt-icon-new"></span>Add row below</button><button type="button" class="table-row-action"><span class="lt-icon lt-icon-trash"></span>Delete row</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Table column handle</h3><code class="built">.table-column-handle</code><span class="built">table-controls.js</span></header>
+<div class="stage"><div class="table-column-handle" style="position:static;transform:none"><button type="button" class="table-column-grip"><span class="lt-icon lt-icon-grip"></span></button><div class="table-column-menu" style="position:static"><button type="button" class="table-column-action"><span class="lt-icon lt-icon-new"></span>Add column left</button><button type="button" class="table-column-action"><span class="lt-icon lt-icon-trash"></span>Delete column</button><button type="button" class="table-column-action"><span class="lt-icon lt-icon-align-center"></span>Align center</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Block gutter</h3><code class="built">.block-insert</code><span class="built">block-controls.js</span></header>
+<div class="stage"><div class="block-insert-row"><button type="button" class="block-insert" title="Paragraph"><span class="lt-icon lt-icon-text"></span></button><button type="button" class="block-insert" title="Heading"><span class="lt-icon lt-icon-heading"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Selection toolbar</h3><code class="built">.selection</code><span class="built">selection-toolbar.js</span></header>
+<div class="stage"><div class="selection-toolbar" style="position:relative;transform:none"><span class="selection-toolbar-point"></span><div class="selection-format-row"><button type="button" class="selection-format"><span class="lt-icon lt-icon-bold"></span></button><button type="button" class="selection-format"><span class="lt-icon lt-icon-italic"></span></button></div></div><div class="selection-toolbar is-below" style="position:relative;transform:none"><span class="selection-toolbar-point"></span><div class="selection-format-row"><button type="button" class="selection-format"><span class="lt-icon lt-icon-bold"></span></button><button type="button" class="selection-format"><span class="lt-icon lt-icon-italic"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Find bar</h3><code class="built">.find</code><span class="built">app-shell.html, driven by find-bar.js</span></header>
+<div class="stage"><div class="find-bar" style="position:static"><div class="find-row"><span class="find-field"><button type="button" class="find-scope"><span class="find-scope-label">This file</span><span class="find-scope-caret" aria-hidden="true">▾</span></button><input class="find-input" type="text" placeholder="Find" value="stage"><span class="find-count">3 of 41</span></span><span class="find-flags"><button type="button" class="find-flag icon-button" aria-pressed="true">Aa</button><button type="button" class="find-flag icon-button">ab&#124;</button><button type="button" class="find-flag icon-button">.*</button><button type="button" class="find-flag icon-button"><span class="lt-icon lt-icon-text"></span></button></span><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-select-all"></span></button><button type="button" class="find-step icon-button" aria-pressed="true"><span class="lt-icon lt-icon-replace"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div><div class="find-row"><span class="find-field"><input class="find-input" type="text" placeholder="Replace with"></span><button type="button" class="find-action icon-button">Replace</button><button type="button" class="find-action icon-button">All</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Code view</h3><code class="built">.code</code><span class="built">code-view.js</span></header>
+<div class="stage"><div class="code-frame"><div class="code-toolbar"><button type="button" class="code-copy">Copy</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Pinned headings</h3><code class="built">.code-sticky</code><span class="built">code-sticky.js</span></header>
+<div class="stage"><div class="code-sticky"><div class="code-sticky-row">A pinned heading</div></div></div>
+</section>
+<section class="part">
+<header><h3>Copy button</h3><code class="built">.code-copy</code><span class="built">decorate.js</span></header>
+<div class="stage"><button type="button" class="code-copy">Copy</button></div>
+</section>
+<section class="part">
+<header><h3>Graph</h3><code class="built">.reader-graph</code><span class="built">app-shell.html, drawn by graph.js and graph-scene.js</span></header>
+<div class="stage"><div class="reader-graph" style="height:120px"><p class="reader-graph-legend"><span class="graph-key graph-key-document"></span>your documents<span class="graph-key graph-key-external"></span>web addresses</p></div></div>
+</section>
+<section class="part">
+<header><h3>Flow canvas</h3><code class="built">.flow</code><span class="built">flow-canvas.js</span></header>
+<div class="stage"><div class="flow-canvas" style="height:88px"><p class="flow-hint">Double-click to add a box</p></div></div>
+</section>
+<section class="part">
+<header><h3>Shape picker form</h3><code class="built">.flow-form</code><span class="built">flow-picker.js</span></header>
+<div class="stage"><div class="flow-picker-head" style="max-width:520px"><div class="flow-form"><label class="flow-form-row"><span class="flow-form-label">Name</span><input class="flow-field" type="text" value="Read the file"></label><label class="flow-form-row"><span class="flow-form-label">Link</span><input class="flow-field" type="text" placeholder="Where clicking this box goes"></label><label class="flow-form-row"><span class="flow-form-label">Icon</span><input class="flow-field" type="text" placeholder="leaf:back"></label><label class="flow-form-row"><span class="flow-form-label">Picture</span><input class="flow-field" type="text" placeholder="A picture beside this document, or its address"></label></div></div></div>
+</section>
+<section class="part">
+<header><h3>Theme card</h3><code class="built">.theme-item</code><span class="built">theme.js, lib.rs</span></header>
+<div class="stage"><ul class="theme-sheet-grid" style="max-width:320px"><li><button type="button" class="theme-item" aria-pressed="true"><span class="theme-item-name">Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span></button></li></ul></div>
+</section>
+<section class="part">
+<header><h3>Update bell</h3><code class="built">.update</code><span class="built">updater.js, app-shell.html</span></header>
+<div class="stage"><details class="update-menu" open style="position:static"><summary class="icon-button"><span class="lt-icon lt-icon-update"></span><span class="update-alert-dot"></span></summary><div class="update-panel" style="position:static;margin-top:8px"><button type="button" class="update-button"><span class="update-button-label">Restart to update</span></button></div></details></div>
+</section>
+<section class="part">
+<header><h3>Link preview</h3><code class="built">.link-hover</code><span class="built">glossary.js</span></header>
+<div class="stage"><div class="link-hover-tip shown has-preview" style="position:static"><div class="link-hover-tip-preview"><div class="link-hover-tip-preview-placeholder"><span class="lt-spinner link-hover-tip-preview-spinner"></span></div><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"><h2>A linked note</h2><p>Its opening line.</p><pre class="mermaid" data-card-diagram="unshown" data-language="mermaid">flowchart TD A--&gt;B</pre></div></div></div><div class="link-hover-tip-kind">Note</div><div class="link-hover-tip-detail">A linked note — its opening line.</div></div><div class="link-hover-tip shown has-preview" style="position:static;margin-top:12px"><div class="link-hover-tip-preview is-loaded is-entry is-capped" style="--link-preview-shrink:1;height:96px"><div class="link-hover-tip-preview-scale"><div class="document-body link-hover-tip-preview-document"><h2>Tier</h2><p>One of the bands the running order groups its rows into.</p><p>A row moves a band at a time rather than a place at a time, so what changes is what kind of thing it is.</p></div></div></div><div class="link-hover-tip-kind">Glossary entry</div><div class="link-hover-tip-detail">glossary:tier</div><div class="link-hover-tip-more">Press to read the rest</div></div></div>
+</section>
+<section class="part">
+<header><h3>Document alerts</h3><code class="built">.markdown-alert</code><span class="built">decorate.js, dom-to-markdown.js</span></header>
+<div class="stage"><div class="document-body"><blockquote class="markdown-alert markdown-alert-note"><p>Something worth knowing. The word above it is drawn by the stylesheet, not written in the document.</p></blockquote></div></div>
+</section>
+<section class="part">
+<header><h3>Document comment</h3><code class="built">.xml-comment</code><span class="built">xml.rs and tei.rs, from a comment standing between two blocks of an XML file</span></header>
+<div class="stage"><div class="document-body"><h2>A section</h2><details class="xml-comment"><summary class="xml-comment-summary">Comment</summary><div class="xml-comment-body">checked against the manuscript</div></details><details class="xml-comment" open><summary class="xml-comment-summary">Comment</summary><div class="xml-comment-body">checked against the manuscript</div></details><p>The translation starts here.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Bottom sheet</h3><code class="built">.leaf-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js, theme.js and glossary.js</span></header>
+<div class="stage"><div class="leaf-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><button type="button" class="leaf-sheet-close" style="align-self:flex-end"><span class="lt-icon lt-icon-close"></span></button><p style="padding:0 20px 20px">Whatever the sheet is for goes here: a theme picker, a glossary entry, a flowchart.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Sheet scrim</h3><code class="built">.lt-backdrop</code><span class="built">app-shell.html</span></header>
+<div class="stage"><div class="lt-backdrop open" style="position:static;height:48px"></div></div>
+</section>
+<section class="part">
+<header><h3>Confirmation</h3><code class="built">.confirm-dialog</code><span class="built">app-shell.html, asked by context-menu.js</span></header>
+<div class="stage"><div class="confirm-dialog" style="position:static;transform:none;width:340px"><h2 class="confirm-dialog-title">Delete “favorites.md”?</h2><p class="confirm-dialog-detail">It goes to the Recycle Bin, so you can put it back.</p><div class="confirm-dialog-actions"><button type="button" class="confirm-dialog-button">Cancel</button><button type="button" class="confirm-dialog-button is-danger">Delete</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Spinner</h3><code class="built">.lt-spinner</code><span class="built">app-shell.html, glossary.js, minimap.js, lib.rs</span></header>
+<div class="stage"><div class="startup-card" style="position:static;height:64px"><span class="lt-spinner startup-card-spinner"></span></div><div class="glossary-sheet-waiting"><div class="lt-spinner glossary-sheet-spinner"></div></div></div>
+</section>
+<section class="part">
+<header><h3>Skeleton</h3><code class="built">.lt-skeleton</code><span class="built">pager.rs, app-shell.html, library-search.js</span></header>
+<div class="stage"><div style="display:flex;gap:16px"><span class="docs-pager-skeleton"><span class="lt-skeleton docs-pager-label-skeleton"></span><span class="lt-skeleton docs-pager-title-skeleton"></span></span><div class="reader-loading-page" style="flex:1 1 0;padding:0"><span class="lt-skeleton reader-loading-heading"></span><span class="lt-skeleton reader-loading-line"></span><span class="lt-skeleton reader-loading-line reader-loading-line-short"></span></div><span class="library-hit-waiting" style="flex:1 1 0;padding:0"><span class="lt-skeleton library-hit-waiting-title"></span><span class="lt-skeleton library-hit-waiting-line"></span><span class="lt-skeleton library-hit-waiting-line library-hit-waiting-line-short"></span></span></div></div>
+</section>
+<section class="part">
+<header><h3>Icon</h3><code class="built">.lt-icon</code><span class="built">everything, drawn by icons.css</span></header>
+<div class="stage"><span class="lt-icon lt-icon-leaf"></span> <span class="lt-icon lt-icon-back-long"></span> <span class="lt-icon lt-icon-back-long" data-leaf-pack="feather"></span> <a class="jump" href="#icons">All 63 icons, under each of the seven packs, on the Icons tab</a></div>
+</section>
+<section class="part">
+<header><h3>Dropdown</h3><code class="built">.leaf-select</code><span class="built">app-shell.html</span></header>
+<div class="stage"><label class="leaf-select">Graph size <select><option>Focus</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></div>
+</section>
+<section class="part">
+<header><h3>Scroll area</h3><code class="built">.leaf-scroll</code><span class="built">app-shell.html</span></header>
+<div class="stage"><div class="leaf-scroll" style="height:64px;overflow:auto"><p>This box scrolls, and the bar it draws is the app’s own.</p><div style="height:120px"></div></div><div class="leaf-scroll" style="overflow:auto;margin-top:12px"><p style="width:1200px">Sideways is the same bar turned on its side — the library pane, the reader with no minimap, and a table too wide for the text all wear it.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Table lane</h3><code class="built">.table-lane</code><span class="built">decorate.js</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th></tr></thead><tbody><tr><td>North</td><td>Q1</td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr><tr><td>East</td><td>Q2</td><td>377000</td></tr><tr><td>West</td><td>Q2</td><td>468000</td></tr></tbody></table></div></div><div class="table-bay"><div class="table-lane"><table class="is-cards"><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th><th>Owners</th><th>Note</th></tr></thead><tbody><tr><td data-leaf-col="Region">North</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">412000</td><td data-leaf-col="Owners"><a href="#components">Ada Okonkwo</a>, <a href="#components">Bo Lindqvist</a> (6 in all)</td><td data-leaf-col="Note" data-leaf-long="">Short cells share a line and a sentence takes one of its own, and a path nothing can break — <code>app/src/assets/reading/document-tables.css</code> — breaks inside the card rather than running out of it.</td></tr><tr><td data-leaf-col="Region">South</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">501000</td><td data-leaf-col="Owners"><a href="#components">Ravi Menon</a> (2 in all)</td><td data-leaf-col="Note" data-leaf-long="">A short value in a long column keeps its column&#39;s section, so every card is the same shape.</td></tr></tbody></table></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Picture lane</h3><code class="built">.image-lane</code><span class="built">decorate.js</span></header>
+<div class="stage"><div class="document-body"><p class="image-lane"><img alt="A picture alone in its paragraph, reading at the reader's own lane" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='240'%3E%3Crect width='640' height='240' fill='%23b7c4b0'/%3E%3C/svg%3E"><span class="image-lane-corner" style="opacity:1"><button type="button" class="image-sheet-open"><span class="lt-icon lt-icon-expand"></span></button><button type="button" class="image-export-open"><span class="lt-icon lt-icon-export"></span></button></span></p><p>A paragraph either side keeps the text measure.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Full-window picture</h3><code class="built">.image-sheet</code><span class="built">image-sheet.js</span></header>
+<div class="stage"><section class="image-sheet-overlay open" style="position:relative;inset:auto;height:180px;padding:12px;background:var(--lt-tint-backdrop)"><img class="image-sheet-picture" alt="The picture, fitted whole to the window" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='140'%3E%3Crect width='480' height='140' fill='%23b7c4b0'/%3E%3C/svg%3E"><div class="image-sheet-corner"><button type="button" class="leaf-sheet-close image-sheet-close" style="opacity:1"><span class="lt-icon lt-icon-close"></span></button></div></section></div>
+</section>
+<section class="part">
+<header><h3>Toast</h3><code class="built">.app-toast</code><span class="built">dom.js</span></header>
+<div class="stage"><div class="app-toast is-shown">Saved</div> <div class="app-toast is-shown" style="margin-top:8px"><span class="app-toast-text">Deleted favorites.md</span><button type="button" class="app-toast-action">Undo</button></div> <div class="app-toast is-shown" style="margin-top:8px"><span class="app-toast-text">Saved </span><button type="button" class="app-toast-link">C:\Users\reader\Documents\quarterly-review.pdf</button></div></div>
+</section>
+<section class="part">
+<header><h3>First-run bubble</h3><code class="built">.hint-bubble</code><span class="built">hints.js</span></header>
+<div class="stage"><div class="hint-bubble is-shown is-right" role="status" style="position:static;--hint-tail:20px"><span class="hint-bubble-text">Pick which folder the list below shows.</span><span class="hint-bubble-tail"></span></div></div>
+</section>
+<section class="part">
+<header><h3>Vault introduction</h3><code class="built">.library-intro</code><span class="built">library.js</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px"><div class="library-tree"><div class="library-intro"><b class="library-intro-title">A vault is one folder of notes.</b><p class="library-intro-text">Point Leaftext at yours and search reads all of it, the map draws how the notes link, and this pane lists it.</p><button type="button" class="library-intro-action">Add your notes folder</button></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
+<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-speed-reader-off"></span></button></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>
+<div class="stage"><div class="window-controls"><button type="button" class="window-control"><span class="lt-icon lt-icon-window-minimize"></span></button><button type="button" class="window-control"><span class="lt-icon wc-maximize lt-icon-window-maximize"></span></button><button type="button" class="window-control window-control-close"><span class="lt-icon lt-icon-window-close"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Empty state</h3><code class="built">.empty-state</code><span class="built">render-document.js</span></header>
+<div class="stage"><div class="empty-state" style="padding:8px 0"><div class="empty-subtitle">Nothing open</div><div class="empty-description">Open a document to start.</div></div></div>
+</section>
+<section class="part">
+<header><h3>Start screen vault switcher</h3><code class="built">.home-vault-switch</code><span class="built">render-document.js, library.js</span></header>
+<div class="stage"><button type="button" class="kicker library-vault-switch home-vault-switch" aria-haspopup="menu" aria-expanded="false"><span class="library-crumb-caret" aria-hidden="true">▾</span><span class="lt-icon lt-icon-package-open"></span>Vault</button></div>
+</section>
+<section class="part">
+<header><h3>Home list row</h3><code class="built">.home-row</code><span class="built">render-document.js</span></header>
+<div class="stage"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">Journal</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row is-missing"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A note that moved</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button><button type="button" class="home-row-repair">Find it…</button></span></li><li class="home-list-group is-missing">A vault that is not there<span class="home-list-group-gone">folder missing</span></li></ol></div><div class="home-list-box" style="margin-top:12px"><div class="home-list-scroll"><ol><li class="is-dropzone" style="height:44px"></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A row it made room above</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-row-ghost" style="position:static;width:260px"><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">The row being carried</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></div></div></div>
+</section>
+<section class="part">
+<header><h3>Home lists</h3><code class="built">.home-list</code><span class="built">render-document.js</span></header>
+<div class="stage"><div class="empty-state" style="padding:0"><div class="home-list-grid" style="border:0;margin:0;padding:0"><section class="home-list"><h2>Recent (2)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">Another note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section><section class="home-list"><h2>Favorites (1)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li class="home-list-group">A vault</li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div></div>
+</section>
+<section class="part">
+<header><h3>Show all</h3><code class="built">.home-showall</code><span class="built">render-document.js</span></header>
+<div class="stage"><button type="button" class="home-showall" style="display:block;width:auto">Show all 24</button></div>
+</section>
+<section class="part">
+<header><h3>Home list sheet</h3><code class="built">.home-sheet</code><span class="built">app-shell.html, filled by render-document.js</span></header>
+<div class="stage"><div class="leaf-sheet home-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="home-sheet-head"><span class="home-sheet-title">Favorites (3)</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="home-sheet-body"><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">Journal</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Reader frame</h3><code class="built">.reader-shell</code><span class="built">app-shell.html</span></header>
+<div class="stage"><div class="reader-shell" style="height:96px"><div class="reader-corner reader-corner-tl"></div><p style="padding:12px">The page sits in here.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Diagram controls</h3><code class="built">.mermaid-tool</code><span class="built">decorate.js</span></header>
+<div class="stage"><div class="mermaid-tools" style="opacity:1"><button type="button" class="mermaid-tool"><span class="lt-icon lt-icon-fit"></span></button></div><div class="mermaid-view-controls" style="position:static;opacity:1"><button type="button" class="mermaid-export"><span class="lt-icon lt-icon-export"></span></button><div class="mermaid-zoom"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Full-window diagram</h3><code class="built">.diagram</code><span class="built">diagram-view.js</span></header>
+<div class="stage"><div class="diagram-overlay open" style="position:static;height:150px"><pre class="mermaid diagram-stage" data-processed="true"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg><button type="button" class="leaf-sheet-close diagram-close"><span class="lt-icon lt-icon-close"></span></button><div class="mermaid-view-controls"><button type="button" class="mermaid-export"><span class="lt-icon lt-icon-export"></span></button><div class="mermaid-zoom" role="group"><button type="button"><span class="lt-icon lt-icon-zoom-out"></span></button><button type="button"><span class="lt-icon lt-icon-fit"></span></button><button type="button"><span class="lt-icon lt-icon-zoom-in"></span></button></div></div></pre></div></div>
+</section>
+<section class="part">
+<header><h3>Diagram print sheet</h3><code class="built">.diagram-print</code><span class="built">flow-canvas.js, filled for one export and emptied on the answer</span></header>
+<div class="stage"><div class="diagram-print" style="display:block"><svg viewBox="0 0 220 60" width="220" height="60"><rect x="1" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><rect x="133" y="14" width="86" height="32" rx="6" fill="none" stroke="currentColor"></rect><path d="M87 30h46" fill="none" stroke="currentColor"></path></svg></div></div>
+</section>
+<section class="part">
+<header><h3>Picture print sheet</h3><code class="built">.picture-print</code><span class="built">image-sheet.js, filled for one export and emptied on the answer</span></header>
+<div class="stage"><div class="picture-print" style="display:block"><img alt="The picture at its own size, the whole of what the sheet is made to" width="220" height="88" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='88'%3E%3Crect width='220' height='88' fill='%23b7c4b0'/%3E%3C/svg%3E"></div></div>
+</section>
+<section class="part">
+<header><h3>Table lens bar</h3><code class="built">.table-lens</code><span class="built">table-lens.js</span></header>
+<div class="stage"><div class="table-bay"><div class="table-lens-bar" style="opacity:1;pointer-events:auto"><button type="button" class="table-lens-button table-lens-layout">Table</button><button type="button" class="table-lens-button table-lens-layout is-on">Cards</button><button type="button" class="table-lens-button table-lens-fields table-lens-attached">Card fields</button><button type="button" class="table-lens-button table-lens-sort is-group-start is-on">Sort by status</button><button type="button" class="table-lens-button table-lens-filter is-on">Filter: finished</button></div><div class="table-lane"><table><thead><tr><th>id</th><th>title</th><th>status</th></tr></thead><tbody><tr><td>dune</td><td>Dune</td><td>reading</td></tr><tr><td>dispossessed</td><td>The Dispossessed</td><td>finished</td></tr></tbody></table></div></div></div>
+</section>
+<section class="part">
+<header><h3>Table lens menu</h3><code class="built">.table-lens-menu</code><span class="built">table-lens.js</span></header>
+<div class="stage"><div class="table-lens-bar" style="position:relative;opacity:1;pointer-events:auto;height:180px;align-items:flex-start"><div class="table-lens-menu" style="position:static"><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">title</span></button><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">status</span><span class="lt-icon lt-icon-check table-lens-menu-check"></span></button><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">pages</span><span class="table-lens-menu-trail">Low to high</span></button><div class="table-lens-range"><input type="text" class="table-lens-input" placeholder="From"><input type="text" class="table-lens-input" placeholder="To"></div><button type="button" class="table-lens-menu-item table-lens-menu-clear"><span class="table-lens-menu-label">Clear this filter</span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Table lens chip</h3><code class="built">.table-lens-chip</code><span class="built">table-lens.js</span></header>
+<div class="stage"><div class="document-body"><p><a href="#components" class="table-lens-chip">Frank Herbert</a> <a href="#components" class="table-lens-chip is-missing">Nobody</a> <a href="#components" class="table-lens-chip is-unread">Somebody Else</a></p></div></div>
+</section>
+<section class="part">
+<header><h3>Table lens board</h3><code class="built">.table-lens-board</code><span class="built">table-lens.js</span></header>
+<div class="stage"><div class="table-lens-board"><section class="table-lens-column"><h4 class="table-lens-column-head">reading</h4><article class="table-lens-card"><h4 class="table-lens-card-title">Dune</h4><p class="table-lens-card-field"><span class="table-lens-card-name">pages</span><span>412</span></p></article></section><section class="table-lens-column"><h4 class="table-lens-column-head">finished</h4><article class="table-lens-card"><h4 class="table-lens-card-title">The Dispossessed</h4><p class="table-lens-card-field"><span class="table-lens-card-name">pages</span><span>387</span></p></article><article class="table-lens-card"><h4 class="table-lens-card-title">The Left Hand of Darkness</h4><p class="table-lens-card-field"><span class="table-lens-card-name">pages</span><span>304</span></p></article></section></div></div>
+</section>
+<section class="part">
+<header><h3>Table lens list</h3><code class="built">.table-lens-list</code><span class="built">table-lens.js</span></header>
+<div class="stage"><div class="table-lens-list"><div class="table-lens-line"><span class="table-lens-line-title">Dune</span><span class="table-lens-line-trail">reading</span></div><div class="table-lens-line"><span class="table-lens-line-title">The Dispossessed</span><span class="table-lens-line-trail">finished</span></div><div class="table-lens-line"><span class="table-lens-line-title">The Left Hand of Darkness</span><span class="table-lens-line-trail">finished</span></div></div></div>
+</section>
+<section class="part">
+<header><h3>Full-window table</h3><code class="built">.table-sheet</code><span class="built">table-sheet.js</span></header>
+<div class="stage"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North</td><td>Q1</td></tr></tbody></table><button type="button" class="table-sheet-open" style="opacity:1"><span class="lt-icon lt-icon-expand"></span></button></div><section class="table-sheet-overlay open" style="position:static;height:150px"><header class="table-sheet-head"><h2 class="table-sheet-title">Table</h2><button type="button" class="leaf-sheet-close table-sheet-close"><span class="lt-icon lt-icon-close"></span></button></header><div class="table-sheet-grid document-body"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td><a href="../north.md">North</a></td><td><a href="glossary:quarter">Q1</a></td></tr></tbody></table></div></section></div>
+</section>
+<section class="part">
+<header><h3>Editable fields</h3><code class="built">.frontmatter-input</code><span class="built">frontmatter-fields.js</span></header>
+<div class="stage"><div class="document-body"><div class="frontmatter is-editable"><table><tbody><tr><th>title</th><td data-leaf-field="title">A note</td><td class="frontmatter-actions"><button type="button" class="frontmatter-remove" style="opacity:1"><span class="lt-icon lt-icon-close"></span></button></td></tr><tr><th>status</th><td data-leaf-field="status" class="is-editing"><input type="text" class="frontmatter-input" value="draft"></td><td class="frontmatter-actions"></td></tr><tr><th>tags</th><td data-leaf-field="tags"><div class="frontmatter-chips"><span class="frontmatter-chip">one<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><span class="frontmatter-chip">two<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><button type="button" class="frontmatter-chip-add"><span class="lt-icon lt-icon-new"></span></button></div></td><td class="frontmatter-actions"></td></tr><tr><th>due</th><td data-leaf-field="due" class="is-editing"><input type="date" class="frontmatter-input frontmatter-date" value="2026-08-10"></td><td class="frontmatter-actions"></td></tr><tr class="frontmatter-add"><td colspan="3"><button type="button" class="frontmatter-add-button"><span class="lt-icon lt-icon-new"></span><span>Add a field</span></button></td></tr></tbody></table></div></div></div>
+</section>
+<section class="part">
+<header><h3>Syntax colors</h3><code class="built">.syn</code><span class="built">markdown/code.rs, whose SYNTAX_STYLE_RULES is the one table of these</span></header>
+<div class="stage"><div class="document-body"><pre><code><span class="syn-keyword">fn</span> <span class="syn-function">main</span>() { <span class="syn-comment">// a comment</span> <span class="syn-string">"text"</span> }</code></pre></div></div>
+</section>
+</section>
+<script>
+  const root = document.documentElement;
+  const wire = (id, attr) => {
+    document.getElementById(id).addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const value = button.dataset[attr];
+      root.dataset[attr === "family" ? "leafTheme" : "leafAppearance"] = value;
+      if (attr === "appearance") root.dataset.theme = value;
+      for (const other of event.currentTarget.querySelectorAll("button")) {
+        other.setAttribute("aria-pressed", String(other === button));
+      }
+    });
+  };
+  wire("familyPick", "family");
+  wire("appearancePick", "appearance");
+  // The tabs: one panel at a time, and the address bar remembers which.
+  const tabs = document.querySelector(".tabs");
+  const show = (name) => {
+    for (const tab of tabs.querySelectorAll("button")) {
+      const open = tab.dataset.panel === name;
+      tab.setAttribute("aria-selected", String(open));
+      document.getElementById(tab.dataset.panel).hidden = !open;
+    }
+  };
+  tabs.addEventListener("click", (event) => {
+    const tab = event.target.closest("button");
+    if (!tab) return;
+    show(tab.dataset.panel);
+    history.replaceState(null, "", "#" + tab.dataset.panel);
+  });
+  const fromHash = () => {
+    const name = location.hash.slice(1);
+    if (document.getElementById(name)) show(name);
+  };
+  addEventListener("hashchange", fromHash);
+  fromHash();
+</script>
+</html>
