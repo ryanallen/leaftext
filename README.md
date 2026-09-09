@@ -6,7 +6,7 @@
 
 {{{icon:windows[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)}}} {{{icon:apple[Download for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)}}}
 
-Free · Windows 10+ and macOS Universal · **[Windows `.msi`](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.msi)** · **[All releases](https://github.com/ryanallen/leaftext/releases/latest)**
+Free · Windows 10+ and macOS Universal · **[All releases](https://github.com/ryanallen/leaftext/releases/latest)**
 
 **[How to install it →](docs/02-installation.md#install)** · **[Mac won't open it? →](docs/02-installation.md#mac-blocks-the-first-launch)**
 
@@ -271,7 +271,7 @@ Every launch after that is an ordinary double-click. On macOS 12 and earlier it'
 
 ![The Windows protected your PC dialog with More info already expanded: the MSI file name beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](imgs/install-windows.png)
 
-Grab the 64-bit MSI and run it. If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
+Grab the 64-bit installer and run it. If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 
 ```text
 %LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe
@@ -284,8 +284,6 @@ Your app data lives alongside it:
 ```
 
 **Leaftext opens itself when the install finishes.** After that, launch it from the Start Menu, or tap the Windows key and type **Leaftext**. One Start Menu entry, no desktop shortcut.
-
-If a small box says **the system administrator has set policies to prevent this installation**, that machine is set to refuse Windows Installer packages and no certificate would change it. Take the `.exe` from the release page instead — same install, same folder, same Start Menu entry, and updates keep arriving as that file. **[More detail →](docs/02-installation.md#windows-refuses-the-msi)**
 
 > **Upgrading from v0.1.364 or earlier?** Uninstall the old version first, from **Settings → Apps**. Those installed machine-wide into `C:\Program Files`, and a per-user package can't remove one, so you'd end up with two copies.
 
@@ -332,9 +330,9 @@ Other [`Justfile`](Justfile) tasks:
 | Task | Command |
 |:--|:--|
 | Cut a release | `just release <version>` |
-| Finish a release GitHub would not publish | `just publish-release <version>` |
+| Finish a release GitHub would not publish | `just publish-installers <tag>` |
 
-`just release` commits the version bump, tags, and pushes — CI builds the two Windows installers and the macOS DMG. `just publish-release` starts those builds again against a tag that is already up, for the case where the installers were built and only the release to hang them on was refused; it writes nothing, so no second version number is spent. See [Releasing](docs/02-development/03-releasing.md#finishing-a-release-github-refused).
+`just release` builds the Windows installer here and the macOS DMG over a Mac on the network, then commits the version bump, tags, pushes, publishes the release both installers hang on, and hands the site across. Nothing runs on GitHub Actions. `just publish-installers` publishes the files already built, for the case where only the release to hang them on was refused; it builds nothing and moves no tag, so no second version number is spent. See [Releasing](docs/02-development/03-releasing.md#finishing-a-release-github-refused).
 
 ### Every written file in the repo
 

@@ -42,7 +42,9 @@ const stripOrder = (name) => name.replace(ORDER_PREFIX, '');
 
 // ---- labels: mechanical, never hand-set ------------------------------------
 // A name like "markdown-rendering" or "get_started" becomes "Markdown Rendering" / "Get Started". Pure transformation of the on-disk name, with any ordering prefix dropped first so it never reaches the label.
-function label(name) {
+//
+// Exported because `scripts/check-docs.mjs` refuses two neighbors the sidebar would draw with the same words, and the only way to ask that is to ask this. A copy of the rule over there would answer for a sidebar nobody draws.
+export function docsNavLabel(name) {
   return stripOrder(name.replace(documentPattern, ''))
     .replace(/[-_]+/g, ' ')
     .trim()
@@ -95,7 +97,7 @@ function buildNav(relPaths) {
       .forEach((f) =>
         out.push({
           route: (cleanRel ? cleanRel + '/' : '') + stripOrder(routeName(f)),
-          label: label(f),
+          label: docsNavLabel(f),
           path: (rawRel ? rawRel + '/' : '') + f,
         })
       );
@@ -108,12 +110,12 @@ function buildNav(relPaths) {
       // A folder with a README becomes a clickable heading (its index); a folder with no README is a plain heading. A folder with neither a README nor any descendant pages is dropped (nothing to point at).
       if (readme)
         out.push({
-          group: label(d),
+          group: docsNavLabel(d),
           route: childClean + '/' + stripOrder(routeName(readme)),
           path: childRaw + '/' + readme,
           items,
         });
-      else if (items.length) out.push({ group: label(d), items });
+      else if (items.length) out.push({ group: docsNavLabel(d), items });
     });
     return out;
   };

@@ -31,7 +31,7 @@ flowchart LR
 | Page | What it covers |
 | --- | --- |
 | [Introduction](01-introduction.md) | What Leaftext is, the feature overview, and where to go for each task |
-| [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.msi`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), [file associations](02-installation.md#file-associations), [updates](01-features/05-settings.md#updates), and data paths |
+| [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.exe`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), [file associations](02-installation.md#file-associations), [updates](01-features/05-settings.md#updates), and data paths |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 
 ## Features
@@ -78,7 +78,7 @@ For anyone building, extending, or releasing Leaftext:
 | --- | --- |
 | [Architecture](02-development/01-architecture.md) | The Rust binary end to end: tao windowing, wry WebView, the Markdown pipeline, the XML, JSON/YAML, and email renderers, the IPC bridge, the vault registry, the git integration, and every source file's role |
 | [Building](02-development/02-building.md) | Toolchain prerequisites, platform WebView dependencies, and the `just verify` suite |
-| [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, the tag push, and the CI builds it triggers on Windows and macOS |
+| [Releasing](02-development/03-releasing.md) | `just release <version>`: the version bump, both installers built on the machines here, the tag push, the publish and the site hand-over |
 | [Theming](02-development/04-theming.md) | The startup-validated contract of 84 `--lt-*` CSS custom properties, of which 80 of the 84 are required, the theme sources, and how the CSS is compiled and validated |
 | [Design system](02-development/05-design-system.md) | Where every value in the interface comes from: the four files under `design/`, the icons, the components, the gallery, and the checks that fail the build on a hand-written value |
 | [Screenshots](02-development/06-screenshots.md) | One row per picture in `imgs/`: what it shows and what takes it, so a fault common to all of them can be fixed as a batch |
