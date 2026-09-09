@@ -376,7 +376,7 @@ What a [new document](GLOSSARY.md#new-document) is called before its first [save
 
 ## Update bell
 
-The bell in the [app bar](GLOSSARY.md#app-bar), there only when there is something to install: a spinning ring while the new version downloads, a green dot once a restart would install it. Clicking it opens one button — **Restart to update**. A check that found nothing, could not reach GitHub, or found a release with no installer for your platform says nothing at all, because there is nothing you could do about any of it. See [Installation](02-installation.md#updates).
+The bell in the [app bar](GLOSSARY.md#app-bar), there only when there is news: a spinning ring while the new version downloads, a green dot once a restart would install it. Clicking it opens one button — **Restart to update**. It says one more thing, and this is the only one you have to act on yourself: where a new release carries no file this copy can install, the panel names that version, says so, and offers **Open the releases page**. A check that found nothing, could not reach GitHub, or was rate-limited says nothing at all, because there is nothing you could do about any of it. See [Installation](02-installation.md#updates).
 
 ## Vault
 

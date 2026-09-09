@@ -3918,7 +3918,18 @@ body.is-maximized #winMaximize .wc-restore {
   background: var(--lt-surface-elevated);
   padding: var(--lt-space-14);
 }
-/* Green "restart to update" call-to-action, the only thing in the panel. Takes the primary-action fill; spans it. `position: relative` anchors the download progress fill. */
+/* The panel's one sentence: which version is out and why this copy cannot install it. Quieter than the button, which is the way out where this is the reason, and set on the two-line leading because it wraps. */
+.update-note {
+  margin: 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-4);
+}
+.update-note[hidden] {
+  display: none;
+}
+/* Green "restart to update" call-to-action. Takes the primary-action fill; spans it. `position: relative` anchors the download progress fill. */
 .update-button {
   position: relative;
   display: flex;
@@ -3931,6 +3942,16 @@ body.is-maximized #winMaximize .wc-restore {
 }
 .update-button[hidden] {
   display: none;
+}
+/* Opening a page is not installing one, so the button that does it reads as an offer rather than the thing to press. A control that clears its own fill has to say what the pointer paints, or the app-wide `button:hover` lands primary purple under this one's quiet ink. */
+.update-button.is-quiet {
+  border-color: var(--lt-border);
+  background: transparent;
+  color: var(--lt-foreground);
+}
+.update-button.is-quiet:hover {
+  border-color: var(--lt-border);
+  background: var(--lt-wash-hover);
 }
 /* Progress behind the label, left to right. Zero width at rest, so the staged button — no percent — shows nothing. */
 .update-button-fill {

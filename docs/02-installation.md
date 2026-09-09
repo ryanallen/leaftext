@@ -165,12 +165,14 @@ Each version is installed automatically once. If an install fails, that version 
 
 **On Windows, updates arrive as the `.exe`**, whichever installer put Leaftext on the machine. It is the one Windows file a release publishes, and it lays down the same install in the same folder, so nothing about where the app lives changes when an update arrives.
 
-**The app only speaks when it can act.** A check that found nothing, could not reach GitHub, was rate-limited, or found a release carrying no installer for your platform says nothing at all — the bell stays away. There is nothing you could do about any of those, and a panel reporting them read as the app asking for work it should be doing itself. Startup is never blocked by any of this, and being offline changes nothing you can see. The version you are running is at the foot of the [home screen](03-quickstart.md).
+**The app only speaks when it can act.** A check that found nothing, could not reach GitHub, or was rate-limited says nothing at all — the bell stays away. There is nothing you could do about any of those, and a panel reporting them read as the app asking for work it should be doing itself. Startup is never blocked by any of this, and being offline changes nothing you can see. The version you are running is at the foot of the [home screen](03-quickstart.md).
+
+**A release carrying no installer for your platform is the one thing it does tell you about.** There is a new version and this copy cannot fetch it for you, so the bell arrives with its green dot and the panel names the version, says the release carries no file this copy can install, and offers **Open the releases page**, which opens that page in your browser and nothing else. It is not a download: the file may not be published yet. It stays there on every check until a release turns up with a file in it, because a copy that has quietly stopped updating itself otherwise looks exactly like one that is current.
 
 ## Uninstall
 
 - **macOS** — drag `leaftext.app` from Applications to the Trash. Your documents are untouched; the app's own data stays in `~/Library/Application Support/com.ryanallen.leaftext` until you delete that folder too.
-- **Windows** — **Settings** → **Apps** → **Leaftext** → **Uninstall**. Same story: your files and folders are yours, and only the app is removed. Both Windows installers put Leaftext in that list and both are removed from there.
+- **Windows** — **Settings** → **Apps** → **Leaftext** → **Uninstall**. Same story: your files and folders are yours, and only the app is removed. Both Windows installers put a Leaftext row in that list, so a machine that has had both shows two — see [Why do I have two Leaftext entries](#why-do-i-have-two-leaftext-entries).
 
 Nothing you wrote is inside Leaftext. Every document is the plain file you already had, in the folder you put it in.
 
@@ -179,6 +181,14 @@ Nothing you wrote is inside Leaftext. Every document is the plain file you alrea
 ### Is the warning a virus alert
 
 No. Both warnings are about *who paid whom*, not about what is in the file. macOS and Windows check whether an app carries a certificate from a paid developer program; Leaftext is free and carries none, so both systems say they cannot vouch for it. Nothing was scanned, and nothing was found. Clearing it takes a few clicks, once — [macOS](#mac-blocks-the-first-launch), [Windows](#windows-warns-before-it-runs).
+
+### Why do I have two Leaftext entries
+
+Because Leaftext was installed from the `.msi` at some point and every update since has arrived as the `.exe`. Only one Leaftext is on the machine — both installers use the same folder — but each one registers its own row in **Installed Apps**, and the MSI's row stays behind.
+
+Both rows read **Leaftext** by **ryanallen**, so tell them apart by the version. The row showing the version at the foot of the [home screen](03-quickstart.md) is the live one. The other row is older, and it is the one to remove: **Settings** → **Apps** → **Installed apps** → the older **Leaftext** → **Uninstall**.
+
+Nothing is lost by removing it. It is a stale registration and not a second copy of the app — your install, your settings, your [recent files](01-features/02-navigation.md#recent-files) and your [vaults](01-features/03-library.md#vaults) are untouched, and the row that is left keeps updating as usual.
 
 ### Does it need administrator rights
 
