@@ -6,7 +6,7 @@ Leaftext calls this **RDB**: a [relational table](../GLOSSARY.md#relational-tabl
 
 ## Open a relational table
 
-Point at a [table](01-rendering.md#tables) with a header row and at least three body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**. The layout on screen is marked. A smaller table stays an ordinary table.
+Point at a [table](01-rendering.md#tables) with a header row and at least two body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**. The layout on screen is marked. A smaller table stays an ordinary table.
 
 ![A reading-list table in the page with a quiet bar standing above it: Table marked, then Cards, Board, List, Sort and Filter, over a table of id, title, author, status, pages, read and due columns whose author cells are green links](../../imgs/relational-table-bar.png)
 
@@ -20,7 +20,7 @@ The view works from the values already in the table. Leaftext recognizes numbers
 
 ![The same records as a board in three columns headed FINISHED, READING and REFERENCE, each card led by its id with its fields listed under it, and Board marked in the bar with a Board fields button beside the four layouts](../../imgs/relational-board.png)
 
-Sorting, filtering and changing the layout only change what is drawn. They write no file, setting or saved view, and reopening the document restores the table as written. Sorting a column handle in [Editing](07-editing.md#editing-a-table) is different: that action deliberately reorders the file.
+Sorting, filtering and changing the layout only change what is drawn. They write no file, setting or saved view, and reopening the document restores the table as written. Sorting from a cell's right-click menu in [Editing](07-editing.md#editing-a-table) is different: that action deliberately reorders the file.
 
 Sort a column once for ascending order, again for descending order and a third time to restore the file's order. Numbers, ISO dates and task checkboxes sort by their values; other columns sort as words. A filter offers a value list for a short-choice column, a range for a number or date, and words for other columns. More than one filter can apply at once.
 

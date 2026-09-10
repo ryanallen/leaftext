@@ -241,7 +241,7 @@ Every second body row is filled a shade back from the page, so a reader can foll
 
 A cell can also be one the app keeps right: a [formula line](../GLOSSARY.md#formula-line) commented under the table says what it is, and Leaftext rewrites it as the rows it reads change. See [Editing](07-editing.md#a-table-that-adds-itself-up).
 
-**A table with a few rows in it can become a relational table.** Point at a table with a header row and three or more rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
+**A table with a few rows in it can become a relational table.** Point at a table with a header row and two or more body rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
 
 A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — renders as a checkbox, so a table can carry a status column:
 

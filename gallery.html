@@ -3988,8 +3988,6 @@ body.is-maximized #winMaximize .wc-restore {
 /* Every floating surface shares one halftone: four edge ramps screen coverage off a tiled blob before the curve turns what survives into one ink, and a five-layer mask fades the band to nothing at its rim and punches the host's own face out. */
 .app-overflow-panel::before,
 .context-menu::before,
-.table-row-menu::before,
-.table-column-menu::before,
 .rename-box::before,
 .update-panel::before,
 .app-toast::before,
@@ -8311,7 +8309,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 
 /* ---- A table's own row handle -------------------------------------------
-   The grip a body row is moved, added or deleted by. Inside .table-lane rather than in the block gutter: the gutter already stands in that margin and it means the whole block, so a row control beside it would read as another way to drag the table. Being in the lane is also what makes it travel with a wide table's sideways scroll instead of hanging over a column it no longer points at.
+   The grip a body row is dragged by. Add, delete and the rest are on the right-click menu over a cell; this control only moves the row. Inside .table-lane rather than in the block gutter: the gutter already stands in that margin and it means the whole block, so a row control beside it would read as another way to drag the table. Being in the lane is also what makes it travel with a wide table's sideways scroll instead of hanging over a column it no longer points at.
 
    It stands on the row's own middle, which the script writes as `top`; everything else is the component's own geometry. */
 .table-row-handle[hidden] {
@@ -8347,46 +8345,9 @@ body.is-block-dragging .document-body [data-src-start] {
 .table-row-grip:active {
   cursor: grabbing;
 }
-.table-row-menu[hidden] {
-  display: none;
-}
-/* Beside the grip rather than under it: a row is one line tall, so a menu dropped below it covers the row it is about. */
-.table-row-menu {
-  position: absolute;
-  top: 0;
-  right: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: var(--lt-space-4);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  /* The halftone reads this too, and adds its spread to it, so the ring outside the corner is struck from the corner’s own center. */
-  --lt-shadow-host-radius: var(--lt-radius-8);
-  border-radius: var(--lt-shadow-host-radius);
-  background: var(--lt-surface-elevated);
-  white-space: nowrap;
-}
-.table-row-action {
-  display: flex;
-  align-items: center;
-  gap: var(--lt-space-6);
-  margin: 0;
-  padding: var(--lt-space-4) var(--lt-space-8);
-  border: 0;
-  border-radius: var(--lt-radius-6);
-  background: none;
-  color: var(--lt-markdown-text);
-  font-family: var(--app-font);
-  font-size: var(--lt-text-13);
-  text-align: left;
-  cursor: pointer;
-}
-.table-row-action:hover,
-.table-row-action:focus-visible {
-  background: var(--lt-markdown-table-row-background);
-}
 
 /* ---- A table's own column handle -----------------------------------------
-   The grip a column is moved, added, deleted and aligned from. In .table-lane like the row handle, and for the same reason: the lane owns the sideways scroll, so a handle in it travels with its column instead of hanging over a neighbor once a wide table is scrolled. Its place along the lane is the column's middle, which the script writes as `left`. */
+   The grip a column is dragged by, and nothing else: add, delete, align and sort are on the right-click menu over a cell. In .table-lane like the row handle, and for the same reason: the lane owns the sideways scroll, so a handle in it travels with its column instead of hanging over a neighbor once a wide table is scrolled. Its place along the lane is the column's middle, which the script writes as `left`. */
 .table-column-handle[hidden] {
   display: none;
 }
@@ -8420,43 +8381,6 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .table-column-grip:active {
   cursor: grabbing;
-}
-.table-column-menu[hidden] {
-  display: none;
-}
-/* Below the grip, because a column handle stands above the table with the page over it and a menu opened upwards would leave the reader. */
-.table-column-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  padding: var(--lt-space-4);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  /* The halftone reads this too, and adds its spread to it, so the ring outside the corner is struck from the corner’s own center. */
-  --lt-shadow-host-radius: var(--lt-radius-8);
-  border-radius: var(--lt-shadow-host-radius);
-  background: var(--lt-surface-elevated);
-  white-space: nowrap;
-}
-.table-column-action {
-  display: flex;
-  align-items: center;
-  gap: var(--lt-space-6);
-  margin: 0;
-  padding: var(--lt-space-4) var(--lt-space-8);
-  border: 0;
-  border-radius: var(--lt-radius-6);
-  background: none;
-  color: var(--lt-markdown-text);
-  font-family: var(--app-font);
-  font-size: var(--lt-text-13);
-  text-align: left;
-  cursor: pointer;
-}
-.table-column-action:hover,
-.table-column-action:focus-visible {
-  background: var(--lt-markdown-table-row-background);
 }
 /* A number the app keeps right off the document's own hidden formula line wears a quiet bar on its leading edge, so it is not mistaken for one somebody typed. It is a mark and not a second copy of the value — the number in the cell is the number in the file — and it sits on the edge a right-aligned number never reaches, which is why it can never collide with the digits. */
 .document-body .table-cell-computed {
@@ -12098,11 +12022,11 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Table row handle</h3><code class="built">.table-row-handle</code><span class="built">table-controls.js</span></header>
-<div class="stage"><div class="table-row-handle" style="position:static;transform:none"><button type="button" class="table-row-grip"><span class="lt-icon lt-icon-grip"></span></button><div class="table-row-menu" style="position:static"><button type="button" class="table-row-action"><span class="lt-icon lt-icon-new"></span>Add row above</button><button type="button" class="table-row-action"><span class="lt-icon lt-icon-new"></span>Add row below</button><button type="button" class="table-row-action"><span class="lt-icon lt-icon-trash"></span>Delete row</button></div></div></div>
+<div class="stage"><div class="table-row-handle" style="position:static;transform:none"><button type="button" class="table-row-grip"><span class="lt-icon lt-icon-grip"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Table column handle</h3><code class="built">.table-column-handle</code><span class="built">table-controls.js</span></header>
-<div class="stage"><div class="table-column-handle" style="position:static;transform:none"><button type="button" class="table-column-grip"><span class="lt-icon lt-icon-grip"></span></button><div class="table-column-menu" style="position:static"><button type="button" class="table-column-action"><span class="lt-icon lt-icon-new"></span>Add column left</button><button type="button" class="table-column-action"><span class="lt-icon lt-icon-trash"></span>Delete column</button><button type="button" class="table-column-action"><span class="lt-icon lt-icon-align-center"></span>Align center</button></div></div></div>
+<div class="stage"><div class="table-column-handle" style="position:static;transform:none"><button type="button" class="table-column-grip"><span class="lt-icon lt-icon-grip"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Block gutter</h3><code class="built">.block-insert</code><span class="built">block-controls.js</span></header>

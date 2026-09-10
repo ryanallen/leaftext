@@ -116,9 +116,9 @@ Take the handle and a block lifts off the page; drop it where its neighbors have
 
 ### Restructure a table without typing a pipe
 
-![A reading list table in the page, with a grip standing above the Title column, another beside the Arctic Dreams row, and that row's menu open beside it offering Add row above, Add row below and Delete row](imgs/table-controls.png)
+![A reading list table in the page, with a grip standing above the Author column and another beside the Arctic Dreams row, and the right-click menu open over a cell offering Add row above, Add row below, Delete row, the three column actions, the three alignments, both sorts and the five totals](imgs/table-controls.png)
 
-Point at a table and a grip appears beside the row and above the column. Add a row or a column, delete one, drag either to reorder it, align a column left, center or right, or sort by it — numbers and dates by value, everything else as text. `Tab` and `Enter` walk the cells, and `Tab` at the last one writes the next row. The same actions are on a right-click, and the corner copies the whole table as CSV. **[Editing a table →](docs/01-features/07-editing.md#editing-a-table)**
+Point at a table and a grip appears beside the row and above the column: take either and drag it to reorder. Right-click a cell to add a row or a column, delete one, align a column left, center or right, or sort by it — numbers and dates by value, everything else as text. `Tab` and `Enter` walk the cells, and `Tab` at the last one writes the next row. The corner copies the whole table as CSV. **[Editing a table →](docs/01-features/07-editing.md#editing-a-table)**
 
 ### A table that adds itself up
 
