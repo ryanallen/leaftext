@@ -2168,7 +2168,7 @@
   --lt-grain-shadow-blob: #000000;
   --lt-grain-shadow-rim: rgba(255, 255, 255, 0.6);
   --lt-grain-shadow-mid: rgba(255, 255, 255, 0.365);
-  --lt-grain-shadow-curve: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone");
+  --lt-grain-shadow-curve: url(#lt-shadow-halftone);
   --lt-grain-shadow-opacity: 1;
   --lt-grain-shadow-opacity-inside: 1;
   --lt-grain-shadow-opacity-inside-light: 0.2;
@@ -11539,6 +11539,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
   .stage > * + * { margin-top: 8px !important; }
   .stage > :is(button, a, span, code, i, svg) { margin: 0 8px 0 0 !important; }
 </style>
+<!-- The shadow band's alpha curve, which --lt-grain-shadow-curve names as url(#lt-shadow-halftone). It is markup rather than a data URI in the token because WebKit resolves no filter reference outside the page, which left the band an opaque white slab on every Mac. Every page that serves the reading stylesheet carries this block, byte for byte, and reading_css_grain_curve.rs holds them to each other. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
 <p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 83 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
@@ -11861,7 +11863,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-grain-shadow-blob</code><code>#000000</code></div>
 <div class="value"><code>lt-grain-shadow-rim</code><code>rgba(255, 255, 255, 0.6)</code></div>
 <div class="value"><code>lt-grain-shadow-mid</code><code>rgba(255, 255, 255, 0.365)</code></div>
-<div class="value"><code>lt-grain-shadow-curve</code><code>url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='halftone' color-interpolation-filters='sRGB'%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1' result='coverage'/%3E%3CfeComponentTransfer in='coverage' result='cut'%3E%3CfeFuncA type='linear' slope='4.5' intercept='-0.949'/%3E%3C/feComponentTransfer%3E%3CfeComposite in='cut' in2='SourceGraphic' operator='in'/%3E%3C/filter%3E%3C/svg%3E#halftone")</code></div>
+<div class="value"><code>lt-grain-shadow-curve</code><code>url(#lt-shadow-halftone)</code></div>
 <div class="value"><code>lt-grain-shadow-opacity</code><code>1</code></div>
 <div class="value"><code>lt-grain-shadow-opacity-inside</code><code>1</code></div>
 <div class="value"><code>lt-grain-shadow-opacity-inside-light</code><code>0.2</code></div>
