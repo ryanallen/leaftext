@@ -2,14 +2,14 @@
 // What the published site serves beside its pages: the app's own renderer as a module, its document stylesheet, the version both were built from — and the front page with its document already written into it.
 //
 //   node scripts/site-assets.mjs           name every published path and say whether it is there
-//   node scripts/site-assets.mjs --write   build them out of web/dist into the site tree
-//   node scripts/site-assets.mjs --bake    bake the front page through the renderer already beside the pages
+//   node scripts/site-assets.mjs --write   build the four out of web/dist into the site tree, and draw the front page's document without writing it anywhere
+//   node scripts/site-assets.mjs --bake    bake the front page through the renderer already beside the pages, into the copy the deploy uploads
 //
 // **`--bake` is the public repository's half.** The source is private, so the repository that deploys leaftext.com cannot compile a module; the renderer workflow in the private repository hands it the three files above and its deploy bakes the front page through the one it was handed. Same bake, same refusals, and no Rust anywhere near it — what `--write` adds on top is building those three files in the first place, which is the half only a checkout with the source in it can do.
 //
 // **Not one of these files is ever committed.** `.gitignore` refuses the folder they land in, so the publish builds them and the repository keeps its seventeen small readable files instead of a compiled module nobody can read a diff of. The publish workflow runs this script; `scripts/check-site.mjs` reads the table below, so a renamed output shows up offline as a page fetching a file nobody writes rather than as a blank document on the live site. `scripts/serve-site.mjs` reads it too, and hands a browser what it says rather than whatever the last publish left on disk — there is one answer to which renderer the site is read through.
 //
-// **The front page is baked, never committed the same way.** The repository keeps it with an empty content element; `--write` fills that element in the workspace the deploy uploads, so a cold visitor reads the words out of the first response instead of after a 2.8 MB module and a second fetch. `scripts/check-site.mjs` refuses a committed copy that already holds a document, which is the only way a baked page could reach the tree.
+// **The front page is baked, never written here.** The repository keeps it with an empty content element, and `--bake` fills that element in the workspace the deploy uploads, so a cold visitor reads the words out of the first response instead of after a 2.8 MB module and a second fetch. `--write` draws the same document and puts it nowhere: the bake is its check that the module can draw the README before a byte crosses, and writing the result over the tracked page is what committed a baked front page and stopped the whole gate in every session. So the only run that writes the page is the deploy's own, in the copy it is about to upload, and `scripts/check-site.mjs` goes on refusing a committed copy that already holds a document.
 //
 // The other site rides on these too. Emptyguru has no Rust and no app source, so its pages name leaftext.com for exactly these paths — which works because GitHub Pages sends `access-control-allow-origin: *` on every asset. That is why the names here are a contract with another repository and not an implementation detail.
 
@@ -92,6 +92,17 @@ export function previewAnswers(leaf, moduleBytes, { baked = true } = {}) {
   return answers;
 }
 
+/**
+ * Which paths a run of this script writes.
+ *
+ * Answered here rather than decided inside `main`, so the gate can ask it offline with no module built — and so there is one answer rather than a decision made twice.
+ *
+ * `--write` writes the four built files and leaves the tracked front page alone. It still bakes one, because that bake is the check that the module can draw the README before a byte crosses; nothing reads the result. Only `--bake` writes the page, into the workspace the deploy uploads, which is the one place a written front page is ever read.
+ */
+export function writtenPaths({ bakeOnly = false } = {}) {
+  return bakeOnly ? [FRONT_PAGE] : [...PUBLISHED];
+}
+
 /** The app version, read where the release path reads it. */
 export function appVersion() {
   const found = /^version\s*=\s*"([^"]+)"/m.exec(readFileSync(join(root, 'Cargo.toml'), 'utf8'));
@@ -148,12 +159,11 @@ async function main() {
     process.exit(1);
   }
 
-  if (!bakeOnly) {
-    mkdirSync(join(root, ASSET_DIR), { recursive: true });
-    for (const [path, bytes] of publishedAssets(leaf, readFileSync(BUILT_MODULE))) writeFileSync(join(root, path), bytes);
+  // The bake above is a check, not an output: baking `--write`'s page onto the disk is what put a baked front page in the tree, and nothing ever read it — the hand-over fills its clone out of the commit and the deploy bakes its own copy.
+  const bytesFor = bakeOnly ? new Map([[FRONT_PAGE, baked]]) : publishedAssets(leaf, readFileSync(BUILT_MODULE));
+  if (!bakeOnly) mkdirSync(join(root, ASSET_DIR), { recursive: true });
+  for (const path of writtenPaths({ bakeOnly })) {
+    writeFileSync(join(root, path), bytesFor.get(path));
+    console.log(`wrote ${path}`);
   }
-
-  writeFileSync(join(root, FRONT_PAGE), baked);
-
-  for (const path of bakeOnly ? [FRONT_PAGE] : [...PUBLISHED, FRONT_PAGE]) console.log(`wrote ${path}`);
 }

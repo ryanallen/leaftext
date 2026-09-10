@@ -2,13 +2,13 @@
 
 Every word Leaftext uses for a part of itself, in one file, alphabetically. Wherever one of these terms appears in a page, Leaftext links it for you; clicking the link opens that entry in a [bottom sheet](GLOSSARY.md#bottom-sheet) over the page you are reading, so you never leave the document. You can also link one by hand — `[minimap](GLOSSARY.md#minimap)` from a page in this folder, `[minimap](../GLOSSARY.md#minimap)` from a page one level down.
 
-## Alias
-
-Another name a note answers to, listed in its `aliases` [frontmatter](GLOSSARY.md#frontmatter) field. Every alias works wherever the file's own name works: a [wikilink](GLOSSARY.md#wikilink) resolves to it, the [graph view](GLOSSARY.md#graph-view) draws that edge, [vault search](GLOSSARY.md#vault-search) matches it, and [typing help](GLOSSARY.md#typing-help) offers it. A real file name always beats an alias, and a node on the map keeps its file's name. Thirty-two per note. See [Library](01-features/03-library.md#other-names).
-
 ## Alert
 
 A block quote that opens with `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]` or `> [!CAUTION]`. It renders as a colored callout in the theme's own colors. Also called a callout. See [Rendering](01-features/01-rendering.md#blockquotes-and-alerts).
+
+## Alias
+
+Another name a note answers to, listed in its `aliases` [frontmatter](GLOSSARY.md#frontmatter) field. Every alias works wherever the file's own name works: a [wikilink](GLOSSARY.md#wikilink) resolves to it, the [graph view](GLOSSARY.md#graph-view) draws that edge, [vault search](GLOSSARY.md#vault-search) matches it, and [typing help](GLOSSARY.md#typing-help) offers it. A real file name always beats an alias, and a node on the map keeps its file's name. Thirty-two per note. See [Library](01-features/03-library.md#other-names).
 
 ## App bar
 
@@ -70,6 +70,10 @@ A `<details>` / `<summary>` pair, folded away until you click it. Add `open` to 
 
 The Markdown standard Leaftext parses. [GFM](GLOSSARY.md#gfm) is what it adds on top.
 
+## Confirmation
+
+The one question the app asks before it does something: a box over the dimmed page, naming what is about to happen. Only [Delete](GLOSSARY.md#file-actions) asks. Escape or a click on the dim cancels, Enter goes ahead, and the safe answer is where the pointer already is. Cut, copy, paste and rename do not ask, because each is reversible by hand and asking about all of them is how asking stops being read.
+
 ## Data file
 
 A `.json`, `.yaml` or `.yml` file. Leaftext reads it as a page — headed sections, aligned fields, and record tables — by the same shape rules the generic [XML reader](GLOSSARY.md#xml-reader) uses. See [Rendering](01-features/01-rendering.md#data-files-json-and-yaml).
@@ -86,13 +90,13 @@ An `.eml`, `.mht` or `.mhtml` file — what Gmail, Outlook and Apple Mail export
 
 A GitHub-style name between colons — `:rocket:` — rendered as the emoji.
 
+## Field type
+
+What one [frontmatter](GLOSSARY.md#frontmatter) field holds. Six of them, the same six Obsidian uses: text, list, number, checkbox, date, and date and time. Four things decide it, each beating the one before: the quotes the file already carries, so `version: "1.0"` is text where bare `1.0` is a number; then the value's own shape; then the vault's `.obsidian/types.json` if it has one; then a `leaftext-types` line in the note, one `key=type` per item. `aliases`, `cssclasses` and `tags` are always lists. See [Rendering](01-features/01-rendering.md#frontmatter).
+
 ## File actions
 
 The right-click menu in the [library pane](GLOSSARY.md#library-pane) and on a page being read. On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On the page: Copy where words are highlighted, then Favorite, Copy path, Reveal file, Properties, Delete. On a folder or the empty space around it: Open folder, Paste, Reveal folder, Properties. Delete goes to the Recycle Bin or Trash, not away for good, and it asks first — see [Confirmation](GLOSSARY.md#confirmation).
-
-## Confirmation
-
-The one question the app asks before it does something: a box over the dimmed page, naming what is about to happen. Only [Delete](GLOSSARY.md#file-actions) asks. Escape or a click on the dim cancels, Enter goes ahead, and the safe answer is where the pointer already is. Cut, copy, paste and rename do not ask, because each is reversible by hand and asking about all of them is how asking stops being read.
 
 ## File association
 
@@ -129,10 +133,6 @@ A commented line under a table saying how one or more of its cells get their val
 ## Frontmatter
 
 A leading `--- … ---` block of metadata at the top of a file. Leaftext renders it as a table above the document, drawing each field as the thing it is — a checkbox as a checkbox, a list as items — and keeping the case the key was written in. Only the first block counts; a later `---` is a horizontal rule. Nesting is not part of it: an indented `key: value` is refused rather than read as a field of its own. See [Rendering](01-features/01-rendering.md#frontmatter).
-
-## Field type
-
-What one [frontmatter](GLOSSARY.md#frontmatter) field holds. Six of them, the same six Obsidian uses: text, list, number, checkbox, date, and date and time. Four things decide it, each beating the one before: the quotes the file already carries, so `version: "1.0"` is text where bare `1.0` is a number; then the value's own shape; then the vault's `.obsidian/types.json` if it has one; then a `leaftext-types` line in the note, one `key=type` per item. `aliases`, `cssclasses` and `tags` are always lists. See [Rendering](01-features/01-rendering.md#frontmatter).
 
 ## GFM
 
@@ -254,10 +254,6 @@ The open document's headings, listed in the [library pane](GLOSSARY.md#library-p
 
 The chevron menu the [app bar](GLOSSARY.md#app-bar)'s buttons fold into as the [tab](GLOSSARY.md#tab) strip fills, or as the bar itself runs wider than the window — trailing actions first, then Back and Forward, then the window controls. Both are watched, so a narrow window with nothing open keeps its own close, minimize and maximize on the bar; an empty strip has nothing to run out of. Tabs are never squeezed to make room. The [leaf mark](GLOSSARY.md#leaf-mark) and the [library pane](GLOSSARY.md#library-pane) button never fold. What the menu *reads* in is its own order, with the window controls at the foot: see [When the bar runs out of room](01-features/02-navigation.md#when-the-bar-runs-out-of-room).
 
-## Plain text file
-
-A `.txt` file. Leaftext draws it as one block kept exactly as typed — every space and every line break, nothing reflowed and nothing parsed. See [Rendering](01-features/01-rendering.md#plain-text-files).
-
 ## Padlock
 
 The lock in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar) that says whether you can type into the view you are in. There are two — one for the [reading view](GLOSSARY.md#reading-view), one for the [code view](GLOSSARY.md#code-view) — and they are independent, so unlocking the page you read does not open the file's own text. Both start locked and both are remembered across restarts; a [new document](GLOSSARY.md#new-document) opens with the reading view's turned off for you. Checkboxes toggle either way, and so do copy, highlight and annotate on the [format bar](GLOSSARY.md#format-bar).
@@ -270,6 +266,10 @@ The **Previous / Next** bar at the foot of a document, for reading a folder in o
 
 In the Markdown [code view](GLOSSARY.md#code-view), the headings you are reading under stay at the top edge as you scroll — the trail down to where you are, five rows at most. Each row is the real source line, and clicking it jumps there.
 
+## Plain text file
+
+A `.txt` file. Leaftext draws it as one block kept exactly as typed — every space and every line break, nothing reflowed and nothing parsed. See [Rendering](01-features/01-rendering.md#plain-text-files).
+
 ## Random
 
 The last entry in the [theme picker](GLOSSARY.md#theme-picker). Not a palette but a preference: it draws a fresh [theme family](GLOSSARY.md#theme-family) at each launch, every family once before any repeats, and the rotation survives restarts.
@@ -278,6 +278,10 @@ The last entry in the [theme picker](GLOSSARY.md#theme-picker). Not a palette bu
 
 The rendered document — the view Leaftext is for. Its two companions on the [floating toolbar](GLOSSARY.md#floating-toolbar) are the [code view](GLOSSARY.md#code-view) and the [graph view](GLOSSARY.md#graph-view).
 
+## Recent files
+
+The files you opened most recently, listed on the [home screen](GLOSSARY.md#home-screen) beside your [favorites](01-features/02-navigation.md#favorites); the last 50 are kept. Inside a [vault](01-features/03-library.md#vaults) the list is that vault's own files, and outside every vault it is all of them grouped by vault. Missing files drop off by themselves, and two spellings of one path collapse to a single entry.
+
 ## Reduce Motion
 
 Your system's accessibility setting for cutting animation, which Leaftext follows. Turn it on and nothing in the app slides, rises or fades — [sheets](GLOSSARY.md#bottom-sheet), the [library pane](GLOSSARY.md#library-pane), menus, the [find bar](01-features/02-navigation.md#find-in-this-document), the [tab](GLOSSARY.md#tab) strip, anything that [folds open](01-features/01-rendering.md#collapsible-sections) and a document opening all arrive in place, and a control you point at takes its highlight in one frame instead of over a beat. Spinners keep turning more slowly, a [wide table](01-features/01-rendering.md#tables)'s edge marks stay, and a loading placeholder stays dim, because stopping any of the three would say something untrue. There is no control for it in the app. See [Settings](01-features/05-settings.md#reduce-motion).
@@ -285,10 +289,6 @@ Your system's accessibility setting for cutting animation, which Leaftext follow
 ## Relational table
 
 An ordinary Markdown table with a temporary RDB view over it: cards, a board, a list, sorting, filtering and relations to rows in another table. The table stays as plain Markdown, and only an optional description comment is written. See [Relational tables](01-features/08-relational-tables.md).
-
-## Recent files
-
-The files you opened most recently, listed on the [home screen](GLOSSARY.md#home-screen) beside your [favorites](01-features/02-navigation.md#favorites); the last 50 are kept. Inside a [vault](01-features/03-library.md#vaults) the list is that vault's own files, and outside every vault it is all of them grouped by vault. Missing files drop off by themselves, and two spellings of one path collapse to a single entry.
 
 ## Save
 

@@ -30,7 +30,7 @@ Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave las
 
 ## Open
 
-There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)), and **Licenses** beside it opens every third-party notice the app carries — the icon packs, the Noto typefaces and the libraries behind math, diagrams, the source editor and the graph — as a document in the reader, with no network needed.
+There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)), and **Licenses** beside it opens every third-party notice the app carries — the icon packs, the Noto typefaces, the libraries behind math, diagrams, the source editor and the graph, and the licenses of all 187 Rust packages compiled into the binary — as a document in the reader, with no network needed.
 
 ## Files
 
