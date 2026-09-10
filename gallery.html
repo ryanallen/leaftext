@@ -8964,6 +8964,22 @@ body.leaf-web .document-minimap-track::after {
   letter-spacing: var(--lt-tracking-020);
   user-select: text;
 }
+/* The way to the licenses document, in the version line and in its voice — same size, same muted color — a button reset to a word so it sits in the line rather than beside it. The hover sets the background as well as the color, since the generic button hover fill sits underneath. */
+.empty-licenses {
+  margin: 0 0 0 var(--lt-space-12);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.empty-licenses:hover {
+  background: none;
+  color: var(--lt-link);
+}
 /* The two ways in, side by side: open a document you have, or start one you don't. */
 .empty-actions {
   display: flex;

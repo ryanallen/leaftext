@@ -30,7 +30,7 @@ Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave las
 
 ## Open
 
-There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)).
+There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)), and **Licenses** beside it opens every third-party notice the app carries — the icon packs, the Noto typefaces and the libraries behind math, diagrams, the source editor and the graph — as a document in the reader, with no network needed.
 
 ## Files
 
@@ -167,7 +167,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - **The updater speaks only where there is something to do.** A check that found nothing, one that could not reach GitHub, and one GitHub refused all pass in silence — there is nothing for you to do about any of them, and the next check retries on its own. What it shows is the download in progress, *Restart to update*, the message above, and a release carrying no file this copy can install
 - **A release with no file for your platform is told rather than hidden.** The bell arrives, and the panel names the version, says the release carries nothing this copy can install, and offers **Open the releases page**. It stays on every check until a release turns up with a file in it, because a copy that has quietly stopped updating otherwise looks exactly like one that is current ([Installation](../02-installation.md#updates))
 - **The bell is only in the app bar while there is news.** No update, no bell — its presence is the message, and there is no control sitting there saying nothing
-- The running version is printed at the foot of the home screen, so after a relaunch you can confirm which build is installed
+- The running version is printed at the foot of the home screen, so after a relaunch you can confirm which build is installed; **Licenses** beside it opens the notices of everything the app redistributes
 - Saved as `update_last_checked`, `update_staged_version`, and `update_auto_applied`
 
 > [!NOTE]
