@@ -44,6 +44,12 @@
     <link rel="stylesheet" href="../site/styles.css" />
     <!-- Docs-only chrome: the left navigation sidebar and the page pager. -->
     <link rel="stylesheet" href="docs.css" />
+    <!-- The documentation folder's own file list, written in by the publish and by
+         the local preview. The sidebar is built from it, so the page needs neither a
+         directory listing a static host cannot answer nor a call to the GitHub API.
+         The repository keeps it empty: a list committed here would be whatever the
+         folder held the day somebody wrote it. -->
+    <script type="application/json" id="docs-pages"></script>
     <!-- Apply the saved theme and panel toggles before first paint (no flash).
          Keys mirror ../site/settings.js; "System" resolves to the device theme. -->
     <script>

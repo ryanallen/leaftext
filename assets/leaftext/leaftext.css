@@ -11154,6 +11154,7 @@ body.is-home-row-dragging .home-list-scroll li {
   padding: 0 var(--lt-space-8);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-sm);
+  overflow: hidden;
   background: var(--lt-surface-sunken);
 }
 .find-field:focus-within {
@@ -11166,9 +11167,11 @@ body.is-home-row-dragging .home-list-scroll li {
   display: inline-flex;
   align-items: center;
   gap: var(--lt-space-2);
-  padding: 0 var(--lt-space-8) 0 0;
+  margin-left: calc(var(--lt-space-8) * -1);
+  padding: 0 var(--lt-space-8);
   border: 0;
   border-right: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: 0;
   background: transparent;
   color: var(--lt-muted-foreground);
   font-family: inherit;

@@ -1,20 +1,21 @@
 // docs-nav.js
 // ---------------------------------------------------------------------------
-// Build the docs navigation from the REAL file/folder tree at runtime. Nothing about the page list is written by hand: every folder becomes a group, every document becomes a page, ordering is alphabetical, labels come from the file names. Add or remove a file and the nav follows — no manifest, no build step.
+// Build the docs navigation from the REAL file/folder tree. Nothing about the page list is written by hand: every folder becomes a group, every document becomes a page, ordering is alphabetical, labels come from the file names. Add or remove a file and the nav follows — no manifest, and nobody to keep one true.
 //
 // **Which files are documents is the renderer's answer, not this file's.** The caller passes the extension list it read off the module (`leaf_formats`), which is the app's own one table — so an XML, JSON, YAML or email file beside a page becomes a page by that table naming it, and there is never a second list of extensions in site code to fall behind the first.
 //
-// Static hosting (GitHub Pages) cannot list a directory at runtime, so the tree is discovered two ways, in order:
+// Static hosting cannot list a directory at runtime — a folder address is answered with the `index.html` that folder holds, which on the docs folder is this very reader — so the file list arrives one of two ways, in order:
 //
-//   1. Directory autoindex — ask the server for the docs folder and parse the
-//      HTML file listing it returns (python -m http.server, nginx autoindex,
-//      most dev servers). This makes local preview reflect the real filesystem
-//      instantly, including files you have not committed yet.
+//   1. The list the served page carries. The publish and the local preview
+//      write the documentation folder's own file list into an inert JSON
+//      element on the page (`scripts/site-assets.mjs`), so the sidebar is built
+//      out of the first response with no request of its own.
 //
-//   2. GitHub tree API — Pages returns the app shell instead of a listing, so
-//      fall back to the repo's git tree over the API. `repo` here only says
-//      WHICH repo to read; it is not the nav. The nav is whatever .md files
-//      that repo actually contains on its branch.
+//   2. GitHub tree API — for a host serving a page nobody baked. `repo` here
+//      only says WHICH repo to read; it is not the nav. The nav is whatever
+//      documents that repo actually contains on its branch. Unauthenticated it
+//      is sixty calls an hour per address, and an empty sidebar past that,
+//      which is why a baked page never reaches it.
 //
 // Both strategies converge on the same shape:
 //   { hasIndex: boolean, glossary: string | null, nav: NavNode[] }
@@ -153,40 +154,26 @@ function buildNav(relPaths) {
   return { hasIndex, glossary, nav: toNodes(root, '', '') };
 }
 
-// ---- strategy 1: directory autoindex --------------------------------------
-// Recursively fetch directory listings and collect every .md path. Throws if the server does not hand back a parseable listing (e.g. it returns the docs app shell, as GitHub Pages does), so the caller can fall back.
-async function fromAutoindex() {
-  const paths = [];
+// ---- strategy 1: the file list the page carries -----------------------------
+// The publish and the local preview write the documentation folder's own file list into an inert JSON element on the served page, so the sidebar is built out of the first response: no request, and nothing an hourly limit can refuse. Answers null — never throws — for a page nobody baked, which is the one case the API below is still here for.
+//
+// The list is every file in that folder, not the ones that looked like documents to whatever wrote it: which of them is a page is the renderer's own table to answer, asked here through `isDocument` off `leaf_formats`, so there is never a second extension list to fall behind the first. Somebody else's page could carry anything under this name, so a path that is not a plain relative one is dropped rather than fetched.
+const DOCS_PAGES_ELEMENT = 'docs-pages';
 
-  const crawl = async (rel) => {
-    const url = rel ? rel + '/' : './';
-    const res = await fetchWatched(url, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('no listing at ' + url);
-    const html = await res.text();
-
-    // GitHub Pages answers a directory request with the folder's index.html (our reader shell), not a file listing. Detect that and bail.
-    if (/id=["']content["']|src=["'][^"']*docs\.js/i.test(html)) {
-      throw new Error('directory listing unavailable (served app shell)');
-    }
-
-    const hrefs = [...html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map((m) => m[1]);
-    for (let href of hrefs) {
-      href = href.replace(/^\.\//, '');
-      if (!href || href.startsWith('?') || href.startsWith('#')) continue;
-      if (href.startsWith('/') || /^[a-z]+:/i.test(href)) continue; // absolute / external
-      if (href.startsWith('..')) continue; // parent link
-      const name = decodeURIComponent(href.replace(/\/$/, ''));
-      const childRel = rel ? rel + '/' + name : name;
-      if (href.endsWith('/')) {
-        await crawl(childRel);
-      } else if (isDocument(name)) {
-        paths.push(childRel);
-      }
-    }
-  };
-
-  await crawl('');
-  if (!paths.length) throw new Error('listing had no documents');
+function fromEmbedded() {
+  if (typeof document === 'undefined') return null;
+  const holder = document.getElementById(DOCS_PAGES_ELEMENT);
+  const written = holder ? (holder.textContent || '').trim() : '';
+  if (!written) return null;
+  let listed;
+  try {
+    listed = JSON.parse(written);
+  } catch (e) {
+    return null;
+  }
+  if (!Array.isArray(listed)) return null;
+  const paths = listed.filter((path) => typeof path === 'string' && path && !path.startsWith('/') && !/^[a-z]+:/i.test(path) && !path.split('/').includes('..') && isDocument(path));
+  if (!paths.length) return null;
   return buildNav(paths);
 }
 
@@ -213,12 +200,8 @@ async function fromGitHub(repo) {
 }
 
 // ---- public entry ----------------------------------------------------------
-// Resolve the nav, preferring a live directory listing, falling back to the GitHub tree. The result is NOT cached: boot() runs loadDocsNav once per full page load (in-app navigation is hash-based and never re-boots), so there is no per-session network saving worth the risk. A persisted copy only ever caused stale sidebars — a docs tree edited after a visit would keep showing the old shape until the tab was closed. Always rebuild from the real tree.
+// Resolve the nav, preferring the list the served page carries and falling back to the GitHub tree for a page nobody baked. The result is NOT cached: boot() runs loadDocsNav once per full page load (in-app navigation is hash-based and never re-boots), so there is no per-session network saving worth the risk. A persisted copy only ever caused stale sidebars — a docs tree edited after a visit would keep showing the old shape until the tab was closed. Always rebuild from the tree the page was served with.
 export async function loadDocsNav(repo, formats) {
   useFormats(formats);
-  try {
-    return await fromAutoindex();
-  } catch (e) {
-    return await fromGitHub(repo);
-  }
+  return fromEmbedded() || (await fromGitHub(repo));
 }

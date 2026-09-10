@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // The /docs reader. Like site/reader.js (fetch a Markdown file, render it, build the minimap) but it serves a whole set of pages chosen by the #/route in the URL and draws a navigation sidebar down the left.
 //
-// Nothing about the page list lives here. The sidebar, the mobile dropdown, and the prev/next pager are all built from the REAL docs/ file tree at runtime (see ../site/docs-nav.js): every folder is a group, every .md file is a page. Drop a file under docs/ and it appears; remove it and it's gone. No manifest, no list to maintain.
+// Nothing about the page list lives here. The sidebar, the mobile dropdown, and the prev/next pager are all built from the REAL docs/ file tree (see ../site/docs-nav.js): every folder is a group, every document is a page. Drop a file under docs/ and it appears; remove it and it's gone. No manifest, no list to maintain — the publish writes the folder's own file list into this page, and the reader builds the tree out of it.
 //
 // Routing is hash-based so this is a static site that works on GitHub Pages with no server. A route is a doc's path under docs/ without the .md (e.g. "features/themes"); the empty route is the index, which renders docs/README.md (or shows nothing if there is no README). The raw .md files stay viewable on GitHub, and in-page links between them are intercepted and turned into routes.
 //
@@ -56,7 +56,7 @@ function renderDocument(body, path) {
   return drawn;
 }
 
-// Parse the first github.com/<owner>/<repo> out of the site's root README (one level up from /docs). Sub-paths like /releases are fine — only owner/repo are kept. Returns null if there is no README or no GitHub link, in which case the local-directory autoindex still builds the nav (dev) and only the Pages fallback is unavailable.
+// Parse the first github.com/<owner>/<repo> out of the site's root README (one level up from /docs). Sub-paths like /releases are fine — only owner/repo are kept. Returns null if there is no README or no GitHub link, in which case the file list this page carries still builds the nav and only the fallback for an unbaked page is unavailable. It is also what the footer's GitHub link is drawn from, which is why it is read whether or not the nav needs it.
 async function deriveRepo() {
   try {
     const res = await fetchWatched('../README.md', { cache: 'no-cache' });

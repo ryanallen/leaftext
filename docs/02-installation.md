@@ -35,7 +35,7 @@ Every file on the release page is an installer you can run — no checksums, not
 
 ### Windows
 
-![The Leaftext MSI installer’s single screen, titled Destination Folder: the install path in a text field with a Change button under it, and Install and Cancel at the foot](../imgs/install-windows-msi.png)
+![The Leaftext installer’s single screen, titled Destination Folder: the install path in a text field with a Change button under it, and Install and Cancel at the foot](../imgs/install-windows-msi.png)
 
 **1. Download** the file ending in `.exe` — **[the installer →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)**. It needs 64-bit Windows 10 or later.
 
@@ -91,7 +91,7 @@ That removes the "downloaded from the internet" tag macOS attaches to the file. 
 
 ### Windows warns before it runs
 
-![The Windows protected your PC dialog with More info already expanded: the MSI file name beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](../imgs/install-windows.png)
+![The Windows protected your PC dialog with More info already expanded: leaftext beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](../imgs/install-windows.png)
 
 Windows may show a full-screen **Windows protected your PC** box the first time you run the installer, because it is not signed with a paid certificate. Click **More info**, then **Run anyway**. Your browser may also make you keep the download — choose **Keep** if it asks; browsers press hard on an unsigned `.exe`, so expect one more click there.
 

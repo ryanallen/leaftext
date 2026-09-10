@@ -269,7 +269,7 @@ Every launch after that is an ordinary double-click. On macOS 12 and earlier it'
 
 ### Windows
 
-![The Windows protected your PC dialog with More info already expanded: the MSI file name beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](imgs/install-windows.png)
+![The Windows protected your PC dialog with More info already expanded: leaftext beside App, Unknown publisher beside Publisher, and Run anyway next to Don’t run at the foot](imgs/install-windows.png)
 
 Grab the 64-bit installer and run it. If a full-screen **Windows protected your PC** box appears, click **More info** → **Run anyway** — the installer isn't signed with a paid certificate. It installs just for you, with no admin prompt. Here by default, though **Change...** puts it anywhere you like and updates keep it there:
 

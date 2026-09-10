@@ -116,7 +116,12 @@ jobs:
       # committed beside the pages, and refuses a module that does not render or
       # a page baked with nothing in it — which is what stops a hand-over that
       # went wrong reaching the deploy step below.
-      - name: Bake the front page through the renderer beside the pages
+      #
+      # The same run writes the documentation folder's own file list into the
+      # docs page, so its sidebar is built out of the first response. Without it
+      # every reader of the guide asks api.github.com for the page list, which
+      # is sixty calls an hour per address and an empty sidebar past that.
+      - name: Bake both pages through the renderer beside them
         run: node scripts/site-assets.mjs --bake
 
       - name: Configure Pages
