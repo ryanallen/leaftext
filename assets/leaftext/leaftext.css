@@ -6159,6 +6159,7 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
 /* Keyed on the app's own surface as well as on a document, because the two controls that offer a tone draw a real badge to say what the tone looks like, and they stand in the bar and the gutter rather than in the page. Scoped to the document alone, all five presses drew one word in the toolbar's own ink and a reader picking a color had nothing to look at. `:is()` takes its most specific arm, so the pair weighs exactly what the single key weighed. */
 :is(.document-body, .app-surface) .doc-badge {
   display: inline-block;
+  text-indent: 0;
   border: var(--lt-stroke-1) solid currentColor;
   border-radius: var(--lt-radius-sm);
   background: var(--lt-markdown-background);
