@@ -9004,6 +9004,25 @@ body.leaf-web .document-minimap-track::after {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* What is due next, in one box across the whole of what the pair below it uses. The slot is in the markup on every Home screen and empty until the vault answers, so filling it moves nothing either side of it — and it draws nothing at all while it is empty, since a heading over a line saying there is nothing scheduled is a box on the screen somebody sees most, saying nothing. */
+.home-scheduled-slot:empty {
+  display: none;
+}
+/* The pair's own break-out, so the three boxes line up on both edges instead of reading as three widths. */
+.home-scheduled {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: 100%;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  margin-top: var(--lt-space-48);
+}
+/* The date sits in the column the heart sits in on a favorite, at the other end of the same three-column row — so a long task wraps inside its own column rather than pushing its date off the end. */
+.home-task-due {
+  grid-column: 3;
+  margin-right: var(--lt-space-16);
+}
 /* Each list is a box of its own, not a section of the writing: a hairline round it and the page's own surface inside, so the rows sit on what everything else on this screen sits on.
 
    No inset on the right at all: the bar takes its own width out of the box below, and its thumb is drawn inset inside that, so the gap it leaves to the box's edge and the gap it leaves to the row fill beside it are the same one. Any padding here is added to the first of those and to neither of the others. */
@@ -11468,7 +11487,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 83 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 84 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -11490,7 +11509,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>178</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>83</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>84</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -11892,7 +11911,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">83 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">84 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12164,6 +12183,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Home lists</h3><code class="built">.home-list</code><span class="built">render-document.js</span></header>
 <div class="stage"><div class="empty-state" style="padding:0"><div class="home-list-grid" style="border:0;margin:0;padding:0"><section class="home-list"><h2>Recent (2)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">A note</span><span class="home-row-folder">C:\Users\me\Vault\Journal</span></button></span></li><li><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name">Another note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section><section class="home-list"><h2>Favorites (1)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li class="home-list-group">A vault</li><li><span class="home-row"><button type="button" class="home-row-heart"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="home-row-open"><span class="home-row-name">A favorite note</span><span class="home-row-folder">C:\Users\me\Vault</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div></div>
+</section>
+<section class="part">
+<header><h3>Scheduled task row</h3><code class="built">.home-scheduled</code><span class="built">render-document.js</span></header>
+<div class="stage"><div class="empty-state" style="padding:0"><section class="home-list home-scheduled" style="position:static;transform:none;left:auto;margin:0"><h2>Scheduled tasks (3)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row home-task-row"><button type="button" class="home-row-open home-task-open"><span class="home-row-name">Chase the invoice</span><span class="home-row-folder">Accounts — C:\Users\me\Vault</span></button><span class="doc-badge doc-badge--red home-task-due">Aug 2</span></span></li><li><span class="home-row home-task-row"><button type="button" class="home-row-open home-task-open"><span class="home-row-name">Winter cleanup schedule</span><span class="home-row-folder">House — C:\Users\me\Vault\Journal</span></button><span class="doc-badge doc-badge--amber home-task-due">Sep 12</span></span></li><li><span class="home-row home-task-row"><button type="button" class="home-row-open home-task-open"><span class="home-row-name">Renew the lease</span><span class="home-row-folder">House — C:\Users\me\Vault</span></button><span class="doc-badge doc-badge--gray home-task-due">Dec 1</span></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div>
 </section>
 <section class="part">
 <header><h3>Show all</h3><code class="built">.home-showall</code><span class="built">render-document.js</span></header>

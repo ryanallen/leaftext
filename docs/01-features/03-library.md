@@ -267,6 +267,22 @@ A colon only starts a field when what is in front of it looks like a field name 
 
 **It completes as you type.** The field names your vault actually uses, and the values each one holds, are offered under the box. Arrows walk the list, Enter or Tab takes one, Escape closes it — and only then does a second Escape clear the field. The list is what the vault sets now, not what it set when it was opened: add a field to a note and it is offered, and when the last note using a field drops it the name stops being offered.
 
+## Scheduled tasks
+
+A checkbox in a note can carry a date. Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
+
+The box is about the vault you are in, the same as Recent and Favorites. Leave the vault and its rows go with it; the new vault's own arrive once its text has been read.
+
+| A row shows | Where it comes from |
+| --- | --- |
+| The words on the checkbox line | The line itself, without its date |
+| The note and the folder holding it | The path |
+| The date | Red once it is past, amber from today through the next seven days, gray after that. Today is your machine's |
+
+Overdue work is at the top, because a past date is the nearest one. Two tasks due the same day settle by note and then by the line they sit on, so the order does not shuffle between one look and the next. Pressing a row opens that note and lands on the checkbox.
+
+A ticked box is not in the list, and neither is a checkbox with no date on it — those stay in their notes. With nothing open and dated, the box is not on the screen at all.
+
 ## Other names
 
 A note can answer to more than the name of its file. Give it an `aliases` field and every name in the list works everywhere the file's own name works:
@@ -459,6 +475,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, smallest documents first |
 | Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
 | Repositories inside a vault | Found up to three folders deep, stopping at the first one on each branch. See [Repositories inside repositories](#repositories-inside-repositories) |
+| Scheduled tasks | The active vault's open dated checkboxes, nearest due first. See [Scheduled tasks](#scheduled-tasks) |
 | Search results | Top 50 |
 | Folder listing | One directory per click |
 | First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again. A [sheet](#the-bubble-on-your-first-launch) takes it down, unmet, until the last one closes |

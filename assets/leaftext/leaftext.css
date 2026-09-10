@@ -8996,6 +8996,25 @@ body.leaf-web .document-minimap-track::after {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+/* What is due next, in one box across the whole of what the pair below it uses. The slot is in the markup on every Home screen and empty until the vault answers, so filling it moves nothing either side of it — and it draws nothing at all while it is empty, since a heading over a line saying there is nothing scheduled is a box on the screen somebody sees most, saying nothing. */
+.home-scheduled-slot:empty {
+  display: none;
+}
+/* The pair's own break-out, so the three boxes line up on both edges instead of reading as three widths. */
+.home-scheduled {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: 100%;
+  max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
+  margin-top: var(--lt-space-48);
+}
+/* The date sits in the column the heart sits in on a favorite, at the other end of the same three-column row — so a long task wraps inside its own column rather than pushing its date off the end. */
+.home-task-due {
+  grid-column: 3;
+  margin-right: var(--lt-space-16);
+}
 /* Each list is a box of its own, not a section of the writing: a hairline round it and the page's own surface inside, so the rows sit on what everything else on this screen sits on.
 
    No inset on the right at all: the bar takes its own width out of the box below, and its thumb is drawn inset inside that, so the gap it leaves to the box's edge and the gap it leaves to the row fill beside it are the same one. Any padding here is added to the first of those and to neither of the others. */

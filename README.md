@@ -160,6 +160,8 @@ The button that changes where the list is rooted is a caret and a mark, which sa
 
 Until you have a vault the start screen offers to add your notes folder, and the pane says once what one buys you. Both go for good the moment there is one. **[Your first vault →](docs/01-features/03-library.md#your-first-vault)**
 
+Put a date on a checkbox and the start screen keeps a box of everything in the vault still open, nearest due first, over Recent and Favorites. Press a row and you land on that checkbox. **[Scheduled tasks →](docs/01-features/03-library.md#scheduled-tasks)**
+
 ### Search everything you've written
 
 ![All-files search results under the find bar: a filename match at the top, then content matches with highlighted terms, while the pane keeps showing the open document's outline behind them](imgs/search.png)

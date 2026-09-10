@@ -209,6 +209,7 @@ The no-file home screen lists the files you opened most recently, under the **Ch
 
 - **The three lines at the top change with each visit.** The headline, the line under it and the sentence under that are drawn together from one of three voices — palm leaves and the long history of writing on them, clear thinking, and your files staying files you own — and you get a different one each time you come back to this screen. Nothing under them moves with it: the buttons, both lists, the help line and the version are the same every time.
 - **The screen is about the [vault](03-library.md#vaults) you are standing in.** Recent shows that vault's files alone, the way [Favorites](#favorites) beside it does, and the small word over the headline is the vault's name where it otherwise reads **Leaftext**. Switching vaults from the [library](03-library.md#vaults) pane with the home screen up changes both lists and that word with them. Standing outside every vault, both lists show every vault at once, grouped under each vault's name with the files in no vault last.
+- **A vault with dated work puts it above both.** Open checkboxes carrying a date show up in one full-width box over Recent and Favorites, nearest due first — see [Scheduled tasks](03-library.md#scheduled-tasks).
 - Each box is eight rows deep and scrolls, with the app's own thin [bar](#scrollbars) and a soft edge wherever there is more list past it.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.
