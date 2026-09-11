@@ -3049,6 +3049,8 @@ body.leaf-app {
   background: transparent;
   /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two, and the same on all four sides, which is what a light hung overhead and centered gives. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The two classes below turn it on. */
   --app-shadow-spread: 0px;
+  /* The window's corner, decided here and nowhere else: the three rules below set this rather than writing a corner of their own, so there is one place to read the number from in every state the window has. 8px is Windows' own figure for a top-level app window and what a browser starts from. It sits on the body rather than on the surface because the shadow band's four strips are siblings of the surface and their height is this plus the spread — a rule on the surface is one they cannot read at all. */
+  --app-window-radius: var(--lt-radius-lg);
 }
 /* Where the app owns its own frame, so the shadow is the app's to draw. One class covers both platforms: a Mac carries this as well as `mac-frame`, because both kinds draw the app bar as the title bar. */
 body.frameless {
@@ -3067,31 +3069,33 @@ body.frameless.is-fullscreen {
   /* The page color and the app's own edge, both the app's to draw: with the client area running out to the window's own edge there is no frame left for the platform to draw a line in. */
   background: var(--lt-background);
   border: var(--lt-stroke-1) solid var(--lt-border);
-  /* The window's corner, decided here and nowhere else: the rule below and the Mac rule below that set this rather than writing a corner of their own, so there is one place to read the number from in every state the window has. 8px is Windows' own figure for a top-level app window and what a browser starts from. */
-  --app-window-radius: var(--lt-radius-lg);
-  /* The reading card's two bottom corners, likewise decided here rather than in the six rules that draw them. It travels down to them as a variable because the card's corner and the window's have to move together — a card left at 6px inside a deeper window pinches the band between the two arcs. */
+  /* The reading card's two bottom corners, decided here rather than in the six rules that draw them. It travels down to them as a variable because the card's corner and the window's have to move together — a card left at 6px inside a deeper window pinches the band between the two arcs. It stays on this box where the window's own has gone up to the page: only what the shadow band's strips read has to be reachable from outside the surface, and every consumer of this one is inside it. */
   --reader-card-radius: var(--lt-radius-md);
   border-radius: var(--app-window-radius);
   /* Both directions of the inactive fade, written on the element rather than inside the state's own rule so leaving and returning each animate, and so the Reduce Motion blanket at the foot of this file zeroes both by existing. */
   transition: filter var(--lt-duration-200) var(--lt-ease);
 }
-/* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. Above the flush rule below so a browser, which ties this on specificity, still wins. */
-body.mac-frame .app-surface {
+/* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. On the body rather than on the surface, beside the two it overrides. Above the flush rule below so a browser, which ties this on specificity, still wins. */
+body.mac-frame {
   --app-window-radius: var(--lt-radius-window);
+}
+body.mac-frame .app-surface {
   --reader-card-radius: var(--lt-radius-window-inner);
 }
-/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. The corner goes by setting the variable the surface reads, not by writing a `border-radius` here, so the window's number stays decided in one place. */
+/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. The corner goes by setting the variable the surface reads, not by writing a `border-radius` here, so the window's number stays decided in one place. The corner is zeroed on the body beside the other two that set it and the edge is taken off the surface that draws it. */
+body:not(.frameless),
+body.frameless.is-fullscreen,
+body.frameless:not(.mac-frame).is-maximized {
+  --app-window-radius: 0px;
+}
 body:not(.frameless) .app-surface,
 body.frameless:not(.mac-frame).is-maximized .app-surface,
 body.frameless.is-fullscreen .app-surface {
   border: 0;
-  --app-window-radius: 0px;
 }
-/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. */
-body::before {
-  content: '';
+/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. Four strips rather than one full-window layer, because WebKit runs the filter over every pixel of the layer before the mask cuts it down: on a Mac that is 3.3 million pixels through a three-primitive chain on the CPU, redone whenever the layout under it moves, and it cost 218 ms of the frame a library open should have drawn in 16. The same band as four strips over a tenth of the window measured 72 to 85 ms, which is what taking the filter off altogether measures. */
+.window-band {
   position: fixed;
-  inset: 0;
   z-index: var(--lt-z-below);
   pointer-events: none;
   background-color: var(--lt-grain-shadow-base);
@@ -3106,25 +3110,61 @@ body::before {
   background-blend-mode: screen, screen, screen, screen, multiply;
   filter: var(--lt-grain-shadow-curve);
   opacity: var(--lt-grain-shadow-opacity);
-  /* The same four ramps again, in the mask this time, taking the band's ink from full where the app starts to nothing at the window's edge. No punch here: this is a sibling of the app surface rather than a child, so the opaque surface covers the middle on its own. */
+  /* Every one of the five is anchored to the window rather than to the strip. The lattice always was: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. The four ramps were `scroll`, which on one full-window layer named the same box — on a strip it would run a whole ramp across twelve pixels, so each one now paints whatever the full-window layer painted at that position and the ink is unchanged by construction rather than by arithmetic. */
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
+}
+/* The four ramps again, in the mask this time, taking the band's ink from full where the app starts to nothing at the window's edge. No punch: these are siblings of the app surface rather than children, so the opaque surface covers the middle on its own. **Each strip carries only the ramps for the window edges it touches** — a mask has no attachment property either engine honors, so a ramp for an edge the strip does not sit on runs across the strip's own twelve pixels instead of across the window and eats the ink. Read pixel for pixel at the Mac's geometry: one shared four-ramp mask misses 2,907 of the band's 113,984 pixels, all down the left and right; this misses none. */
+.window-band-top {
+  left: 0;
+  right: 0;
+  top: 0;
+  /* Past the spread, out to where the surface's own arc leaves a crescent nothing covers and the band paints its fullest ink — 20px in from both edges on Windows, 32 on a Mac. Four strips one spread wide leave a notch at every corner, and the corner is where a hand is when a window is resized. */
+  height: calc(var(--app-shadow-spread) + var(--app-window-radius));
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  -webkit-mask-composite: source-in, source-in, source-in, add;
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  -webkit-mask-composite: source-in, source-in, source-in;
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  mask-composite: intersect, intersect, intersect;
+}
+.window-band-bottom {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  mask-composite: intersect, intersect, intersect, add;
-  /* The lattice is anchored to the window, not to a box: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. The four ramps take the layer's own box, or their 100% would size to the viewport and none of them would reach the band at all. */
-  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  -webkit-mask-composite: source-in, source-in, source-in;
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  mask-composite: intersect, intersect, intersect;
+}
+/* Between the two, so no pixel is painted twice and no corner is the sum of two layers. One ramp: over this box the other three were opaque on the full-window layer. */
+.window-band-left {
+  left: 0;
+  top: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  bottom: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  width: var(--app-shadow-spread);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+}
+.window-band-right {
+  right: 0;
+  top: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  bottom: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  width: var(--app-shadow-spread);
+  -webkit-mask-image: linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  mask-image: linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
 }
 /* No frame of its own, maximized, or in full screen: no band at all rather than one masked away to nothing. A browser carries neither frame class, so this is also what takes it off a published page. */
-body:not(.frameless)::before,
-body.frameless:not(.mac-frame).is-maximized::before,
-body.frameless.is-fullscreen::before {
-  content: none;
+body:not(.frameless) .window-band,
+body.frameless:not(.mac-frame).is-maximized .window-band,
+body.frameless.is-fullscreen .window-band {
+  display: none;
 }
 /* Another app has the window: everything the app draws steps back together, by one amount, in one paint. Every visible part of the page is inside `.app-surface` — the chrome and its leaf, the document, the source view, a Mermaid diagram, a raster picture, the sheets and the rail's miniature — so a filter here is the only treatment that reaches all of them at once, which is the whole of what stops the leaf and the rail reading as two different effects. It is a filter rather than a list of re-pointed color tokens because only one of the two can fade: a custom property is not an animatable type, and with a transition on it the ink was watched answering its new value at every frame from the first, where the filter was watched interpolating frame by frame over the same window. A filter also reaches a raster picture inside the document, which no token can. Neither `opacity` nor `grayscale` may come back: `opacity` composites the bar's own shade with the page behind it, so the top of the window read as see-through and every tab edge, divider and panel seam that shade had been covering came out as a line; `grayscale` takes a tinted family's shade off the bar and leaves the card beside it tinted, which is a seam of the same kind. This makes no new paint group — the surface is already `position: fixed` with `contain: paint`, so it is already a stacking context and already the fixed containing block for the overlays inside it. The three paper classes cancel the rule, because `.diagram-print` and `.picture-print` are children of this same surface and a printed or exported page rendered through them would otherwise bake an inactive window into a file somebody keeps. The two amounts, and the 3:1 floor they were chosen against, are rows in design/tokens.md. */
 body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-paper-picture) .app-surface {
@@ -4414,6 +4454,10 @@ body.is-library-settling .app-bar::after {
   /* No rail to sit against: follow the card out to its left gutter. */
   left: calc(100% + var(--reader-gutter));
 }
+.library-shell.library-closed {
+  /* The page takes a left inset only while the pane is shut, and the floating bar is centered on the page, so it has to count that inset too — kept as a variable here, beside the other closed-pane facts, the way --reader-toolbar-rail is declared where the rail is reasoned about. */
+  --reader-toolbar-gutter: var(--reader-gutter);
+}
 .library-divider {
   /* An invisible grab strip straddling the pane's right edge, wide enough to catch the pointer. Overhangs into the reader a few px. */
   position: absolute;
@@ -5133,6 +5177,10 @@ body.library-resizing button {
   /* Clear the app bar the page tucks under. */
   padding-top: var(--app-bar-height);
 }
+.library-shell.library-closed .reader-graph {
+  /* Standing in for the page means standing where it stands: with no pane to sit against, the card is held off the left frame by the same gutter, and the arc that caps its top-left is already moved out to it. */
+  margin-left: var(--reader-gutter);
+}
 .reader-graph-canvas {
   width: 100%;
   height: 100%;
@@ -5199,6 +5247,8 @@ body.library-resizing button {
   --reader-toolbar-space: 0px;
   --reader-toolbar-edits: 0px;
   --reader-toolbar-rail: 0px;
+  /* The gutter the page is held off the left frame by, which only a shut pane opens — see library.css. */
+  --reader-toolbar-gutter: 0px;
 }
 /* An embedded host hides the bar with a rule, so the window state stays off that host. */
 body.has-reader-toolbar:not(.is-embedded) {
@@ -5219,8 +5269,8 @@ body.has-reader-toolbar:not(.is-embedded) {
   gap: var(--lt-space-2);
   /* Off the page's bottom edge by the same 8px the card is held off the frame. */
   margin-bottom: var(--lt-space-8);
-  /* The rail measure stays fixed while views collapse the column they do not draw. */
-  margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-edits));
+  /* The rail measure stays fixed while views collapse the column they do not draw. The gutter is subtracted because a left inset moves the page's own middle right, and a right margin that moves a centered box left has to shrink to follow it. */
+  margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-edits) - var(--reader-toolbar-gutter));
   padding: var(--lt-space-4);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-lg);
@@ -11533,7 +11583,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 86 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 87 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -11555,7 +11605,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>178</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>86</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>87</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -11957,10 +12007,14 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">86 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">87 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
+</section>
+<section class="part">
+<header><h3>Window shadow band</h3><code class="built">.window-band</code><span class="built">app-shell.html</span></header>
+<div class="stage"><div style="position:relative;height:120px;padding:24px;background:var(--lt-background)"><div style="position:relative;height:72px;--app-shadow-spread:12px;--app-window-radius:var(--lt-radius-lg)"><div class="window-band window-band-top" style="position:absolute"></div><div class="window-band window-band-bottom" style="position:absolute"></div><div class="window-band window-band-left" style="position:absolute"></div><div class="window-band window-band-right" style="position:absolute"></div><div style="position:absolute;inset:12px;background:var(--lt-surface);border:var(--lt-stroke-1) solid var(--lt-border);border-radius:var(--lt-radius-lg)"></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Startup screen</h3><code class="built">.startup-card</code><span class="built">app-shell.html, taken off by render-document.js when the host says the window has grown</span></header>
