@@ -8421,10 +8421,10 @@ body.table-resizing {
 body.table-resizing button {
   cursor: col-resize;
 }
-/* The strip a reader drags to set a row's height, along the lower edge of the row's first cell. The first rather than the last: a wide table scrolls sideways inside its lane, so the last cell of a row is one a reader may have no way to point at. A stated height on a row is a floor the layout may grow past, which is what makes a row the asymmetrical half of this gesture — taller freely, and never shorter than the words wrapped inside it. */
+/* The strip a reader drags to set a row's height, along the lower edge of every cell of the row. Every cell rather than the first: a wide table scrolls sideways inside its lane, so a reader who has moved right has no first cell left to point at — watched in a running copy, its grip sat 436 px off the left of the table's own box with nothing to press anywhere along the row. It starts 3 px in, because the column strip in the cell before it straddles 3 px across the boundary, and a row strip flush with the edge would take those last three pixels of an 8 px column divider by being later in the document. A stated height on a row is a floor the layout may grow past, which is what makes a row the asymmetrical half of this gesture — taller freely, and never shorter than the words wrapped inside it. */
 .table-sizer-row {
   position: absolute;
-  left: 0;
+  left: 3px;
   right: 0;
   bottom: -3px;
   height: 8px;

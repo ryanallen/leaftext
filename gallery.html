@@ -8429,10 +8429,10 @@ body.table-resizing {
 body.table-resizing button {
   cursor: col-resize;
 }
-/* The strip a reader drags to set a row's height, along the lower edge of the row's first cell. The first rather than the last: a wide table scrolls sideways inside its lane, so the last cell of a row is one a reader may have no way to point at. A stated height on a row is a floor the layout may grow past, which is what makes a row the asymmetrical half of this gesture — taller freely, and never shorter than the words wrapped inside it. */
+/* The strip a reader drags to set a row's height, along the lower edge of every cell of the row. Every cell rather than the first: a wide table scrolls sideways inside its lane, so a reader who has moved right has no first cell left to point at — watched in a running copy, its grip sat 436 px off the left of the table's own box with nothing to press anywhere along the row. It starts 3 px in, because the column strip in the cell before it straddles 3 px across the boundary, and a row strip flush with the edge would take those last three pixels of an 8 px column divider by being later in the document. A stated height on a row is a floor the layout may grow past, which is what makes a row the asymmetrical half of this gesture — taller freely, and never shorter than the words wrapped inside it. */
 .table-sizer-row {
   position: absolute;
-  left: 0;
+  left: 3px;
   right: 0;
   bottom: -3px;
   height: 8px;
@@ -12101,8 +12101,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region<span class="table-sizer table-sizer-column" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></th><th>Quarter<span class="table-sizer table-sizer-column" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></th><th>Pipeline</th></tr></thead><tbody><tr><td>North<span class="table-sizer table-sizer-column" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1<span class="table-sizer table-sizer-column" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr></tbody></table></div></div></div></div>
 </section>
 <section class="part">
-<header><h3>Row size grip</h3><code class="built">.table-sizer-row</code><span class="built">table-sizing.js, on the first cell of every body row</span></header>
-<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1</td></tr><tr><td>South<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1</td></tr></tbody></table></div></div></div></div>
+<header><h3>Row size grip</h3><code class="built">.table-sizer-row</code><span class="built">table-sizing.js, on every cell of every body row</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td></tr><tr><td>South<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td></tr></tbody></table></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Block gutter</h3><code class="built">.block-insert</code><span class="built">block-controls.js</span></header>
