@@ -669,6 +669,8 @@ On disk such a file is wild: delivery and signature headers on top, then every p
 
 The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. The body passes the same sanitizer every other rendered page does, and nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
 
+**Every part of a message names the charset its words are written in, and each is decoded from the file's own bytes.** So a message written straight in Shift_JIS, GBK, KOI8-R or any other legacy charset draws its words, whether its body arrived base64-coded, quoted-printable, or as eight-bit bytes the way a mail client on an 8BITMIME path writes it. It is the one format that does not need the Windows-1252 guess [below](#file-encodings): the file says what it is, so the reader believes the file.
+
 A message is also [edited where you read it](07-editing.md#editing-an-email), wherever the file says the same words the page draws.
 
 > [!NOTE]
@@ -717,7 +719,7 @@ Most text files are UTF-8, and those need no thought. Leaftext reads the others 
 
 **A file is saved back the way it was read.** A UTF-16 document stays UTF-16, mark and all; a file that had no mark does not gain one. Saving is not where your file quietly changes shape.
 
-**Unmarked files that are not UTF-8** — a text file from an older Windows program, say — have nothing in them that says what they are, so they are read as Windows-1252. That is an assumption, not a fact: if it is the wrong one, you get mojibake (`café` as `cafÃ©`), which is at least something you can see. Such a file becomes UTF-8 when you save it, because writing the guess back out would drop any character the guess has no room for.
+**Unmarked files that are not UTF-8** — a text file from an older Windows program, say — have nothing in them that says what they are, so they are read as Windows-1252. That is an assumption, not a fact: if it is the wrong one, you get mojibake (`café` as `cafÃ©`), which is at least something you can see. Such a file becomes UTF-8 when you save it, because writing the guess back out would drop any character the guess has no room for. **An [email message](#email-eml) is the exception**, because its parts each name their own charset: the guess is undone before the message is read, so its words draw right, and a save writes the file's own bytes back rather than re-spelling a body whose words are not UTF-8. A character that message's charset has no room for refuses the save and says which — see [Editing an email](07-editing.md#editing-an-email).
 
 **Files that are not text at all** are refused rather than shown as noise. Which words you get depends on whether Leaftext reads that kind of file: a `.rtf` or a `.zip` is an ending it opens nothing for, so it says `Leaftext doesn't open .rtf files`; a file named for a format it does read — a `.md` holding a picture — is described by its bytes instead, with a zero byte in the first few kilobytes as the tell and the message saying where it was found. Either way you are told what is wrong rather than "failed to open".
 

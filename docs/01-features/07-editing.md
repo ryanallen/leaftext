@@ -115,6 +115,7 @@ An [email](01-rendering.md#email-eml) edits where you read it too, wherever the 
 - **What cannot be opened says why.** A body coded into the file, and a header folded over two lines or written as an encoded word, are drawn but not editable here; clicking one says so and points at the [code view](#code-view), which edits the whole message as it stands.
 - **A message that can prove nothing has no reading padlock at all** — see [The padlock](#the-padlock).
 - **There is no bar over selected text.** Its buttons write Markdown, and Markdown in a message is just characters, so it stays hidden here.
+- **A message written in a legacy charset is saved back byte for byte.** Its words are read out of the file's own bytes, and a save writes those bytes rather than re-spelling them, so the body you were reading is the body on the disk. Type a character that charset has no room for — an emoji into a Shift_JIS message — and the save is refused in a sentence naming the character, because writing it would take the rest of the words with it.
 
 ### The fields at the top of a note
 
