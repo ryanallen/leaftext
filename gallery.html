@@ -7522,7 +7522,9 @@ body.is-block-dragging .document-body [data-src-start] {
   display: block;
   font-family: var(--app-font);
   line-height: var(--lt-leading-1-45);
-  overflow: auto;
+  /* Sideways only. A block table with collapsed borders rounds two or three empty pixels onto its height, so a vertical scrollport here eats the wheel over every table, hangs a thumb that drags nowhere down its right edge and holds 14px of width for it. The horizontal half is spelled out because a box with one axis not visible computes the other to auto. */
+  overflow-x: auto;
+  overflow-y: hidden;
   width: max-content;
   max-width: 100%;
 }
