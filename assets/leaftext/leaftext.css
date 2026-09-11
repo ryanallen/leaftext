@@ -2992,7 +2992,7 @@
   --reader-row-grain: transparent;
   /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
   --reader-gutter: 8px;
-  /* The gutter the reader's scrollbar occupies, for overlays that must keep off it. Repeats ::-webkit-scrollbar's width rather than feeding it: that rule stays class-driven because Chromium won't re-resolve a scrollbar pseudo on a :has() flip. */
+  /* The gutter the reader's scrollbar occupies, for overlays that must keep off it. Repeats ::-webkit-scrollbar's width rather than feeding it: that rule stays class-driven because Chromium won't re-resolve a scrollbar pseudo when a relational match flips. */
   --reader-scrollbar: 14px;
   /* The minimap rail's metrics. Global because the rail sits outside the page now: the shell sizes its column from them, and the rail itself reads them from the other side of that boundary. */
   --minimap-padding-inline: 8px;
@@ -3035,7 +3035,7 @@ body {
   font-family: var(--reading-font);
 }
 /* The app's own page and nothing else. Every declaration here is the window's, and the whole file is what a browser is handed — so a bare `body` rule reaches leaftext.com and empty.guru too, and a browser takes the viewport's overflow from `body` where the root element's is `visible`. v1.5.0 shipped both sites with no scrollport at all, unscrollable on every device. */
-body:has(.app-surface) {
+body.leaf-app {
   overflow: hidden;
   /* Nothing paints the whole window: past the app's own edge the window is where the shadow falls, and a page color there would be the app painting its own halo out to the frame. The app surface below carries the color. */
   background: transparent;
@@ -3561,8 +3561,8 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
   gap: var(--lt-space-4);
   align-items: center;
 }
-/* Once the fold has taken both arrows into the chevron menu, the strip is a zero-wide box the bar's left zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Not `:empty`: the markup writes the strip over eight lines, so three whitespace text nodes stay behind when the buttons leave. Written in the actions group's shape below rather than a narrower `:has(*)` of its own, so both emptied groups are asked one question — the arrows are `disabled` and never `hidden`, so a drawn child is every child the strip has. */
-.history-actions:not(:has(> *:not([hidden]))) {
+/* Once the fold has taken both arrows into the chevron menu, the strip is a zero-wide box the bar's left zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Not `:empty`: the markup writes the strip over eight lines, so three whitespace text nodes stay behind when the buttons leave. The fold marks the empty group after moving its drawn children. */
+.history-actions.no-drawn-actions {
   display: none;
 }
 /* The trailing group: the action buttons plus the window controls. Anchors the collapsed overflow dropdown; padded off the window edge (frameless windows let the flush window controls own that edge instead — see below). */
@@ -3587,8 +3587,8 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
   gap: var(--lt-space-4);
   align-items: center;
 }
-/* Once the fold has taken the theme, open and new buttons into the chevron menu, the group is a zero-wide box the trailing zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. Asked of drawn children only: the update bell stays in the group hidden, and its own summary and panel are descendants nothing marks hidden, so a bare `:has(*)` never fires here. */
-.app-actions-items:not(:has(> *:not([hidden]))) {
+/* Once the fold has taken the theme, open and new buttons into the chevron menu, the group is a zero-wide box the trailing zone still spends a 16px gap on — at the one moment there is no room, so it can cost a further button. The update bell stays in the group hidden, so the fold marks whether any drawn child remains. */
+.app-actions-items.no-drawn-actions {
   display: none;
 }
 /* Overflow chevron: hidden inline (the `.app-trailing` prefix outranks the later `.icon-button { display: inline-grid }`), shown only once something has actually folded. Rests muted, greens on hover like the other toolbar icons. */
@@ -4219,7 +4219,7 @@ summary:focus-visible {
   outline: none;
 }
 /* The minimap is chrome, not page: it gets its own column outside the card so the page's right border stops short of it and the shell's texture runs behind the rail. */
-body:has(.document-minimap) {
+body.has-minimap {
   --reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));
   /* The rail is the scroll affordance while it's up, so the native bar is hidden and its gutter closes with it. */
   --reader-scrollbar: 0px;
@@ -4273,11 +4273,11 @@ body.is-embedded .library-shell {
   display: none;
 }
 /* The sheet stands in for the page, so the page's furniture goes with it: the corner arcs would paint on top of it, the divider is the top edge of a card nobody can see, and the tabs belong to a document the sheet is covering. The tabs go by visibility, not display — the overflow fold measures the strip to decide what to fold, and a collapsed one would unfold the whole bar into a window too narrow to hold it. */
-body:has(.library-overlay) .reader-corner,
-body:has(.library-overlay) .app-bar::after {
+.app-surface.has-library-overlay .reader-corner,
+.app-surface.has-library-overlay .app-bar::after {
   display: none;
 }
-body:has(.library-overlay) .tab-bar {
+.app-surface.has-library-overlay .tab-bar {
   visibility: hidden;
 }
 /* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The track, the bar's lead and the divider line all read --library-rail-width, so one var write moves the three in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
@@ -5191,8 +5191,8 @@ body.library-resizing button {
   --reader-toolbar-edits: 0px;
   --reader-toolbar-page-strip: 0px;
 }
-/* An embedded host hides the bar with a rule, which :has() cannot see; a plain body rule cannot outrank this selector. */
-body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
+/* An embedded host hides the bar with a rule, so the window state stays off that host. */
+body.has-reader-toolbar:not(.is-embedded) {
   --reader-toolbar-space: 52px;
 }
 .reader-toolbar {
@@ -5388,19 +5388,13 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
 }
 /* Out: the nub grown to hold what is in it, quick and with the spring the owner asked for — the overshoot curve runs about a tenth past the mark and settles back, which is the rubberband at the top. Two ways in besides the tray's own nub: the button of the view these tools belong to, and the keyboard reaching anything inside. */
 /* The keyboard is `:focus-visible` rather than `:focus-within` on purpose. A press leaves focus on the button it landed on, so plain focus pins the tray open until the reader clicks somewhere else — press the padlock, take your hand away, and it stays out. `:focus-visible` is exactly the distinction: Tab sets it, a press does not, so the tray closes on a press the way it closes on a hover that left. The one press that has to hold it is the graph size, whose list is a window of its own that the pointer leaves the tray to reach — a select keeps plain focus the whole time its list is up, which is what that last selector is for and why it names `select` rather than anything focused. */
-.reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray,
-.reader-tool-tray:hover,
-.reader-tool-tray:has(:focus-visible),
-.reader-tool-tray:has(select:focus) {
+.reader-toolbar.has-open-tray .reader-tool-tray {
   /* The tools' measured height plus both visible steps, the hidden foot, and the tray and bar strokes. */
   height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2);
   transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-200) var(--lt-ease-overshoot);
 }
 /* And the tools come up out of the bar with it, which is what the nub says is in there. */
-.reader-toolbar:has(.reader-tool.is-active:hover) .reader-tool-tray .reader-view-tools,
-.reader-tool-tray:hover .reader-view-tools,
-.reader-tool-tray:has(:focus-visible) .reader-view-tools,
-.reader-tool-tray:has(select:focus) .reader-view-tools {
+.reader-toolbar.has-open-tray .reader-tool-tray .reader-view-tools {
   transform: none;
   transition: transform var(--lt-duration-200) var(--lt-ease-overshoot);
 }
@@ -5590,7 +5584,7 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
   display: none;
 }
 /* Nothing drawn after the divider: it has nothing to divide. Asked of the markup rather than named button by button, so a button added after it needs no edit here — which is why every element after it has to ship `hidden`. */
-.reader-toolbar:not(:has(.reader-tool-divider ~ *:not([hidden]))) .reader-tool-divider {
+.reader-toolbar.no-trailing-tools .reader-tool-divider {
   display: none;
 }
 .reader-shell {
@@ -5712,7 +5706,7 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
     transparent
   );
 }
-/* The rail is the reader's scroll affordance, so the native bar hides while there is one. On a class, not :has() — scrollbar styles don't re-resolve when a :has() match flips, so the bar outlived the rail coming back. The two branches stay apart for a second reason: in Chromium `scrollbar-width` anywhere on the element kills every ::-webkit-scrollbar rule for it (see .library-scroll). */
+/* The rail is the reader's scroll affordance, so the native bar hides while there is one. On a class because scrollbar styles do not re-resolve when a relational match flips, leaving the bar behind after the rail returns. The two branches stay apart for a second reason: in Chromium `scrollbar-width` anywhere on the element kills every ::-webkit-scrollbar rule for it (see .library-scroll). */
 .reader-shell.has-minimap {
   scrollbar-width: none;
 }
@@ -5809,7 +5803,7 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
   color: var(--lt-danger);
 }
 /* A toast that carries an offer: the words, then the one button. Laid out only when there is something to lay out beside — a plain growl is still its own text. */
-.app-toast:has(.app-toast-action) {
+.app-toast.has-action {
   display: flex;
   align-items: center;
   gap: var(--lt-space-12);
@@ -6482,7 +6476,7 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
   margin: 0.25em 0 0;
 }
 /* A list whose item opens with a badge is a status list rather than prose, so it is drawn as one: the badge is lifted out of the flow into a column of its own on the left and the row's own indent is what places everything beside it. Lifted rather than laid out in a grid or a flex row, because a row is a title, a run of links and a paragraph — every one of them a child, and every child of a grid takes a cell of its own. Nothing here reaches an item the author did not open with a badge, so an ordinary list is never converted. */
-.document-body li:has(> .doc-badge:first-child) {
+.document-body li.doc-badge-row {
   position: relative;
   /* The badge is the marker. */
   list-style: none;
@@ -6492,14 +6486,14 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
   padding: 0.5em 0 0.5em 11em;
 }
 /* One width for every badge in the column, so a badge that is a whole sentence — the `Conflicts with #205` case — leaves every title beside it on the same left edge. Over that width it wraps inside its own column rather than reaching into the row. */
-.document-body li:has(> .doc-badge:first-child) > .doc-badge:first-child {
+.document-body li.doc-badge-row > .doc-badge:first-child {
   position: absolute;
   left: 0;
   max-width: 10em;
   white-space: normal;
 }
 /* A hairline between rows and none above the first, which is what makes a run of them read as a table of states. */
-.document-body li:has(> .doc-badge:first-child) + li:has(> .doc-badge:first-child) {
+.document-body li.doc-badge-row + li.doc-badge-row {
   border-top: var(--lt-stroke-1) solid var(--lt-border);
 }
 /* Ordered lists follow the classic outline sequence by depth (I, A, 1, a, i) rather than restarting at decimal each level. */
@@ -6567,11 +6561,11 @@ body:has(#readerToolbar:not([hidden])):not(.is-embedded) {
 }
 
 /* And no wash over the page's own top and bottom. The edge fade dissolves a cut line of Leaftext's own text back into Leaftext's own page color, which over somebody else's page is Leaftext's color painted across the top and bottom of it — the page reads as stopping short of the card rather than filling it. The map already switches the fade off for the same reason: what is drawn there is not a column of text being sliced. */
-.library-shell:has(.document-body-site) .reader-edge-fade {
+.library-shell.has-contained-document .reader-edge-fade {
   display: none;
 }
 /* The lane's own side padding as well. Every other format is a column of words that wants a margin either side; a whole HTML page is a page, and a page stops at the edge of the window it is in. Written as the lane's own variable rather than as a negative margin on the article, so the rail's clone box — which is sized from this lane's content width — measures the same room the page is drawn in. */
-.reader-layout:has(.document-body-site) {
+.reader-layout.has-contained-document {
   --reader-layout-padding-inline: 0px;
 }
 /* A whole HTML file is drawn as the page its own CSS makes, so the article holding it takes none of Leaftext's measure, padding or type — the only thing around it is the reader's own edges. */
@@ -7058,7 +7052,7 @@ body.is-block-dragging .document-body [data-src-start] {
   tab-size: 4;
 }
 /* Hand the horizontal scroll (and the corner clip with it) to the <code> inside, so the gutter number hung outside is not clipped and the language label and copy button hold still while the code scrolls. A raw-HTML <pre> with no <code> keeps scrolling itself — there is nothing inside to hand the job to. */
-.document-body pre:has(> code) {
+.document-body pre.doc-code-block {
   clip-path: none;
   overflow: visible;
 }
@@ -7070,7 +7064,7 @@ body.is-block-dragging .document-body [data-src-start] {
   white-space: pre;
   word-break: normal;
 }
-.document-body pre:has(> code) > code {
+.document-body pre.doc-code-block > code {
   display: block;
   overflow-x: auto;
 }
@@ -7881,16 +7875,16 @@ body.is-block-dragging .document-body [data-src-start] {
       padding-top: 0;
     }
     /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
-    .document-body > .table-bay:has(table:not(.no-cards)) {
+    .document-body > .table-bay.table-allows-cards {
       width: 100%;
       margin-inline: 0;
     }
-    .document-body .table-lane:has(> table:not(.no-cards)) {
+    .document-body .table-lane.table-allows-cards {
       max-width: none;
       width: 100%;
     }
-    .document-body .table-lane:has(> table:not(.no-cards))::before,
-    .document-body .table-lane:has(> table:not(.no-cards))::after {
+    .document-body .table-lane.table-allows-cards::before,
+    .document-body .table-lane.table-allows-cards::after {
       display: none;
     }
   }
@@ -8024,16 +8018,16 @@ body.is-block-dragging .document-body [data-src-start] {
   padding-top: 0;
 }
 /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
-.document-body > .table-bay:has(table.is-cards) {
+.document-body > .table-bay.table-is-cards {
   width: 100%;
   margin-inline: 0;
 }
-.document-body .table-lane:has(> table.is-cards) {
+.document-body .table-lane.table-is-cards {
   max-width: none;
   width: 100%;
 }
-.document-body .table-lane:has(> table.is-cards)::before,
-.document-body .table-lane:has(> table.is-cards)::after {
+.document-body .table-lane.table-is-cards::before,
+.document-body .table-lane.table-is-cards::after {
   display: none;
 }
 .document-body kbd {
@@ -9314,7 +9308,7 @@ body.is-home-row-dragging .home-list-scroll li {
   opacity: var(--lt-opacity-45);
 }
 /* And then it goes: it dissolves while the rows under it close the gap, on the app's own curve. Both on the item holding the row, because a height that snapped shut under a row still fading would drag the list up in one jump — and only an item holding a row, since a group heading is not one of these and is not this tall. Reduce Motion answers this rule with everything else, so the row simply goes. */
-.home-list-scroll li:has(> .home-row) {
+.home-list-scroll li.home-list-row {
   overflow: hidden;
   max-height: var(--home-row-height);
   opacity: 1;
@@ -11287,17 +11281,17 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 /* Printing, which is also the Save as PDF every desktop print panel offers — the app's one route to a PDF of the page it is drawing. A browser prints the page as it is laid out, and this page is laid out to fill a window exactly once: the app surface is fixed and paint-contained, the reader carries its own scroller, and the window's overflow is hidden. Unprepared, that prints a single sheet holding the app's frame and whatever of the document happened to be on screen. These rules unwind those three, drop everything on the page that is a control rather than the document, and force the colors so the panel's own Background graphics box cannot take the theme away.
 
-   Keyed on `.app-surface` and `body:has(.app-surface)`, never on a bare `html`, `body` or `:root`: this whole file is what leaftext.com and empty.guru are handed too, and `scripts/check-page-frame.mjs` refuses a rule here that would take somebody else's page frame. Both sites draw their documents through these same classes, so a reader printing from one of them gets this printable page as well, which is wanted rather than a leak. */
+   Keyed on `.app-surface` and `body.leaf-app`, never on a bare `html`, `body` or `:root`: this whole file is what leaftext.com and empty.guru are handed too, and `scripts/check-page-frame.mjs` refuses a rule here that would take somebody else's page frame. Both sites draw their documents through these same classes, so a reader printing from one of them gets this printable page as well, which is wanted rather than a leak. */
 /* The page as it is handed to paper. On a class rather than in `@media print`, because the page has to be able to measure the sheet it is about to ask for: the height a document comes to under these rules is nothing the app can work out from the screen by subtracting things, and every attempt to came out as blank paper under the last line. The class goes on for the measurement and for the render, and comes off after both — `leafHoldAppearance` owns it, and `beforeprint` puts it on for a browser's own print. */
 /* No page-box rule here on purpose. A page margin written in CSS outranks the one the app sets when it renders the page itself, and the app sizes that page to the whole document so it comes out as one continuous page rather than a document chopped across sheets — a margin written here would be added to a height already decided and push the last inch onto a second sheet. */
 /* The window's overflow, and the shadow band the app throws over the strip of window it is held off by. Paper has no window to be held off. The body also wears the theme's own page color: the sheet is sized off a measurement and rounds up to the hundredth of an inch, so a few pixels of it always outlive the layout — painted here they are the page, unpainted they are a white strip under the last line. */
-body.leaf-paper:has(.app-surface) {
+body.leaf-paper.leaf-app {
   overflow: visible;
   background: var(--lt-markdown-background);
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
-body.leaf-paper:has(.app-surface)::before {
+body.leaf-paper.leaf-app::before {
   display: none;
 }
 /* The app becomes a box on the page instead of a rectangle pinned to the window: static so it takes the height of what it holds, uncontained so nothing inside is clipped to one screen, and unframed because the card edge and the rounded corner are the window's drawing rather than the document's. `print-color-adjust` is what keeps the theme — a print panel leaves Background graphics unticked by default, which drops every painted background and prints a dark theme as dark ink on white paper. */
@@ -11395,10 +11389,10 @@ body.leaf-web .document-minimap {
     transform-origin: 0 0;
   }
   /* The rail is this page's scroll affordance, so the native bar goes while one stands — and a page whose script never arrived keeps its bar, which is the whole point of asking whether a rail is there. Two branches for the reason the reader's pair above are two: in Chromium `scrollbar-width` anywhere on the element kills every ::-webkit-scrollbar rule for it. */
-  body.leaf-web:has(.document-minimap) {
+  body.leaf-web.has-minimap {
     scrollbar-width: none;
   }
-  body.leaf-web:has(.document-minimap)::-webkit-scrollbar {
+  body.leaf-web.has-minimap::-webkit-scrollbar {
     width: 0;
   }
 }

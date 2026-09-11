@@ -11,6 +11,7 @@
 const MIN_VIEWPORT_HEIGHT = 22;
 
 export function initMinimap(source) {
+  document.body.classList.toggle('has-minimap', Boolean(source));
   if (!source) return;
 
   // Build the rail: a sticky aside holding a track, a (scaled) content clone, and the viewport rectangle. aria-hidden throughout — it is a pointer convenience that duplicates the scrollbar, not new content for a reader.
