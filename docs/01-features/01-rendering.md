@@ -662,12 +662,14 @@ On disk such a file is wild: delivery and signature headers on top, then every p
 |---|---|
 | `Subject:` | The page title and heading (encoded-word headers decoded) |
 | `From:`, `To:`, `Cc:`, `Date:` | A field list; each address a `mailto:` link |
-| The HTML body | The message, sanitized through the same allowlist as [inline HTML](#inline-html) |
+| The HTML body | The message, sanitized through the [inline HTML](#inline-html) allowlist plus one mail-only rule: a control takes its unusable content with it |
 | A plain-text body | Paragraphs, with bare URLs linked |
 | Inline images (`cid:` references) | Embedded in place, straight from the message's own parts |
 | Attachments | A list of name, type, and size |
 
-The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. The body passes the same sanitizer every other rendered page does, and nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
+The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. Nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
+
+**A message body takes the rendered allowlist and one rule of its own: a control goes with the words inside it.** A note keeps its task boxes, because that is what a checklist is written with; a message has none, so a button, a dropdown, a text box, a frame's fallback markup and a tick box are all dropped whole rather than left as loose words and a blank control in the middle of somebody's mail. Ordinary prose inside a form or a fieldset still reads, and so does the fallback an author wrote for a picture or an embed the reader does not draw — that fallback is what you have instead of the thing itself.
 
 **Every part of a message names the charset its words are written in, and each is decoded from the file's own bytes.** So a message written straight in Shift_JIS, GBK, KOI8-R or any other legacy charset draws its words, whether its body arrived base64-coded, quoted-printable, or as eight-bit bytes the way a mail client on an 8BITMIME path writes it. It is the one format that does not need the Windows-1252 guess [below](#file-encodings): the file says what it is, so the reader believes the file.
 
