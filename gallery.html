@@ -4229,6 +4229,8 @@ summary:focus-visible {
 /* The minimap is chrome, not page: it gets its own column outside the card so the page's right border stops short of it and the shell's texture runs behind the rail. */
 body.has-minimap {
   --reader-minimap-column: calc(var(--minimap-width) + var(--reader-minimap-gap));
+  /* The same number as the column, kept apart from it: the column is what a view drawing no rail collapses, and the floating bar reads this one so it does not move when the source or the graph closes that column. */
+  --reader-toolbar-rail: calc(var(--minimap-width) + var(--reader-minimap-gap));
   /* The rail is the scroll affordance while it's up, so the native bar is hidden and its gutter closes with it. */
   --reader-scrollbar: 0px;
 }
@@ -5193,11 +5195,10 @@ body.library-resizing button {
 }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
-/* The strip of the bar's lane that the page is not drawn on, where the page itself stops short of its own column: the source view's editor minimap and its stand-off. Zero everywhere else, and the reading view's rail is its own column instead (--reader-minimap-column). */
 :root {
   --reader-toolbar-space: 0px;
   --reader-toolbar-edits: 0px;
-  --reader-toolbar-page-strip: 0px;
+  --reader-toolbar-rail: 0px;
 }
 /* An embedded host hides the bar with a rule, so the window state stays off that host. */
 body.has-reader-toolbar:not(.is-embedded) {
@@ -5218,11 +5219,8 @@ body.has-reader-toolbar:not(.is-embedded) {
   gap: var(--lt-space-2);
   /* Off the page's bottom edge by the same 8px the card is held off the frame. */
   margin-bottom: var(--lt-space-8);
-  /* Centered on the page rather than on the lane: a right margin moves a centered box left by half of it, so adding the part of the lane the page does not draw on — the reading view's map column, the source view's editor strip — lands the bar on the page's own center. Both are half the same rail, so both views move by the same amount at any window width and the button does not start jumping between them again. The edits shift is subtracted, still holding the view buttons still when Save appears. */
-  margin-right: calc(
-    var(--reader-minimap-column) + var(--reader-toolbar-page-strip) -
-      var(--reader-toolbar-edits)
-  );
+  /* The rail measure stays fixed while views collapse the column they do not draw. */
+  margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-edits));
   padding: var(--lt-space-4);
   /* The shadow reads this too, and adds the spread to it, so the ring outside the corner is struck from the corner’s own center. */
   --lt-shadow-host-radius: var(--lt-radius-lg);
@@ -7364,9 +7362,9 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 5;
   pointer-events: none;
 }
-/* The floating bar's lane runs to the shell's right edge here, but the page frame above stops at the editor's minimap stroke, so that strip is lane the page is not drawn on and the bar has to be measured past it. Scoped to the source view: the reading view's rail is its own grid column and the map view has no strip at all. */
-:root[data-code-view="true"] {
-  --reader-toolbar-page-strip: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+/* Monaco draws its own rail inside the source frame, so the reader's grid column closes without changing the bar's rail measure. */
+:root[data-code-view="true"] > body {
+  --reader-minimap-column: 0px;
 }
 /* Trim the app bar's reader divider (the card's top edge) to the faked right edge at the minimap stroke, measured from the window's right edge: the reader gutter to the shell, then the minimap and its stand-off, then a radius short so the ::before top-right arc turns the corner. Same shape as the reading-view formula, with the minimap column replaced by the code-view minimap width. */
 :root[data-code-view="true"] .app-bar::after {
