@@ -8397,6 +8397,46 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-muted-foreground);
   opacity: var(--lt-opacity-46);
 }
+/* The strip a reader drags to set a column's width: the library pane's own divider, at the same width and with the same pointer, straddling the divider on a heading cell's right edge. Invisible at rest and drawing no paint, so a table nobody is pointing at looks exactly as it did — there is no handle, no bar over the table and nothing new in any corner. The cell takes `position: relative` so the strip has a box to hang off, which is safe beside the grain written above it: a positioned box is not the containing block for `background-attachment: fixed`, which is what a transform would have been and what dragged the dots in a scrolled header sideways with the columns. */
+.table-lane th,
+.table-lane tbody > tr > td:first-child {
+  position: relative;
+}
+.table-sizer-column {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 8px;
+  z-index: 1;
+  cursor: col-resize;
+  touch-action: none;
+}
+/* The drag lock, written the way the pane's own is: the pointer keeps its shape wherever the hand wanders and nothing selects, so dragging across a table does not paint a selection behind it. The buttons are named as well — a control writing its own hand under a moving pointer reads as the drag having let go. */
+body.table-resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.table-resizing button {
+  cursor: col-resize;
+}
+/* The strip a reader drags to set a row's height, along the lower edge of the row's first cell. The first rather than the last: a wide table scrolls sideways inside its lane, so the last cell of a row is one a reader may have no way to point at. A stated height on a row is a floor the layout may grow past, which is what makes a row the asymmetrical half of this gesture — taller freely, and never shorter than the words wrapped inside it. */
+.table-sizer-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 8px;
+  z-index: 1;
+  cursor: row-resize;
+  touch-action: none;
+}
+/* A row drag holds the up-and-down pointer instead, and takes everything else the lock above brings. */
+body.table-resizing.is-row,
+body.table-resizing.is-row button {
+  cursor: row-resize;
+}
 /* The lens bar over a table, and the one menu it opens.
  *
  * Quiet by default and drawn only when the table is being aimed at, the way the two corner actions beside it are: a document with a table on every second screen must not read as a page of toolbars. It sits above the lane rather than in it, because the lane is the table's own scrollport and a bar inside it would scroll away sideways with a wide table. */
@@ -11487,7 +11527,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 84 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 86 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -11509,7 +11549,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>178</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>84</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>86</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -11911,7 +11951,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">84 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">86 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12047,6 +12087,14 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Table column handle</h3><code class="built">.table-column-handle</code><span class="built">table-controls.js</span></header>
 <div class="stage"><div class="table-column-handle" style="position:static;transform:none"><button type="button" class="table-column-grip"><span class="lt-icon lt-icon-grip"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Column size grip</h3><code class="built">.table-sizer-column</code><span class="built">table-sizing.js, on each heading cell but the last</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region<span class="table-sizer table-sizer-column" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></th><th>Quarter<span class="table-sizer table-sizer-column" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></th><th>Pipeline</th></tr></thead><tbody><tr><td>North</td><td>Q1</td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr></tbody></table></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Row size grip</h3><code class="built">.table-sizer-row</code><span class="built">table-sizing.js, on the first cell of every body row</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th></tr></thead><tbody><tr><td>North<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1</td></tr><tr><td>South<span class="table-sizer table-sizer-row" style="background:var(--lt-primary);opacity:var(--lt-opacity-46)"></span></td><td>Q1</td></tr></tbody></table></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Block gutter</h3><code class="built">.block-insert</code><span class="built">block-controls.js</span></header>

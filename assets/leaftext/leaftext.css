@@ -8389,6 +8389,46 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-muted-foreground);
   opacity: var(--lt-opacity-46);
 }
+/* The strip a reader drags to set a column's width: the library pane's own divider, at the same width and with the same pointer, straddling the divider on a heading cell's right edge. Invisible at rest and drawing no paint, so a table nobody is pointing at looks exactly as it did — there is no handle, no bar over the table and nothing new in any corner. The cell takes `position: relative` so the strip has a box to hang off, which is safe beside the grain written above it: a positioned box is not the containing block for `background-attachment: fixed`, which is what a transform would have been and what dragged the dots in a scrolled header sideways with the columns. */
+.table-lane th,
+.table-lane tbody > tr > td:first-child {
+  position: relative;
+}
+.table-sizer-column {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 8px;
+  z-index: 1;
+  cursor: col-resize;
+  touch-action: none;
+}
+/* The drag lock, written the way the pane's own is: the pointer keeps its shape wherever the hand wanders and nothing selects, so dragging across a table does not paint a selection behind it. The buttons are named as well — a control writing its own hand under a moving pointer reads as the drag having let go. */
+body.table-resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.table-resizing button {
+  cursor: col-resize;
+}
+/* The strip a reader drags to set a row's height, along the lower edge of the row's first cell. The first rather than the last: a wide table scrolls sideways inside its lane, so the last cell of a row is one a reader may have no way to point at. A stated height on a row is a floor the layout may grow past, which is what makes a row the asymmetrical half of this gesture — taller freely, and never shorter than the words wrapped inside it. */
+.table-sizer-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 8px;
+  z-index: 1;
+  cursor: row-resize;
+  touch-action: none;
+}
+/* A row drag holds the up-and-down pointer instead, and takes everything else the lock above brings. */
+body.table-resizing.is-row,
+body.table-resizing.is-row button {
+  cursor: row-resize;
+}
 /* The lens bar over a table, and the one menu it opens.
  *
  * Quiet by default and drawn only when the table is being aimed at, the way the two corner actions beside it are: a document with a table on every second screen must not read as a page of toolbars. It sits above the lane rather than in it, because the lane is the table's own scrollport and a bar inside it would scroll away sideways with a wide table. */

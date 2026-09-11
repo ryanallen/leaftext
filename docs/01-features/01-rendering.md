@@ -237,6 +237,8 @@ A colon in the divider row sets a column's alignment — `:---` left, `:---:` ce
 | :--- | :----: | ----: |
 | a    | b      | c     |
 
+**Drag a divider to size a column or a row, the way a spreadsheet does.** Point at a table and the divider beside a column heading takes the sideways pointer: drag it and that column goes to the width you left it at, with the columns beside it exactly where they were. The line under a row does the same up and down — a row can be made taller freely, and never shorter than the words wrapped inside it. A double-click on a divider gives that one column or row its automatic size back. Nothing is written to your file and no size outlives the document: the widths hold through a typing pause, a live reload and a theme change, and a table opened again comes back the way the app draws it.
+
 Every second body row is filled a shade back from the page, so a reader can follow one row across to its last column. The fill is the [theme](06-themes.md) family’s own recess rather than one gray for every family, which is what lets the band read on a dark page as well as a light one.
 
 A cell can also be one the app keeps right: a [formula line](../GLOSSARY.md#formula-line) commented under the table says what it is, and Leaftext rewrites it as the rows it reads change. See [Editing](07-editing.md#a-table-that-adds-itself-up).
