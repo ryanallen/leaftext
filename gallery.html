@@ -3364,7 +3364,7 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
 }
 .tab-bar {
   display: flex;
-  /* Tighter than the bar's 16px on purpose: a strip of open documents is one list, not a run of unrelated controls. A flare reaching an inactive neighbor makes the two read as fused, so the active tab buys the difference back with a 12px margin of its own — 4px here plus 12px there is the 16px its curve needs. Move the two together. */
+  /* Tighter than the bar's 16px on purpose: a strip of open documents is one list, not a run of unrelated controls. The active tab adds a 12px margin of its own on top of this, so 4px here plus 12px there is the 16px of daylight that keeps it from reading as fused to the tab beside it. Move the two together. */
   gap: var(--lt-space-4);
   min-width: 0;
   /* Full header height, but the tabs hang from the bar's bottom edge (where the active one covers the reader divider) under a shoulder of chrome — which is what gives their top corners room to round. */
@@ -3409,10 +3409,10 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
 }
 .tab-active {
   max-width: none;
-  /* The room the flares below turn in: 12px on top of the strip's 4px gap is the 16px they need, bought only beside another tab and only by the one tab drawing them. It is in the transition above, or every tab to the right jumps when the selection moves. */
+  /* Daylight beside the selected tab: 12px on top of the strip's 4px gap, bought only beside another tab and only by the selected one, so it stands clear of its neighbors. It is the strip's own spacing, not room the small flare below asks for. It is in the transition above, or every tab to the right jumps when the selection moves. */
   margin: 0 var(--lt-space-12);
 }
-/* At an end of the strip there is no neighbor to buy room from, and none is needed: the strip's own 16px inset is wider than the 14px flare, so the margin here would only push the tab past the 16px every other space in the row keeps. A one-tab strip is both ends and drops both. */
+/* At an end of the strip there is no neighbor to stand clear of, and the strip's own 16px inset is already the widest space in the row, so the margin here would only push the tab past it. A one-tab strip is both ends and drops both. */
 .tab-active:first-child {
   margin-left: 0;
 }
@@ -3439,8 +3439,8 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
   --tab-corner-fill: var(--tab-page-fill, var(--lt-surface));
   --tab-corner-ink: var(--tab-page-ink, var(--lt-muted-foreground));
   --tab-corner-marked-ink: var(--tab-page-ink, var(--lt-foreground));
-  /* These carry the fill out over the divider rather than just turning a stroke. Capped by the room beside the active tab, which they grow into — the strip's 4px gap plus this tab's own 12px margin next to another tab, and the strip's own 16px inset at an end — and the strip scrolls, so a flare wider than that 16px inset is clipped flat: inside it the largest radius that still leaves daylight is 14px. */
-  --tab-flare: var(--lt-radius-2xl);
+  /* These carry the fill out over the divider rather than just turning a stroke. A small turn, read against the tab's own 6px top corners rather than against the room beside it: a wide one draws as a scoop instead of a join. The strip scrolls, so a flare wider than its 16px side inset would be clipped flat, and this is well inside that. */
+  --tab-flare: var(--lt-radius-sm);
   background: var(--tab-fill);
   border-top-color: var(--lt-border);
   border-left-color: var(--lt-border);
