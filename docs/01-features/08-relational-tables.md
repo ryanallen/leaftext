@@ -20,6 +20,8 @@ The view works from the values already in the table. Leaftext recognizes numbers
 
 ![The same records as a board in three columns headed FINISHED, READING and REFERENCE, each card led by its id with its fields listed under it, and Board marked in the bar with a Board fields button beside the four layouts](../../imgs/relational-board.png)
 
+A view you set stays set while the document is open, including when the file changes underneath. Editing a cell, dragging a card between board columns, or another program writing the file all redraw the page, and the layout, sort, filters and chosen fields come back with it — with any record that changed drawn as it now reads. Adding or deleting a table above the one you are looking at is the exception: the view is a table's place in the document, so the table you set it on is no longer at that place and it comes back as an ordinary table.
+
 Sorting, filtering and changing the layout only change what is drawn. They write no file, setting or saved view, and reopening the document restores the table as written. Sorting from a cell's right-click menu in [Editing](07-editing.md#editing-a-table) is different: that action deliberately reorders the file.
 
 Sort a column once for ascending order, again for descending order and a third time to restore the file's order. Numbers, ISO dates and task checkboxes sort by their values; other columns sort as words. A filter offers a value list for a short-choice column, a range for a number or date, and words for other columns. More than one filter can apply at once.

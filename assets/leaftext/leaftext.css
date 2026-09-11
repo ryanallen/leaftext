@@ -8397,9 +8397,9 @@ body.is-block-dragging .document-body [data-src-start] {
   background: var(--lt-muted-foreground);
   opacity: var(--lt-opacity-46);
 }
-/* The strip a reader drags to set a column's width: the library pane's own divider, at the same width and with the same pointer, straddling the divider on a heading cell's right edge. Invisible at rest and drawing no paint, so a table nobody is pointing at looks exactly as it did — there is no handle, no bar over the table and nothing new in any corner. The cell takes `position: relative` so the strip has a box to hang off, which is safe beside the grain written above it: a positioned box is not the containing block for `background-attachment: fixed`, which is what a transform would have been and what dragged the dots in a scrolled header sideways with the columns. */
+/* The strip a reader drags to set a column's width: the library pane's own divider, at the same width and with the same pointer, straddling the divider on a cell's right edge. Invisible at rest and drawing no paint, so a table nobody is pointing at looks exactly as it did — there is no handle, no bar over the table and nothing new in any corner. The cell takes `position: relative` so the strip has a box to hang off, which is safe beside the grain written above it: a positioned box is not the containing block for `background-attachment: fixed`, which is what a transform would have been and what dragged the dots in a scrolled header sideways with the columns. Every body cell rather than each row's first one, because a table with no heading row hangs its column strips off its first body row — watched in a running copy, a strip in an unpositioned cell landed 67 px past that cell's right edge and 99 px tall against a 33 px cell. */
 .table-lane th,
-.table-lane tbody > tr > td:first-child {
+.table-lane tbody > tr > td {
   position: relative;
 }
 .table-sizer-column {
