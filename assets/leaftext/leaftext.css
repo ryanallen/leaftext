@@ -2126,6 +2126,8 @@
   --lt-transition-hover-reveal-arrive: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
   --lt-transition-hover-reveal-leave: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
   /* Inactive window */
+  --lt-active-saturation: 1;
+  --lt-active-contrast: 1;
   --lt-inactive-saturation: 0.5;
   --lt-inactive-contrast: 0.9;
   /* Layers */
@@ -3089,6 +3091,10 @@ body.frameless.is-fullscreen {
   border-radius: var(--app-window-radius);
   /* Both directions of the inactive fade, written on the element rather than inside the state's own rule so leaving and returning each animate, and so the Reduce Motion blanket at the foot of this file zeroes both by existing. */
   transition: filter var(--lt-duration-200) var(--lt-ease);
+}
+/* Held at both functions' identity so WebKit never builds or unmakes the filtered layer across a fade. The pair has to be the inactive rule's two functions in the same order, or the two filters do not interpolate and the fade steps. Windows stays unfiltered: there is no stall there to remove, and a permanent filter takes subpixel antialiasing off 80,174 of the window's pixels per channel at rest. */
+body.mac-frame .app-surface {
+  filter: saturate(var(--lt-active-saturation)) contrast(var(--lt-active-contrast));
 }
 /* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. On the body rather than on the surface, beside the two it overrides. Above the flush rule below so a browser, which ties this on specificity, still wins. */
 body.mac-frame {

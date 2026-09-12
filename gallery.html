@@ -2134,6 +2134,8 @@
   --lt-transition-hover-reveal-arrive: opacity var(--lt-duration-120) var(--lt-ease-decelerate);
   --lt-transition-hover-reveal-leave: opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300);
   /* Inactive window */
+  --lt-active-saturation: 1;
+  --lt-active-contrast: 1;
   --lt-inactive-saturation: 0.5;
   --lt-inactive-contrast: 0.9;
   /* Layers */
@@ -3097,6 +3099,10 @@ body.frameless.is-fullscreen {
   border-radius: var(--app-window-radius);
   /* Both directions of the inactive fade, written on the element rather than inside the state's own rule so leaving and returning each animate, and so the Reduce Motion blanket at the foot of this file zeroes both by existing. */
   transition: filter var(--lt-duration-200) var(--lt-ease);
+}
+/* The matching pair keeps WebKit's layer alive and interpolable; Windows stays unfiltered to keep ClearType. */
+body.mac-frame .app-surface {
+  filter: saturate(var(--lt-active-saturation)) contrast(var(--lt-active-contrast));
 }
 /* macOS rounds a window far harder than Windows does, and the app draws the only corner there is on that side: the window is transparent and the app is held 20px inside it, so the system's own mask falls on a strip nothing paints. The card follows the window in, at the window's number less the 8px gutter between them, which strikes both arcs from one center. Both values are plain rows in design/tokens.md — move one and move the other. On the body rather than on the surface, beside the two it overrides. Above the flush rule below so a browser, which ties this on specificity, still wins. */
 body.mac-frame {
@@ -11714,7 +11720,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 178 values that do not change with the theme, all 72 icons, and all 87 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 72 icons, and all 87 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -11734,7 +11740,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>178</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>87</b></button>
 </div>
@@ -11839,7 +11845,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">178 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">180 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -11996,6 +12002,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-transition-hover-reveal-leave</code><code>opacity var(--lt-duration-100) var(--lt-ease-accelerate) var(--lt-duration-300)</code></div>
 </div>
 <h3>Inactive window</h3><div class="wall wide">
+<div class="value"><code>lt-active-saturation</code><code>1</code></div>
+<div class="value"><code>lt-active-contrast</code><code>1</code></div>
 <div class="value"><code>lt-inactive-saturation</code><code>0.5</code></div>
 <div class="value"><code>lt-inactive-contrast</code><code>0.9</code></div>
 </div>
