@@ -4029,7 +4029,6 @@ body.is-maximized #winMaximize .wc-restore {
 .home-row-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
-.leaf-sheet::before,
 .reader-toolbar::before,
 .reader-tool-tray::before,
 .selection-toolbar::before,
@@ -9551,9 +9550,87 @@ body.is-home-row-dragging .home-list-scroll li {
   /* Dropping away, so it accelerates and is over sooner than the rise. */
   transition: transform var(--lt-duration-200) var(--lt-ease-accelerate);
 }
-/* The one host on the shared list rounded on two corners rather than four: it sits on the window's foot, so the ring follows its top corners and runs square to the bottom edge the sheet has none of. The spread is added to the top corners the same way it is everywhere else. */
-.leaf-sheet::before {
+/* Four narrow layers keep WebKit's curve on the band instead of running it over the sheet's whole face. */
+.sheet-shadow-band {
+  position: absolute;
+  z-index: -2;
+  pointer-events: none;
+  background-color: var(--lt-grain-shadow-base);
+  background-repeat: repeat;
+  filter: var(--lt-grain-shadow-curve);
+  opacity: var(--lt-grain-shadow-opacity-inside);
+}
+.sheet-shadow-face {
+  position: absolute;
+  inset: 0;
+  z-index: var(--lt-z-below);
+  pointer-events: none;
+  border-radius: inherit;
+  background-color: inherit;
+  background-image: inherit;
+  background-size: inherit;
+  background-repeat: inherit;
+}
+.sheet-shadow-band-top {
+  top: calc(-1 * var(--lt-shadow-spread));
+  left: calc(-1 * var(--lt-shadow-spread));
+  right: calc(-1 * var(--lt-shadow-spread));
+  height: calc(var(--lt-shadow-spread) + var(--lt-shadow-host-radius));
   border-radius: calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread)) calc(var(--lt-shadow-host-radius) + var(--lt-shadow-spread)) 0 0;
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to bottom, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(transparent, transparent),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  -webkit-mask-composite: source-in, source-in, source-in;
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  mask-composite: intersect, intersect, intersect;
+}
+.sheet-shadow-band-bottom {
+  bottom: calc(-1 * var(--lt-shadow-spread));
+  left: calc(-1 * var(--lt-shadow-spread));
+  right: calc(-1 * var(--lt-shadow-spread));
+  height: var(--lt-shadow-spread);
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    linear-gradient(transparent, transparent),
+    linear-gradient(to top, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  -webkit-mask-composite: source-in, source-in, source-in;
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)), linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  mask-composite: intersect, intersect, intersect;
+}
+.sheet-shadow-band-left {
+  top: var(--lt-shadow-host-radius);
+  bottom: 0;
+  left: calc(-1 * var(--lt-shadow-spread));
+  width: var(--lt-shadow-spread);
+  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)), linear-gradient(transparent, transparent), linear-gradient(transparent, transparent), linear-gradient(transparent, transparent), radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+}
+.sheet-shadow-band-right {
+  top: var(--lt-shadow-host-radius);
+  right: calc(-1 * var(--lt-shadow-spread));
+  bottom: 0;
+  width: var(--lt-shadow-spread);
+  background-image: linear-gradient(transparent, transparent), linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--lt-shadow-spread) / 2), transparent var(--lt-shadow-spread)), linear-gradient(transparent, transparent), linear-gradient(transparent, transparent), radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
+  background-attachment: scroll, scroll, scroll, scroll, fixed;
+  background-blend-mode: screen, screen, screen, screen, multiply;
+  -webkit-mask-image: linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
+  mask-image: linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
 }
 /* The same cassette grain the app bar and the reading surfaces wear, so a sheet reads as one of this app's surfaces rather than a plain card dropped on it. The color under it is each sheet's own, written as `background-color`: the shorthand would reset the lattice. It tiles from the sheet's own box rather than from the window, which is right for a surface that slides up over the page — and is what it does anyway, since a sheet always carries a transform and a transform re-anchors a fixed background to the element itself. */
 .leaf-sheet {
