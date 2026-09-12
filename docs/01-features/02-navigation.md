@@ -280,7 +280,7 @@ In the rendered view a replace is written to the file's source, not to the page.
 
 Open a document and the [library pane](03-library.md) swaps its file list for that document's **Outline** — its headings, in order, starting with the page's own title and indented by level under it, with the one you are reading lit. The lit row moves as you scroll, so the pane says where you are as well as what is there.
 
-- Above the list, a back row wearing the folder's name puts the files back.
+- Above the list, a back row wearing the folder's name puts the files back. So does sending the pane somewhere — switching [vault](03-library.md#vaults), pressing a crumb, or opening a folder — since asking for a folder is asking for the files in it.
 - Under it, **On this page** names the list, with how many headings are in it at its right — **23 headings** — counted off the rows drawn below, so the number and the list can never disagree.
 - **The page's own title is the first row**, so every section below it hangs under something you can see, and it is counted with them.
 - **The levels look like levels.** The shallowest headings read largest and boldest; each level in is a step smaller and lighter, and from the third level in they sit in the page's quieter ink. So the shape of a document shows in the type as well as in the indenting, which matters most in a narrow pane where the indents run out.
