@@ -2996,6 +2996,22 @@
   --lt-grain-shadow-tile: var(--lt-grain-tile);
   --lt-grain-blob: 1px;
   --lt-grain-tile: 2px;
+  /* The window band's dot, row by row, and the one every row past the spread draws. The band is the app's one halftone that runs no filter, because it does not need one: the alpha curve it used to run is linear in a pixel's distance from its tile's center, so a circle stopped hard at two radii is the same dot that curve cut. These seven are that arithmetic at each row's own depth — the four edge ramps lift coverage off the blob, and what is left of it clears the curve's floor at the first radius and its ceiling at the second — so they are what --lt-grain-shadow-rim and --lt-grain-shadow-mid mean, written out. Move either of those and move all seven. The 100% branch below re-reads them because a coarser tile puts the rows at different depths, and its last two are the full-size dot: past the spread there is no ramp left to narrow one. */
+  --lt-grain-shadow-dot-0: 0.0138px;
+  --lt-grain-shadow-dot-1: 0.1631px;
+  --lt-grain-shadow-dot-2: 0.2731px;
+  --lt-grain-shadow-dot-3: 0.3776px;
+  --lt-grain-shadow-dot-4: 0.4702px;
+  --lt-grain-shadow-dot-5: 0.5388px;
+  --lt-grain-shadow-dot-full: 0.5669px;
+  /* Where each of those dots stops being solid ink and starts fading out. Written as the dot's own radius rather than beside it: both radii are the same straight line through the same coverage, so the far one is an affine function of the near one and the pair can never drift apart. */
+  --lt-grain-shadow-edge-0: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-0) * 0.486916);
+  --lt-grain-shadow-edge-1: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-1) * 0.486916);
+  --lt-grain-shadow-edge-2: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-2) * 0.486916);
+  --lt-grain-shadow-edge-3: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-3) * 0.486916);
+  --lt-grain-shadow-edge-4: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-4) * 0.486916);
+  --lt-grain-shadow-edge-5: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-5) * 0.486916);
+  --lt-grain-shadow-edge-full: calc(var(--lt-grain-blob) * 0.513084 + var(--lt-grain-shadow-dot-full) * 0.486916);
   /* The untinted table rows — the ones carrying no fill, so the grain above has nothing to speckle. Dark themes only: on a light theme these are the near-white rows, where a dot dark enough to see reads as a gray screen-door mesh laid over the whole table. Light themes leave them plain. */
   --reader-row-grain: transparent;
   /* How far the reading surface is held off the window frame. The chrome shows through the gap, so the page reads as a card floating on the bar's texture rather than something bleeding off the edge of the glass. */
@@ -3030,6 +3046,13 @@
     --lt-grain-edge: 1.05px;
     --lt-grain-blob: 1.5px;
     --lt-grain-tile: 3px;
+    --lt-grain-shadow-dot-0: 0.0838px;
+    --lt-grain-shadow-dot-1: 0.3726px;
+    --lt-grain-shadow-dot-2: 0.6055px;
+    --lt-grain-shadow-dot-3: 0.7851px;
+    --lt-grain-shadow-dot-4: 0.8503px;
+    --lt-grain-shadow-dot-5: 0.8503px;
+    --lt-grain-shadow-dot-full: 0.8503px;
   }
 }
 * {
@@ -3093,33 +3116,34 @@ body.frameless:not(.mac-frame).is-maximized .app-surface,
 body.frameless.is-fullscreen .app-surface {
   border: 0;
 }
-/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. Four strips rather than one full-window layer, because WebKit runs the filter over every pixel of the layer before the mask cuts it down: on a Mac that is 3.3 million pixels through a three-primitive chain on the CPU, redone whenever the layout under it moves, and it cost 218 ms of the frame a library open should have drawn in 16. The same band as four strips over a tenth of the window measured 72 to 85 ms, which is what taking the filter off altogether measures. */
+/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. Four strips rather than one full-window layer, because WebKit runs a filter over every pixel of a layer before the mask cuts it down: on a Mac that is 3.3 million pixels through a three-primitive chain on the CPU, redone whenever the layout under it moves, and it cost 218 ms of the frame a library open should have drawn in 16. **And no filter at all, because the strips did not fix it.** Watched on a Mac at v2.7.12 with the four strips in: taking the curve off them takes a library open's worst frame from 62 to 70 ms down to 27 to 38, which is exactly what taking the strips out of the page altogether measures — so the filter was the whole of what was left, and shrinking the area it ran over had already given everything area had to give. The dot is drawn at its own width per row instead. The curve was linear in a pixel's distance from its tile's center, so a circle stopped hard at that row's two radii is the dot it cut; --lt-grain-shadow-dot-0 onward in the metrics block are that arithmetic and where the ramps now live. Rendered against the former shape pixel for pixel by scripts/check-grain-in-a-picture.mjs. */
 .window-band {
   position: fixed;
   z-index: var(--lt-z-below);
   pointer-events: none;
-  background-color: var(--lt-grain-shadow-base);
-  /* The same halftone the floating surfaces throw, and for the same reason it is written this way: the ramps run in front of the curve rather than in the mask, so the dot narrows toward the window's edge instead of the ink falling under one dot width. */
-  background-image: linear-gradient(to right, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
-    linear-gradient(to left, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
-    linear-gradient(to bottom, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
-    linear-gradient(to top, var(--lt-grain-shadow-rim) 0, var(--lt-grain-shadow-mid) calc(var(--app-shadow-spread) / 2), transparent var(--app-shadow-spread)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, transparent var(--lt-grain-blob));
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
-  background-repeat: repeat;
-  background-blend-mode: screen, screen, screen, screen, multiply;
-  filter: var(--lt-grain-shadow-curve);
   opacity: var(--lt-grain-shadow-opacity);
-  /* Every one of the five is anchored to the window rather than to the strip. The lattice always was: the band is the one grained surface outside the app, and it never meets one of the app's own, so its lattice cannot show a seam against them. The four ramps were `scroll`, which on one full-window layer named the same box — on a strip it would run a whole ramp across twelve pixels, so each one now paints whatever the full-window layer painted at that position and the ink is unchanged by construction rather than by arithmetic. */
-  background-attachment: fixed, fixed, fixed, fixed, fixed;
+  background-size: var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
 }
-/* The four ramps again, in the mask this time, taking the band's ink from full where the app starts to nothing at the window's edge. No punch: these are siblings of the app surface rather than children, so the opaque surface covers the middle on its own. **Each strip carries only the ramps for the window edges it touches** — a mask has no attachment property either engine honors, so a ramp for an edge the strip does not sit on runs across the strip's own twelve pixels instead of across the window and eats the ink. Read pixel for pixel at the Mac's geometry: one shared four-ramp mask misses 2,907 of the band's 113,984 pixels, all down the left and right; this misses none. */
+/* The four ramps run in the mask, taking the band's ink from full where the app starts to nothing at the window's edge. No punch: these are siblings of the app surface rather than children, so the opaque surface covers the middle on its own. **Each strip carries only the ramps for the window edges it touches** — a mask has no attachment property either engine honors, so a ramp for an edge the strip does not sit on runs across the strip's own twelve pixels instead of across the window and eats the ink. Read pixel for pixel at the Mac's geometry: one shared four-ramp mask misses 2,907 of the band's 113,984 pixels, all down the left and right; this misses none. **The dot rows run in front of them, one background layer each**, so the dot narrows toward the window's edge as well as the ink falling — which is what the curve did and what a mask alone cannot: a ramp that only takes ink away leaves the band ending on one dot width. The top and bottom strips carry a seventh layer under the six, the full-size lattice for the part of them that lies past the spread, out where the surface's arc leaves a crescent; it is clipped to the padding box and the transparent top border is what starts it there, so it can never paint a second dot under a row that has already drawn one. The left and right strips are one spread wide and are all ramp, so they carry the six and no more. */
 .window-band-top {
   left: 0;
   right: 0;
   top: 0;
   /* Past the spread, out to where the surface's own arc leaves a crescent nothing covers and the band paints its fullest ink — 20px in from both edges on Windows, 32 on a Mac. Four strips one spread wide leave a notch at every corner, and the corner is where a hand is when a window is resized. */
   height: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  /* Six rows of lattice, then the full-size one: the border is what the seventh layer's padding-box clip starts at, so it is said in tiles rather than in the spread — a coarser tile puts six rows deeper than twelve pixels, and a border of one spread would leave the seventh painting over the last two of them. */
+  border-top: calc(var(--lt-grain-shadow-tile) * 6) solid transparent;
+  background-attachment: fixed;
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-full), transparent var(--lt-grain-shadow-edge-full)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
+  background-position: left 0px top 0px, left 0px top 0px, left 0px top calc(var(--lt-grain-shadow-tile) * 1), left 0px top calc(var(--lt-grain-shadow-tile) * 2), left 0px top calc(var(--lt-grain-shadow-tile) * 3), left 0px top calc(var(--lt-grain-shadow-tile) * 4), left 0px top calc(var(--lt-grain-shadow-tile) * 5);
+  background-repeat: repeat, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x;
+  background-clip: padding-box, border-box, border-box, border-box, border-box, border-box, border-box;
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
@@ -3134,6 +3158,18 @@ body.frameless.is-fullscreen .app-surface {
   right: 0;
   bottom: 0;
   height: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  border-bottom: calc(var(--lt-grain-shadow-tile) * 6) solid transparent;
+  background-attachment: fixed;
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-full), transparent var(--lt-grain-shadow-edge-full)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
+  background-position: left 0px bottom 0px, left 0px bottom 0px, left 0px bottom calc(var(--lt-grain-shadow-tile) * 1), left 0px bottom calc(var(--lt-grain-shadow-tile) * 2), left 0px bottom calc(var(--lt-grain-shadow-tile) * 3), left 0px bottom calc(var(--lt-grain-shadow-tile) * 4), left 0px bottom calc(var(--lt-grain-shadow-tile) * 5);
+  background-repeat: repeat, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x;
+  background-clip: padding-box, border-box, border-box, border-box, border-box, border-box, border-box;
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
     linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
@@ -3149,6 +3185,15 @@ body.frameless.is-fullscreen .app-surface {
   top: calc(var(--app-shadow-spread) + var(--app-window-radius));
   bottom: calc(var(--app-shadow-spread) + var(--app-window-radius));
   width: var(--app-shadow-spread);
+  background-attachment: fixed;
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
+  background-position: left 0px top 0px, left calc(var(--lt-grain-shadow-tile) * 1) top 0px, left calc(var(--lt-grain-shadow-tile) * 2) top 0px, left calc(var(--lt-grain-shadow-tile) * 3) top 0px, left calc(var(--lt-grain-shadow-tile) * 4) top 0px, left calc(var(--lt-grain-shadow-tile) * 5) top 0px;
+  background-repeat: repeat-y, repeat-y, repeat-y, repeat-y, repeat-y, repeat-y;
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
 }
@@ -3157,6 +3202,15 @@ body.frameless.is-fullscreen .app-surface {
   top: calc(var(--app-shadow-spread) + var(--app-window-radius));
   bottom: calc(var(--app-shadow-spread) + var(--app-window-radius));
   width: var(--app-shadow-spread);
+  background-attachment: fixed;
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
+  background-position: right 0px top 0px, right calc(var(--lt-grain-shadow-tile) * 1) top 0px, right calc(var(--lt-grain-shadow-tile) * 2) top 0px, right calc(var(--lt-grain-shadow-tile) * 3) top 0px, right calc(var(--lt-grain-shadow-tile) * 4) top 0px, right calc(var(--lt-grain-shadow-tile) * 5) top 0px;
+  background-repeat: repeat-y, repeat-y, repeat-y, repeat-y, repeat-y, repeat-y;
   -webkit-mask-image: linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
   mask-image: linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
 }
