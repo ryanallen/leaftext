@@ -8922,6 +8922,10 @@ body.leaf-web .document-minimap-track::after {
   container-type: inline-size;
   transform-origin: 0 0;
 }
+/* On WebKit this layer cut travel frames from 100–600 ms to 17–54 ms and rebuilds from 200 ms to 33 ms; containment and the content layer did not. */
+body.mac-frame .document-minimap-frame {
+  will-change: transform;
+}
 /* The clone: a shrunken rendering of the document. JS sets its width; the frame above carries the scale, so `position: relative` is what keeps a document's absolutely positioned parts measuring off the clone rather than off that wider box. Zero the .document-body scroll-origin margin (JS positions it) but keep its padding so the internal layout matches the page. */
 .document-minimap-preview {
   box-sizing: border-box;

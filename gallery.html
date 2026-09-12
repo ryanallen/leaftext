@@ -3100,7 +3100,7 @@ body.frameless.is-fullscreen {
   /* Both directions of the inactive fade, written on the element rather than inside the state's own rule so leaving and returning each animate, and so the Reduce Motion blanket at the foot of this file zeroes both by existing. */
   transition: filter var(--lt-duration-200) var(--lt-ease);
 }
-/* The matching pair keeps WebKit's layer alive and interpolable; Windows stays unfiltered to keep ClearType. */
+/* Held at both functions' identity so WebKit never builds or unmakes the filtered layer across a fade. The pair has to be the inactive rule's two functions in the same order, or the two filters do not interpolate and the fade steps. Windows stays unfiltered: there is no stall there to remove, and a permanent filter takes subpixel antialiasing off 80,174 of the window's pixels per channel at rest. */
 body.mac-frame .app-surface {
   filter: saturate(var(--lt-active-saturation)) contrast(var(--lt-active-contrast));
 }
@@ -8929,6 +8929,10 @@ body.leaf-web .document-minimap-track::after {
 .document-minimap-frame {
   container-type: inline-size;
   transform-origin: 0 0;
+}
+/* On WebKit this layer cut travel frames from 100–600 ms to 17–54 ms and rebuilds from 200 ms to 33 ms; containment and the content layer did not. */
+body.mac-frame .document-minimap-frame {
+  will-change: transform;
 }
 /* The clone: a shrunken rendering of the document. JS sets its width; the frame above carries the scale, so `position: relative` is what keeps a document's absolutely positioned parts measuring off the clone rather than off that wider box. Zero the .document-body scroll-origin margin (JS positions it) but keep its padding so the internal layout matches the page. */
 .document-minimap-preview {
