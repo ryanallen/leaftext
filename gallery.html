@@ -4026,6 +4026,12 @@ body.is-maximized #winMaximize .wc-restore {
 .context-menu-item.is-danger:focus-visible .lt-icon {
   color: inherit;
 }
+/* A row that writes a date says at its right which day that is, so Next Monday is read before it is pressed. */
+.task-date-when {
+  float: right;
+  margin-left: var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+}
 .context-menu-separator {
   height: 1px;
   margin: var(--lt-space-4) var(--lt-space-6);
@@ -11826,7 +11832,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 72 icons, and all 87 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 72 icons, and all 88 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -11848,7 +11854,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>87</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>88</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -12252,7 +12258,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">87 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">88 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12336,6 +12342,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Context menu</h3><code class="built">.context-menu</code><span class="built">context-menu.js</span></header>
 <div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item">Open</button><button type="button" class="context-menu-item is-danger">Delete</button></div></div>
+</section>
+<section class="part">
+<header><h3>Task date</h3><code class="built">.task-date</code><span class="built">task-dates.js</span></header>
+<div class="stage"><div class="document-body"><ul><li><input type="checkbox"> Winter cleanup schedule <button type="button" class="doc-badge doc-badge--red task-date">Sep 2</button></li><li><input type="checkbox" checked> Book the meeting room <button type="button" class="doc-badge doc-badge--gray task-date">Sep 10</button></li><li><input type="checkbox"> Pay the water bill <button type="button" class="doc-badge doc-badge--green task-date">Sep 11</button></li><li><input type="checkbox"> Ask about the late arrivals <button type="button" class="doc-badge doc-badge--amber task-date">Sep 12</button></li><li><input type="checkbox"> Renew the lease <button type="button" class="doc-badge doc-badge--gray task-date">Jan 4 2027</button></li></ul></div><div class="context-menu" style="position:static;width:220px"><button type="button" class="context-menu-item">Today<span class="task-date-when">Sep 7</span></button><button type="button" class="context-menu-item">Tomorrow<span class="task-date-when">Sep 8</span></button><button type="button" class="context-menu-item">Next Monday<span class="task-date-when">Sep 14</span></button><div class="context-menu-item"><input type="text" class="rename-input" value="09/22/2026" placeholder="MM/DD/YYYY"></div><div class="context-menu-separator"></div><button type="button" class="context-menu-item">Clear the date</button></div></div>
 </section>
 <section class="part">
 <header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js</span></header>

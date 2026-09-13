@@ -4018,6 +4018,12 @@ body.is-maximized #winMaximize .wc-restore {
 .context-menu-item.is-danger:focus-visible .lt-icon {
   color: inherit;
 }
+/* A row that writes a date says at its right which day that is, so Next Monday is read before it is pressed. */
+.task-date-when {
+  float: right;
+  margin-left: var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+}
 .context-menu-separator {
   height: 1px;
   margin: var(--lt-space-4) var(--lt-space-6);

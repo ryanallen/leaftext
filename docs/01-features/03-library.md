@@ -270,7 +270,7 @@ A colon only starts a field when what is in front of it looks like a field name 
 
 ## Scheduled tasks
 
-A checkbox in a note can carry a date. Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
+A checkbox in a note can carry [a date](01-rendering.md#task-lists). Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
 
 The box is about the vault you are in, the same as Recent and Favorites. Leave the vault and its rows go with it; the new vault's own arrive once its text has been read.
 
@@ -278,7 +278,7 @@ The box is about the vault you are in, the same as Recent and Favorites. Leave t
 | --- | --- |
 | The words on the checkbox line | The line itself, without its date |
 | The note and the folder holding it | The path |
-| The date | Red once it is past, amber from today through the next seven days, gray after that. Today is your machine's |
+| The date | Red once it is past, green on the day itself, amber from tomorrow through the next seven days, gray after that. Today is your machine's |
 
 Overdue work is at the top, because a past date is the nearest one. Two tasks due the same day settle by note and then by the line they sit on, so the order does not shuffle between one look and the next. Pressing a row opens that note and lands on the checkbox.
 
