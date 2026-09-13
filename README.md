@@ -180,7 +180,7 @@ The [graph view](docs/01-features/03-library.md#graph) maps the links between yo
 
 ![A vault's settings panel showing the connected GitHub repository, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](imgs/github-sync.png)
 
-A vault can be a git repository that pushes to GitHub. Leaftext never holds a token — it runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub, and one vault can turn on automatic sync for each local change. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
+A vault can be a git repository that pushes to GitHub. Leaftext never holds a token — it runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub, and one vault can turn on automatic sync, which sends once your changes stop. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
 
 ## Move around
 
