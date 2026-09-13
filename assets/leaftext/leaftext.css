@@ -5380,6 +5380,14 @@ body.has-reader-toolbar:not(.is-embedded) {
 .library-sync:hover {
   background: color-mix(in srgb, var(--lt-accent) 26%, transparent);
 }
+/* Automatic sync has stopped after a failed job; the word in the count says what the tint only hints at. */
+.library-sync.is-stopped {
+  background: color-mix(in srgb, var(--lt-danger) 16%, transparent);
+  color: var(--lt-danger);
+}
+.library-sync.is-stopped:hover {
+  background: color-mix(in srgb, var(--lt-danger) 26%, transparent);
+}
 .library-sync[hidden] {
   display: none;
 }

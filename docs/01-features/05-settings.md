@@ -30,7 +30,7 @@ Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave las
 
 ## Open
 
-There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)), and **Licenses** beside it opens every third-party notice the app carries — the icon packs, the Noto typefaces, the libraries behind math, diagrams, the source editor and the graph, and the licenses of all 187 Rust packages compiled into the binary — as a document in the reader, with no network needed.
+There is nothing to open. Every control changes the app the moment you use it and saves straight away. The version you are running is at the foot of the home screen ([Updates](#updates)), and **Licenses** beside it opens every third-party notice the app carries — the icon packs, the Noto typefaces, the libraries behind math, diagrams, the source editor and the graph, and the licenses of all 184 Rust packages compiled into the binary — as a document in the reader, with no network needed.
 
 ## Files
 
@@ -217,7 +217,7 @@ With it off, a panel arriving slows as it lands and one leaving is gone quicker,
 
 Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It is written for bug reports: if something goes wrong, that file is what to attach.
 
-- It holds what the app printed and the details of a crash — nothing else
+- It holds what the app printed, the details of a crash, and a line for each [GitHub sync](03-library.md#syncing) that failed — nothing else
 - **Your writing is never in it.** File paths are recorded, document text is not
 - It stops at about a megabyte, at which point it becomes `journal.prev.log` and a fresh one starts. That is two files, and it never grows past them
 - It is safe to delete, and it is not sent anywhere — nothing leaves your machine unless you attach it yourself
