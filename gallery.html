@@ -8385,12 +8385,12 @@ body.is-block-dragging .document-body [data-src-start] {
   min-width: 0;
   width: auto;
 }
-/* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; the width is the one the renderer stamped on the tag, falling back to `max-content` for a picture nothing could measure, so a small one is left where it was and an undecoded one still has its box, and the centering is a percentage transform because CSS cannot read a used width. */
+/* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; `max-content` of a picture whose tag carries the width the renderer read out of its header is that stamped number, decoded or not, so a small one is left where it was and an undecoded one still has its box, and the centering is a percentage transform because CSS cannot read a used width. */
 .document-body > p.image-lane {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
-  width: var(--picture-width, max-content);
+  width: max-content;
   max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
 }
 /* A percentage cap resolves against the box being measured, so `max-width: 100%` below holds the paragraph at the very measure it is escaping; a percentage width does not, so the paragraph sizes to the picture and the picture fills it. */
