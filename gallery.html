@@ -3122,7 +3122,7 @@ body.frameless:not(.mac-frame).is-maximized .app-surface,
 body.frameless.is-fullscreen .app-surface {
   border: 0;
 }
-/* The window keeps its own full-strength band because it falls on the desktop rather than on a page; it needs no punch because the app surface paints over its middle. Four strips rather than one full-window layer, because WebKit runs a filter over every pixel of a layer before the mask cuts it down: on a Mac that is 3.3 million pixels through a three-primitive chain on the CPU, redone whenever the layout under it moves, and it cost 218 ms of the frame a library open should have drawn in 16. **And no filter at all, because the strips did not fix it.** Watched on a Mac at v2.7.12 with the four strips in: taking the curve off them takes a library open's worst frame from 62 to 70 ms down to 27 to 38, which is exactly what taking the strips out of the page altogether measures — so the filter was the whole of what was left, and shrinking the area it ran over had already given everything area had to give. The dot is drawn at its own width per row instead. The curve was linear in a pixel's distance from its tile's center, so a circle stopped hard at that row's two radii is the dot it cut; --lt-grain-shadow-dot-0 onward in the metrics block are that arithmetic and where the ramps now live. Rendered against the former shape pixel for pixel by scripts/check-grain-in-a-picture.mjs. */
+/* Narrow straight strips and four corner pieces keep WebKit from filtering a full-window layer. Windows draws each corner's nested rings live; a Mac reads the same rings from one precomposed mask at each lattice size. */
 .window-band {
   position: fixed;
   z-index: var(--lt-z-below);
@@ -3130,62 +3130,167 @@ body.frameless.is-fullscreen .app-surface {
   opacity: var(--lt-grain-shadow-opacity);
   background-size: var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile), var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
 }
-/* The four ramps run in the mask, taking the band's ink from full where the app starts to nothing at the window's edge. No punch: these are siblings of the app surface rather than children, so the opaque surface covers the middle on its own. **Each strip carries only the ramps for the window edges it touches** — a mask has no attachment property either engine honors, so a ramp for an edge the strip does not sit on runs across the strip's own twelve pixels instead of across the window and eats the ink. Read pixel for pixel at the Mac's geometry: one shared four-ramp mask misses 2,907 of the band's 113,984 pixels, all down the left and right; this misses none. **The dot rows run in front of them, one background layer each**, so the dot narrows toward the window's edge as well as the ink falling — which is what the curve did and what a mask alone cannot: a ramp that only takes ink away leaves the band ending on one dot width. The top and bottom strips carry a seventh layer under the six, the full-size lattice for the part of them that lies past the spread, out where the surface's arc leaves a crescent; it is clipped to the padding box and the transparent top border is what starts it there, so it can never paint a second dot under a row that has already drawn one. The left and right strips are one spread wide and are all ramp, so they carry the six and no more. */
-.window-band-top {
+.window-band-corner {
+  --window-band-reach: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  --window-band-corner-at: 100% 100%;
+  width: var(--window-band-reach);
+  height: var(--window-band-reach);
+  background-color: var(--window-band-corner-background, transparent);
+  -webkit-mask-image: var(--window-band-corner-mask, radial-gradient(circle at var(--window-band-corner-at), var(--lt-mask-opaque) var(--app-window-radius), transparent var(--window-band-reach)));
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-position: 0 0;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: var(--window-band-corner-mask, radial-gradient(circle at var(--window-band-corner-at), var(--lt-mask-opaque) var(--app-window-radius), transparent var(--window-band-reach)));
+  mask-size: 100% 100%;
+  mask-position: 0 0;
+  mask-repeat: no-repeat;
+}
+.window-band-top-left {
+  --window-band-corner-at: 100% 100%;
   left: 0;
+  top: 0;
+}
+.window-band-top-right {
+  --window-band-corner-at: 0% 100%;
   right: 0;
   top: 0;
-  /* Past the spread, out to where the surface's own arc leaves a crescent nothing covers and the band paints its fullest ink — 20px in from both edges on Windows, 32 on a Mac. Four strips one spread wide leave a notch at every corner, and the corner is where a hand is when a window is resized. */
-  height: calc(var(--app-shadow-spread) + var(--app-window-radius));
-  /* Six rows of lattice, then the full-size one: the border is what the seventh layer's padding-box clip starts at, so it is said in tiles rather than in the spread — a coarser tile puts six rows deeper than twelve pixels, and a border of one spread would leave the seventh painting over the last two of them. */
-  border-top: calc(var(--lt-grain-shadow-tile) * 6) solid transparent;
-  background-attachment: fixed;
-  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-full), transparent var(--lt-grain-shadow-edge-full)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
-  background-position: left 0px top 0px, left 0px top 0px, left 0px top calc(var(--lt-grain-shadow-tile) * 1), left 0px top calc(var(--lt-grain-shadow-tile) * 2), left 0px top calc(var(--lt-grain-shadow-tile) * 3), left 0px top calc(var(--lt-grain-shadow-tile) * 4), left 0px top calc(var(--lt-grain-shadow-tile) * 5);
-  background-repeat: repeat, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x;
-  background-clip: padding-box, border-box, border-box, border-box, border-box, border-box, border-box;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  -webkit-mask-composite: source-in, source-in, source-in;
-  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  mask-composite: intersect, intersect, intersect;
+  transform: var(--window-band-top-right-transform, none);
 }
-.window-band-bottom {
+.window-band-bottom-left {
+  --window-band-corner-at: 100% 0%;
   left: 0;
+  bottom: 0;
+  transform: var(--window-band-bottom-left-transform, none);
+}
+.window-band-bottom-right {
+  --window-band-corner-at: 0% 0%;
   right: 0;
   bottom: 0;
-  height: calc(var(--app-shadow-spread) + var(--app-window-radius));
-  border-bottom: calc(var(--lt-grain-shadow-tile) * 6) solid transparent;
+  transform: var(--window-band-bottom-right-transform, none);
+}
+.window-band-ring {
+  position: absolute;
+  display: var(--window-band-ring-display, block);
+  background-size: var(--lt-grain-shadow-tile) var(--lt-grain-shadow-tile);
+  background-repeat: repeat;
+}
+.window-band-ring-top-left {
+  right: 0;
+  bottom: 0;
+  border-radius: 100% 0 0 0;
+  background-position: left 0 top 0;
+}
+.window-band-ring-top-right {
+  left: 0;
+  bottom: 0;
+  border-radius: 0 100% 0 0;
+  background-position: left 0 top 0;
+}
+.window-band-ring-bottom-left {
+  right: 0;
+  top: 0;
+  border-radius: 0 0 0 100%;
+  background-position: left 0 bottom 0;
+}
+.window-band-ring-bottom-right {
+  left: 0;
+  top: 0;
+  border-radius: 0 0 100% 0;
+  background-position: left 0 bottom 0;
+}
+.window-band-ring-0 {
+  width: var(--window-band-reach);
+  height: var(--window-band-reach);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0));
   background-attachment: fixed;
-  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-full), transparent var(--lt-grain-shadow-edge-full)),
-    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
+}
+.window-band-ring-1 {
+  width: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 1);
+  height: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 1);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1));
+  background-attachment: fixed;
+}
+.window-band-ring-2 {
+  width: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 2);
+  height: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 2);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2));
+  background-attachment: fixed;
+}
+.window-band-ring-3 {
+  width: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 3);
+  height: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 3);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3));
+  background-attachment: fixed;
+}
+.window-band-ring-4 {
+  width: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 4);
+  height: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 4);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4));
+  background-attachment: fixed;
+}
+.window-band-ring-5 {
+  width: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 5);
+  height: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 5);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
+  background-attachment: fixed;
+}
+.window-band-ring-6 {
+  width: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 6);
+  height: calc(var(--window-band-reach) - var(--lt-grain-shadow-tile) * 6);
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-full), transparent var(--lt-grain-shadow-edge-full));
+  background-attachment: fixed;
+}
+body.mac-frame {
+  --window-band-corner-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww%2Ew3%2Eorg%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g0%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.519803%22%3E%3Cstop%20offset%3D%220.026548%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p0%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g0)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g1%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.5925%22%3E%3Cstop%20offset%3D%220.275274%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p1%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g1)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g2%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.646061%22%3E%3Cstop%20offset%3D%220.422716%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p2%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g2)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g3%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.696943%22%3E%3Cstop%20offset%3D%220.541794%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p3%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g3)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g4%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.742032%22%3E%3Cstop%20offset%3D%220.633665%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p4%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g4)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g5%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.775434%22%3E%3Cstop%20offset%3D%220.694836%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p5%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g5)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g6%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221%22%20cy%3D%221%22%20r%3D%220.789117%22%3E%3Cstop%20offset%3D%220.718398%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p6%22%20width%3D%222%22%20height%3D%222%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%222%22%20height%3D%222%22%20fill%3D%22url(%23g6)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22f%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2232%22%3E%3Cstop%20offset%3D%220.625%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22black%22%2F%3E%3C%2FradialGradient%3E%3Cmask%20id%3D%22m%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22url(%23f)%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cg%20mask%3D%22url(%23m)%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2231%22%20fill%3D%22none%22%20stroke%3D%22url(%23p0)%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2229%22%20fill%3D%22none%22%20stroke%3D%22url(%23p1)%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2227%22%20fill%3D%22none%22%20stroke%3D%22url(%23p2)%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2225%22%20fill%3D%22none%22%20stroke%3D%22url(%23p3)%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2223%22%20fill%3D%22none%22%20stroke%3D%22url(%23p4)%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2221%22%20fill%3D%22none%22%20stroke%3D%22url(%23p5)%22%20stroke-width%3D%222%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+}
+body.mac-frame {
+  --window-band-corner-background: var(--lt-grain-shadow-blob);
+  --window-band-ring-display: none;
+  --window-band-top-right-transform: scaleX(-1);
+  --window-band-bottom-left-transform: scaleY(-1);
+  --window-band-bottom-right-transform: scale(-1);
+}
+@media (resolution <= 1dppx) {
+  body.mac-frame {
+  --window-band-corner-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww%2Ew3%2Eorg%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g0%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%220.81043%22%3E%3Cstop%20offset%3D%220.103402%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p0%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g0)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g1%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%220.951051%22%3E%3Cstop%20offset%3D%220.391777%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p1%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g1)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g2%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%221.064454%22%3E%3Cstop%20offset%3D%220.568836%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p2%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g2)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g3%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%221.151904%22%3E%3Cstop%20offset%3D%220.681567%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p3%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g3)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g4%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%221.183651%22%3E%3Cstop%20offset%3D%220.718371%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p4%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g4)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g5%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%221.183651%22%3E%3Cstop%20offset%3D%220.718371%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p5%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g5)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22g6%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%221.5%22%20cy%3D%221.5%22%20r%3D%221.183651%22%3E%3Cstop%20offset%3D%220.718371%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22transparent%22%2F%3E%3C%2FradialGradient%3E%3Cpattern%20id%3D%22p6%22%20width%3D%223%22%20height%3D%223%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22url(%23g6)%22%2F%3E%3C%2Fpattern%3E%3CradialGradient%20id%3D%22f%22%20gradientUnits%3D%22userSpaceOnUse%22%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2232%22%3E%3Cstop%20offset%3D%220.625%22%20stop-color%3D%22white%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22black%22%2F%3E%3C%2FradialGradient%3E%3Cmask%20id%3D%22m%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22url(%23f)%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cg%20mask%3D%22url(%23m)%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2230.5%22%20fill%3D%22none%22%20stroke%3D%22url(%23p0)%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2227.5%22%20fill%3D%22none%22%20stroke%3D%22url(%23p1)%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2224.5%22%20fill%3D%22none%22%20stroke%3D%22url(%23p2)%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2221.5%22%20fill%3D%22none%22%20stroke%3D%22url(%23p3)%22%20stroke-width%3D%223%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+  }
+}
+/* Each straight strip carries the one edge ramp it touches and six dot rows. The corners are separate pieces, so no strip crosses an arc or overlaps another piece. */
+.window-band-top {
+  left: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  right: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  top: 0;
+  height: var(--app-shadow-spread);
+  background-attachment: fixed;
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
     radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
     radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
     radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
     radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
     radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
-  background-position: left 0px bottom 0px, left 0px bottom 0px, left 0px bottom calc(var(--lt-grain-shadow-tile) * 1), left 0px bottom calc(var(--lt-grain-shadow-tile) * 2), left 0px bottom calc(var(--lt-grain-shadow-tile) * 3), left 0px bottom calc(var(--lt-grain-shadow-tile) * 4), left 0px bottom calc(var(--lt-grain-shadow-tile) * 5);
-  background-repeat: repeat, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x;
-  background-clip: padding-box, border-box, border-box, border-box, border-box, border-box, border-box;
-  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  -webkit-mask-composite: source-in, source-in, source-in;
-  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
-  mask-composite: intersect, intersect, intersect;
+  background-position: left 0px top 0px, left 0px top calc(var(--lt-grain-shadow-tile) * 1), left 0px top calc(var(--lt-grain-shadow-tile) * 2), left 0px top calc(var(--lt-grain-shadow-tile) * 3), left 0px top calc(var(--lt-grain-shadow-tile) * 4), left 0px top calc(var(--lt-grain-shadow-tile) * 5);
+  background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  mask-image: linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
 }
-/* Between the two, so no pixel is painted twice and no corner is the sum of two layers. One ramp: over this box the other three were opaque on the full-window layer. */
+.window-band-bottom {
+  left: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  right: calc(var(--app-shadow-spread) + var(--app-window-radius));
+  bottom: 0;
+  height: var(--app-shadow-spread);
+  background-attachment: fixed;
+  background-image: radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-0), transparent var(--lt-grain-shadow-edge-0)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-1), transparent var(--lt-grain-shadow-edge-1)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-2), transparent var(--lt-grain-shadow-edge-2)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-3), transparent var(--lt-grain-shadow-edge-3)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-4), transparent var(--lt-grain-shadow-edge-4)),
+    radial-gradient(circle, var(--lt-grain-shadow-blob) 0, var(--lt-grain-shadow-blob) var(--lt-grain-shadow-dot-5), transparent var(--lt-grain-shadow-edge-5));
+  background-position: left 0px bottom 0px, left 0px bottom calc(var(--lt-grain-shadow-tile) * 1), left 0px bottom calc(var(--lt-grain-shadow-tile) * 2), left 0px bottom calc(var(--lt-grain-shadow-tile) * 3), left 0px bottom calc(var(--lt-grain-shadow-tile) * 4), left 0px bottom calc(var(--lt-grain-shadow-tile) * 5);
+  background-repeat: repeat-x, repeat-x, repeat-x, repeat-x, repeat-x, repeat-x;
+  -webkit-mask-image: linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+  mask-image: linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--app-shadow-spread));
+}
+/* The side strips stop at the corner pieces, so no pixel is painted twice. */
 .window-band-left {
   left: 0;
   top: calc(var(--app-shadow-spread) + var(--app-window-radius));
@@ -12154,7 +12259,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Window shadow band</h3><code class="built">.window-band</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div style="position:relative;height:120px;padding:24px;background:var(--lt-background)"><div style="position:relative;height:72px;--app-shadow-spread:12px;--app-window-radius:var(--lt-radius-lg)"><div class="window-band window-band-top" style="position:absolute"></div><div class="window-band window-band-bottom" style="position:absolute"></div><div class="window-band window-band-left" style="position:absolute"></div><div class="window-band window-band-right" style="position:absolute"></div><div style="position:absolute;inset:12px;background:var(--lt-surface);border:var(--lt-stroke-1) solid var(--lt-border);border-radius:var(--lt-radius-lg)"></div></div></div></div>
+<div class="stage"><div style="position:relative;height:120px;padding:24px;background:var(--lt-background)"><div style="position:relative;height:72px;--app-shadow-spread:12px;--app-window-radius:var(--lt-radius-lg)"><div class="window-band window-band-top" style="position:absolute"></div><div class="window-band window-band-bottom" style="position:absolute"></div><div class="window-band window-band-left" style="position:absolute"></div><div class="window-band window-band-right" style="position:absolute"></div><div class="window-band window-band-corner window-band-top-left" style="position:absolute"><span class="window-band-ring window-band-ring-top-left window-band-ring-0"></span><span class="window-band-ring window-band-ring-top-left window-band-ring-1"></span><span class="window-band-ring window-band-ring-top-left window-band-ring-2"></span><span class="window-band-ring window-band-ring-top-left window-band-ring-3"></span><span class="window-band-ring window-band-ring-top-left window-band-ring-4"></span><span class="window-band-ring window-band-ring-top-left window-band-ring-5"></span><span class="window-band-ring window-band-ring-top-left window-band-ring-6"></span></div><div class="window-band window-band-corner window-band-top-right" style="position:absolute"><span class="window-band-ring window-band-ring-top-right window-band-ring-0"></span><span class="window-band-ring window-band-ring-top-right window-band-ring-1"></span><span class="window-band-ring window-band-ring-top-right window-band-ring-2"></span><span class="window-band-ring window-band-ring-top-right window-band-ring-3"></span><span class="window-band-ring window-band-ring-top-right window-band-ring-4"></span><span class="window-band-ring window-band-ring-top-right window-band-ring-5"></span><span class="window-band-ring window-band-ring-top-right window-band-ring-6"></span></div><div class="window-band window-band-corner window-band-bottom-left" style="position:absolute"><span class="window-band-ring window-band-ring-bottom-left window-band-ring-0"></span><span class="window-band-ring window-band-ring-bottom-left window-band-ring-1"></span><span class="window-band-ring window-band-ring-bottom-left window-band-ring-2"></span><span class="window-band-ring window-band-ring-bottom-left window-band-ring-3"></span><span class="window-band-ring window-band-ring-bottom-left window-band-ring-4"></span><span class="window-band-ring window-band-ring-bottom-left window-band-ring-5"></span><span class="window-band-ring window-band-ring-bottom-left window-band-ring-6"></span></div><div class="window-band window-band-corner window-band-bottom-right" style="position:absolute"><span class="window-band-ring window-band-ring-bottom-right window-band-ring-0"></span><span class="window-band-ring window-band-ring-bottom-right window-band-ring-1"></span><span class="window-band-ring window-band-ring-bottom-right window-band-ring-2"></span><span class="window-band-ring window-band-ring-bottom-right window-band-ring-3"></span><span class="window-band-ring window-band-ring-bottom-right window-band-ring-4"></span><span class="window-band-ring window-band-ring-bottom-right window-band-ring-5"></span><span class="window-band-ring window-band-ring-bottom-right window-band-ring-6"></span></div><div style="position:absolute;inset:12px;background:var(--lt-surface);border:var(--lt-stroke-1) solid var(--lt-border);border-radius:var(--lt-radius-lg)"></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Startup screen</h3><code class="built">.startup-card</code><span class="built">app-shell.html, taken off by render-document.js when the host says the window has grown</span></header>
