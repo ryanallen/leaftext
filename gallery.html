@@ -2242,6 +2242,7 @@
   --lt-icon-table: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M12 3v18M3 12h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-divider: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-note-frame: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='4' ry='4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 8h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 17h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
   --lt-icon-comment: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-workflow: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='13' y='13' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -2804,6 +2805,10 @@
 .lt-icon-divider {
   -webkit-mask-image: var(--lt-icon-divider);
   mask-image: var(--lt-icon-divider);
+}
+.lt-icon-note-frame {
+  -webkit-mask-image: var(--lt-icon-note-frame);
+  mask-image: var(--lt-icon-note-frame);
 }
 .lt-icon-tag {
   -webkit-mask-image: var(--lt-icon-tag);
@@ -6819,6 +6824,53 @@ body.has-reader-toolbar:not(.is-embedded) {
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
+}
+/* A framed figure the note's author asked for. The only class a document may name is one beginning `note-` (`markdown/rawhtml.rs`), and this is the first drawing through that door: a titled box with a quiet note in its head, whatever blocks the writer put in the body, and a caption on a sunken strip at the foot. Keyed on `.document-body` like every other document rule, so it draws inside a note and nowhere else. */
+.document-body .note-frame {
+  margin: var(--lt-space-24) 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  /* The two hairlines inside it are the head's and the caption's own borders, so a frame missing either part has no rule floating where that part would have been. */
+  overflow: hidden;
+}
+/* The head is plain text in a `div` rather than a heading, so a frame's title stays out of the document outline and the minimap's heading list — and in a reader that has never heard of Leaftext it reads as the paragraph a figure's title should be. */
+.document-body .note-frame-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-35);
+}
+/* The note in the head's top right: quieter and smaller than the title, and pushed to the far end by the head's own spacing rather than by a float, so a long title wraps above it instead of running under it. */
+.document-body .note-frame-aside {
+  color: var(--lt-muted-foreground);
+  font-size: 0.85em;
+  font-weight: var(--lt-weight-400);
+}
+/* The body is whatever the writer put between the head and the caption, so it takes the frame's padding and nothing else — a paragraph, a list, a table or a diagram each keeps the drawing it already has. The first and last blocks lose their outer margin so the box closes on them rather than on a band of empty page. */
+.document-body .note-frame > :not(.note-frame-head):not(.note-frame-caption) {
+  padding-left: var(--lt-space-16);
+  padding-right: var(--lt-space-16);
+}
+.document-body .note-frame > :not(.note-frame-head):first-child {
+  padding-top: var(--lt-space-16);
+}
+.document-body .note-frame > :not(.note-frame-caption):last-child {
+  padding-bottom: var(--lt-space-16);
+}
+/* The caption sits on a recess under its own hairline, the way the head sits over one, so the two ends of the box read as the same kind of edge. */
+.document-body .note-frame-caption {
+  padding: var(--lt-space-10) var(--lt-space-16);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface-sunken);
+  color: var(--lt-muted-foreground);
+  font-size: 0.9em;
+  line-height: var(--lt-leading-1-45);
 }
 /* ---- The block gutter --------------------------------------------------
    The handle you drag a block by and the plus that writes a new one, in the page's left margin. Positioned inside .reader-layout (the reader's positioned ancestor), so it scrolls with the document instead of being chased down the page by a scroll handler. See block-controls.js.
@@ -11832,7 +11884,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 72 icons, and all 88 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 73 icons, and all 89 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -11853,8 +11905,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>72</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>88</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>73</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>89</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -12182,7 +12234,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">72 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
+<p class="lead">73 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
 <div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div><div class="glyph packs-head"><code>leaftext</code></div><div class="glyph packs-head"><code>feather</code></div><div class="glyph packs-head"><code>lucide</code></div><div class="glyph packs-head"><code>tabler</code></div><div class="glyph packs-head"><code>remix</code></div><div class="glyph packs-head"><code>phosphor</code></div><div class="glyph packs-head"><code>heroicons</code></div></div>
 <div class="wall packs"><div class="glyph"><code>back-long</code></div><div class="glyph"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back-long"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>forward-long</code></div><div class="glyph"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-forward-long"></span></div></div>
@@ -12216,6 +12268,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>table</code></div><div class="glyph"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-table"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>image</code></div><div class="glyph"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-image"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>divider</code></div><div class="glyph"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-divider"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>note-frame</code></div><div class="glyph"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-note-frame"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>tag</code></div><div class="glyph"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-tag"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>comment</code></div><div class="glyph"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-comment"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-comment"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>workflow</code></div><div class="glyph"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-workflow"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-workflow"></span></div></div>
@@ -12258,7 +12311,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">88 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">89 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12326,6 +12379,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Document badge</h3><code class="built">.doc-badge</code><span class="built">markdown/events.rs, from {green: Shipped} in a document</span></header>
 <div class="stage"><div class="document-body"><p><span class="doc-badge doc-badge--green">Shipped</span> <span class="doc-badge doc-badge--amber">Next press, on hold</span> <span class="doc-badge doc-badge--red">Conflicts with #205</span> <span class="doc-badge doc-badge--gray">Backlog</span> <span class="doc-badge doc-badge--primary">In review</span></p><blockquote><p><span class="doc-badge doc-badge--gray">Ready</span> A badge keeps its words inside its own box in a quote.</p></blockquote><p>A badge and a tag are one drawing off this base, differing in the two things that mean something: <span class="doc-badge doc-badge--green">Shipped</span> says what state a thing is in, wears the square corner and cannot be pressed, and <a href="#" class="doc-badge doc-badge--gray" style="border-radius:var(--lt-radius-pill);text-decoration:none;cursor:pointer">#work</a> is a word the author wrote, wears the pill corner and takes the press that finds every note carrying it. The tag keeps the gray tone, because a tone means a state and a subject has none.</p><ul><li class="doc-badge-row"><span class="doc-badge doc-badge--green">Shipped</span> <strong>The release went out</strong><br>Both installers published and the download page moved.</li><li class="doc-badge-row"><span class="doc-badge doc-badge--red">Conflicts with #205</span> <strong>The pager</strong><br>A badge that is a whole sentence keeps its own column, so every title beside it stays on one left edge.</li><li class="doc-badge-row"><span class="doc-badge doc-badge--gray">Backlog</span> <strong>Nothing is waiting on this</strong></li></ul></div></div>
+</section>
+<section class="part">
+<header><h3>Document framed figure</h3><code class="built">.note-frame</code><span class="built">The note's own author, from a note- class in the document (markdown/rawhtml.rs is what lets one past)</span></header>
+<div class="stage"><div class="document-body"><figure class="note-frame"><div class="note-frame-head">Cost of a cover<span class="note-frame-aside">Per 1,000 covers</span></div><p>The body holds whatever blocks the writer put in the box &mdash; prose, a list, a table or a diagram &mdash; and each keeps the drawing it already has.</p><ul><li>A first point.</li><li>A second point.</li></ul><figcaption class="note-frame-caption">A caption under a line, on a sunken strip.</figcaption></figure></div></div>
 </section>
 <section class="part">
 <header><h3>Flowchart sheet</h3><code class="built">.flow-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js</span></header>

@@ -349,6 +349,63 @@ Four marks, and they are the app's list rather than yours — the same reason a 
 
 You do not have to type any of it. Choose words in the reading view and the [bar over them](07-editing.md) offers Badge, which asks which of the five colors and wraps exactly the words you chose; press it again over a badge and its color changes rather than a second badge appearing. On an empty line the [plus in the margin](07-editing.md) offers Badge too: pick a color, and a box asks what the badge says and offers the four marks, drawing the badge beside the field as you type it. Nothing is written into the note until there is something to draw. Both rows draw each color's name in that color, so the choice is made by looking rather than by reading.
 
+### Framed figures (Leaf extension)
+
+A titled box with a note in its top right, whatever you put inside it, and a caption under a line at the foot — for a figure, a worked example, a set of numbers, anything you want the reader to take as one thing rather than as the paragraphs around it.
+
+<figure class="note-frame">
+
+<div class="note-frame-head">
+
+Cost of a cover <span class="note-frame-aside">Per 1,000 covers</span>
+
+</div>
+
+The body holds whatever blocks you put in the box — prose, a list, a table, a diagram — and each keeps the drawing it already has.
+
+- A first point.
+- A second point.
+
+<figcaption class="note-frame-caption">
+
+A caption under a line, on a sunken strip.
+
+</figcaption>
+
+</figure>
+
+It is written as plain HTML with a class on it:
+
+```markdown
+<figure class="note-frame">
+
+<div class="note-frame-head">
+
+Cost of a cover <span class="note-frame-aside">Per 1,000 covers</span>
+
+</div>
+
+The body, with whatever blocks you want in it.
+
+<figcaption class="note-frame-caption">
+
+A caption under a line.
+
+</figcaption>
+
+</figure>
+```
+
+**The blank line around every piece of content is not a style — leave one out and the note stops being editable.** Markdown ends an HTML block at each blank line, which is what gives the title, the body and the caption each their own place in the file; written on consecutive lines the whole box is one block, and then no paragraph anywhere in the note can be clicked and typed in. **You do not have to remember any of it**: on an empty line the [plus in the margin](07-editing.md) offers **Framed figure**, which writes exactly this shape with the title under the caret, ready to type over. Every part of it is editable in place afterwards — click the title, the body or the caption and type.
+
+Four parts, and each is optional but the frame: `note-frame` on the box, `note-frame-head` on the title's line, `note-frame-aside` on the quiet note in its top right, and `note-frame-caption` on the caption. A frame missing its head, its body or its caption draws the parts it has.
+
+**Anywhere else, it is a figure.** A reader that has never heard of Leaftext drops the class and draws what is left — the title as a line of prose, the body as itself, and the caption as a caption, in that order. Nothing arrives as visible syntax, which is why the drawing is written this way rather than as a fenced block.
+
+**`note-` is the only class a document may name**, and it is what keeps this safe: every other class is stripped, so a note can draw a box of its own without being able to wear any part of the app's interface. A class that leaves the namespace takes the whole attribute with it rather than half-drawing something. There is no `style` on any tag, ever.
+
+**When to write the whole file as HTML instead.** A page with its own typography, grid and palette is better off as an `.html` file — Leaftext draws it exactly as its own stylesheet makes it, in a frame of its own ([HTML files](#html-files)). What that costs is everything that makes a note a note: nothing in it is editable in place, its links do not follow into your vault, and no script runs in it, so its diagrams do not draw. A framed figure is the answer when you want the box *and* the note.
+
 ### Images
 
 Image paths are resolved against the open file: relative paths (including `../` at any depth), absolute paths, and `file://` URLs all load. The title shows on hover:

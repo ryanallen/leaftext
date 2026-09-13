@@ -2234,6 +2234,7 @@
   --lt-icon-table: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M12 3v18M3 12h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-divider: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-note-frame: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='4' ry='4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 8h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 17h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
   --lt-icon-comment: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-workflow: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='13' y='13' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -2796,6 +2797,10 @@
 .lt-icon-divider {
   -webkit-mask-image: var(--lt-icon-divider);
   mask-image: var(--lt-icon-divider);
+}
+.lt-icon-note-frame {
+  -webkit-mask-image: var(--lt-icon-note-frame);
+  mask-image: var(--lt-icon-note-frame);
 }
 .lt-icon-tag {
   -webkit-mask-image: var(--lt-icon-tag);
@@ -6811,6 +6816,53 @@ body.has-reader-toolbar:not(.is-embedded) {
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
+}
+/* A framed figure the note's author asked for. The only class a document may name is one beginning `note-` (`markdown/rawhtml.rs`), and this is the first drawing through that door: a titled box with a quiet note in its head, whatever blocks the writer put in the body, and a caption on a sunken strip at the foot. Keyed on `.document-body` like every other document rule, so it draws inside a note and nowhere else. */
+.document-body .note-frame {
+  margin: var(--lt-space-24) 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  /* The two hairlines inside it are the head's and the caption's own borders, so a frame missing either part has no rule floating where that part would have been. */
+  overflow: hidden;
+}
+/* The head is plain text in a `div` rather than a heading, so a frame's title stays out of the document outline and the minimap's heading list — and in a reader that has never heard of Leaftext it reads as the paragraph a figure's title should be. */
+.document-body .note-frame-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--lt-space-8);
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-35);
+}
+/* The note in the head's top right: quieter and smaller than the title, and pushed to the far end by the head's own spacing rather than by a float, so a long title wraps above it instead of running under it. */
+.document-body .note-frame-aside {
+  color: var(--lt-muted-foreground);
+  font-size: 0.85em;
+  font-weight: var(--lt-weight-400);
+}
+/* The body is whatever the writer put between the head and the caption, so it takes the frame's padding and nothing else — a paragraph, a list, a table or a diagram each keeps the drawing it already has. The first and last blocks lose their outer margin so the box closes on them rather than on a band of empty page. */
+.document-body .note-frame > :not(.note-frame-head):not(.note-frame-caption) {
+  padding-left: var(--lt-space-16);
+  padding-right: var(--lt-space-16);
+}
+.document-body .note-frame > :not(.note-frame-head):first-child {
+  padding-top: var(--lt-space-16);
+}
+.document-body .note-frame > :not(.note-frame-caption):last-child {
+  padding-bottom: var(--lt-space-16);
+}
+/* The caption sits on a recess under its own hairline, the way the head sits over one, so the two ends of the box read as the same kind of edge. */
+.document-body .note-frame-caption {
+  padding: var(--lt-space-10) var(--lt-space-16);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface-sunken);
+  color: var(--lt-muted-foreground);
+  font-size: 0.9em;
+  line-height: var(--lt-leading-1-45);
 }
 /* ---- The block gutter --------------------------------------------------
    The handle you drag a block by and the plus that writes a new one, in the page's left margin. Positioned inside .reader-layout (the reader's positioned ancestor), so it scrolls with the document instead of being chased down the page by a scroll handler. See block-controls.js.

@@ -184,6 +184,7 @@ Press it and a row of kinds fans out over the empty line, unfurling rather than 
 | Image | [The image box](#images) |
 | Flowchart | [The flowchart editor](#the-flowchart-editor) |
 | Divider | A horizontal rule |
+| Framed figure | A [framed figure](01-rendering.md#framed-figures-leaf-extension) with its title selected, so the first keystroke replaces it |
 | Badge | [The badge box](#badges) |
 
 The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
