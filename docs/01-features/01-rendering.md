@@ -11,7 +11,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Core Markdown | Headings, paragraphs, lists, links, images, blockquotes, rules, inline code |
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
-| Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces; [badges](#badges-leaf-extension) — words as inline code with a color name in a comment after them |
+| Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces; [badges](#badges-leaf-extension) — words as inline code with a color name, or a hex color of your own, in a comment after them; [bars](#bars-leaf-extension) — a list whose items end in an amount, drawn on one scale, in a color name or a hex color of your own |
 | Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width, opening on the whole window, and saving out as a PNG, a WebP, a JPEG, a PDF or a Markdown document |
 | Safety | Sanitized HTML allowlist |
 | [XML](#any-xml) | Any `.xml` file: sections, label/value fields, record tables, links |
@@ -326,7 +326,21 @@ Four named colors, and no more of those, because the [theme families](06-themes.
 
 `primary` is the fifth and it is not a color you pick — it is whatever color the theme you are in is recognized by, so the same badge is green on one family and violet on the next. That is also why it is the one tone allowed to land on top of a named one: on a family whose action color is its green, `primary` and `green` are the same color, because the family really is green.
 
-The words are yours and the color is the app's. A color name the app does not know is not a badge at all — ``` `bar`<!--foo--> ``` stays plain code and its comment stays hidden, so a typo shows rather than drawing a badge in no color — and a document cannot name a color of its own, which is what keeps a badge looking like part of the theme rather than part of the file. Written inside a longer code span or a fenced block, the syntax stays literal, so this page can show it without drawing one.
+The words are yours and a named color is the app's. A name the app does not know is not a badge at all — ``` `bar`<!--foo--> ``` stays plain code and its comment stays hidden, so a typo shows rather than drawing a badge in no color. Written inside a longer code span or a fenced block, the syntax stays literal, so this page can show it without drawing one.
+
+**A color of your own.** Where the five do not answer — a client, a project, a category — put `#` and an opaque hex color where a color name goes, in either spelling:
+
+| Syntax | Looks like |
+| --- | --- |
+| ``` `Design`<!--#3b82f6--> ``` | `Design`<!--#3b82f6--> |
+| ``` `Client`<!--#b45309 icon:tag--> ``` | `Client`<!--#b45309 icon:tag--> |
+| `{#0a7: Field notes}` | {#0a7: Field notes} |
+
+Three digits or six, in either letter case, and the marks work the way they do on a named color. Your digits are kept exactly as you typed them, so editing that paragraph writes the badge back in your own color; choosing one of the five in the bar over your words replaces it with that color, which is the way back out.
+
+**Only those two lengths.** Four and eight digits carry transparency, which would make the drawn color — and whether it can be read at all — depend on whatever lies behind the badge, so they are not a color here. Anything else is not one either: a missing `#`, a digit that is not hex, any other length. Each of those stays exactly the characters you typed, the same way an unknown color name does.
+
+**A color you write is yours to check.** The five named ones were measured against every theme family's page and each is readable on all of them; a color out of your file is the same color on a light page and a dark one, and nothing changes it for you. Pick one that can be read on both, or use a named color and let the theme answer for it.
 
 **A badge is not a tag.** They are drawn from the same base on purpose, and they differ in the two things that mean something: a badge wears a square corner and cannot be pressed, because it is a label saying what state a thing is in; a [tag chip](07-editing.md#the-fields-at-the-top-of-a-note) wears a fully rounded corner and carries its `#`.
 
@@ -348,6 +362,46 @@ The words are yours and the color is the app's. A color name the app does not kn
 Four marks, and they are the app's list rather than yours — the same reason a button's marks are a short list. A name that is not on it is not a badge at all: the words stay plain code, so a typo shows rather than drawing a badge with a blank where its mark should be.
 
 You do not have to type any of it. Choose words in the reading view and the [bar over them](07-editing.md) offers Badge, which asks which of the five colors and wraps exactly the words you chose; press it again over a badge and its color changes rather than a second badge appearing. On an empty line the [plus in the margin](07-editing.md) offers Badge too: pick a color, and a box asks what the badge says and offers the four marks, drawing the badge beside the field as you type it. Nothing is written into the note until there is something to draw. Both rows draw each color's name in that color, so the choice is made by looking rather than by reading.
+
+### Bars (Leaf extension)
+
+A list whose items end in an amount can be drawn as bars, so three numbers far apart in size are a comparison you see rather than three strings you compare in your head. End each item with its amount as inline code and a comment reading `bar` and a color name straight after it:
+
+```markdown
+- One picture per **section** `~$2,000,000`<!--bar red-->
+- One picture per **distinct course** `$75k–$200k`<!--bar amber-->
+- One picture per **archetype** — what we built `$56`<!--bar green-->
+```
+
+Each item is drawn as its words on the left, its amount on the right, and a track under both, filled as far as the amount reaches:
+
+- One picture per **section** `~$2,000,000`<!--bar red-->
+- One picture per **distinct course** `$75k–$200k`<!--bar amber-->
+- One picture per **archetype** — what we built `$56`<!--bar green-->
+
+**The number is read out of the amount you wrote**, so a bar can never disagree with the figure printed beside it. It is the first run of digits: commas between groups are skipped, one `.` is a decimal point, a `k`, `m` or `b` straight after it means thousands, millions or billions, and a minus straight before it makes it negative. `~$2,000,000` is two million, `1.5M` is one and a half million, and a range like `$75k–$200k` is drawn at its low end, which is the part that is certain.
+
+**Every bar in one list shares one scale**: the largest amount is a full track and the rest are measured against it, so the smallest is still a visible sliver rather than nothing. An amount ending in `%` is out of 100 instead, and one over 100% fills its track. A list nested under a bar is its own run with its own scale. Zero or a negative amount draws an empty track.
+
+**The colors are the badge's**: the five names `green`, `amber`, `red`, `gray` and `primary`, and a bare `<!--bar-->` takes `primary`, the theme's own color. Each of the five fills was measured against its track on every theme family.
+
+**A color of your own**, exactly as a badge takes one — put `#` and an opaque three- or six-digit hex color where a color name goes:
+
+```markdown
+- Client work `$2,000`<!--bar #3b82f6-->
+- Everything else `$500`<!--bar #f0a-->
+```
+
+- Client work `$2,000`<!--bar #3b82f6-->
+- Everything else `$500`<!--bar #f0a-->
+
+That color is yours, so whether the fill can be told apart from the track in both light and dark is yours too. The five names are measured for you; a color you name is not.
+
+A color that is neither one of the five names nor an opaque hex color leaves the item an ordinary list item, and so does an amount with no digit in it at all — a typo shows as plain words rather than as a bar at a made-up length.
+
+**Anywhere else, it is a list.** A Markdown reader that has never heard of Leaftext hides the comment and draws each item as its words with the amount as a code chip, so a note of bars still reads cleanly on GitHub or in another editor. The comment has to touch the amount and end the item's line, the way a badge's comment touches its words.
+
+Typing in a row's words keeps every bar in the list, and you do not have to type the syntax at all: on an empty line the [plus in the margin](07-editing.md) offers Bars. Pick a color, and a box asks what the bar is and how much, drawing the bar beside the fields as you type; Enter writes one row. Press the plus again on the line under it for the next bar, and it joins the same list and the same scale.
 
 ### Framed figures (Leaf extension)
 

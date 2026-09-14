@@ -112,7 +112,7 @@ Highlight words and a small bar appears over them: bold, italic, strikethrough, 
 
 ![One paragraph lifted out of a document mid-drag, floating over the page while its neighbors slide together to close the gap it left](imgs/block-gutter.png)
 
-Take the handle and a block lifts off the page; drop it where its neighbors have opened a gap. Press the plus on an empty line and [a row of block kinds](docs/01-features/07-editing.md#adding-a-block) fans out — text, heading, list, quote, code, table, image, flowchart, divider. **[The block gutter →](docs/01-features/07-editing.md#the-block-gutter)**
+Take the handle and a block lifts off the page; drop it where its neighbors have opened a gap. Press the plus on an empty line and [a row of block kinds](docs/01-features/07-editing.md#adding-a-block) fans out — text, heading, list, quote, code, table, image, flowchart, divider, framed figure, badge and bars. **[The block gutter →](docs/01-features/07-editing.md#the-block-gutter)**
 
 ### Restructure a table without typing a pipe
 

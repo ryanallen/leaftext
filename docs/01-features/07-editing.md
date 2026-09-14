@@ -28,7 +28,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
 | [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
-| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, badge |
+| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, framed figure, badge, bars |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
@@ -186,6 +186,7 @@ Press it and a row of kinds fans out over the empty line, unfurling rather than 
 | Divider | A horizontal rule |
 | Framed figure | A [framed figure](01-rendering.md#framed-figures-leaf-extension) with its title selected, so the first keystroke replaces it |
 | Badge | [The badge box](#badges) |
+| Bars | [The bars box](#bars) |
 
 The first four **open** a block rather than writing one: you get an empty block of that kind showing gray placeholder wording, and **nothing reaches the file until your first keystroke**. Pick Heading and change your mind and the page is as it was — no stray word left in the document. Picking a kind on a line that is already empty just changes what that line is, rather than adding a second one.
 
@@ -219,6 +220,14 @@ The badge button asks before it writes anything. Press it and the row swaps for 
 - Pick a tone and a box opens for the words the badge carries, with a live badge of that tone beside the field, so what is being written is on screen while it is typed. `Enter` writes it; `Enter` with nothing typed writes nothing.
 - The box also offers a **mark** — a check, a cross, a tag or an update arrow — drawn as itself; picking one puts it in the badge beside the words, and pressing the one already on takes it off.
 - What lands is one [badge](01-rendering.md#badges-leaf-extension) on the line, and never a list item: a status list is a list you write as a list.
+
+#### Bars
+
+The bars button asks the same way. Press it and the row swaps for the same tones the badge offers; pick one and a box opens with two fields — what the bar is, and how much — and a live bar of that tone above them that redraws on every keystroke.
+
+- The live bar is drawn full, because one amount on its own is its own scale. In the document a run of bars shares one scale, so the largest amount fills its track and every other bar is drawn against it.
+- `Enter` in either field writes the row once both fields hold something, and writes nothing otherwise. `Escape` folds the row away.
+- What lands is one [bar](01-rendering.md#bars-leaf-extension) — a label, the amount as inline code, and the marker that gives it its tone — so a reader whose app has never heard of Leaftext still sees the label and its number.
 
 ### Editing a table
 

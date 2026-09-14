@@ -2236,6 +2236,7 @@
   --lt-icon-divider: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-note-frame: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='4' ry='4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 8h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 17h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
+  --lt-icon-chart-bar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v16a2 2 0 0 0 2 2h16'/%3E%3Cpath d='M7 16h8'/%3E%3Cpath d='M7 11h12'/%3E%3Cpath d='M7 6h3'/%3E%3C/svg%3E");
   --lt-icon-comment: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-workflow: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='13' y='13' width='8' height='8' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-zoom-in: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M21 21l-4.35-4.35M8 11h6M11 8v6' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -2385,6 +2386,7 @@
   --lt-icon-image: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-image' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2' /%3E%3Ccircle cx='9' cy='9' r='2' /%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21' /%3E%3C/svg%3E");
   --lt-icon-divider: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-minus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M5 12h14' /%3E%3C/svg%3E");
   --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
+  --lt-icon-chart-bar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v16a2 2 0 0 0 2 2h16'/%3E%3Cpath d='M7 16h8'/%3E%3Cpath d='M7 11h12'/%3E%3Cpath d='M7 6h3'/%3E%3C/svg%3E");
   --lt-icon-comment: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-message-square' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z' /%3E%3C/svg%3E");
   --lt-icon-workflow: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-workflow' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='8' height='8' x='3' y='3' rx='2' /%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4' /%3E%3Crect width='8' height='8' x='13' y='13' rx='2' /%3E%3C/svg%3E");
   --lt-icon-zoom-in: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-zoom-in' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='11' cy='11' r='8' /%3E%3Cline x1='21' x2='16.65' y1='21' y2='16.65' /%3E%3Cline x1='11' x2='11' y1='8' y2='14' /%3E%3Cline x1='8' x2='14' y1='11' y2='11' /%3E%3C/svg%3E");
@@ -2805,6 +2807,10 @@
 .lt-icon-tag {
   -webkit-mask-image: var(--lt-icon-tag);
   mask-image: var(--lt-icon-tag);
+}
+.lt-icon-chart-bar {
+  -webkit-mask-image: var(--lt-icon-chart-bar);
+  mask-image: var(--lt-icon-chart-bar);
 }
 .lt-icon-comment {
   -webkit-mask-image: var(--lt-icon-comment);
@@ -6727,6 +6733,85 @@ body.has-reader-toolbar:not(.is-embedded) {
 .document-body li.doc-badge-row + li.doc-badge-row {
   border-top: var(--lt-stroke-1) solid var(--lt-border);
 }
+/* A bar: a list item ending in an amount and a bar marker, drawn as its label with the amount on the end edge and a track under both. A grid, because every child here is the renderer's own and there are exactly three, so every track runs the same width and every amount ends on the same edge whatever the label's length. */
+.document-body li.doc-bar-row {
+  list-style: none;
+  margin-left: -2em;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--lt-space-16);
+  row-gap: var(--lt-space-4);
+  align-items: baseline;
+}
+.document-body li.doc-bar-row + li.doc-bar-row {
+  margin-top: var(--lt-space-12);
+}
+/* A list nested under a bar is its own run, under the track rather than squeezed into the label's cell. */
+.document-body li.doc-bar-row > :is(ul, ol) {
+  grid-column: 1 / -1;
+}
+/* The amount is the number the bar is drawn from, so it reads as a figure rather than as a piece of code sitting in a sentence: no ground, and digits that line up down the column. */
+:is(.document-body, .app-surface) code.doc-bar-amount {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-family: var(--code-font);
+  font-weight: var(--lt-weight-600);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  white-space: nowrap;
+}
+/* The meter draws its own fill from `value` over `max`, so no width is ever written by anybody. */
+:is(.document-body, .app-surface) meter.doc-bar {
+  appearance: none;
+  display: block;
+  grid-column: 1 / -1;
+  inline-size: 100%;
+  block-size: 0.5em;
+  background: none;
+  border: none;
+}
+:is(.document-body, .app-surface) meter.doc-bar::-webkit-meter-bar {
+  background: var(--lt-surface-sunken);
+  border: none;
+  border-radius: var(--lt-radius-xs);
+  block-size: 100%;
+}
+/* A floor, so the smallest amount in a comparison is still a mark on the track rather than nothing — the sliver is the point of the drawing. */
+:is(.document-body, .app-surface) meter.doc-bar::-webkit-meter-optimum-value {
+  background: var(--doc-bar-fill);
+  border-radius: var(--lt-radius-xs);
+  min-inline-size: 3px;
+}
+/* Its own rule: an engine drops a whole selector list holding a pseudo-element it does not know. */
+:is(.document-body, .app-surface) meter.doc-bar::-moz-meter-bar {
+  background: var(--doc-bar-fill);
+  border-radius: var(--lt-radius-xs);
+  min-inline-size: 3px;
+}
+:is(.document-body, .app-surface) meter.doc-bar--green {
+  --doc-bar-fill: var(--lt-success);
+}
+:is(.document-body, .app-surface) meter.doc-bar--amber {
+  --doc-bar-fill: var(--lt-warning);
+}
+:is(.document-body, .app-surface) meter.doc-bar--red {
+  --doc-bar-fill: var(--lt-danger);
+}
+:is(.document-body, .app-surface) meter.doc-bar--gray {
+  --doc-bar-fill: var(--lt-muted-foreground);
+}
+/* `primary-ink` rather than `primary`, which falls under 3:1 on its own track on two light families. */
+:is(.document-body, .app-surface) meter.doc-bar--primary {
+  --doc-bar-fill: var(--lt-primary-ink);
+}
+/* A zero or negative amount has no length, so the floor goes and the track stays empty. */
+:is(.document-body, .app-surface) meter.doc-bar--empty::-webkit-meter-optimum-value {
+  min-inline-size: 0;
+}
+:is(.document-body, .app-surface) meter.doc-bar--empty::-moz-meter-bar {
+  min-inline-size: 0;
+}
 /* Ordered lists follow the classic outline sequence by depth (I, A, 1, a, i) rather than restarting at decimal each level. */
 .document-body ol {
   list-style-type: upper-roman;
@@ -6988,6 +7073,23 @@ body.has-reader-toolbar:not(.is-embedded) {
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-400);
   line-height: var(--lt-leading-1-2);
+}
+/* The live bar beside the bar box's two fields: the document's own row drawing, label and amount over a full track, at a width that leaves the fields room. */
+.block-insert-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--lt-space-8);
+  row-gap: var(--lt-space-2);
+  align-items: baseline;
+  flex: 0 0 160px;
+  color: var(--lt-markdown-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+.block-insert-bar .doc-bar-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .block-insert-url:focus {
   border-color: var(--lt-accent, var(--lt-border));
