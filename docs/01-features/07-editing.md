@@ -28,7 +28,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
 | [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
-| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, framed figure, badge, bars |
+| [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, framed figure, cards, badge, bars |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
@@ -185,6 +185,7 @@ Press it and a row of kinds fans out over the empty line, unfurling rather than 
 | Flowchart | [The flowchart editor](#the-flowchart-editor) |
 | Divider | A horizontal rule |
 | Framed figure | A [framed figure](01-rendering.md#framed-figures-leaf-extension) with its title selected, so the first keystroke replaces it |
+| Cards | A choice of two [prose or four compact cards](01-rendering.md#cards-across-the-page-leaf-extension), each opening on an empty heading with the caret in the first |
 | Badge | [The badge box](#badges) |
 | Bars | [The bars box](#bars) |
 

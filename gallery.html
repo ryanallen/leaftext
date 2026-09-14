@@ -2242,6 +2242,7 @@
   --lt-icon-table: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M12 3v18M3 12h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-divider: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12h14' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-cards: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='8' height='14' rx='2' ry='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Crect x='13' y='5' width='8' height='9' rx='2' ry='2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-note-frame: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='3' width='18' height='18' rx='4' ry='4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 8h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M3 17h18' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z'/%3E%3Ccircle cx='7.5' cy='7.5' r='.5' fill='%23000'/%3E%3C/svg%3E");
   --lt-icon-chart-bar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3v16a2 2 0 0 0 2 2h16'/%3E%3Cpath d='M7 16h8'/%3E%3Cpath d='M7 11h12'/%3E%3Cpath d='M7 6h3'/%3E%3C/svg%3E");
@@ -2807,6 +2808,10 @@
 .lt-icon-divider {
   -webkit-mask-image: var(--lt-icon-divider);
   mask-image: var(--lt-icon-divider);
+}
+.lt-icon-cards {
+  -webkit-mask-image: var(--lt-icon-cards);
+  mask-image: var(--lt-icon-cards);
 }
 .lt-icon-note-frame {
   -webkit-mask-image: var(--lt-icon-note-frame);
@@ -6956,6 +6961,41 @@ body.has-reader-toolbar:not(.is-embedded) {
   color: var(--lt-muted-foreground);
   font-size: 0.9em;
   line-height: var(--lt-leading-1-45);
+}
+/* Cards the note's author set across the page. `auto-fill` keeps a lone last card the width of the ones above it, the inner `min` lets one card fit a column narrower than its minimum, and start alignment leaves each card its own height rather than the tallest one's. */
+.document-body .note-card-grid {
+  --note-card-min: 18em;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--note-card-min)), 1fr));
+  align-items: start;
+  gap: var(--lt-space-16);
+  margin: var(--lt-space-24) 0;
+}
+/* Short figures and swatches: the same grid with a smaller floor, so three or four fit across the measure. */
+.document-body .note-card-grid-compact {
+  --note-card-min: 9em;
+}
+.document-body .note-card {
+  min-width: 0;
+  padding: var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  overflow-wrap: anywhere;
+}
+/* A swatch card: the color the card's own code line named, as a band across its top. The band is the document's color rather than the theme's, like a picture, and the words under it keep the theme's ink. */
+.document-body .note-card.is-swatch-card {
+  padding-top: calc(var(--lt-space-48) + var(--lt-space-16));
+  background-image: linear-gradient(var(--note-card-swatch), var(--note-card-swatch));
+  background-size: 100% var(--lt-space-48);
+  background-repeat: no-repeat;
+}
+/* The card's padding is its edge, so the first and last blocks inside lose the margin that would otherwise sit inside it. */
+.document-body .note-card > :first-child {
+  margin-top: 0;
+}
+.document-body .note-card > :last-child {
+  margin-bottom: 0;
 }
 /* ---- The block gutter --------------------------------------------------
    The handle you drag a block by and the plus that writes a new one, in the page's left margin. Positioned inside .reader-layout (the reader's positioned ancestor), so it scrolls with the document instead of being chased down the page by a scroll handler. See block-controls.js.
@@ -11987,7 +12027,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 74 icons, and all 90 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 75 icons, and all 93 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -12008,8 +12048,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>74</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>90</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>75</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>93</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -12337,7 +12377,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">74 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
+<p class="lead">75 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
 <div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div><div class="glyph packs-head"><code>leaftext</code></div><div class="glyph packs-head"><code>feather</code></div><div class="glyph packs-head"><code>lucide</code></div><div class="glyph packs-head"><code>tabler</code></div><div class="glyph packs-head"><code>remix</code></div><div class="glyph packs-head"><code>phosphor</code></div><div class="glyph packs-head"><code>heroicons</code></div></div>
 <div class="wall packs"><div class="glyph"><code>back-long</code></div><div class="glyph"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back-long"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>forward-long</code></div><div class="glyph"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-forward-long"></span></div></div>
@@ -12371,6 +12411,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>table</code></div><div class="glyph"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-table"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-table"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>image</code></div><div class="glyph"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-image"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-image"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>divider</code></div><div class="glyph"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-divider"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-divider"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>cards</code></div><div class="glyph"><span class="lt-icon lt-icon-cards"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-cards"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-cards"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-cards"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-cards"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-cards"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-cards"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>note-frame</code></div><div class="glyph"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-note-frame"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-note-frame"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>tag</code></div><div class="glyph"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-tag"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-tag"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>chart-bar</code></div><div class="glyph"><span class="lt-icon lt-icon-chart-bar"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-chart-bar"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-chart-bar"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-chart-bar"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-chart-bar"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-chart-bar"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-chart-bar"></span></div></div>
@@ -12415,7 +12456,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">90 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">93 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12491,6 +12532,18 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Document framed figure</h3><code class="built">.note-frame</code><span class="built">The note's own author, from a note- class in the document (markdown/rawhtml.rs is what lets one past)</span></header>
 <div class="stage"><div class="document-body"><figure class="note-frame"><div class="note-frame-head">Cost of a cover<span class="note-frame-aside">Per 1,000 covers</span></div><p>The body holds whatever blocks the writer put in the box &mdash; prose, a list, a table or a diagram &mdash; and each keeps the drawing it already has.</p><ul><li>A first point.</li><li>A second point.</li></ul><figcaption class="note-frame-caption">A caption under a line, on a sunken strip.</figcaption></figure></div></div>
+</section>
+<section class="part">
+<header><h3>Document card grid</h3><code class="built">.note-card-grid</code><span class="built">The note's own author, from a note-card-grid wrapper in the document, or note-card-grid note-card-grid-compact for short cards</span></header>
+<div class="stage"><div class="document-body"><div class="note-card-grid"><div class="note-card"><h2>Can do today</h2><ul><li>Read a note</li><li>Edit it in place</li></ul></div><div class="note-card"><h2>Cannot do today</h2><ul><li>Sync a vault</li><li>Share a link</li><li>Print a range</li><li>Record a voice note</li></ul></div></div><div class="note-card-grid note-card-grid-compact"><div class="note-card"><p>Readers</p><p><strong>1,204</strong></p></div><div class="note-card"><p>Notes</p><p><strong>86</strong></p></div><div class="note-card"><p>Vaults</p><p><strong>3</strong></p></div><div class="note-card"><p>Themes</p><p><strong>12</strong></p></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Document card</h3><code class="built">.note-card</code><span class="built">The note's own author, from a note-card wrapper inside a card grid</span></header>
+<div class="stage"><div class="document-body"><div class="note-card-grid"><div class="note-card"><h2>A card</h2><p>Whatever Markdown the writer put in it, keeping its own drawing.</p></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Document swatch card</h3><code class="built">.note-card</code><span class="built">decorateNoteCards in decorate.js, from a card whose own paragraph is one code span starting with an opaque #RGB or #RRGGBB</span></header>
+<div class="stage"><div class="document-body"><div class="note-card-grid note-card-grid-compact"><div class="note-card is-swatch-card" style="--note-card-swatch:#14b8a6"><h3>Teal</h3><p><code>#14b8a6</code></p></div><div class="note-card is-swatch-card" style="--note-card-swatch:#b45309"><h3>Amber</h3><p><code>#b45309 brand</code></p></div><div class="note-card is-swatch-card" style="--note-card-swatch:#f0a"><h3>Pink</h3><p><code>#f0a</code></p></div><div class="note-card"><h3>Not a swatch</h3><p>A color like <code>#3b82f6</code> inside a sentence stays words.</p></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Flowchart sheet</h3><code class="built">.flow-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js</span></header>

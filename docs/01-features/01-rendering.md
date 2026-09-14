@@ -326,6 +326,8 @@ Four named colors, and no more of those, because the [theme families](06-themes.
 
 `primary` is the fifth and it is not a color you pick — it is whatever color the theme you are in is recognized by, so the same badge is green on one family and violet on the next. That is also why it is the one tone allowed to land on top of a named one: on a family whose action color is its green, `primary` and `green` are the same color, because the family really is green.
 
+There is no second theme color: in most families it is a shade of the main one, so a badge in it could not be told apart from `primary`.
+
 The words are yours and a named color is the app's. A name the app does not know is not a badge at all — ``` `bar`<!--foo--> ``` stays plain code and its comment stays hidden, so a typo shows rather than drawing a badge in no color. Written inside a longer code span or a fenced block, the syntax stays literal, so this page can show it without drawing one.
 
 **A color of your own.** Where the five do not answer — a client, a project, a category — put `#` and an opaque hex color where a color name goes, in either spelling:
@@ -459,6 +461,77 @@ Four parts, and each is optional but the frame: `note-frame` on the box, `note-f
 **`note-` is the only class a document may name**, and it is what keeps this safe: every other class is stripped, so a note can draw a box of its own without being able to wear any part of the app's interface. A class that leaves the namespace takes the whole attribute with it rather than half-drawing something. There is no `style` on any tag, ever.
 
 **When to write the whole file as HTML instead.** A page with its own typography, grid and palette is better off as an `.html` file — Leaftext draws it exactly as its own stylesheet makes it, in a frame of its own ([HTML files](#html-files)). What that costs is everything that makes a note a note: nothing in it is editable in place, its links do not follow into your vault, and no script runs in it, so its diagrams do not draw. A framed figure is the answer when you want the box *and* the note.
+
+### Cards across the page (Leaf extension)
+
+Several cards side by side, for things meant to be compared rather than read one after the next: two lists, a set of figures, a row of colors.
+
+<div class="note-card-grid">
+
+<div class="note-card">
+
+#### Can do today
+
+- Read a note
+- Edit it in place
+
+</div>
+
+<div class="note-card">
+
+#### Cannot do today
+
+- Sync a vault
+- Share a link
+- Record a voice note
+
+</div>
+
+</div>
+
+A grid wraps the cards, and each card holds whatever Markdown you like:
+
+```markdown
+<div class="note-card-grid">
+
+<div class="note-card">
+
+## Can do today
+
+- Read a note
+
+</div>
+
+<div class="note-card">
+
+## Cannot do today
+
+- Sync a vault
+
+</div>
+
+</div>
+```
+
+`note-card-grid` sets prose cards two across the reading column. Add `note-card-grid-compact` beside it — `<div class="note-card-grid note-card-grid-compact">` — for short cards, three or four across. Cards keep the order you wrote them in, each keeps its own height rather than stretching to its neighbor's, a last card on its own row keeps the width of the ones above it, and when the window is too narrow for two the cards stack into one column.
+
+**The blank lines are load-bearing here too**, for the same reason as in a [framed figure](#framed-figures-leaf-extension): around each wrapper and around every block inside a card. **You do not have to type it**: on an empty line the [plus in the margin](07-editing.md) offers **Cards**, then **Prose cards** (two) or **Compact cards** (four). Each card opens on an empty heading with the caret in the first one, so the first thing you type is the first card's title.
+
+**A figure in a card** is a one-column table with one row, which reads as a label over its value:
+
+```markdown
+<div class="note-card">
+
+| Readers |
+| --- |
+| 1,204 |
+
+</div>
+```
+
+**A color swatch.** A card whose own line is nothing but one code span starting with a color — `` `#14b8a6` `` — is drawn with a band of that color across its top. It takes an opaque hex color in its three- or six-digit spelling, and words may follow it inside the span: `` `#b45309 brand amber` ``. Anything else stays ordinary code: a four- or eight-digit color, one without the `#`, a color written inside a sentence, or a code span beside other words on its line. The band is your color rather than the theme's, like a picture, so it looks the same in light and dark.
+
+**Anywhere else, it is still a document.** A reader that has never heard of Leaftext drops the classes and draws every card's contents one after the next, in the order you wrote them, with nothing arriving as visible syntax — a swatch card is its heading and its code line.
 
 ### Images
 
