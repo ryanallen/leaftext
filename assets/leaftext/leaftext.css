@@ -8225,6 +8225,34 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The table is the one lane and every row a card standing on it, which is the shape the RDB board already draws a record in: the lane takes the reading view's tinted panel, the card takes the page it is printed on, and the room down the lane is what separates one record from the next. The board's own classes describe different markup, so the tokens travel and the selectors do not. */
 /* A column whose middle value cannot share a card line takes a line of its own, led by a rule — the one place a rule does work, since the card edge is what separates the records. Which columns those are is the renderer's answer, off the whole table, because no field name or cell position holds across documents; `data-leaf-long` is what it writes. A marked cell that opens a card draws no rule, because the card edge above it has already made the break. */
 /* The label is an eyebrow, which is the whole difference between a card that reads as a run of words and one whose fields can be found without reading them. Three quarters of the value rather than four fifths: at the reader's 14 pixels that is the 10.5 the app's own muted headings are already drawn at, and the narrower label packs one more field onto a card's first line. Relative rather than a token, because a document's text scales with the reader's setting and the label has to scale with it. */
+.document-body table.is-cell-card {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: var(--lt-markdown-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+}
+.document-body table.is-cell-card th,
+.document-body table.is-cell-card td {
+  background: none;
+  background-image: none;
+  border: 0;
+  padding: var(--lt-space-12);
+}
+.document-body table.is-figure-card th {
+  padding-bottom: 0;
+  color: var(--lt-muted-foreground);
+  font-size: 0.75em;
+  letter-spacing: var(--lt-tracking-040);
+  text-transform: uppercase;
+}
+.document-body table.is-figure-card td {
+  padding-top: 0;
+  font-size: 2em;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--lt-weight-400);
+}
 @media screen {
   @container (max-width: 720px) {
     /* The one place the card width is decided for the window, and the flag the changeover reads. A reader wider than this is left a grid however far it overflows its lane, so the bands and the Control wheel have something to run on. */

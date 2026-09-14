@@ -61,6 +61,7 @@ export async function instantiateCore(file) {
     // The same lines for a document inside somebody else's page, plus the one that says so. `unlocked` is whether the reader may type, since an embed draws no padlock to decide it with.
     embedBoot: (unlocked) => read(api.leaf_embed_boot_script(unlocked ? 1 : 0)),
     formats: () => read(api.leaf_formats()).split(' '),
+    vocabulary: () => JSON.parse(read(api.leaf_vocabulary()) || '{"rows":[]}'),
     documentScript: (source, path) => withStrings(api.leaf_document_script, source, path),
     glossaryScript: (href) => withStrings(api.leaf_glossary_script, href || ''),
     setGlossary: (text) => {

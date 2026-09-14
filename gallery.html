@@ -8233,6 +8233,34 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The table is the one lane and every row a card standing on it, which is the shape the RDB board already draws a record in: the lane takes the reading view's tinted panel, the card takes the page it is printed on, and the room down the lane is what separates one record from the next. The board's own classes describe different markup, so the tokens travel and the selectors do not. */
 /* A column whose middle value cannot share a card line takes a line of its own, led by a rule — the one place a rule does work, since the card edge is what separates the records. Which columns those are is the renderer's answer, off the whole table, because no field name or cell position holds across documents; `data-leaf-long` is what it writes. A marked cell that opens a card draws no rule, because the card edge above it has already made the break. */
 /* The label is an eyebrow, which is the whole difference between a card that reads as a run of words and one whose fields can be found without reading them. Three quarters of the value rather than four fifths: at the reader's 14 pixels that is the 10.5 the app's own muted headings are already drawn at, and the narrower label packs one more field onto a card's first line. Relative rather than a token, because a document's text scales with the reader's setting and the label has to scale with it. */
+.document-body table.is-cell-card {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  background: var(--lt-markdown-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+}
+.document-body table.is-cell-card th,
+.document-body table.is-cell-card td {
+  background: none;
+  background-image: none;
+  border: 0;
+  padding: var(--lt-space-12);
+}
+.document-body table.is-figure-card th {
+  padding-bottom: 0;
+  color: var(--lt-muted-foreground);
+  font-size: 0.75em;
+  letter-spacing: var(--lt-tracking-040);
+  text-transform: uppercase;
+}
+.document-body table.is-figure-card td {
+  padding-top: 0;
+  font-size: 2em;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--lt-weight-400);
+}
 @media screen {
   @container (max-width: 720px) {
     /* The one place the card width is decided for the window, and the flag the changeover reads. A reader wider than this is left a grid however far it overflows its lane, so the bands and the Control wheel have something to run on. */
@@ -12027,7 +12055,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 75 icons, and all 93 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 75 icons, and all 94 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -12049,7 +12077,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>75</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>93</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>94</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -12456,7 +12484,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">93 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">94 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12796,6 +12824,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Picture print sheet</h3><code class="built">.picture-print</code><span class="built">image-sheet.js, filled for one export and emptied on the answer</span></header>
 <div class="stage"><div class="picture-print" style="display:block"><img alt="The picture at its own size, the whole of what the sheet is made to" width="220" height="88" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='88'%3E%3Crect width='220' height='88' fill='%23b7c4b0'/%3E%3C/svg%3E"></div></div>
+</section>
+<section class="part">
+<header><h3>Cell card</h3><code class="built">.is-cell-card</code><span class="built">decorate.js</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay table-is-cell-card"><div class="table-lane table-is-cell-card"><table class="is-cell-card"><thead><tr><th>Cellar temperature is 12 degrees</th></tr></thead><tbody></tbody></table></div></div><div class="table-bay table-is-cell-card"><div class="table-lane table-is-cell-card"><table class="is-cell-card is-figure-card"><thead><tr><th>Cellar temperature</th></tr></thead><tbody><tr><td>12°</td></tr></tbody></table></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Table lens bar</h3><code class="built">.table-lens</code><span class="built">table-lens.js</span></header>

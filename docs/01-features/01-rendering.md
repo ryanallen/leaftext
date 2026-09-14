@@ -243,6 +243,8 @@ Every second body row is filled a shade back from the page, so a reader can foll
 
 A cell can also be one the app keeps right: a [formula line](../GLOSSARY.md#formula-line) commented under the table says what it is, and Leaftext rewrites it as the rows it reads change. See [Editing](07-editing.md#a-table-that-adds-itself-up).
 
+A table with one column and at most one body row draws as a card. A header on its own is one set-apart line; a body row makes the header a small label over a large figure. Point at the card to show its **Table** and **Card** switch, which changes only the page and never the file.
+
 **A table with a few rows in it can become a relational table.** Point at a table with a header row and two or more body rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
 
 A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — renders as a checkbox, so a table can carry a status column:
@@ -452,7 +454,7 @@ A caption under a line.
 </figure>
 ```
 
-**The blank line around every piece of content is not a style — leave one out and the note stops being editable.** Markdown ends an HTML block at each blank line, which is what gives the title, the body and the caption each their own place in the file; written on consecutive lines the whole box is one block, and then no paragraph anywhere in the note can be clicked and typed in. **You do not have to remember any of it**: on an empty line the [plus in the margin](07-editing.md) offers **Framed figure**, which writes exactly this shape with the title under the caret, ready to type over. Every part of it is editable in place afterwards — click the title, the body or the caption and type.
+**The blank line around every piece of content is not a style — leave one out and the note stops being editable.** Markdown ends an HTML block at each blank line, which is what gives the title, the body and the caption each their own place in the file; written on consecutive lines the whole box is one block, and then no paragraph anywhere in the note can be clicked and typed in. **You do not have to remember any of it**: on an empty line the [plus in the margin](07-editing.md) offers **Framed figure**, which writes exactly this shape with the title under the caret, ready to type over. Every part of it is editable in place afterwards — click the title, the body or the caption and type. Delete every word of the body and the frame keeps an empty line where it was, so there is still somewhere to click and type the next words, or to press the plus for another kind of block.
 
 Four parts, and each is optional but the frame: `note-frame` on the box, `note-frame-head` on the title's line, `note-frame-aside` on the quiet note in its top right, and `note-frame-caption` on the caption. A frame missing its head, its body or its caption draws the parts it has.
 
