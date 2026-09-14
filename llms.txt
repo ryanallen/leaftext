@@ -13,6 +13,7 @@
 - [Themes](https://leaftext.com/docs/01-features/06-themes.md)
 - [Editing](https://leaftext.com/docs/01-features/07-editing.md)
 - [Relational tables](https://leaftext.com/docs/01-features/08-relational-tables.md)
+- [Your Grove](https://leaftext.com/docs/01-features/09-progress.md)
 - [Meet Leaftext](https://leaftext.com/docs/01-introduction.md)
 - [Installation](https://leaftext.com/docs/02-installation.md)
 - [Quickstart](https://leaftext.com/docs/03-quickstart.md)

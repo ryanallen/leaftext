@@ -476,6 +476,8 @@ A button with nothing to open is left out and the row closes up around it. Openi
 
 Drag the pane narrower and the row stays one row: whatever no longer fits folds under a chevron at its end, the same one the app bar folds into, and opens upward as a menu. Widening puts each button back in its place. Close the pane and the row goes with it.
 
+Under the row sits the **Grove** pill, which opens [Your Grove](09-progress.md), the record of how you use Leaftext. A narrow pane shortens its words and keeps its leaf, and it goes with the row when the pane shuts.
+
 ## Layout
 
 | Behavior | Rule |

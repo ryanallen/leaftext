@@ -47,6 +47,11 @@
 - Markdown: https://leaftext.com/docs/01-features/08-relational-tables.md
 - Summary: Leaftext calls this RDB: a relational table view over a Markdown table. The table remains ordinary GFM, so it opens everywhere it did before. The desktop app adds the view while you read it; it doe...
 
+## Your Grove
+- Page: https://leaftext.com/docs/01-features/09-progress.md
+- Markdown: https://leaftext.com/docs/01-features/09-progress.md
+- Summary: Leaftext keeps a quiet record of what you do in it and shows it as your Grove: thirteen Growth areas, each leveled by its own kind of use, and a Grove level that adds them up. Nothing about it chan...
+
 ## Meet Leaftext
 - Page: https://leaftext.com/docs/01-introduction.md
 - Markdown: https://leaftext.com/docs/01-introduction.md

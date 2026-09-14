@@ -37,7 +37,8 @@ There is nothing to open. Every control changes the app the moment you use it an
 | File | Purpose |
 | --- | --- |
 | `{config_dir}/settings.json` | Preferences, the tabs to reopen, and any [unsaved edits](07-editing.md#save) the window was closed on |
-| `{config_dir}/recent-files.json` | Last 8 opened files |
+| `{config_dir}/recent-files.json` | The last 50 opened files, and your favorites |
+| `{config_dir}/profile.json` | [Your Grove](09-progress.md#where-it-is-kept): counts of what you do in Leaftext and the switch that turns the record off, never a file name or a word of a document |
 | `{config_dir}/mcp.json` | Outside tool servers, in the `mcpServers` shape, each started the first time something could use it. Written by hand; Leaftext reads it from this folder and from nowhere else — never from a vault, a document or a link. A server is switched off with `"disabled": true` rather than deleted |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/webview2` | WebView2 data |

@@ -311,6 +311,7 @@ New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a coup
 | [Themes](docs/01-features/06-themes.md) | The eleven families, appearance, fonts, diagram colors |
 | [Editing](docs/01-features/07-editing.md) | Inline editing, the block gutter, the flowchart editor, code view, save |
 | [Relational tables](docs/01-features/08-relational-tables.md) | RDB views, relations, sorting, filtering and optional table descriptions |
+| [Your Grove](docs/01-features/09-progress.md) | The reading record at the library's foot, and the switch that turns it off |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
 
 The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaftext itself.

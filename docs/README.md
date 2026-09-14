@@ -43,6 +43,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | [Themes](01-features/06-themes.md) | The eleven families (Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage), light/dark/System/Daylight appearance, on-demand Google Fonts, diagram colors, and the semantic token contract. All eleven are drawn on one page at [leaftext.com/gallery.html](https://leaftext.com/gallery.html) |
 | [Editing](01-features/07-editing.md) | Writing in the rendered page (blocks, the gutter, the format bar, the flowchart editor), the raw-source code view with typing help, and the explicit Save flow |
 | [Relational tables](01-features/08-relational-tables.md) | RDB views over Markdown tables: cards, boards, sorting, filtering, relations, and optional descriptions |
+| [Your Grove](01-features/09-progress.md) | The reading record: the Grove pill at the library's foot, the thirteen Growth areas and seeds, where `profile.json` is kept, and the switch that turns it off |
 
 ### Which page answers which question
 
@@ -60,6 +61,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | Why can't I click into this block? | [Editing → Formats](01-features/07-editing.md#formats) |
 | How do I draw a flowchart? | [Editing → The flowchart editor](01-features/07-editing.md#the-flowchart-editor) |
 | How do I turn a Markdown table into cards or a board? | [Relational tables](01-features/08-relational-tables.md) |
+| What is the Grove, and how do I turn it off? | [Your Grove → Turn it off](01-features/09-progress.md#turn-it-off) |
 | Where are my settings stored? | [Settings → Paths](01-features/05-settings.md#paths) |
 | How do updates work? | [Settings → Updates](01-features/05-settings.md#updates) |
 | How do I change the look? | [Themes → Choose](01-features/06-themes.md#choose) |

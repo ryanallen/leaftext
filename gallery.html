@@ -4734,7 +4734,7 @@ body.is-library-opening .library-scroll {
   display: flex;
 }
 .library-shell.library-narrow .library-foot {
-  display: block;
+  display: grid;
 }
 /* The library toggle sits in the app bar's lead, left of Back. Rests muted like the other secondary toolbar icons, greens on hover. */
 .library-open {
@@ -5050,6 +5050,11 @@ body.library-resizing button {
   bottom: 0;
   z-index: 2;
   box-sizing: border-box;
+  /* One column as wide as the launcher row, capped at the pane, so the Grove pill under it takes the row's width and follows it. */
+  display: grid;
+  grid-template-columns: minmax(0, max-content);
+  justify-content: start;
+  align-content: start;
   height: var(--library-foot-height);
   padding: var(--lt-space-4);
   background-color: var(--lt-surface);
@@ -5057,12 +5062,69 @@ body.library-resizing button {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
+/* A hairline over the foot, inset to the pane's margins and fading out toward both ends. */
+.library-foot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--lt-space-8);
+  right: var(--lt-space-8);
+  height: var(--lt-stroke-1);
+  background: linear-gradient(to right, transparent, var(--lt-border) 30%, var(--lt-border) 70%, transparent);
+  pointer-events: none;
+}
 /* As strong as the narrow pane's own display and after it, or a sheet would draw an empty row. */
 .library-shell .library-foot[hidden] {
   display: none;
 }
 .library-pane.has-foot {
   --library-foot-height: 40px;
+}
+/* The Grove pill takes one more row under the launchers: 4px between, 32 of its own. */
+.library-pane.has-foot.has-grove {
+  --library-foot-height: 76px;
+}
+/* The Grove pill. As wide as the launcher row above it and never wider, so it grows and shrinks with the row; its own words add nothing to the column's width, and a narrow row truncates the label and keeps the mark whole. */
+.library-profile {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+  box-sizing: border-box;
+  contain: inline-size;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 32px;
+  margin-top: var(--lt-space-4);
+  padding: 0 var(--lt-space-10) 0 var(--lt-space-6);
+  overflow: hidden;
+  cursor: default;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+.library-profile[hidden] {
+  display: none;
+}
+.library-profile:hover {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+.library-profile-mark {
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+.library-profile-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* One row that never wraps, spaced like the app bar's own run of actions; a pane too narrow for it clips at the divider rather than spilling past it. */
 .library-foot-rail {
@@ -10818,6 +10880,34 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-link-hover);
   text-decoration: underline;
 }
+/* The reading record — the same slide-up pattern at the shared ceiling, wide like the shape picker. What it holds is drawn in profile.css. */
+.grove-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  gap: var(--lt-space-10);
+  padding: 0 var(--lt-space-20) calc(var(--lt-space-16) + var(--sheet-raise));
+  background-color: var(--lt-background);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+}
+.grove-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  flex: none;
+}
+.grove-sheet-title {
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-18);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-2);
+}
+/* The record scrolls inside the sheet's own ceiling rather than growing the sheet past the window. */
+.grove-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 /* A month of the vault's documents — the same slide-up pattern, at the ordinary column. */
 .calendar-sheet {
   position: fixed;
@@ -10955,7 +11045,214 @@ body.is-home-row-dragging .home-list-scroll li {
 .calendar-month.is-one-day {
   grid-template-columns: minmax(0, 1fr);
 }
-/* ---- The flowchart sheet ------------------------------------------------
+/* The Grove's contents: the seeds and the switch in the sheet's header, the total, and the Growth areas with their level bars. The sheet's own frame is in sheets.css and the pill in library.css. */
+.grove-sheet-seeds {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+}
+/* The one switch that turns the whole record off. Pushed to the far end of the header, beside the close cross, and drawn quiet so it never reads as the sheet's main action. */
+.grove-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  margin-left: auto;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  cursor: default;
+  border: var(--lt-stroke-1) solid transparent;
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+}
+.grove-switch:hover {
+  background: var(--lt-wash-hover);
+  border-color: transparent;
+  color: var(--lt-foreground);
+}
+.grove-switch-track {
+  flex: none;
+  width: 28px;
+  height: 16px;
+  padding: var(--lt-space-2);
+  box-sizing: border-box;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border);
+  transition: background-color var(--lt-duration-120) var(--lt-ease);
+}
+.grove-switch-thumb {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-accent-foreground);
+  transition: transform var(--lt-duration-120) var(--lt-ease);
+}
+.grove-switch-track.is-on {
+  background: var(--lt-accent);
+}
+.grove-switch-thumb.is-on {
+  transform: translateX(12px);
+}
+.grove-level-total {
+  margin: 0 0 var(--lt-space-12);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-700);
+}
+/* As many 220px columns of areas as the room beside the Landmarks holds. */
+.grove-areas {
+  flex: 3 1 440px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--lt-space-8) var(--lt-space-20);
+  /* Each card its own height: Leafing's strip of formats must not stretch the card beside it. */
+  align-items: start;
+}
+.grove-area {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--lt-space-4) var(--lt-space-8);
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.grove-area-name {
+  overflow: hidden;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grove-area-level {
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+/* What the area counts, under its name, so a name like Leafing explains itself. */
+.grove-area-about {
+  grid-column: 1 / -1;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+.grove-area-note {
+  grid-column: 1 / -1;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+}
+/* How far into its current level an area has grown. */
+.grove-level-bar {
+  grid-column: 1 / -1;
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border);
+}
+.grove-level-bar-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-accent);
+  transform: scaleX(var(--grove-fill, 0));
+  transform-origin: left center;
+}
+/* Nothing earned yet: the row is there to be pressed, and says so quietly. */
+.grove-area-level.is-unstarted {
+  color: var(--lt-muted-foreground);
+}
+.grove-off {
+  margin: 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+}
+/* The year: its days in order, wrapping to fill the sheet's whole width with square cells at least 10px across. Four steps of the accent, so one enormous day does not wash every other day out. */
+.grove-year {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10px, 1fr));
+  gap: var(--lt-space-2);
+  margin: 0 0 var(--lt-space-16);
+}
+.grove-day {
+  aspect-ratio: 1;
+  border-radius: var(--lt-radius-xs);
+  background: var(--lt-border);
+}
+.grove-day.is-future {
+  background: transparent;
+}
+.grove-day-shade-1 {
+  background: color-mix(in srgb, var(--lt-accent) 30%, var(--lt-border));
+}
+.grove-day-shade-2 {
+  background: color-mix(in srgb, var(--lt-accent) 55%, var(--lt-border));
+}
+.grove-day-shade-3 {
+  background: color-mix(in srgb, var(--lt-accent) 80%, var(--lt-border));
+}
+.grove-day-shade-4 {
+  background: var(--lt-accent);
+}
+/* The areas beside the Landmarks where the sheet has room, the Landmarks under them where it has not. A wrap on the sheet's own width rather than a window query: the sheet is a share of the window, and a column squeezed to a sliver is what a window query let through. */
+.grove-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-16) var(--lt-space-20);
+  align-items: flex-start;
+}
+/* Under an area's bar: the formats Leafing has read, or why Foraging stops where it does. */
+.grove-strip {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-4);
+}
+.grove-strip-note {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+}
+.grove-chip {
+  padding: 0 var(--lt-space-6);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+  line-height: var(--lt-leading-1-6);
+}
+.grove-chip.is-read {
+  border-color: var(--lt-accent);
+  background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
+  color: var(--lt-primary-ink);
+}
+/* Four high-water marks, a label over its figure. */
+.grove-landmarks {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: grid;
+  gap: var(--lt-space-8);
+  margin: 0;
+}
+.grove-landmark {
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.grove-landmark-label {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+}
+.grove-landmark-value {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+}/* ---- The flowchart sheet ------------------------------------------------
    Full screen, unlike the other two sheets: it is an editor, not something to glance at, and it has two panes to fit. No grab bar for the same reason — a sheet you can flick away is wrong over unsaved work. */
 .flow-sheet[hidden] {
   display: none;
@@ -11862,8 +12159,9 @@ body.is-home-row-dragging .home-list-scroll li {
     width: min(680px, 92%);
     translate: -50%;
   }
-  /* Except the flowchart picker, which is two columns of drawings rather than a column of text. It takes nearly the whole editor, because that is what it takes to read forty-seven shapes without scrolling for every one. */
-  .flow-picker {
+  /* Except the flowchart picker, which is two columns of drawings rather than a column of text, and the Grove, which is columns of bars for the same reason. It takes nearly the whole editor, because that is what it takes to read forty-seven shapes without scrolling for every one. */
+  .flow-picker,
+  .grove-sheet {
     width: 85%;
   }
 }
@@ -12316,7 +12614,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 96 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 11 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 104 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -12338,7 +12636,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>96</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>104</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -12748,7 +13046,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">96 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">104 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -12890,6 +13188,38 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="library-foot" style="position:static;height:40px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Scheduled tasks"><span class="lt-icon lt-icon-check-circle"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Favorites"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div></div></div>
 </section>
 <section class="part">
+<header><h3>Profile pill</h3><code class="built">.library-profile</code><span class="built">app-shell.html, drawn by profile.js under the library foot's launchers</span></header>
+<div class="stage"><div class="library-foot" style="position:static;height:76px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div><button type="button" class="library-profile" aria-label="Your Grove, level 178"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">Grove 178</span></button></div><div class="library-foot" style="position:static;height:76px;width:80px;margin-top:12px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div><button type="button" class="library-profile" aria-label="Your Grove, level 178"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">Grove 178</span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Grove sheet</h3><code class="built">.grove-sheet</code><span class="built">app-shell.html, driven by profile.js</span></header>
+<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><span class="grove-sheet-seeds">165 seeds</span><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><p class="grove-level-total">Grove 178</p><div class="grove-areas"><div class="grove-area"><span class="grove-area-name">Leafing</span><span class="grove-area-level">Level 24</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.4"></span></span><span class="grove-area-note">285 XP</span></div><div class="grove-area"><span class="grove-area-name">Charting</span><span class="grove-area-level is-unstarted">Level 1</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-area-note">Not started</span></div></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><button type="button" class="grove-switch" role="switch" aria-checked="false"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track"><span class="grove-switch-thumb"></span></span></button></div><div class="grove-sheet-body"><p class="grove-off">Nothing is being counted. Turn the record back on to keep growing your Grove.</p></div></div></div>
+</section>
+<section class="part">
+<header><h3>Grove switch</h3><code class="built">.grove-switch</code><span class="built">profile.js, in the Grove sheet's header</span></header>
+<div class="stage"><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button> <button type="button" class="grove-switch" role="switch" aria-checked="false"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track"><span class="grove-switch-thumb"></span></span></button></div>
+</section>
+<section class="part">
+<header><h3>Growth area row</h3><code class="built">.grove-area</code><span class="built">profile.js</span></header>
+<div class="stage"><div class="grove-areas" style="max-width:480px"><div class="grove-area"><span class="grove-area-name">Scribing</span><span class="grove-area-level">Level 12</span><span class="grove-area-about">Writing: words of prose you add.</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.7"></span></span><span class="grove-area-note">74 XP</span></div><div class="grove-area"><span class="grove-area-name">Foraging</span><span class="grove-area-level">Level 20</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-area-note">At its ceiling</span></div></div></div>
+</section>
+<section class="part">
+<header><h3>Level bar</h3><code class="built">.grove-level-bar</code><span class="built">profile.js, inside each Growth area row</span></header>
+<div class="stage"><div style="max-width:220px;display:grid;gap:8px"><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span></div></div>
+</section>
+<section class="part">
+<header><h3>Growth area strip</h3><code class="built">.grove-strip</code><span class="built">profile.js, under the Leafing and Foraging rows</span></header>
+<div class="stage"><div class="grove-areas" style="max-width:480px"><div class="grove-area"><span class="grove-area-name">Leafing</span><span class="grove-area-level">Level 24</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.4"></span></span><span class="grove-area-note">285 XP</span><span class="grove-strip"><span class="grove-chip is-read">Markdown</span><span class="grove-chip is-read">YAML</span><span class="grove-chip">JSON</span><span class="grove-chip">Word</span></span></div><div class="grove-area"><span class="grove-area-name">Foraging</span><span class="grove-area-level">Level 12</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-area-note">80 XP</span><span class="grove-strip grove-strip-note">Stops at level 20: ten for each of 15 formats read and five for each of 11 theme families worn.</span></div></div></div>
+</section>
+<section class="part">
+<header><h3>Landmarks</h3><code class="built">.grove-landmarks</code><span class="built">profile.js, beside the Growth areas in the Grove sheet</span></header>
+<div class="stage"><dl class="grove-landmarks" style="max-width:240px"><div class="grove-landmark"><dt class="grove-landmark-label">Most words in a day</dt><dd class="grove-landmark-value">18,420</dd></div><div class="grove-landmark"><dt class="grove-landmark-label">Longest run of days</dt><dd class="grove-landmark-value">12 days</dd></div></dl></div>
+</section>
+<section class="part">
+<header><h3>Year grid</h3><code class="built">.grove-year</code><span class="built">profile.js, at the top of the Grove sheet</span></header>
+<div class="stage"><div class="grove-year" style="max-width:260px"><span class="grove-day grove-day-shade-0"></span><span class="grove-day grove-day-shade-1"></span><span class="grove-day grove-day-shade-0"></span><span class="grove-day grove-day-shade-2"></span><span class="grove-day grove-day-shade-3"></span><span class="grove-day grove-day-shade-0"></span><span class="grove-day grove-day-shade-4"></span><span class="grove-day grove-day-shade-1"></span><span class="grove-day grove-day-shade-2"></span><span class="grove-day grove-day-shade-0"></span><span class="grove-day grove-day-shade-0"></span><span class="grove-day grove-day-shade-3"></span><span class="grove-day grove-day-shade-4"></span><span class="grove-day is-future"></span></div></div>
+</section>
+<section class="part">
 <header><h3>Minimap rail</h3><code class="built">.document-minimap</code><span class="built">minimap.js</span></header>
 <div class="stage"><aside class="document-minimap" style="height:120px"><div class="document-minimap-track"><div class="document-minimap-content"></div><div class="document-minimap-fade" data-edge="top"></div><div class="document-minimap-fade" data-edge="bottom"></div><div class="document-minimap-viewport"></div></div></aside></div>
 </section>
@@ -13003,7 +13333,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Icon</h3><code class="built">.lt-icon</code><span class="built">everything, drawn by icons.css</span></header>
-<div class="stage"><span class="lt-icon lt-icon-leaf"></span> <span class="lt-icon lt-icon-back-long"></span> <span class="lt-icon lt-icon-back-long" data-leaf-pack="feather"></span> <a class="jump" href="#icons">All 65 icons, under each of the seven packs, on the Icons tab</a></div>
+<div class="stage"><span class="lt-icon lt-icon-leaf"></span> <span class="lt-icon lt-icon-back-long"></span> <span class="lt-icon lt-icon-back-long" data-leaf-pack="feather"></span> <a class="jump" href="#icons">All 78 icons, under each of the seven packs, on the Icons tab</a></div>
 </section>
 <section class="part">
 <header><h3>Dropdown</h3><code class="built">.leaf-select</code><span class="built">app-shell.html</span></header>
