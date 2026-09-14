@@ -162,6 +162,8 @@ Until you have a vault the start screen offers to add your notes folder, and the
 
 Put a date on a checkbox and the start screen keeps a box of everything in the vault still open, nearest due first, over Recent and Favorites. Press a row and you land on that checkbox. **[Scheduled tasks →](docs/01-features/03-library.md#scheduled-tasks)**
 
+Open the calendar at the foot of the library and a month of the vault shows which days its documents were changed, made or dated. Pick a day and the pane lists them. **[Calendar →](docs/01-features/03-library.md#calendar)**
+
 ### Search everything you've written
 
 ![All-files search results under the find bar: a filename match at the top, then content matches with highlighted terms, while the pane keeps showing the open document's outline behind them](imgs/search.png)

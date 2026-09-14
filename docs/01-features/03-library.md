@@ -27,7 +27,8 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
-| [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent and Search, one press from the bottom of the pane, over the document you are reading |
+| [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and the pane lists it |
+| [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent, Search and Calendar, one press from the bottom of the pane, over the document you are reading |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
 ## Vaults
@@ -287,6 +288,22 @@ Overdue work is at the top, because a past date is the nearest one. Two tasks du
 
 A ticked box is not in the list, and neither is a checkbox with no date on it — those stay in their notes. With nothing open and dated, the box is not on the screen at all.
 
+## Calendar
+
+Inside a vault, the Calendar button at the [foot of the library](#launchers-at-the-foot) opens a month of the vault's documents in a sheet from the bottom of the window. Each day wears up to three marks for the documents dated to it, and its full date and count are read out to a screen reader.
+
+| Control | What it does |
+| --- | --- |
+| Changed, Made, or a field | Which date is counted: when a file was last changed, when it was made, or any date field the vault's notes write in their [frontmatter](#filtering). A written date and time belongs to the day it names. A field that disappears from every note falls back to Changed |
+| Month, Week, Day | How long a stretch is shown. The choice is kept until the app closes |
+| The arrows and Today | Step back or forward by the stretch shown, or jump to today |
+
+Pressing a day closes the sheet and leaves the pane listing that day's documents, up to 50, with the folder each sits in. The cross beside the day's name puts back the outline or file tree that was there. A search from the [find bar](02-navigation.md#find-in-this-document) leaves the day where it is.
+
+The keyboard works the month too: the arrows move a day or a week, Home and End reach the week's edges, Page Up and Page Down turn the month, Enter or Space picks, and Escape closes the sheet.
+
+The calendar reads only the vault's text already held in memory, and it stays current: a file changed, made or re-dated while the sheet is open is counted again. Outside a vault there is no Calendar button.
+
 ## Other names
 
 A note can answer to more than the name of its file. Give it an `aliases` field and every name in the list works everywhere the file's own name works:
@@ -453,6 +470,7 @@ A row of buttons sits at the bottom of the pane, so the lists on the home screen
 | Favorites | The home screen's Favorites list, over the document. Shown only while something is a favorite |
 | Recent | The home screen's Recent list, over the document. Shown only while something has been opened |
 | Search | The [find bar](02-navigation.md#find-in-this-document), set to **All files** when a vault is open, and to the document when none is |
+| Calendar | The [Calendar](#calendar) month, over the document. Shown only inside a vault |
 
 A button with nothing to open is left out and the row closes up around it. Opening a list never leaves the document: close the list and you are where you were. Every button wears the drawing of the icon set your [theme](06-themes.md) uses.
 
@@ -497,6 +515,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | Repositories inside a vault | Found up to three folders deep, stopping at the first one on each branch. See [Repositories inside repositories](#repositories-inside-repositories) |
 | Scheduled tasks | The active vault's open dated checkboxes, nearest due first. See [Scheduled tasks](#scheduled-tasks) |
 | Search results | Top 50 |
+| A calendar day's documents | Top 50 |
 | Folder listing | One directory per click |
 | First-launch bubbles | One per launch at most, with a quiet launch between; each one shows until you point at what it points at, then never again. A [sheet](#the-bubble-on-your-first-launch) takes it down, unmet, until the last one closes |
 | The pane's vault introduction | Shown once, to a reader with no vault outside their cloud folders; retired by picking a folder or opening the vault list |
