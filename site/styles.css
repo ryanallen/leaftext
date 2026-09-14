@@ -46,7 +46,7 @@
   --syntax-deleted-bg: var(--lt-syntax-deleted-background, #67060c);
 
   /* ---- Type --------------------------------------------------------- */
-  /* The family's own faces, so the chrome is set in the same type as the document beside it. The fallbacks are what this file asked for before the app's stylesheet was there to ask: Noto first (bundled in site/noto-fonts.css), then system faces. */
+  /* The family's own faces, so the chrome is set in the same type as the document beside it. The fallbacks are what this file asked for before the app's stylesheet was there to ask: Noto first (linked from Google Fonts in the page head, the address the app's own Fern theme uses), then system faces for a reader with no connection. */
   --font-body: var(--reading-font, 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
     Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji');
   --font-heading: var(--heading-font, 'Noto Serif', Georgia, Cambria, 'Times New Roman', serif);

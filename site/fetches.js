@@ -144,3 +144,21 @@ export function fetchWatched(url, options = {}) {
     options,
   );
 }
+
+/**
+ * Wait for the linked faces before anything measures words in them. A label is only as wide as the face it was measured in, so a diagram laid out before Noto arrives is drawn in a system face and keeps those widths after the swap.
+ *
+ * The deadline is the same silence limit every fetch here waits under, because a stalled font file never settles `document.fonts.ready` — and it resolves rather than throws: a page whose faces never came still draws its diagrams, in whatever the stacks fell through to.
+ */
+export function fontsSettled() {
+  const ready = typeof document !== 'undefined' && document.fonts && document.fonts.ready;
+  if (!ready || typeof ready.then !== 'function') return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, silenceMs);
+    const done = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    ready.then(done, done);
+  });
+}

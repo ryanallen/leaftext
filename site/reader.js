@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { createLeaftext, rendererBase } from './leaftext-core.js';
-import { fetchWatched } from './fetches.js';
+import { fetchWatched, fontsSettled } from './fetches.js';
 import { fillPager } from './pager.js';
 import { initMinimap } from './minimap.js';
 import { buildOutline } from './outline.js';
@@ -88,17 +88,20 @@ async function renderMermaidDiagrams() {
   if (!nodes.length) return;
   try {
     if (!window.mermaid) await loadScript(MERMAID_SRC);
-    // Use our bundled Noto Sans for diagram labels (arrows/shapes are SVG, not fonts, so they're unaffected).
+    // The body stack styles.css sets, not a bare 'Noto Sans': the faces are linked, so a reader with no connection measures labels in whatever the stack fell through to.
+    const labelFont = getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim() || 'sans-serif';
     const subgraphTitleGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lt-space-8')) || 0;
     window.mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
       theme: 'dark',
-      fontFamily: "'Noto Sans', sans-serif",
+      fontFamily: labelFont,
       flowchart: { subGraphTitleMargin: { top: subgraphTitleGap, bottom: subgraphTitleGap } },
       themeCSS: '.cluster-label div { white-space: nowrap !important; width: max-content !important; max-width: none !important; }',
-      themeVariables: { fontFamily: "'Noto Sans', sans-serif" },
+      themeVariables: { fontFamily: labelFont },
     });
+    // A label measured before its face arrives keeps the width it was measured at, so the boxes are drawn once the linked faces have settled.
+    await fontsSettled();
     await window.mermaid.run({ nodes });
   } catch (err) {
     // Leave the fence as readable source text if the runtime can't load.

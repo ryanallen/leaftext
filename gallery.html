@@ -11783,8 +11783,9 @@ body.leaf-paper .library-shell .reader-shell {
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }
-/* The room the page keeps at its foot for the floating toolbar, which nothing draws here. Left in, it is blank paper under the last line, and the height the page sends already has it taken off — so the sheet would be shorter than what is laid out on it. */
+/* The room the page keeps at its foot for the floating toolbar, which nothing draws here: left in, it is blank paper under the last line. The scroll origin goes too — it only cancels the app bar's room at the top of the scroller, and paper has neither. Left on, the page measures the document pulled up by it while the render lays the document out at its full height, so the sheet comes out a few pixels short and a short note prints a second, blank page. */
 body.leaf-paper .document-body {
+  margin-top: 0;
   padding-bottom: var(--reader-content-pad);
 }
 /* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen a picture's lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. A table's lane already arrives untransformed, centered inside a bay for the same reason; here the bay stands down to the measure so the lane's own arithmetic is the one that runs. */
