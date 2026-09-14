@@ -27,6 +27,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to paste, reveal it, or see its properties |
+| [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent and Search, one press from the bottom of the pane, over the document you are reading |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
 ## Vaults
@@ -272,6 +273,8 @@ A colon only starts a field when what is in front of it looks like a field name 
 
 A checkbox in a note can carry [a date](01-rendering.md#task-lists). Every one of them that is still open shows up in one box on the home screen, above Recent and Favorites, with the nearest due at the top.
 
+With a document open, the Tasks button at the [foot of the library](#launchers-at-the-foot) opens the same list over it.
+
 The box is about the vault you are in, the same as Recent and Favorites. Leave the vault and its rows go with it; the new vault's own arrive once its text has been read.
 
 | A row shows | Where it comes from |
@@ -438,6 +441,21 @@ The pane keeps up with changes on disk, so a file you just created shows up with
 - A change that lands while the vault is still being read is held until that read finishes, then applied once. The pass under way is reading every file as it was when it started, so a change folded into it would either be thrown away by the batch that replaces the first rows or carried back stale by a later one. Search can answer with the old words for the rest of that read; the answer it settles on when the ring goes has the change in it.
 - A [graph of one document](#graph) rather than a vault holds nothing in memory to patch, so it is simply read again — a folder listing and a file per link, which is cheap enough not to cache. It cannot go stale, and a redraw that produces the same picture never reaches the screen.
 - The [sync count](#syncing) is re-read too, whether the change was to the document you are editing or to any other file in the vault — and again whenever the window is focused, which is what catches a commit you made in a terminal: that writes nothing but the repository's own bookkeeping, which the watcher ignores.
+
+## Launchers at the foot
+
+A row of buttons sits at the bottom of the pane, so the lists on the home screen are one press away while a document is open:
+
+| Button | What it opens |
+| --- | --- |
+| Tasks | The [Scheduled tasks](#scheduled-tasks) list, over the document. Shown only while a dated checkbox is still open |
+| Favorites | The home screen's Favorites list, over the document. Shown only while something is a favorite |
+| Recent | The home screen's Recent list, over the document. Shown only while something has been opened |
+| Search | The [find bar](02-navigation.md#find-in-this-document), set to **All files** when a vault is open, and to the document when none is |
+
+A button with nothing to open is left out and the row closes up around it. Opening a list never leaves the document: close the list and you are where you were. Every button wears the drawing of the icon set your [theme](06-themes.md) uses.
+
+Drag the pane narrower and the row stays one row: whatever no longer fits folds under a chevron at its end, the same one the app bar folds into, and opens upward as a menu. Widening puts each button back in its place. Close the pane and the row goes with it.
 
 ## Layout
 
