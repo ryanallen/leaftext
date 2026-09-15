@@ -5765,8 +5765,8 @@ body.is-library-settling .app-bar::after {
   /* No rail to sit against: follow the card out to its left gutter. */
   left: calc(100% + var(--reader-gutter));
 }
-.library-shell.library-closed {
-  /* The page takes a left inset only while the pane is shut, and the floating bar is centered on the page, so it has to count that inset too — kept as a variable here, beside the other closed-pane facts, the way --reader-toolbar-rail is declared where the rail is reasoned about. */
+.library-shell.library-closed .reader-toolbar {
+  /* The page takes a left inset only while the pane is shut, and the floating bar is centered on the page, so it has to count that inset too — kept as a variable here, beside the other closed-pane facts, the way --reader-toolbar-rail is declared where the rail is reasoned about. It sits on the bar rather than on the shell because a custom property inherits: declared on the box the document is rendered into, every element of a megabyte page is re-resolved to carry a value only the bar reads, which cost 61–71 ms of style on each close and open against 5 ms with it here. */
   --reader-toolbar-gutter: var(--reader-gutter);
 }
 .library-divider {
@@ -10696,12 +10696,19 @@ body.mac-frame .document-minimap-frame {
 /* Scaling takes the clone off the shared lattice: 31.5ms a frame before, 7.2ms after. */
 .document-minimap-preview.document-body .document-outline,
 .document-minimap-preview.document-body .tei-front,
-.document-minimap-preview.document-body pre,
+.document-minimap-preview.document-body pre {
+  background-attachment: scroll;
+}
+/* A table slice rendered for 12 to 18 ms each slide with positioned, stripped and grained cells, and 2.3 ms with those paints gone; every copied rectangle stayed identical, while the shrunken lattice drew heavier than the page's. */
 .document-minimap-preview.document-body th,
 .document-minimap-preview.document-body tr:nth-child(2n) td,
 .document-minimap-preview.document-body tr:nth-child(2n + 1) td,
 .document-minimap-preview.document-body td {
-  background-attachment: scroll;
+  position: static;
+  background-image: none;
+}
+.document-minimap-preview .table-sizer {
+  display: none;
 }
 /* The clone is inert; clicks belong to the rail, which handles jump/drag. */
 .document-minimap-preview,
