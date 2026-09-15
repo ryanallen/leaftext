@@ -294,7 +294,7 @@ Inside a vault, the Calendar button at the [foot of the library](#launchers-at-t
 
 | Control | What it does |
 | --- | --- |
-| Changed, Made, or a field | Which date is counted: when a file was last changed, when it was made, or any date field the vault's notes write in their [frontmatter](#filtering). A written date and time belongs to the day it names. A field that disappears from every note falls back to Changed |
+| Changed, Made, or a field | Which date is counted: when a file was last changed, when it was made, or any date field the vault's notes write in their [frontmatter](#filtering). Written dates are grouped under **Written in your notes**, with how many notes carry each. The calendar starts on Due where the vault writes one and remembers your last choice. A written date and time belongs to the day it names. A field that disappears from every note falls back to Changed for that vault without replacing your choice |
 | Month, Week, Day | How long a stretch is shown. The choice is kept until the app closes |
 | The arrows and Today | Step back or forward by the stretch shown, or jump to today |
 
@@ -474,7 +474,7 @@ A row of buttons sits at the bottom of the pane, so the lists on the home screen
 
 A button with nothing to open is left out and the row closes up around it. Opening a list never leaves the document: close the list and you are where you were. Every button wears the drawing of the icon set your [theme](06-themes.md) uses.
 
-Drag the pane narrower and the row stays one row: whatever no longer fits folds under a chevron at its end, the same one the app bar folds into, and opens upward as a menu. Widening puts each button back in its place. Close the pane and the row goes with it.
+Drag the pane narrower and the row stays one row: whatever no longer fits folds under a chevron at its end, the same one the app bar folds into, and opens upward as a menu. Widening puts each button back in its place. A launcher you reached with Tab keeps the keyboard while the pane moves, on the row or inside the open menu. Close the pane and the row goes with it.
 
 Under the row sits the **Grove** pill, which opens [Your Grove](09-progress.md), the record of how you use Leaftext. A narrow pane shortens its words and keeps its leaf, and it goes with the row when the pane shuts.
 
@@ -494,6 +494,7 @@ Saved library state includes:
 - `library_closed`
 - `library_width`
 - `graph_scope`
+- `calendar_field`
 - `library_project_path`
 
 The active vault is saved in `manifest.db` beside the vault list, not in [settings](05-settings.md).

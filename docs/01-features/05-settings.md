@@ -13,6 +13,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random | The palette at the library pane's foot |
 | [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | Daylight | The same [theme picker](06-themes.md#choose) |
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
+| [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
 Three more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader), [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
@@ -70,6 +71,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "theme_mode": "daylight",
   "theme_random_used": [],
   "graph_scope": "small",
+  "calendar_field": "field:due",
   "library_project_path": "",
   "library_closed": false,
   "library_width": 240,
@@ -124,6 +126,12 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - **Medium** shows up to the 2,000 most-linked documents, **Large** up to 5,000, and **Everything** the whole vault with no cap
 - Smaller sizes open faster; the larger ones stay responsive by settling the layout sooner and repainting less often
 - Saved as `graph_scope`, stored as `small`, `medium`, `large`, or `xl`
+
+### Calendar date
+
+- Controls which date the [calendar](03-library.md#calendar) counts across a vault
+- Starts on Due where the vault writes one, and shows Changed for a vault without the chosen field
+- Saved as `calendar_field`, stored as `changed`, `made`, or `field:` followed by the field name
 
 ### Minimap
 
