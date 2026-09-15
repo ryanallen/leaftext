@@ -4199,19 +4199,14 @@ body.leaf-app {
   overflow: hidden;
   /* Nothing paints the whole window: past the app's own edge the window is where the shadow falls, and a page color there would be the app painting its own halo out to the frame. The app surface below carries the color. */
   background: transparent;
-  /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two, and the same on all four sides, which is what a light hung overhead and centered gives. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The two classes below turn it on. */
+  /* How far the app is held off the window, which is how much room the shadow band has to fall in — the same spread every floating surface inside the app throws, so the app has one shadow size rather than two, and the same on all four sides, which is what a light hung overhead and centered gives. Zero here: a window with no frame of its own has nothing outside it to cast onto, and a browser has no window at all. The class below turns it on; the flush rule further down closes the gutter by writing the surface's own inset. */
   --app-shadow-spread: 0px;
-  /* The window's corner, decided here and nowhere else: the three rules below set this rather than writing a corner of their own, so there is one place to read the number from in every state the window has. 8px is Windows' own figure for a top-level app window and what a browser starts from. It sits on the body rather than on the surface because the shadow band's four strips are siblings of the surface and their height is this plus the spread — a rule on the surface is one they cannot read at all. */
+  /* The window's corner where the window has one, decided here and by the Mac rule below, so there is one place to read the number from wherever a corner is drawn. 8px is Windows' own figure for a top-level app window and what a browser starts from. It sits on the body rather than on the surface because the shadow band's four strips are siblings of the surface and their height is this plus the spread — a rule on the surface is one they cannot read at all. A window filling the screen has no corner at all rather than a different number, so the flush rule below writes it on the surface. */
   --app-window-radius: var(--lt-radius-lg);
 }
 /* Where the app owns its own frame, so the shadow is the app's to draw. One class covers both platforms: a Mac carries this as well as `mac-frame`, because both kinds draw the app bar as the title bar. */
 body.frameless {
   --app-shadow-spread: var(--lt-shadow-spread);
-}
-/* Nothing behind a window filling the screen for a shadow to fall on, and a band there would show the desktop through a frame inside the screen edge. Filling the screen means maximized on Windows or full screen on either platform — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
-body.frameless:not(.mac-frame).is-maximized,
-body.frameless.is-fullscreen {
-  --app-shadow-spread: 0px;
 }
 /* One box that means "the app", holding everything the page has. `contain: paint` is the whole point of it: it makes this element what a `position: fixed` child is measured from and what one is clipped to, so the fourteen rules below that place an overlay against the window place it against the app instead. The two are the same rectangle until the inset above turns on, and part company after it. Fixed rather than a block, so its height is definite for the two grids that fill it. */
 .app-surface {
@@ -4238,16 +4233,13 @@ body.mac-frame {
 body.mac-frame .app-surface {
   --reader-card-radius: var(--lt-radius-window-inner);
 }
-/* Maximized, and in a browser: the app is the whole window, so it draws neither an edge nor a corner — both would be a frame inside the screen edge. The corner goes by setting the variable the surface reads, not by writing a `border-radius` here, so the window's number stays decided in one place. The corner is zeroed on the body beside the other two that set it and the edge is taken off the surface that draws it. */
-body:not(.frameless),
-body.frameless.is-fullscreen,
-body.frameless:not(.mac-frame).is-maximized {
-  --app-window-radius: 0px;
-}
+/* Maximized, in full screen, and in a browser: the app is the whole window, so it draws neither an edge nor a corner nor a gutter for a shadow to fall in — each would be a frame inside the screen edge, and there is nothing behind the window to cast onto. All three are written here rather than by zeroing `--app-shadow-spread` and `--app-window-radius` on the body: a custom property inherits, so a value changed there is re-resolved on every element of the open document — 101 to 103 ms of style on a megabyte note per maximize, against under 4 ms written here. The band reads those two as well, which is why they sit on the body at all, and it is not drawn in any of these three states (the rule below), so this surface is their only reader here. Filling the screen means maximized on Windows or full screen on either platform — never a Mac's maximized, which is a zoomed window that still floats over what is behind it and still casts a shadow. Hence `:not(.mac-frame)`: both platforms report maximized, and only one of them means this by it. */
 body:not(.frameless) .app-surface,
 body.frameless:not(.mac-frame).is-maximized .app-surface,
 body.frameless.is-fullscreen .app-surface {
+  inset: 0;
   border: 0;
+  border-radius: 0;
 }
 /* Narrow straight strips and four corner pieces keep WebKit from filtering a full-window layer. Windows draws each corner's nested rings live; a Mac reads the same rings from one precomposed mask at each lattice size. */
 .window-band {
@@ -6174,6 +6166,7 @@ body.library-resizing button {
 }
 /* The Grove pill. As wide as the launcher row above it and never wider, so it grows and shrinks with the row; its own words add nothing to the column's width, and a narrow row truncates the label and keeps the mark whole. */
 .library-profile {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--lt-space-6);
@@ -6218,6 +6211,30 @@ body.library-resizing button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* A payment landing: a bar along the pill's foot, filled to that area's place in its level, for as long as the label names the payment. It leaves on the resting rule and arrives on the shown one. */
+.library-profile-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--lt-border);
+  transition: opacity var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.library-profile-bar.is-shown {
+  opacity: 1;
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+.library-profile-bar-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--lt-accent);
+  transform: scaleX(var(--grove-fill, 0));
+  transform-origin: left center;
 }
 /* One row that never wraps, spaced like the app bar's own run of actions; a pane too narrow for it clips at the divider rather than spilling past it. */
 .library-foot-rail {
@@ -6714,10 +6731,16 @@ body.library-resizing button {
   --reader-toolbar-rail: 0px;
   /* The gutter the page is held off the left frame by, which only a shut pane opens — see library.css. */
   --reader-toolbar-gutter: 0px;
+  /* The bar's own height plus the gap it floats above the page's edge. Written once and never changed, so nothing inherits a new value when the bar arrives; the two rules below spend it. */
+  --reader-toolbar-room: 52px;
 }
-/* An embedded host hides the bar with a rule, so the window state stays off that host. */
-body.has-reader-toolbar:not(.is-embedded) {
-  --reader-toolbar-space: 52px;
+/* An embedded host hides the bar with a rule, so the window state stays off that host. The page takes the resolved padding rather than the variable: a custom property inherits, so declaring the room on `body` — or on `.document-body` — re-resolved it on every element of the open document, which cost a megabyte note 55 to 130 ms of style on the frame the bar's class lands in. Writing the padding costs half a millisecond. */
+body.has-reader-toolbar:not(.is-embedded) .document-body {
+  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-room));
+}
+/* The two boxes outside the document that measure themselves off the bar still read it as a variable, because neither has anything under it. */
+body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-status) {
+  --reader-toolbar-space: var(--reader-toolbar-room);
 }
 .reader-toolbar {
   /* Page column plus the minimap's, in every view: only the reading view opens that second track, so centering on the page alone put the same bar 31px left of where the source view drew it and moved the button a reader goes back to most. The source view's own map strip is the editor's, drawn inside the page column, so it is already inside this measurement. */
@@ -7431,8 +7454,8 @@ body.has-reader-toolbar:not(.is-embedded) {
   width: min(var(--type-measure-body), 100%);
   margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;
   padding: var(--reader-content-pad) 0;
-  /* The floating bar sits over this corner of the page. Without the extra room the last thing on the page ends underneath it — which the Previous/Next pager makes obvious, being the last thing and a target. */
-  padding-bottom: calc(var(--reader-content-pad) + var(--reader-toolbar-space, 0px));
+  /* No bar, so no extra room: the state rule in reader-toolbar.css writes this again with the bar's room added, because the last thing on the page would otherwise end underneath it — which the Previous/Next pager makes obvious, being the last thing and a target. */
+  padding-bottom: var(--reader-content-pad);
   color: var(--lt-markdown-foreground);
   font-size: var(--type-body-size);
   line-height: var(--type-body-line);
@@ -9169,8 +9192,8 @@ body.is-block-dragging .document-body [data-src-start] {
   z-index: 5;
   pointer-events: none;
 }
-/* Monaco draws its own rail inside the source frame, so the reader's grid column closes without changing the bar's rail measure. */
-:root[data-code-view="true"] > body {
+/* Monaco draws its own rail inside the source frame, so the reader's grid column closes without changing the bar's rail measure. On the app bar rather than on `body`: the two boxes that read this are the bar's own divider and the corner arc inside it, and the shell's track is written straight onto the shell by the page. A custom property inherits, so declaring it on `body` re-resolved it on every element of the open document — 67 to 103 ms of style on a megabyte note, which was the whole of what pressing the source view cost. On the bar it still beats what `body.has-minimap` gives it, because a value on the element beats one inherited from an ancestor whatever the selectors say. */
+:root[data-code-view="true"] .app-bar {
   --reader-minimap-column: 0px;
 }
 /* Trim the app bar's reader divider (the card's top edge) to the faked right edge at the minimap stroke, measured from the window's right edge: the reader gutter to the shell, then the minimap and its stand-off, then a radius short so the ::before top-right arc turns the corner. Same shape as the reading-view formula, with the minimap column replaced by the code-view minimap width. */
@@ -12573,9 +12596,63 @@ body.is-home-row-dragging .home-list-scroll li {
   background: color-mix(in srgb, var(--lt-accent) 22%, transparent);
   color: var(--lt-primary-ink);
 }
+/* The column beside the areas: Earned lately over the Landmarks. */
+.grove-side {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: grid;
+  gap: var(--lt-space-8);
+}
+/* The latest payments, newest first: a day, what was done, and what it was worth. */
+.grove-earned {
+  display: grid;
+  gap: var(--lt-space-6);
+  padding: var(--lt-space-8) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.grove-earned-head {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+.grove-earned-list {
+  display: grid;
+  gap: var(--lt-space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.grove-earned-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--lt-space-8);
+}
+.grove-earned-day {
+  grid-column: 1 / -1;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+}
+.grove-earned-doing {
+  min-width: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+}
+.grove-earned-xp {
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+}
+.grove-earned-empty {
+  margin: 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
 /* Four high-water marks, a label over its figure. */
 .grove-landmarks {
-  flex: 1 1 200px;
   min-width: 0;
   display: grid;
   gap: var(--lt-space-8);

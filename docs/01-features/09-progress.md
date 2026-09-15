@@ -36,6 +36,12 @@ Open an area and it lists every rule that pays it — **Every 500 words read**, 
 
 Leafing counts the words you actually reach: a paragraph, heading or other block counts once it has been on screen for two seconds, and every 500 words is a point. A block taller than the window — a long table, a long code block — counts by how far down it you have read, so scrolling past the top of one pays for the part you saw rather than all of it. A page Leaftext cannot split into blocks counts by how far down you have read it. Reading the same document again in one sitting adds nothing, and nothing counts while nobody has scrolled, typed or moved the pointer for five minutes, so a window left open overnight earns nothing. An area that has not counted anything yet stays at level 1 and says **Not started**. The first unit of anything reaches level 2, the third level 3, and level 50 is the top. Every bar says the XP it holds and the XP the next level costs; an area at its ceiling says so instead. Every fifth level an area reaches is a **seed**, and so are its levels 10, 25 and 50; your seeds show at the top right of the sheet.
 
+## See XP as it lands
+
+Whenever something pays XP, the pill says so for a few seconds — **+1 Leafing** — with a thin bar along its foot showing how far that area now is into its level, and pointing at it gives the same words the area's bar says. When one reading pays two areas, each takes its turn, and then the pill goes back to your Grove level or the levels waiting to claim. Nothing plays when the app opens.
+
+The Grove sheet's column beside the areas opens on **Earned lately**: the latest things that paid, newest first, each with its day, what you did — **1,000 words read**, **Vault synced, 3 times** — and the XP it was worth. The same kind of payment on the same day adds up on one line, and the list keeps the twelve latest. It starts empty and fills from the next thing that pays.
+
 The record holds counts and nothing else: never a file's name, its folder, or a word of what it says.
 
 ## Claim a level
