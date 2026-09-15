@@ -6206,6 +6206,11 @@ body.library-resizing button {
 .library-profile[hidden] {
   display: none;
 }
+/* A level is waiting: the pill wears the accent so the reader can see there is something to collect without opening it. */
+.library-profile.has-claim {
+  border-color: var(--lt-accent);
+  background: color-mix(in srgb, var(--lt-accent) 16%, var(--lt-surface-elevated));
+}
 .library-profile:hover {
   background: var(--lt-navigation-button-hover-background);
   border-color: var(--lt-navigation-button-hover-background);
@@ -10650,6 +10655,9 @@ body.leaf-web .document-minimap-track::after {
   left: var(--minimap-padding-inline);
   overflow: visible;
   pointer-events: none;
+}
+/* The lane's own layer, on the Mac only. On Windows the hint cost a wheel deep in a 44,000px note 62 dropped frames against none, with nothing built and the slide frozen, and a fast drag of the box was no better for it; the transform alone still keeps the slide off layout. Every Mac reading of the deep scroll was taken with it on. */
+body.mac-frame .document-minimap-content {
   will-change: transform;
 }
 /* The box the clone is laid out in: .reader-layout's own content-box width (JS writes it) and a container query of its own, so a document sizing itself against that container measures the same room here as on the page. Without it a wide table read `100cqi` as the whole window and was drawn wider than the page draws it, so the thumbnail wrapped less and ended a fifth short of its track. It carries the scale as well, which is why the clone below needs a containing block: container-type is layout containment, so this box would otherwise be one. */
@@ -12428,6 +12436,82 @@ body.is-home-row-dragging .home-list-scroll li {
   transform: scaleX(var(--grove-fill, 0));
   transform-origin: left center;
 }
+/* The bar's own value in words, so a number is never drawn without its unit or its threshold. */
+.grove-bar-words {
+  grid-column: 1 / -1;
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-600);
+}
+.grove-area:hover .grove-bar-words {
+  color: var(--lt-primary-foreground);
+}
+/* The claim screen: the Grove sheet's whole body while a level waits, so nothing else is drawn over the one thing there is to do. */
+.grove-claim {
+  display: grid;
+  gap: var(--lt-space-8);
+  justify-items: start;
+  max-width: 420px;
+  padding: var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-accent);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+}
+.grove-claim .grove-level-bar {
+  width: 100%;
+}
+.grove-claim-eyebrow {
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-700);
+}
+.grove-claim-earned {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+}
+.grove-claim-gives {
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+}
+.grove-claim-more {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+}
+/* What the grove total is made of, under it. */
+.grove-level-said {
+  margin: calc(-1 * var(--lt-space-8)) 0 var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+/* Every rule that pays this area: what the reader does on the left, what it is worth on the right. */
+.grove-rules-head {
+  margin-top: var(--lt-space-12);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+.grove-rules {
+  display: grid;
+  gap: var(--lt-space-2);
+  margin: var(--lt-space-6) 0 0;
+}
+.grove-rule {
+  display: flex;
+  gap: var(--lt-space-8);
+  justify-content: space-between;
+  align-items: baseline;
+}
+.grove-rule-doing {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+}
+.grove-rule-pays {
+  margin: 0;
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+}
 /* Nothing earned yet: the row is there to be pressed, and says so quietly. */
 .grove-area-level.is-unstarted {
   color: var(--lt-muted-foreground);
@@ -14099,7 +14183,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 17 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 107 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 17 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 109 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="amber" aria-pressed="false">Amber</button>
@@ -14127,7 +14211,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>107</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>109</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -14537,7 +14621,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">107 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">109 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -14676,11 +14760,11 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Profile pill</h3><code class="built">.library-profile</code><span class="built">app-shell.html, drawn by profile.js under the library foot's launchers</span></header>
-<div class="stage"><div class="library-foot" style="position:static;height:76px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div><button type="button" class="library-profile" aria-label="Your Grove, level 178"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">Grove 178</span></button></div><div class="library-foot" style="position:static;height:76px;width:80px;margin-top:12px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div><button type="button" class="library-profile" aria-label="Your Grove, level 178"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">Grove 178</span></button></div></div>
+<div class="stage"><div class="library-foot" style="position:static;height:76px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div><button type="button" class="library-profile" aria-label="Your Grove, level 178"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">Grove 178</span></button></div><div class="library-foot" style="position:static;height:76px;width:240px;margin-top:12px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button></div><button type="button" class="library-profile has-claim" aria-label="Your Grove, 2 levels ready to claim"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">2 to claim</span></button></div><div class="library-foot" style="position:static;height:76px;width:80px;margin-top:12px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div><button type="button" class="library-profile" aria-label="Your Grove, level 178"><span class="lt-icon lt-icon-leaf library-profile-mark"></span><span class="library-profile-label">Grove 178</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Grove sheet</h3><code class="built">.grove-sheet</code><span class="built">app-shell.html, driven by profile.js</span></header>
-<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove<span class="grove-sheet-title-name">Cartographer</span></span><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button><span class="grove-sheet-seeds">165 seeds</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><p class="grove-level-total">Grove 178</p><div class="grove-areas"><div class="grove-area"><span class="grove-area-name">Leafing</span><span class="grove-area-level">Level 24</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.4"></span></span><span class="grove-area-note">285 XP</span></div><div class="grove-area"><span class="grove-area-name">Charting</span><span class="grove-area-level is-unstarted">Level 1</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-area-note">Not started</span></div></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><button type="button" class="grove-switch" role="switch" aria-checked="false"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track"><span class="grove-switch-thumb"></span></span></button></div><div class="grove-sheet-body"><p class="grove-off">Nothing is being counted. Turn the record back on to keep growing your Grove.</p></div></div></div>
+<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static"><div class="leaf-sheet-grip"></div><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove<span class="grove-sheet-title-name">Cartographer</span></span><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button><span class="grove-sheet-seeds">165 seeds</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><p class="grove-level-total">Grove 178</p><p class="grove-level-said">The levels you have claimed in all 13 growth areas, added up. Each one starts at level 1.</p><div class="grove-areas"><div class="grove-area"><span class="grove-area-name">Leafing</span><span class="grove-area-level">Level 24</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.4"></span></span><span class="grove-area-note">285 XP</span></div><div class="grove-area"><span class="grove-area-name">Charting</span><span class="grove-area-level is-unstarted">Level 1</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-area-note">Not started</span></div></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><button type="button" class="grove-switch" role="switch" aria-checked="false"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track"><span class="grove-switch-thumb"></span></span></button></div><div class="grove-sheet-body"><p class="grove-off">Nothing is being counted, so no bar here will move and no level will be earned. Turn the record back on to keep growing your Grove.</p></div></div></div>
 </section>
 <section class="part">
 <header><h3>Grove switch</h3><code class="built">.grove-switch</code><span class="built">profile.js, in the Grove sheet's header</span></header>
@@ -14708,7 +14792,15 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Level bar</h3><code class="built">.grove-level-bar</code><span class="built">profile.js, inside each Growth area row</span></header>
-<div class="stage"><div style="max-width:220px;display:grid;gap:8px"><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span></div></div>
+<div class="stage"><div style="max-width:220px;display:grid;gap:8px"><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" aria-label="Charting: 0 of 3 XP toward level 4"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-bar-words">0 of 3 XP toward level 4</span><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-valuenow="6" aria-label="Leafing: 6 of 12 XP toward level 13"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-bar-words">6 of 12 XP toward level 13</span><span class="grove-level-bar" aria-hidden="true"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-bar-words">At its ceiling, level 50</span></div></div>
+</section>
+<section class="part">
+<header><h3>Grove claim</h3><code class="built">.grove-claim</code><span class="built">profile.js, the Grove sheet's whole body while a level waits to be claimed</span></header>
+<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:520px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><span class="grove-sheet-seeds">4 seeds</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Leafing reached level 5</span><span class="grove-claim-earned">You earned it with 1,000 words read, worth 2 XP.</span><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10" aria-label="Leafing: 10 XP reached — level 5 is full"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-bar-words">10 XP reached — level 5 is full</span><span class="grove-claim-gives">Claiming it takes Leafing to level 5, takes your Grove to 18, and gives you 1 seed to spend.</span><button type="button" class="grove-tree-action is-spend grove-claim-press">Claim level 5</button><span class="grove-claim-more">2 more levels waiting after this one.</span></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Earning rules</h3><code class="built">.grove-rules</code><span class="built">profile.js, under an opened area's bar, one row per rule in the host's signal table</span></header>
+<div class="stage"><div style="max-width:360px"><div class="grove-rules-head">What earns XP here</div><dl class="grove-rules"><div class="grove-rule"><dt class="grove-rule-doing">Every 500 words read</dt><dd class="grove-rule-pays">1 XP</dd></div><div class="grove-rule"><dt class="grove-rule-doing">Each new format read</dt><dd class="grove-rule-pays">10 XP</dd></div><div class="grove-rule"><dt class="grove-rule-doing">Every 10 links followed inside the app</dt><dd class="grove-rule-pays">1 XP</dd></div></dl></div></div>
 </section>
 <section class="part">
 <header><h3>Growth area strip</h3><code class="built">.grove-strip</code><span class="built">profile.js, under the Leafing and Foraging rows</span></header>

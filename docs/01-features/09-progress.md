@@ -2,11 +2,11 @@
 
 > A record of how you use Leaftext, kept on your own disk and turned off with one switch.
 
-Leaftext keeps a quiet record of what you do in it and shows it as your **Grove**: thirteen Growth areas, each leveled by its own kind of use, and a Grove level that adds them up. Nothing about it changes how a document reads, and nothing it counts leaves your computer.
+Leaftext keeps a quiet record of what you do in it and shows it as your **Grove**: thirteen Growth areas, each leveled by its own kind of use, and a Grove level that adds up the levels you have claimed. XP is earned as you go; a level is yours when you claim it, so the number on the pill never moves while the Grove is shut. Nothing about it changes how a document reads, and nothing it counts leaves your computer.
 
 ## Open your Grove
 
-The **Grove** pill sits at the bottom of the [library pane](03-library.md), under the row of buttons for Scheduled tasks, Favorites, Recent and Search. It runs the width of that row and shows the Leaftext leaf and your Grove level. Press it and a large sheet rises from the bottom of the window with a year of days — one square a day, darker the more grew on it — and every Growth area, its level and a bar for how far into that level it has grown. Drag the sheet down, press the cross, press outside it or press Escape to put it away. The document stays open underneath.
+The **Grove** pill sits at the bottom of the [library pane](03-library.md), under the row of buttons for Scheduled tasks, Favorites, Recent and Search. It runs the width of that row and shows the Leaftext leaf and your Grove level — or, when a level is waiting, **1 to claim**, with the pill in the theme's accent. Press it and a large sheet rises from the bottom of the window with a year of days — one square a day, darker the more grew on it — and every Growth area, its level and a bar for how far into that level it has grown. Drag the sheet down, press the cross, press outside it or press Escape to put it away. The document stays open underneath.
 
 ![The Grove sheet risen over a document: Your Grove with four seeds and the Keep a record switch on in its header, Grove 17, a year of days with today shaded, the Growth areas in two columns with Leafing listing the fifteen formats and Markdown lit, and the four Landmarks in a column beside them, over the leaf-marked Grove pill at the foot of the library pane](../../imgs/grove-sheet.png)
 
@@ -32,9 +32,17 @@ Each area grows from one kind of thing you already do:
 | Delving | Looking at a document's source |
 | Foraging | Reading a new kind of file and wearing a new theme |
 
-Leafing counts the words you actually reach: a paragraph, heading or other block counts once it has been on screen for two seconds, and every 500 words is a point. A page Leaftext cannot split into blocks counts by how far down you have read it. Reading the same document again in one sitting adds nothing, and nothing counts while nobody has scrolled, typed or moved the pointer for five minutes, so a window left open overnight earns nothing. An area that has not counted anything yet stays at level 1 and says **Not started**. The first unit of anything puts an area at level 2, the third at level 3, and level 50 is the top. Every fifth level an area reaches is a **seed**, and so are its levels 10, 25 and 50; your seeds show at the top right of the sheet.
+Open an area and it lists every rule that pays it — **Every 500 words read**, **Each new format read** — with the XP each one is worth, so nothing is a guess.
+
+Leafing counts the words you actually reach: a paragraph, heading or other block counts once it has been on screen for two seconds, and every 500 words is a point. A block taller than the window — a long table, a long code block — counts by how far down it you have read, so scrolling past the top of one pays for the part you saw rather than all of it. A page Leaftext cannot split into blocks counts by how far down you have read it. Reading the same document again in one sitting adds nothing, and nothing counts while nobody has scrolled, typed or moved the pointer for five minutes, so a window left open overnight earns nothing. An area that has not counted anything yet stays at level 1 and says **Not started**. The first unit of anything reaches level 2, the third level 3, and level 50 is the top. Every bar says the XP it holds and the XP the next level costs; an area at its ceiling says so instead. Every fifth level an area reaches is a **seed**, and so are its levels 10, 25 and 50; your seeds show at the top right of the sheet.
 
 The record holds counts and nothing else: never a file's name, its folder, or a word of what it says.
+
+## Claim a level
+
+Reaching a level does not take it. The level waits, the pill says **1 to claim**, and the areas, the Grove total and your seeds all stay where they were. Open the Grove and it opens on that level instead of the usual sheet: which area reached it, what you did to earn it and what that was worth, its bar full at the XP it needed, and what claiming changes — the area's new level, your new Grove total, and the seed it hands over or the reason it hands none.
+
+Press **Claim** and that one level is yours: the area moves up, the Grove total moves with it, and any seed becomes yours to spend. Another level waiting is shown next, in the order they were reached, and the sheet goes back to the usual Grove once the last one is claimed. Closing the sheet keeps everything still waiting, and XP keeps being counted behind it.
 
 ## Grow with seeds
 
@@ -58,6 +66,6 @@ The record is `profile.json`, beside `settings.json` and `recent-files.json` in 
 
 ## Turn it off
 
-Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title, the mark and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
+Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, no bar moves, no level is earned, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title, the mark and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
 
 The published site and a document embedded in another product keep no record, and show no pill.
