@@ -10,7 +10,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 
 | Setting | Options | Default | Where the control is |
 | --- | --- | --- | --- |
-| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random | The palette in the app bar |
+| [Theme](#theme) | Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, Sage, Random | Random | The palette at the library pane's foot |
 | [Appearance](06-themes.md#appearance) | System, Light, Dark, Daylight | Daylight | The same [theme picker](06-themes.md#choose) |
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 
@@ -111,7 +111,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 ### Theme
 
-- The palette button in the app bar opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on
+- The palette button at the foot of the [library](03-library.md#browsing) pane opens the [theme picker](06-themes.md#choose); its tooltip names the family and appearance you are on
 - Saved as `theme_family` (family or `random`) and `theme_mode` (appearance)
 - New installs default to `random` and `daylight`; once you pick a theme your choice is saved and used from then on
 - Choosing [Random](06-themes.md#random) draws a fresh family at each launch; `theme_random_used` records the families already shown in the current no-repeat cycle so the rotation survives restarts

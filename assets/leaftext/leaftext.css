@@ -5486,8 +5486,7 @@ button {
   height: 16px;
   pointer-events: none;
 }
-/* Themes, Open, New, Export and the library foot's launchers are the same button over and over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
-.theme-button,
+/* Open, New, Export and the library foot's launchers — the theme palette among them — are the same button over and over: muted at rest, greening on hover like the other secondary toolbar icons. Said once, so they cannot drift apart — and none of them is ever the filled primary button, which is how the bar says which view you are in. A button added to this run without its name here rests filled, which reads as the one action already pressed. */
 .open-button,
 .new-button,
 .export-button,
@@ -5499,7 +5498,6 @@ button {
   color: var(--lt-muted-foreground);
 }
 /* The chip keeps its 8px corner: a pill on a 32px square is a circle, which reads as a different control rather than as an emphasis. */
-.theme-button:hover,
 .open-button:hover,
 .new-button:hover,
 .export-button:hover,
@@ -5603,14 +5601,14 @@ body.is-embedded .library-divider,
 body.is-embedded .reader-toolbar {
   display: none;
 }
-/* Not a grid here, so the rail track cannot hold a column open beside the page: the pane's width is written onto the root element by the front end, and an inline property there wins over any rule here. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
+/* Not a grid here, so the rail track cannot hold a column open beside the page: the track the front end writes on the shell does nothing to a block. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
 body.is-embedded .library-shell {
   display: block;
 }
 .library-shell {
   display: grid;
   /* A trailing column and a bottom row hold the reader off the window frame; the rail spans both so only the page is inset. */
-  /* The first track spends the rail width the app bar's lead follows — 0px closed — so one var write moves pane and page together and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
+  /* The first track is the pane's width — 0px closed. The default here stands only until the front end writes this whole track on the shell and the same width on the app bar, never on the root, and the motion classes below transition this one property. Never an @property registration for the rail: animating a registered inherited length off :root crashed the whole app in this web view (library-sidebar-motion, phase 0). */
   grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
   grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
   /* The app surface's height, not the window's: the surface is the app, and past the inset the window has edge the app does not paint. */
@@ -5649,7 +5647,7 @@ body.is-embedded .library-shell {
 .app-surface.has-library-overlay .tab-bar {
   visibility: hidden;
 }
-/* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The track, the bar's lead and the divider line all read --library-rail-width, so one var write moves the three in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
+/* The toggle's motion: open springs past its width on the overshoot curve; close slams to the reader's padding, bounces off it, and seats — three chained legs, because one curve cannot come back out of its target. The front end writes the width on the track and on the app bar, whose lead and divider line read --library-rail-width, so one write per leg moves the three in step; the transitions live only on these classes (library.js holds one per leg), so a drag or resize stays immediate and Reduce Motion's blanket rule zeroes every leg. */
 body.is-library-opening .library-shell {
   transition: grid-template-columns var(--lt-duration-220) var(--lt-ease-overshoot);
 }

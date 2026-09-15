@@ -220,7 +220,7 @@ Write one `GLOSSARY.md` and every mention of a defined term, across every docume
 
 ### Settings you can read, where you need them
 
-There's no settings panel to hunt through. Every control stands where it applies: the palette in the app bar for [theme and appearance](docs/01-features/06-themes.md#choose), the [graph](docs/01-features/03-library.md#graph)'s own toolbar for how big a map to draw. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
+There's no settings panel to hunt through. Every control stands where it applies: the palette at the foot of the library pane for [theme and appearance](docs/01-features/06-themes.md#choose), the [graph](docs/01-features/03-library.md#graph)'s own toolbar for how big a map to draw. It's all a plain JSON file on your machine, not an account. **[Settings →](docs/01-features/05-settings.md)**
 
 ## Your thoughts stay yours
 

@@ -12,7 +12,7 @@ Another name a note answers to, listed in its `aliases` [frontmatter](GLOSSARY.m
 
 ## App bar
 
-The strip along the top of the window: the leaf mark, the [library pane](GLOSSARY.md#library-pane) button, Back and Forward, the [tab](GLOSSARY.md#tab) strip, then the palette that opens the [theme picker](GLOSSARY.md#theme-picker), Open and **+** at the right. There is no Settings button; the [update bell](GLOSSARY.md#update-bell) joins the right-hand group only while there is something to install. It is also the title bar — drag it to move the window, double-click it to maximize or restore — with Leaftext's own window buttons on both: squares at its right end on Windows, three theme-colored dots at its left end on a Mac. What it holds is about the app; what the [floating toolbar](GLOSSARY.md#floating-toolbar) holds is about the document.
+The strip along the top of the window: the leaf mark, the [library pane](GLOSSARY.md#library-pane) button, Back and Forward, the [tab](GLOSSARY.md#tab) strip, then Open and **+** at the right. The palette that opens the [theme picker](GLOSSARY.md#theme-picker) is at the foot of the [library pane](GLOSSARY.md#library-pane) rather than up here. There is no Settings button; the [update bell](GLOSSARY.md#update-bell) joins the right-hand group only while there is something to install. It is also the title bar — drag it to move the window, double-click it to maximize or restore — with Leaftext's own window buttons on both: squares at its right end on Windows, three theme-colored dots at its left end on a Mac. What it holds is about the app; what the [floating toolbar](GLOSSARY.md#floating-toolbar) holds is about the document.
 
 ## Appearance
 
@@ -300,7 +300,7 @@ How Leaftext remembers a reading position: the nearest heading above the top edg
 
 ## Settings
 
-A plain JSON file on your machine, not a panel: there is nowhere to open. Every control stands where it applies — the palette in the [app bar](GLOSSARY.md#app-bar) for [theme](GLOSSARY.md#theme-family) and [appearance](GLOSSARY.md#appearance), the [graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) — and each one saves the moment you use it. See [Settings](01-features/05-settings.md).
+A plain JSON file on your machine, not a panel: there is nowhere to open. Every control stands where it applies — the palette at the foot of the [library pane](GLOSSARY.md#library-pane) for [theme](GLOSSARY.md#theme-family) and [appearance](GLOSSARY.md#appearance), the [graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) — and each one saves the moment you use it. See [Settings](01-features/05-settings.md).
 
 ## Sheet
 
@@ -352,7 +352,7 @@ A palette plus its type and its [icon pack](GLOSSARY.md#icon-pack) — eleven sh
 
 ## Theme picker
 
-The [bottom sheet](GLOSSARY.md#bottom-sheet) the palette button in the [app bar](GLOSSARY.md#app-bar) opens. Every [family](GLOSSARY.md#theme-family) is a card wearing its own colors and type, with the [appearance](GLOSSARY.md#appearance) control at the top and [Random](GLOSSARY.md#random) at the end.
+The [bottom sheet](GLOSSARY.md#bottom-sheet) the palette button at the foot of the [library pane](GLOSSARY.md#library-pane) opens. Every [family](GLOSSARY.md#theme-family) is a card wearing its own colors and type, with the [appearance](GLOSSARY.md#appearance) control at the top and [Random](GLOSSARY.md#random) at the end.
 
 ## Token contract
 

@@ -78,9 +78,9 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ### The app bar
 
-![The Leaftext app bar: the leaf mark, then the theme palette, Open, plus and Export at the right](../../imgs/navigation.png)
+![The Leaftext app bar: the leaf mark, then Open, plus and Export at the right](../../imgs/navigation.png)
 
-At the right the palette that opens the [theme picker](06-themes.md#choose), Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-a-pdf).
+At the right Open, **+** ([new document](07-editing.md#new-document)), and [Export](#export-a-pdf). The palette that opens the [theme picker](06-themes.md#choose) is not up here: it stands with the other launchers at the foot of the [library pane](03-library.md#browsing), because what it opens is a sheet rather than a file.
 
 The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back, Refresh and Forward, then the tab strip. Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
@@ -344,7 +344,7 @@ Every other shape still does its own work, because it describes a gesture rather
 
 ### What a control does under the pointer
 
-Point at one of the icon buttons at either end of the bar — [Back and Forward](#history) at the left, the palette, Open, **+** and Export at the right — at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
+Point at one of the icon buttons at either end of the bar — [Back and Forward](#history) at the left, Open, **+** and Export at the right — at a launcher at the foot of the [library](03-library.md#browsing) pane — at a file row in the [library](03-library.md#browsing) pane, or at a [button written into a document](01-rendering.md#buttons-leaf-extension), and it answers rather than sitting still. The fill goes to the theme's own color, the glyph reverses out of it, and the ink and the edge arrive over the same beat, as they do on every control in the app.
 
 That is the whole answer. Nothing changes shape, nothing slides: the control stays exactly the box, the corner and the place it rests at, so the thing you aimed at is the thing under the pointer and no row changes height. The color reverses the moment the pointer leaves, and with [Reduce Motion](05-settings.md#reduce-motion) on it arrives in one frame.
 
