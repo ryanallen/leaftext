@@ -212,11 +212,11 @@ Write one `GLOSSARY.md` and every mention of a defined term, across every docume
 
 ## Make it yours
 
-### Eleven themes, light and dark
+### Eleven themes, six more to earn, light and dark
 
 ![Amaranth theme](imgs/themes/themes.png)
 
-[Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) — each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap, and the [icons](docs/01-features/06-themes.md#icons) — seven icon sets, and each theme wears one. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
+[Amaranth, Arabica, Bloodleaf, Fern, Ginger, GitHub, Goldenrod, Halcyon, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) ship free, and six one-color modes — Amber, Cobalt, Ink, Verdant, Vermilion and Violet — are earned with seeds in [the Grove](docs/01-features/09-progress.md), each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap, and the [icons](docs/01-features/06-themes.md#icons) — seven icon sets, and each theme wears one. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
 
 ### Settings you can read, where you need them
 
@@ -308,7 +308,7 @@ New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a coup
 | [Library](docs/01-features/03-library.md) | Vaults, the file tree, search, the graph, GitHub sync, file actions |
 | [Minimap](docs/01-features/04-minimap.md) | The side rail, in both the reading view and the code view |
 | [Settings](docs/01-features/05-settings.md) | Every preference, its default, and where it is stored |
-| [Themes](docs/01-features/06-themes.md) | The eleven families, appearance, fonts, diagram colors |
+| [Themes](docs/01-features/06-themes.md) | The eleven families and the six earned ones, appearance, fonts, diagram colors |
 | [Editing](docs/01-features/07-editing.md) | Inline editing, the block gutter, the flowchart editor, code view, save |
 | [Relational tables](docs/01-features/08-relational-tables.md) | RDB views, relations, sorting, filtering and optional table descriptions |
 | [Your Grove](docs/01-features/09-progress.md) | The reading record at the library's foot, and the switch that turns it off |
@@ -330,5 +330,5 @@ Each of these links onward to the rest of its own set, so nothing published here
 |:--|:--|
 | [Documentation](docs/README.md) | Every page published at [leaftext.com/docs](https://leaftext.com/docs), listed above |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
-| [Themes](themes/README.md) | The eleven families, one Markdown file each, with the colors they set and the icon set they wear |
+| [Themes](themes/README.md) | The eleven free families and the six earned ones, one Markdown file each, with the colors they set and the icon set they wear |
 | Crawler files | [`robots.txt`](robots.txt), [`sitemap.xml`](sitemap.xml), [`sitemap-md.txt`](sitemap-md.txt), [`llms.txt`](llms.txt), [`llms-full.txt`](llms-full.txt) — generated from this file and `docs/` |

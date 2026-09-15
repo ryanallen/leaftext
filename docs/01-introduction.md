@@ -65,7 +65,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 ### Make it yours
 
-- Pick one of [eleven themes](01-features/06-themes.md#families), each in light and dark, plus System and Daylight. See them all first at [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every theme, color, icon and part of the interface on one page, with a switcher for the family and for light or dark.
+- Pick one of [eleven themes](01-features/06-themes.md#families), with six more to earn in the Grove, each in light and dark, plus System and Daylight. See them all first at [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every theme, color, icon and part of the interface on one page, with a switcher for the family and for light or dark.
 - Everything moves together — text, code, callouts, [diagrams](01-features/06-themes.md#diagrams), minimap — because every theme fills the same [token contract](01-features/06-themes.md#tokens).
 - Choose the [theme](01-features/05-settings.md#theme), [Speed Reader](01-features/05-settings.md#speed-reader), [typing help](01-features/05-settings.md#typing-help), and [padlocks](01-features/05-settings.md#the-padlocks); each choice saves to a [JSON file](01-features/05-settings.md#files) you can read.
 

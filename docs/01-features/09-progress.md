@@ -32,9 +32,25 @@ Each area grows from one kind of thing you already do:
 | Delving | Looking at a document's source |
 | Foraging | Reading a new kind of file and wearing a new theme |
 
-Leafing counts the words you actually reach: a paragraph, heading or other block counts once it has been on screen for two seconds, and every 500 words is a point. A page Leaftext cannot split into blocks counts by how far down you have read it. Reading the same document again in one sitting adds nothing, and nothing counts while nobody has scrolled, typed or moved the pointer for five minutes, so a window left open overnight earns nothing. An area that has not counted anything yet stays at level 1 and says **Not started**. The first unit of anything puts an area at level 2, the third at level 3, and level 50 is the top. Every level gained anywhere is also a **seed**, shown beside the title.
+Leafing counts the words you actually reach: a paragraph, heading or other block counts once it has been on screen for two seconds, and every 500 words is a point. A page Leaftext cannot split into blocks counts by how far down you have read it. Reading the same document again in one sitting adds nothing, and nothing counts while nobody has scrolled, typed or moved the pointer for five minutes, so a window left open overnight earns nothing. An area that has not counted anything yet stays at level 1 and says **Not started**. The first unit of anything puts an area at level 2, the third at level 3, and level 50 is the top. Every fifth level an area reaches is a **seed**, and so are its levels 10, 25 and 50; your seeds show at the top right of the sheet.
 
 The record holds counts and nothing else: never a file's name, its folder, or a word of what it says.
+
+## Grow with seeds
+
+Every Growth area in the sheet is a button, and each says how many things grow from it. Press one and the sheet shows that area's tree, with a back arrow in place of **Your Grove**; press it or Escape to return to every area. Your seeds stay one number at the top right, whichever area is open.
+
+A tree starts with broad beginnings on the left and branches toward more specific things on the right, joined by lines. A beginning can be grown as soon as you have the seeds for it. Anything further along says which earlier ones it needs, and its line lights once you own the one it comes from. A few things can be grown more than once, and show how many times you have. Something another part of Leaftext has not built yet stands on its path and says **Not grown yet**.
+
+Press a price and the node asks whether to spend those seeds, with **Not now** and **Spend**. Nothing is spent until you press Spend, and pressing anywhere else, Back or Escape puts the price back. Seeds are not given back, and nothing you grow is ever taken away.
+
+What you can grow today:
+
+- **Six one-color themes** under Foraging — Cobalt, Vermilion, Verdant, Amber, Violet and Ink. A theme you grow joins the [theme picker](06-themes.md) and Random; press **Wear it in Themes** in its node to open the picker on it.
+- **Things on the page** — a drop cap, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch in its node.
+- **More leaf lore** — six more sentences for the start screen's palm-leaf voice, one each time.
+- **A title** — Reader, Scribe, Cartographer or Prism Keeper, shown under **Your Grove**.
+- **The mark** — a thin circle around the leaf at the left of the app bar.
 
 ## Where it is kept
 
@@ -42,6 +58,6 @@ The record is `profile.json`, beside `settings.json` and `recent-files.json` in 
 
 ## Turn it off
 
-Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Press the switch again to start counting where you left off.
+Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title, the mark and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
 
 The published site and a document embedded in another product keep no record, and show no pill.

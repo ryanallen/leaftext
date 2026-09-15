@@ -6,7 +6,7 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Eleven ship, listed alphabetically. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Eleven ship free and six more are earned with seeds in [the Grove](09-progress.md), listed alphabetically; an earned family joins the picker once it is bought. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette | Icons |
 | --- | --- | --- |
@@ -71,6 +71,34 @@ Every family rendering the same reference document, split diagonally so the ligh
 ### Sage
 
 ![Sage — the same document in the light and dark variants](../../imgs/themes/sage.png)
+
+### Earned families
+
+The six one-color families are bought with seeds in the Grove's Foraging area, and appear in the picker once they are yours.
+
+### Amber
+
+![Amber — the same document in the light and dark variants](../../imgs/themes/amber.png)
+
+### Cobalt
+
+![Cobalt — the same document in the light and dark variants](../../imgs/themes/cobalt.png)
+
+### Ink
+
+![Ink — the same document in the light and dark variants](../../imgs/themes/ink.png)
+
+### Verdant
+
+![Verdant — the same document in the light and dark variants](../../imgs/themes/verdant.png)
+
+### Vermilion
+
+![Vermilion — the same document in the light and dark variants](../../imgs/themes/vermilion.png)
+
+### Violet
+
+![Violet — the same document in the light and dark variants](../../imgs/themes/violet.png)
 
 ## Random
 

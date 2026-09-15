@@ -5,7 +5,7 @@
 
 Every theme in Leaftext is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-11 families ship today, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 84-color contract inside its file.
+11 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 84-color contract inside its file.
 
 4 of the 84 are optional, and a family that says nothing about one gets another of its own colors copied in: `hover-tint`, the ink every fill under the pointer is mixed from, takes the quiet-text color; `primary-ink` and `accent-ink`, the inks printed on those two fills, take the primary and the accent themselves; and `markdown-table-row-background`, the band every other table row wears, takes the sunken surface. Set `hover-tint`, as Goldenrod does, and every menu row, toolbar button and file in the pane washes in that hue instead.
 
@@ -31,6 +31,27 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#e0e0e0` | `#363636` |
+
+### Amber
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Amber mode is bought.
+
+[`amber.md`](amber.md) · Heading **Libre Franklin** · Body **Libre Franklin** · Code **Noto Sans Mono** · Google Fonts
+
+![Amber — the same document in the light and dark variants](../imgs/themes/amber.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#211e18` |
+| Foreground | `#282117` | `#ded9d2` |
+| Heading    | `#15110c` | `#ffffff` |
+| Primary    | `#986313` | `#e0911c` |
+| Accent     | `#986313` | `#eab059` |
+| Link       | `#986313` | `#eab059` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#e7dfd4` | `#3c352b` |
 
 ### Arabica
 
@@ -69,6 +90,27 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Warning    | `#8a6100` | `#ffc043` |
 | Danger     | `#b81420` | `#ff5f63` |
 | Border     | `#dde5ec` | `#28323d` |
+
+### Cobalt
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Cobalt mode is bought.
+
+[`cobalt.md`](cobalt.md) · Heading **Manrope** · Body **Manrope** · Code **Noto Sans Mono** · Google Fonts
+
+![Cobalt — the same document in the light and dark variants](../imgs/themes/cobalt.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#1b1e25` |
+| Foreground | `#1b222f` | `#d6dae1` |
+| Heading    | `#0e1219` | `#ffffff` |
+| Primary    | `#2068e3` | `#77a3ee` |
+| Accent     | `#2068e3` | `#9cbcf3` |
+| Link       | `#2068e3` | `#9cbcf3` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#dbe0eb` | `#303642` |
 
 ### Fern
 
@@ -165,6 +207,27 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Danger     | `#d3243a` | `#fb5d62` |
 | Border     | `#e6e9ee` | `#353b44` |
 
+### Ink
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Ink mode is bought.
+
+[`ink.md`](ink.md) · Heading **Public Sans** · Body **Public Sans** · Code **Noto Sans Mono** · Google Fonts
+
+![Ink — the same document in the light and dark variants](../imgs/themes/ink.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#1e1e1e` |
+| Foreground | `#222222` | `#dadada` |
+| Heading    | `#121212` | `#ffffff` |
+| Primary    | `#6e6e6e` | `#a2a2a2` |
+| Accent     | `#6e6e6e` | `#bbbbbb` |
+| Link       | `#6e6e6e` | `#bbbbbb` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#e0e0e0` | `#363636` |
+
 ### Nightshade
 
 [`nightshade.md`](nightshade.md) · Heading **Fraunces** · Body **Inter** · Code **Fira Code** · Google Fonts
@@ -221,6 +284,69 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#dcdad5` | `#363636` |
+
+### Verdant
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Verdant mode is bought.
+
+[`verdant.md`](verdant.md) · Heading **Figtree** · Body **Figtree** · Code **Noto Sans Mono** · Google Fonts
+
+![Verdant — the same document in the light and dark variants](../imgs/themes/verdant.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#17201a` |
+| Foreground | `#15261a` | `#d0ddd4` |
+| Heading    | `#0b140e` | `#ffffff` |
+| Primary    | `#108031` | `#17bb48` |
+| Accent     | `#108031` | `#1bd753` |
+| Link       | `#108031` | `#1bd753` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#d1e5d7` | `#2a3a2f` |
+
+### Vermilion
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Vermilion mode is bought.
+
+[`vermilion.md`](vermilion.md) · Heading **Karla** · Body **Karla** · Code **Noto Sans Mono** · Google Fonts
+
+![Vermilion — the same document in the light and dark variants](../imgs/themes/vermilion.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#251c1b` |
+| Foreground | `#301e1b` | `#e2d8d7` |
+| Heading    | `#19100e` | `#ffffff` |
+| Primary    | `#cf321a` | `#ee8575` |
+| Accent     | `#cf321a` | `#f3a89d` |
+| Link       | `#cf321a` | `#f3a89d` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#ebdddb` | `#423230` |
+
+### Violet
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Violet mode is bought.
+
+[`violet.md`](violet.md) · Heading **Outfit** · Body **Outfit** · Code **Noto Sans Mono** · Google Fonts
+
+![Violet — the same document in the light and dark variants](../imgs/themes/violet.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#211c27` |
+| Foreground | `#281d34` | `#ddd8e3` |
+| Heading    | `#150f1b` | `#ffffff` |
+| Primary    | `#9043e8` | `#bc8ef1` |
+| Accent     | `#9043e8` | `#ceadf5` |
+| Link       | `#9043e8` | `#ceadf5` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#e4ddec` | `#3b3246` |
 
 ## Adding or editing a theme
 
