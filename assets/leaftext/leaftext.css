@@ -10710,6 +10710,10 @@ body.mac-frame .document-minimap-frame {
 .document-minimap-preview .table-sizer {
   display: none;
 }
+/* A hand-speed drag down a long leaf-bulleted note dropped 62 to 72 frames with the leaf and 13 to 27 without it; every copied rectangle stayed identical, and at the rail's scale the leaf is under a pixel. */
+.document-minimap-preview.document-body.has-leaf-bullets ul > li:not(.is-task)::before {
+  content: none;
+}
 /* The clone is inert; clicks belong to the rail, which handles jump/drag. */
 .document-minimap-preview,
 .document-minimap-preview * {

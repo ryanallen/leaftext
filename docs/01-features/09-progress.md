@@ -6,7 +6,7 @@ Leaftext keeps a quiet record of what you do in it and shows it as your **Grove*
 
 ## Open your Grove
 
-The **Grove** pill sits at the bottom of the [library pane](03-library.md), under the row of buttons for Scheduled tasks, Favorites, Recent and Search. It runs the width of that row and shows the Leaftext leaf and your Grove level — or, when a level is waiting, **1 to claim**, with the pill in the theme's accent. Press it and a large sheet rises from the bottom of the window with a year of days — one square a day on your own computer's calendar, darker the more grew on it — and every Growth area, its level and a bar for how far into that level it has grown. Drag the sheet down, press the cross, press outside it or press Escape to put it away. The document stays open underneath.
+The **Grove** pill sits at the bottom of the [library pane](03-library.md), under the row of buttons for Scheduled tasks, Favorites, Recent and Search. It runs the width of that row and shows the Leaftext leaf and your Grove level — or **Check a day** when one recorded date needs your choice, or **1 to claim** when a level is waiting, with the pill in the theme's accent. Press it and a large sheet rises from the bottom of the window with a year of days — one square a day on your own computer's calendar, darker the more grew on it — and every Growth area, its level and a bar for how far into that level it has grown. Drag the sheet down, press the cross, press outside it or press Escape to put it away. The document stays open underneath.
 
 ![The Grove sheet risen over a document: Your Grove with four seeds and the Keep a record switch on in its header, Grove 17, a year of days with today shaded, the Growth areas in two columns with Leafing listing the fifteen formats and Markdown lit, and the four Landmarks in a column beside them, over the leaf-marked Grove pill at the foot of the library pane](../../imgs/grove-sheet.png)
 
@@ -43,6 +43,10 @@ Whenever something pays XP, the pill says so for a few seconds — **+1 Leafing*
 The Grove sheet's column beside the areas opens on **Earned lately**: the latest things that paid, newest first, each with its day, what you did — **1,000 words read**, **Vault synced, 3 times** — and the XP it was worth. The same kind of payment on the same day adds up on one line, and the list keeps the twelve latest. It starts empty and fills from the next thing that pays.
 
 The record holds counts and nothing else: never a file's name, its folder, or a word of what it says.
+
+## Check a recorded day
+
+When an older record holds XP on the day immediately after its saved current day, Leaftext cannot tell whether that growth happened before or after midnight. The Grove pill says **Check a day**, and the sheet opens on the amount and both dates ahead of any waiting level. **Keep** leaves the XP on the later date. **Move** joins it to the earlier date and recalculates the longest run of days. The question is settled once, and Leaftext changes nothing until you choose.
 
 ## Claim a level
 
