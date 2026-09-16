@@ -50,7 +50,7 @@
 ## Your Grove
 - Page: https://leaftext.com/docs/01-features/09-progress.md
 - Markdown: https://leaftext.com/docs/01-features/09-progress.md
-- Summary: Leaftext keeps a quiet record of what you do in it and shows it as your Grove: thirteen Growth areas, each leveled by its own kind of use, and a Grove level that adds up the levels you have claimed...
+- Summary: Leaftext keeps a quiet record of what you do in it and shows it as your Grove: thirteen Growth areas, each leveled by its own kind of use, and one Grove level that everything you do fills. XP is ea...
 
 ## Meet Leaftext
 - Page: https://leaftext.com/docs/01-introduction.md

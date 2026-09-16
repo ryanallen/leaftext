@@ -12563,11 +12563,12 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-13);
 }
 /* The year: its days in order, wrapping to fill the sheet's whole width with square cells at least 10px across. Four steps of the accent, so one enormous day does not wash every other day out. */
+/* Under the Grove's own bar, so the bar's words keep a gap from the first row of days. */
 .grove-year {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(10px, 1fr));
   gap: var(--lt-space-2);
-  margin: 0 0 var(--lt-space-16);
+  margin: var(--lt-space-4) 0 var(--lt-space-16);
 }
 .grove-day {
   aspect-ratio: 1;
