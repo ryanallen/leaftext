@@ -12684,6 +12684,17 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
+/* What today came to: a heading over two rows drawn as landmarks. */
+.grove-today {
+  display: grid;
+  gap: var(--lt-space-6);
+}
+.grove-today-head {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
 /* Four high-water marks, a label over its figure. */
 .grove-landmarks {
   min-width: 0;
@@ -14287,7 +14298,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 17 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 110 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 17 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 111 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="amber" aria-pressed="false">Amber</button>
@@ -14315,7 +14326,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>110</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>111</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -14725,7 +14736,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">110 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">111 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -14873,6 +14884,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Earned lately</h3><code class="built">.grove-earned</code><span class="built">profile.js, heading the column beside the Grove's areas</span></header>
 <div class="stage"><div class="grove-side" style="width:280px"><section class="grove-earned"><h3 class="grove-earned-head">Earned lately</h3><ol class="grove-earned-list"><li class="grove-earned-row"><span class="grove-earned-day">Today</span><span class="grove-earned-doing">1,000 words read</span><span class="grove-earned-xp">+2 Leafing XP</span></li><li class="grove-earned-row"><span class="grove-earned-day">Yesterday</span><span class="grove-earned-doing">Vault synced, 3 times</span><span class="grove-earned-xp">+3 Rooting XP</span></li></ol></section><section class="grove-earned"><h3 class="grove-earned-head">Earned lately</h3><p class="grove-earned-empty">Nothing has been earned since this list began. The next thing that pays XP shows here.</p></section></div></div>
+</section>
+<section class="part">
+<header><h3>Today</h3><code class="built">.grove-today</code><span class="built">profile.js, between Earned lately and the Landmarks in the Grove's side column, on the page's own day once something is on it</span></header>
+<div class="stage"><div class="grove-side" style="width:280px"><section class="grove-today"><h3 class="grove-today-head">Today</h3><dl class="grove-landmarks"><div class="grove-landmark"><dt class="grove-landmark-label">Words read today</dt><dd class="grove-landmark-value" data-grove-today="words">37</dd></div><div class="grove-landmark"><dt class="grove-landmark-label">Documents opened today</dt><dd class="grove-landmark-value" data-grove-today="documents">1</dd></div></dl></section></div></div>
 </section>
 <section class="part">
 <header><h3>Grove switch</h3><code class="built">.grove-switch</code><span class="built">profile.js, in the Grove sheet's header</span></header>

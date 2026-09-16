@@ -12676,6 +12676,17 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
+/* What today came to: a heading over two rows drawn as landmarks. */
+.grove-today {
+  display: grid;
+  gap: var(--lt-space-6);
+}
+.grove-today-head {
+  margin: 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
 /* Four high-water marks, a label over its figure. */
 .grove-landmarks {
   min-width: 0;
