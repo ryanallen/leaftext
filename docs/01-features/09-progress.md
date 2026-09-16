@@ -30,9 +30,11 @@ Each area grows from one kind of thing you already do:
 | Rooting | Adding vaults, successfully making or linking repositories, turning automatic sync on for a vault, and pressing Sync when it sends your work; each of these is setup a vault does once, so picking a folder that is already a vault switches to it and pays nothing, a vault pays for its first successful remote link and for its switch once each, a sync with nothing to send earns nothing, and the syncs the switch makes on its own earn nothing |
 | Sharing | Exporting a diagram, a picture, a PDF or a page |
 | Delving | Looking at a document's source |
-| Foraging | Reading a new kind of file and wearing a new theme |
+| Foraging | Opening a new kind of file and wearing a new theme |
 
 Open an area and it lists every rule that pays it — **Every 500 words read**, **Each new format read** — with the XP each one is worth, so nothing is a guess.
+
+Foraging counts each kind of file once: every format, and every source language on its own, so a Rust file, a Python file and a Dockerfile are three finds rather than one. It pays nothing for a second file of a kind you have already opened, so it stops where there is nothing left to find — at level 10, for thirty kinds of file and seventeen theme families. Open it and the kinds of file you have found are lit among the ones still to find.
 
 Leafing counts the words you actually reach: a paragraph, heading or other block counts once it has been on screen for two seconds, and every 500 words is a point. A block taller than the window — a long table, a long code block — counts by how far down it you have read, so scrolling past the top of one pays for the part you saw rather than all of it. A page Leaftext cannot split into blocks counts by how far down you have read it. Reading the same document again in one sitting adds nothing, and nothing counts while nobody has scrolled, typed or moved the pointer for five minutes, so a window left open overnight earns nothing. An area that has not counted anything yet stays at level 1 and says **Not started**. Every rule pays one point, so one thing you do never reaches more than one level at once. The first unit of anything reaches level 2, the third level 3, and level 50 is the top. Every bar says the XP it holds and the XP the next level costs; an area at its ceiling says so instead. Every fifth level an area reaches is a **seed**, and so are its levels 10, 25 and 50; your seeds show at the top right of the sheet.
 
