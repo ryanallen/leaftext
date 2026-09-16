@@ -6679,9 +6679,13 @@ body.library-resizing button {
 :root[data-graph-view="true"] .reader-loading {
   grid-column: 2 / 4;
 }
-/* The map has no minimap, so in this view there is no minimap column — said once here rather than in each place measuring to a rail that is not there. The bar's divider and .reader-corner-tr are both positioned off it, so they stopped a column short of the map and turned the arc down in mid-air over the canvas. On `body`, where the rule that opens the column sets it: a custom property set on an element beats one inherited from :root, however specific that selector. */
-:root[data-graph-view="true"] > body {
+/* The map has no minimap, so in this view there is no minimap column — said once here rather than in each place measuring to a rail that is not there. The bar's divider and .reader-corner-tr are both positioned off it, so they stopped a column short of the map and turned the arc down in mid-air over the canvas. On the bar, which is the only thing that reads it and holds no document: on `body` it restyled every element in the open page, 82 to 100 ms on a megabyte note each time the map went up or came down. */
+:root[data-graph-view="true"] .app-bar {
   --reader-minimap-column: 0px;
+}
+/* The page and its rail while the map stands over them. Out of sight, out of hit testing, out of the tab order and out of what a screen reader reads — and still laid out, so pressing Reading is a restyle of boxes that are already placed rather than a megabyte of document built again from nothing. */
+.is-under-map {
+  visibility: hidden;
 }
 .reader-graph-canvas canvas {
   display: block;
@@ -9214,6 +9218,15 @@ body.is-block-dragging .document-body [data-src-start] {
 /* The top-right corner of the faked page: the same convex arc reader-corner-tr draws at the card's real right corner in the reading view, moved in to the minimap stroke. Only the offset changes — outside the corner is the shell's grain here as well, now that the page fill stops at the frame (the shell's ::before), so the chrome fill and the mask cutting the page's disc back out of it are both right as they stand. Its z-index 11 keeps it above Monaco, which is why the corner lives here and not on a shell pseudo (::before paints behind the editor). The right offset matches ::after's faked edge; the arc's own geometry (top: 100% - 1px, the radius+1 box, the top/right borders) is inherited from .reader-corner(-tr). */
 :root[data-code-view="true"] .reader-corner-tr {
   right: calc(var(--reader-gutter) + var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+}
+/* The reading page while the editor stands over it: still inside the shell, still laid out at the width it was reading at, and out of the editor's way. Out of flow so the shell scrolls the editor rather than the page, clipped to the shell so a long document adds nothing to it, and out of sight, out of hit testing, out of the tab order and out of what a screen reader reads. Taken out of the shell and put back, the same page costs 260 to 284 ms — it loses its boxes the moment it leaves — where kept like this it comes back in 67 to 75. */
+.reader-layout.is-under-editor {
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  height: 100%;
+  overflow: hidden;
+  visibility: hidden;
 }
 .code-view-monaco {
   position: absolute;

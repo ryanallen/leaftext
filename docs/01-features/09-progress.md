@@ -27,7 +27,7 @@ Each area grows from one kind of thing you already do:
 | Wayfinding | Following links, opening the map and the glossary |
 | Seeking | Opening what a vault search found |
 | Tending | Making, renaming and moving files, and setting favorites |
-| Rooting | Adding vaults, successfully making or linking repositories, turning automatic sync on for a vault, and successful Sync presses; a vault pays for its switch once, and the syncs the switch makes on its own earn nothing |
+| Rooting | Adding vaults, successfully making or linking repositories, turning automatic sync on for a vault, and successful Sync presses; each of these is setup a vault does once, so picking a folder that is already a vault switches to it and pays nothing, a vault pays for its first successful remote link and for its switch once each, and the syncs the switch makes on its own earn nothing |
 | Sharing | Exporting a diagram, a picture, a PDF or a page |
 | Delving | Looking at a document's source |
 | Foraging | Reading a new kind of file and wearing a new theme |
@@ -42,7 +42,7 @@ Whenever something pays XP, the pill says so for a few seconds — **+1 Leafing*
 
 The Grove sheet's column beside the areas opens on **Earned lately**: the latest things that paid, newest first, each with its day, what you did — **1,000 words read**, **Vault synced, 3 times** — and the XP it was worth. The same kind of payment on the same day adds up on one line, and the list keeps the twelve latest. It starts empty and fills from the next thing that pays.
 
-The record holds counts, and the ids of the things that pay only once — which kinds of file you have read, which theme families you have worn, which vaults you have set to sync themselves. Never a file's name, its folder, or a word of what it says.
+The record holds counts, and the ids of the things that pay only once — which kinds of file you have read, which theme families you have worn, which vaults you have linked to a repository, which vaults you have set to sync themselves. Never a file's name, its folder, or a word of what it says.
 
 ## Check a recorded day
 
