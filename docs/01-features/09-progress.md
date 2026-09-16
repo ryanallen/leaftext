@@ -27,7 +27,7 @@ Each area grows from one kind of thing you already do:
 | Wayfinding | Following links, opening the map and the glossary |
 | Seeking | Opening what a vault search found |
 | Tending | Making, renaming and moving files, and setting favorites |
-| Rooting | Adding vaults, linking them to a repository and pressing Sync; a vault that syncs itself earns nothing |
+| Rooting | Adding vaults, successfully making or linking repositories and successful Sync presses; automatic sync earns nothing |
 | Sharing | Exporting a diagram, a picture, a PDF or a page |
 | Delving | Looking at a document's source |
 | Foraging | Reading a new kind of file and wearing a new theme |
