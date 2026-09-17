@@ -165,9 +165,7 @@ Each version is installed automatically once. If an install fails, that version 
 
 **On Windows, updates arrive as the `.exe`**, whichever installer put Leaftext on the machine. It is the one Windows file a release publishes, and it lays down the same install in the same folder, so nothing about where the app lives changes when an update arrives.
 
-**The app only speaks when it can act.** A check that found nothing, could not reach GitHub, or was rate-limited says nothing at all — the bell stays away. There is nothing you could do about any of those, and a panel reporting them read as the app asking for work it should be doing itself. Startup is never blocked by any of this, and being offline changes nothing you can see. The version you are running is at the foot of the [home screen](03-quickstart.md).
-
-**A release carrying no installer for your platform is the one thing it does tell you about.** There is a new version and this copy cannot fetch it for you, so the bell arrives with its green dot and the panel names the version, says the release carries no file this copy can install, and offers **Open the releases page**, which opens that page in your browser and nothing else. It is not a download: the file may not be published yet. It stays there on every check until a release turns up with a file in it, because a copy that has quietly stopped updating itself otherwise looks exactly like one that is current.
+**The app only speaks when it can act.** A check that found nothing, could not reach GitHub, was rate-limited, or found a release carrying no installer this copy can use yet says nothing at all — the bell stays away, and the next check or the next launch takes the release once its file is there. There is nothing you could do about any of those, and a panel reporting them read as the app asking for work it should be doing itself. Startup is never blocked by any of this, and being offline changes nothing you can see. The version you are running is at the foot of the [home screen](03-quickstart.md).
 
 ## Uninstall
 

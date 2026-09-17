@@ -62,6 +62,8 @@ A tree starts with broad beginnings on the left and branches toward more specifi
 
 Press a price and the node asks whether to spend those seeds, with **Not now** and **Spend**. Nothing is spent until you press Spend, and pressing anywhere else, Back or Escape puts the price back. Seeds are not given back, and nothing you grow is ever taken away.
 
+Finishing every Growth area pays enough seeds to buy every rank of everything that has grown.
+
 What you can grow today:
 
 - **Six one-color themes** under Foraging — Cobalt, Vermilion, Verdant, Amber, Violet and Ink. A theme you grow joins the [theme picker](06-themes.md) and Random; press **Wear it in Themes** in its node to open the picker on it.
