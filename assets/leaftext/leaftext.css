@@ -12612,34 +12612,6 @@ body.is-home-row-dragging .home-list-scroll li {
     transform: translateY(100%);
   }
 }
-/* The seed flying from the burst into the balance in the sheet's head. The page measures both ends and hands the distance over, so one keyframe lands it wherever the balance is. */
-.grove-seed-flight {
-  position: absolute;
-  padding: var(--lt-space-2) var(--lt-space-10);
-  border-radius: var(--lt-radius-pill);
-  background: var(--lt-accent);
-  color: var(--lt-accent-foreground);
-  font-size: var(--lt-text-13);
-  font-weight: var(--lt-weight-600);
-  white-space: nowrap;
-  translate: -50% -50%;
-  animation: grove-seed-fly var(--lt-duration-900) var(--lt-ease-emphasized) both;
-}
-@keyframes grove-seed-fly {
-  0%,
-  30% {
-    opacity: 1;
-    transform: translate(0, 0) scale(1);
-  }
-  90% {
-    opacity: 1;
-    transform: translate(var(--grove-flight-x), var(--grove-flight-y)) scale(0.6);
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--grove-flight-x), var(--grove-flight-y)) scale(0.6);
-  }
-}
 /* Won back under Reduce Motion: the fill is the only sign a hold is counting, and a fill that jumps to full on the press reads as a control that ignores the reader. Only the filling half — the drain may snap. */
 @media (prefers-reduced-motion: reduce) {
   .grove-claim-fill.is-holding {
