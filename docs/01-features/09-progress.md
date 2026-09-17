@@ -40,7 +40,7 @@ Leafing counts the words you actually reach: a paragraph, heading or other block
 
 ## See XP as it lands
 
-Whenever something pays XP, the pill says so for a few seconds — **+1 Leafing** — with a thin bar along its foot showing how far that area now is into its level, and pointing at it gives the same words the area's bar says. When one reading pays two areas, each takes its turn, and then the pill goes back to your Grove level or the levels waiting to claim. Nothing plays when the app opens.
+Whenever something pays XP, the pill says so for a few seconds — **+1 Leafing** — with a thin bar along its foot showing how far that area now is into its level, and pointing at it gives the same words the area's bar says. When one reading pays two areas, each takes its turn. When a reading carries your Grove up a level, the pill first says the seeds that level brought — **+3 seeds** — with no bar, before the areas that paid take their turns. Then the pill goes back to your Grove level or the levels waiting to claim. Nothing plays when the app opens.
 
 The Grove sheet's column beside the areas opens on **Earned lately**: the latest things that paid, newest first, each with its day, what you did — **1,000 words read**, **Vault synced, 3 times** — and the XP it was worth. The same kind of payment on the same day adds up on one line, and the list keeps the twelve latest. It starts empty and fills from the next thing that pays.
 
