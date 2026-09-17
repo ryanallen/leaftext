@@ -44,7 +44,7 @@ Whenever something pays XP, the pill says so for a few seconds — **+1 Leafing*
 
 The Grove sheet's column beside the areas opens on **Earned lately**: the latest things that paid, newest first, each with its day, what you did — **1,000 words read**, **Vault synced, 3 times** — and the XP it was worth. The same kind of payment on the same day adds up on one line, and the list keeps the twelve latest. It starts empty and fills from the next thing that pays.
 
-Under it, **Today** says what today has come to so far — the words read and the documents opened — directly above the Landmarks for the most of each in a day, so you can see whether today is about to beat them. It counts from midnight on your own clock, and stays hidden until today has something on it.
+Under it, **Today** says what today has come to so far — the words read and the documents opened, each document counted once a day however often you open it or restart Leaftext — directly above the Landmarks for the most of each in a day, so you can see whether today is about to beat them. It counts from midnight on your own clock, and stays hidden until today has something on it.
 
 The record holds counts, and the ids of the things that pay only once — which kinds of file you have read, which theme families you have worn, which vaults you have linked to a repository, which vaults you have set to sync themselves. Never a file's name, its folder, or a word of what it says.
 
@@ -52,7 +52,7 @@ The record holds counts, and the ids of the things that pay only once — which 
 
 Reaching an area's level does not take it. The level waits, the pill says **1 to claim**, and that area's level and your seeds stay where they were; the Grove's bar has already counted the XP that earned it. Open the Grove and it opens on that level instead of the usual sheet: which area reached it, what you did to earn it and what that was worth, its bar full at the XP it needed, and what claiming changes — the area's new level, and the seed it hands over or the level where the area's next one comes.
 
-Press **Claim** and that one level is yours: the area moves up and any seed becomes yours to spend. Another level waiting is shown next, in the order they were reached, and the sheet goes back to the usual Grove once the last one is claimed. Closing the sheet keeps everything still waiting, and XP keeps being counted behind it.
+Press and hold **Hold to claim** until the button fills, and that one level is yours: the card bursts into confetti, the area's level rolls over to the new one, and any seed it hands over flies up into the seed count in the sheet's head. Let go before the button is full and nothing is claimed. Pressing it once from a screen reader claims at once, and with Reduce Motion on the numbers simply change. Another level waiting is shown next, in the order they were reached, and the sheet goes back to the usual Grove once the last one is claimed. Closing the sheet keeps everything still waiting, and XP keeps being counted behind it.
 
 ## Grow with seeds
 

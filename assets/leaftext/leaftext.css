@@ -3187,7 +3187,9 @@
   --lt-duration-280: 280ms;
   --lt-duration-300: 300ms;
   --lt-duration-400: 400ms;
+  --lt-duration-600: 600ms;
   --lt-duration-700: 700ms;
+  --lt-duration-900: 900ms;
   --lt-duration-800: 800ms;
   --lt-duration-1100: 1100ms;
   --lt-duration-1250: 1250ms;
@@ -7466,7 +7468,10 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   word-wrap: break-word;
   word-break: normal;
 }
-/* The reader lays the whole document out up front (like the web reader), which keeps scrolling smooth: content-visibility skipping makes off-screen blocks flash blank and the minimap box jump as heights re-estimate. A drawn diagram is the one exception, and only because its height is measured and remembered rather than estimated. */
+/* Blocks below the landing leave the page entirely; skipped layout keeps guessed heights in it, so the scroll range and minimap lie until those guesses settle. */
+.is-held-below {
+  display: none !important;
+}
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -12517,6 +12522,150 @@ body.is-home-row-dragging .home-list-scroll li {
 .grove-claim-more {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-11);
+}
+/* The claim press is held, not clicked: a fill under its words crosses it on the hold's length and drains faster when let go, because a hold abandoned is a departure. The fill sits a layer below the words inside the button's own stacking context, so the words never go under it. */
+.grove-claim-press {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.grove-claim-fill {
+  position: absolute;
+  inset: 0;
+  z-index: var(--lt-z-below);
+  background: var(--lt-accent-foreground);
+  opacity: var(--lt-opacity-38);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.grove-claim-fill.is-holding {
+  transform: scaleX(1);
+  transition: transform var(--lt-duration-600) var(--lt-ease-linear);
+}
+/* A claimed level's celebration: one layer over the sheet that drew the claim, outside the body a redraw rewrites, taking no pointer and removed when it ends. Every piece is placed by the page and moved by its own custom properties, so one keyframe serves all of them. */
+.grove-celebration {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.grove-confetti {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  translate: -50% -50%;
+  border-radius: var(--lt-radius-xs);
+  background: var(--grove-confetti-color);
+  opacity: 0;
+  animation: grove-confetti-burst var(--lt-duration-900) var(--lt-ease-decelerate) both;
+}
+@keyframes grove-confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--grove-confetti-x), var(--grove-confetti-y)) rotate(var(--grove-confetti-turn));
+  }
+}
+/* What the claim moved, centered on the card: the area's name over its level rolling from the old number to the new one. It lands with the burst and fades as the layer ends, so the card the sheet redraws is what is left. */
+.grove-celebration-count {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-8) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-accent);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  translate: -50% -50%;
+  animation: grove-count-arrive var(--lt-duration-900) var(--lt-ease-emphasized) both;
+}
+@keyframes grove-count-arrive {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+.grove-celebration-name {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+.grove-celebration-roll {
+  display: grid;
+  overflow: hidden;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-700);
+}
+.grove-celebration-from,
+.grove-celebration-to {
+  grid-area: 1 / 1;
+  text-align: center;
+}
+.grove-celebration-from {
+  animation: grove-roll-out var(--lt-duration-300) var(--lt-ease-accelerate) var(--lt-duration-200) both;
+}
+.grove-celebration-to {
+  animation: grove-roll-in var(--lt-duration-300) var(--lt-ease-decelerate) var(--lt-duration-200) both;
+}
+@keyframes grove-roll-out {
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+@keyframes grove-roll-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+/* The seed flying from the burst into the balance in the sheet's head. The page measures both ends and hands the distance over, so one keyframe lands it wherever the balance is. */
+.grove-seed-flight {
+  position: absolute;
+  padding: var(--lt-space-2) var(--lt-space-10);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-accent);
+  color: var(--lt-accent-foreground);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+  translate: -50% -50%;
+  animation: grove-seed-fly var(--lt-duration-900) var(--lt-ease-emphasized) both;
+}
+@keyframes grove-seed-fly {
+  0%,
+  30% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(var(--grove-flight-x), var(--grove-flight-y)) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--grove-flight-x), var(--grove-flight-y)) scale(0.6);
+  }
+}
+/* Won back under Reduce Motion: the fill is the only sign a hold is counting, and a fill that jumps to full on the press reads as a control that ignores the reader. Only the filling half — the drain may snap. */
+@media (prefers-reduced-motion: reduce) {
+  .grove-claim-fill.is-holding {
+    transition-duration: var(--lt-duration-600) !important;
+  }
 }
 /* What the grove total is made of, under it. */
 .grove-level-said {

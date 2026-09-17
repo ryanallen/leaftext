@@ -3195,7 +3195,9 @@
   --lt-duration-280: 280ms;
   --lt-duration-300: 300ms;
   --lt-duration-400: 400ms;
+  --lt-duration-600: 600ms;
   --lt-duration-700: 700ms;
+  --lt-duration-900: 900ms;
   --lt-duration-800: 800ms;
   --lt-duration-1100: 1100ms;
   --lt-duration-1250: 1250ms;
@@ -7474,7 +7476,10 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   word-wrap: break-word;
   word-break: normal;
 }
-/* The reader lays the whole document out up front (like the web reader), which keeps scrolling smooth: content-visibility skipping makes off-screen blocks flash blank and the minimap box jump as heights re-estimate. A drawn diagram is the one exception, and only because its height is measured and remembered rather than estimated. */
+/* Blocks below the landing leave the page entirely; skipped layout keeps guessed heights in it, so the scroll range and minimap lie until those guesses settle. */
+.is-held-below {
+  display: none !important;
+}
 .docs-pager {
   display: flex;
   justify-content: space-between;
@@ -12526,6 +12531,150 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-11);
 }
+/* The claim press is held, not clicked: a fill under its words crosses it on the hold's length and drains faster when let go, because a hold abandoned is a departure. The fill sits a layer below the words inside the button's own stacking context, so the words never go under it. */
+.grove-claim-press {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.grove-claim-fill {
+  position: absolute;
+  inset: 0;
+  z-index: var(--lt-z-below);
+  background: var(--lt-accent-foreground);
+  opacity: var(--lt-opacity-38);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.grove-claim-fill.is-holding {
+  transform: scaleX(1);
+  transition: transform var(--lt-duration-600) var(--lt-ease-linear);
+}
+/* A claimed level's celebration: one layer over the sheet that drew the claim, outside the body a redraw rewrites, taking no pointer and removed when it ends. Every piece is placed by the page and moved by its own custom properties, so one keyframe serves all of them. */
+.grove-celebration {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.grove-confetti {
+  position: absolute;
+  width: 6px;
+  height: 10px;
+  translate: -50% -50%;
+  border-radius: var(--lt-radius-xs);
+  background: var(--grove-confetti-color);
+  opacity: 0;
+  animation: grove-confetti-burst var(--lt-duration-900) var(--lt-ease-decelerate) both;
+}
+@keyframes grove-confetti-burst {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--grove-confetti-x), var(--grove-confetti-y)) rotate(var(--grove-confetti-turn));
+  }
+}
+/* What the claim moved, centered on the card: the area's name over its level rolling from the old number to the new one. It lands with the burst and fades as the layer ends, so the card the sheet redraws is what is left. */
+.grove-celebration-count {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-8) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-accent);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  translate: -50% -50%;
+  animation: grove-count-arrive var(--lt-duration-900) var(--lt-ease-emphasized) both;
+}
+@keyframes grove-count-arrive {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+.grove-celebration-name {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+}
+.grove-celebration-roll {
+  display: grid;
+  overflow: hidden;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-16);
+  font-weight: var(--lt-weight-700);
+}
+.grove-celebration-from,
+.grove-celebration-to {
+  grid-area: 1 / 1;
+  text-align: center;
+}
+.grove-celebration-from {
+  animation: grove-roll-out var(--lt-duration-300) var(--lt-ease-accelerate) var(--lt-duration-200) both;
+}
+.grove-celebration-to {
+  animation: grove-roll-in var(--lt-duration-300) var(--lt-ease-decelerate) var(--lt-duration-200) both;
+}
+@keyframes grove-roll-out {
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+@keyframes grove-roll-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+/* The seed flying from the burst into the balance in the sheet's head. The page measures both ends and hands the distance over, so one keyframe lands it wherever the balance is. */
+.grove-seed-flight {
+  position: absolute;
+  padding: var(--lt-space-2) var(--lt-space-10);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-accent);
+  color: var(--lt-accent-foreground);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  white-space: nowrap;
+  translate: -50% -50%;
+  animation: grove-seed-fly var(--lt-duration-900) var(--lt-ease-emphasized) both;
+}
+@keyframes grove-seed-fly {
+  0%,
+  30% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(var(--grove-flight-x), var(--grove-flight-y)) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--grove-flight-x), var(--grove-flight-y)) scale(0.6);
+  }
+}
+/* Won back under Reduce Motion: the fill is the only sign a hold is counting, and a fill that jumps to full on the press reads as a control that ignores the reader. Only the filling half — the drain may snap. */
+@media (prefers-reduced-motion: reduce) {
+  .grove-claim-fill.is-holding {
+    transition-duration: var(--lt-duration-600) !important;
+  }
+}
 /* What the grove total is made of, under it. */
 .grove-level-said {
   margin: calc(-1 * var(--lt-space-8)) 0 var(--lt-space-12);
@@ -14298,7 +14447,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 17 themes, in light and dark: all 84 colors, the 180 values that do not change with the theme, all 78 icons, and all 111 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 17 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 112 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="amber" aria-pressed="false">Amber</button>
@@ -14324,9 +14473,9 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>180</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>111</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>112</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -14429,7 +14578,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">180 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">182 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -14564,7 +14713,9 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-duration-280</code><code>280ms</code></div>
 <div class="value"><code>lt-duration-300</code><code>300ms</code></div>
 <div class="value"><code>lt-duration-400</code><code>400ms</code></div>
+<div class="value"><code>lt-duration-600</code><code>600ms</code></div>
 <div class="value"><code>lt-duration-700</code><code>700ms</code></div>
+<div class="value"><code>lt-duration-900</code><code>900ms</code></div>
 <div class="value"><code>lt-duration-800</code><code>800ms</code></div>
 <div class="value"><code>lt-duration-1100</code><code>1100ms</code></div>
 <div class="value"><code>lt-duration-1250</code><code>1250ms</code></div>
@@ -14736,7 +14887,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">111 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">112 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -14919,7 +15070,11 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Grove claim</h3><code class="built">.grove-claim</code><span class="built">profile.js, the Grove sheet's whole body while a level or recorded day waits for the reader</span></header>
-<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:520px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><span class="grove-sheet-seeds">4 seeds</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Leafing reached level 5</span><span class="grove-claim-earned">You earned it with 1,000 words read, worth 2 XP.</span><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10" aria-label="Leafing: 10 XP reached — level 5 is full"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-bar-words">10 XP reached — level 5 is full</span><span class="grove-claim-gives">Claiming it takes Leafing to level 5 and gives you 1 seed to spend.</span><button type="button" class="grove-tree-action is-spend grove-claim-press">Claim level 5</button><span class="grove-claim-more">2 more levels waiting after this one.</span></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;max-width:520px;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Check one recorded day</span><span class="grove-claim-earned">18 XP was saved under 15 September before Leaftext knew your local day. Did that growth happen on 14 September?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Keep 15 September</button><button type="button" class="grove-tree-action is-spend">Move to 14 September</button></span></div></div></div></div>
+<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:520px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><span class="grove-sheet-seeds">4 seeds</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Leafing reached level 5</span><span class="grove-claim-earned">You earned it with 1,000 words read, worth 2 XP.</span><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10" aria-label="Leafing: 10 XP reached — level 5 is full"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-bar-words">10 XP reached — level 5 is full</span><span class="grove-claim-gives">Claiming it takes Leafing to level 5 and gives you 1 seed to spend.</span><button type="button" class="grove-tree-action is-spend grove-claim-press"><span class="grove-claim-fill is-holding" aria-hidden="true"></span>Hold to claim level 5</button><span class="grove-claim-more">2 more levels waiting after this one.</span></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;max-width:520px;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Check one recorded day</span><span class="grove-claim-earned">18 XP was saved under 15 September before Leaftext knew your local day. Did that growth happen on 14 September?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Keep 15 September</button><button type="button" class="grove-tree-action is-spend">Move to 14 September</button></span></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Claim celebration</h3><code class="built">.grove-celebration</code><span class="built">profile.js, laid over the Grove sheet once the host has taken a held claim, and removed when it ends</span></header>
+<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:relative;max-width:520px;height:220px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><span class="grove-sheet-seeds">4 seeds</span></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Leafing reached level 5</span><button type="button" class="grove-tree-action is-spend grove-claim-press"><span class="grove-claim-fill is-holding" aria-hidden="true"></span>Hold to claim level 5</button></div></div><div class="grove-celebration" aria-hidden="true"><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(-60px,-50px) rotate(40deg);--grove-confetti-color:var(--lt-accent)"></span><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(50px,-60px) rotate(120deg);--grove-confetti-color:var(--lt-link)"></span><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(70px,20px) rotate(200deg);--grove-confetti-color:var(--lt-primary-ink)"></span><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(-40px,40px) rotate(300deg);--grove-confetti-color:var(--lt-foreground)"></span><span class="grove-celebration-count" style="left:120px;top:120px;animation:none"><span class="grove-celebration-name">Leafing</span><span class="grove-celebration-roll"><span class="grove-celebration-from" style="animation:none;opacity:0">Level 4</span><span class="grove-celebration-to" style="animation:none">Level 5</span></span></span><span class="grove-seed-flight" style="left:360px;top:60px;animation:none">+1 seed</span></div></div></div>
 </section>
 <section class="part">
 <header><h3>Earning rules</h3><code class="built">.grove-rules</code><span class="built">profile.js, under an opened area's bar, one row per rule in the host's signal table</span></header>
