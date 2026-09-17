@@ -105,6 +105,7 @@ Opening a document swaps the file list for that document's [outline](02-navigati
 - A back row above the list wears the folder's name and puts the files back, the same way the row above a folder listing steps out of it.
 - Sending the pane somewhere puts the files back on its own, because asking for a folder is asking for the files in it. Switching [vault](#vaults), pressing a crumb, opening a folder from a file's right-click menu, and pressing a favorite folder on the start screen all land in that folder's list rather than leaving the headings up. The files arrive in one draw, when the folder does.
 - Under that row, **On this page** names the list, with how many headings it holds at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
+- Once you have put the files back and walked the pane somewhere, it stays there. Marking a favorite, closing or moving a tab, and a page opening behind the one you are reading all leave the pane on the folder you left it on; only going to a different document brings that document's headings up.
 - A document with only a title, or none, has no outline, so the files stay where they are.
 
 ### File types
@@ -136,7 +137,7 @@ Right-click a file row for a context menu of file actions:
 | Cut | Puts the file on the system clipboard to move on paste |
 | Copy | Puts the file on the system clipboard to copy on paste |
 | Copy path | Copies the file's full path as text |
-| Rename | Edits the name inline; press Enter to apply, Escape to cancel. The same box opens over a page [headed with its own file name](07-editing.md#renaming-from-the-heading) |
+| Rename | Edits the name inline; press Enter to apply, Escape to cancel. A name another file in the folder already has is refused; changing only the capitals of the file's own name is not, so `notes.md` can become `Notes.md`. The same box opens over a page [headed with its own file name](07-editing.md#renaming-from-the-heading) |
 | Reveal file | Shows the file in your OS file manager |
 | Properties | Opens the OS file-properties view |
 | Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
