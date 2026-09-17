@@ -28,6 +28,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [A quoted YAML value](#editing-data-files) | A value written in quotes opens its own source at a press, quotes and all, the way the same value in JSON does |
 | [A press that cannot open says why](#editing-data-files) | Where a data file is written a way the page cannot place exactly, pressing it raises a line naming the source view rather than answering with nothing |
 | [The block gutter](#the-block-gutter) | A handle and a plus in the page's left margin: drag a block to reorder it, or add one on the empty line |
+| [Pasting a picture](#images) | `Ctrl+V` / `Cmd+V` with a picture on the clipboard puts it in the note: the picture is written into an `imgs` folder beside the file and drawn on the line below |
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, framed figure, cards, badge, bars |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
@@ -210,7 +211,15 @@ The image button does not write a placeholder path for you to correct. It asks:
 - **Choose file** opens your operating system's picker, filtered to what a page can draw.
 - Or paste an **address** for a picture on the web and press `Enter`. Where the app [cannot write the line](#when-the-app-cannot-write-it), the box comes back with the address still in it.
 
-A picked file is **never copied anywhere** — the picture stays where you keep it. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
+**A picture on the clipboard goes in with `Ctrl+V`** (`Cmd+V` on macOS), with the padlock open. Take a screen clip, or copy a picture file in your file manager, click the line you want it under and press it: the picture is written into an **`imgs` folder beside the note** — the same folder [a picture taken out as Markdown](01-rendering.md#images) fills — and drawn on its own line below the one you were on, as one press of undo.
+
+- **The file takes the note's own name**: `release-notes.png` beside `release-notes.md`, then `release-notes-2.png` for the next one, so an `imgs` folder shared by a folder of notes says which note each picture belongs to.
+- **The picture keeps its own format.** A screen clip stays the PNG your system made, and a JPEG, a WebP or a GIF copied from your file manager stays what it was, at the bytes it already had. Anything that is not one of those four is refused and nothing is written.
+- **Pasting the same picture twice leaves one file**, addressed twice. A different picture landing on a name already there is written beside it, numbered, and the file already there is left alone.
+- **A note you have never saved is told to save first** — there is no folder beside it yet for the picture to go in, so nothing is written.
+- **A paste carrying words is still a paste of words.** Copying from a word processor puts a picture of what you copied on the clipboard beside its text; the text is what goes in.
+
+A picked file is **never copied anywhere** — the picture stays where you keep it. That is the difference between the two ways in: a picture that already has a file of its own is addressed where it sits, and a picture that only exists on the clipboard is written beside the note, because there is nowhere else for it to be. What goes into the document is where it already is: written relative to the document when it sits under the same folder, so the pair survive being moved or shared together, and as a full path when it does not. A path holding a space or a bracket is written in Markdown's `<…>` form, so it cannot end early.
 
 **Taking a picture out again is a right-click on the picture.** While the padlock is open, a picture on a line of its own carries a **Delete picture** row: it removes the picture from the document as one press of undo, writes nothing until you save, and leaves the picture on your disk exactly where it is. A picture inside a sentence has no such row, because the only piece of source it belongs to is the sentence around it. See [Picture actions](03-library.md#right-click-a-picture).
 
