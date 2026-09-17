@@ -4521,7 +4521,12 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
 /* The launch state, drawn before the app is: the leaf over a turning ring over the app's name, centered in the small window a launch puts up. It is the app surface's own color rather than a wash, because there is nothing underneath it a reader would want to see through — the reader, the bar and the tabs are all still being built. Held over every layer the app has for as long as it stands, and taken off whole rather than faded: the same step that removes it resizes the window, and a fade would run against a layout still finding its new width. */
 .startup-card {
   position: absolute;
-  inset: 0;
+  inset: 0 auto auto 0;
+  /* The box the reader sees, less the surface's band and edge. On Windows the host lays the page out at the size the window will grow to and names the small box in `--launch-box-width` and `--launch-box-height`; where nothing names one, these fail to resolve and the card fills the surface. */
+  --startup-card-width: calc(var(--launch-box-width) - var(--app-shadow-spread) - var(--app-shadow-spread) - var(--lt-stroke-1) - var(--lt-stroke-1));
+  --startup-card-height: calc(var(--launch-box-height) - var(--app-shadow-spread) - var(--app-shadow-spread) - var(--lt-stroke-1) - var(--lt-stroke-1));
+  width: var(--startup-card-width, 100%);
+  height: var(--startup-card-height, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4534,6 +4539,13 @@ body.is-window-inactive:not(.leaf-paper):not(.leaf-paper-diagram):not(.leaf-pape
 /* The UA sheet's own `[hidden]` rule cannot beat the display above, so the card would stay on screen with the attribute set. */
 .startup-card[hidden] {
   display: none;
+}
+/* A surface drawn flush has no band or edge to take off, so the card is the whole box. The same three states as the flush rule on `.app-surface`. */
+body:not(.frameless) .startup-card,
+body.frameless:not(.mac-frame).is-maximized .startup-card,
+body.frameless.is-fullscreen .startup-card {
+  --startup-card-width: var(--launch-box-width);
+  --startup-card-height: var(--launch-box-height);
 }
 /* Large enough to read as the app's mark rather than as a toolbar icon, which is the whole job it has here. */
 .startup-card-mark {
@@ -6111,9 +6123,9 @@ body.library-resizing button {
   bottom: 0;
   z-index: 2;
   box-sizing: border-box;
-  /* One column as wide as the launcher row, capped at the pane, so the Grove pill under it takes the row's width and follows it. */
+  /* One column as wide as the launcher row or 140px, whichever is wider, capped at the pane, so the Grove pill under it takes the row's width and follows it. 140 is the four-launcher row: with only the two permanent launchers the column was 68px and the pill read Gr… on a reader's first day. The floor is written on the track and never on the pill, because min-width beats max-width and a pill floored at 140 hangs past a 40px pane. */
   display: grid;
-  grid-template-columns: minmax(0, max-content);
+  grid-template-columns: minmax(min(140px, 100%), max-content);
   justify-content: start;
   align-content: start;
   height: var(--library-foot-height);
@@ -6145,7 +6157,7 @@ body.library-resizing button {
 .library-pane.has-foot.has-grove {
   --library-foot-height: 76px;
 }
-/* The Grove pill. As wide as the launcher row above it and never wider, so it grows and shrinks with the row; its own words add nothing to the column's width, and a narrow row truncates the label and keeps the mark whole. */
+/* The Grove pill. It fills the column above and never exceeds it, so it follows the row; its own words add nothing to the column's width, and a pane under the column's floor truncates the label and keeps the mark whole. */
 .library-profile {
   position: relative;
   display: flex;
