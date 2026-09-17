@@ -823,6 +823,8 @@ Key names are read as words, so `runs-on` renders as "Runs on" and `lastBuildDat
 
 **YAML** is parsed with `yaml-rust2`. An `*alias` is resolved to what its `&anchor` held, and a `<<:` merge key is spliced into the mapping that used it — so a job that merges shared defaults shows those settings under the job, not as a field named `<<`. Keys already written win, which is what merging means. Several documents in one stream (separated by `---`) read as a list of them, so a multi-document Kubernetes manifest renders as a table of its resources.
 
+An alias is a copy of everything its anchor held, so a few lines of aliases pointing at aliases can name far more blocks than the file has bytes. Leaftext counts the blocks a file produces and draws **Too much to draw.** in place of the page past 200,000 of them, which is twice the largest document in this tree. Nothing is copied once that ceiling is reached, so the refusal costs no wait and the window, the other tabs and the [code view](07-editing.md#code-view) of that same file all stay as they were.
+
 A file that will not parse renders a single line naming the position — `JSON parse error. expected ',' or '}' after the value (line 12)` — instead of a blank page. A file nested hundreds of levels deep is refused the same way rather than being followed down.
 
 > [!NOTE]
