@@ -66,7 +66,7 @@ Every Growth area in the sheet is a button, and each says how many things grow f
 
 A tree starts with broad beginnings on the left and branches toward more specific things on the right, joined by lines. A beginning can be grown as soon as you have the seeds for it. Anything further along says which earlier ones it needs, and its line lights once you own the one it comes from. A few things can be grown more than once, and show how many times you have. Something another part of Leaftext has not built yet stands on its path and says **Not grown yet**.
 
-Press a price and the node asks whether to spend those seeds, with **Not now** and **Spend**. Nothing is spent until you press Spend, and pressing anywhere else, Back or Escape puts the price back. Seeds are not given back, and nothing you grow is ever taken away.
+Press a price and the node asks whether to spend those seeds, with **Not now** and **Spend**. Nothing is spent until you press Spend, and pressing anywhere else, Back or Escape puts the price back. Seeds you spend are not given back, and nothing you grow is ever taken away — the one exception is a reward Leaftext retires, which goes from the tree and hands its own price back to everyone who had grown it.
 
 Topping out the Grove pays enough seeds to buy every rank of everything that has grown.
 
@@ -76,7 +76,6 @@ What you can grow today:
 - **Things on the page** — a drop cap, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch in its node.
 - **More leaf lore** — six more sentences for the start screen's palm-leaf voice, one each time.
 - **A title** — Reader, Scribe, Cartographer or Prism Keeper, shown under **Your Grove**.
-- **The mark** — a thin circle around the leaf at the left of the app bar.
 
 ## Where it is kept
 
@@ -86,6 +85,6 @@ Every gain is kept a second time in `growth-log.jsonl`, beside the record: one l
 
 ## Turn it off
 
-Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, no bar moves, no level is earned, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title, the mark and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
+Open your Grove and press **Keep a record** in the sheet's header. With the record off nothing is counted, no bar moves, no level is earned, the pill reads **Grove** with no number, and the sheet holds only the switch and a line saying so. Everything you have grown on the page, the title and the extra lore go away while it is off, and a theme you are wearing stays on. Press the switch again to start counting where you left off, with everything you grew back as it was.
 
 The published site and a document embedded in another product keep no record, and show no pill.

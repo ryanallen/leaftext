@@ -5123,18 +5123,6 @@ body.is-maximized #winMaximize .wc-restore {
 .window-controls[hidden] {
   display: none;
 }
-/* The mark bought in the Grove: a thin circle around the brand leaf. */
-.brand-button.has-mark {
-  position: relative;
-}
-.brand-button.has-mark::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border: var(--lt-stroke-1-5) solid var(--lt-primary-ink);
-  border-radius: var(--lt-radius-full);
-  pointer-events: none;
-}
 .context-menu {
   position: fixed;
   z-index: var(--lt-z-50);
@@ -15039,8 +15027,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><button type="button" class="icon-button history-button"><span class="lt-icon lt-icon-back-long"></span></button></div>
 </section>
 <section class="part">
-<header><h3>Brand button</h3><code class="built">.brand-button</code><span class="built">app-shell.html, and profile.js for the mark bought in the Grove</span></header>
-<div class="stage"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button> <button type="button" class="brand-button has-mark"><span class="lt-icon lt-icon-leaf"></span></button></div>
+<header><h3>Brand button</h3><code class="built">.brand-button</code><span class="built">app-shell.html</span></header>
+<div class="stage"><button type="button" class="brand-button"><span class="lt-icon lt-icon-leaf"></span></button></div>
 </section>
 <section class="part">
 <header><h3>History button</h3><code class="built">.history-button</code><span class="built">app-shell.html</span></header>
