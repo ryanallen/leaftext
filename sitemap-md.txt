@@ -11,5 +11,6 @@ https://leaftext.com/docs/01-features/09-progress.md
 https://leaftext.com/docs/01-introduction.md
 https://leaftext.com/docs/02-installation.md
 https://leaftext.com/docs/03-quickstart.md
+https://leaftext.com/docs/04-help.md
 https://leaftext.com/docs/GLOSSARY.md
 https://leaftext.com/docs/README.md

@@ -67,6 +67,11 @@
 - Markdown: https://leaftext.com/docs/03-quickstart.md
 - Summary: There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a fi...
 
+## Get help
+- Page: https://leaftext.com/docs/04-help.md
+- Markdown: https://leaftext.com/docs/04-help.md
+- Summary: Leaftext is one app made by one person, and there is no support desk behind it. What there is instead is a public page where questions are asked and answered where everybody can read them, so the a...
+
 ## Glossary
 - Page: https://leaftext.com/docs/GLOSSARY.md
 - Markdown: https://leaftext.com/docs/GLOSSARY.md

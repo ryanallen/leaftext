@@ -312,9 +312,12 @@ New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a coup
 | [Editing](docs/01-features/07-editing.md) | Inline editing, the block gutter, the flowchart editor, code view, save |
 | [Relational tables](docs/01-features/08-relational-tables.md) | RDB views, relations, sorting, filtering and optional table descriptions |
 | [Your Grove](docs/01-features/09-progress.md) | The reading record at the library's foot, and the switch that turns it off |
+| [Get help](docs/04-help.md) | Where to ask a question, what to say when you ask, and what these pages already answer |
 | [Glossary](docs/GLOSSARY.md) | Every word Leaftext uses for a part of itself |
 
 The pages are plain Markdown under [`docs/`](docs/) — the same format the app reads, so you can open them in Leaftext itself.
+
+**Stuck on something these pages don't answer?** Ask on **[Discussions](https://github.com/ryanallen/leaftext/discussions/categories/get-help)** — the project's own public page, readable and searchable without an account, so the answer is there for whoever hits the same thing next. Inside the app it is **Get help** on the version line at the foot of the start screen. **[What to say when you ask →](docs/04-help.md)**
 
 ---
 
