@@ -6,7 +6,7 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Twelve ship free and six more are earned with seeds in [the Grove](09-progress.md), listed alphabetically; an earned family joins the picker once it is bought. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Thirteen ship free and six more are earned with seeds in [the Grove](09-progress.md), listed alphabetically; an earned family joins the picker once it is bought. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette | Icons |
 | --- | --- | --- |
@@ -14,6 +14,7 @@ Pick a family in the theme picker. Twelve ship free and six more are earned with
 | [Arabica](https://github.com/ryanallen/leaftext/blob/main/themes/arabica.md) | A coffee palette — creamy latte light, dark-roast espresso dark — with an AnuPpuccin mauve accent | Remix |
 | [Bloodleaf](https://github.com/ryanallen/leaftext/blob/main/themes/bloodleaf.md) | Blood-red veins on a white ground — an over-exposed white light with a red accent and a sky-blue second hue, against a blue-black night dark | Remix |
 | [Fern](https://github.com/ryanallen/leaftext/blob/main/themes/fern.md) | **Fallback family.** An Amaranth-based palette with a fern-green cast | Tabler |
+| [Foxglove](https://github.com/ryanallen/leaftext/blob/main/themes/foxglove.md) | A printed-report palette — warm paper light, the darkest ground in the picker for dark — with a violet accent and Instrument Serif headings | Feather |
 | [Ginger](https://github.com/ryanallen/leaftext/blob/main/themes/ginger.md) | A warm palette — cream light, cool slate dark — with a ginger-orange accent | Tabler |
 | [GitHub](https://github.com/ryanallen/leaftext/blob/main/themes/github.md) | GitHub's light/dark palette, in its own system-font stack | Feather |
 | [Goldenrod](https://github.com/ryanallen/leaftext/blob/main/themes/goldenrod.md) | A stark black-and-gold palette — honey-on-white light, near-black dark — with a golden-yellow accent | Lucide |
@@ -23,7 +24,7 @@ Pick a family in the theme picker. Twelve ship free and six more are earned with
 | [Pippin](https://github.com/ryanallen/leaftext/blob/main/themes/pippin.md) | A crisp, macOS-style palette — clean neutral grays with a system-blue accent | Lucide |
 | [Sage](https://github.com/ryanallen/leaftext/blob/main/themes/sage.md) | A neutral grayscale palette with a muted-blue (Minimal-style) accent | Leaftext |
 
-A thirteenth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
+A fourteenth picker entry, **Random**, is a preference rather than a palette — see [Random](#random).
 
 ## Previews
 
@@ -44,6 +45,10 @@ Every family rendering the same reference document, split diagonally so the ligh
 ### Fern
 
 ![Fern — the same document in the light and dark variants](../../imgs/themes/fern.png)
+
+### Foxglove
+
+![Foxglove — the same document in the light and dark variants](../../imgs/themes/foxglove.png)
 
 ### Ginger
 
@@ -143,7 +148,7 @@ Press the palette at the foot of the [library](03-library.md#browsing) pane to s
 
 Leaftext does not bundle fonts. Instead, the active theme's font is fetched from **Google Fonts** when the theme activates, and the WebView caches it on disk so later launches are instant:
 
-- Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono; **Goldenrod** pairs Space Grotesk with Space Mono; **Ginger** pairs Nunito with Inconsolata; **Pippin** pairs DM Sans with DM Mono; **Bloodleaf** pairs Archivo with Roboto Mono; **Ivy** sets every word in IBM Plex Mono, headings included.
+- Each family carries its own type: **Fern** uses Noto (Sans/Serif/Sans Mono); **Nightshade** pairs Fraunces headings with Inter and Fira Code; **Halcyon** uses IBM Plex Sans/Mono; **Amaranth** uses the Source family (Serif 4 / Sans 3 / Code Pro); **Sage** uses Inter with JetBrains Mono; **Arabica** pairs Rubik with JetBrains Mono; **Goldenrod** pairs Space Grotesk with Space Mono; **Ginger** pairs Nunito with Inconsolata; **Pippin** pairs DM Sans with DM Mono; **Bloodleaf** pairs Archivo with Roboto Mono; **Ivy** sets every word in IBM Plex Mono, headings included; **Foxglove** sets Instrument Serif headings over IBM Plex Sans and Mono, and since Instrument Serif comes in one weight, every heading level draws at that weight and is told apart by size alone.
 - The **GitHub** family is the exception: it uses your OS's native font stack (like github.com) and fetches nothing.
 - Switching families swaps the font link, so the font changes with the theme.
 - The theme picker is the exception to loading only the active font: while it is open it loads every theme's font so each card shows its real type, then drops them all on close, so the app never carries them at rest. A card keeps the app font (and shows a spinner) until its own font arrives, then swaps.
@@ -158,7 +163,7 @@ Seven icon sets are drawn on, and the **Icons** column in [Families](#families) 
 | Set | Where it comes from |
 |---|---|
 | Leaftext | Drawn for this app. **Sage** wears it |
-| [Feather](https://feathericons.com) | **GitHub**, **Ivy** |
+| [Feather](https://feathericons.com) | **GitHub**, **Ivy**, **Foxglove** |
 | [Lucide](https://lucide.dev) | **Goldenrod**, **Pippin** |
 | [Tabler](https://tabler.io/icons) | **Fern**, **Ginger** |
 | [Remix Icon](https://remixicon.com) | **Arabica**, **Bloodleaf** |
