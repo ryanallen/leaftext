@@ -35,7 +35,7 @@ flowchart LR
 | Drag and drop | Drop a `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.eml`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, or [source](01-features/01-rendering.md#source-files) file onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaftext with a file path, or double-click an [associated file](02-installation.md#file-associations) |
-| Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document) |
+| Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document). To make it in a folder you can see instead, right-click that folder in the library and pick [**New file**](01-features/03-library.md#folders-and-the-space-around-them) |
 | Point it at a folder | **Add your notes folder** on the home screen, until you have a [vault](01-features/03-library.md#your-first-vault) |
 
 > [!TIP]

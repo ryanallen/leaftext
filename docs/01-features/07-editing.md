@@ -75,6 +75,7 @@ The **+** beside Open in the app bar starts a blank document in a new tab. The h
 - It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing reaches your folders until you say so. Closing the window with words in it keeps them in the [saved session](05-settings.md#unsaved-edits) rather than losing them, and the next launch puts the note back under the same name with its dot lit; a note you never typed into does not come back, because there is nothing in it to keep.
 - The first **Save** opens your operating system's Save dialog: choose a folder and a name, and from then on it saves like any other document. On Windows that dialog lists every format the app reads; on a Mac it shows none of them, so a short menu asks which one first and the dialog then suggests a name already ending in it. Close the dialog without choosing and nothing is written.
 - Once it is saved, the tab, the window title, and [Recent files](02-navigation.md#recent-files) all take the real name, and you can keep typing — the padlock is a setting, not something the new name resets.
+- To put the file in a folder you are already looking at rather than choosing one at the first save, right-click that folder in the library pane and pick [**New file**](03-library.md#folders-and-the-space-around-them): it is made on the disk straight away, under the name you type, and opens in the tab in front.
 
 ## Writing in the page
 
