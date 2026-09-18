@@ -9,6 +9,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Feature | What it means |
 | --- | --- |
 | [Tabs](#tabs) | Open multiple documents at once |
+| [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
@@ -54,6 +55,7 @@ flowchart LR
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
 | Previous tab | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
+| [Stand the next tab beside this one](#two-documents-side-by-side), and close the split | `Ctrl+\` | `Cmd+\` |
 | [Full screen](06-themes.md#windows) | `F11` | Green dot at the top left |
 | Save (with [unsaved edits](07-editing.md#save), your own typing included) | `Ctrl+S` | `Cmd+S` |
 | [Undo](07-editing.md#undo) — a word of your typing, then the last reading-view edit | `Ctrl+Z` | `Cmd+Z` |
@@ -152,6 +154,23 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 - Clicking a tab while the [Graph view](03-library.md#graph) is open flies the graph to that document's node and zooms in on it.
 - Closing the last tab returns to the home screen. So does clicking the leaf mark at the left of the app bar, which brightens on hover to show it is a control.
 - Opening a file while Leaftext is already running (e.g. Explorer "Open with", or double-clicking an [associated file](../02-installation.md#file-associations)) reuses the running window — the file opens as a new tab and the window comes to the front, rather than launching a second copy of the app.
+
+#### Two documents side by side
+
+Any second tab can stand beside the one you are reading, in a column of its own, so two documents are on screen at once and each scrolls on its own.
+
+- Right-click a tab and choose **Open beside**, or press `Ctrl+\` (`Cmd+\` on a Mac) to stand the next tab beside the one in front. The row is there where there is another tab for it to stand beside, so a window with one document open does not offer it. The same menu row reads **Close beside** while a split is open, and the same key closes it.
+- Right-click a file in the [library pane](03-library.md#file-actions) and choose **Open beside** to stand that file in the second column, with the document you are reading keeping the keys.
+- Dragging a tab onto the right half of the page opens it beside as well. The half you would drop it on is drawn while the tab is over it; a drop anywhere else still reorders the strip.
+- Each column keeps its own place, its own Back list, its own unsaved edits and its own [minimap](04-minimap.md) rail, because each is a tab and a tab already carries all of those.
+- Each page wears its own tabs. The strip is cut into a group per card, each taking that card's share of the window, so the tab of the document you are reading sits over the page it opens; a press in a card's own strip draws into that card, and a tab dragged from one strip to the other hands that document to that card.
+- One column has the keys: the reader's commands — Find, the outline, the floating toolbar, the padlocks, the source view — all act on that one, and the floating toolbar stands under that card, which is what says which one has them. Press into the other column to move the keys there; neither document moves when you do.
+- Each card wears its own tabs, over that card, and the tab each card is showing is drawn selected — so the strip says which two documents are on screen and which card each one is in. One document standing beside itself as its source and its page wears one tab, over both cards.
+- Drag the line between the two columns to share the window differently, and Leaftext remembers where you left it. Pull a side narrower than one page needs and the split closes. A window too narrow for two pages folds the second column away and brings it back when there is room again.
+- A split is remembered across launches, as the tabs are. Closing either tab ends the split; closing the one you are reading brings the other forward.
+- Pressing a tab that is in neither column reads that document on its own and puts the split away, and pressing the tab you were reading stands the same pair back up — the same document beside it, on the same side. Closing the split with **Close beside** or the key is you saying you are done with it, so that tab opens on one page from then on.
+
+One document can stand beside itself as well: **Open source beside** on a tab puts its [source](07-editing.md#code-view) in one card and the page it draws in the other, under that one tab. It is one document and one buffer, so a word typed into the source arrives in the page beside it and the Save mark is the tab's; closing it leaves the tab in whichever view you were in.
 
 #### When the bar runs out of room
 

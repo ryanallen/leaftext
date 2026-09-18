@@ -134,6 +134,7 @@ Right-click a file row for a context menu of file actions:
 | --- | --- |
 | Open | Opens the file in the reader |
 | Favorite | Pins the file to the top of the pane, and reads **Unfavorite** on one already there |
+| Open beside | Stands the file in a column of its own beside the document you are reading, which keeps the keys. There while a document is open and nothing is split — see [two documents side by side](02-navigation.md#two-documents-side-by-side) |
 | Cut | Puts the file on the system clipboard to move on paste |
 | Copy | Puts the file on the system clipboard to copy on paste |
 | Copy path | Copies the file's full path as text |

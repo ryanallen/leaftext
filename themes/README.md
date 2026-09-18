@@ -5,7 +5,7 @@
 
 Every theme in Leaftext is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-11 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 84-color contract inside its file.
+12 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 84-color contract inside its file.
 
 4 of the 84 are optional, and a family that says nothing about one gets another of its own colors copied in: `hover-tint`, the ink every fill under the pointer is mixed from, takes the quiet-text color; `primary-ink` and `accent-ink`, the inks printed on those two fills, take the primary and the accent themselves; and `markdown-table-row-background`, the band every other table row wears, takes the sunken surface. Set `hover-tint`, as Goldenrod does, and every menu row, toolbar button and file in the pane washes in that hue instead.
 
@@ -227,6 +227,25 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once I
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#e0e0e0` | `#363636` |
+
+### Ivy
+
+[`ivy.md`](ivy.md) · Heading **IBM Plex Mono** · Body **IBM Plex Mono** · Code **IBM Plex Mono** · Google Fonts
+
+![Ivy — the same document in the light and dark variants](../imgs/themes/ivy.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#cfe8c9` | `#0a0f0a` |
+| Foreground | `#1b2b1d` | `#9ff29f` |
+| Heading    | `#0f2413` | `#d9ffd9` |
+| Primary    | `#145c20` | `#3ae04f` |
+| Accent     | `#0b5d63` | `#7ff0e0` |
+| Link       | `#145c20` | `#3ae04f` |
+| Success    | `#145c20` | `#3ae04f` |
+| Warning    | `#6e5200` | `#e8d07a` |
+| Danger     | `#a3161c` | `#ff6b6b` |
+| Border     | `#9dbf97` | `#1f3a1f` |
 
 ### Nightshade
 
