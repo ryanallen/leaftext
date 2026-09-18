@@ -1,12 +1,12 @@
-# Violet
+# Lavender
 
-![Violet — the same document in the light and dark variants](../imgs/themes/violet.png)
+![Lavender — the same document in the light and dark variants](../imgs/themes/lavender.png)
 
-**Family ID:** `violet`
+**Family ID:** `lavender`
 
 **Pack:** `tabler`
 
-**Earned:** Violet mode, in Foraging
+**Earned:** Lavender mode, in Foraging
 
 One hue, violet: every surface, border, heading and accent is a shade of it, and danger, warning and success keep their own colors so an action still says what it will do.
 

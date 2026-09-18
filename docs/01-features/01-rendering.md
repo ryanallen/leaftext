@@ -11,6 +11,7 @@ Leaftext picks a pipeline from the file extension. Markdown (`.md`, `.markdown`,
 | Core Markdown | Headings, paragraphs, lists, links, images, blockquotes, rules, inline code |
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
+| [Wiki links](#wiki-links) | `[[Note name]]`, with shown words after a `|` and a heading after a `#`, drawn as a link to that note |
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces; [badges](#badges-leaf-extension) — words as inline code with a color name, or a hex color of your own, in a comment after them; [bars](#bars-leaf-extension) — a list whose items end in an amount, drawn on one scale, in a color name or a hex color of your own |
 | Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width, opening on the whole window, and saving out as a PNG, a WebP, a JPEG, a PDF or a Markdown document |
 | Safety | Sanitized HTML allowlist |
@@ -280,6 +281,20 @@ A task can carry a date at the end of its line, written `📅 09/16/2026` — mo
 [cm]: https://commonmark.org
 
 A link may point at the web, at an email address, at a page beside the document, or at a file anywhere on this machine — a whole path, written from the drive letter or as a `file://` address, works the same as a relative one, and a link to a file the system would run asks before it runs it. Any other kind of address — another program's own scheme, a phone number — is not one Leaftext follows, so it is taken off the link. What is left is drawn as the document's own words with a dotted line under them rather than in the link color, and the [hover hint](02-navigation.md#link-hints) says the address it was written with is not one this app follows, so a link that goes nowhere can be told from a live one without clicking it.
+
+### Wiki links
+
+A note written the way Obsidian writes them links to another note by name: `[[Station handbook]]`. The reading view draws it as an ordinary link to that note and leaves the brackets off the page. Three spellings are read:
+
+| Written | Shown | Opens |
+| --- | --- | --- |
+| `[[Station handbook]]` | Station handbook | the note called Station handbook |
+| `[[Station handbook\|the rules]]` | the rules | the same note |
+| `[[Station handbook#Boundary rule]]` | Station handbook | that note, at its Boundary rule heading |
+
+The name is matched however it is capitalized. A note whose file is called that name wins over another note that lists the name in its `aliases` field, and a name no file carries opens the first note that lists it as an alias. The note is looked for in the [vault](03-library.md#vaults) the document belongs to, or in the document's own folder when it belongs to none; a published site looks in the documents it serves. A name no note answers to leaves the page where it is and says so. Hovering one shows the note's first lines, and the link's menu reveals it or copies its path, the same as any link to a page beside the document.
+
+Editing the paragraph around a wiki link writes it back exactly as it was spelled. To change where it points or the words it shows, change it in the [code view](07-editing.md). Written inside code, behind a backslash, across a line break, with nothing before a `#`, or as an embed (`![[…]]`), it stays the words it was written as.
 
 ### Buttons (Leaf extension)
 

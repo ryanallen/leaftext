@@ -96,29 +96,29 @@ Every family rendering the same reference document, split diagonally so the ligh
 
 The six one-color families are bought with seeds in the Grove's Foraging area, and appear in the picker once they are yours.
 
-### Amber
+### Birch
 
-![Amber — the same document in the light and dark variants](../../imgs/themes/amber.png)
+![Birch — the same document in the light and dark variants](../../imgs/themes/birch.png)
 
-### Cobalt
+### Laurel
 
-![Cobalt — the same document in the light and dark variants](../../imgs/themes/cobalt.png)
+![Laurel — the same document in the light and dark variants](../../imgs/themes/laurel.png)
 
-### Ink
+### Lavender
 
-![Ink — the same document in the light and dark variants](../../imgs/themes/ink.png)
+![Lavender — the same document in the light and dark variants](../../imgs/themes/lavender.png)
 
-### Verdant
+### Saffron
 
-![Verdant — the same document in the light and dark variants](../../imgs/themes/verdant.png)
+![Saffron — the same document in the light and dark variants](../../imgs/themes/saffron.png)
 
-### Vermilion
+### Sumac
 
-![Vermilion — the same document in the light and dark variants](../../imgs/themes/vermilion.png)
+![Sumac — the same document in the light and dark variants](../../imgs/themes/sumac.png)
 
-### Violet
+### Woad
 
-![Violet — the same document in the light and dark variants](../../imgs/themes/violet.png)
+![Woad — the same document in the light and dark variants](../../imgs/themes/woad.png)
 
 ## Random
 

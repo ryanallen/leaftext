@@ -1,12 +1,12 @@
-# Verdant
+# Laurel
 
-![Verdant — the same document in the light and dark variants](../imgs/themes/verdant.png)
+![Laurel — the same document in the light and dark variants](../imgs/themes/laurel.png)
 
-**Family ID:** `verdant`
+**Family ID:** `laurel`
 
 **Pack:** `phosphor`
 
-**Earned:** Verdant mode, in Foraging
+**Earned:** Laurel mode, in Foraging
 
 One hue, green: every surface, border, heading and accent is a shade of it, and danger, warning and success keep their own colors so an action still says what it will do.
 

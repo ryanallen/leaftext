@@ -1,12 +1,12 @@
-# Amber
+# Saffron
 
-![Amber — the same document in the light and dark variants](../imgs/themes/amber.png)
+![Saffron — the same document in the light and dark variants](../imgs/themes/saffron.png)
 
-**Family ID:** `amber`
+**Family ID:** `saffron`
 
 **Pack:** `lucide`
 
-**Earned:** Amber mode, in Foraging
+**Earned:** Saffron mode, in Foraging
 
 One hue, amber: every surface, border, heading and accent is a shade of it, and danger, warning and success keep their own colors so an action still says what it will do.
 

@@ -32,27 +32,6 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#e0e0e0` | `#363636` |
 
-### Amber
-
-Earned with seeds in the Grove, under Foraging: its card joins the picker once Amber mode is bought.
-
-[`amber.md`](amber.md) · Heading **Libre Franklin** · Body **Libre Franklin** · Code **Noto Sans Mono** · Google Fonts
-
-![Amber — the same document in the light and dark variants](../imgs/themes/amber.png)
-
-| Role       | Light     | Dark      |
-| ---------- | --------- | --------- |
-| Background | `#ffffff` | `#211e18` |
-| Foreground | `#282117` | `#ded9d2` |
-| Heading    | `#15110c` | `#ffffff` |
-| Primary    | `#986313` | `#e0911c` |
-| Accent     | `#986313` | `#eab059` |
-| Link       | `#986313` | `#eab059` |
-| Success    | `#087a34` | `#44cf6e` |
-| Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb4f55` |
-| Border     | `#e7dfd4` | `#3c352b` |
-
 ### Arabica
 
 [`arabica.md`](arabica.md) · Heading **Rubik** · Body **Rubik** · Code **JetBrains Mono** · Google Fonts
@@ -71,6 +50,27 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once A
 | Warning    | `#8a5a12` | `#e8c07a` |
 | Danger     | `#c0392b` | `#e8917f` |
 | Border     | `#dbcab4` | `#3a2d23` |
+
+### Birch
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Birch mode is bought.
+
+[`birch.md`](birch.md) · Heading **Public Sans** · Body **Public Sans** · Code **Noto Sans Mono** · Google Fonts
+
+![Birch — the same document in the light and dark variants](../imgs/themes/birch.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#1e1e1e` |
+| Foreground | `#222222` | `#dadada` |
+| Heading    | `#121212` | `#ffffff` |
+| Primary    | `#6e6e6e` | `#a2a2a2` |
+| Accent     | `#6e6e6e` | `#bbbbbb` |
+| Link       | `#6e6e6e` | `#bbbbbb` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#e0e0e0` | `#363636` |
 
 ### Bloodleaf
 
@@ -109,27 +109,6 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once A
 | Warning    | `#7a5200` | `#e8c872` |
 | Danger     | `#b42318` | `#ff8a7a` |
 | Border     | `#e3c2d1` | `#43293a` |
-
-### Cobalt
-
-Earned with seeds in the Grove, under Foraging: its card joins the picker once Cobalt mode is bought.
-
-[`cobalt.md`](cobalt.md) · Heading **Manrope** · Body **Manrope** · Code **Noto Sans Mono** · Google Fonts
-
-![Cobalt — the same document in the light and dark variants](../imgs/themes/cobalt.png)
-
-| Role       | Light     | Dark      |
-| ---------- | --------- | --------- |
-| Background | `#ffffff` | `#1b1e25` |
-| Foreground | `#1b222f` | `#d6dae1` |
-| Heading    | `#0e1219` | `#ffffff` |
-| Primary    | `#2068e3` | `#77a3ee` |
-| Accent     | `#2068e3` | `#9cbcf3` |
-| Link       | `#2068e3` | `#9cbcf3` |
-| Success    | `#087a34` | `#44cf6e` |
-| Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb4f55` |
-| Border     | `#dbe0eb` | `#303642` |
 
 ### Eucalyptus
 
@@ -264,27 +243,6 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once C
 | Danger     | `#d3243a` | `#fb5d62` |
 | Border     | `#e6e9ee` | `#353b44` |
 
-### Ink
-
-Earned with seeds in the Grove, under Foraging: its card joins the picker once Ink mode is bought.
-
-[`ink.md`](ink.md) · Heading **Public Sans** · Body **Public Sans** · Code **Noto Sans Mono** · Google Fonts
-
-![Ink — the same document in the light and dark variants](../imgs/themes/ink.png)
-
-| Role       | Light     | Dark      |
-| ---------- | --------- | --------- |
-| Background | `#ffffff` | `#1e1e1e` |
-| Foreground | `#222222` | `#dadada` |
-| Heading    | `#121212` | `#ffffff` |
-| Primary    | `#6e6e6e` | `#a2a2a2` |
-| Accent     | `#6e6e6e` | `#bbbbbb` |
-| Link       | `#6e6e6e` | `#bbbbbb` |
-| Success    | `#087a34` | `#44cf6e` |
-| Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb4f55` |
-| Border     | `#e0e0e0` | `#363636` |
-
 ### Ivy
 
 [`ivy.md`](ivy.md) · Heading **IBM Plex Mono** · Body **IBM Plex Mono** · Code **IBM Plex Mono** · Google Fonts
@@ -303,6 +261,48 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once I
 | Warning    | `#6e5200` | `#e8d07a` |
 | Danger     | `#a3161c` | `#ff6b6b` |
 | Border     | `#9dbf97` | `#1f3a1f` |
+
+### Laurel
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Laurel mode is bought.
+
+[`laurel.md`](laurel.md) · Heading **Figtree** · Body **Figtree** · Code **Noto Sans Mono** · Google Fonts
+
+![Laurel — the same document in the light and dark variants](../imgs/themes/laurel.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#17201a` |
+| Foreground | `#15261a` | `#d0ddd4` |
+| Heading    | `#0b140e` | `#ffffff` |
+| Primary    | `#108031` | `#17bb48` |
+| Accent     | `#108031` | `#1bd753` |
+| Link       | `#108031` | `#1bd753` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#d1e5d7` | `#2a3a2f` |
+
+### Lavender
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Lavender mode is bought.
+
+[`lavender.md`](lavender.md) · Heading **Outfit** · Body **Outfit** · Code **Noto Sans Mono** · Google Fonts
+
+![Lavender — the same document in the light and dark variants](../imgs/themes/lavender.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#211c27` |
+| Foreground | `#281d34` | `#ddd8e3` |
+| Heading    | `#150f1b` | `#ffffff` |
+| Primary    | `#9043e8` | `#bc8ef1` |
+| Accent     | `#9043e8` | `#ceadf5` |
+| Link       | `#9043e8` | `#ceadf5` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#e4ddec` | `#3b3246` |
 
 ### Nightshade
 
@@ -342,6 +342,27 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once I
 | Danger     | `#d70015` | `#ff5c52` |
 | Border     | `#d8d8dd` | `#3a3a3c` |
 
+### Saffron
+
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Saffron mode is bought.
+
+[`saffron.md`](saffron.md) · Heading **Libre Franklin** · Body **Libre Franklin** · Code **Noto Sans Mono** · Google Fonts
+
+![Saffron — the same document in the light and dark variants](../imgs/themes/saffron.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#ffffff` | `#211e18` |
+| Foreground | `#282117` | `#ded9d2` |
+| Heading    | `#15110c` | `#ffffff` |
+| Primary    | `#986313` | `#e0911c` |
+| Accent     | `#986313` | `#eab059` |
+| Link       | `#986313` | `#eab059` |
+| Success    | `#087a34` | `#44cf6e` |
+| Warning    | `#8a6d00` | `#e0de71` |
+| Danger     | `#d3243a` | `#fb4f55` |
+| Border     | `#e7dfd4` | `#3c352b` |
+
 ### Sage
 
 [`sage.md`](sage.md) · Heading **Inter** · Body **Inter** · Code **JetBrains Mono** · Google Fonts
@@ -361,34 +382,13 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once I
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#dcdad5` | `#363636` |
 
-### Verdant
+### Sumac
 
-Earned with seeds in the Grove, under Foraging: its card joins the picker once Verdant mode is bought.
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Sumac mode is bought.
 
-[`verdant.md`](verdant.md) · Heading **Figtree** · Body **Figtree** · Code **Noto Sans Mono** · Google Fonts
+[`sumac.md`](sumac.md) · Heading **Karla** · Body **Karla** · Code **Noto Sans Mono** · Google Fonts
 
-![Verdant — the same document in the light and dark variants](../imgs/themes/verdant.png)
-
-| Role       | Light     | Dark      |
-| ---------- | --------- | --------- |
-| Background | `#ffffff` | `#17201a` |
-| Foreground | `#15261a` | `#d0ddd4` |
-| Heading    | `#0b140e` | `#ffffff` |
-| Primary    | `#108031` | `#17bb48` |
-| Accent     | `#108031` | `#1bd753` |
-| Link       | `#108031` | `#1bd753` |
-| Success    | `#087a34` | `#44cf6e` |
-| Warning    | `#8a6d00` | `#e0de71` |
-| Danger     | `#d3243a` | `#fb4f55` |
-| Border     | `#d1e5d7` | `#2a3a2f` |
-
-### Vermilion
-
-Earned with seeds in the Grove, under Foraging: its card joins the picker once Vermilion mode is bought.
-
-[`vermilion.md`](vermilion.md) · Heading **Karla** · Body **Karla** · Code **Noto Sans Mono** · Google Fonts
-
-![Vermilion — the same document in the light and dark variants](../imgs/themes/vermilion.png)
+![Sumac — the same document in the light and dark variants](../imgs/themes/sumac.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
@@ -403,26 +403,26 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once V
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#ebdddb` | `#423230` |
 
-### Violet
+### Woad
 
-Earned with seeds in the Grove, under Foraging: its card joins the picker once Violet mode is bought.
+Earned with seeds in the Grove, under Foraging: its card joins the picker once Woad mode is bought.
 
-[`violet.md`](violet.md) · Heading **Outfit** · Body **Outfit** · Code **Noto Sans Mono** · Google Fonts
+[`woad.md`](woad.md) · Heading **Manrope** · Body **Manrope** · Code **Noto Sans Mono** · Google Fonts
 
-![Violet — the same document in the light and dark variants](../imgs/themes/violet.png)
+![Woad — the same document in the light and dark variants](../imgs/themes/woad.png)
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
-| Background | `#ffffff` | `#211c27` |
-| Foreground | `#281d34` | `#ddd8e3` |
-| Heading    | `#150f1b` | `#ffffff` |
-| Primary    | `#9043e8` | `#bc8ef1` |
-| Accent     | `#9043e8` | `#ceadf5` |
-| Link       | `#9043e8` | `#ceadf5` |
+| Background | `#ffffff` | `#1b1e25` |
+| Foreground | `#1b222f` | `#d6dae1` |
+| Heading    | `#0e1219` | `#ffffff` |
+| Primary    | `#2068e3` | `#77a3ee` |
+| Accent     | `#2068e3` | `#9cbcf3` |
+| Link       | `#2068e3` | `#9cbcf3` |
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
-| Border     | `#e4ddec` | `#3b3246` |
+| Border     | `#dbe0eb` | `#303642` |
 
 ## Adding or editing a theme
 

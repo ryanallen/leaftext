@@ -1,12 +1,12 @@
-# Ink
+# Birch
 
-![Ink — the same document in the light and dark variants](../imgs/themes/ink.png)
+![Birch — the same document in the light and dark variants](../imgs/themes/birch.png)
 
-**Family ID:** `ink`
+**Family ID:** `birch`
 
 **Pack:** `tabler`
 
-**Earned:** Ink mode, in Foraging
+**Earned:** Birch mode, in Foraging
 
 Black, white and gray only: every surface, border, heading and accent is a shade of gray, and danger, warning and success keep their own colors so an action still says what it will do.
 

@@ -44,7 +44,7 @@ Free, on macOS and Windows.
 
 ![Leaftext reading view rendering a Markdown document](imgs/rendering-2x.png)
 
-Open a `.md` file and it renders the way you'd expect, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), [task lists](docs/01-features/01-rendering.md#task-lists), [tables](docs/01-features/01-rendering.md#tables), [collapsible sections](docs/01-features/01-rendering.md#collapsible-sections), [frontmatter](docs/01-features/01-rendering.md#frontmatter), and [your own images](docs/01-features/01-rendering.md#images). **[Rendering →](docs/01-features/01-rendering.md)**
+Open a `.md` file and it renders the way you'd expect, with the extras people actually use: [highlighted code](docs/01-features/01-rendering.md#code), [math](docs/01-features/01-rendering.md#math), [callouts](docs/01-features/01-rendering.md#blockquotes-and-alerts), [footnotes](docs/01-features/01-rendering.md#footnotes), [emoji](docs/01-features/01-rendering.md#emoji), [task lists](docs/01-features/01-rendering.md#task-lists), [tables](docs/01-features/01-rendering.md#tables), [collapsible sections](docs/01-features/01-rendering.md#collapsible-sections), [frontmatter](docs/01-features/01-rendering.md#frontmatter), [wiki links](docs/01-features/01-rendering.md#wiki-links) to your other notes, and [your own images](docs/01-features/01-rendering.md#images). **[Rendering →](docs/01-features/01-rendering.md)**
 
 ### Diagrams that take your theme's colors
 
@@ -216,7 +216,7 @@ Write one `GLOSSARY.md` and every mention of a defined term, across every docume
 
 ![Amaranth theme](imgs/themes/themes.png)
 
-[Amaranth, Arabica, Bloodleaf, Camellia, Eucalyptus, Fern, Foxglove, Ginger, GitHub, Goldenrod, Halcyon, Ivy, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) ship free, and six one-color modes — Amber, Cobalt, Ink, Verdant, Vermilion and Violet — are earned with seeds in [the Grove](docs/01-features/09-progress.md), each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap, and the [icons](docs/01-features/06-themes.md#icons) — seven icon sets, and each theme wears one. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
+[Amaranth, Arabica, Bloodleaf, Camellia, Eucalyptus, Fern, Foxglove, Ginger, GitHub, Goldenrod, Halcyon, Ivy, Nightshade, Pippin, and Sage](docs/01-features/06-themes.md#families) ship free, and six one-color modes — Birch, Laurel, Lavender, Saffron, Sumac and Woad — are earned with seeds in [the Grove](docs/01-features/09-progress.md), each in light and dark, plus System and Daylight if you'd rather the app follow the time of day. Everything moves together: text, code, callouts, diagrams, minimap, and the [icons](docs/01-features/06-themes.md#icons) — seven icon sets, and each theme wears one. Each theme's font is fetched from Google Fonts the first time you choose it. **[Themes →](docs/01-features/06-themes.md)**
 
 ### Settings you can read, where you need them
 

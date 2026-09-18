@@ -126,7 +126,7 @@ The other thing that walk refuses is a folder a machine filled: one that declare
 
 ## File actions
 
-![A right-click context menu open on a file row in the library pane, listing Open, Favorite, Cut, Copy, Copy path, Rename, Reveal file, Properties and Delete](../../imgs/file-actions.png)
+![A right-click context menu open on a file row in the library pane, listing Open, Favorite, Open beside, Cut, Copy, Copy path, Rename, Reveal file, Properties and Delete](../../imgs/file-actions.png)
 
 Right-click a file row for a context menu of file actions:
 

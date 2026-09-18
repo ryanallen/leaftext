@@ -1,12 +1,12 @@
-# Vermilion
+# Sumac
 
-![Vermilion — the same document in the light and dark variants](../imgs/themes/vermilion.png)
+![Sumac — the same document in the light and dark variants](../imgs/themes/sumac.png)
 
-**Family ID:** `vermilion`
+**Family ID:** `sumac`
 
 **Pack:** `heroicons`
 
-**Earned:** Vermilion mode, in Foraging
+**Earned:** Sumac mode, in Foraging
 
 One hue, red: every surface, border, heading and accent is a shade of it, and danger, warning and success keep their own colors so an action still says what it will do.
 

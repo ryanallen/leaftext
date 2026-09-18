@@ -1,12 +1,12 @@
-# Cobalt
+# Woad
 
-![Cobalt — the same document in the light and dark variants](../imgs/themes/cobalt.png)
+![Woad — the same document in the light and dark variants](../imgs/themes/woad.png)
 
-**Family ID:** `cobalt`
+**Family ID:** `woad`
 
 **Pack:** `feather`
 
-**Earned:** Cobalt mode, in Foraging
+**Earned:** Woad mode, in Foraging
 
 One hue, blue: every surface, border, heading and accent is a shade of it, and danger, warning and success keep their own colors so an action still says what it will do.
 
