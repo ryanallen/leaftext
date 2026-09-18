@@ -12,8 +12,9 @@
 | ------- | ----- |
 | Heading | `"Source Serif 4", Georgia, Cambria, "Times New Roman", serif` |
 | Body    | `"Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"` |
+| Reading | `"Source Serif 4", Georgia, Cambria, "Times New Roman", serif` |
 | Code    | `"Source Code Pro", ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace` |
-| Google  | `https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;0,900;1,400&display=swap` |
+| Google  | `https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600;700&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600&display=swap` |
 
 ## Light
 

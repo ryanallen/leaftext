@@ -5,7 +5,7 @@
 
 Every theme in Leaftext is plain data — one Markdown file per family, right here in this folder. Because they are Markdown, they render as the color tables below in Leaf itself and at [leaftext.com/themes](https://leaftext.com/themes).
 
-13 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 84-color contract inside its file.
+15 families ship free and 6 more are earned with seeds in the Grove, listed alphabetically (the order the theme picker uses). Each links to its full file; the screenshot is the same document split across the light and dark variants, and the table previews the key colors — every family also defines the full 84-color contract inside its file.
 
 4 of the 84 are optional, and a family that says nothing about one gets another of its own colors copied in: `hover-tint`, the ink every fill under the pointer is mixed from, takes the quiet-text color; `primary-ink` and `accent-ink`, the inks printed on those two fills, take the primary and the accent themselves; and `markdown-table-row-background`, the band every other table row wears, takes the sunken surface. Set `hover-tint`, as Goldenrod does, and every menu row, toolbar button and file in the pane washes in that hue instead.
 
@@ -15,7 +15,7 @@ Mermaid diagrams take these same tokens, so a family says nothing about diagrams
 
 ### Amaranth
 
-[`amaranth.md`](amaranth.md) · Heading **Source Serif 4** · Body **Source Sans 3** · Code **Source Code Pro** · Google Fonts
+[`amaranth.md`](amaranth.md) · Heading **Source Serif 4** · Body **Source Sans 3** · Reading **Source Serif 4** · Code **Source Code Pro** · Google Fonts
 
 ![Amaranth — the same document in the light and dark variants](../imgs/themes/amaranth.png)
 
@@ -91,6 +91,25 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once A
 | Danger     | `#b81420` | `#ff5f63` |
 | Border     | `#dde5ec` | `#28323d` |
 
+### Camellia
+
+[`camellia.md`](camellia.md) · Heading **Cormorant Garamond** · Body **Karla** · Code **IBM Plex Mono** · Google Fonts
+
+![Camellia — the same document in the light and dark variants](../imgs/themes/camellia.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#fff7fa` | `#1a1016` |
+| Foreground | `#3a1f2b` | `#e8d4de` |
+| Heading    | `#2a1520` | `#fff0f8` |
+| Primary    | `#b0248a` | `#f58fd0` |
+| Accent     | `#2f6a4a` | `#8fd4a8` |
+| Link       | `#9a1f78` | `#f58fd0` |
+| Success    | `#2d6e31` | `#8fdc8a` |
+| Warning    | `#7a5200` | `#e8c872` |
+| Danger     | `#b42318` | `#ff8a7a` |
+| Border     | `#e3c2d1` | `#43293a` |
+
 ### Cobalt
 
 Earned with seeds in the Grove, under Foraging: its card joins the picker once Cobalt mode is bought.
@@ -111,6 +130,25 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once C
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
 | Border     | `#dbe0eb` | `#303642` |
+
+### Eucalyptus
+
+[`eucalyptus.md`](eucalyptus.md) · Heading **Lato** · Body **Lato** · Code **IBM Plex Mono** · Google Fonts
+
+![Eucalyptus — the same document in the light and dark variants](../imgs/themes/eucalyptus.png)
+
+| Role       | Light     | Dark      |
+| ---------- | --------- | --------- |
+| Background | `#f3fbfa` | `#0e1a1c` |
+| Foreground | `#173536` | `#d5e7e6` |
+| Heading    | `#0d2a2b` | `#eefaf9` |
+| Primary    | `#00787b` | `#5fd6d2` |
+| Accent     | `#2f6b45` | `#9ad08a` |
+| Link       | `#00696c` | `#5fd6d2` |
+| Success    | `#2d6e31` | `#8fdc8a` |
+| Warning    | `#765300` | `#e8c872` |
+| Danger     | `#b3261e` | `#ff8a80` |
+| Border     | `#b9d6d2` | `#24403f` |
 
 ### Fern
 
