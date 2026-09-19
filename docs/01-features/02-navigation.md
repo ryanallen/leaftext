@@ -378,6 +378,8 @@ A plain click follows a link in the [tab](#tabs) you are reading, so coming back
 
 This works on a link to any document Leaftext reads — the `Another page` hint above — and on the [Previous / Next](#pager) buttons under a document. An outside site has no page here to open, so the gesture follows it the way a plain click does, into your browser; an in-page jump has nowhere to go and simply jumps. A document that is already open in another tab does not get a second one, and you are not moved to it — you asked to stay where you are.
 
+A link that names a heading in another document — `[the rule](Note.md#the-rule)`, or `[[Note#The rule]]` as a [wiki link](01-rendering.md#wiki-links) — lands on that heading rather than at the top, whether you click it or open it behind. A tab opened behind waits on the heading and lands on it the first time you come to it, even after a restart; from then on it keeps the place you left it, like any other tab.
+
 Right-click a link for the same thing by name, plus copying it. The pointer has to be resting on the link for the menu to be about the link, so the [hint](#link-hints) that rest raised is already up — it goes as the menu opens, and stays down while the menu is up:
 
 | Item | What it does |

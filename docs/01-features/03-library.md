@@ -373,6 +373,8 @@ The second map is **smaller, not wrong**. A document only ever records what it l
 
 How many documents it draws is set by the [Graph size](05-settings.md#graph-size) setting — from a tight **Focus** neighborhood (the open document and its direct links) up to **Everything**. Smaller sizes render faster; larger ones stay responsive by easing the layout and repainting less often as it settles.
 
+A [vault](#vaults) stops reading at its [limit](#facts), so a very large one can hold a document it never read. That document is mapped from its own links rather than drawn empty, the way it would be outside any vault. Where a **Focus** map inside a vault still comes back with nothing, it says the document is not in that vault's map — not that the document has no links.
+
 ### Web addresses
 
 A `http`/`https` link is a node too, drawn as a **ring with a dot at its center** rather than a filled disc, and labeled by its domain — `reddit.com`, not the whole URL, which stays in the tooltip. **Clicking one opens your browser and leaves the map exactly as it is** — no redraw, because nothing here replaced the document you are on.
