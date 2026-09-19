@@ -2532,21 +2532,21 @@
 }
 :root[data-leaf-theme="lavender"][data-leaf-appearance="dark"] {
   --lt-theme-source: lavender-dark;
-  --lt-background: #211c27;
+  --lt-background: #251734;
   --lt-foreground: #ddd8e3;
-  --lt-surface: #211c27;
-  --lt-surface-elevated: #2a2331;
-  --lt-surface-muted: #2e2736;
-  --lt-surface-sunken: #1a161f;
-  --lt-border: #3b3246;
+  --lt-surface: #251734;
+  --lt-surface-elevated: #301b41;
+  --lt-surface-muted: #341f47;
+  --lt-surface-sunken: #1d122a;
+  --lt-border: #402c55;
   --lt-border-strong: #5d4f6d;
   --lt-muted-foreground: #a194b1;
   --lt-hover-tint: #a194b1;
   --lt-primary: #bc8ef1;
-  --lt-primary-foreground: #211c27;
+  --lt-primary-foreground: #251734;
   --lt-primary-ink: #bc8ef1;
   --lt-accent: #ceadf5;
-  --lt-accent-foreground: #211c27;
+  --lt-accent-foreground: #251734;
   --lt-accent-ink: #ceadf5;
   --lt-danger: #fb4f55;
   --lt-danger-foreground: #1e1e1e;
@@ -2559,7 +2559,7 @@
   --lt-focus-ring: #bc8ef1;
   --lt-focus-selection-background: #471186;
   --lt-focus-selection-foreground: #ffffff;
-  --lt-markdown-background: #211c27;
+  --lt-markdown-background: #251734;
   --lt-markdown-foreground: #ddd8e3;
   --lt-markdown-heading: #ffffff;
   --lt-markdown-heading-2: #ffffff;
@@ -2567,7 +2567,7 @@
   --lt-markdown-heading-4: #ffffff;
   --lt-markdown-heading-5: #ffffff;
   --lt-markdown-heading-6: #ffffff;
-  --lt-markdown-rule: #3b3246;
+  --lt-markdown-rule: #402c55;
   --lt-markdown-link: #ceadf5;
   --lt-markdown-blockquote-border: #bc8ef1;
   --lt-markdown-blockquote-foreground: #ddd8e3;
@@ -2576,22 +2576,22 @@
   --lt-markdown-alert-important: #bc8ef1;
   --lt-markdown-alert-warning: #e0de71;
   --lt-markdown-alert-caution: #fb464c;
-  --lt-markdown-badge-background: #2e2736;
+  --lt-markdown-badge-background: #341f47;
   --lt-markdown-badge-foreground: #ddd8e3;
   --lt-markdown-table-border: #736287;
-  --lt-markdown-table-row-background: #1a161f;
-  --lt-markdown-thematic-break: #3b3246;
-  --lt-markdown-math-inline-background: #2e2736;
-  --lt-markdown-keyboard-background: #28222e;
-  --lt-markdown-keyboard-border: #3b3246;
-  --lt-editor-inline-code-background: #2e2736;
+  --lt-markdown-table-row-background: #1d122a;
+  --lt-markdown-thematic-break: #402c55;
+  --lt-markdown-math-inline-background: #341f47;
+  --lt-markdown-keyboard-background: #2d1c3c;
+  --lt-markdown-keyboard-border: #402c55;
+  --lt-editor-inline-code-background: #341f47;
   --lt-editor-inline-code-foreground: #ddd8e3;
-  --lt-editor-code-background: #1a161f;
+  --lt-editor-code-background: #1d122a;
   --lt-editor-code-foreground: #ddd8e3;
-  --lt-editor-code-border: #3b3246;
+  --lt-editor-code-border: #402c55;
   --lt-editor-code-selection-background: #4f1295;
   --lt-editor-code-selection-foreground: #ffffff;
-  --lt-syntax-background: #1a161f;
+  --lt-syntax-background: #1d122a;
   --lt-syntax-foreground: #ddd8e3;
   --lt-syntax-comment: #9586a7;
   --lt-syntax-keyword: #dec7f8;
@@ -2609,9 +2609,9 @@
   --lt-syntax-changed: #e0de71;
   --lt-syntax-changed-background: #33301a;
   --lt-navigation-button-hover-background: #ceadf5;
-  --lt-navigation-button-disabled-background: #2e2736;
+  --lt-navigation-button-disabled-background: #341f47;
   --lt-navigation-button-disabled-foreground: #746388;
-  --lt-navigation-recent-border: #3b3246;
+  --lt-navigation-recent-border: #402c55;
   --lt-navigation-recent-item-foreground: #ddd8e3;
   --lt-navigation-recent-item-hover-foreground: #ceadf5;
   --lt-minimap-viewport-border: #bc8ef1;
@@ -5508,7 +5508,8 @@ body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
   transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
 }
 .tab-active {
-  max-width: none;
+  /* Capped at its group, so a group narrower than the tab ends it with its own corner rather than cutting it off. */
+  max-width: 100%;
   /* Daylight beside the selected tab: 12px on top of the strip's 4px gap, bought only beside another tab and only by the selected one, so it stands clear of its neighbors. It is the strip's own spacing, not room the small flare below asks for. It is in the transition above, or every tab to the right jumps when the selection moves. */
   margin: 0 var(--lt-space-12);
 }
@@ -5601,6 +5602,8 @@ body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
   max-width: none;
   -webkit-mask-image: none;
   mask-image: none;
+  /* A fade would bite a name that fits, since this label is exactly as wide as its text; an ellipsis draws only once the tab is capped. */
+  text-overflow: ellipsis;
 }
 .tab-label:hover {
   background: transparent;
@@ -12187,7 +12190,7 @@ body.is-home-row-dragging .home-list-scroll li {
     max-width: 104px;
   }
   .tab-active {
-    max-width: 200px;
+    max-width: min(200px, 100%);
   }
   .tab-label {
     max-width: 96px;

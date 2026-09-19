@@ -293,7 +293,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once L
 
 | Role       | Light     | Dark      |
 | ---------- | --------- | --------- |
-| Background | `#ffffff` | `#211c27` |
+| Background | `#ffffff` | `#251734` |
 | Foreground | `#281d34` | `#ddd8e3` |
 | Heading    | `#150f1b` | `#ffffff` |
 | Primary    | `#9043e8` | `#bc8ef1` |
@@ -302,7 +302,7 @@ Earned with seeds in the Grove, under Foraging: its card joins the picker once L
 | Success    | `#087a34` | `#44cf6e` |
 | Warning    | `#8a6d00` | `#e0de71` |
 | Danger     | `#d3243a` | `#fb4f55` |
-| Border     | `#e4ddec` | `#3b3246` |
+| Border     | `#e4ddec` | `#402c55` |
 
 ### Nightshade
 
