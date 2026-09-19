@@ -11191,6 +11191,21 @@ body.is-block-dragging .document-body [data-src-start] {
 .table-column-grip:active {
   cursor: grabbing;
 }
+
+/* ---- A row or column being carried ----------------------------------------
+   The cells a grip has lifted ride under the pointer, and the script writes their transform on every move, so they carry no transition. They take no pointer, so a release lands on whatever the table has put under them. */
+.document-body .table-carried {
+  position: relative;
+  z-index: 3;
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-edge-strong);
+  opacity: var(--lt-opacity-92);
+  pointer-events: none;
+}
+/* The other cells of a carried table slide one slot aside to open the place it will land, and slide back when it moves on, so the table reads as making room rather than jumping. Only while something is carried: no table pays for this at rest. */
+.document-body .table-steps-aside {
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}
 /* A number the app keeps right off the document's own hidden formula line wears a quiet bar on its leading edge, so it is not mistaken for one somebody typed. It is a mark and not a second copy of the value — the number in the cell is the number in the file — and it sits on the edge a right-aligned number never reaches, which is why it can never collide with the digits. */
 .document-body .table-cell-computed {
   position: relative;
@@ -12157,7 +12172,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .home-row.is-going {
   opacity: var(--lt-opacity-45);
 }
-/* And then it goes: it dissolves while the rows under it close the gap, on the app's own curve. Both on the item holding the row, because a height that snapped shut under a row still fading would drag the list up in one jump — and only an item holding a row, since a group heading is not one of these and is not this tall. Reduce Motion answers this rule with everything else, so the row simply goes. */
+/* The item fades and closes its gap together; Reduce Motion zeros both transitions so the page redraws at once. */
 .home-list-scroll li.home-list-row {
   overflow: hidden;
   max-height: var(--home-row-height);
@@ -15514,7 +15529,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 119 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 121 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -15546,7 +15561,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>183</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>119</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>121</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -15959,7 +15974,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">119 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">121 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -16203,6 +16218,14 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Table column handle</h3><code class="built">.table-column-handle</code><span class="built">table-controls.js</span></header>
 <div class="stage"><div class="table-column-handle" style="position:static;transform:none"><button type="button" class="table-column-grip"><span class="lt-icon lt-icon-grip"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Carried row or column</h3><code class="built">.table-carried</code><span class="built">table-controls.js, on every cell of the row or column a grip has lifted, from the first four pixels of the drag to the release</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Name</th><th>Kind</th></tr></thead><tbody><tr><td class="table-steps-aside" style="transform:translateY(-37px)">Beta</td><td class="table-steps-aside" style="transform:translateY(-37px)">fern</td></tr><tr><td class="table-carried" style="transform:translateY(40px)">Alpha</td><td class="table-carried" style="transform:translateY(40px)">tree</td></tr><tr><td>Gamma</td><td>moss</td></tr></tbody></table></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Stepping aside</h3><code class="built">.table-steps-aside</code><span class="built">table-controls.js, on every other cell of a table while one of its rows or columns is carried</span></header>
+<div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Name</th><th>Kind</th></tr></thead><tbody><tr><td class="table-steps-aside" style="transform:translateY(-37px)">Beta</td><td class="table-steps-aside" style="transform:translateY(-37px)">fern</td></tr><tr><td>Gamma</td><td>moss</td></tr></tbody></table></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Column size grip</h3><code class="built">.table-sizer-column</code><span class="built">table-sizing.js, on every cell whose last covered column is not the table’s last</span></header>

@@ -11183,6 +11183,21 @@ body.is-block-dragging .document-body [data-src-start] {
 .table-column-grip:active {
   cursor: grabbing;
 }
+
+/* ---- A row or column being carried ----------------------------------------
+   The cells a grip has lifted ride under the pointer, and the script writes their transform on every move, so they carry no transition. They take no pointer, so a release lands on whatever the table has put under them. */
+.document-body .table-carried {
+  position: relative;
+  z-index: 3;
+  background: var(--lt-markdown-background);
+  box-shadow: var(--lt-shadow-edge-strong);
+  opacity: var(--lt-opacity-92);
+  pointer-events: none;
+}
+/* The other cells of a carried table slide one slot aside to open the place it will land, and slide back when it moves on, so the table reads as making room rather than jumping. Only while something is carried: no table pays for this at rest. */
+.document-body .table-steps-aside {
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}
 /* A number the app keeps right off the document's own hidden formula line wears a quiet bar on its leading edge, so it is not mistaken for one somebody typed. It is a mark and not a second copy of the value — the number in the cell is the number in the file — and it sits on the edge a right-aligned number never reaches, which is why it can never collide with the digits. */
 .document-body .table-cell-computed {
   position: relative;
@@ -12149,7 +12164,7 @@ body.is-home-row-dragging .home-list-scroll li {
 .home-row.is-going {
   opacity: var(--lt-opacity-45);
 }
-/* And then it goes: it dissolves while the rows under it close the gap, on the app's own curve. Both on the item holding the row, because a height that snapped shut under a row still fading would drag the list up in one jump — and only an item holding a row, since a group heading is not one of these and is not this tall. Reduce Motion answers this rule with everything else, so the row simply goes. */
+/* The item fades and closes its gap together; Reduce Motion zeros both transitions so the page redraws at once. */
 .home-list-scroll li.home-list-row {
   overflow: hidden;
   max-height: var(--home-row-height);
