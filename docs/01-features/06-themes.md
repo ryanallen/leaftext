@@ -206,7 +206,7 @@ Every fill under the pointer — a menu row, a toolbar button, a file in the lib
 
 ## Diagrams
 
-![One page of diagrams shown twice under two different themes: the same flowchart, gantt chart and pie chart, each drawn in that theme's own surfaces, ink and categorical color scale](../../imgs/theme-diagrams.png)
+![One page of diagrams shown twice under two different themes: the same flowchart and pie chart, each drawn in that theme's own surfaces, ink and categorical color scale](../../imgs/theme-diagrams.png)
 
 [Mermaid diagrams](01-rendering.md#mermaid-diagrams) are drawn in the theme's own colors, so every family themes every kind of diagram without saying anything about diagrams at all:
 

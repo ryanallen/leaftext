@@ -138,13 +138,13 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ### Or work in the raw source
 
-![Editing in code view, with save and undo button](imgs/code-view.png)
+![A Markdown file as raw source in the code view, line numbers down the left and the editor’s minimap rail at the right](imgs/code-view.png)
 
 Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of the part a Word, Excel, PowerPoint or OpenDocument file is anchored to — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
-![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link further down](imgs/typing-help.png)
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link higher up the file](imgs/typing-help.png)
 
 Type `[[` and your notes are listed, by file name and by any [other name](docs/01-features/03-library.md#other-names) they answer to. Type `#` for a heading. Hover a wikilink for a preview, and a link that answers to nothing gets a wavy underline. It knows only what you pointed it at. **[Typing help →](docs/01-features/07-editing.md#typing-help)**
 

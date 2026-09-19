@@ -164,7 +164,7 @@ Hover a block and two controls appear in the page's left margin: a **handle** to
 
 ### Adding a block
 
-![The insert row fanned out over an empty line: a row of buttons for text, heading, list, quote, code block, table, image, flowchart and divider, each drawn with its own icon](../../imgs/insert-row.png)
+![The insert row fanned out over an empty line: a row of buttons for text, heading, list, quote, code block, table, image, flowchart, divider, framed figure, cards, badge and bars, each drawn with its own icon](../../imgs/insert-row.png)
 
 The plus stands on empty lines, never on a line that already says something — beside a written line it would be offering to write over it. So:
 
@@ -443,7 +443,7 @@ Scroll a Markdown file in the [code view](#code-view) and the heading you are un
 
 ### Typing help
 
-![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link further down the file](../../imgs/typing-help.png)
+![The code view with a completion popup open after typing two square brackets, listing note names from the vault, and a wavy underline beneath a broken link higher up the file](../../imgs/typing-help.png)
 
 While you type Markdown in the code view, the editor can offer what Leaftext already knows — the same knowledge the [graph](03-library.md#graph) and [search](03-library.md#search) run on, so it only ever sees what you pointed it at: the active [vault](03-library.md#vaults), or the document's own folder when no vault holds it.
 
