@@ -5338,6 +5338,7 @@ body.frameless.is-fullscreen .startup-card {
   content: "";
   position: absolute;
   /* Only as wide as the card below it, then a radius shorter again at each end: .reader-corner-tl / -tr arc from there down into the card's side borders. A pixel of overlap with each arc's tangent, so a rounding difference between the boxes can't open a gap. On the right that also clears the rail's column (0 wide when there is no rail), which is chrome the line must not cross. */
+  /* With two cards up, .reader-seam stands over this line between them and covers it: the run either side is unchanged, and the middle carries nothing. */
   /* The left end starts past the library rail — one unbroken surface the line must not cut — and spends the same number the grid track does, so their transitions interpolate the same span and the line stays on the pane's corner arc every frame; a gutter floor here is what detached them. */
   left: calc(var(--library-rail-width, 0px) + var(--lt-radius-md) - 1px);
   right: calc(var(--reader-gutter) + var(--reader-minimap-column) + var(--lt-radius-md) - 1px);
@@ -5407,8 +5408,8 @@ body.frameless.is-fullscreen .startup-card {
   align-items: stretch;
   overflow-x: auto;
   scrollbar-width: none;
-  /* The side insets stay at the bar's own 16px while the gap above closes, so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. They also cap --tab-flare: this box scrolls, so a flare wider than the inset is clipped flat and the first tab's corner draws as a straight run. No bottom inset — the tabs have to reach the divider. */
-  padding: var(--lt-space-4) var(--lt-space-16) 0;
+  /* The shoulder above the tabs and nothing at the sides: the 16px that keeps the first and last tab off the zones either side is the group's, because the group is the box that scrolls and an inset outside it cannot hold a flare in. No bottom inset — the tabs have to reach the divider. */
+  padding: var(--lt-space-4) 0 0;
 }
 .tab-bar::-webkit-scrollbar {
   height: 0;
@@ -5419,8 +5420,11 @@ body.frameless.is-fullscreen .startup-card {
   gap: var(--lt-space-4);
   align-items: stretch;
   min-width: 0;
-  flex: 1 1 auto;
+  /* Never wider than the tabs in it: the plus stands after the groups and rests against the last tab, and a group that took the rest of the row would push it to the strip's end with a gap of nothing in between. It still gives room up, so a full strip shrinks the group and the plus comes to rest at the strip's own end. */
+  flex: 0 1 auto;
   overflow-x: auto;
+  /* The bar's own 16px, spent inside the box that scrolls so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. It is also what caps --tab-flare: a flare wider than this inset is clipped flat by the scroll box and the end tab's corner draws as a straight run. */
+  padding: 0 var(--lt-space-16);
 }
 /* The part scrolls and its bar is hidden by the rule below alone: the standard property is the one that kills every `::-webkit-scrollbar` rule on the box it sits on, and the four boxes that set it are counted. This one is inside the strip, which already sets it. */
 .strip-part::-webkit-scrollbar {
@@ -5435,29 +5439,37 @@ body.has-split .strip-part {
   width: var(--strip-part-left, 50%);
 }
 body.has-split .strip-part-beside {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   width: auto;
-  /* The strip's own side inset again, so the right-hand group's first tab stands as far inside its card as the left-hand group's does inside that one. Without it one group starts 16px in and the other flush against the card's edge. */
-  padding-left: var(--lt-space-16);
 }
-/* The keys in the second card, so the group without them is the left card's: the two swap places and the left card's width goes with them. */
+/* The keys in the second card, so the group without them is the left card's: the two swap places and the left card's width and the right card's inset go with them. Written pair first and group beside second, because .strip-part-beside is a .strip-part too: a declaration added after the override lands on both groups and wins, which walked the left card's tab 16px right on every press. */
 body.has-split.beside-on-the-left .strip-part {
   order: 1;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   width: auto;
 }
 body.has-split.beside-on-the-left .strip-part-beside {
   order: 0;
   flex: 0 1 auto;
   width: var(--strip-part-left, 50%);
-  padding-left: 0;
-}
-body.has-split.beside-on-the-left .strip-part {
-  padding-left: var(--lt-space-16);
 }
 /* A published site carries the folder trail in this box rather than a strip of tabs. A tab hangs off the bar's bottom edge so its top corners have room to round; a trail is a line of text, so it sits in the middle of the band instead, and it takes the whole box because it shrinks itself to whatever room it is given. */
+/* A group scrolled past its start dissolves at its left end rather than cutting a tab in half there, right beside Back, Refresh and Forward. A mask, not a scrim: the bar's dot lattice is fixed to the window, so anything painted flat over it draws as a patch. A group at rest wears no mask at all and draws its first tab whole. */
+.strip-part.tabs-scrolled {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 24px);
+  mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 24px);
+}
+/* The plus, standing where the last tab ends and the next one will begin. Last however the split orders the two groups — the swap gives them order 1 and 0 — and it never shrinks, so a strip that has run out of room scrolls its tabs under it rather than squeezing it. The 16px is the bar's own, spent here because the strip spends none of its own at its sides any more. */
+.tab-bar > .new-button {
+  flex: 0 0 auto;
+  order: 2;
+  align-self: center;
+  margin-right: var(--lt-space-16);
+}
 .tab-bar > .library-crumb-trail {
   align-self: center;
+  /* The bar's 16px at both ends. A site's strip holds no group, so the inset the groups carry has to be spent here or the trail runs flush into the zones either side. */
+  padding: 0 var(--lt-space-16);
 }
 .tab {
   display: inline-flex;
@@ -6394,6 +6406,7 @@ body.is-embedded .library-shell {
 }
 /* The sheet stands in for the page, so the page's furniture goes with it: the corner arcs would paint on top of it, the divider is the top edge of a card nobody can see, and the tabs belong to a document the sheet is covering. The tabs go by visibility, not display — the overflow fold measures the strip to decide what to fold, and a collapsed one would unfold the whole bar into a window too narrow to hold it. */
 .app-surface.has-library-overlay .reader-corner,
+.app-surface.has-library-overlay .reader-seam,
 .app-surface.has-library-overlay .app-bar::after {
   display: none;
 }
@@ -6475,7 +6488,43 @@ body.is-library-settling .app-bar::after {
   font-size: var(--lt-text-13);
   /* No right-edge hairline: the reader's own left border, flush against this column, is the stroke that marks the boundary. */
 }
-/* The card's two top corners, where the app bar's divider turns down into the card's side borders. The card can't round these itself: its top is square and tucked under the bar, so the visible corner falls at the bar's bottom edge. Each element covers the junction with the chrome surface and grain, masks the page's quarter disc back out of it (which also hides the few px of straight border the arc stands in for), and strokes the arc over the join with ::after. The bottom corners need none of this — the card rounds those itself. .reader-corner-tl is a child of .library-pane and hangs off `left: 100%`, the grid line the card's left border starts on, rather than off --library-rail-width: a fractional pane width rounds to different device pixels in different containing blocks, which left the arc a pixel off the border it is meant to continue. */
+/* The middle of a split: the strip of the bar's own last pixel that runs between the two cards, from the left card's right edge to the right card's left edge. The bar's divider draws straight through there, which reads as one sheet scored down the middle rather than two pages, so this covers it with the same chrome surface and grain the bar shows, and carries an arc off each end to turn the two inner corners.
+
+   Placed by the shell's own grid, never by a number: the bar is not in the grid, so cutting the divider into a run per card could only be reached by the page writing each card's edge into the bar — the placement .reader-corner below records drifting a device pixel off the border. Hung on the grid instead, it follows a pane resize, the pane's three legs and a drag of the line with no work of its own. */
+.reader-seam {
+  grid-column: 3 / 5;
+  grid-row: 1;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--app-bar-height) - 1px);
+  height: var(--lt-stroke-1);
+  /* Over the app bar (z-index 10), the layer the two arcs it holds already stand on. */
+  z-index: 11;
+  background-color: var(--lt-surface);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  /* The same window-anchored lattice as every other grained surface, so the covered pixel stays in phase with the bar either side of it. */
+  background-attachment: fixed;
+  pointer-events: none;
+}
+.reader-seam[hidden] {
+  display: none;
+}
+/* The seam's own two arcs, hung off its ends rather than placed: the grid put the seam on the two cards' inner edges, so each arc ends on its card's edge by hanging off the strip that already reaches it. What each one is shaped like is the outer corner's shape rule below, which names it. */
+.reader-seam-corner-left {
+  top: 0;
+  right: 100%;
+}
+.reader-seam-corner-right {
+  top: 0;
+  left: 100%;
+}
+/* With the pane shut both cards are held off the left frame by the gutter (reader-page.css:18), which moves the right card's left edge off its own track while the left card's right edge stays on its. So only this end follows, or the arc ends a gutter short of the border it is turning. */
+.library-shell.library-closed .reader-seam {
+  right: calc(-1 * var(--reader-gutter));
+}
+/* The card's two top corners, where the app bar's divider turns down into the card's side borders. The card can't round these itself: its top is square and tucked under the bar, so the visible corner falls at the bar's bottom edge. Each element covers the junction with the chrome surface and grain, masks the page's quarter disc back out of it (which also hides the few px of straight border the arc stands in for), and strokes the arc over the join with ::after. The bottom corners need none of this — the card rounds those itself. The two inner corners a split makes are turned by arcs of the same kind, hung off .reader-seam rather than placed here. .reader-corner-tl is a child of .library-pane and hangs off `left: 100%`, the grid line the card's left border starts on, rather than off --library-rail-width: a fractional pane width rounds to different device pixels in different containing blocks, which left the arc a pixel off the border it is meant to continue. */
 .reader-corner {
   /* Where the mask cuts the page back out: a half pixel inside the arc's inner edge, so the stroke (which the mask also covers, being a child) survives whole instead of having its inner edge nibbled off. */
   --reader-corner-cut: calc(var(--lt-radius-md) - 0.5px);
@@ -6497,30 +6546,40 @@ body.is-library-settling .app-bar::after {
   inset: 0;
   border: 0 solid var(--lt-border);
 }
-.reader-corner-tl {
-  top: calc(var(--library-app-bar) - 1px);
-  left: 100%;
+/* The top-left arc: what it is shaped like, apart from where it is put. Three rules re-point the outer corners by their class, so an arc that wore one for its shape moved with them — the inner arc that took .reader-corner-tr landed 24 px inside the left card. The shape names the seam's own arcs; the placement below names the outer two alone. */
+.reader-corner-tl,
+.reader-seam-corner-right {
   -webkit-mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
   mask-image: radial-gradient(circle at 100% 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
 }
-.reader-corner-tl::after {
+.reader-corner-tl::after,
+.reader-seam-corner-right::after {
   border-top-width: var(--lt-stroke-1);
   border-left-width: var(--lt-stroke-1);
   border-top-left-radius: calc(var(--lt-radius-md) + 1px);
 }
+.reader-corner-tl {
+  top: calc(var(--library-app-bar) - 1px);
+  left: 100%;
+}
 /* In the app bar, so it tracks the bar's bottom edge whether or not the frameless window drops the bar's top border. Follows the card in when the rail takes a column beside it (0 wide when there is no rail).
 
    The mask belongs on this rule, not on a conditional one: without it the box paints as a plain chrome square over the page's corner. */
-.reader-corner-tr {
-  top: calc(100% - 1px);
-  right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+/* The top-right arc, shape first for the reason the top-left one is split. */
+.reader-corner-tr,
+.reader-seam-corner-left {
   -webkit-mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
   mask-image: radial-gradient(circle at 0 100%, transparent 0 var(--reader-corner-cut), var(--lt-mask-opaque) var(--reader-corner-cut));
 }
-.reader-corner-tr::after {
+.reader-corner-tr::after,
+.reader-seam-corner-left::after {
   border-top-width: var(--lt-stroke-1);
   border-right-width: var(--lt-stroke-1);
   border-top-right-radius: calc(var(--lt-radius-md) + 1px);
+}
+.reader-corner-tr {
+  top: calc(100% - 1px);
+  right: calc(var(--reader-gutter) + var(--reader-minimap-column));
 }
 .library-shell.library-closed .reader-corner-tl {
   /* No rail to sit against: follow the card out to its left gutter. */
@@ -8305,6 +8364,15 @@ body.has-split:not(.beside-on-the-left) .app-bar::after {
 }
 body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+}
+/* The seam ends on the left card's visible right edge, and two views draw that edge somewhere other than the track line.
+
+   The source view fakes it a rail in from the track — the editor's frame carries its own right border a minimap and its standoff inside the card (`code-view.css:30`) — so the seam's left end goes out to meet it, and with it the arc that turns that corner. Only the left card needs this: a source view in the card on the right has its frame's left border on the card's own edge. The map covers the left card's rail as well as the card (`reader-graph.css:7`), so with it up the seam starts at the rail's far side instead. */
+:root[data-code-view="true"] body.has-split:not(.beside-on-the-left) .reader-seam {
+  left: calc(-1 * (var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff)));
+}
+:root[data-graph-view="true"] body.has-split .reader-seam {
+  grid-column: 4 / 5;
 }
 /* The second card's own dissolve, in its own track. Named for the card rather than for a side: a band down the reader's left or right edge is a thing this tree refused, and the names for one are held out of the stylesheet. */
 .reader-edge-fade-second {
@@ -15320,6 +15388,7 @@ body.leaf-paper :is(.docs-pager,
 .app-bar,
 .app-overflow-panel,
 .reader-corner,
+.reader-seam,
 .library-pane,
 .library-divider,
 .filter-menu,
@@ -15919,8 +15988,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><button type="button" class="icon-button open-button"><span class="lt-icon lt-icon-open"></span></button></div>
 </section>
 <section class="part">
-<header><h3>New-document button</h3><code class="built">.new-button</code><span class="built">app-shell.html</span></header>
-<div class="stage"><button type="button" class="icon-button new-button"><span class="lt-icon lt-icon-new"></span></button></div>
+<header><h3>New-document button</h3><code class="built">.new-button</code><span class="built">app-shell.html, standing at the end of the tab strip rather than in the bar's trailing group — it rests against the last tab and never folds</span></header>
+<div class="stage"><div class="tab-bar" style="height:44px"><div class="strip-part"><span class="tab tab-active"><button type="button" class="tab-label">one.md</button></span></div><button type="button" class="icon-button new-button"><span class="lt-icon lt-icon-new"></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Export button</h3><code class="built">.export-button</code><span class="built">app-shell.html</span></header>

@@ -10,7 +10,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 
 | Feature | What it means |
 | --- | --- |
-| [New document](#new-document) | The **+** in the app bar (and on the home screen) starts a blank page, its reading view unlocked and ready to type |
+| [New document](#new-document) | The **+** at the end of the tab strip (and on the home screen) starts a blank page, its reading view unlocked and ready to type |
 | [Save As](#new-document) | A new document has no file until its first save, which asks where to put it |
 | [Inline editing](#inline-editing-the-reading-view) | Click into the rendered page and edit it directly — see [Formats](#formats) for what each one allows |
 | [Typing in a Word file or a spreadsheet](#formats) | Type into a paragraph of a `.docx`, `.docm` or `.odt`, or a cell of an `.xlsx`, `.xlsm` or `.ods`, where it is drawn — and everything the app never read stays byte for byte what it was on save |
@@ -69,7 +69,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 
 ## New document
 
-The **+** beside Open in the app bar starts a blank document in a new tab. The home screen carries the same button beside **Choose file**.
+The **+** at the end of the tab strip starts a blank document in a new tab — it rests against the last tab, where the next one will open, and walks right as you open more. The home screen carries the same button beside **Choose file**.
 
 - It opens in the reading view, whose [padlock](#the-padlock) is turned off for you, with the caret on the first line — there is nothing to click before you type. `Enter` starts the next paragraph, as it does anywhere else in the reading view.
 - It has **no file** yet. The tab is called *Untitled* (*Untitled 2*, and so on, when one is already open), and nothing reaches your folders until you say so. Closing the window with words in it keeps them in the [saved session](05-settings.md#unsaved-edits) rather than losing them, and the next launch puts the note back under the same name with its dot lit; a note you never typed into does not come back, because there is nothing in it to keep.

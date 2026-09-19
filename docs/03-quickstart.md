@@ -35,7 +35,7 @@ flowchart LR
 | Drag and drop | Drop a `.md`, `.html`, `.xml`, `.json`, `.yaml`, `.txt`, `.ini`, `.eml`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, or [source](01-features/01-rendering.md#source-files) file onto the window |
 | Recent files | Click a file on the no-file home screen |
 | Command line / Open with | Launch Leaftext with a file path, or double-click an [associated file](02-installation.md#file-associations) |
-| Start a blank one | The **+** in the app bar, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document). To make it in a folder you can see instead, right-click that folder in the library and pick [**New file**](01-features/03-library.md#folders-and-the-space-around-them) |
+| Start a blank one | The **+** at the end of the tab strip, or **New document** on the home screen — see [Editing](01-features/07-editing.md#new-document). To make it in a folder you can see instead, right-click that folder in the library and pick [**New file**](01-features/03-library.md#folders-and-the-space-around-them) |
 | Point it at a folder | **Add your notes folder** on the home screen, until you have a [vault](01-features/03-library.md#your-first-vault) |
 
 > [!TIP]
@@ -52,8 +52,8 @@ flowchart LR
 | Leaf mark | Returns to the home screen |
 | Library button | Opens and closes the [library pane](01-features/03-library.md) |
 | Back / Forward | Moves through document and scroll history |
-| Tab bar | Keeps multiple documents open |
-| Open, **+**, Export | Open a file, start a [new document](01-features/07-editing.md#new-document), and [write the page you are reading as a PDF or as a web page](01-features/02-navigation.md#export-the-page). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used, and the palette that chooses a [theme](01-features/06-themes.md#choose) is at the foot of the library pane |
+| Tab bar, **+** at its end | Keeps multiple documents open, with the **+** that starts a [new document](01-features/07-editing.md#new-document) resting against the last tab |
+| Open, Export | Open a file, and [write the page you are reading as a PDF or as a web page](01-features/02-navigation.md#export-the-page). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used, and the palette that chooses a [theme](01-features/06-themes.md#choose) is at the foot of the library pane |
 
 ### The page itself
 
@@ -120,7 +120,7 @@ Documents open **locked**, so a stray click never changes a file. Open the [padl
 - Highlight words for a [format bar](01-features/07-editing.md#the-format-bar). Copy, highlight and annotate are on it whether the page is locked or not.
 - Use the handle and plus in the left [margin](01-features/07-editing.md#the-block-gutter) to drag a block or [add one](01-features/07-editing.md#adding-a-block).
 - For the raw source instead, click the code-brackets button on the toolbar. It has a padlock of its own, so unlocking the page does not open the file's text.
-- To start from nothing, press the **+** in the app bar for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it.
+- To start from nothing, press the **+** at the end of the tab strip for a [new document](01-features/07-editing.md#new-document); its first save asks where to put it.
 
 Checkboxes are the exception to the padlock: a `- [ ]` box is clickable either way, and ticking it saves on the spot.
 
