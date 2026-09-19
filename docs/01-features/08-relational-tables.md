@@ -6,9 +6,9 @@ Leaftext calls this **RDB**: a [relational table](../GLOSSARY.md#relational-tabl
 
 ## Open a relational table
 
-Point at a [table](01-rendering.md#tables) with a header row and at least two body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**. The layout on screen is marked. A smaller table stays an ordinary table.
+Point at a [table](01-rendering.md#tables) with a header row and at least two body rows. A quiet bar appears above it with **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe**, centered over the table, and the copy and whole-window buttons at the same bar's right end. The layout on screen is marked. A smaller table stays an ordinary table, with only those two buttons in the bar.
 
-![A reading-list table in the page with a quiet bar standing above it: Table marked, then Cards, Board, List, Sort and Filter, over a table of id, title, author, status, pages, read and due columns whose author cells are green links](../../imgs/relational-table-bar.png)
+![A reading-list table in the page with a quiet bar standing above it: Table marked, then Cards, Board, List, Sort and Filter, with the copy and whole-window buttons at its right end, over a table of id, title, author, status, pages, read and due columns whose author cells are green links](../../imgs/relational-table-bar.png)
 
 The view works from the values already in the table. Leaftext recognizes numbers, ISO dates, task checkboxes, short repeated values, lone images and links to another table. A column it cannot recognize stays text.
 

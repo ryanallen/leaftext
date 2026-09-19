@@ -5426,9 +5426,10 @@ body.frameless.is-fullscreen .startup-card {
   /* The bar's own 16px, spent inside the box that scrolls so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. It is also what caps --tab-flare: a flare wider than this inset is clipped flat by the scroll box and the end tab's corner draws as a straight run. */
   padding: 0 var(--lt-space-16);
 }
-/* The part scrolls and its bar is hidden by the rule below alone: the standard property is the one that kills every `::-webkit-scrollbar` rule on the box it sits on, and the four boxes that set it are counted. This one is inside the strip, which already sets it. */
+/* The part scrolls and both its bars are hidden by the rule below alone: the standard property is the one that kills every `::-webkit-scrollbar` rule on the box it sits on, and the four boxes that set it are counted. This one is inside the strip, which already sets it. `height` is the horizontal bar's thickness and `width` the vertical one's, and both are needed: `overflow-x: auto` computes `overflow-y` to `auto` as well, so a vertical bar nothing can ever scroll reserved 15px inside the box, between the last tab and the group's end. */
 .strip-part::-webkit-scrollbar {
   height: 0;
+  width: 0;
 }
 .strip-part[hidden] {
   display: none;
@@ -5436,21 +5437,30 @@ body.frameless.is-fullscreen .startup-card {
 /* Two groups, placed on the cards below them. The left-hand group is pinned to the left card's own width, written on the strip in pixels because the cards and the strip divide two different boxes; the right-hand group takes whatever is left. Both may shrink: a pair that cannot give room back leaves the bar's own fold unable to reach a fit, and it folds every control at the bar's right end away instead. No stroke between them — the cards already draw the seam, and a third line in the middle is one the reader can see. */
 body.has-split .strip-part {
   flex: 0 1 auto;
-  width: var(--strip-part-left, 50%);
 }
 body.has-split .strip-part-beside {
   flex: 0 1 auto;
-  width: auto;
 }
 /* The keys in the second card, so the group without them is the left card's: the two swap places and the left card's width and the right card's inset go with them. Written pair first and group beside second, because .strip-part-beside is a .strip-part too: a declaration added after the override lands on both groups and wins, which walked the left card's tab 16px right on every press. */
 body.has-split.beside-on-the-left .strip-part {
   order: 1;
   flex: 0 1 auto;
-  width: auto;
 }
 body.has-split.beside-on-the-left .strip-part-beside {
   order: 0;
   flex: 0 1 auto;
+}
+/* A card's width is taken only while there are two groups to divide the row. One document in two views draws one group and hides the other, so a group pinned to the left card there would stretch to that card's far edge and carry the plus over the other page — which is what the strip's own mark, written by the page beside the group it draws, says. The mark is on the strip and the groups are its children, so `body.has-split` still leads: a mark left standing in a window with no split can pin nothing. Same four rules in the same order as the flexes above, pair first and group beside second, for the same reason. */
+body.has-split .tab-bar.has-two-groups > .strip-part {
+  width: var(--strip-part-left, 50%);
+}
+body.has-split .tab-bar.has-two-groups > .strip-part-beside {
+  width: auto;
+}
+body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part {
+  width: auto;
+}
+body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
   width: var(--strip-part-left, 50%);
 }
 /* A published site carries the folder trail in this box rather than a strip of tabs. A tab hangs off the bar's bottom edge so its top corners have room to round; a trail is a line of text, so it sits in the middle of the band instead, and it takes the whole box because it shrinks itself to whatever room it is given. */
@@ -5459,11 +5469,12 @@ body.has-split.beside-on-the-left .strip-part-beside {
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 24px);
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 24px);
 }
-/* The plus, standing where the last tab ends and the next one will begin. Last however the split orders the two groups — the swap gives them order 1 and 0 — and it never shrinks, so a strip that has run out of room scrolls its tabs under it rather than squeezing it. The 16px is the bar's own, spent here because the strip spends none of its own at its sides any more. */
+/* The plus, standing where the last tab ends and the next one will begin. Last however the split orders the two groups — the swap gives them order 1 and 0 — and it never shrinks, so a strip that has run out of room scrolls its tabs under it rather than squeezing it. The 16px is the bar's own, spent here because the strip spends none of its own at its sides. The gap handed back is the strip's 4px: the group's own 16px inset already stands between the last tab and the plus, and the forward arrow's side spends that inset and nothing else, so the strip's gap on top of it is what made this side read wider. */
 .tab-bar > .new-button {
   flex: 0 0 auto;
   order: 2;
   align-self: center;
+  margin-left: calc(-1 * var(--lt-space-4));
   margin-right: var(--lt-space-16);
 }
 .tab-bar > .library-crumb-trail {
@@ -10298,9 +10309,17 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 /* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
 /* The bay is the box the centering arithmetic can name, and it exists for nothing else: it draws no paint, holds no grain and takes no gesture. Its width is a length rather than the lane's `max-content`, so the margin that centers it is computable — half the room the measure does not cover, which is zero on a window too narrow for a lane to break out at all. Never a transform: a transform makes its own box the containing block for every `background-attachment: fixed` inside it, which is what dragged the dots in a scrolled table's header sideways with the columns, and what shrank a printed sheet to fit a slid lane's phantom width. print.css carries the same arithmetic for paper off a width the render wrote down. */
+/* One column as wide as the table and centered, so the row of pills above the lane is exactly the table's width and its two buttons end on the table's right edge. A `max-content` track is what can follow the lane's width where a margin cannot. */
 .document-body > .table-bay {
+  display: grid;
+  grid-template-columns: minmax(0, max-content);
+  justify-content: center;
   width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
   margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
+}
+/* A board or a list takes the whole measure rather than the table's width, so the column does too. */
+.document-body > .table-bay.table-bay-is-drawn {
+  grid-template-columns: minmax(0, 1fr);
 }
 /* And the lane keeps its own box inside the bay, so everything keyed on it — the bands, the corner control, the hover that reveals it, the wheel, the full-window sheet — lands where it always did. Auto margins center it because it can no longer be wider than its parent; a block box wider than its containing block has them treated as zero, which is why they cannot center the lane against the measure directly. */
 .table-bay > .table-lane {
@@ -10317,12 +10336,12 @@ body.is-block-dragging .document-body [data-src-start] {
 .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
 }
-/* The table's reading control is a second corner action beside the content, so it appears only when the table is being aimed at and leaves the page quiet otherwise. A widened picture wears the same shape in the same corner — one shape, two blocks, so the pair of them is written once. */
+/* The table's two actions stand in the row above it, where the pills are, and appear with that row; a widened picture wears the same shape in its own corner — one shape, two blocks, so it is written once. */
 .table-sheet-open,
 .image-sheet-open,
 .image-export-open {
   z-index: 1;
-  /* The wash below hangs off this box, so each of the three has to be the layer's containing block. The table's own is placed absolutely a rule down, which does the same job. */
+  /* The wash below hangs off this box, so each of the three has to be the layer's containing block. */
   position: relative;
   display: grid;
   place-items: center;
@@ -10351,22 +10370,14 @@ body.is-block-dragging .document-body [data-src-start] {
 .image-export-open:hover::before {
   background: var(--lt-wash-hover);
 }
-/* One control, so the table's own sits in the corner itself. Its own reveal, so the shared hover fade at the top of the file never reaches it — a `transition` shorthand replaces that one outright rather than merging with it — which is why the edge and the ink are named here and on the rule that shows it below. */
+/* The row above the table reveals it, so it fades only its edge and ink. */
 .table-sheet-open {
-  position: absolute;
-  top: var(--lt-space-6);
-  right: var(--lt-space-6);
-  opacity: 0;
-  pointer-events: none;
-  transition: var(--lt-transition-hover-reveal-leave), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease);
+  transition: border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
-/* The second corner action: the same shape and the same reveal, one button-width further in. Written out rather than folded into the lists above, which are each read as one selector by a test that names them; a row box like the picture lane's would be the other way to place two, and this is one block against restructuring the lane for a control that never moves. */
+/* The second action: the same shape, written out rather than folded into the lists above, which are each read as one selector by a test that names them. */
 .table-copy-csv {
   z-index: 1;
-  position: absolute;
-  top: var(--lt-space-6);
-  right: calc(var(--lt-space-6) + 34px);
+  position: relative;
   display: grid;
   place-items: center;
   width: 28px;
@@ -10376,10 +10387,7 @@ body.is-block-dragging .document-body [data-src-start] {
   border-radius: var(--lt-radius-md);
   background: var(--lt-surface-elevated);
   color: var(--lt-muted-foreground);
-  opacity: 0;
-  pointer-events: none;
-  transition: var(--lt-transition-hover-reveal-leave), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease);
+  transition: border-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease);
 }
 .table-copy-csv::before {
   content: '';
@@ -10397,13 +10405,6 @@ body.is-block-dragging .document-body [data-src-start] {
   position: relative;
   width: 16px;
   height: 16px;
-}
-.table-lane:hover .table-copy-csv,
-.table-copy-csv:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transition: var(--lt-transition-hover-reveal-arrive), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease);
 }
 .table-copy-csv:hover {
   border-color: var(--lt-border-strong);
@@ -10435,14 +10436,6 @@ body.is-block-dragging .document-body [data-src-start] {
   opacity: 1;
   pointer-events: auto;
   transition: var(--lt-transition-hover-reveal-arrive);
-}
-/* The colors ride along here too, for the reason written on the resting rule: the shorthand that reveals the button is the whole of its transition, so a fade it does not name is a fade it does not get. */
-.table-lane:hover .table-sheet-open,
-.table-sheet-open:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transition: var(--lt-transition-hover-reveal-arrive), border-color var(--lt-duration-120) var(--lt-ease),
-    color var(--lt-duration-120) var(--lt-ease);
 }
 /* The edge and the ink; the fill is the layer above. */
 .table-sheet-open:hover,
@@ -10686,6 +10679,7 @@ body.is-block-dragging .document-body [data-src-start] {
     }
     /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
     .document-body > .table-bay.table-allows-cards {
+      grid-template-columns: minmax(0, 1fr);
       width: 100%;
       margin-inline: 0;
     }
@@ -10829,6 +10823,7 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
 .document-body > .table-bay.table-is-cards {
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   margin-inline: 0;
 }
@@ -11249,20 +11244,39 @@ body.table-resizing.is-row button {
 }
 /* The lens bar over a table, and the one menu it opens.
  *
- * Quiet by default and drawn only when the table is being aimed at, the way the two corner actions beside it are: a document with a table on every second screen must not read as a page of toolbars. It sits above the lane rather than in it, because the lane is the table's own scrollport and a bar inside it would scroll away sideways with a wide table. */
+ * Quiet by default and drawn only when the table is being aimed at: a document with a table on every second screen must not read as a page of toolbars. It sits above the lane rather than in it, because the lane is the table's own scrollport and a bar inside it would scroll away sideways with a wide table. */
 .table-lens-bar {
+  /* The pills centered over the table and the copy and whole-window buttons at its right end: two equal outer tracks keep the middle one centered whatever sits in the last. The row spans the bay's one column, which is the table's width. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  /* Sized by the table and never the other way round: left to its own width the row would widen a small table's column, and the buttons would end past the table's edge. */
+  contain: inline-size;
+  column-gap: var(--lt-space-6);
+  align-items: center;
+  margin-block-end: var(--lt-space-4);
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--lt-transition-hover-reveal-leave);
+}
+/* The pills, and the box their one menu is placed against, so it opens under them. */
+.table-lens-pills {
+  grid-column: 2;
   display: flex;
   position: relative;
   /* Tight inside a group; the space between groups is written on the button that starts the next one. Four layouts and the one control about whichever is drawn, then the two that are about the table however it is laid out, then the one that writes — a row of seven evenly spaced pills says none of that and leaves the reader to work out from a button appearing and disappearing which of them belongs to what. */
   gap: var(--lt-space-2);
   align-items: center;
-  margin-inline: auto;
-  margin-block-end: var(--lt-space-4);
-  width: max-content;
-  max-width: 100%;
-  opacity: 0;
-  pointer-events: none;
-  transition: var(--lt-transition-hover-reveal-leave);
+  /* Over a table narrower than the pills they fold onto a second line rather than pushing the two buttons past the table's right edge. */
+  flex-wrap: wrap;
+  justify-content: center;
+  min-width: 0;
+}
+/* Copy, then whole window, flush with the table's right edge, as far apart as the picture's own pair. */
+.table-lens-ends {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  gap: var(--lt-space-6);
 }
 /* The whole bay, not the lane: the bar is above the table, so a pointer moving onto it from the table has already left the lane. */
 .table-bay:hover > .table-lens-bar,
@@ -16176,8 +16190,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="document-body"><nav class="docs-pager"><a class="docs-pager-prev" href="#"><span class="docs-pager-label">Previous</span>Gauge Maintenance</a><a class="docs-pager-next" href="#"><span class="docs-pager-label">Next</span>Weir Crest Survey</a></nav></div></div>
 </section>
 <section class="part">
-<header><h3>Table corner actions</h3><code class="built">.table-sheet-open</code><span class="built">table-sheet.js</span></header>
-<div class="stage"><div style="position:relative;height:40px;background:var(--lt-markdown-background)"><button type="button" class="table-copy-csv" style="opacity:1;pointer-events:auto"><span class="lt-icon lt-icon-copy"></span></button><button type="button" class="table-sheet-open" style="opacity:1;pointer-events:auto"><span class="lt-icon lt-icon-expand"></span></button></div></div>
+<header><h3>Table actions</h3><code class="built">.table-sheet-open</code><span class="built">table-sheet.js</span></header>
+<div class="stage"><div class="table-lens-bar" style="opacity:1;pointer-events:auto;max-width:240px"><div class="table-lens-pills"></div><div class="table-lens-ends"><button type="button" class="table-copy-csv"><span class="lt-icon lt-icon-copy"></span></button><button type="button" class="table-sheet-open"><span class="lt-icon lt-icon-expand"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Table row handle</h3><code class="built">.table-row-handle</code><span class="built">table-controls.js</span></header>
@@ -16389,7 +16403,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Table lens bar</h3><code class="built">.table-lens</code><span class="built">table-lens.js</span></header>
-<div class="stage"><div class="table-bay"><div class="table-lens-bar" style="opacity:1;pointer-events:auto"><button type="button" class="table-lens-button table-lens-layout">Table</button><button type="button" class="table-lens-button table-lens-layout is-on">Cards</button><button type="button" class="table-lens-button table-lens-fields table-lens-attached">Card fields</button><button type="button" class="table-lens-button table-lens-sort is-group-start is-on">Sort by status</button><button type="button" class="table-lens-button table-lens-filter is-on">Filter: finished</button></div><div class="table-lane"><table><thead><tr><th>id</th><th>title</th><th>status</th></tr></thead><tbody><tr><td>dune</td><td>Dune</td><td>reading</td></tr><tr><td>dispossessed</td><td>The Dispossessed</td><td>finished</td></tr></tbody></table></div></div></div>
+<div class="stage"><div class="table-bay"><div class="table-lens-bar" style="opacity:1;pointer-events:auto"><div class="table-lens-pills"><button type="button" class="table-lens-button table-lens-layout">Table</button><button type="button" class="table-lens-button table-lens-layout is-on">Cards</button><button type="button" class="table-lens-button table-lens-fields table-lens-attached">Card fields</button><button type="button" class="table-lens-button table-lens-sort is-group-start is-on">Sort by status</button><button type="button" class="table-lens-button table-lens-filter is-on">Filter: finished</button></div><div class="table-lens-ends"><button type="button" class="table-copy-csv"><span class="lt-icon lt-icon-copy"></span></button><button type="button" class="table-sheet-open"><span class="lt-icon lt-icon-expand"></span></button></div></div><div class="table-lane"><table><thead><tr><th>id</th><th>title</th><th>status</th></tr></thead><tbody><tr><td>dune</td><td>Dune</td><td>reading</td></tr><tr><td>dispossessed</td><td>The Dispossessed</td><td>finished</td></tr></tbody></table></div></div></div>
 </section>
 <section class="part">
 <header><h3>Table lens menu</h3><code class="built">.table-lens-menu</code><span class="built">table-lens.js</span></header>
