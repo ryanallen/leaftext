@@ -154,6 +154,22 @@ How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-v
 
 A force-directed map of how your documents link to each other. Each **node** is a document or a [web address](GLOSSARY.md#web-address-node); each **edge** is a link that resolves, with an arrowhead at the document being linked to. Click a node to open that document and stay on the map, which redraws around it and flies to its node; drag to reposition, scroll to zoom. It needs a document open — not a [vault](GLOSSARY.md#vault). See [Library](01-features/03-library.md#graph).
 
+## Grove
+
+Your record of using Leaftext: thirteen [Growth areas](GLOSSARY.md#growth-area) for different kinds of activity and one overall [Grove level](GLOSSARY.md#grove-level). It stays on your computer and can be turned off. Open it from the [Grove pill](GLOSSARY.md#grove-pill). See [Your Grove](01-features/09-progress.md#open-your-grove).
+
+## Grove level
+
+The level shared by everything you do in Leaftext. [XP](GLOSSARY.md#xp) from every [Growth area](GLOSSARY.md#growth-area) fills its bar; when the bar is full, hold it to take the next level and receive [Seeds](GLOSSARY.md#seeds). See [Your Grove](01-features/09-progress.md#grow-the-whole-grove).
+
+## Grove pill
+
+The button at the foot of the [library pane](GLOSSARY.md#library-pane) showing your [Grove level](GLOSSARY.md#grove-level). Press it to open the [Grove](GLOSSARY.md#grove) over the document you are reading. See [Your Grove](01-features/09-progress.md#open-your-grove).
+
+## Growth area
+
+One of thirteen kinds of activity the [Grove](GLOSSARY.md#grove) counts, such as reading, writing or making links. Each earns its own [XP](GLOSSARY.md#xp) and levels up as its bar fills; the same XP fills the overall [Grove level](GLOSSARY.md#grove-level). See [Your Grove](01-features/09-progress.md#what-it-counts).
+
 ## Home screen
 
 What you see with no document open: **Choose file**, **New document**, and your [recent files](GLOSSARY.md#recent-files) — with your [favorites](01-features/02-navigation.md#favorites) in a column beside them once there are any. Standing in a [vault](01-features/03-library.md#vaults), the screen is that vault's: both lists are its own, and the small word above the headline is its name. Closing the last tab returns you here, and so does clicking the [leaf mark](GLOSSARY.md#leaf-mark).
@@ -181,6 +197,10 @@ Raw HTML written in your Markdown. Leaftext keeps a curated set of safe tags —
 ## Insert row
 
 The row of block kinds that fans out when you press the plus in the [block gutter](GLOSSARY.md#block-gutter): text, heading, list, quote, code block, table, [image](GLOSSARY.md#image-box), [flowchart](GLOSSARY.md#flowchart-editor), divider. The first four open an empty block rather than writing one — nothing reaches the file until your first keystroke.
+
+## Landmarks
+
+Your highest number of words read and documents opened in a single day, shown beside today's counts in the [Grove](GLOSSARY.md#grove). See [Your Grove](01-features/09-progress.md#see-xp-as-it-lands).
 
 ## Leaf button
 
@@ -298,6 +318,10 @@ Writing the buffer to your file, always explicitly. A green **Save** button (and
 
 How Leaftext remembers a reading position: the nearest heading above the top edge, the [block](GLOSSARY.md#block) within that section, and a pixel offset. It survives a rerender, so images, diagrams and the [pager](GLOSSARY.md#pager) settling in cannot pull you away from the line you were reading.
 
+## Seeds
+
+What a [Grove level](GLOSSARY.md#grove-level) gives you when you take it. Each level gives the same number, whichever [Growth area](GLOSSARY.md#growth-area) earned the [XP](GLOSSARY.md#xp). Spend seeds to grow things in an area's tree; spent seeds do not come back. See [Your Grove](01-features/09-progress.md#grow-with-seeds).
+
 ## Settings
 
 A plain JSON file on your machine, not a panel: there is nowhere to open. Every control stands where it applies — the palette at the foot of the [library pane](GLOSSARY.md#library-pane) for [theme](GLOSSARY.md#theme-family) and [appearance](GLOSSARY.md#appearance), the [graph view](GLOSSARY.md#graph-view)'s own toolbar for [graph size](GLOSSARY.md#graph-size) — and each one saves the moment you use it. See [Settings](01-features/05-settings.md).
@@ -409,3 +433,7 @@ A `[[Note name]]` link, matched to a document by its filename or by one of its [
 ## XML reader
 
 How Leaftext reads any `.xml` file that is not [TEI](GLOSSARY.md#tei): from the shape of the tree rather than a schema. Elements holding elements become sections, elements holding values become aligned fields, repeated sibling records become a table, and tag names are read as words — so a sitemap, a feed or a config file reads as a page instead of tags. See [Rendering](01-features/01-rendering.md#any-xml).
+
+## XP
+
+Points earned for things you do in Leaftext, such as reading words or making a link. Each point fills the bar of the [Growth area](GLOSSARY.md#growth-area) that paid it and the bar of your overall [Grove level](GLOSSARY.md#grove-level). See [Your Grove](01-features/09-progress.md#see-xp-as-it-lands).
