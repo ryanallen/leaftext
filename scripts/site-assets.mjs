@@ -18,6 +18,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
+import { project } from './project.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -46,22 +47,39 @@ export const FRONT_DOCUMENT = 'README.md';
 /** The empty element the front page leaves for its document. */
 const CONTENT_HOLDER = /(<article\b[^>]*\bid="content"[^>]*>)(\s*)(<\/article>)/;
 
-/** Whether a front page is still the shape the repository keeps: an empty holder waiting for a document. */
+/**
+ * The two addresses the front page's structured data carries, written as marks the bake fills rather than as URLs.
+ *
+ * They are the project this page is about and the file its Windows button hands over, and both are the public repository — which the tracked page must not spell, because a repository named in a committed file is a repository that can disagree with the one line that owns it. A crawler reads the deploy's copy, which has them filled; nothing reads the committed one.
+ */
+export const PAGE_MARKS = {
+  '{{leaftext:repository}}': (project) => project.url,
+  '{{leaftext:windows-download}}': (project) => `${project.download}/leaftext-windows-x86_64.exe`,
+};
+
+/** Whether a front page is still the shape the repository keeps: an empty holder waiting for a document, and both address marks unfilled. */
 export function frontPageIsEmpty(page) {
   const found = CONTENT_HOLDER.exec(page);
-  return Boolean(found) && found[2].trim() === '';
+  return Boolean(found) && found[2].trim() === '' && Object.keys(PAGE_MARKS).every((mark) => page.includes(mark));
 }
 
 /**
- * The front page with its document already in it — what the deploy uploads, never what the repository holds.
+ * The front page with its document already in it and its two addresses filled — what the deploy uploads, never what the repository holds.
  *
  * Unbaked, a cold visitor reads nothing until a 2.8 MB module and a second fetch have both crossed the network, and a connection that stalls on either leaves them reading nothing at all. Baked, the words are in the first response and the module is a decoration that arrives after.
+ *
+ * The addresses are filled in the same pass and from the same reader every other consumer uses, so leaftext.com tells a crawler the project is where the app it offers actually lives.
  */
-export function bakeFrontPage(page, drawn) {
+export function bakeFrontPage(page, drawn, project) {
   if (!CONTENT_HOLDER.test(page)) throw new Error(`${FRONT_PAGE} has no empty content element to write the document into`);
   const body = drawn && drawn.html ? drawn.html.trim() : '';
   if (!body) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} to write into ${FRONT_PAGE}`);
-  return page.replace(CONTENT_HOLDER, (_, open, __, close) => open + body + close);
+  let filled = page.replace(CONTENT_HOLDER, (_, open, __, close) => open + body + close);
+  for (const [mark, answer] of Object.entries(PAGE_MARKS)) {
+    if (!filled.includes(mark)) throw new Error(`${FRONT_PAGE} no longer carries ${mark}, so the deploy would publish a page naming no project address`);
+    filled = filled.split(mark).join(answer(project));
+  }
+  return filled;
 }
 
 /** The documentation reader, and the folder whose file list the publish writes into it. */
@@ -121,9 +139,22 @@ export function publishedAssets(leaf, moduleBytes) {
   return new Map([
     [MODULE_PATH, moduleBytes],
     [STYLES_PATH, leaf.styles()],
-    [VERSION_PATH, `${JSON.stringify({ version: appVersion() }, null, 2)}\n`],
+    // The repository rides beside the version because the public side has no `Cargo.toml` to read: this file is what a bake over there reads its own project address back out of, and it is written here, where the manifest is.
+    [VERSION_PATH, `${JSON.stringify({ version: appVersion(), repository: project().url }, null, 2)}\n`],
     [IMAGE_SIZES_PATH, `${JSON.stringify(imageSizes())}\n`],
   ]);
+}
+
+/**
+ * The project this run is drawing for.
+ *
+ * Private side, that is the manifest. On `--bake` there is no manifest at all — the public repository holds the site and no source — so it comes out of the `version.json` the hand-over committed beside the module, which is the same line read through the same rule.
+ */
+export function siteProject({ bakeOnly = false } = {}) {
+  if (!bakeOnly) return project();
+  const path = join(root, VERSION_PATH);
+  if (!existsSync(path)) throw new Error(`${VERSION_PATH} is not here, so the bake cannot say which project this site is. It is committed by the hand-over in the private repository.`);
+  return project(JSON.parse(readFileSync(path, 'utf8')));
 }
 
 /**
@@ -137,7 +168,7 @@ export function previewAnswers(leaf, moduleBytes, { baked = true } = {}) {
   const answers = new Map(publishedAssets(leaf, moduleBytes));
   if (baked) {
     const page = readFileSync(join(root, FRONT_PAGE), 'utf8');
-    answers.set(FRONT_PAGE, bakeFrontPage(page, leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT)));
+    answers.set(FRONT_PAGE, bakeFrontPage(page, leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT), siteProject()));
     answers.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsPaths()));
   }
   return answers;
@@ -198,7 +229,7 @@ async function main() {
   // The front page's own document, drawn here rather than in the reader's browser. Asked for before anything is written, the same as the module is: a page baked empty is the blank page a reader waits in front of.
   let baked = null;
   try {
-    baked = bakeFrontPage(readFileSync(join(root, FRONT_PAGE), 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT));
+    baked = bakeFrontPage(readFileSync(join(root, FRONT_PAGE), 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT), siteProject({ bakeOnly }));
     if (frontPageIsEmpty(baked)) fail(`${FRONT_PAGE} came out of the bake with no document in it`);
   } catch (error) {
     fail(error.message);
