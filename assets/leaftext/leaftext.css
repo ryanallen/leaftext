@@ -7327,6 +7327,20 @@ body.library-resizing button {
 .crumb-menu {
   min-width: 132px;
   max-width: 300px;
+  /* Leaving the icon, the strip and the list takes the list away over a fade rather than in one frame, so a hand that wandered off has time to come back to it. Only the pointer leaving ever fades: a press outside, Escape and the window going away are decisions, and they close outright. */
+  transition: opacity var(--lt-duration-300) var(--lt-ease-accelerate);
+}
+.crumb-menu.is-leaving {
+  opacity: 0;
+}
+/* The list hangs four pixels under its button, and that strip is the list's: a pointer travelling down to it, or resting in it, is on the list rather than in the band behind them. As wide as the list and no taller than the drop, so it can never reach a control — the crumbs above it all end before it starts. Worn only where a vault switcher opened the list; the "…" opens nothing on hover and keeps that strip open to a press. The 4 is CRUMB_MENU_DROP in library.js, and check-shell refuses the two disagreeing. */
+.crumb-menu.is-bridged::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
+  height: 4px;
 }
 .crumb-menu-item {
   display: flex;
