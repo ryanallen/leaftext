@@ -6561,15 +6561,6 @@ body.is-library-settling .app-bar::after {
 .reader-seam[hidden] {
   display: none;
 }
-/* The seam's own two arcs, hung off its ends rather than placed: the grid put the seam on the two cards' inner edges, so each arc ends on its card's edge by hanging off the strip that already reaches it. What each one is shaped like is the outer corner's shape rule below, which names it. */
-.reader-seam-corner-left {
-  top: 0;
-  right: 100%;
-}
-.reader-seam-corner-right {
-  top: 0;
-  left: 100%;
-}
 /* With the pane shut both cards are held off the left frame by the gutter (reader-page.css:18), which moves the right card's left edge off its own track while the left card's right edge stays on its. So only this end follows, or the arc ends a gutter short of the border it is turning. */
 .library-shell.library-closed .reader-seam {
   right: calc(-1 * var(--reader-gutter));
@@ -6612,6 +6603,11 @@ body.is-library-settling .app-bar::after {
   top: calc(var(--library-app-bar) - 1px);
   left: 100%;
 }
+/* The seam's arc hangs off the strip at the right card's inner edge. */
+.reader-seam-corner-right {
+  top: 0;
+  left: 100%;
+}
 /* In the app bar, so it tracks the bar's bottom edge whether or not the frameless window drops the bar's top border. Follows the card in when the rail takes a column beside it (0 wide when there is no rail).
 
    The mask belongs on this rule, not on a conditional one: without it the box paints as a plain chrome square over the page's corner. */
@@ -6630,6 +6626,11 @@ body.is-library-settling .app-bar::after {
 .reader-corner-tr {
   top: calc(100% - 1px);
   right: calc(var(--reader-gutter) + var(--reader-minimap-column));
+}
+/* The seam's arc hangs off the strip at the left card's inner edge. */
+.reader-seam-corner-left {
+  top: 0;
+  right: 100%;
 }
 .library-shell.library-closed .reader-corner-tl {
   /* No rail to sit against: follow the card out to its left gutter. */

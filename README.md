@@ -18,7 +18,7 @@ Free · Windows 10+ and macOS Universal · **[All releases](https://github.com/r
 
 Your notes deserve better than a text editor. Open a file in Leaftext and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
 
-There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [source files](docs/01-features/01-rendering.md#source-files), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml), [plain text](docs/01-features/01-rendering.md#plain-text-files) and [config files](docs/01-features/01-rendering.md#ini-files) — and even [saved emails](docs/01-features/01-rendering.md#email-eml) and [Word, Excel, PowerPoint and OpenDocument files](docs/01-features/01-rendering.md#office-and-opendocument-files) — formats every other app can read, so you're never locked in.
+There's no account and no sign-up. Your files never leave your computer, and they stay [Markdown](docs/01-features/01-rendering.md), [source files](docs/01-features/01-rendering.md#source-files), [HTML](docs/01-features/01-rendering.md#html-files), [XML](docs/01-features/01-rendering.md#xml), [JSON, and YAML](docs/01-features/01-rendering.md#data-files-json-and-yaml), [plain text](docs/01-features/01-rendering.md#plain-text-files) and [config files](docs/01-features/01-rendering.md#ini-files) — and even [saved emails](docs/01-features/01-rendering.md#email-eml), [Word, Excel, PowerPoint and OpenDocument files](docs/01-features/01-rendering.md#office-and-opendocument-files) and [EPUB books](docs/01-features/01-rendering.md#epub-books) — formats every other app can read, so you're never locked in.
 
 Free, on macOS and Windows.
 
@@ -88,6 +88,10 @@ An `.ini` opens as sections with their keys and values under each, every value r
 
 A `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` opens as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as one entry per slide. Type into a paragraph or a cell, save, and everything Leaftext never read — your styles, themes, comments, tracked changes, charts and macros — is byte for byte what it was. A macro is read past and never run; Leaftext has no way to run one. No network, no account, no sign-in. **[Word, Excel, PowerPoint and OpenDocument →](docs/01-features/01-rendering.md#office-and-opendocument-files)**
 
+### An EPUB book reads as one document
+
+An `.epub` is a zip of chapters, and Leaftext draws the whole of it as one page in the order the book's own package says to read it: the cover where the book puts it, the book's own contents page with every link landing on the chapter it names, and the pictures out of the book itself. Nothing is fetched from the network, so opening a book somebody sent you makes no request at all. A book is read-only — nothing writes back into one. **[EPUB books →](docs/01-features/01-rendering.md#epub-books)**
+
 ### Read faster when you need to
 
 ![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
@@ -140,7 +144,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![A Markdown file as raw source in the code view, line numbers down the left and the editor’s minimap rail at the right](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of the part a Word, Excel, PowerPoint or OpenDocument file is anchored to — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of the part a Word, Excel, PowerPoint or OpenDocument file is anchored to; a book is the one thing with no single source to show, and says so — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
@@ -293,7 +297,7 @@ Your app data lives alongside it:
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

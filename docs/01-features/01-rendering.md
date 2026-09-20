@@ -2,7 +2,7 @@
 
 > Read without the noise. Leaftext renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: TEI documents through a reader that knows the format, any other XML through a generic one, JSON or YAML as readable pages, plain text exactly as you typed it, config files as a page of sections, and saved emails as the message they carry.
 
-Leaftext picks a pipeline from the file extension, and from the file's own first words where its name carries no extension at all — `.gitignore`, `LICENSE`, `Procfile` and the rest. A nameless file that opens with a doctype or an `<html>` root is drawn as a page, one that opens with an XML declaration through the XML reader, one that opens with a brace or a bracket and parses as JSON through the data reader, and everything else as Markdown, which is what a `.gitignore` gets today. A file whose extension already names its format is never asked what it holds, and a file you are typing in keeps the format it opened with. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` and `.odp` reach the app as bytes rather than as text, because each is a zip rather than something somebody typed: the archive is opened, the member holding the words is unpacked, and that member goes to [its own reader](#office-and-opendocument-files). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, email and Office sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
+Leaftext picks a pipeline from the file extension, and from the file's own first words where its name carries no extension at all — `.gitignore`, `LICENSE`, `Procfile` and the rest. A nameless file that opens with a doctype or an `<html>` root is drawn as a page, one that opens with an XML declaration through the XML reader, one that opens with a brace or a bracket and parses as JSON through the data reader, and everything else as Markdown, which is what a `.gitignore` gets today. A file whose extension already names its format is never asked what it holds, and a file you are typing in keeps the format it opened with. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` and `.odp` reach the app as bytes rather than as text, because each is a zip rather than something somebody typed: the archive is opened, the member holding the words is unpacked, and that member goes to [its own reader](#office-and-opendocument-files). `.epub` arrives as bytes through the same door and goes to [the book reader](#epub-books), which follows the book's own package rather than one named part. All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, email and Office sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
 
 ## Summary
 
@@ -20,6 +20,7 @@ Leaftext picks a pipeline from the file extension, and from the file's own first
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
 | [Email](#email-eml) | Any `.eml`, `.mht`, or `.mhtml` file: headers, the message body, inline images, attachments |
 | [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place |
+| [EPUB books](#epub-books) | Any `.epub` file, read as one document in the order the book's own package says to read it |
 | [Plain text](#plain-text-files) | Any `.txt` file, kept exactly as typed |
 | [INI](#ini-files) | Any `.ini` file: sections, keys and values, each key drawn as it was written |
 | [Source files](#source-files) | TypeScript, JavaScript, JSONC, CSS, shell, TOML, Rust, Python, SQL, diff, dotenv, GraphQL, and Dockerfile files as highlighted source |
@@ -52,7 +53,35 @@ flowchart LR
     U[Word, Excel, PowerPoint or OpenDocument file] --> V[Zip archive read as bytes]
     V --> W[The member holding the words, unpacked]
     W --> G
+    X[EPUB book] --> Y[Zip archive read as bytes]
+    Y --> Z[Every chapter in the order the package spine names]
+    Z --> G
 ```
+
+## EPUB books
+
+Leaftext opens an `.epub` as **one document**, in the order the book's own package says to read it. An EPUB is a zip of chapters with a package document naming their order, so what you get is the whole book on one scrolling page: the cover where the book puts it, the book's own contents page with every entry landing on the chapter it names, and then the chapters themselves. The minimap, find, the heading outline in the pane and Previous/Next all work on it the way they work on a note, because it is one document rather than a shelf of them.
+
+| In the book | Rendered as |
+|---|---|
+| The package spine | The order the page runs in, first entry to last |
+| A chapter | Its own section of the page, with an anchor a link to it lands on |
+| The book's own contents page | A contents page, with every link jumping inside the document |
+| The title and author in the package metadata | The page heading and the byline under it |
+| A picture the book packs | The picture, drawn out of the book itself |
+| A stylesheet or a script the book packs | Nothing. A book does not restyle or script the reading surface |
+| A part in a form nothing can draw | One sentence saying so, where the part sits |
+
+**Nothing is fetched from the network when a book opens.** A book may name a picture, a font, a sound or a film on the internet, and every one of those loads itself the moment the page draws — so a tracking picture in a book somebody sent you would call home before you read a word. Leaftext removes every such address and draws only the pictures packed inside the book. A **link** is different, because a link is a press: a book's links to the web and to an email address are kept and open the way any other document's do.
+
+**A book is read-only.** Nothing writes back into an `.epub`, the reading view has no editable text in it, and the source button says a book is made of several source files rather than opening an editor over one. [Typing into a chapter](07-editing.md) is separate work.
+
+**A book that is not the book it claims to be says so instead of taking the machine.** A missing or damaged package document, a chapter that points outside the book, a chapter claiming more text than the app will open, a spine longer than 4,096 parts and a chain of fallbacks that points round in a circle each get one sentence. A book whose chapters are encrypted says so by name; one that only scrambles its fonts reads normally, because a book's own fonts never load here.
+
+**A very illustrated book stops drawing pictures partway and says so.** Every picture is carried inside the page, so a comic or a manga volume of a hundred and eighty megabytes cannot all be drawn at once; a book past sixteen megabytes of picture draws what fits, keeps the descriptions the book wrote for the rest, and says at the foot that the others are not shown.
+
+> [!NOTE]
+> Leaftext is a reader of EPUB rather than a conforming EPUB reading system, and does not claim to be one. A fixed-layout book — a comic drawn to exact pages — opens as its pictures in reading order rather than as the pages its maker laid out. A book's scripts do not run and its audio narration has no player.
 
 ## Plain text files
 

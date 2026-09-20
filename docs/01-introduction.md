@@ -6,7 +6,7 @@
 
 Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, [HTML](01-features/01-rendering.md#html-files), [XML](01-features/01-rendering.md#xml), [JSON, or YAML](01-features/01-rendering.md#data-files-json-and-yaml) document — a [plain text](01-features/01-rendering.md#plain-text-files) or [config](01-features/01-rendering.md#ini-files) file, a [source file](01-features/01-rendering.md#source-files), or a [saved email](01-features/01-rendering.md#email-eml) — on macOS or Windows and it renders clean and calm. Keep your place with [tabs](01-features/02-navigation.md#tabs), [history](01-features/02-navigation.md#history), a [minimap](01-features/04-minimap.md), and a searchable [library](01-features/03-library.md). When something needs changing, [click into the sentence and type](01-features/07-editing.md#inline-editing-the-reading-view) — or drop to the raw source in the [code view](01-features/07-editing.md#code-view) — then [save](01-features/07-editing.md#save) when you're ready.
 
-**Your thoughts stay yours.** No account, no cloud, no telemetry. Your documents never leave your device, and they stay plain Markdown, HTML, XML, JSON, YAML, text, config, source, and email files — and Word, Excel, PowerPoint and OpenDocument files that Office and its rivals open unchanged — so any other app can read them, so you're never locked in.
+**Your thoughts stay yours.** No account, no cloud, no telemetry. Your documents never leave your device, and they stay plain Markdown, HTML, XML, JSON, YAML, text, config, source, and email files — and Word, Excel, PowerPoint, OpenDocument and EPUB files that Office, its rivals and every other reader open unchanged — so any other app can read them, so you're never locked in.
 
 New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GLOSSARY.md#frontmatter) link into the [glossary](GLOSSARY.md#glossary) — clicking one opens its entry in a [bottom sheet](GLOSSARY.md#bottom-sheet) over this page instead of taking you away from it. The glossary carries one entry per feature and subfeature, so it doubles as an index of the whole app.
 
@@ -34,6 +34,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Turn a Markdown table into a [relational table](01-features/08-relational-tables.md): cards, a board, a list, filters, sorting and links to rows in other files, with the plain table still your file.
 - Open a [saved email](01-features/01-rendering.md#email-eml) (`.eml` from Gmail, Outlook, or Apple Mail) as the message it carries — headers, body, inline images, and attachments — instead of a wall of base64.
 - Open a [Word, Excel, PowerPoint or OpenDocument file](01-features/01-rendering.md#office-and-opendocument-files) (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`) as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as one entry per slide — and type into it in place, with everything Leaftext never read kept byte for byte on save.
+- Open an [EPUB book](01-features/01-rendering.md#epub-books) (`.epub`) as one document in the order its own package says to read it, with its contents page, its links and its pictures all inside the book and nothing fetched from the network. A book is read-only.
 - Turn on [Speed Reader](01-features/05-settings.md#speed-reader) to dim the page back and mark each word's start, so your eye follows the reading path down.
 
 ### Move around
@@ -73,7 +74,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 
 ```mermaid
 flowchart LR
-    A[Open Markdown, HTML, XML, JSON, YAML, text, config, source, email, Word, Excel, PowerPoint or OpenDocument file] --> B[Rendered reading view]
+    A[Open Markdown, HTML, XML, JSON, YAML, text, config, source, email, Word, Excel, PowerPoint, OpenDocument or EPUB file] --> B[Rendered reading view]
     B --> C[Minimap]
     B --> D[Tabs]
     B --> E[Back / Forward history]
