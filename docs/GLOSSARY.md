@@ -436,4 +436,4 @@ How Leaftext reads any `.xml` file that is not [TEI](GLOSSARY.md#tei): from the 
 
 ## XP
 
-Points earned for things you do in Leaftext, such as reading words or making a link. Each point fills the bar of the [Growth area](GLOSSARY.md#growth-area) that paid it and the bar of your overall [Grove level](GLOSSARY.md#grove-level). See [Your Grove](01-features/09-progress.md#see-xp-as-it-lands).
+Points earned for things you do in Leaftext, such as reading words, reaching a picture page or making a link. Each point fills the bar of the [Growth area](GLOSSARY.md#growth-area) that paid it and the bar of your overall [Grove level](GLOSSARY.md#grove-level). See [Your Grove](01-features/09-progress.md#see-xp-as-it-lands).
