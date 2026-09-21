@@ -67,10 +67,16 @@ Leaftext opens an `.epub` as **one document**, in the order the book's own packa
 | The package spine | The order the page runs in, first entry to last |
 | A chapter | Its own section of the page, with an anchor a link to it lands on |
 | The book's own contents page | A contents page, with every link jumping inside the document |
+| What the book's contents call each chapter | That chapter's heading, at the level the contents nest it at, where the chapter draws none of its own |
 | The title and author in the package metadata | The page heading and the byline under it |
-| A picture the book packs | The picture, drawn out of the book itself |
-| A stylesheet or a script the book packs | Nothing. A book does not restyle or script the reading surface |
+| A picture the book packs | The picture, drawn out of the book itself, including a cover carried by an SVG `image` element on its own page |
+| A stylesheet the book packs | The typography it describes, drawn in Leaftext's own type: italic, bold, small, raised, lowered, large, small capitals, centered or aligned, tight, and indented. The stylesheet itself never reaches the page |
+| A script the book packs | Nothing. A book does not script the reading surface |
 | A part in a form nothing can draw | One sentence saying so, where the part sits |
+
+**Every chapter of a book has a heading, so the outline holds the whole book.** Almost no book writes its chapter titles as headings — a title is an ordinary paragraph the publisher's stylesheet made big — so Leaftext reads the book's own contents, the one every EPUB carries, and uses what it calls each chapter. Where a chapter opens on its title already, that opening line *becomes* the heading rather than gaining a second copy above it; where a chapter opens on its first words, the name the book's contents gives it is written above them. The level comes from the book's own nesting, so a part is a top-level heading and each chapter under it sits one level in. A chapter that does write its own heading, at any level, is left exactly as the author wrote it, and a book whose contents name nothing reads as it always did, with the chapters it does have. This is what fills the [outline in the pane](02-navigation.md#outline), the minimap and find for a book.
+
+**A book keeps its publisher's typography and not its publisher's numbers.** Every EPUB carries a stylesheet, and the words in a book are not plain prose: a title is centered and heavy, a book's name inside a sentence is italic, a footnote marker is a small raised digit, and a contents page is a close-set list. Leaftext reads that stylesheet and draws each of those in **its own** type, so a book takes the theme you are reading in rather than the weights and sizes its publisher picked. Eleven things are recognized — italic, bold, small, raised, lowered, large, larger, small capitals, no gap under a block, an indented first line, and all four alignments — and anything else a stylesheet says is left out: a book cannot set a color, place a box, hide a part of itself or name an address, because the reading surface is the app's page as well as the book's.
 
 **Nothing is fetched from the network when a book opens.** A book may name a picture, a font, a sound or a film on the internet, and every one of those loads itself the moment the page draws — so a tracking picture in a book somebody sent you would call home before you read a word. Leaftext removes every such address and draws only the pictures packed inside the book. A **link** is different, because a link is a press: a book's links to the web and to an email address are kept and open the way any other document's do.
 

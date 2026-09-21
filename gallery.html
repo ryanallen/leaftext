@@ -6123,6 +6123,10 @@ body.is-maximized #winMaximize .wc-restore {
   background: var(--lt-surface-elevated);
   padding: var(--lt-space-14);
 }
+/* The grid above outranks the browser's own `[hidden]`, so a panel that is put away says so here. */
+.update-panel[hidden] {
+  display: none;
+}
 /* Green "restart to update" call-to-action. Takes the primary-action fill; spans it. `position: relative` anchors the download progress fill. */
 .update-button {
   position: relative;
@@ -7736,7 +7740,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   width: 13px;
   height: 13px;
 }
-.library-sync:disabled {
+/* It wears `aria-disabled` rather than `disabled` while it spins, so a keyboard reader can still focus it and open the progress panel under it. `startVaultSync` is what refuses a second start, and always has been. */
+.library-sync[aria-disabled='true'] {
   cursor: default;
 }
 /* Turning while it works, so a slow push looks like a slow push. An <svg> takes its transform origin from its own box, so this has to be said out loud or the glyph orbits the button's top-left corner instead of spinning. */
@@ -7749,6 +7754,14 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   .library-sync.is-busy .lt-icon {
     animation-duration: var(--lt-duration-2400) !important;
   }
+}
+
+/* How far along the push is, in the update bell's own panel. It hangs under the crumb band rather than inside it, because that band is `overflow: hidden` and 28px tall and clips the whole panel away; and it takes the pane's own width less 8px each side, because `.update-panel`'s 290px is 50px wider than a 240px pane. Placement and width are the whole of this class — everything inside it is the bell's. */
+.library-sync-progress {
+  top: calc(var(--library-chrome-height) + 8px);
+  left: 8px;
+  right: 8px;
+  width: auto;
 }
 
 /* A line of explanation inside the vault menu: what the repository is, or what is missing before it can be one. Sized down from a row and not clickable, so it never looks like a button that has stopped working. */
@@ -8634,6 +8647,40 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 .document-body [align="justify"] {
   text-align: justify;
+}
+/* A book's own typography, as the named facts `book/styling.rs` reads its stylesheet into. The book's CSS never reaches the page: what its classes declared is drawn here with this app's tokens, so a book takes the theme's weights and sizes rather than its publisher's. Alignment is not here on purpose — the four `[align]` rules above have drawn it all along. */
+.document-body .book-italic {
+  font-style: italic;
+}
+.document-body .book-heavy {
+  font-weight: var(--lt-weight-700);
+}
+.document-body .book-small {
+  font-size: var(--type-caption-size);
+}
+.document-body .book-small-raised {
+  font-size: var(--type-caption-size);
+  vertical-align: super;
+}
+.document-body .book-small-lowered {
+  font-size: var(--type-caption-size);
+  vertical-align: sub;
+}
+.document-body .book-large {
+  font-size: var(--type-h6-size);
+}
+.document-body .book-larger {
+  font-size: var(--type-h4-size);
+}
+.document-body .book-small-caps {
+  font-variant: small-caps;
+}
+/* A contents page sets no gap under its entries, and this is what lets it say so: two classes beat the one class and one tag of the paragraph rule above, so no relational selector is needed to undo it. */
+.document-body .book-tight {
+  margin-bottom: 0;
+}
+.document-body .book-indent {
+  text-indent: var(--type-spacing);
 }
 .document-body a {
   color: var(--lt-markdown-link);
