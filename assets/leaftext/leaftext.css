@@ -8674,6 +8674,18 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body .book-indent {
   text-indent: var(--type-spacing);
 }
+/* The two blocks the reader writes itself rather than reading out of the book: the author's name under the title, and the sentence shown where a part of the book cannot be drawn. Both are quieter than the book's own words, because neither is the book speaking. */
+.document-body .book-byline {
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+}
+.document-body .book-undrawable {
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+  font-style: italic;
+}
 .document-body a {
   color: var(--lt-markdown-link);
   text-decoration: none;

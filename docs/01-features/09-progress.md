@@ -75,7 +75,7 @@ Topping out the Grove pays enough seeds to buy every rank of everything that has
 What you can grow today:
 
 - **Six one-color themes** under Foraging — Woad, Sumac, Laurel, Saffron, Lavender and Birch. A theme you grow joins the [theme picker](06-themes.md) and Random; press **Wear it in Themes** in its node to open the picker on it.
-- **Things on the page** — a drop cap, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch in its node.
+- **Things on the page** — a drop cap on the document's first words, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch in its node.
 - **More leaf lore** — six more sentences for the start screen's palm-leaf voice, one each time.
 - **A title** — Reader, Scribe, Cartographer or Prism Keeper, shown under **Your Grove**.
 
