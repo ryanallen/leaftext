@@ -10007,6 +10007,73 @@ body.is-block-dragging .document-body [data-src-start] {
     animation-duration: var(--lt-duration-1600) !important;
   }
 }
+/* A diagram that would not draw shows the reader their own source instead of the renderer's bomb. It keeps the block's own rectangle and its place in the page, and carries nothing to press. */
+.diagram-failed {
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-45);
+  letter-spacing: 0;
+  color: var(--lt-markdown-foreground);
+  /* The document around it can set italic on the block. */
+  font-style: normal;
+  text-align: left;
+}
+.diagram-failed-head {
+  font-weight: var(--lt-weight-600);
+  margin-bottom: var(--lt-space-2);
+}
+.diagram-failed-why {
+  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
+  margin-bottom: var(--lt-space-10);
+}
+.diagram-failed-source {
+  font-family: var(--code-font);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-6);
+  background: var(--lt-editor-code-background);
+  border: var(--lt-stroke-1) solid var(--lt-border-strong);
+  border-radius: var(--lt-radius-md);
+  padding: var(--lt-space-8) 0;
+  overflow-x: auto;
+}
+/* The number is drawn in a gutter of its own so a wrapped line cannot slide under it. Not a spacing step: the gutter is as wide as four of this face's digits and nothing else is measured against it. */
+.diagram-failed-line {
+  --lt-diagram-line-gutter: 40px;
+  position: relative;
+  padding-left: var(--lt-diagram-line-gutter);
+  padding-right: var(--lt-space-10);
+  white-space: pre;
+}
+/* An empty line in their source is still a line, and a box with nothing in it would close up and throw the numbering out. */
+.diagram-failed-line:empty::after {
+  content: "\00a0";
+}
+.diagram-failed-line::before {
+  content: attr(data-diagram-line);
+  position: absolute;
+  left: 0;
+  width: calc(var(--lt-diagram-line-gutter) - var(--lt-space-8));
+  text-align: right;
+  color: var(--lt-muted-foreground);
+}
+/* The one line the renderer stopped at. */
+.diagram-failed-line.is-stopped {
+  background: color-mix(in srgb, var(--lt-danger) 14%, transparent);
+}
+.diagram-failed-line.is-stopped::before {
+  color: var(--lt-danger);
+  font-weight: var(--lt-weight-700);
+}
+.diagram-failed-fix {
+  margin-top: var(--lt-space-8);
+  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
+}
+.diagram-failed-fix code {
+  font-family: var(--code-font);
+  color: var(--lt-markdown-foreground);
+}
 .document-body pre.highlight::before,
 .document-body pre.mermaid::before {
   content: attr(data-language);
