@@ -9090,6 +9090,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body li > ol {
   margin: 0.25em 0 0;
 }
+/* An office document's nested list sits in an item of its own rather than inside the item above it, so pressing that item swaps its own words and never the list under them. The wrapper holds only the list, so it carries no marker. */
+.document-body li.office-list-nest {
+  list-style: none;
+}
 /* A list whose item opens with a badge is a status list rather than prose, so it is drawn as one: the badge is lifted out of the flow into a column of its own on the left and the row's own indent is what places everything beside it. Lifted rather than laid out in a grid or a flex row, because a row is a title, a run of links and a paragraph — every one of them a child, and every child of a grid takes a cell of its own. Nothing here reaches an item the author did not open with a badge, so an ordinary list is never converted. */
 .document-body li.doc-badge-row {
   position: relative;
