@@ -11900,6 +11900,33 @@ body.mac-frame .document-minimap-frame {
   background: var(--lt-minimap-viewport-background);
   pointer-events: none;
 }
+/* A deck's slides, drawn over the thumbnail rather than inside it. The clone is scaled to about a fifteenth of the page, so a rule written into it would be a fifteenth of a hairline and a number under a pixel; this layer is a sibling of the scaled frame inside the lane, so it takes the lane's slide and none of its scale. It sits under the fades on purpose — the first slide's number then dissolves with the page it labels, the way the thumbnail does at both edges. */
+.document-minimap-slides {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+/* One slide's stretch, from its own start to the next slide's. `is-divided` is every one but the first: the rule is the mark between two slides, and a line across the top of the thumbnail reads as the rail's own edge. Written as a class by the page, which already knows which one is first, rather than as a structural selector the browser would have to match. */
+.document-minimap-slide {
+  position: absolute;
+  inset-inline: 0;
+}
+.document-minimap-slide.is-divided {
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+/* On the rule's own line with the chrome behind it: the thumbnail under a number is the page's own text at rail scale, and a numeral over that alone reads as a smudge. */
+.document-minimap-slide-number {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 var(--lt-space-2);
+  border-radius: var(--lt-radius-xs);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-9);
+  line-height: var(--lt-leading-1-2);
+  background-color: var(--lt-surface);
+}
 /* The ribbon bought in the Grove: a small tab on the rail at the deepest point read in this document, placed from the share `profile.js` writes on it. */
 .document-minimap-ribbon {
   position: absolute;

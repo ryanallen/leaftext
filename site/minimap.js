@@ -9,6 +9,8 @@
 
 // Minimum on-screen height of the viewport rectangle, so it stays grabbable even on very long documents. Mirrors the desktop app's 22px floor.
 const MIN_VIEWPORT_HEIGHT = 22;
+// How tall a slide's stretch of the rail has to be before its number is drawn in it. Mirrors MINIMAP_SLIDE_NUMBER_ROOM in the desktop rail.
+const MIN_SLIDE_NUMBER_ROOM = 12;
 
 export function initMinimap(source) {
   document.body.classList.toggle('has-minimap', Boolean(source));
@@ -108,6 +110,7 @@ export function initMinimap(source) {
     content.style.height = `${m.scaledDocHeight}px`;
     track.style.height = `${m.trackHeight}px`;
     content.replaceChildren(preview);
+    drawSlideDivisions(m);
     drawnGeometry = {
       sourceWidth: m.sourceWidth,
       contentWidth: m.contentWidth,
@@ -119,6 +122,36 @@ export function initMinimap(source) {
       viewportFrame = 0;
     }
     updateViewport(m);
+  }
+
+  // A deck exported as a page carries the same `data-slide` the desktop reader stamps, so the rail here divides on it the same way: a rule at each slide's start and its number beside it, drawn over the thumbnail rather than inside it — the clone is scaled to a fraction, so a rule written in it would be a fraction of a hairline. Nothing is drawn for a document that carries none, which is every page but a deck.
+  function drawSlideDivisions(m) {
+    const marks = source.querySelectorAll('[data-slide]');
+    if (!marks.length) return;
+    const scroll = currentScroll();
+    const tops = Array.from(marks, (mark) => mark.getBoundingClientRect().top + scroll);
+    // The first slide begins where the page begins: the mark sits on its heading, and the gap above that heading is still the first slide's.
+    tops[0] = 0;
+    const lane = document.createElement('div');
+    lane.className = 'document-minimap-slides';
+    lane.setAttribute('aria-hidden', 'true');
+    for (let at = 0; at < tops.length; at += 1) {
+      const top = tops[at] * m.previewScale;
+      const foot = at + 1 < tops.length ? tops[at + 1] * m.previewScale : m.scaledDocHeight;
+      const division = document.createElement('div');
+      // The rule is the mark between two slides, so the first one carries none.
+      division.className = at === 0 ? 'document-minimap-slide' : 'document-minimap-slide is-divided';
+      division.style.top = `${top}px`;
+      division.style.height = `${Math.max(0, foot - top)}px`;
+      if (foot - top >= MIN_SLIDE_NUMBER_ROOM) {
+        const number = document.createElement('span');
+        number.className = 'document-minimap-slide-number';
+        number.textContent = marks[at].getAttribute('data-slide');
+        division.appendChild(number);
+      }
+      lane.appendChild(division);
+    }
+    content.appendChild(lane);
   }
 
   // ---- the viewport rectangle --------------------------------------------

@@ -936,7 +936,7 @@ Leaftext opens `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.o
 | A Word paragraph, bulleted item or numbered item | A paragraph or a list item |
 | A Word table | The table drawing a Markdown table takes |
 | A sheet in a workbook | A heading with the sheet's name, then its rows as a record table |
-| A slide in a deck | A heading with the slide's title, then the words in its boxes. A slide that marks no title is headed by its largest words nearest the top, and by its number where it has none |
+| A slide in a deck | A heading with the slide's title, then the words in its boxes and each table as a table headed by its first row. A slide that marks no title is headed by its largest words nearest the top, and by its number where it has none |
 | The macro in a `.docm`, `.xlsm` or `.pptm` | Nothing. It is read past, not run |
 
 **A file that is not the document it claims to be says so instead of taking the machine.** A part claiming to hold more than 256 MB of words, or one that unpacks past that however small it looked, is refused by name; a spreadsheet naming a column no spreadsheet has is refused the same way; and a cell that says it repeats a billion times fills the 16,384 cells a sheet has room for and stops. Each of those draws a sentence about the file, and the window stays where it was.

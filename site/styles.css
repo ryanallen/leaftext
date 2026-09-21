@@ -548,6 +548,32 @@ body.front-page {
 .document-minimap-preview * {
   pointer-events: none !important;
 }
+/* A deck's slides, drawn over the thumbnail rather than inside it: the clone is scaled to a fraction of the page, so a rule written into it would be a fraction of a hairline and a number under a pixel. minimap.js places each one from the slide's own offset; `is-divided` is every slide but the first, because the rule is the mark between two slides. Mirrors the desktop rail's own rules in src/assets/reading/minimap.css. */
+.document-minimap-slides {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.document-minimap-slide {
+  position: absolute;
+  inset-inline: 0;
+}
+.document-minimap-slide.is-divided {
+  border-top: 1px solid var(--border);
+}
+/* On the rule's own line with the page behind it: the thumbnail under a number is the document's own text at rail scale, and a numeral over that alone reads as a smudge. */
+.document-minimap-slide-number {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.2;
+  background: var(--bg);
+}
 .document-minimap-viewport {
   position: absolute;
   inset-inline: 0;

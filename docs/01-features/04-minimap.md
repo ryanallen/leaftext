@@ -11,6 +11,7 @@
 | [Real text](#how-it-works) | A scaled clone of the rendered page, not a synthesized pattern of lines — so you recognize a section by its shape |
 | [Viewport indicator](#how-it-works) | A box marking what is on screen; click the rail to jump, drag the box to scroll, turn the wheel over it to keep scrolling |
 | [Laid out like the page](#how-it-works) | The clone is given the reading column's own width, so a wide table in the thumbnail wraps where it wraps on the page and the picture ends where the document ends |
+| [A deck's slides](#a-decks-slides) | Beside a slide deck the rail is divided one stretch per slide, each numbered, over the same real thumbnail |
 | [Whether it appears](#whether-the-rail-appears) | Skipped entirely for an empty document; shown for every format, including XML, JSON and YAML |
 | [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
 | [Responsive widths](#responsive-behavior) | The lane narrows with the window, and is never hidden |
@@ -49,6 +50,14 @@ The wheel is not handled by Leaftext at all. The rail's column is itself a scrol
 
 > [!NOTE]
 > The thumbnail is a second, scaled-down layout, so it cannot exist until the document itself has been laid out. Until it does the rail shows a small spinner rather than an empty lane — on a large document that build is a visible wait, and a blank rail beside a finished page reads as one that failed rather than one still working. The rail keeps that spinner while any [Mermaid diagram](01-rendering.md#mermaid-diagrams) in the document has still to be measured, since the thumbnail is a clone of the page and a diagram nobody has drawn yet has nothing for the clone to take. Every diagram is drawn once after the page settles, so that is one wait that ends when the last block knows its height, rather than a spinner returning on every scroll into diagrams that have not been drawn.
+
+## A deck's slides
+
+A [slide deck](01-rendering.md#office-and-opendocument-files) is not prose. It is eight or twenty-three fixed things, and what somebody scrolling one is looking for is the fourth of them — where a column of paragraph marks says only how far down the file you are. So beside a deck the rail carries a hairline rule where each slide starts and that slide's number beside it, and the thumbnail underneath is the same real page it is beside every other document. The stretch the viewport indicator sits in is the slide you are reading, and pressing anywhere in a stretch carries you into that slide, which is what the rail's press has always done.
+
+Nothing new is a control and nothing else moves. The number is drawn only where its own stretch is tall enough to hold it; on a deck of very many short slides the rules divide alone. The first slide's stretch begins at the top of the page rather than at its heading, and its number dissolves into the rail's top fade the way the thumbnail does at both edges.
+
+Both deck formats are divided this way, and every other document is untouched: the divisions are read off a mark the deck reader puts on the block each slide begins at, so a document that carries none gets none. A deck [exported as a web page](02-navigation.md#export-the-page) carries the marks with it, so its rail is divided too.
 
 ## Whether the rail appears
 
