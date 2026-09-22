@@ -933,7 +933,7 @@ Leaftext opens `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.o
 | In the file | Rendered as |
 |---|---|
 | A Word title or heading style | The page heading, and the headings under it |
-| A Word paragraph, bulleted item or numbered item | A paragraph or a list item |
+| A Word or OpenDocument paragraph, bulleted item or numbered item | A paragraph or a list item, a sub-point drawn one level in under its point, up to eight levels deep |
 | A Word table | The table drawing a Markdown table takes |
 | A sheet in a workbook | A heading with the sheet's name, then its rows as a record table |
 | A slide in a deck | A heading with the slide's title, then the words in its boxes and each table as a table headed by its first row. Bulleted text reads as a list, at the level it was written, whether the slide says so itself or takes its bullet from the layout and the master behind it. A slide that marks no title is headed by its largest words nearest the top, and by its number where it has none |

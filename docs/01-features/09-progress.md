@@ -14,27 +14,27 @@ When the library pane is dragged narrow the pill's words shorten and then go, an
 
 ## What it counts
 
-Each area grows from one kind of thing you already do:
+Each area grows from one kind of thing you already do, whether you do it by hand or an agent does it through Leaftext:
 
 | Growth area | What grows it |
 | --- | --- |
 | Leafing | Reading documents |
 | Scribing | Writing prose |
 | Marking | Highlighting passages and hanging notes off them |
-| Charting | Drawing flowcharts |
+| Charting | Drawing flowcharts, including diagrams an agent writes into a note through Leaftext |
 | Tabling | Filling in tables |
 | Furnishing | Ticking checkboxes, writing fields and placing pictures |
 | Wayfinding | Making links from one note to another, following links, and opening the map and the glossary |
 | Seeking | Every search that finds something, and opening what a vault search found |
 | Tending | Making files and folders, renaming and moving files, and setting favorites |
 | Rooting | Adding vaults, successfully making or linking repositories, turning automatic sync on for a vault, and pressing Sync when it sends your work; each of these is setup a vault does once, so picking a folder that is already a vault switches to it and pays nothing, a vault pays for its first successful remote link and for its switch once each, a sync with nothing to send earns nothing, and the syncs the switch makes on its own earn nothing |
-| Sharing | Exporting a diagram, a picture, a PDF or a page |
+| Sharing | Exporting a diagram, a picture, a PDF or a page, once for each file written |
 | Delving | Looking at a document's source |
 | Foraging | Opening a new kind of file and wearing a new theme |
 
 Open an area and it lists every rule that pays it — **Every 500 words read**, **Each picture page read**, **Each new format read** — with the XP each one is worth, so nothing is a guess.
 
-Only what lands pays. Where the app says it could not do what you asked — a note, a highlight, a table cell or words typed into a document whose file has gone, a [rename or a paste](03-library.md#file-actions) onto a name already taken, a [new file or folder](03-library.md#folders-and-the-space-around-them) asked for under a name that folder already holds — the bar stays exactly where it was.
+Only what lands pays. Where the app says it could not do what you asked — a note, a highlight, a table cell or words typed into a document whose file has gone, a [rename or a paste](03-library.md#file-actions) onto a name already taken, a [new file or folder](03-library.md#folders-and-the-space-around-them) asked for under a name that folder already holds, an export whose save window you closed or whose file could not be written — the bar stays exactly where it was.
 
 Foraging counts each kind of file once: every format, and every source language on its own, so a Rust file, a Python file and a Dockerfile are three finds rather than one. It pays nothing for a second file of a kind you have already opened, so it stops where there is nothing left to find — at level 10, for thirty kinds of file and twenty-one theme families. Open it and the kinds of file you have found are lit among the ones still to find.
 
