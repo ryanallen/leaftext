@@ -48,6 +48,8 @@ let FOOTER_LINKS = [{ href: SITE_HREF, label: '← ' + location.hostname }];
 let leaf = null;
 // The fallback that puts a picture back on the PNG beside it when the browser cannot decode the WebP. Asked for at boot rather than imported, because the other site running this reader carries no `site/pictures.js`: a static import of a file the origin lacks takes the whole reader down before it draws a word, where an ask that comes back with nothing costs only a decoration. Null until boot() has asked, and null for ever on a site with no copy.
 let installPictureFallback = null;
+// The comparison chart's drawing, asked for at boot for the same reason: the other site compares nothing and carries no `site/compare-chart.js`. Null there, and the compare page stays a list of its subject pages.
+let compareChart = null;
 
 // The document, drawn by the app's own renderer. One place, so the sheet, the auto-linker and the page itself cannot end up drawing three different documents. The body is the file's own bytes where the page has them and a string where it composed the source itself.
 function renderDocument(body, path) {
@@ -505,7 +507,7 @@ async function render(route, anchor) {
 
     // The path, not just the body: the renderer's one format table is what decides whether this is Markdown, TEI, data or a message, and nothing here chooses.
     const drawn = renderDocument(source, file);
-    contentEl.innerHTML = drawn.html;
+    contentEl.innerHTML = await withCompareChart(drawn.html, source, file);
     // A quoted passage broken by <br> is verse, and the hanging indent that makes a long wrapped prose quote hang would step every line after the first to the right. Each hard-break line gets a span of its own so only a true wrap hangs.
     decorateBlockquoteLines(contentEl);
     // Every route is drawn into this same article, so the listener goes on once and only the sweep runs again.
@@ -557,6 +559,25 @@ async function render(route, anchor) {
   }
 }
 
+// The compare page with its whole chart drawn in place of the list of subject pages, the same drawing the front page opens on. A chart page that will not arrive costs the chart and nothing else: the list stays and the console says which page failed.
+async function withCompareChart(html, source, file) {
+  if (!compareChart || 'docs/' + file !== compareChart.COMPARE_INDEX) return html;
+  try {
+    const paths = compareChart.chartPagePaths(new TextDecoder().decode(source)).map((path) => path.replace(/^docs\//, ''));
+    const pages = await Promise.all(
+      paths.map(async (path) => {
+        const res = await fetchWatched(path, { cache: 'no-cache' });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + path);
+        return { path, html: renderDocument(await res.bytes(), path).html };
+      })
+    );
+    return compareChart.compareIndexWithChart(html, pages);
+  } catch (err) {
+    console.error('The comparison chart could not be drawn:', err);
+    return html;
+  }
+}
+
 // ---- boot ---------------------------------------------------------------
 
 let lastRoute = null;
@@ -578,6 +599,11 @@ let lastRoute = null;
     ({ installPictureFallback } = await import('../site/pictures.js'));
   } catch (err) {
     installPictureFallback = null;
+  }
+  try {
+    compareChart = await import('../site/compare-chart.js');
+  } catch (err) {
+    compareChart = null;
   }
 
   // Derive the repo from the README before building the nav, and add the GitHub footer link once it is known.

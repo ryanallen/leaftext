@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // The comparison chart on the front page. The chart's words live once, in the documentation — `docs/05-compare.md` says how to read it and lists its subject pages under `## The chart` — and this draws those same pages into the README at the heading that asks for them, so the front page and the docs route can never disagree.
 //
-// Two callers, one drawing: the publish bakes the chart into the first response (`scripts/site-assets.mjs`), and `reader.js` draws it on a page nobody baked. The bake has no DOM, so everything here works on the renderer's HTML as text; that HTML is the app's own and regular, which is what makes a text pass safe.
+// Three callers, one drawing: the publish bakes the chart into the first response (`scripts/site-assets.mjs`), `reader.js` draws it on a page nobody baked, and `docs/docs.js` draws it on the compare page in place of that page's list of subject pages. The bake has no DOM, so everything here works on the renderer's HTML as text; that HTML is the app's own and regular, which is what makes a text pass safe.
 //
 // What it draws, in order: the legend, a short open matrix of every row whose name the pages write in bold, then one folded `<details>` per subject page holding every row. A group is a table with its name as the caption rather than a heading, so the page's outline stays the README's own and does not grow a line per group.
 // ---------------------------------------------------------------------------
@@ -76,6 +76,11 @@ const count = (n) => `${n.toLocaleString('en-US')} ${n === 1 ? 'feature' : 'feat
  * `indexHtml` is `COMPARE_INDEX` drawn by the renderer, and `pages` the subject pages it lists, in its order, each `{ path, html }`.
  */
 export function drawCompareChart(indexHtml, pages) {
+  return `<section class="compare-chart">${legendOf(indexHtml)}\n${drawMatrix(pages)}\n</section>`;
+}
+
+/** The short matrix open and a folded group per subject page, without the legend. */
+function drawMatrix(pages) {
   if (!pages.length) throw new Error(`${COMPARE_INDEX} lists no chart pages to draw`);
   const read = pages.map(readPage);
   const glance = read.flatMap((page) => page.glance);
@@ -87,7 +92,15 @@ export function drawCompareChart(indexHtml, pages) {
         `<details class="compare-group"><summary><strong class="compare-group-title">${page.title}</strong> — <span class="compare-group-subtitle">${page.subtitle}</span> · <span class="compare-group-count">${count(page.rows)}</span></summary>${page.tables}</details>`
     )
     .join('\n');
-  return `<section class="compare-chart">${legendOf(indexHtml)}\n<table class="compare-glance">${head}<tbody>\n${glance.join('\n')}\n</tbody></table>\n${groups}\n</section>`;
+  return `<table class="compare-glance">${head}<tbody>\n${glance.join('\n')}\n</tbody></table>\n${groups}`;
+}
+
+/** The compare page drawn with the chart in place of its list of subject pages, under the legend it already carries. `pages` are spelled from the docs folder, so every link in them stays a docs route. */
+export function compareIndexWithChart(indexHtml, pages) {
+  const list = /(<h2 id="the-chart">[\s\S]*?)<ol>[\s\S]*?<\/ol>/.exec(indexHtml);
+  if (!list) throw new Error(`${COMPARE_INDEX} has no list of chart pages under its chart heading`);
+  const at = list.index + list[1].length;
+  return indexHtml.slice(0, at) + `<section class="compare-chart">${drawMatrix(pages)}</section>` + indexHtml.slice(list.index + list[0].length);
 }
 
 /** The README drawn with the chart after the paragraph under its compare heading. Refuses a README that no longer asks for it, so a renamed heading stops the publish rather than dropping the chart in silence. */
