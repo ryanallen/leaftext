@@ -107,9 +107,9 @@
 - Markdown: https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
 - Summary: [l-families]: ../01-features/06-themes.md#families [l-earned]: ../01-features/06-themes.md#earned-families [l-previews]: ../01-features/06-themes.md#previews [l-see-all]: ../01-features/06-themes.m...
 
-## Your Grove
-- Page: https://leaftext.com/docs/06-comparison-chart/07-your-grove.md
-- Markdown: https://leaftext.com/docs/06-comparison-chart/07-your-grove.md
+## Progress
+- Page: https://leaftext.com/docs/06-comparison-chart/07-progress.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/07-progress.md
 - Summary: [l-open]: ../01-features/09-progress.md#open-your-grove [l-counts]: ../01-features/09-progress.md#what-it-counts [l-xp]: ../01-features/09-progress.md#see-xp-as-it-lands [l-grow]: ../01-features/09...
 
 ## Install, updates and privacy

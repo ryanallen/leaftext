@@ -32,7 +32,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Leaf goes home | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Logo goes home | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Library button | [✅][l-appbar] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Back, Refresh, Forward | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Plus for new document | [✅][l-appbar] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
@@ -43,7 +43,7 @@
 | Own title bar | [✅][l-appbar] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Mac dots in place | [✅][l-appbar] | [✅][o-seen] | ? | [❌][c-seen] |
 | Chevron overflow menu | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Leaf and library stay | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Logo and library stay | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Focus follows folding | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rightmost folds first | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
@@ -91,8 +91,6 @@
 | Graph flies to tab | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Last tab goes home | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Second launch adds tab | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Plus 16px from tabs | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Tabs 4px apart | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Selected tab curves in | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Extensions, no badges | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Background presses honored | [✅][l-tabs] | ? | [❌][t-seen] | [❌][c-seen] |
@@ -248,7 +246,6 @@
 | README reading order | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | README and GLOSSARY skipped | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Never blocks page | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | ? |
-| Dotted hover shadow | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hover card with length | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Middle and right click | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hover names neighbor | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -284,7 +281,6 @@
 | Late drawings dropped | [✅][l-hints] | ? | [❌][t-seen] | ? |
 | Dead buttons keep arrow | [✅][l-hints] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Dragged widths survive | [✅][l-hints] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Fixed-width halftone card | [✅][l-hints] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Picture fades in | [✅][l-hints] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No spinner second time | [✅][l-hints] | ? | [❌][t-seen] | ? |
 | Quick return keeps card | [✅][l-hints] | ? | [❌][t-seen] | ? |
@@ -305,7 +301,6 @@
 | Fitting pointer shapes | [✅][l-pointer] | ? | ? | ? |
 | Theme fill under pointer | [✅][l-hover] | ? | ? | ? |
 | Nothing moves on hover | [✅][l-hover] | ? | ? | ? |
-| Pager dotted shadow | [✅][l-hover] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Open file keeps tint | [✅][l-hover] | [✅][o-seen] | [✅][t-seen] | ? |
 | One frame, Reduce Motion | [✅][l-hover] | ? | ? | ? |
 

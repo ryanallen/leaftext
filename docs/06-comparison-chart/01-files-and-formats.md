@@ -6,7 +6,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Markdown files | [✅][l-md] | [✅][o-formats] | [✅][t-files] | [❌][c-conv] |
+| **Markdown files** | [✅][l-md] | [✅][o-formats] | [✅][t-files] | [❌][c-conv] |
 | HTML pages | [✅][l-html] | [❌][o-formats] | [❌][t-seen] | [❌][c-faq] |
 | XML files | [✅][l-anyxml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | TEI editions | [✅][l-tei] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
@@ -282,7 +282,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | XHTML read as page | [✅][l-html] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Leaf extensions parsed | [✅][l-summary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Own Markdown extensions | [✅][l-summary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bare addresses linked | [✅][l-autolinks] | [✅][o-ofm] | [✅][t-md] | [❌][c-seen] |
 | Footnotes numbered by use | [✅][l-footnotes] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Picture sizes from headers | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

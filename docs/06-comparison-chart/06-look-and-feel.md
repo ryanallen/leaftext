@@ -6,36 +6,12 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Fifteen free families | [✅][l-families] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
-| Six earned families | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Amaranth theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Arabica theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Bloodleaf theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Camellia theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Eucalyptus theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Fern theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Foxglove theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Ginger theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| GitHub theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Goldenrod theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Halcyon theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Ivy theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Nightshade theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Pippin theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Sage theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Birch theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Laurel theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Lavender theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Saffron theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Sumac theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Woad theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fifteen built-in themes | [✅][l-families] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
+| Themes earned by use | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Light and dark each | [✅][l-families] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
 | Family preview pictures | [✅][l-previews] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Online theme gallery | [✅][l-see-all] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
-| Plant names settled | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Teal and rose added | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No faked bold | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Amaranth bold italic | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Packs draw every control | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cards hold size | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
@@ -120,7 +96,6 @@
 | Own window buttons | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Red close hover | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | F11 full screen | [✅][l-windows] | [❌][o-seen] | [✅][t-keys] | [✅][c-seen] |
-| Hairline edge, dotted band | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | See-through Mac strip | [✅][l-macos] | [✅][o-appearance] | ? | ? |
 | Theme-colored Mac dots | [✅][l-macos] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Marks on hover | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
@@ -128,7 +103,6 @@
 | Green dot full screen | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Option-click zoom | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Double-click zooms | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Mac dotted band | [✅][l-macos] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Eight resize edges | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Resize arrows per zone | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Mac minimum size held | [✅][l-macos] | ? | ? | ? |
@@ -140,17 +114,15 @@
 | Sheets land springily | [✅][l-hover] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Folds slide open | [✅][l-collapsible] | ? | ? | ? |
 | One overhead light | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Dot grain surfaces | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pane springs, bounces | [✅][l-pane] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Nub slams home | [✅][l-toolbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | File type badges | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hover-only tab controls | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hand only on links | [✅][l-pointer] | ? | ? | ? |
 | Pixel-grid window buttons | [✅][l-windows] | ? | ? | ? |
-| Taskbar preview leaf | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Taskbar preview icon | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawn edge resizing | [✅][l-windows] | ? | ? | ? |
 | Own scrollbars everywhere | [✅][l-scrollbars] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Own dotted shadow | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rounded Mac window | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Smooth trackpad glide | [✅][l-macos] | ? | ? | ? |
 | F11, middle square exit | [✅][l-windows] | ? | ? | ? |
@@ -165,7 +137,6 @@
 | Drag dismissal follows hand | [✅][l-reduce-motion] | ? | ? | ? |
 | Reduce Motion closes instantly | [✅][l-reduce-motion] | ? | ? | ? |
 | Scrim fades with sheet | [✅][l-reduce-motion] | ? | ? | ? |
-| Dot-grain shadow bands | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Single overhead light | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Lighter bands on light | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Corner buttons light gradually | [✅][l-hover] | ? | ? | ? |

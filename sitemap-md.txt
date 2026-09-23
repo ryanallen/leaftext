@@ -19,7 +19,7 @@ https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
 https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md
 https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md
 https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
-https://leaftext.com/docs/06-comparison-chart/07-your-grove.md
+https://leaftext.com/docs/06-comparison-chart/07-progress.md
 https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
 https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
 https://leaftext.com/docs/06-comparison-chart/10-coming.md

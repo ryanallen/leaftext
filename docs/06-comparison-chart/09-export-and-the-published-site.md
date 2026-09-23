@@ -23,7 +23,6 @@
 | Windows lists every kind | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Render hidden by cover | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Late fonts awaited | [✅][l-export] | ? | ? | ? |
-| Exports carry grain | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No pager exported | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Exports open at top | [✅][l-export] | ? | ? | ? |
 | Rail dissolves in export | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

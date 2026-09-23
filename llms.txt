@@ -25,7 +25,7 @@
 - [Writing and editing](https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md)
 - [Library, search and sync](https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md)
 - [Look and feel](https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md)
-- [Your Grove](https://leaftext.com/docs/06-comparison-chart/07-your-grove.md)
+- [Progress](https://leaftext.com/docs/06-comparison-chart/07-progress.md)
 - [Install, updates and privacy](https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md)
 - [Export and the published site](https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md)
 - [Coming](https://leaftext.com/docs/06-comparison-chart/10-coming.md)

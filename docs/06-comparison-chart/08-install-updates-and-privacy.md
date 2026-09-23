@@ -28,7 +28,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Every extension registered | [✅][l-associations] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Leaf icon on files | [✅][l-associations] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Own icon on files | [✅][l-associations] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Listed under Open with | [✅][l-associations] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Never steals defaults | [✅][l-associations] | ? | ? | ? |
 | Unclaimed extensions open here | [✅][l-associations] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -236,13 +236,7 @@
 | Refresh a document | [✅][l-history] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Speed reader switch | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Typing help switch | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Grove record switch | [✅][l-grove-off] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Buy a reward | [✅][l-grove-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Take a level | [✅][l-grove-grow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Read the XP log | [✅][l-grove-xp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Resolve a year-map day | [✅][l-grove-xp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Reward switches | [✅][l-grove-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Report reading progress | [✅][l-grove-counts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Progress record switch | [✅][l-grove-off] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Set the padlocks | [✅][l-padlocks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Choose theme family | [✅][l-theme] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
 | Choose appearance | [✅][l-theme] | [✅][o-appearance] | [✅][t-dark] | [❌][c-seen] |

@@ -16,7 +16,7 @@ Sources read 23 September 2026, 7:42am. The apps themselves checked 23 September
 4. [Writing and editing](06-comparison-chart/04-writing-and-editing.md)
 5. [Library, search and sync](06-comparison-chart/05-library-search-and-sync.md)
 6. [Look and feel](06-comparison-chart/06-look-and-feel.md)
-7. [Your Grove](06-comparison-chart/07-your-grove.md)
+7. [Progress](06-comparison-chart/07-progress.md)
 8. [Install, updates and privacy](06-comparison-chart/08-install-updates-and-privacy.md)
 9. [Export and the published site](06-comparison-chart/09-export-and-the-published-site.md)
 10. [Coming](06-comparison-chart/10-coming.md)

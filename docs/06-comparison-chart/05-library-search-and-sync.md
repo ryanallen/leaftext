@@ -382,7 +382,7 @@
 | Lists over document | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Theme icon set | [✅][l-launchers] | ? | ? | [❌][c-seen] |
 | Chevron when narrow | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Grove pill below | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Progress under launchers | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pill shortens words | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Launcher registry | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Palette first launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
