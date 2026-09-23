@@ -19,7 +19,7 @@
 | One Start Menu entry | [✅][l-where] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Per-user install | [✅][l-where] | [✅][o-seen] | [✅][t-windows] | [❌][c-seen] |
 | Data kept apart | [✅][l-where] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Only installers published | [✅][l-install] | — | — | — |
+| Only installers published | [✅][l-install] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drag to uninstall | [✅][l-uninstall] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Documents untouched | [✅][l-uninstall] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 
@@ -31,8 +31,8 @@
 | Leaf icon on files | [✅][l-associations] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Listed under Open with | [✅][l-associations] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Never steals defaults | [✅][l-associations] | ? | ? | ? |
-| Unclaimed extensions open here | [✅][l-associations] | — | — | — |
-| Double-click adds tab | [✅][l-associations] | — | [❌][t-seen] | [❌][c-seen] |
+| Unclaimed extensions open here | [✅][l-associations] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Double-click adds tab | [✅][l-associations] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Source extensions offered | [✅][l-associations] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cursor rules registered | [✅][l-associations] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Mac HTML alternate handler | [✅][l-associations] | ? | ? | ? |
@@ -46,14 +46,14 @@
 | Recent files list | [✅][l-launch] | ? | [✅][t-files] | [✅][c-seen] |
 | Command-line path | [✅][l-launch] | [✅][o-cli] | [✅][t-shell] | [✅][c-viewer] |
 | Open with menu | [✅][l-launch] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| New document start | [✅][l-launch] | [✅][o-explorer] | [✅][t-keys] | — |
-| Add notes folder | [✅][l-launch] | [✅][o-vaults] | [✅][t-files] | — |
+| New document start | [✅][l-launch] | [✅][o-explorer] | [✅][t-keys] | [❌][c-seen] |
+| Add notes folder | [✅][l-launch] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
 | Early files wait | [✅][l-launch] | ? | ? | ? |
 | Ten-file drop draws once | [✅][l-launch] | ? | ? | ? |
 | Finder multi-file open | [✅][l-launch] | ? | ? | ? |
 | Launch file replaces front | [✅][l-launch] | ? | ? | ? |
 | Relative paths resolved | [✅][l-launch] | ? | ? | ? |
-| Local-day launch counts | [✅][l-launch] | — | — | — |
+| Local-day launch counts | [✅][l-launch] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Grows after drawing | [✅][l-window] | ? | ? | ? |
 | Raw mouse ignored | [✅][l-launch] | ? | ? | ? |
 | Startup grows on timer | [✅][l-window] | ? | ? | ? |
@@ -61,7 +61,7 @@
 | First screen early | [✅][l-window] | ? | ? | ? |
 | Only changes restyled | [✅][l-window] | ? | ? | ? |
 | Single running window | [✅][l-launch] | [❌][o-seen] | [❌][t-seen] | ? |
-| Explorer files tabbed | [✅][l-launch] | — | [❌][t-seen] | [❌][c-seen] |
+| Explorer files tabbed | [✅][l-launch] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Offline and help
 
@@ -80,39 +80,39 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Checks launch and six-hourly | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | [❌][c-faq] |
-| Bell only when due | [✅][l-updates] | [❌][o-seen] | [❌][t-seen] | — |
-| Verified background download | [✅][l-updates] | [✅][o-seen] | [✅][t-seen] | — |
-| Installs next launch | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | — |
-| Mac swaps bundle | [✅][l-updates] | ? | ? | — |
-| Returns by itself | [✅][l-updates] | ? | ? | — |
-| Restart to update | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | — |
-| One try per version | [✅][l-updates] | ? | ? | — |
-| Silent with nothing new | [✅][l-updates] | [✅][o-seen] | [✅][t-seen] | — |
-| Never blocks startup | [✅][l-updates] | [✅][o-seen] | ? | — |
+| Bell only when due | [✅][l-updates] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Verified background download | [✅][l-updates] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Installs next launch | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | [❌][c-seen] |
+| Mac swaps bundle | [✅][l-updates] | ? | ? | [❌][c-seen] |
+| Returns by itself | [✅][l-updates] | ? | ? | [❌][c-seen] |
+| Restart to update | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | [❌][c-seen] |
+| One try per version | [✅][l-updates] | ? | ? | [❌][c-seen] |
+| Silent with nothing new | [✅][l-updates] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Never blocks startup | [✅][l-updates] | [✅][o-seen] | ? | [❌][c-seen] |
 | Always updates | [✅][l-settings-updates] | [❌][o-updates] | [❌][t-seen] | [❌][c-faq] |
-| Checks every launch | [✅][l-settings-updates] | [✅][o-seen] | [✅][t-seen] | — |
-| Rechecks every six hours | [✅][l-settings-updates] | ? | ? | — |
-| Background installer download | [✅][l-settings-updates] | [✅][o-seen] | [✅][t-seen] | — |
-| Bad downloads deleted | [✅][l-settings-updates] | ? | ? | — |
-| Digest checked | [✅][l-settings-updates] | [✅][o-seen] | ? | — |
-| Spinning bell, filling button | [✅][l-settings-updates] | [❌][o-seen] | [❌][t-seen] | — |
-| Installs before windows | [✅][l-settings-updates] | [✅][o-seen] | ? | — |
-| No admin prompt updating | [✅][l-settings-updates] | [✅][o-seen] | ? | — |
-| Restart button | [✅][l-settings-updates] | [✅][o-updates] | [✅][t-seen] | — |
-| No boot loop | [✅][l-settings-updates] | ? | ? | — |
-| Failed install explained | [✅][l-settings-updates] | ? | ? | — |
-| Quiet when current | [✅][l-settings-updates] | [✅][o-seen] | [✅][t-seen] | — |
-| Bell only with news | [✅][l-settings-updates] | [❌][o-seen] | [❌][t-seen] | — |
-| One staged installer | [✅][l-settings-updates] | ? | ? | — |
-| Staging folder per version | [✅][l-settings-updates] | ? | ? | — |
-| Size-capped download | [✅][l-settings-updates] | ? | ? | — |
-| Hashed while arriving | [✅][l-settings-updates] | ? | ? | — |
-| Checked before running | [✅][l-settings-updates] | [✅][o-seen] | ? | — |
-| Finished download only | [✅][l-settings-updates] | ? | ? | — |
-| Old stages cleaned | [✅][l-settings-updates] | ? | ? | — |
-| Verdict read once | [✅][l-settings-updates] | ? | ? | — |
-| Old Mac bundle kept | [✅][l-settings-updates] | ? | ? | — |
-| Six updater states | [✅][l-settings-updates] | ? | ? | — |
+| Checks every launch | [✅][l-settings-updates] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Rechecks every six hours | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Background installer download | [✅][l-settings-updates] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Bad downloads deleted | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Digest checked | [✅][l-settings-updates] | [✅][o-seen] | ? | [❌][c-seen] |
+| Spinning bell, filling button | [✅][l-settings-updates] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Installs before windows | [✅][l-settings-updates] | [✅][o-seen] | ? | [❌][c-seen] |
+| No admin prompt updating | [✅][l-settings-updates] | [✅][o-seen] | ? | [❌][c-seen] |
+| Restart button | [✅][l-settings-updates] | [✅][o-updates] | [✅][t-seen] | [❌][c-seen] |
+| No boot loop | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Failed install explained | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Quiet when current | [✅][l-settings-updates] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Bell only with news | [✅][l-settings-updates] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| One staged installer | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Staging folder per version | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Size-capped download | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Hashed while arriving | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Checked before running | [✅][l-settings-updates] | [✅][o-seen] | ? | [❌][c-seen] |
+| Finished download only | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Old stages cleaned | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Verdict read once | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Old Mac bundle kept | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
+| Six updater states | [✅][l-settings-updates] | ? | ? | [❌][c-seen] |
 
 ## Settings
 
@@ -121,20 +121,20 @@
 | No settings panel | [✅][l-options] | [❌][o-settings] | [❌][t-autosave] | [❌][c-seen] |
 | Saved on use | [✅][l-options] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Plain JSON settings | [✅][l-files] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Marked settings read | [✅][l-files] | — | — | — |
+| Marked settings read | [✅][l-files] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bad settings kept | [✅][l-files] | ? | ? | ? |
 | Unknown keys ignored | [✅][l-files] | ? | ? | ? |
 | Offline license notices | [✅][l-options] | ? | [✅][t-seen] | [✅][c-seen] |
 | Version on home | [✅][l-options] | ? | ? | ? |
-| Padlocks remembered | [✅][l-padlocks] | — | — | — |
+| Padlocks remembered | [✅][l-padlocks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Theme choice saved | [✅][l-theme] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Random without repeats | [✅][l-theme] | — | — | — |
-| Four graph sizes | [✅][l-graph-size] | [❌][o-seen] | — | — |
-| Calendar choice saved | [✅][l-calendar-date] | [❌][o-seen] | — | — |
+| Random without repeats | [✅][l-theme] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Four graph sizes | [✅][l-graph-size] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Calendar choice saved | [✅][l-calendar-date] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Speed Reader mode | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Speed Reader never writes | [✅][l-speed-reader] | — | — | — |
-| Typing help default | [✅][l-typing-help] | — | — | — |
-| Pager, minimap always | [✅][l-pager] | — | — | — |
+| Speed Reader never writes | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Typing help default | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pager, minimap always | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Small launch window | [✅][l-window] | ? | ? | ? |
 | Grows when ready | [✅][l-window] | ? | ? | ? |
 | First frame early | [✅][l-window] | ? | ? | ? |
@@ -144,14 +144,14 @@
 | Launch size unsaved | [✅][l-window] | ? | ? | ? |
 | Size apart from maximized | [✅][l-window] | ? | ? | ? |
 | Full screen unsaved | [✅][l-window] | ? | ? | ? |
-| Closing keeps words | [✅][l-unsaved] | [✅][o-seen] | [✅][t-seen] | — |
-| Compared on launch | [✅][l-unsaved] | ? | ? | — |
-| Untitled notes carried | [✅][l-unsaved] | — | [✅][t-seen] | — |
-| Empty notes dropped | [✅][l-unsaved] | ? | ? | — |
-| Bubble remembered | [✅][l-bubble] | — | — | — |
-| Introduction remembered | [✅][l-bubble] | — | — | — |
-| Quiet between hints | [✅][l-bubble] | — | — | — |
-| Hints reset by emptying | [✅][l-bubble] | — | — | — |
+| Closing keeps words | [✅][l-unsaved] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Compared on launch | [✅][l-unsaved] | ? | ? | [❌][c-seen] |
+| Untitled notes carried | [✅][l-unsaved] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Empty notes dropped | [✅][l-unsaved] | ? | ? | [❌][c-seen] |
+| Bubble remembered | [✅][l-bubble] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Introduction remembered | [✅][l-bubble] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Quiet between hints | [✅][l-bubble] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Hints reset by emptying | [✅][l-bubble] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Per-user folders | [✅][l-paths] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Settings survive reinstalls | [✅][l-paths] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 
@@ -163,7 +163,7 @@
 | Writing never logged | [✅][l-journal] | [✅][o-seen] | ? | ? |
 | Two small files | [✅][l-journal] | ? | ? | ? |
 | Journal never sent | [✅][l-journal] | [✅][o-seen] | ? | ? |
-| Failed syncs logged | [✅][l-journal] | — | — | — |
+| Failed syncs logged | [✅][l-journal] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Unexpected close noticed | [✅][l-journal] | ? | ? | ? |
 | Launch notices queued | [✅][l-journal] | ? | ? | ? |
 | Press clears notices | [✅][l-journal] | ? | ? | ? |
@@ -175,12 +175,12 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Commands answer values | [✅][l-rendering-pipeline] | — | — | — |
+| Commands answer values | [✅][l-rendering-pipeline] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Readers tested hostile | [✅][l-rendering-pipeline] | ? | ? | ? |
 | Corrupt documents explained | [✅][l-rendering-pipeline] | ? | ? | ? |
-| Raw HTML sanitizer | [✅][l-inline-html] | [✅][o-html] | ? | — |
+| Raw HTML sanitizer | [✅][l-inline-html] | [✅][o-html] | ? | [❌][c-seen] |
 | Lengths checked first | [✅][l-rendering-pipeline] | ? | ? | ? |
-| Pages served per file | [✅][l-html] | — | — | — |
+| Pages served per file | [✅][l-html] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Damaged containers named | [✅][l-epub] | ? | ? | ? |
 | Too much, said plainly | [✅][l-rendering-pipeline] | ? | ? | ? |
 | Unplaceable pictures refused | [✅][l-images] | ? | ? | ? |
@@ -200,99 +200,99 @@
 | --- | --- | --- | --- | --- |
 | Open a document | [✅][l-launch] | [✅][o-seen] | [✅][t-keys] | [✅][c-seen] |
 | Open a recent file | [✅][l-recent] | ? | [✅][t-files] | [✅][c-seen] |
-| Start a document | [✅][l-new] | [✅][o-explorer] | [✅][t-keys] | — |
+| Start a document | [✅][l-new] | [✅][o-explorer] | [✅][t-keys] | [❌][c-seen] |
 | Open license notices | [✅][l-options] | ? | ? | ? |
-| Paste a file | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | — |
+| Paste a file | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Reveal a file | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | [✅][c-seen] |
-| Copy a file | [✅][l-cut-copy] | [✅][o-seen] | [✅][t-seen] | — |
-| Copy a path | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | — |
-| Favorite and unfavorite | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | — |
-| Check favorites exist | [✅][l-favorites] | — | — | — |
-| Repoint a favorite | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | — |
-| Reorder favorites | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | — |
-| Rename a file | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | — |
-| Create a file | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | — |
-| Create a folder | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | — |
-| Delete a file | [✅][l-delete] | [✅][o-notes] | [✅][t-files] | — |
-| Undo a delete | [✅][l-delete] | [❌][o-seen] | [✅][t-files] | — |
-| Show file properties | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | — |
-| Reveal a picture | [✅][l-picture-actions] | [✅][o-seen] | [✅][t-seen] | — |
-| Copy picture's path | [✅][l-picture-actions] | [❌][o-seen] | ? | — |
-| Show picture properties | [✅][l-picture-actions] | [❌][o-seen] | [❌][t-seen] | — |
+| Copy a file | [✅][l-cut-copy] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Copy a path | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Favorite and unfavorite | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
+| Check favorites exist | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Repoint a favorite | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reorder favorites | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
+| Rename a file | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Create a file | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Create a folder | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Delete a file | [✅][l-delete] | [✅][o-notes] | [✅][t-files] | [❌][c-seen] |
+| Undo a delete | [✅][l-delete] | [❌][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Show file properties | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reveal a picture | [✅][l-picture-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Copy picture's path | [✅][l-picture-actions] | [❌][o-seen] | ? | [❌][c-seen] |
+| Show picture properties | [✅][l-picture-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Copy a picture | [✅][l-picture-actions] | [✅][o-seen] | [✅][t-seen] | [✅][c-viewer] |
-| Close, switch, move tabs | [✅][l-tabs] | [✅][o-tabs] | [❌][t-seen] | — |
-| Open beside by path | [✅][l-split] | [✅][o-seen] | — | — |
-| Close the beside column | [✅][l-split] | [✅][o-seen] | — | — |
-| Go home | [✅][l-appbar] | — | — | — |
+| Close, switch, move tabs | [✅][l-tabs] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
+| Open beside by path | [✅][l-split] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Close the beside column | [✅][l-split] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Go home | [✅][l-appbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Follow a link | [✅][l-open-links] | [✅][o-links] | [✅][t-md] | [✅][c-viewer] |
 | Open in browser | [✅][l-open-links] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Open glossary entries | [✅][l-glossary] | — | — | — |
-| Reveal a link's file | [✅][l-open-links] | [✅][o-seen] | ? | — |
-| Copy a link's path | [✅][l-open-links] | [✅][o-seen] | [❌][t-seen] | — |
-| Measure linked documents | [✅][l-hints] | [❌][o-seen] | [❌][t-seen] | — |
-| Preview a link | [✅][l-hints] | [✅][o-preview] | [❌][t-seen] | — |
+| Open glossary entries | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reveal a link's file | [✅][l-open-links] | [✅][o-seen] | ? | [❌][c-seen] |
+| Copy a link's path | [✅][l-open-links] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Measure linked documents | [✅][l-hints] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Preview a link | [✅][l-hints] | [✅][o-preview] | [❌][t-seen] | [❌][c-seen] |
 | Go back | [✅][l-history] | [✅][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Go forward | [✅][l-history] | [✅][o-seen] | [❌][t-seen] | [✅][c-viewer] |
-| Refresh a document | [✅][l-history] | [❌][o-seen] | [✅][t-seen] | — |
-| Speed reader switch | [✅][l-speed-reader] | — | — | — |
-| Typing help switch | [✅][l-typing-help] | — | — | — |
-| Grove record switch | [✅][l-grove-off] | — | — | — |
-| Buy a reward | [✅][l-grove-seeds] | — | — | — |
-| Take a level | [✅][l-grove-grow] | — | — | — |
-| Read the XP log | [✅][l-grove-xp] | — | — | — |
-| Resolve a year-map day | [✅][l-grove-xp] | — | — | — |
-| Reward switches | [✅][l-grove-seeds] | — | — | — |
-| Report reading progress | [✅][l-grove-counts] | — | — | — |
-| Set the padlocks | [✅][l-padlocks] | — | — | — |
-| Choose theme family | [✅][l-theme] | [✅][o-themes] | [✅][t-themes] | — |
-| Choose appearance | [✅][l-theme] | [✅][o-appearance] | [✅][t-dark] | — |
-| Random theme rotation | [✅][l-theme] | — | — | — |
-| First-run hints | [✅][l-bubble] | — | — | — |
+| Refresh a document | [✅][l-history] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Speed reader switch | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Typing help switch | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove record switch | [✅][l-grove-off] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Buy a reward | [✅][l-grove-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Take a level | [✅][l-grove-grow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Read the XP log | [✅][l-grove-xp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Resolve a year-map day | [✅][l-grove-xp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reward switches | [✅][l-grove-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Report reading progress | [✅][l-grove-counts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Set the padlocks | [✅][l-padlocks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Choose theme family | [✅][l-theme] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
+| Choose appearance | [✅][l-theme] | [✅][o-appearance] | [✅][t-dark] | [❌][c-seen] |
+| Random theme rotation | [✅][l-theme] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| First-run hints | [✅][l-bubble] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Move and size window | [✅][l-window] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Resize by edge | [✅][l-window] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Save your place | [✅][l-recents] | [✅][o-seen] | ? | [✅][c-viewer] |
-| Library and graph layout | [✅][l-files] | [✅][o-seen] | — | — |
-| Vault git status | [✅][l-github] | — | — | — |
-| Create a repository | [✅][l-github] | — | — | — |
-| Link a remote | [✅][l-github] | — | — | — |
-| Sync a vault | [✅][l-github] | — | — | — |
-| Automatic sync switch | [✅][l-github] | — | — | — |
-| Ignore nested repositories | [✅][l-github] | — | — | — |
-| Set git identity | [✅][l-github] | — | — | — |
-| Refresh a vault | [✅][l-vaults] | ? | ? | — |
-| Open source beside | [✅][l-split] | [✅][o-edit] | — | — |
-| Save split layout | [✅][l-split] | [✅][o-tabs] | — | — |
-| Add a vault | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | — |
-| Find cloud folders | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | — |
-| Clone into vault | [✅][l-github] | — | — | — |
-| Manage vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | — |
-| Read a folder | [✅][l-vaults] | — | — | — |
-| Reveal in library | [✅][l-vaults] | [✅][o-explorer] | [✅][t-seen] | — |
-| Build the graph | [✅][l-graph] | [✅][o-graph] | — | — |
-| Set graph size | [✅][l-graph-size] | [❌][o-seen] | — | — |
-| Set calendar field | [✅][l-calendar-date] | [❌][o-seen] | — | — |
+| Library and graph layout | [✅][l-files] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Vault git status | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Create a repository | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Link a remote | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sync a vault | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Automatic sync switch | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ignore nested repositories | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Set git identity | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Refresh a vault | [✅][l-vaults] | ? | ? | [❌][c-seen] |
+| Open source beside | [✅][l-split] | [✅][o-edit] | [❌][t-seen] | [❌][c-seen] |
+| Save split layout | [✅][l-split] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
+| Add a vault | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
+| Find cloud folders | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Clone into vault | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Manage vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | [❌][c-seen] |
+| Read a folder | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reveal in library | [✅][l-vaults] | [✅][o-explorer] | [✅][t-seen] | [❌][c-seen] |
+| Build the graph | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Set graph size | [✅][l-graph-size] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Set calendar field | [✅][l-calendar-date] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Search a vault | [✅][l-search] | [✅][o-search] | [✅][t-search] | [✅][c-gui] |
-| Read calendar range | [✅][l-calendar-date] | [❌][o-seen] | — | — |
+| Read calendar range | [✅][l-calendar-date] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Find previous and next | [✅][l-pager] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Enter and leave source | [✅][l-code-view] | [✅][o-edit] | [✅][t-keys] | — |
-| Splice the source | [✅][l-code-view] | — | — | — |
-| Save a document | [✅][l-save] | [✅][o-seen] | [✅][t-keys] | — |
-| Complete note names | [✅][l-typing-help] | [✅][o-links] | [❌][t-seen] | — |
-| Complete headings | [✅][l-typing-help] | [✅][o-links] | [❌][t-seen] | — |
-| Hover a note | [✅][l-typing-help] | [✅][o-preview] | [❌][t-seen] | — |
+| Enter and leave source | [✅][l-code-view] | [✅][o-edit] | [✅][t-keys] | [❌][c-seen] |
+| Splice the source | [✅][l-code-view] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Save a document | [✅][l-save] | [✅][o-seen] | [✅][t-keys] | [❌][c-seen] |
+| Complete note names | [✅][l-typing-help] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |
+| Complete headings | [✅][l-typing-help] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |
+| Hover a note | [✅][l-typing-help] | [✅][o-preview] | [❌][t-seen] | [❌][c-seen] |
 | Check links | [✅][l-typing-help] | ? | ? | ? |
-| Read a table | [✅][l-rdb] | — | — | — |
-| Tick a task | [✅][l-inline] | [✅][o-syntax] | [✅][t-md] | — |
-| Edit several blocks | [✅][l-inline] | — | — | — |
-| Manage fields | [✅][l-fields] | [✅][o-props] | [❌][t-seen] | — |
-| Move a block | [✅][l-gutter] | [❌][o-seen] | [❌][t-seen] | — |
-| Pick a picture | [✅][l-pictures] | [✅][o-seen] | [✅][t-images] | — |
-| Export a diagram | [✅][l-flow-export] | [❌][o-seen] | [❌][t-seen] | — |
-| Export a picture | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | — |
-| Export the page | [✅][l-export] | [✅][o-seen] | [✅][t-export] | — |
+| Read a table | [✅][l-rdb] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Tick a task | [✅][l-inline] | [✅][o-syntax] | [✅][t-md] | [❌][c-seen] |
+| Edit several blocks | [✅][l-inline] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Manage fields | [✅][l-fields] | [✅][o-props] | [❌][t-seen] | [❌][c-seen] |
+| Move a block | [✅][l-gutter] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pick a picture | [✅][l-pictures] | [✅][o-seen] | [✅][t-images] | [❌][c-seen] |
+| Export a diagram | [✅][l-flow-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Export a picture | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Export the page | [✅][l-export] | [✅][o-seen] | [✅][t-export] | [❌][c-seen] |
 | Undo an edit | [✅][l-undo] | [✅][o-shortcuts] | [✅][t-seen] | [✅][c-edit] |
 | Redo an edit | [✅][l-undo] | [✅][o-shortcuts] | [✅][t-seen] | [✅][c-edit] |
-| Apply updates | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | — |
+| Apply updates | [✅][l-updates] | [✅][o-updates] | [✅][t-seen] | [❌][c-seen] |
 | Report page errors | [✅][l-journal] | ? | ? | ? |
 
 [l-install]: ../02-installation.md#install

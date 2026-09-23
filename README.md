@@ -1,5 +1,7 @@
 # Refine your mind.
 
+Read, understand and edit the files other readers leave closed.
+
 **Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own. Have an AI tool write a glossary for a hard book or a team's notes, and every term in it is linked as you read.
 
 ![The Leaftext window with a Markdown document open: the library pane at left holding the document's headings, the rendered page in the middle, and the minimap rail down the right edge](imgs/leaftext.png)
@@ -45,6 +47,8 @@ Free, on macOS and Windows.
 | Build it from source | [Development](#development) |
 
 ## Read your files
+
+Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each open as a page you want to read.
 
 ### Markdown, rendered the way GitHub renders it
 
@@ -106,6 +110,8 @@ Turn on Speed Reader and the page dims back while bold anchors mark the start of
 
 ## Write where you read
 
+Click into the rendered page and type. The change lands in your file, and nothing saves until you say so.
+
 ### Click into a sentence and type
 
 ![Inline editing in the rendered page, with save and undo button](imgs/editing.png)
@@ -159,6 +165,8 @@ Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's a
 Type `[[` and your notes are listed, by file name and by any [other name](docs/01-features/03-library.md#other-names) they answer to. Type `#` for a heading. Hover a wikilink for a preview, and a link that answers to nothing gets a wavy underline. It knows only what you pointed it at. **[Typing help →](docs/01-features/07-editing.md#typing-help)**
 
 ## Keep a library
+
+Point it at a folder, then search everything in it and see how every note links to the next.
 
 ### Point it at a folder and it becomes a vault
 
@@ -274,7 +282,7 @@ An installer downloads in the background, is checked for the length the release 
 
 ## Install it
 
-Leaftext is free. **[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** or **[for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)**, then follow your platform below — or the fuller walkthrough in the **[Installation guide](docs/02-installation.md#install)**.
+Leaftext is free. **[Download for Windows](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** or **[for macOS](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)**, and the **[Installation guide](docs/02-installation.md#install)** walks through both, the Mac's first launch included.
 
 ### macOS
 

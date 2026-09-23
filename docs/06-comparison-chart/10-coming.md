@@ -6,39 +6,39 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Declared book covers | [❌][l-roadmap] | — | — | [✅][c-gui] |
-| Every picture-book picture | [❌][l-roadmap] | — | — | [✅][c-seen] |
-| Kindle library titles | [❌][l-roadmap] | — | — | ? |
-| Stylesheets as pages | [❌][l-roadmap] | — | — | — |
-| Deck speaker notes | [❌][l-roadmap] | ? | — | — |
-| Slide pictures and charts | [❌][l-roadmap] | — | — | — |
-| Deck export per slide | [❌][l-roadmap] | — | — | — |
-| Custom heading anchors | [❌][l-roadmap] | ? | ? | — |
+| Declared book covers | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-gui] |
+| Every picture-book picture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
+| Kindle library titles | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | ? |
+| Stylesheets as pages | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Deck speaker notes | [❌][l-roadmap] | ? | [❌][t-seen] | [❌][c-seen] |
+| Slide pictures and charts | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Deck export per slide | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Custom heading anchors | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
 | Glossary word forms | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Link preview cards | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | — |
+| Link preview cards | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | ElevenLabs read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Live source beside page | [❌][l-roadmap] | [✅][o-edit] | [❌][t-seen] | — |
-| Frontmatter top sheet | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| HTML in browser | [❌][l-roadmap] | — | — | — |
+| Live source beside page | [❌][l-roadmap] | [✅][o-edit] | [❌][t-seen] | [❌][c-seen] |
+| Frontmatter top sheet | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| HTML in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | EPUB export | [❌][l-roadmap] | [❌][o-seen] | [✅][t-export] | [✅][c-faq] |
-| Markdown export | [❌][l-roadmap] | — | [✅][t-md-export] | — |
+| Markdown export | [❌][l-roadmap] | [❌][o-seen] | [✅][t-md-export] | [❌][c-seen] |
 
 ## Writing plans
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Edit whole emails | [❌][l-roadmap] | — | — | — |
+| Edit whole emails | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Threaded comments | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Rendered multiple cursors | [❌][l-roadmap] | [✅][o-cursors] | [❌][t-seen] | — |
-| Type into EPUB | [❌][l-roadmap] | — | — | [✅][c-edit] |
-| Slide editor | [❌][l-roadmap] | [❌][o-seen] | — | — |
-| Presentation builds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Drop pictures in | [❌][l-roadmap] | [✅][o-attach] | [✅][t-images] | — |
-| Suggested field values | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | — |
-| Row arithmetic formulas | [❌][l-roadmap] | [✅][o-bases-formulas] | [❌][t-seen] | — |
-| Point-to-edit diagrams | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
+| Rendered multiple cursors | [❌][l-roadmap] | [✅][o-cursors] | [❌][t-seen] | [❌][c-seen] |
+| Type into EPUB | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-edit] |
+| Slide editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Presentation builds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drop pictures in | [❌][l-roadmap] | [✅][o-attach] | [✅][t-images] | [❌][c-seen] |
+| Suggested field values | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Row arithmetic formulas | [❌][l-roadmap] | [✅][o-bases-formulas] | [❌][t-seen] | [❌][c-seen] |
+| Point-to-edit diagrams | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Library plans
 
@@ -46,7 +46,7 @@
 | --- | --- | --- | --- | --- |
 | Richer library pane | [❌][l-roadmap] | ? | ? | ? |
 | Drag files around | [❌][l-roadmap] | [✅][o-dnd] | [✅][t-files] | ? |
-| Backlinks and mentions | [❌][l-roadmap] | [✅][o-backlinks] | [❌][t-seen] | — |
+| Backlinks and mentions | [❌][l-roadmap] | [✅][o-backlinks] | [❌][t-seen] | [❌][c-seen] |
 | Clickable tags | [❌][l-roadmap] | [✅][o-tags] | [❌][t-seen] | [✅][c-seen] |
 | Clientless cloud services | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cloud documents opened | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -68,65 +68,65 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Terminal rendering | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Folder console | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Live web tabs | [❌][l-roadmap] | [✅][o-web-viewer] | [❌][t-seen] | — |
+| Terminal rendering | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folder console | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Live web tabs | [❌][l-roadmap] | [✅][o-web-viewer] | [❌][t-seen] | [❌][c-seen] |
 | Serve local site | [❌][l-roadmap] | ? | ? | [✅][c-server] |
-| Theme editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
+| Theme editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Every view in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-server] |
-| Web relational tables | [❌][l-roadmap] | [❌][o-seen] | — | — |
+| Web relational tables | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Post questions in-app | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Grove plans
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Reading streak | [❌][l-roadmap] | — | — | — |
-| Grove home strip | [❌][l-roadmap] | — | — | — |
-| Twenty-seven badges | [❌][l-roadmap] | — | — | — |
-| Grove textures | [❌][l-roadmap] | — | — | — |
-| CRT screen effect | [❌][l-roadmap] | — | — | — |
-| Window skins | [❌][l-roadmap] | — | — | — |
-| Glass look | [❌][l-roadmap] | — | — | — |
-| Grove effects | [❌][l-roadmap] | — | — | — |
-| Sparkle effects | [❌][l-roadmap] | — | — | — |
-| Grove file icons | [❌][l-roadmap] | — | — | — |
-| Per-vault look | [❌][l-roadmap] | — | — | — |
-| Grove buddy | [❌][l-roadmap] | — | — | — |
-| ASCII painting | [❌][l-roadmap] | — | — | — |
-| Ten classic games | [❌][l-roadmap] | — | — | — |
-| Secret room | [❌][l-roadmap] | — | — | — |
-| Seasonal leaf | [❌][l-roadmap] | — | — | — |
-| Gilt mark | [❌][l-roadmap] | — | — | — |
-| Leaf on your files | [❌][l-roadmap] | — | — | — |
-| Wide dots | [❌][l-roadmap] | — | — | — |
-| Crosshatch texture | [❌][l-roadmap] | — | — | — |
-| Diagonal scanlines | [❌][l-roadmap] | — | — | — |
-| Upright scanlines | [❌][l-roadmap] | — | — | — |
-| Halftone texture | [❌][l-roadmap] | — | — | — |
-| Weave texture | [❌][l-roadmap] | — | — | — |
-| Flat texture | [❌][l-roadmap] | — | — | — |
-| Analogous wash | [❌][l-roadmap] | — | — | — |
-| Two-leaf wash | [❌][l-roadmap] | — | — | — |
-| Glass skin | [❌][l-roadmap] | — | — | — |
-| Iridescent skin | [❌][l-roadmap] | — | — | — |
-| Mercury skin | [❌][l-roadmap] | — | — | — |
-| Stardust skin | [❌][l-roadmap] | — | — | — |
-| Shimmering shadow | [❌][l-roadmap] | — | — | — |
-| Glinting controls | [❌][l-roadmap] | — | — | — |
-| Level-up glint | [❌][l-roadmap] | — | — | — |
-| Pointer trail | [❌][l-roadmap] | — | — | — |
-| Letter sparks | [❌][l-roadmap] | — | — | — |
-| Typing sparks | [❌][l-roadmap] | — | — | — |
-| Button burst | [❌][l-roadmap] | — | — | — |
-| Checkbox burst | [❌][l-roadmap] | — | — | — |
-| Save flourish | [❌][l-roadmap] | — | — | — |
-| Combo counter | [❌][l-roadmap] | — | — | — |
-| Numbers that arrive | [❌][l-roadmap] | — | — | — |
-| Rising paragraphs | [❌][l-roadmap] | — | — | — |
-| Falling blocks unlock | [❌][l-roadmap] | — | — | — |
-| Games unlock | [❌][l-roadmap] | — | — | — |
-| Buddy unlock | [❌][l-roadmap] | — | — | — |
+| Reading streak | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove home strip | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Twenty-seven badges | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove textures | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| CRT screen effect | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Window skins | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Glass look | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove effects | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sparkle effects | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove file icons | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Per-vault look | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove buddy | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| ASCII painting | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ten classic games | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Secret room | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Seasonal leaf | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Gilt mark | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Leaf on your files | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Wide dots | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Crosshatch texture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagonal scanlines | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Upright scanlines | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Halftone texture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Weave texture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Flat texture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Analogous wash | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Two-leaf wash | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Glass skin | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Iridescent skin | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Mercury skin | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Stardust skin | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Shimmering shadow | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Glinting controls | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Level-up glint | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pointer trail | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Letter sparks | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Typing sparks | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Button burst | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Checkbox burst | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Save flourish | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Combo counter | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Numbers that arrive | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rising paragraphs | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Falling blocks unlock | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Games unlock | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Buddy unlock | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Built for agents
 
@@ -144,10 +144,10 @@
 | Close ends reliably | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents edit documents | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Agents tick tasks | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Agent work counted | [❌][l-agent] | — | — | — |
-| Fourteen document tools | [❌][l-agent] | — | — | — |
+| Agent work counted | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fourteen document tools | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Written agent workflow | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
-| Untitled saves refused | [❌][l-agent] | — | — | — |
+| Untitled saves refused | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawings described to agents | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | MCP tool servers | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Servers start on demand | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -160,22 +160,22 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Mirrored remote vaults | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | — |
-| Browser sign-in tokens | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Mirror folder kinds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Mirror removed with vault | [❌][l-roadmap] | ? | ? | — |
-| Loopback browser sign-in | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | — |
-| Tokens in system store | [❌][l-roadmap] | ? | ? | — |
-| Account shown in panel | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | — |
-| Readable after sign-out | [❌][l-roadmap] | ? | ? | — |
-| Upstream renames followed | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | — |
-| Backs off refusals | [❌][l-roadmap] | ? | ? | — |
-| Offline as a line | [❌][l-roadmap] | ? | ? | — |
-| Opening never waits | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | — |
-| Local first, then push | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | — |
-| Refused pushes kept | [❌][l-roadmap] | ? | ? | — |
-| Sign-in pages confirm | [❌][l-roadmap] | ? | ? | — |
-| Lost races keep yours | [❌][l-roadmap] | ? | ? | — |
+| Mirrored remote vaults | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | [❌][c-seen] |
+| Browser sign-in tokens | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Mirror folder kinds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Mirror removed with vault | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Loopback browser sign-in | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Tokens in system store | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Account shown in panel | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | [❌][c-seen] |
+| Readable after sign-out | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Upstream renames followed | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | [❌][c-seen] |
+| Backs off refusals | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Offline as a line | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Opening never waits | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | [❌][c-seen] |
+| Local first, then push | [❌][l-roadmap] | [✅][o-sync] | [❌][t-seen] | [❌][c-seen] |
+| Refused pushes kept | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Sign-in pages confirm | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
+| Lost races keep yours | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
 
 ## Embedding in other products
 
@@ -183,16 +183,16 @@
 | --- | --- | --- | --- | --- |
 | Mount in any product | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Host owns saving | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Bytes returned unchanged | [❌][l-roadmap] | — | — | — |
+| Bytes returned unchanged | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Folder to static site | [❌][l-roadmap] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Embeddable editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Shared buffer and undo | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Opens raw bytes | [❌][l-roadmap] | — | — | — |
+| Opens raw bytes | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Static export module | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Local site preview | [❌][l-roadmap] | ? | ? | ? |
 | Sample embed page | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Source editor embedded | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Module size ceilings | [❌][l-roadmap] | — | — | — |
+| Module size ceilings | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Save on request | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Embedding API commands | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | React provider and hook | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -204,7 +204,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Chromebook install | [❌][l-roadmap] | ? | ? | ? |
-| Reader inside Scholar | [❌][l-roadmap] | — | — | — |
+| Reader inside Scholar | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Signed installers | [❌][l-roadmap] | ? | ? | ? |
 
 [l-roadmap]: ../05-compare.md#on-our-roadmap

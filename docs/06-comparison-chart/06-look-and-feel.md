@@ -6,110 +6,110 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Fifteen free families | [✅][l-families] | [✅][o-themes] | [✅][t-themes] | — |
-| Six earned families | [✅][l-earned] | — | — | — |
-| Amaranth theme family | [✅][l-families] | — | — | — |
-| Arabica theme family | [✅][l-families] | — | — | — |
-| Bloodleaf theme family | [✅][l-families] | — | — | — |
-| Camellia theme family | [✅][l-families] | — | — | — |
-| Eucalyptus theme family | [✅][l-families] | — | — | — |
-| Fern theme family | [✅][l-families] | — | — | — |
-| Foxglove theme family | [✅][l-families] | — | — | — |
-| Ginger theme family | [✅][l-families] | — | — | — |
-| GitHub theme family | [✅][l-families] | — | — | — |
-| Goldenrod theme family | [✅][l-families] | — | — | — |
-| Halcyon theme family | [✅][l-families] | — | — | — |
-| Ivy theme family | [✅][l-families] | — | — | — |
-| Nightshade theme family | [✅][l-families] | — | — | — |
-| Pippin theme family | [✅][l-families] | — | — | — |
-| Sage theme family | [✅][l-families] | — | — | — |
-| Birch theme family | [✅][l-earned] | — | — | — |
-| Laurel theme family | [✅][l-earned] | — | — | — |
-| Lavender theme family | [✅][l-earned] | — | — | — |
-| Saffron theme family | [✅][l-earned] | — | — | — |
-| Sumac theme family | [✅][l-earned] | — | — | — |
-| Woad theme family | [✅][l-earned] | — | — | — |
+| Fifteen free families | [✅][l-families] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
+| Six earned families | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Amaranth theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Arabica theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Bloodleaf theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Camellia theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Eucalyptus theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fern theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Foxglove theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ginger theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| GitHub theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Goldenrod theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Halcyon theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ivy theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nightshade theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pippin theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sage theme family | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Birch theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Laurel theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Lavender theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Saffron theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sumac theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Woad theme family | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Light and dark each | [✅][l-families] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
-| Family preview pictures | [✅][l-previews] | [✅][o-seen] | [❌][t-seen] | — |
-| Online theme gallery | [✅][l-see-all] | [✅][o-themes] | [✅][t-themes] | — |
-| Plant names settled | [✅][l-earned] | — | — | — |
-| Teal and rose added | [✅][l-families] | — | — | — |
-| No faked bold | [✅][l-families] | — | — | — |
-| Amaranth bold italic | [✅][l-families] | — | — | — |
-| Packs draw every control | [✅][l-icons] | — | — | — |
-| Cards hold size | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
+| Family preview pictures | [✅][l-previews] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Online theme gallery | [✅][l-see-all] | [✅][o-themes] | [✅][t-themes] | [❌][c-seen] |
+| Plant names settled | [✅][l-earned] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Teal and rose added | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| No faked bold | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Amaranth bold italic | [✅][l-families] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Packs draw every control | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Cards hold size | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Choosing a look
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| New family each launch | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | — |
-| No repeats before all | [✅][l-random] | — | — | — |
-| Rotation survives restarts | [✅][l-random] | — | — | — |
-| Random card morphs | [✅][l-random] | — | — | — |
+| New family each launch | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| No repeats before all | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rotation survives restarts | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Random card morphs | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | System appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
 | Light appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
 | Dark appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
 | Daylight appearance | [✅][l-appearance] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Follows system live | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
-| Palette bottom sheet | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
-| Cards in own colors | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
-| Current family ringed | [✅][l-choose] | ? | ? | — |
+| Palette bottom sheet | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Cards in own colors | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Current family ringed | [✅][l-choose] | ? | ? | [❌][c-seen] |
 | Applies at once | [✅][l-choose] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Four ways to close | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
-| Picker scrolls to family | [✅][l-choose] | — | — | — |
+| Four ways to close | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Picker scrolls to family | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Fonts and icons
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Typeface per family | [✅][l-fonts] | [✅][o-seen] | [✅][t-seen] | — |
+| Typeface per family | [✅][l-fonts] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Fonts cached | [✅][l-fonts] | ? | ? | ? |
-| GitHub uses system fonts | [✅][l-fonts] | — | — | — |
-| Picker loads fonts briefly | [✅][l-fonts] | [❌][o-seen] | [❌][t-seen] | — |
-| System fallback offline | [✅][l-fonts] | — | — | — |
-| Fonts cached across launches | [✅][l-fonts] | — | — | — |
+| GitHub uses system fonts | [✅][l-fonts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Picker loads fonts briefly | [✅][l-fonts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| System fallback offline | [✅][l-fonts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fonts cached across launches | [✅][l-fonts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Reading and interface fonts | [✅][l-fonts] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
-| Seven icon sets | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | — |
-| Seven named icon packs | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | — |
-| Icons shipped inside | [✅][l-icons] | [✅][o-seen] | — | — |
-| Missing icons fall back | [✅][l-icons] | — | — | — |
-| Diagram icons shared | [✅][l-icons] | — | — | — |
-| One bolder weight | [✅][l-icons] | — | — | — |
-| Exports carry icon pack | [✅][l-icons] | — | — | — |
+| Seven icon sets | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Seven named icon packs | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Icons shipped inside | [✅][l-icons] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Missing icons fall back | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagram icons shared | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| One bolder weight | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Exports carry icon pack | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Theme colors
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| One token contract | [✅][l-tokens] | [✅][o-seen] | ? | — |
-| Per-level heading colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
-| Table bands and grid | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
-| Code and syntax colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
-| Focus and selection colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
-| Readable ink on fills | [✅][l-tokens] | ? | ? | — |
-| Missing token fails build | [✅][l-tokens] | — | — | — |
-| Transparent hover wash | [✅][l-hover-token] | ? | ? | — |
-| Goldenrod hovers gold | [✅][l-hover-token] | — | — | — |
-| Boxes in theme surfaces | [✅][l-diagrams] | [✅][o-seen] | [❌][t-seen] | — |
-| Arrows in muted ink | [✅][l-diagrams] | ? | ? | — |
-| Twelve categorical colors | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | — |
-| Gantt state colors | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | — |
-| Labels in document face | [✅][l-diagrams] | ? | ? | — |
-| Ink picked per fill | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | — |
-| Diagrams redrawn on theme | [✅][l-diagrams] | [✅][o-seen] | [❌][t-seen] | — |
-| Diagram contrast gated | [✅][l-diagrams] | — | — | — |
+| One token contract | [✅][l-tokens] | [✅][o-seen] | ? | [❌][c-seen] |
+| Per-level heading colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Table bands and grid | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Code and syntax colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Focus and selection colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Readable ink on fills | [✅][l-tokens] | ? | ? | [❌][c-seen] |
+| Missing token fails build | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Transparent hover wash | [✅][l-hover-token] | ? | ? | [❌][c-seen] |
+| Goldenrod hovers gold | [✅][l-hover-token] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Boxes in theme surfaces | [✅][l-diagrams] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Arrows in muted ink | [✅][l-diagrams] | ? | ? | [❌][c-seen] |
+| Twelve categorical colors | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Gantt state colors | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Labels in document face | [✅][l-diagrams] | ? | ? | [❌][c-seen] |
+| Ink picked per fill | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagrams redrawn on theme | [✅][l-diagrams] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagram contrast gated | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Make your own
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Themes as data files | [✅][l-add-own] | [✅][o-themes] | [✅][t-themes] | [✅][c-seen] |
-| Make-your-own link | [✅][l-add-own] | [✅][o-appearance] | [✅][t-themes] | — |
-| Checked against contract | [✅][l-add-own] | [❌][o-seen] | [❌][t-seen] | — |
-| Themes as Markdown tables | [✅][l-add-own] | [❌][o-seen] | [❌][t-seen] | — |
-| Light and dark variants | [✅][l-add-own] | [✅][o-seen] | [✅][t-themes] | — |
-| Per-variant overrides | [✅][l-add-own] | [✅][o-seen] | [✅][t-seen] | — |
+| Make-your-own link | [✅][l-add-own] | [✅][o-appearance] | [✅][t-themes] | [❌][c-seen] |
+| Checked against contract | [✅][l-add-own] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Themes as Markdown tables | [✅][l-add-own] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Light and dark variants | [✅][l-add-own] | [✅][o-seen] | [✅][t-themes] | [❌][c-seen] |
+| Per-variant overrides | [✅][l-add-own] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 
 ## The window
 
@@ -144,17 +144,17 @@
 | Pane springs, bounces | [✅][l-pane] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Nub slams home | [✅][l-toolbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | File type badges | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Hover-only tab controls | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | — |
+| Hover-only tab controls | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hand only on links | [✅][l-pointer] | ? | ? | ? |
 | Pixel-grid window buttons | [✅][l-windows] | ? | ? | ? |
-| Taskbar preview leaf | [✅][l-windows] | — | — | — |
+| Taskbar preview leaf | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawn edge resizing | [✅][l-windows] | ? | ? | ? |
 | Own scrollbars everywhere | [✅][l-scrollbars] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Own dotted shadow | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rounded Mac window | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Smooth trackpad glide | [✅][l-macos] | ? | ? | ? |
 | F11, middle square exit | [✅][l-windows] | ? | ? | ? |
-| Fading tab close cross | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | — |
+| Fading tab close cross | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Motion and surfaces
 

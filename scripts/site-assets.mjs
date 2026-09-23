@@ -20,6 +20,7 @@ import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
 import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
+import { layoutFrontPage } from '../site/front-page-layout.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -46,16 +47,16 @@ export const FRONT_PAGE = 'index.html';
 export const FRONT_DOCUMENT = 'README.md';
 
 /**
- * The README drawn the way the front page shows it: the document, with the comparison chart drawn under its compare heading out of the documentation's own chart pages.
+ * The README drawn the way the front page shows it: the document, with the comparison chart drawn under its compare heading out of the documentation's own chart pages, laid out as the front page's hero, comparison, cards and foot.
  *
- * The chart's rows are written once, in `docs/`, so the front page never holds a copy of them; `site/compare-chart.js` draws them here and in the browser alike.
+ * The chart's rows are written once, in `docs/`, so the front page never holds a copy of them; `site/compare-chart.js` draws them and `site/front-page-layout.js` lays the page out, here and in the browser alike.
  */
 export function drawFrontDocument(leaf, from = root) {
   const readme = readFileSync(join(from, FRONT_DOCUMENT), 'utf8');
   const index = readFileSync(join(from, COMPARE_INDEX), 'utf8');
   const bodies = new Map(chartPagePaths(index).map((path) => [path, readFileSync(join(from, path), 'utf8')]));
   const render = (body, path) => leaf.render(body, path);
-  return { html: frontWithChart(render(readme, FRONT_DOCUMENT).html, index, bodies, render) };
+  return { html: layoutFrontPage(frontWithChart(render(readme, FRONT_DOCUMENT).html, index, bodies, render)) };
 }
 
 /** The empty element the front page leaves for its document. */

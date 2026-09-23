@@ -82,6 +82,8 @@
     <link rel="stylesheet" href="/assets/leaftext/leaftext.css" />
     <!-- What draws the page around the document: edit the tokens at the top of it. -->
     <link rel="stylesheet" href="site/styles.css" />
+    <!-- The front page's own composition — the bar, the hero, the cards — which only this page carries. -->
+    <link rel="stylesheet" href="site/front-page.css" />
     <!-- Apply the saved theme and panel toggles before first paint (no flash).
          Keys mirror site/settings.js; "System" resolves to the device theme. -->
     <script>
@@ -114,6 +116,15 @@
     <!-- The shadow band's alpha curve, which --lt-grain-shadow-curve names as url(#lt-shadow-halftone). It is markup rather than a data URI in the token because WebKit resolves no filter reference outside the page, which left the band an opaque white slab on every Mac. Every page that serves the reading stylesheet carries this block, byte for byte, and reading_css_grain_curve.rs holds them to each other. -->
     <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
     <a class="skip-link" href="#content">Skip to content</a>
+    <header class="front-bar">
+      <a class="front-bar-brand" href="#download"><img src="/assets/leaf-icon.png" alt="" width="24" height="24" />Leaftext</a>
+      <nav class="front-bar-links" aria-label="Site">
+        <a href="#features">Features</a>
+        <a href="#how-leaftext-compares">Compare</a>
+        <a href="docs/">Docs</a>
+        <a class="front-bar-download" href="#download">Download</a>
+      </nav>
+    </header>
     <main class="page">
       <!-- reader.js fills this with the rendered README. -->
       <article class="markdown-body" id="content" tabindex="-1"></article>

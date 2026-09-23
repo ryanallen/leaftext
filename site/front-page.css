@@ -1,0 +1,279 @@
+/* front-page.css
+   ==========================================================================
+   The front page's own composition: the bar across the top, the hero with the downloads, the comparison, the picture of the app, the four cards, the install line and the foot. `site/front-page-layout.js` writes the markup; the words inside it are the README's and are painted by the app's stylesheet like any document.
+
+   Loaded after `styles.css`, which the other site shares, so nothing here reaches a page but this one. Every color, space, corner, weight and duration is an app token; a width is this page's own geometry.
+   ========================================================================== */
+
+/* No rail on this page, so none of its reserve. */
+body.front-page {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Wide enough for two cards side by side; the reading parts keep the app's measure below. */
+body.front-page .page {
+  max-width: 1120px;
+  padding-top: 0;
+}
+
+/* A jump to a section lands under the bar rather than behind it. */
+body.front-page [id] {
+  scroll-margin-top: calc(var(--lt-space-48) + var(--lt-space-24));
+}
+
+/* ---- The bar --------------------------------------------------------- */
+
+.front-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--lt-z-40);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-16);
+  padding: var(--lt-space-12) var(--lt-space-24);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(var(--lt-space-12));
+  border-bottom: var(--lt-stroke-1) solid var(--border);
+}
+
+.front-bar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-weight: var(--lt-weight-600);
+  font-size: var(--lt-text-18);
+  text-decoration: none;
+}
+
+.front-bar-links {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-20);
+}
+
+.front-bar-links a {
+  color: var(--text-muted);
+  font-size: var(--lt-text-15);
+  text-decoration: none;
+  transition: color var(--lt-duration-150) var(--lt-ease);
+}
+
+.front-bar-links a:hover {
+  color: var(--text);
+}
+
+.front-bar-links .front-bar-download {
+  padding: var(--lt-space-6) var(--lt-space-14);
+  border-radius: var(--lt-radius-md);
+  background: var(--action-hover-bg);
+  color: var(--action-hover-fg);
+  font-weight: var(--lt-weight-600);
+}
+
+.front-bar-links .front-bar-download:hover {
+  color: var(--action-hover-fg);
+}
+
+/* ---- The page -------------------------------------------------------- */
+
+/* The whole page's width rather than a document's measure; each section below sets its own. */
+.document-body.front-layout {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.document-body.front-layout > section,
+.document-body.front-layout > footer {
+  margin-inline: auto;
+}
+
+/* Section headings at the hero's weight rather than a document's, so the page reads as one composition. */
+.document-body.front-layout h2 {
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-01);
+}
+
+/* The hero: the promise, one line, the downloads. Nothing else on the first screen. */
+.front-hero {
+  max-width: var(--content-width);
+  padding: calc(var(--lt-space-48) * 2) 0 var(--lt-space-48);
+  text-align: center;
+}
+
+.document-body.front-layout .front-hero h1 {
+  margin: 0;
+  border: 0;
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-01);
+  line-height: var(--type-display-line);
+}
+
+.document-body.front-layout .front-hero-line {
+  margin: var(--lt-space-16) auto var(--lt-space-32);
+  max-width: 34ch;
+  color: var(--text-muted);
+  font-size: var(--type-h5-size);
+  line-height: var(--lt-leading-1-35);
+}
+
+.document-body.front-layout .front-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--lt-space-12);
+  margin: 0;
+}
+
+.document-body.front-layout .front-small {
+  margin: var(--lt-space-16) 0 0;
+  color: var(--text-muted);
+  font-size: var(--type-caption-size);
+}
+
+/* The comparison keeps the reading measure, and a table wider than a phone scrolls inside itself rather than taking the page sideways. */
+.front-compare {
+  max-width: var(--content-width);
+  padding: var(--lt-space-32) 0;
+}
+
+.front-compare table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* The picture of the app: one wide frame, lifted off the page. */
+.front-demo {
+  padding: var(--lt-space-48) 0;
+}
+
+.document-body.front-layout .front-clip {
+  margin: 0;
+  overflow: hidden;
+  border: var(--lt-stroke-1) solid var(--border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--bg-elevated);
+}
+
+.document-body.front-layout .front-clip img,
+.document-body.front-layout .front-clip video {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+}
+
+.front-demo-clip {
+  box-shadow: 0 var(--lt-space-24) var(--lt-space-48) var(--lt-tint-recess);
+}
+
+/* The four cards: two across where there is room, one above the next where there is not. */
+.front-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--lt-space-24);
+  padding: var(--lt-space-32) 0;
+}
+
+@media (min-width: 760px) {
+  .front-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.front-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--border);
+  border-radius: var(--lt-radius-xl);
+  background: var(--bg-elevated);
+}
+
+/* A card rises once into place as it first comes into view. `site/front-page.js` adds the rise only where motion is welcome, so a reader who asked for less, or a page the script never reached, has every card in place. */
+.front-card.front-rise {
+  opacity: 0;
+  transform: translateY(var(--lt-space-24));
+  transition:
+    opacity var(--lt-duration-600) var(--lt-ease-decelerate),
+    transform var(--lt-duration-600) var(--lt-ease-decelerate);
+}
+
+.front-card.front-rise.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.document-body.front-layout .front-card h3 {
+  margin: 0 0 var(--lt-space-8);
+  font-size: var(--type-h4-size);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-01);
+}
+
+.document-body.front-layout .front-card p {
+  margin: 0 0 var(--lt-space-16);
+  color: var(--text-muted);
+}
+
+/* Every card's picture the same shape, so the four line up however each still was taken; the top of the window is where the app is. */
+.document-body.front-layout .front-card .front-clip {
+  margin-top: auto;
+  aspect-ratio: 16 / 10;
+}
+
+.document-body.front-layout .front-card .front-clip img,
+.document-body.front-layout .front-card .front-clip video {
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.document-body.front-layout .front-card .front-more {
+  margin: var(--lt-space-16) 0 0;
+}
+
+/* The install line and the foot: quiet, centered, the last thing on the page. */
+.front-install,
+.front-foot {
+  max-width: var(--content-width);
+  text-align: center;
+}
+
+.front-install {
+  padding: var(--lt-space-48) 0 var(--lt-space-16);
+}
+
+.front-foot {
+  padding: var(--lt-space-16) 0 var(--lt-space-48);
+  color: var(--text-muted);
+}
+
+/* ---- A phone ---------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  .front-bar {
+    padding: var(--lt-space-10) var(--lt-space-16);
+  }
+
+  .front-bar-links {
+    gap: var(--lt-space-12);
+  }
+
+  /* The brand, Docs and Download are what fit; the other two are sections of this page, a scroll away. */
+  .front-bar-links a[href='#features'],
+  .front-bar-links a[href='#how-leaftext-compares'] {
+    display: none;
+  }
+
+  .front-hero {
+    padding: var(--lt-space-48) 0 var(--lt-space-32);
+  }
+}

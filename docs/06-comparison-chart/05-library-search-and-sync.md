@@ -6,34 +6,34 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Any folder as vault | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | — |
-| Switcher opens on hover | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | — |
-| Machine, box, cloud marks | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | — |
-| Switcher lights as one | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | — |
-| Vaults sorted alphabetically | [✅][l-vaults] | ? | — | — |
-| Name goes to top | [✅][l-vaults] | ? | — | — |
-| Whole-machine library mode | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | — |
-| New vault from picker | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | — |
-| Clone repository as vault | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | — |
-| Rename, repoint, remove vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | — |
-| Nothing written into folder | [✅][l-vaults] | [❌][o-seen] | [✅][t-seen] | — |
-| Vault registry database | [✅][l-vaults] | [✅][o-seen] | [✅][t-seen] | — |
-| Innermost nested vault wins | [✅][l-vaults] | — | — | — |
-| Folder, clone, remote kinds | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | — |
-| Signed-in name, stored token | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | — |
-| Named views removed | [✅][l-vaults] | ? | ? | — |
-| Obsidian types found | [✅][l-frontmatter] | [✅][o-props] | — | — |
-| Per-note type pins | [✅][l-frontmatter] | [❌][o-seen] | — | — |
-| Quotes kept on write | [✅][l-frontmatter] | [❌][o-seen] | — | — |
-| CRLF line ends kept | [✅][l-frontmatter] | [❌][o-seen] | [✅][t-seen] | — |
-| List forms kept | [✅][l-frontmatter] | [❌][o-seen] | — | — |
-| Up to 32 aliases | [✅][l-names] | — | — | — |
-| Drive-top system folders | [✅][l-skipped] | ? | ? | — |
-| Symlink loops refused | [✅][l-skipped] | [✅][o-symlinks] | ? | — |
+| Any folder as vault | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
+| Switcher opens on hover | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Machine, box, cloud marks | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Switcher lights as one | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Vaults sorted alphabetically | [✅][l-vaults] | ? | [❌][t-seen] | [❌][c-seen] |
+| Name goes to top | [✅][l-vaults] | ? | [❌][t-seen] | [❌][c-seen] |
+| Whole-machine library mode | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| New vault from picker | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
+| Clone repository as vault | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rename, repoint, remove vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | [❌][c-seen] |
+| Nothing written into folder | [✅][l-vaults] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Vault registry database | [✅][l-vaults] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Innermost nested vault wins | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folder, clone, remote kinds | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Signed-in name, stored token | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Named views removed | [✅][l-vaults] | ? | ? | [❌][c-seen] |
+| Obsidian types found | [✅][l-frontmatter] | [✅][o-props] | [❌][t-seen] | [❌][c-seen] |
+| Per-note type pins | [✅][l-frontmatter] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Quotes kept on write | [✅][l-frontmatter] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| CRLF line ends kept | [✅][l-frontmatter] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| List forms kept | [✅][l-frontmatter] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Up to 32 aliases | [✅][l-names] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drive-top system folders | [✅][l-skipped] | ? | ? | [❌][c-seen] |
+| Symlink loops refused | [✅][l-skipped] | [✅][o-symlinks] | ? | [❌][c-seen] |
 | Long Windows paths | [✅][l-vaults] | ? | ? | ? |
-| Hover-open vault list | [✅][l-vaults] | [❌][o-seen] | — | — |
-| Vault word is switcher | [✅][l-vaults] | [❌][o-seen] | — | — |
-| Opens hover, pins press | [✅][l-vaults] | [❌][o-seen] | — | — |
+| Hover-open vault list | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Vault word is switcher | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Opens hover, pins press | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## First launch and cloud folders
 
@@ -45,112 +45,112 @@
 | One per launch | [✅][l-first-bubble] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Notes folder on start | [✅][l-first-vault] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
 | One-time pane introduction | [✅][l-first-vault] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Six cloud services found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | — |
-| No account held | [✅][l-cloud] | [✅][o-seen] | [✅][t-seen] | — |
-| Moved cloud folders found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | — |
-| Late installs found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | — |
-| Cloud mark on vaults | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | — |
-| Client records read | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | — |
+| Six cloud services found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| No account held | [✅][l-cloud] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Moved cloud folders found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Late installs found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Cloud mark on vaults | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Client records read | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## File tree
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| One folder at once | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | — |
-| Instant folder open | [✅][l-tree] | ? | ? | — |
-| Back row steps out | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | — |
-| Breadcrumb path | [✅][l-tree] | [✅][o-seen] | [❌][t-seen] | — |
-| Breadcrumb refits | [✅][l-tree] | ? | [❌][t-seen] | — |
-| Hidden crumbs menu | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | — |
-| Folders first, alphabetical | [✅][l-tree] | [✅][o-explorer] | [✅][t-files] | — |
-| Dot folders listed | [✅][l-tree] | [❌][o-seen] | [✅][t-seen] | — |
-| Washed row hover | [✅][l-tree] | [✅][o-seen] | [✅][t-seen] | — |
-| Open file tinted | [✅][l-tree] | [✅][o-seen] | [✅][t-seen] | — |
-| Pane follows file | [✅][l-tree] | [✅][o-explorer] | [✅][t-seen] | — |
-| Switches to file's vault | [✅][l-tree] | — | — | — |
-| Folder remembered | [✅][l-tree] | [✅][o-seen] | [✅][t-files] | — |
-| Gone folder falls back | [✅][l-tree] | ? | ? | — |
-| One folder per click | [✅][l-tree] | — | — | — |
-| One-frame folder lists | [✅][l-tree] | — | — | — |
-| Headings replace files | [✅][l-pane-outline] | [❌][o-seen] | [✅][t-outline] | — |
-| Folder-named back row | [✅][l-pane-outline] | [❌][o-seen] | [❌][t-seen] | — |
-| Folder brings files back | [✅][l-pane-outline] | [❌][o-seen] | [❌][t-seen] | — |
-| Pane stays put | [✅][l-pane-outline] | ? | ? | — |
-| Title alone, no outline | [✅][l-pane-outline] | ? | ? | — |
-| Every readable format listed | [✅][l-file-types] | [✅][o-explorer] | [✅][t-seen] | — |
-| Cursor rule files | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | — |
-| Extensionless text listed | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | — |
-| Nothing in .git read | [✅][l-file-types] | [✅][o-seen] | ? | — |
-| Empty-folder counts | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | — |
-| Data files, no links | [✅][l-file-types] | — | — | — |
-| Every folder openable | [✅][l-skipped] | [✅][o-seen] | [✅][t-seen] | — |
-| Drive-top folders skipped | [✅][l-skipped] | ? | ? | — |
-| Broken shortcuts omitted | [✅][l-skipped] | ? | ? | — |
-| Build folders unsearched | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | — |
-| Skipped folders named | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | — |
-| Open document still reloads | [✅][l-skipped] | — | — | — |
+| One folder at once | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Instant folder open | [✅][l-tree] | ? | ? | [❌][c-seen] |
+| Back row steps out | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Breadcrumb path | [✅][l-tree] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Breadcrumb refits | [✅][l-tree] | ? | [❌][t-seen] | [❌][c-seen] |
+| Hidden crumbs menu | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folders first, alphabetical | [✅][l-tree] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Dot folders listed | [✅][l-tree] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Washed row hover | [✅][l-tree] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Open file tinted | [✅][l-tree] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Pane follows file | [✅][l-tree] | [✅][o-explorer] | [✅][t-seen] | [❌][c-seen] |
+| Switches to file's vault | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folder remembered | [✅][l-tree] | [✅][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Gone folder falls back | [✅][l-tree] | ? | ? | [❌][c-seen] |
+| One folder per click | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| One-frame folder lists | [✅][l-tree] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Headings replace files | [✅][l-pane-outline] | [❌][o-seen] | [✅][t-outline] | [❌][c-seen] |
+| Folder-named back row | [✅][l-pane-outline] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folder brings files back | [✅][l-pane-outline] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pane stays put | [✅][l-pane-outline] | ? | ? | [❌][c-seen] |
+| Title alone, no outline | [✅][l-pane-outline] | ? | ? | [❌][c-seen] |
+| Every readable format listed | [✅][l-file-types] | [✅][o-explorer] | [✅][t-seen] | [❌][c-seen] |
+| Cursor rule files | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Extensionless text listed | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nothing in .git read | [✅][l-file-types] | [✅][o-seen] | ? | [❌][c-seen] |
+| Empty-folder counts | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Data files, no links | [✅][l-file-types] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Every folder openable | [✅][l-skipped] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Drive-top folders skipped | [✅][l-skipped] | ? | ? | [❌][c-seen] |
+| Broken shortcuts omitted | [✅][l-skipped] | ? | ? | [❌][c-seen] |
+| Build folders unsearched | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Skipped folders named | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Open document still reloads | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## File actions
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Open from pane | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | — |
-| Favorite a file | [✅][l-file-actions] | [✅][o-bookmarks] | [✅][t-files] | — |
-| Open beside | [✅][l-file-actions] | [✅][o-tabs] | — | — |
-| Cut a file | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | — |
-| Copy a file | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | — |
-| Copy file path | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | — |
-| Rename in place | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | — |
-| Case-only renames | [✅][l-file-actions] | [✅][o-seen] | ? | — |
+| Open from pane | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Favorite a file | [✅][l-file-actions] | [✅][o-bookmarks] | [✅][t-files] | [❌][c-seen] |
+| Open beside | [✅][l-file-actions] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
+| Cut a file | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Copy a file | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Copy file path | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Rename in place | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Case-only renames | [✅][l-file-actions] | [✅][o-seen] | ? | [❌][c-seen] |
 | Reveal in file manager | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | [✅][c-seen] |
-| File properties | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | — |
-| Delete to trash | [✅][l-file-actions] | [✅][o-notes] | [✅][t-files] | — |
-| Page right-click actions | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | — |
-| Copy highlighted words | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | — |
-| Failures said | [✅][l-file-actions] | ? | ? | — |
+| File properties | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Delete to trash | [✅][l-file-actions] | [✅][o-notes] | [✅][t-files] | [❌][c-seen] |
+| Page right-click actions | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Copy highlighted words | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Failures said | [✅][l-file-actions] | ? | ? | [❌][c-seen] |
 | Open picture big | [✅][l-picture-actions] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Copy picture pixels | [✅][l-picture-actions] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Copy picture path | [✅][l-picture-actions] | [❌][o-seen] | ? | — |
-| Reveal picture file | [✅][l-picture-actions] | [✅][o-seen] | [✅][t-seen] | — |
-| Picture properties | [✅][l-picture-actions] | [❌][o-seen] | [❌][t-seen] | — |
-| Remove, file kept | [✅][l-picture-actions] | ? | ? | — |
-| Picture removal undo | [✅][l-picture-actions] | ? | [✅][t-seen] | — |
-| Asks, naming file | [✅][l-delete] | [✅][o-seen] | [✅][t-seen] | — |
-| Safe answer focused | [✅][l-delete] | ? | ? | — |
-| Undo in message | [✅][l-delete] | [❌][o-seen] | [❌][t-seen] | — |
-| Ctrl+Z undeletes | [✅][l-delete] | [❌][o-seen] | [✅][t-files] | — |
-| Never overwrites newer | [✅][l-delete] | ? | ? | — |
-| Failed undo explained | [✅][l-delete] | — | — | — |
-| Open a folder | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | — |
-| Favorite a folder | [✅][l-folders] | [✅][o-bookmarks] | [✅][t-files] | — |
-| New file, named | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | — |
-| New folder | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | — |
-| Paste into folder | [✅][l-folders] | [❌][o-seen] | [❌][t-seen] | — |
-| Reveal folder | [✅][l-folders] | [✅][o-seen] | [✅][t-files] | — |
-| Folder properties | [✅][l-folders] | [❌][o-seen] | [❌][t-seen] | — |
-| Taken names refused | [✅][l-folders] | [✅][o-seen] | [✅][t-seen] | — |
-| Move or copy files | [✅][l-cut-copy] | [✅][o-explorer] | [✅][t-files] | — |
-| Nothing overwritten | [✅][l-cut-copy] | [✅][o-seen] | [✅][t-seen] | — |
-| System clipboard too | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | — |
-| Move whole folders | [✅][l-cut-copy] | [✅][o-explorer] | [✅][t-files] | — |
-| Reveal with file selected | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | — |
-| Copy for file manager | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | — |
-| Busy clipboard reported | [✅][l-cut-copy] | — | — | — |
-| Bad names refused | [✅][l-file-actions] | [✅][o-seen] | ? | — |
-| Bare names become Markdown | [✅][l-file-actions] | [✅][o-seen] | ? | — |
-| Unreadable extensions refused | [✅][l-file-actions] | ? | ? | — |
-| Paste never overwrites | [✅][l-cut-copy] | — | — | — |
-| Deleted files restorable | [✅][l-delete] | [✅][o-notes] | [✅][t-seen] | — |
-| Get Info brought forward | [✅][l-file-actions] | — | — | — |
-| One export table | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | — |
-| Typed ending decides | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | — |
-| One PDF sheet | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | — |
-| Whole-page photographs | [✅][l-export] | [❌][o-seen] | [✅][t-seen] | — |
-| WebP and JPEG quality | [✅][l-export] | [❌][o-seen] | ? | — |
-| Numbered shared assets | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | — |
-| Header-read picture sizes | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | — |
+| Copy picture path | [✅][l-picture-actions] | [❌][o-seen] | ? | [❌][c-seen] |
+| Reveal picture file | [✅][l-picture-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Picture properties | [✅][l-picture-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Remove, file kept | [✅][l-picture-actions] | ? | ? | [❌][c-seen] |
+| Picture removal undo | [✅][l-picture-actions] | ? | [✅][t-seen] | [❌][c-seen] |
+| Asks, naming file | [✅][l-delete] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Safe answer focused | [✅][l-delete] | ? | ? | [❌][c-seen] |
+| Undo in message | [✅][l-delete] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ctrl+Z undeletes | [✅][l-delete] | [❌][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Never overwrites newer | [✅][l-delete] | ? | ? | [❌][c-seen] |
+| Failed undo explained | [✅][l-delete] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Open a folder | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Favorite a folder | [✅][l-folders] | [✅][o-bookmarks] | [✅][t-files] | [❌][c-seen] |
+| New file, named | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| New folder | [✅][l-folders] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Paste into folder | [✅][l-folders] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Reveal folder | [✅][l-folders] | [✅][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Folder properties | [✅][l-folders] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Taken names refused | [✅][l-folders] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Move or copy files | [✅][l-cut-copy] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Nothing overwritten | [✅][l-cut-copy] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| System clipboard too | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Move whole folders | [✅][l-cut-copy] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
+| Reveal with file selected | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Copy for file manager | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Busy clipboard reported | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Bad names refused | [✅][l-file-actions] | [✅][o-seen] | ? | [❌][c-seen] |
+| Bare names become Markdown | [✅][l-file-actions] | [✅][o-seen] | ? | [❌][c-seen] |
+| Unreadable extensions refused | [✅][l-file-actions] | ? | ? | [❌][c-seen] |
+| Paste never overwrites | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Deleted files restorable | [✅][l-delete] | [✅][o-notes] | [✅][t-seen] | [❌][c-seen] |
+| Get Info brought forward | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| One export table | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Typed ending decides | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| One PDF sheet | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Whole-page photographs | [✅][l-export] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| WebP and JPEG quality | [✅][l-export] | [❌][o-seen] | ? | [❌][c-seen] |
+| Numbered shared assets | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Header-read picture sizes | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Open window, every file | [✅][l-open] | ? | ? | ? |
-| New from rename box | [✅][l-folders] | ? | ? | — |
+| New from rename box | [✅][l-folders] | ? | ? | [❌][c-seen] |
 
 ## Search
 
@@ -159,15 +159,15 @@
 | Whole-vault search | [✅][l-search] | [✅][o-search] | [✅][t-search] | [✅][c-gui] |
 | Results under bar | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Name matches first | [✅][l-search] | [❌][o-seen] | ? | ? |
-| Aliases count | [✅][l-search] | [✅][o-seen] | — | — |
-| Folder names count | [✅][l-search] | [✅][o-seen] | ? | — |
+| Aliases count | [✅][l-search] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Folder names count | [✅][l-search] | [✅][o-seen] | ? | [❌][c-seen] |
 | Density-ranked content | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Headings outrank paragraphs | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | — |
+| Headings outrank paragraphs | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Every term required | [✅][l-search] | [✅][o-search] | ? | [✅][c-seen] |
 | Filters in box | [✅][l-search] | [✅][o-search] | [❌][t-seen] | [✅][c-gui] |
 | Three rows per file | [✅][l-search] | [❌][o-seen] | ? | ? |
-| Best 50 files | [✅][l-search] | — | — | — |
-| Skipped folders named | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | — |
+| Best 50 files | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Skipped folders named | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Results stream in | [✅][l-search] | [✅][o-seen] | [✅][t-seen] | ? |
 | Placeholder rows | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Lands on line | [✅][l-search] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
@@ -175,33 +175,33 @@
 | Narrowing reads less | [✅][l-search] | ? | ? | ? |
 | Reads on arrival | [✅][l-search] | ? | ? | ? |
 | Stale reads stopped | [✅][l-search] | ? | ? | ? |
-| One vault read | [✅][l-search] | — | — | — |
+| One vault read | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rows keep place | [✅][l-search] | ? | ? | ? |
 | No disk index | [✅][l-search] | [❌][o-seen] | ? | [❌][c-seen] |
-| No lowercased copy | [✅][l-search] | — | — | — |
-| Twenty appearances counted | [✅][l-search] | — | — | — |
-| Missing term stops early | [✅][l-search] | — | — | — |
-| Fifty snippets built | [✅][l-search] | — | — | — |
-| Long-lived search thread | [✅][l-search] | — | — | — |
-| Four name tiers | [✅][l-search] | — | — | — |
+| No lowercased copy | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Twenty appearances counted | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Missing term stops early | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fifty snippets built | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Long-lived search thread | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Four name tiers | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Filter parser never fails | [✅][l-filters] | [✅][o-seen] | ? | ? |
 | Nested brackets limited | [✅][l-filters] | ? | ? | ? |
 | Any-language case folding | [✅][l-search] | ? | ? | ? |
-| Rarest-letter skip | [✅][l-search] | — | — | — |
+| Rarest-letter skip | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Snippets mark matches | [✅][l-search] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Five scored fields | [✅][l-search] | — | — | — |
-| Capped density scoring | [✅][l-search] | — | — | — |
-| Web links on map | [✅][l-graph] | [❌][o-seen] | — | — |
-| CACHEDIR.TAG respected | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | — |
-| Searchable before listing | [✅][l-search] | — | — | — |
-| Smallest read first | [✅][l-search] | — | — | — |
-| Densest-first graph | [✅][l-graph] | — | — | — |
-| Graph reused | [✅][l-graph] | — | — | — |
+| Five scored fields | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Capped density scoring | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Web links on map | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| CACHEDIR.TAG respected | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Searchable before listing | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Smallest read first | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Densest-first graph | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Graph reused | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rows kept, dropped removed | [✅][l-search] | ? | ? | ? |
 | Clear-search cross | [✅][l-search] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Scope menu | [✅][l-search] | [❌][o-seen] | ? | ? |
-| Searching line ring | [✅][l-search] | — | — | — |
-| Rows never rebuilt | [✅][l-search] | — | — | — |
+| Searching line ring | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rows never rebuilt | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Filters
 
@@ -210,144 +210,144 @@
 | Exact phrases | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-gui] |
 | Exclude with minus | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-seen] |
 | Tags and nested tags | [✅][l-filters] | [✅][o-tags] | [❌][t-seen] | [✅][c-gui] |
-| Field equals value | [✅][l-filters] | [✅][o-search] | — | [✅][c-gui] |
-| Field is set | [✅][l-filters] | [✅][o-search] | — | [✅][c-seen] |
-| Date before or after | [✅][l-filters] | [❌][o-seen] | — | [✅][c-seen] |
-| Number greater or less | [✅][l-filters] | [✅][o-search] | — | [✅][c-seen] |
+| Field equals value | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-gui] |
+| Field is set | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-seen] |
+| Date before or after | [✅][l-filters] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
+| Number greater or less | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-seen] |
 | File kind filter | [✅][l-filters] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
-| Inside a folder | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | — |
-| Open or done tasks | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | — |
+| Inside a folder | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [❌][c-seen] |
+| Open or done tasks | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [❌][c-seen] |
 | OR and AND | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-gui] |
 | Grouping brackets | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [✅][c-seen] |
 | Relative date words | [✅][l-filters] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
 | Half-typed never errors | [✅][l-filters] | [✅][o-seen] | ? | ? |
-| Paths stay text | [✅][l-filters] | — | — | — |
+| Paths stay text | [✅][l-filters] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Filter read back | [✅][l-filters] | [✅][o-search] | [❌][t-seen] | [❌][c-seen] |
-| Unset fields named | [✅][l-filters] | [❌][o-seen] | — | ? |
-| Field completion | [✅][l-filters] | [✅][o-seen] | — | [✅][c-seen] |
-| Live completion | [✅][l-filters] | [✅][o-seen] | — | [✅][c-seen] |
+| Unset fields named | [✅][l-filters] | [❌][o-seen] | [❌][t-seen] | ? |
+| Field completion | [✅][l-filters] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
+| Live completion | [✅][l-filters] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
 
 ## Tasks and calendar
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Dated tasks listed | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Nearest due first | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Tasks per vault | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Task row details | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Colored by soonness | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Stable task order | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Lands on checkbox | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Hidden when none due | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | — |
-| Month, week, day | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Three marks daily | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Screen-reader dates | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Count by date field | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Remembers date field | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Step and today | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Day lists documents | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Calendar keyboard | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Stays current | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Six-week grid | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Your own clock | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Date-times land right | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Newest first | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Only date fields offered | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Field survives relaunch | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Notes counted per date | [✅][l-calendar] | [❌][o-seen] | — | — |
-| Two asks while held | [✅][l-calendar] | [❌][o-seen] | — | — |
+| Dated tasks listed | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nearest due first | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Tasks per vault | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Task row details | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Colored by soonness | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Stable task order | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Lands on checkbox | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Hidden when none due | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Month, week, day | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Three marks daily | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Screen-reader dates | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Count by date field | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Remembers date field | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Step and today | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Day lists documents | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Calendar keyboard | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Stays current | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Six-week grid | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Your own clock | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Date-times land right | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Newest first | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Only date fields offered | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Field survives relaunch | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Notes counted per date | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Two asks while held | [✅][l-calendar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Other names
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Aliases field | [✅][l-names] | [✅][o-aliases] | — | — |
-| Three alias forms | [✅][l-names] | [✅][o-aliases] | — | — |
-| Quoted aliases keep commas | [✅][l-names] | [✅][o-seen] | — | — |
-| Aliases everywhere | [✅][l-names] | [✅][o-seen] | — | — |
-| File names win | [✅][l-names] | ? | — | — |
-| Conflicts named | [✅][l-names] | [❌][o-seen] | — | — |
-| Map keeps file name | [✅][l-names] | [✅][o-seen] | — | — |
-| Thirty-two per note | [✅][l-names] | — | — | — |
-| Works outside vaults | [✅][l-names] | — | — | — |
+| Aliases field | [✅][l-names] | [✅][o-aliases] | [❌][t-seen] | [❌][c-seen] |
+| Three alias forms | [✅][l-names] | [✅][o-aliases] | [❌][t-seen] | [❌][c-seen] |
+| Quoted aliases keep commas | [✅][l-names] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Aliases everywhere | [✅][l-names] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| File names win | [✅][l-names] | ? | [❌][t-seen] | [❌][c-seen] |
+| Conflicts named | [✅][l-names] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Map keeps file name | [✅][l-names] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Thirty-two per note | [✅][l-names] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Works outside vaults | [✅][l-names] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Graph
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| **Map of links** | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | — |
-| Web addresses as nodes | [✅][l-graph] | [❌][o-seen] | — | — |
-| Five link kinds mapped | [✅][l-graph] | ? | — | — |
-| View beside reading | [✅][l-graph] | [✅][o-seen] | — | — |
-| No vault needed | [✅][l-graph] | [❌][o-seen] | — | — |
-| Vault or neighborhood | [✅][l-graph] | [✅][o-graph] | — | — |
-| Reads only pointed | [✅][l-graph] | — | — | — |
-| Opens framed | [✅][l-graph] | ? | — | — |
-| Keeps your view | [✅][l-graph] | ? | — | — |
-| Follows leaving nodes | [✅][l-graph] | ? | — | — |
-| Open document highlighted | [✅][l-graph] | [✅][o-seen] | — | — |
-| Decluttered names | [✅][l-graph] | ? | — | — |
-| Direction arrows | [✅][l-graph] | [✅][o-graph] | — | — |
-| Two-way single line | [✅][l-graph] | ? | — | — |
-| Click keeps map | [✅][l-graph] | ? | — | — |
-| Hover lights neighbors | [✅][l-graph] | [✅][o-graph] | — | — |
-| Drag, pan, zoom | [✅][l-graph] | [✅][o-graph] | — | — |
-| Pane opens keep map | [✅][l-graph] | ? | — | — |
-| Edits redraw in place | [✅][l-graph] | [✅][o-seen] | — | — |
-| Instant return | [✅][l-graph] | ? | — | — |
-| Leaving returns you | [✅][l-graph] | ? | — | — |
-| Focus to Everything | [✅][l-graph] | — | — | — |
-| Unread documents mapped | [✅][l-graph] | [✅][o-graph] | — | — |
-| Domain-labeled rings | [✅][l-graph] | [❌][o-seen] | — | — |
-| Web node opens browser | [✅][l-graph] | [❌][o-seen] | — | — |
-| Shared pages share node | [✅][l-graph] | [❌][o-seen] | — | — |
-| Twenty-five web links | [✅][l-graph] | [❌][o-seen] | — | — |
+| **Map of links** | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Web addresses as nodes | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Five link kinds mapped | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| View beside reading | [✅][l-graph] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| No vault needed | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Vault or neighborhood | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Reads only pointed | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Opens framed | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Keeps your view | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Follows leaving nodes | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Open document highlighted | [✅][l-graph] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Decluttered names | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Direction arrows | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Two-way single line | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Click keeps map | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Hover lights neighbors | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Drag, pan, zoom | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Pane opens keep map | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Edits redraw in place | [✅][l-graph] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Instant return | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Leaving returns you | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
+| Focus to Everything | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Unread documents mapped | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| Domain-labeled rings | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Web node opens browser | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Shared pages share node | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Twenty-five web links | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## GitHub sync
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Vault as repository | [✅][l-github] | [❌][o-git] | [❌][t-vcs] | — |
-| Panel stays open | [✅][l-github] | — | — | — |
-| Your own git | [✅][l-github] | — | — | — |
-| Private repo with gh | [✅][l-github] | — | — | — |
-| Create on GitHub | [✅][l-github] | — | — | — |
-| Install git link | [✅][l-github] | — | — | — |
-| Identity warning, fixed | [✅][l-github] | — | — | — |
-| Set who I am | [✅][l-github] | — | — | — |
-| Sign-in warning link | [✅][l-github] | — | — | — |
-| Failure names fix | [✅][l-github] | — | — | — |
-| Clone a repository | [✅][l-clone] | — | — | — |
-| Failed clone clean | [✅][l-clone] | — | — | — |
-| Change repo safely | [✅][l-change-repo] | — | — | — |
-| Pointing never pushes | [✅][l-change-repo] | — | — | — |
-| Outer repos refused | [✅][l-change-repo] | — | — | — |
-| Commit, pull, push | [✅][l-syncing] | — | — | — |
-| Plain commit messages | [✅][l-syncing] | — | — | — |
-| Automatic per vault | [✅][l-syncing] | — | — | — |
-| Waits for quiet | [✅][l-syncing] | — | — | — |
-| Stops after failure | [✅][l-syncing] | — | — | — |
-| Red Stopped button | [✅][l-syncing] | — | — | — |
-| Silence, not slowness | [✅][l-syncing] | — | — | — |
-| Failures journaled | [✅][l-syncing] | — | — | — |
-| Sync count button | [✅][l-syncing] | — | — | — |
-| Running spinner | [✅][l-syncing] | — | — | — |
-| Upload percentage bar | [✅][l-syncing] | — | — | — |
-| Download count said | [✅][l-syncing] | — | — | — |
-| Inner repos untouched | [✅][l-nested] | — | — | — |
-| Nested repos named | [✅][l-nested] | — | — | — |
-| Nested .gitignore written | [✅][l-nested] | — | — | — |
-| Ignore in one press | [✅][l-nested] | — | — | — |
-| Rebase conflicts undone | [✅][l-syncing] | — | — | — |
-| Inside-repo warning | [✅][l-nested] | — | — | — |
-| Failure note shown | [✅][l-syncing] | — | — | — |
-| One-line progress label | [✅][l-syncing] | — | — | — |
-| Fix-carrying notes | [✅][l-github] | — | — | — |
-| Bad identities refused | [✅][l-github] | — | — | — |
-| Nested warning, Ignore | [✅][l-nested] | — | — | — |
-| Password prompts refused | [✅][l-clone] | — | — | — |
-| Spinner until answered | [✅][l-syncing] | — | — | — |
-| Nested three deep | [✅][l-nested] | — | — | — |
+| Vault as repository | [✅][l-github] | [❌][o-git] | [❌][t-vcs] | [❌][c-seen] |
+| Panel stays open | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Your own git | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Private repo with gh | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Create on GitHub | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Install git link | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Identity warning, fixed | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Set who I am | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sign-in warning link | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Failure names fix | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Clone a repository | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Failed clone clean | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Change repo safely | [✅][l-change-repo] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pointing never pushes | [✅][l-change-repo] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Outer repos refused | [✅][l-change-repo] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Commit, pull, push | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Plain commit messages | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Automatic per vault | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Waits for quiet | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Stops after failure | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Red Stopped button | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Silence, not slowness | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Failures journaled | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Sync count button | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Running spinner | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Upload percentage bar | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Download count said | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Inner repos untouched | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nested repos named | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nested .gitignore written | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ignore in one press | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rebase conflicts undone | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Inside-repo warning | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Failure note shown | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| One-line progress label | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Fix-carrying notes | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Bad identities refused | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nested warning, Ignore | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Password prompts refused | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Spinner until answered | [✅][l-syncing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nested three deep | [✅][l-nested] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Live updates
 
@@ -356,15 +356,15 @@
 | Vault watched deep | [✅][l-live] | [✅][o-seen] | [✅][t-files] | [❌][c-seen] |
 | New files appear | [✅][l-live] | [✅][o-seen] | [✅][t-files] | [✅][c-seen] |
 | Rows never swap | [✅][l-live] | ? | ? | ? |
-| Git folders ignored | [✅][l-live] | [✅][o-seen] | ? | — |
+| Git folders ignored | [✅][l-live] | [✅][o-seen] | ? | [❌][c-seen] |
 | Own actions refresh | [✅][l-live] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
-| Per-file patches | [✅][l-live] | — | — | — |
-| Ticks findable | [✅][l-live] | ? | ? | — |
-| Branch switch batched | [✅][l-live] | — | — | — |
-| Changes held while reading | [✅][l-live] | — | — | — |
-| Focus rereads count | [✅][l-live] | — | — | — |
-| FSEvents and ReadDirectoryChanges | [✅][l-live] | [✅][o-seen] | [✅][t-seen] | — |
-| Browsed folders shallow | [✅][l-live] | — | — | — |
+| Per-file patches | [✅][l-live] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ticks findable | [✅][l-live] | ? | ? | [❌][c-seen] |
+| Branch switch batched | [✅][l-live] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Changes held while reading | [✅][l-live] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Focus rereads count | [✅][l-live] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| FSEvents and ReadDirectoryChanges | [✅][l-live] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Browsed folders shallow | [✅][l-live] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bursts become one | [✅][l-live] | ? | ? | ? |
 | Lost changes reread | [✅][l-live] | ? | ? | ? |
 | Attribute changes ignored | [✅][l-live] | ? | ? | ? |
@@ -373,55 +373,55 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | — |
-| Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | — |
-| Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | — |
-| Search launcher | [✅][l-launchers] | [✅][o-search] | [✅][t-search] | — |
-| Calendar launcher | [✅][l-launchers] | [❌][o-seen] | — | — |
-| Empty launchers hidden | [✅][l-launchers] | — | — | — |
-| Lists over document | [✅][l-launchers] | — | — | — |
-| Theme icon set | [✅][l-launchers] | ? | ? | — |
-| Chevron when narrow | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | — |
-| Grove pill below | [✅][l-launchers] | — | — | — |
-| Pill shortens words | [✅][l-launchers] | — | — | — |
-| Launcher registry | [✅][l-launchers] | — | — | — |
-| Palette first launcher | [✅][l-launchers] | — | — | — |
-| Chevron returns focus | [✅][l-launchers] | — | — | — |
-| Library button stays | [✅][l-layout] | — | — | — |
-| Spring and bounce | [✅][l-layout] | [❌][o-seen] | [❌][t-seen] | — |
-| Moves as one | [✅][l-layout] | — | — | — |
-| Drag the divider | [✅][l-layout] | [✅][o-tabs] | [✅][t-seen] | — |
-| Width remembered exactly | [✅][l-layout] | [✅][o-seen] | [✅][t-seen] | — |
-| Drag shut small | [✅][l-layout] | ? | ? | — |
-| Reader stays 360 px | [✅][l-layout] | — | — | — |
-| Narrow full-width sheet | [✅][l-narrow] | ? | ? | — |
-| Sheet closes on pick | [✅][l-narrow] | ? | ? | — |
-| Active vault remembered | [✅][l-layout] | [✅][o-seen] | — | — |
-| 25,000 documents per vault | [✅][l-facts] | — | — | — |
+| Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
+| Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Search launcher | [✅][l-launchers] | [✅][o-search] | [✅][t-search] | [❌][c-seen] |
+| Calendar launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Empty launchers hidden | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Lists over document | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Theme icon set | [✅][l-launchers] | ? | ? | [❌][c-seen] |
+| Chevron when narrow | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Grove pill below | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pill shortens words | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Launcher registry | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Palette first launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Chevron returns focus | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Library button stays | [✅][l-layout] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Spring and bounce | [✅][l-layout] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Moves as one | [✅][l-layout] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drag the divider | [✅][l-layout] | [✅][o-tabs] | [✅][t-seen] | [❌][c-seen] |
+| Width remembered exactly | [✅][l-layout] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Drag shut small | [✅][l-layout] | ? | ? | [❌][c-seen] |
+| Reader stays 360 px | [✅][l-layout] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Narrow full-width sheet | [✅][l-narrow] | ? | ? | [❌][c-seen] |
+| Sheet closes on pick | [✅][l-narrow] | ? | ? | [❌][c-seen] |
+| Active vault remembered | [✅][l-layout] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| 25,000 documents per vault | [✅][l-facts] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Favorites
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Heart on tab | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | — |
-| Favorite from right-click | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | — |
-| Favorite folders | [✅][l-favorites] | [✅][o-bookmarks] | [✅][t-files] | — |
-| Undo unfavorite | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | — |
-| Favorites per vault | [✅][l-favorites] | [✅][o-seen] | — | — |
-| Moved favorites struck | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | — |
-| Find it repoints | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | — |
-| Drag favorites | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | — |
-| Order saved | [✅][l-favorites] | [✅][o-seen] | — | — |
-| Dragged row lifts | [✅][l-favorites] | ? | — | — |
-| Grabbed-hand pointer | [✅][l-favorites] | ? | — | — |
-| Rows step aside | [✅][l-favorites] | ? | — | — |
-| Textured landing gap | [✅][l-favorites] | [❌][o-seen] | — | — |
-| App's own easing | [✅][l-favorites] | — | — | — |
-| Missing rows dimmed | [✅][l-favorites] | ? | — | — |
-| Gone vault marked | [✅][l-favorites] | — | — | — |
-| Hover-only heart | [✅][l-favorites] | [❌][o-seen] | — | — |
-| Marked before saved | [✅][l-favorites] | — | — | — |
-| Unfavorited rows linger | [✅][l-favorites] | [❌][o-seen] | — | — |
+| Heart on tab | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Favorite from right-click | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
+| Favorite folders | [✅][l-favorites] | [✅][o-bookmarks] | [✅][t-files] | [❌][c-seen] |
+| Undo unfavorite | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Favorites per vault | [✅][l-favorites] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Moved favorites struck | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Find it repoints | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drag favorites | [✅][l-favorites] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
+| Order saved | [✅][l-favorites] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Dragged row lifts | [✅][l-favorites] | ? | [❌][t-seen] | [❌][c-seen] |
+| Grabbed-hand pointer | [✅][l-favorites] | ? | [❌][t-seen] | [❌][c-seen] |
+| Rows step aside | [✅][l-favorites] | ? | [❌][t-seen] | [❌][c-seen] |
+| Textured landing gap | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| App's own easing | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Missing rows dimmed | [✅][l-favorites] | ? | [❌][t-seen] | [❌][c-seen] |
+| Gone vault marked | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Hover-only heart | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Marked before saved | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Unfavorited rows linger | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-vaults]: ../01-features/03-library.md#vaults
 [l-first-bubble]: ../01-features/03-library.md#the-bubble-on-your-first-launch

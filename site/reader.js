@@ -19,6 +19,8 @@ import { installPictureFallback } from './pictures.js';
 import { installSettings } from './settings.js';
 import { applySpeedReaderIfEnabled } from './speed-reader.js';
 import { COMPARE_INDEX, COMPARE_SEAM_ID, chartPagePaths, frontWithChart } from './compare-chart.js';
+import { FRONT_LAYOUT_CLASS, layoutFrontPage } from './front-page-layout.js';
+import { installFrontMotion } from './front-page.js';
 
 const content = document.getElementById('content');
 const statusEl = document.getElementById('status');
@@ -37,8 +39,8 @@ const renderDocument = (body, path) => {
   return drawn;
 };
 
-// The settings menu (theme + show/hide minimap) pinned to the top-right. The single-README site has no navigation sidebar, so no "Show library" toggle.
-installSettings({ hasLibrary: false });
+/** Whether the README on the page is laid out as the front page rather than drawn as a plain document. The laid-out page is a marketing page: no outline, no minimap and no settings menu, which belong to the documentation. */
+const laidOut = () => Boolean(content.querySelector('.' + FRONT_LAYOUT_CLASS));
 
 // Glossary links (e.g. GLOSSARY.md#gauge) open the term in a bottom sheet over the README rather than navigating. The file is docs/GLOSSARY.md — there is no copy at the site root, so a bare 'GLOSSARY.md' here is a 404 in the sheet.
 //
@@ -191,15 +193,28 @@ async function withCompareChart(html) {
   }
 }
 
+/** The README laid out as the front page, the same layout the publish bakes. A README the layout cannot read is drawn plain rather than not at all, and the console says why. */
+function withFrontLayout(html) {
+  try {
+    return layoutFrontPage(html);
+  } catch (err) {
+    console.error('The front page could not be laid out:', err);
+    return html;
+  }
+}
+
 /** Everything a drawn document needs on the page, whether the publish baked it in or this script fetched and rendered it. */
 function decorate() {
+  const front = laidOut();
+  // The settings menu (theme + show/hide minimap) pinned to the top-right, on a README drawn plain. The single-README site has no navigation sidebar, so no "Show library" toggle.
+  if (!front) installSettings({ hasLibrary: false });
   // The pictures the publish baked into this page started loading before this module did, so the sweep is what catches the ones an old browser already failed on.
   installPictureFallback(content);
   // One README, so there is nothing either side of it: the renderer's waiting strip is a promise this page cannot keep, and it comes out.
   fillPager(content, null, null);
   decorateBlockquoteLines(content);
   // A collapsed outline (table of contents) built from the document's headings, tucked just under the title. Built before the anchor pass so its link-only entries stay out of the block-numbering scheme.
-  buildOutline(content, { label: 'Outline' });
+  if (!front) buildOutline(content, { label: 'Outline' });
   if (statusEl) statusEl.hidden = true;
 
   // The document's own title, off the heading it drew. The publish does not know a reader's tab, and this is the same answer the renderer gives.
@@ -214,8 +229,12 @@ function decorate() {
   decorateAnchorLinks(content);
   // Clear any stale processed flag before anchoring the freshly rendered document (the settings boot may have run against this element while it was still empty), the same as the docs viewer does on every render.
   delete content.dataset.speedReaderProcessed;
-  applySpeedReaderIfEnabled(content);
-  initMinimap(content);
+  if (!front) {
+    applySpeedReaderIfEnabled(content);
+    initMinimap(content);
+  } else {
+    installFrontMotion(content);
+  }
   scrollToHash();
 }
 
@@ -257,7 +276,7 @@ async function main() {
     const { body, path } = await fetchDocument();
 
     const drawn = renderDocument(body, path);
-    content.innerHTML = await withCompareChart(drawn.html);
+    content.innerHTML = withFrontLayout(await withCompareChart(drawn.html));
     decorate();
     // Auto-link glossary terms after the page is displayed.
     linkGlossaryTerms();
