@@ -13573,57 +13573,16 @@ body.is-home-row-dragging .home-list-scroll li {
   grid-auto-rows: 1fr;
   align-items: stretch;
 }
-/* A door into the area's tree: the whole card is the press. */
+/* An area's section: what it earns and how, with nothing to press. */
 .grove-area {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: start;
   gap: var(--lt-space-4) var(--lt-space-8);
-  width: 100%;
   padding: var(--lt-space-8) var(--lt-space-10);
-  cursor: default;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
   background: var(--lt-surface-elevated);
-  color: inherit;
-  font-family: var(--app-font);
-  text-align: left;
-}
-/* The app-wide `button:hover` fill lands under the card, so every ink inside it moves to the one the theme compiler gates on that fill. */
-.grove-area:hover {
-  background: var(--lt-navigation-button-hover-background);
-  border-color: var(--lt-navigation-button-hover-background);
-  color: var(--lt-primary-foreground);
-}
-.grove-area:hover .grove-area-name,
-.grove-area:hover .grove-area-level,
-.grove-area:hover .grove-area-about,
-.grove-area:hover .grove-area-note,
-.grove-area:hover .grove-area-count,
-.grove-area:hover .grove-strip-note,
-.grove-area:hover .grove-chip {
-  color: var(--lt-primary-foreground);
-}
-.grove-area:hover .grove-chip {
-  border-color: var(--lt-primary-foreground);
-  background: transparent;
-}
-.grove-area:hover .grove-chip.is-read {
-  background: color-mix(in srgb, var(--lt-primary-foreground) 22%, transparent);
-}
-.grove-area:hover .grove-level-bar {
-  background: color-mix(in srgb, var(--lt-primary-foreground) 30%, transparent);
-}
-.grove-area:hover .grove-level-bar-fill {
-  background: var(--lt-primary-foreground);
-}
-/* How many nodes the tree behind the card holds. */
-.grove-area-count {
-  grid-column: 1 / -1;
-  justify-self: end;
-  color: var(--lt-primary-ink);
-  font-size: var(--lt-text-11);
-  font-weight: var(--lt-weight-600);
 }
 .grove-area-name {
   overflow: hidden;
@@ -13673,9 +13632,6 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-primary-ink);
   font-size: var(--lt-text-11);
   font-weight: var(--lt-weight-600);
-}
-.grove-area:hover .grove-bar-words {
-  color: var(--lt-primary-foreground);
 }
 /* The recorded-day card: the Grove sheet's whole body while one saved day is in doubt, so nothing else is drawn over the one thing there is to answer. */
 .grove-claim {
@@ -13985,17 +13941,19 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
-/* Every rule that pays this area: what the reader does on the left, what it is worth on the right. */
+/* Every rule that pays this area, across the section's width: what the reader does on the left, what it is worth on the right. */
 .grove-rules-head {
-  margin-top: var(--lt-space-12);
+  grid-column: 1 / -1;
+  margin-top: var(--lt-space-4);
   color: var(--lt-foreground);
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
 }
 .grove-rules {
+  grid-column: 1 / -1;
   display: grid;
   gap: var(--lt-space-2);
-  margin: var(--lt-space-6) 0 0;
+  margin: 0;
 }
 .grove-rule {
   display: flex;
@@ -14014,7 +13972,7 @@ body.is-home-row-dragging .home-list-scroll li {
   font-weight: var(--lt-weight-600);
   white-space: nowrap;
 }
-/* Nothing earned yet: the row is there to be pressed, and says so quietly. */
+/* Nothing earned yet: the level says so quietly. */
 .grove-area-level.is-unstarted {
   color: var(--lt-muted-foreground);
 }
@@ -14058,7 +14016,12 @@ body.is-home-row-dragging .home-list-scroll li {
   gap: var(--lt-space-16) var(--lt-space-20);
   align-items: flex-start;
 }
-/* Under an area's bar: the formats Leafing has read, or why Foraging stops where it does. */
+/* What Foraging has found, under the areas: why it stops where it does, then a chip for every kind of file. */
+.grove-finds {
+  display: grid;
+  gap: var(--lt-space-6);
+  margin-top: var(--lt-space-16);
+}
 .grove-strip {
   grid-column: 1 / -1;
   display: flex;
@@ -14182,17 +14145,13 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-500);
 }
-.grove-area-view {
-  display: grid;
-  gap: var(--lt-space-8);
-}
 .grove-tree-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--lt-space-4) var(--lt-space-12);
-  margin-top: var(--lt-space-8);
+  margin: var(--lt-space-16) 0 var(--lt-space-8);
 }
 .grove-tree-heading {
   color: var(--lt-muted-foreground);
@@ -14228,13 +14187,25 @@ body.is-home-row-dragging .home-list-scroll li {
 .grove-tree-link.is-lit {
   stroke: var(--lt-accent);
 }
-/* A column per step along a path and a row per node in catalog order, both handed over on the node from its edges. */
+/* A column per band of Grove levels and a row per reward in catalog order, both handed over on the node; the band labels take row one. */
 .grove-tree-grid {
   position: relative;
   display: grid;
   grid-auto-columns: 220px;
   gap: var(--lt-space-16) var(--lt-space-48);
   align-items: center;
+}
+.grove-tree-band {
+  grid-column: var(--grove-column);
+  grid-row: 1;
+  justify-self: start;
+  padding: 0 var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-6);
 }
 .grove-tree-node {
   grid-column: var(--grove-column);
@@ -14257,6 +14228,14 @@ body.is-home-row-dragging .home-list-scroll li {
 .grove-tree-node.is-later {
   background: var(--lt-surface);
   color: var(--lt-muted-foreground);
+}
+/* The area that earns a reward, over its name. */
+.grove-tree-node-area {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-700);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
 }
 .grove-tree-node-head {
   display: flex;

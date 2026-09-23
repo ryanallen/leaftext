@@ -13581,57 +13581,16 @@ body.is-home-row-dragging .home-list-scroll li {
   grid-auto-rows: 1fr;
   align-items: stretch;
 }
-/* A door into the area's tree: the whole card is the press. */
+/* An area's section: what it earns and how, with nothing to press. */
 .grove-area {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: start;
   gap: var(--lt-space-4) var(--lt-space-8);
-  width: 100%;
   padding: var(--lt-space-8) var(--lt-space-10);
-  cursor: default;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
   background: var(--lt-surface-elevated);
-  color: inherit;
-  font-family: var(--app-font);
-  text-align: left;
-}
-/* The app-wide `button:hover` fill lands under the card, so every ink inside it moves to the one the theme compiler gates on that fill. */
-.grove-area:hover {
-  background: var(--lt-navigation-button-hover-background);
-  border-color: var(--lt-navigation-button-hover-background);
-  color: var(--lt-primary-foreground);
-}
-.grove-area:hover .grove-area-name,
-.grove-area:hover .grove-area-level,
-.grove-area:hover .grove-area-about,
-.grove-area:hover .grove-area-note,
-.grove-area:hover .grove-area-count,
-.grove-area:hover .grove-strip-note,
-.grove-area:hover .grove-chip {
-  color: var(--lt-primary-foreground);
-}
-.grove-area:hover .grove-chip {
-  border-color: var(--lt-primary-foreground);
-  background: transparent;
-}
-.grove-area:hover .grove-chip.is-read {
-  background: color-mix(in srgb, var(--lt-primary-foreground) 22%, transparent);
-}
-.grove-area:hover .grove-level-bar {
-  background: color-mix(in srgb, var(--lt-primary-foreground) 30%, transparent);
-}
-.grove-area:hover .grove-level-bar-fill {
-  background: var(--lt-primary-foreground);
-}
-/* How many nodes the tree behind the card holds. */
-.grove-area-count {
-  grid-column: 1 / -1;
-  justify-self: end;
-  color: var(--lt-primary-ink);
-  font-size: var(--lt-text-11);
-  font-weight: var(--lt-weight-600);
 }
 .grove-area-name {
   overflow: hidden;
@@ -13681,9 +13640,6 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-primary-ink);
   font-size: var(--lt-text-11);
   font-weight: var(--lt-weight-600);
-}
-.grove-area:hover .grove-bar-words {
-  color: var(--lt-primary-foreground);
 }
 /* The recorded-day card: the Grove sheet's whole body while one saved day is in doubt, so nothing else is drawn over the one thing there is to answer. */
 .grove-claim {
@@ -13993,17 +13949,19 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
-/* Every rule that pays this area: what the reader does on the left, what it is worth on the right. */
+/* Every rule that pays this area, across the section's width: what the reader does on the left, what it is worth on the right. */
 .grove-rules-head {
-  margin-top: var(--lt-space-12);
+  grid-column: 1 / -1;
+  margin-top: var(--lt-space-4);
   color: var(--lt-foreground);
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-600);
 }
 .grove-rules {
+  grid-column: 1 / -1;
   display: grid;
   gap: var(--lt-space-2);
-  margin: var(--lt-space-6) 0 0;
+  margin: 0;
 }
 .grove-rule {
   display: flex;
@@ -14022,7 +13980,7 @@ body.is-home-row-dragging .home-list-scroll li {
   font-weight: var(--lt-weight-600);
   white-space: nowrap;
 }
-/* Nothing earned yet: the row is there to be pressed, and says so quietly. */
+/* Nothing earned yet: the level says so quietly. */
 .grove-area-level.is-unstarted {
   color: var(--lt-muted-foreground);
 }
@@ -14066,7 +14024,12 @@ body.is-home-row-dragging .home-list-scroll li {
   gap: var(--lt-space-16) var(--lt-space-20);
   align-items: flex-start;
 }
-/* Under an area's bar: the formats Leafing has read, or why Foraging stops where it does. */
+/* What Foraging has found, under the areas: why it stops where it does, then a chip for every kind of file. */
+.grove-finds {
+  display: grid;
+  gap: var(--lt-space-6);
+  margin-top: var(--lt-space-16);
+}
 .grove-strip {
   grid-column: 1 / -1;
   display: flex;
@@ -14190,17 +14153,13 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-500);
 }
-.grove-area-view {
-  display: grid;
-  gap: var(--lt-space-8);
-}
 .grove-tree-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--lt-space-4) var(--lt-space-12);
-  margin-top: var(--lt-space-8);
+  margin: var(--lt-space-16) 0 var(--lt-space-8);
 }
 .grove-tree-heading {
   color: var(--lt-muted-foreground);
@@ -14236,13 +14195,25 @@ body.is-home-row-dragging .home-list-scroll li {
 .grove-tree-link.is-lit {
   stroke: var(--lt-accent);
 }
-/* A column per step along a path and a row per node in catalog order, both handed over on the node from its edges. */
+/* A column per band of Grove levels and a row per reward in catalog order, both handed over on the node; the band labels take row one. */
 .grove-tree-grid {
   position: relative;
   display: grid;
   grid-auto-columns: 220px;
   gap: var(--lt-space-16) var(--lt-space-48);
   align-items: center;
+}
+.grove-tree-band {
+  grid-column: var(--grove-column);
+  grid-row: 1;
+  justify-self: start;
+  padding: 0 var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-700);
+  line-height: var(--lt-leading-1-6);
 }
 .grove-tree-node {
   grid-column: var(--grove-column);
@@ -14265,6 +14236,14 @@ body.is-home-row-dragging .home-list-scroll li {
 .grove-tree-node.is-later {
   background: var(--lt-surface);
   color: var(--lt-muted-foreground);
+}
+/* The area that earns a reward, over its name. */
+.grove-tree-node-area {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-700);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
 }
 .grove-tree-node-head {
   display: flex;
@@ -15760,7 +15739,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 122 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 121 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -15792,7 +15771,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>183</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>122</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>121</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -16205,7 +16184,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">122 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">121 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -16363,24 +16342,20 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><button type="button" class="grove-switch" role="switch" aria-checked="true"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button> <button type="button" class="grove-switch" role="switch" aria-checked="false"><span class="grove-switch-label">Keep a record</span><span class="grove-switch-track"><span class="grove-switch-thumb"></span></span></button></div>
 </section>
 <section class="part">
-<header><h3>Growth area row</h3><code class="built">.grove-area</code><span class="built">profile.js, one button per area opening its tree</span></header>
-<div class="stage"><div class="grove-areas" style="max-width:480px"><button type="button" class="grove-area"><span class="grove-area-name">Scribing</span><span class="grove-area-level">Level 12</span><span class="grove-area-about">Writing: words of prose you add.</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.7"></span></span><span class="grove-area-note">74 XP</span><span class="grove-area-count">4 nodes ›</span></button><button type="button" class="grove-area"><span class="grove-area-name">Foraging</span><span class="grove-area-level">Level 20</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-area-note">At its ceiling</span><span class="grove-area-count">16 nodes ›</span></button></div></div>
+<header><h3>Growth area row</h3><code class="built">.grove-area</code><span class="built">profile.js, one section per area with nothing to press: what it counts, its level and bar, and every rule that pays it</span></header>
+<div class="stage"><div class="grove-areas" style="max-width:480px"><section class="grove-area"><span class="grove-area-name">Scribing</span><span class="grove-area-level">Level 12</span><span class="grove-area-about">Writing: words of prose you add.</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.7"></span></span><span class="grove-area-note">74 XP in all</span><div class="grove-rules-head">What earns XP here</div><dl class="grove-rules"><div class="grove-rule"><dt class="grove-rule-doing">Every 500 words written</dt><dd class="grove-rule-pays">1 XP</dd></div></dl></section><section class="grove-area"><span class="grove-area-name">Foraging</span><span class="grove-area-level">Level 20</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-area-note">At its ceiling</span></section></div></div>
 </section>
 <section class="part">
-<header><h3>Growth area view</h3><code class="built">.grove-area-view</code><span class="built">profile.js, the Grove sheet's body while an area is open, with groveBack and the area's level in the head</span></header>
-<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px"><div class="grove-sheet-head"><button type="button" class="icon-button grove-back" aria-label="Back to every growth area"><span class="lt-icon grove-back-icon lt-icon-back-long"></span></button><span class="grove-sheet-title">Leafing <span class="grove-sheet-level">Level 3</span></span><span class="grove-sheet-seeds">4 seeds</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-area-view"><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-area-note">Reading: words that stayed on screen long enough to read. 3 XP.</span><div class="grove-tree-head"><span class="grove-tree-heading">Grow with seeds</span><span class="grove-tree-hint">Choose a beginning, then follow its branches</span></div></div></div></div></div>
-</section>
-<section class="part">
-<header><h3>Growth area tree</h3><code class="built">.grove-tree</code><span class="built">profile.js: columns from each node's prerequisites, connectors drawn from where the nodes landed, lit where the prerequisite is owned</span></header>
-<div class="stage"><div class="grove-tree" style="max-width:640px"><svg class="grove-tree-links" width="560" height="150"><path class="grove-tree-link is-lit" d="M 240 40 C 280 40, 280 75, 320 75"></path><path class="grove-tree-link" d="M 240 110 C 280 110, 280 75, 320 75"></path></svg><div class="grove-tree-grid"><div class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:1"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">The first letter set two lines tall.</span></div><div class="grove-tree-node is-short" style="--grove-column:1;--grove-row:2"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-price">2 to go</span></span><span class="grove-tree-node-line">The speckle on the page.</span></div><div class="grove-tree-node is-locked" style="--grove-column:2;--grove-row:1"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">M</span><span class="grove-tree-node-name">Margin mark</span><span class="grove-tree-price is-locked">Locked</span></span><span class="grove-tree-node-line is-needs">Needs Page grain</span></div></div></div></div>
+<header><h3>Grove tree</h3><code class="built">.grove-tree</code><span class="built">profile.js: every reward in one tree of nine Grove-level bands, each in the band its first rank opens at, connectors drawn from where the nodes landed and lit where the prerequisite is owned</span></header>
+<div class="stage"><div style="max-width:640px"><div class="grove-tree-head"><span class="grove-tree-heading">Grow with seeds</span><span class="grove-tree-hint">49 rewards, ordered by the Grove level that opens each</span></div><div class="grove-tree"><svg class="grove-tree-links" width="560" height="190"><path class="grove-tree-link is-lit" d="M 240 90 C 274 90, 274 90, 308 90"></path></svg><div class="grove-tree-grid"><span class="grove-tree-band" style="--grove-column:1">Grove 2–7</span><span class="grove-tree-band" style="--grove-column:2">Grove 20–25</span><div class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:2"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">The first letter set two lines tall.</span></div><div class="grove-tree-node is-locked" style="--grove-column:2;--grove-row:2"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-price is-locked">Locked</span></span><span class="grove-tree-node-line is-needs">Needs Grove 22</span></div></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Grove admin row</h3><code class="built">.grove-admin</code><span class="built">profile.js, under the Grove sheet's head while admin mode is on</span></header>
 <div class="stage"><div class="grove-admin" style="max-width:520px"><span class="grove-admin-label">Admin</span><button type="button" class="grove-tree-action">Reset all</button><button type="button" class="grove-tree-action">Unlock all</button><button type="button" class="grove-tree-action">Lock all</button><button type="button" class="grove-tree-action">Give 20 seeds</button></div></div>
 </section>
 <section class="part">
-<header><h3>Tree node</h3><code class="built">.grove-tree-node</code><span class="built">profile.js, one per catalog entry in the open area: available, short of seeds, locked, not grown yet, asking, or owned</span></header>
-<div class="stage"><div style="display:grid;grid-template-columns:repeat(2,220px);gap:12px"><div class="grove-tree-node is-available"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">M</span><span class="grove-tree-node-name">More leaf lore</span><button type="button" class="grove-tree-price is-available">2 seeds</button></span><span class="grove-tree-node-line">Another sentence in the leaf voice.</span><span class="grove-tree-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></div><div class="grove-tree-node is-available is-asking"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span></span><span class="grove-tree-question">Spend 3 of your 4 seeds?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Not now</button><button type="button" class="grove-tree-action is-spend">Spend 3 seeds</button></span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-owned">Owned</span><button type="button" class="grove-switch grove-tree-switch" role="switch" aria-checked="true"><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button></span><span class="grove-tree-node-line">The speckle on the page.</span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">A</span><span class="grove-tree-node-name">A title</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">A name under Your Grove.</span><span class="grove-tree-titles"><button type="button" class="grove-tree-title is-chosen">Reader</button><button type="button" class="grove-tree-title">Scribe</button></span></div><div class="grove-tree-node is-later"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">R</span><span class="grove-tree-node-name">Rising paragraphs</span><span class="grove-tree-price is-locked">Not grown yet</span></span><span class="grove-tree-node-line">Each block rises into place.</span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">W</span><span class="grove-tree-node-name">Woad mode</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">Every surface a shade of blue.</span><button type="button" class="grove-tree-action">Wear it in Themes</button></div></div></div>
+<header><h3>Tree node</h3><code class="built">.grove-tree-node</code><span class="built">profile.js, one per catalog entry in the one tree, wearing the area that earns it: available, short of seeds, locked, not grown yet, asking, or owned</span></header>
+<div class="stage"><div style="display:grid;grid-template-columns:repeat(2,220px);gap:12px"><div class="grove-tree-node is-available"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">M</span><span class="grove-tree-node-name">More leaf lore</span><button type="button" class="grove-tree-price is-available">2 seeds</button></span><span class="grove-tree-node-line">Another sentence in the leaf voice.</span><span class="grove-tree-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></div><div class="grove-tree-node is-available is-asking"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span></span><span class="grove-tree-question">Spend 3 of your 4 seeds?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Not now</button><button type="button" class="grove-tree-action is-spend">Spend 3 seeds</button></span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-owned">Owned</span><button type="button" class="grove-switch grove-tree-switch" role="switch" aria-checked="true"><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button></span><span class="grove-tree-node-line">The speckle on the page.</span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">A</span><span class="grove-tree-node-name">A title</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">A name under Your Grove.</span><span class="grove-tree-titles"><button type="button" class="grove-tree-title is-chosen">Reader</button><button type="button" class="grove-tree-title">Scribe</button></span></div><div class="grove-tree-node is-later"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">R</span><span class="grove-tree-node-name">Rising paragraphs</span><span class="grove-tree-price is-locked">Not grown yet</span></span><span class="grove-tree-node-line">Each block rises into place.</span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">W</span><span class="grove-tree-node-name">Woad mode</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">Every surface a shade of blue.</span><button type="button" class="grove-tree-action">Wear it in Themes</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Level bar</h3><code class="built">.grove-level-bar</code><span class="built">profile.js, inside each Growth area row and under the Grove number</span></header>
@@ -16407,12 +16382,12 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px"><div class="grove-sheet-head"><button type="button" class="icon-button grove-back" aria-label="Back to your Grove"><span class="lt-icon grove-back-icon lt-icon-back-long"></span></button><span class="grove-sheet-title">All XP <span class="grove-sheet-level">148 gains, back to 4 August</span></span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-all"><h3 class="grove-all-day">Today</h3><ol class="grove-all-list"><li class="grove-all-row"><span class="grove-all-time">9:11pm</span><span class="grove-all-doing">Grove 3</span><span class="grove-all-moved">A level of the whole Grove</span><span class="grove-all-worth">+4 seeds</span></li><li class="grove-all-row"><span class="grove-all-time">9:08pm</span><span class="grove-all-doing">1,500 words read</span><span class="grove-all-moved">Level 4 to 5 · Grove pool 28 to 31</span><span class="grove-all-worth">+3 Leafing XP</span></li></ol><h3 class="grove-all-day">Yesterday</h3><ol class="grove-all-list"><li class="grove-all-row"><span class="grove-all-time">7:42am</span><span class="grove-all-doing">Passage highlighted</span><span class="grove-all-moved">Grove pool 27 to 28</span><span class="grove-all-worth">+1 Marking XP</span></li></ol><button type="button" class="grove-tree-action grove-all-more">Show older</button></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">All XP</span></div><div class="grove-sheet-body"><p class="grove-all-note">Nothing has been kept yet. Every gain from the first one earned is listed here, with the time it happened.</p></div></div></div>
 </section>
 <section class="part">
-<header><h3>Earning rules</h3><code class="built">.grove-rules</code><span class="built">profile.js, under an opened area's bar, one row per rule in the host's signal table</span></header>
+<header><h3>Earning rules</h3><code class="built">.grove-rules</code><span class="built">profile.js, under each area's bar, one row per rule in the host's signal table</span></header>
 <div class="stage"><div style="max-width:360px"><div class="grove-rules-head">What earns XP here</div><dl class="grove-rules"><div class="grove-rule"><dt class="grove-rule-doing">Every 500 words read</dt><dd class="grove-rule-pays">1 XP</dd></div><div class="grove-rule"><dt class="grove-rule-doing">Each new format read</dt><dd class="grove-rule-pays">10 XP</dd></div><div class="grove-rule"><dt class="grove-rule-doing">Every 10 links followed inside the app</dt><dd class="grove-rule-pays">1 XP</dd></div></dl></div></div>
 </section>
 <section class="part">
-<header><h3>Growth area strip</h3><code class="built">.grove-strip</code><span class="built">profile.js, under Foraging's bar, where the kinds of file found are lit and its note says where it stops</span></header>
-<div class="stage"><div class="grove-areas" style="max-width:480px"><div class="grove-area"><span class="grove-area-name">Leafing</span><span class="grove-area-level">Level 24</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.4"></span></span><span class="grove-area-note">285 XP</span><span class="grove-strip"><span class="grove-chip is-read">Markdown</span><span class="grove-chip is-read">YAML</span><span class="grove-chip">JSON</span><span class="grove-chip">Word</span></span></div><div class="grove-area"><span class="grove-area-name">Foraging</span><span class="grove-area-level">Level 12</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-area-note">80 XP</span><span class="grove-strip grove-strip-note">Stops at level 20: 10 XP for each of 15 formats read and 5 XP for each of 11 theme families worn.</span></div></div></div>
+<header><h3>Foraging finds</h3><code class="built">.grove-strip</code><span class="built">profile.js, under the Growth areas, where the kinds of file Foraging found are lit and its note says where it stops</span></header>
+<div class="stage"><div class="grove-finds" style="max-width:480px"><span class="grove-strip grove-strip-note">Stops at level 20: 10 XP for each of 15 formats and 5 XP for each of 11 theme families — 30 things to find, 4 found.</span><span class="grove-strip"><span class="grove-chip is-read">Markdown</span><span class="grove-chip is-read">YAML</span><span class="grove-chip">JSON</span><span class="grove-chip">Word</span></span></div></div>
 </section>
 <section class="part">
 <header><h3>Landmarks</h3><code class="built">.grove-landmarks</code><span class="built">profile.js, beside the Growth areas in the Grove sheet</span></header>

@@ -32,11 +32,11 @@ Each area grows from one kind of thing you already do, whether you do it by hand
 | Delving | Looking at a document's source, and standing two documents side by side |
 | Foraging | Opening a new kind of file and wearing a new theme |
 
-Open an area and it lists every rule that pays it — **Every 500 words read**, **Each picture page read**, **Each new format read** — with the XP each one is worth, so nothing is a guess.
+Every area in the sheet lists every rule that pays it — **Every 500 words read**, **Each picture page read**, **Each new format read** — with the XP each one is worth, so nothing is a guess.
 
 Only what lands pays. Where the app says it could not do what you asked — a note, a highlight, a table cell or words typed into a document whose file has gone, a [rename or a paste](03-library.md#file-actions) onto a name already taken, a [new file or folder](03-library.md#folders-and-the-space-around-them) asked for under a name that folder already holds, an export whose save window you closed or whose file could not be written — the bar stays exactly where it was.
 
-Foraging counts each kind of file once: every format, and every source language on its own, so a Rust file, a Python file and a Dockerfile are three finds rather than one. It pays nothing for a second file of a kind you have already opened, so it stops where there is nothing left to find — at level 10, for thirty kinds of file and twenty-one theme families. Open it and the kinds of file you have found are lit among the ones still to find.
+Foraging counts each kind of file once: every format, and every source language on its own, so a Rust file, a Python file and a Dockerfile are three finds rather than one. It pays nothing for a second file of a kind you have already opened, so it stops where there is nothing left to find — at level 10, for thirty kinds of file and twenty-one theme families. Under the areas, the kinds of file you have found are lit among the ones still to find.
 
 Seeking counts a search once it has found something and settled: a query you have typed into the [find bar](02-navigation.md#find-in-this-document) that has held at least one match for a second, whether you asked this document or the whole vault. Stepping through the matches, a redraw under the bar and asking the same thing again in the same sitting all pay nothing; another word, another document, or the same word asked of another vault is another search.
 
@@ -46,7 +46,7 @@ Leafing counts the reading you actually reach. A paragraph, heading or other pro
 
 With the Grove shut, whatever pays XP says so on the pill for a few seconds — **+1 Leafing** — with a thin bar along its foot showing how far that area now is into its level, and pointing at it gives the same words the area's bar says. When one thing you did pays two areas, each takes its turn. Then the pill goes back to your Grove level. Nothing plays when the app opens.
 
-With the Grove open, the same things pop in at the bottom of the sheet instead and rise over it — **500 words read** or **Picture page read**, then **+1 Leafing XP** — each standing a couple of seconds and fading, up to three at a time, while the area's own card fills and its level rolls over to the new one and the Grove bar takes the same XP. Anything that pays while you are inside an area's tree or the All XP list waits there and rises when you come back, joined into one line where the same thing paid more than once. With Reduce Motion on, the words simply appear and go, and the levels change with no roll.
+With the Grove open, the same things pop in at the bottom of the sheet instead and rise over it — **500 words read** or **Picture page read**, then **+1 Leafing XP** — each standing a couple of seconds and fading, up to three at a time, while the area's own card fills and its level rolls over to the new one and the Grove bar takes the same XP. Anything that pays while the All XP list is up waits there and rises when you come back, joined into one line where the same thing paid more than once. With Reduce Motion on, the words simply appear and go, and the levels change with no roll.
 
 The Grove sheet's column beside the areas opens on **Earned lately**: the latest things that paid, newest first, each with its day, what you did — **1,000 words read**, **Picture page read, 3 times**, **Vault synced, 3 times** — and the XP it was worth. The same kind of payment on the same day adds up on one line, and the list keeps the twelve latest. It starts empty and fills from the next thing that pays.
 
@@ -64,20 +64,24 @@ When the Grove's bar fills, the thin bar is replaced by one press the width of i
 
 ## Grow with seeds
 
-Every Growth area in the sheet is a button, and each says how many things grow from it. Press one and the sheet shows that area's tree, with a back arrow in place of **Your Grove**; press it or Escape to return to every area. Your seeds stay one number at the top right, whichever area is open.
+Everything you can grow sits in one tree under the Growth areas, so finding a reward never means opening anything. The tree runs left to right in nine bands of Grove levels — **Grove 2–7**, **Grove 8–13** and so on up to the last, which runs from Grove 50 to the Grove's ceiling — and each reward stands in the band of the Grove level that opens it, with the Growth area it belongs to written over its name. The tree scrolls sideways inside its own frame, and your seeds stay one number at the top right.
 
-A tree starts with broad beginnings on the left and branches toward more specific things on the right, joined by lines. Growing anything asks three things of you: that the area has reached the level written on that node, that you already own every earlier reward it names, and that you hold the seeds for it. A node you cannot grow yet says what is still in the way — the level first, then the earlier rewards — and its line lights once you own the one it comes from. A few things can be grown more than once, and each of those times waits for a level of its own further up the climb. Something another part of Leaftext has not built yet stands on its path and says **Not grown yet**.
+![The Grove sheet scrolled down past the Growth areas: Foraging's line saying it stops at level 10 over a row of kinds of file with Markdown lit, then Grow with seeds and one tree whose columns are headed Grove 2–7, Grove 8–13 and Grove 14–19, each reward a block with its Growth area over its name — Woad mode, Sumac mode and Laurel mode under Foraging, Ribbon bookmark under Wayfinding, More leaf lore under Leafing with six rank marks — each locked and saying the Grove level it needs, joined by lines to the rewards they open](../../imgs/grove-tree.png)
 
-Press a price and the node asks whether to spend those seeds, with **Not now** and **Spend**. Nothing is spent until you press Spend, and pressing anywhere else, Back or Escape puts the price back. Seeds you spend are not given back, and nothing you grow is ever taken away — the one exception is a reward Leaftext retires, which goes from the tree and hands its own price back to everyone who had grown it.
+Growing anything asks three things of you: that your Grove has reached the level written on that reward, that you already own every earlier reward it names, and that you hold the seeds for it. The XP can come from any area — a reward written under Leafing opens just as well on a Grove level you reached by drawing flowcharts. A reward you cannot grow yet says what is still in the way — **Needs Grove 22** first, then the earlier rewards — and the line joining it to an earlier reward lights once you own that one. A few things can be grown more than once, and each of those times waits for a Grove level of its own further up the climb. Something another part of Leaftext has not built yet stands on its path and says **Not grown yet**.
+
+Press a price and the reward asks whether to spend those seeds, with **Not now** and **Spend**. Nothing is spent until you press Spend, and pressing anywhere else, closing the sheet or Escape puts the price back. Seeds you spend are not given back, and nothing you grow is ever taken away — the one exception is a reward Leaftext retires, which goes from the tree and hands its own price back to everyone who had grown it.
 
 Topping out the Grove pays enough seeds to buy every rank of everything that has grown.
 
 What you can grow today:
 
-- **Six one-color themes** under Foraging — Woad, Sumac, Laurel, Saffron, Lavender and Birch. A theme you grow joins the [theme picker](06-themes.md) and Random; press **Wear it in Themes** in its node to open the picker on it.
-- **Things on the page** — a drop cap on the document's first words, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch in its node.
+- **Six one-color themes**, Foraging's — Woad, Sumac, Laurel, Saffron, Lavender and Birch. A theme you grow joins the [theme picker](06-themes.md) and Random; press **Wear it in Themes** on it to open the picker there.
+- **Things on the page** — a drop cap on the document's first words, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch on its block.
 - **More leaf lore** — six more sentences for the start screen's palm-leaf voice, one each time.
 - **A title** — Reader, Scribe, Cartographer or Prism Keeper, shown under **Your Grove**.
+
+A reward you grew before the tree was ordered by Grove level stays yours, whatever level now opens it.
 
 ## Where it is kept
 

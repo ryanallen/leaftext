@@ -320,7 +320,7 @@ How Leaftext remembers a reading position: the nearest heading above the top edg
 
 ## Seeds
 
-What a [Grove level](GLOSSARY.md#grove-level) gives you when you take it. Each level gives the same number, whichever [Growth area](GLOSSARY.md#growth-area) earned the [XP](GLOSSARY.md#xp). Spend seeds to grow things in an area's tree; spent seeds do not come back. See [Your Grove](01-features/09-progress.md#grow-with-seeds).
+What a [Grove level](GLOSSARY.md#grove-level) gives you when you take it. Each level gives the same number, whichever [Growth area](GLOSSARY.md#growth-area) earned the [XP](GLOSSARY.md#xp). Spend seeds to grow things in the Grove's one tree, where each waits for a Grove level; spent seeds do not come back. See [Your Grove](01-features/09-progress.md#grow-with-seeds).
 
 ## Settings
 
