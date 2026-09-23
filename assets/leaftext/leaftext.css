@@ -9253,6 +9253,21 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body h2.leaf-insert-block[data-blank="true"] {
   border-bottom-color: transparent;
 }
+/* On a package holding words the buffer is not behind — a deck's later slides, a workbook's later sheets — a block that can be typed in wears an accent bar on its leading edge, the computed cell's drawing in the primary color. It hangs just outside the block and takes no width, so not a word moves; the page writes it only while unlocked. */
+.document-body .leaf-editable-here {
+  position: relative;
+}
+.document-body .leaf-editable-here::before {
+  content: '';
+  position: absolute;
+  inset-block: var(--lt-space-4);
+  inset-inline-start: -10px;
+  width: var(--lt-stroke-1-5);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-primary);
+  opacity: var(--lt-opacity-60);
+  pointer-events: none;
+}
 /* Links inside an editable block keep the hand, not the block's text caret. Never the ones drawn as buttons: this rule comes later at equal specificity, so without the exception it would put the hand back on them. */
 .document-body .leaf-editable a:not(.leaf-md-button) {
   cursor: pointer;

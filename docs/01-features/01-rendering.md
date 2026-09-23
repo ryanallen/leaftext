@@ -19,7 +19,7 @@ Leaftext picks a pipeline from the file extension, and from the file's own first
 | [TEI XML](#tei-xml) | Scholarly and archival markup; headings, paragraphs, verse, footnotes |
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
 | [Email](#email-eml) | Any `.eml`, `.mht`, or `.mhtml` file: headers, the message body, inline images, attachments |
-| [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place |
+| [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place — on its first sheet or slide where it has several |
 | [EPUB books](#epub-books) | Any `.epub` file, read as one document in the order the book's own package says to read it |
 | [Plain text](#plain-text-files) | Any `.txt` file, kept exactly as typed |
 | [INI](#ini-files) | Any `.ini` file: sections, keys and values, each key drawn as it was written |
@@ -945,7 +945,7 @@ Leaftext opens `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.o
 
 **An edit is written back into the file it came out of, and nothing else in that file is touched.** Only the part holding the words is rewritten; the styles, the theme, the comments, the tracked changes, the charts and the macros are copied across exactly as they were, because nothing here reads them and nothing here rewrites them. An OpenDocument file keeps the first part that says what it is, in the place a computer looks for it.
 
-A document with more than one part of words — a workbook of several sheets, a deck of several slides — is read whole and typed into on its first sheet or first slide. A block anywhere else is read rather than typed into, the same treatment a value the app cannot vouch for gets in a data file. The [code view](07-editing.md#code-view) shows the XML of the part the page is anchored to.
+A document with more than one part of words — a workbook of several sheets, a deck of several slides — is read whole and typed into on its first sheet or first slide. A block anywhere else is read rather than typed into, the same treatment a value the app cannot vouch for gets in a data file. So nothing has to be pressed to find out which is which: with the padlock open, every block that can be typed in wears a thin accent bar on its leading edge, and the app says once, as the padlock opens, that the rest is read in the page and edited in the source view. A Word file or an OpenDocument file keeps all its words in one part, so it wears no bar and hears nothing. The [code view](07-editing.md#code-view) shows the XML of the part the page is anchored to.
 
 A cell in a spreadsheet is typed into where it is drawn. Excel keeps almost every cell's text in one shared table rather than in the sheet, so what Leaftext writes is the cell itself, saying its own words: a cell that shared its text with another one stops sharing it, and the other cell reads what it always read.
 
