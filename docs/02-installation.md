@@ -15,7 +15,7 @@ The one snag is the same one every small app hits: neither Apple nor Microsoft h
 
 Every file on the release page is an installer you can run — no checksums, nothing published for the updater alone. Windows has one file, the `.exe`: it is what the front page hands out, and it is the one no machine's policy refuses. The [in-app updater](#updates) then keeps taking that same file, so there is nothing to choose twice.
 
-**[Download for Windows →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** · **[Download for macOS →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)** — then follow the steps for your platform below.
+**[Download for Windows →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-windows-x86_64.exe)** · **[Download for macOS →](https://github.com/ryanallen/leaftext/releases/latest/download/leaftext-macos-universal.dmg)** · **[All releases](https://github.com/ryanallen/leaftext/releases/latest)** — then follow the steps for your platform below.
 
 ## Install
 

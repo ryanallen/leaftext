@@ -71,6 +71,9 @@ function clipBox(clip, shows, className) {
   return `<figure class="${className} front-clip" data-clip="${clip}"><img src="${DEMO_DIR}/${clip}.jpg" alt="${shows.replace(/"/g, '&quot;')}" loading="lazy" decoding="async"></figure>`;
 }
 
+/** The installation guide, which the hero's small print links. */
+export const INSTALL_GUIDE = 'docs/02-installation.md';
+
 /** The hero: the title, the one line under it, the downloads and the small print beside them. */
 function heroOf(intro) {
   const title = /<h1\b[^>]*>[\s\S]*?<\/h1>/.exec(intro);
@@ -80,6 +83,8 @@ function heroOf(intro) {
   const downloads = said.findIndex((p) => p.includes('leaf-md-button'));
   if (!line || line.includes('<img') || downloads < 0) throw new Error('the README opens on no one-line promise and no download buttons for the hero');
   const small = said[downloads + 1] || '';
+  // The one link beside the buttons is the install guide, which the Mac's first launch needs.
+  if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
   return `<section class="front-hero" id="download">${title[0]}${line.replace('<p>', '<p class="front-hero-line">')}${said[downloads].replace('<p>', '<p class="front-downloads">')}${small.replace('<p>', '<p class="front-small">')}</section>`;
 }
 
