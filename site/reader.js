@@ -18,6 +18,7 @@ import { installLinkTooltip } from './link-tooltip.js';
 import { installPictureFallback } from './pictures.js';
 import { installSettings } from './settings.js';
 import { applySpeedReaderIfEnabled } from './speed-reader.js';
+import { COMPARE_INDEX, COMPARE_SEAM_ID, chartPagePaths, frontWithChart } from './compare-chart.js';
 
 const content = document.getElementById('content');
 const statusEl = document.getElementById('status');
@@ -167,6 +168,29 @@ async function fetchDocument() {
   throw new Error('no README this reader can open beside this page');
 }
 
+/**
+ * The README with the comparison chart drawn under its compare heading, the same drawing the publish bakes in, out of the same chart pages.
+ *
+ * A chart page that will not arrive costs the chart and nothing else: the README is still drawn, and the console says which page failed.
+ */
+async function withCompareChart(html) {
+  if (!html.includes(`id="${COMPARE_SEAM_ID}"`)) return html;
+  const text = async (path) => {
+    const response = await fetchWatched(path, { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${path}`);
+    return response.text();
+  };
+  try {
+    const index = await text(COMPARE_INDEX);
+    const paths = chartPagePaths(index);
+    const bodies = new Map(await Promise.all(paths.map(async (path) => [path, await text(path)])));
+    return frontWithChart(html, index, bodies, renderDocument);
+  } catch (err) {
+    console.error('The comparison chart could not be drawn:', err);
+    return html;
+  }
+}
+
 /** Everything a drawn document needs on the page, whether the publish baked it in or this script fetched and rendered it. */
 function decorate() {
   // The pictures the publish baked into this page started loading before this module did, so the sweep is what catches the ones an old browser already failed on.
@@ -233,7 +257,7 @@ async function main() {
     const { body, path } = await fetchDocument();
 
     const drawn = renderDocument(body, path);
-    content.innerHTML = drawn.html;
+    content.innerHTML = await withCompareChart(drawn.html);
     decorate();
     // Auto-link glossary terms after the page is displayed.
     linkGlossaryTerms();

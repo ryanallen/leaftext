@@ -14,6 +14,10 @@ Free · Windows 10+ and macOS Universal · **[All releases](https://github.com/r
 
 **[Get started →](docs/03-quickstart.md)** · **[Read the docs →](docs/)** · **[This site on GitHub →](https://github.com/ryanallen/leaftext)**
 
+## How Leaftext compares
+
+Every feature, checked against Obsidian, Typora and Calibre. **[The whole chart, with its sources →](docs/05-compare.md)**
+
 ---
 
 Your notes deserve better than a text editor. Open a file in Leaftext and it becomes a page you actually want to read — quiet, well set, and easy to move through. Click into a sentence and you can write. Nothing saves until you say so.
@@ -26,11 +30,12 @@ Free, on macOS and Windows.
 
 | If you want to… | Go to |
 | --- | --- |
+| See it beside Obsidian, Typora and Calibre | [How Leaftext compares](#how-leaftext-compares) |
 | See what it looks like | [Read your files](#read-your-files) |
 | Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
 | Write in the page, not in an editor | [Write where you read](#write-where-you-read) |
 | Search your notes and see how they link | [Keep a library](#keep-a-library) |
-| Work beside AI, and see it next to Obsidian | [Built to work beside AI](#built-to-work-beside-ai) |
+| Work beside AI | [Built to work beside AI](#built-to-work-beside-ai) |
 | Find a word in the document you are reading | [Search everything you've written](#search-everything-youve-written) |
 | Keep your place across long documents | [Move around](#move-around) |
 | Change the look | [Make it yours](#make-it-yours) |
@@ -203,7 +208,7 @@ The same file keeps a team's words from drifting. When everybody's notes link on
 
 ### Coming next
 
-Leaftext does not yet let an AI agent on your machine work in the document you have open, start outside tool servers through MCP, or define a word in a book with one press. All three are on the roadmap, and the chart that sets Leaftext beside Obsidian, Typora and Calibre marks them as coming, with a source for every other check and cross. **[How it compares →](docs/05-compare.md)**
+Leaftext does not yet let an AI agent on your machine work in the document you have open, start outside tool servers through MCP, or define a word in a book with one press. All three are on the roadmap, and [the chart that sets Leaftext beside Obsidian, Typora and Calibre](#how-leaftext-compares) marks them as coming, with a source for every other check and cross. **[Its sources →](docs/05-compare.md)**
 
 ## Move around
 

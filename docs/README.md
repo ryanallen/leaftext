@@ -31,7 +31,7 @@ flowchart LR
 | [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.exe`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), [file associations](02-installation.md#file-associations), [updates](01-features/05-settings.md#updates), and data paths |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 | [Get help](04-help.md) | Where to ask a question and read what other people already asked, what to say when you ask, and what the pages here already answer |
-| [How it compares](05-compare.md) | Leaftext beside Obsidian, Typora and Calibre, row by row with a source for each cell, how it works beside AI, and what is on the roadmap |
+| [How it compares](05-compare.md) | Leaftext beside Obsidian, Typora and Calibre, row by row with a source for each cell, how it works beside AI, and what is on the roadmap; every feature sits on one of the ten [comparison chart](06-comparison-chart/01-files-and-formats.md) pages it lists |
 
 ## Features
 

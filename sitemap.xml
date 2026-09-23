@@ -2,11 +2,11 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://leaftext.com/</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-23</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/README.md</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-23</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/01-rendering.md</loc>
@@ -62,7 +62,47 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/05-compare.md</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/07-your-grove.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md</loc>
+    <lastmod>2026-09-23</lastmod>
+  </url>
+  <url>
+    <loc>https://leaftext.com/docs/06-comparison-chart/10-coming.md</loc>
+    <lastmod>2026-09-23</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/GLOSSARY.md</loc>
@@ -70,11 +110,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-23</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/README.md</loc>
-    <lastmod>2026-09-22</lastmod>
+    <lastmod>2026-09-23</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/gallery.html</loc>

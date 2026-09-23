@@ -19,6 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
+import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -43,6 +44,19 @@ export const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-core.wasm');
 /** The front page, and the document it draws: the publish writes the one into the other. */
 export const FRONT_PAGE = 'index.html';
 export const FRONT_DOCUMENT = 'README.md';
+
+/**
+ * The README drawn the way the front page shows it: the document, with the comparison chart drawn under its compare heading out of the documentation's own chart pages.
+ *
+ * The chart's rows are written once, in `docs/`, so the front page never holds a copy of them; `site/compare-chart.js` draws them here and in the browser alike.
+ */
+export function drawFrontDocument(leaf, from = root) {
+  const readme = readFileSync(join(from, FRONT_DOCUMENT), 'utf8');
+  const index = readFileSync(join(from, COMPARE_INDEX), 'utf8');
+  const bodies = new Map(chartPagePaths(index).map((path) => [path, readFileSync(join(from, path), 'utf8')]));
+  const render = (body, path) => leaf.render(body, path);
+  return { html: frontWithChart(render(readme, FRONT_DOCUMENT).html, index, bodies, render) };
+}
 
 /** The empty element the front page leaves for its document. */
 const CONTENT_HOLDER = /(<article\b[^>]*\bid="content"[^>]*>)(\s*)(<\/article>)/;
@@ -168,7 +182,7 @@ export function previewAnswers(leaf, moduleBytes, { baked = true } = {}) {
   const answers = new Map(publishedAssets(leaf, moduleBytes));
   if (baked) {
     const page = readFileSync(join(root, FRONT_PAGE), 'utf8');
-    answers.set(FRONT_PAGE, bakeFrontPage(page, leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT), siteProject()));
+    answers.set(FRONT_PAGE, bakeFrontPage(page, drawFrontDocument(leaf), siteProject()));
     answers.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsPaths()));
   }
   return answers;
@@ -229,7 +243,7 @@ async function main() {
   // The front page's own document, drawn here rather than in the reader's browser. Asked for before anything is written, the same as the module is: a page baked empty is the blank page a reader waits in front of.
   let baked = null;
   try {
-    baked = bakeFrontPage(readFileSync(join(root, FRONT_PAGE), 'utf8'), leaf.render(readFileSync(join(root, FRONT_DOCUMENT), 'utf8'), FRONT_DOCUMENT), siteProject({ bakeOnly }));
+    baked = bakeFrontPage(readFileSync(join(root, FRONT_PAGE), 'utf8'), drawFrontDocument(leaf), siteProject({ bakeOnly }));
     if (frontPageIsEmpty(baked)) fail(`${FRONT_PAGE} came out of the bake with no document in it`);
   } catch (error) {
     fail(error.message);

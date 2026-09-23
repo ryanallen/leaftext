@@ -13,5 +13,15 @@ https://leaftext.com/docs/02-installation.md
 https://leaftext.com/docs/03-quickstart.md
 https://leaftext.com/docs/04-help.md
 https://leaftext.com/docs/05-compare.md
+https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md
+https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md
+https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
+https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md
+https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md
+https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
+https://leaftext.com/docs/06-comparison-chart/07-your-grove.md
+https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
+https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
+https://leaftext.com/docs/06-comparison-chart/10-coming.md
 https://leaftext.com/docs/GLOSSARY.md
 https://leaftext.com/docs/README.md

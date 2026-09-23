@@ -77,6 +77,56 @@
 - Markdown: https://leaftext.com/docs/05-compare.md
 - Summary: Each of these apps is good at something. Obsidian is a notebook of linked Markdown notes with a large plugin library; Typora writes Markdown in the finished page; Calibre manages and reads a whole ...
 
+## Files and formats
+- Page: https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md
+- Summary: [l-rendering]: ../01-features/01-rendering.md [l-summary]: ../01-features/01-rendering.md#summary [l-md]: ../01-features/01-rendering.md#markdown [l-html]: ../01-features/01-rendering.md#html-files...
+
+## Markdown and diagrams
+- Page: https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md
+- Summary: [l-md]: ../01-features/01-rendering.md#markdown [l-headings]: ../01-features/01-rendering.md#headings [l-text]: ../01-features/01-rendering.md#text-formatting [l-lists]: ../01-features/01-rendering...
+
+## Reading and moving around
+- Page: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
+- Summary: [l-shortcuts]: ../01-features/02-navigation.md#shortcuts [l-appbar]: ../01-features/02-navigation.md#the-app-bar [l-toolbar]: ../01-features/02-navigation.md#the-floating-toolbar [l-tabs]: ../01-fe...
+
+## Writing and editing
+- Page: https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md
+- Summary: [l-new]: ../01-features/07-editing.md#new-document [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view [l-rename]: ../01-features/07-editing.md#renaming-from-the-heading [l-ema...
+
+## Library, search and sync
+- Page: https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md
+- Summary: [l-vaults]: ../01-features/03-library.md#vaults [l-first-bubble]: ../01-features/03-library.md#the-bubble-on-your-first-launch [l-first-vault]: ../01-features/03-library.md#your-first-vault [l-clou...
+
+## Look and feel
+- Page: https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
+- Summary: [l-families]: ../01-features/06-themes.md#families [l-earned]: ../01-features/06-themes.md#earned-families [l-previews]: ../01-features/06-themes.md#previews [l-see-all]: ../01-features/06-themes.m...
+
+## Your Grove
+- Page: https://leaftext.com/docs/06-comparison-chart/07-your-grove.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/07-your-grove.md
+- Summary: [l-open]: ../01-features/09-progress.md#open-your-grove [l-counts]: ../01-features/09-progress.md#what-it-counts [l-xp]: ../01-features/09-progress.md#see-xp-as-it-lands [l-grow]: ../01-features/09...
+
+## Install, updates and privacy
+- Page: https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
+- Summary: [l-install]: ../02-installation.md#install [l-admin]: ../02-installation.md#does-it-need-administrator-rights [l-where]: ../02-installation.md#where-it-goes [l-uninstall]: ../02-installation.md#uni...
+
+## Export and the published site
+- Page: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
+- Summary: [l-export]: ../01-features/02-navigation.md#export-the-page [l-launch]: ../02-installation.md#launch [l-images]: ../01-features/01-rendering.md#images [l-html]: ../01-features/01-rendering.md#html-...
+
+## Coming
+- Page: https://leaftext.com/docs/06-comparison-chart/10-coming.md
+- Markdown: https://leaftext.com/docs/06-comparison-chart/10-coming.md
+- Summary: [l-roadmap]: ../05-compare.md#on-our-roadmap [l-mcp]: ../05-compare.md#outside-tools-through-mcp [l-agent]: ../05-compare.md#your-own-ai-agent-in-the-open-document [l-define]: ../05-compare.md#defi...
+
 ## Glossary
 - Page: https://leaftext.com/docs/GLOSSARY.md
 - Markdown: https://leaftext.com/docs/GLOSSARY.md
