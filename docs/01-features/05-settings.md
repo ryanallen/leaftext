@@ -41,7 +41,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{config_dir}/recent-files.json` | The last 50 opened files, and your favorites |
 | `{config_dir}/profile.json` | [Your Grove](09-progress.md#where-it-is-kept): counts of what you do in Leaftext and the switch that turns the record off, never a file name or a word of a document |
 | `{config_dir}/growth-log.jsonl` | Every gain [your Grove](09-progress.md#see-xp-as-it-lands) has kept, one line each with the time it happened on your own clock, what you did and what it was worth — never a file name or a word of a document. It is trimmed back to its newest 20,000 lines when it passes 3 MB |
-| `{config_dir}/mcp.json` | Outside tool servers, in the `mcpServers` shape, each started the first time something could use it. Written by hand; Leaftext reads it from this folder and from nowhere else — never from a vault, a document or a link. A server is switched off with `"disabled": true` rather than deleted |
+| `{config_dir}/mcp.json` | Kept for outside tool servers, in the `mcpServers` shape. No part of Leaftext reads this file or starts a server yet — [outside tools are still coming](../05-compare.md#outside-tools-through-mcp). When they arrive it is read from this folder alone, never from a vault, a document or a link, and a server is switched off with `"disabled": true` rather than deleted |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/webview2` | WebView2 data |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |

@@ -144,7 +144,7 @@ Pointing a [vault](GLOSSARY.md#vault) at a GitHub repository and pushing to it. 
 
 ## Glossary
 
-The shared `GLOSSARY.md` this page is one of. Leaftext finds it by walking up from the open document, matches its terms in every format it renders, and links them for you — so one file defines the words for a whole set of documents. Resting on a term draws its entry in the [link hint](GLOSSARY.md#link-hint); clicking one opens it in a [bottom sheet](GLOSSARY.md#bottom-sheet). See [Navigation](01-features/02-navigation.md#glossary).
+The shared `GLOSSARY.md` this page is one of. Leaftext finds it by walking up from the open document, matches its terms in every document it draws as prose, data, a book or an office file, and links them for you — so one file defines the words for a whole set of documents. Resting on a term draws its entry in the [link hint](GLOSSARY.md#link-hint); clicking one opens it in a [bottom sheet](GLOSSARY.md#bottom-sheet). See [Navigation](01-features/02-navigation.md#glossary).
 
 ## Graph size
 
