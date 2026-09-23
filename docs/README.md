@@ -12,6 +12,7 @@ flowchart LR
     B --> C[Quickstart]
     C --> D[Features]
     C --> Z[Get help]
+    A --> Y[How it compares]
     D --> E[Rendering]
     D --> F[Navigation]
     D --> G[Library]
@@ -30,6 +31,7 @@ flowchart LR
 | [Installation](02-installation.md) | Step-by-step installs for macOS (`.dmg`) and Windows (`.exe`), how to get past the [first-launch block on a Mac](02-installation.md#mac-blocks-the-first-launch), [file associations](02-installation.md#file-associations), [updates](01-features/05-settings.md#updates), and data paths |
 | [Quickstart](03-quickstart.md) | The smallest useful path through the app: open a file, read, jump, and reopen — with the core shortcuts |
 | [Get help](04-help.md) | Where to ask a question and read what other people already asked, what to say when you ask, and what the pages here already answer |
+| [How it compares](05-compare.md) | Leaftext beside Obsidian, Typora and Calibre, row by row with a source for each cell, how it works beside AI, and what is on the roadmap |
 
 ## Features
 
@@ -68,6 +70,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | How do updates work? | [Settings → Updates](01-features/05-settings.md#updates) |
 | How do I change the look? | [Themes → Choose](01-features/06-themes.md#choose) |
 | Where do I ask a question? | [Get help](04-help.md) |
+| How does it compare with Obsidian? | [How it compares](05-compare.md) |
 | What do the themes actually look like? | [leaftext.com/gallery.html](https://leaftext.com/gallery.html) — every theme, color, icon and control on one page |
 
 ## Shared reference

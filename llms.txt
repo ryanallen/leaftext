@@ -18,5 +18,6 @@
 - [Installation](https://leaftext.com/docs/02-installation.md)
 - [Quickstart](https://leaftext.com/docs/03-quickstart.md)
 - [Get help](https://leaftext.com/docs/04-help.md)
+- [How it compares](https://leaftext.com/docs/05-compare.md)
 - [Glossary](https://leaftext.com/docs/GLOSSARY.md)
 - [Leaftext documentation](https://leaftext.com/docs/README.md)

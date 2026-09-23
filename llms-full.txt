@@ -5,7 +5,7 @@
 ## Refine your mind.
 - Page: https://leaftext.com/
 - Markdown: https://leaftext.com/README.md
-- Summary: Your thoughts, secure and free. Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
+- Summary: Your thoughts, secure and free. Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own. Have an AI tool write a glossary ...
 
 ## Rendering
 - Page: https://leaftext.com/docs/01-features/01-rendering.md
@@ -71,6 +71,11 @@
 - Page: https://leaftext.com/docs/04-help.md
 - Markdown: https://leaftext.com/docs/04-help.md
 - Summary: Leaftext is one app made by one person, and there is no support desk behind it. What there is instead is a public page where questions are asked and answered where everybody can read them, so the a...
+
+## How it compares
+- Page: https://leaftext.com/docs/05-compare.md
+- Markdown: https://leaftext.com/docs/05-compare.md
+- Summary: Each of these apps is good at something. Obsidian is a notebook of linked Markdown notes with a large plugin library; Typora writes Markdown in the finished page; Calibre manages and reads a whole ...
 
 ## Glossary
 - Page: https://leaftext.com/docs/GLOSSARY.md

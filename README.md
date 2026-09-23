@@ -1,6 +1,6 @@
 # Refine your mind.
 
-**Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own.
+**Your thoughts, secure and free.** Leaftext is a free desktop app for reading and writing your own documents. Everything stays on your device, in plain files you own. Have an AI tool write a glossary for a hard book or a team's notes, and every term in it is linked as you read.
 
 ![The Leaftext window with a Markdown document open: the library pane at left holding the document's headings, the rendered page in the middle, and the minimap rail down the right edge](imgs/leaftext.png)
 
@@ -30,6 +30,7 @@ Free, on macOS and Windows.
 | Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
 | Write in the page, not in an editor | [Write where you read](#write-where-you-read) |
 | Search your notes and see how they link | [Keep a library](#keep-a-library) |
+| Work beside AI, and see it next to Obsidian | [Built to work beside AI](#built-to-work-beside-ai) |
 | Find a word in the document you are reading | [Search everything you've written](#search-everything-youve-written) |
 | Keep your place across long documents | [Move around](#move-around) |
 | Change the look | [Make it yours](#make-it-yours) |
@@ -187,6 +188,22 @@ The [graph view](docs/01-features/03-library.md#graph) maps the links between yo
 ![A vault's settings panel showing the connected GitHub repository, and the sync button at the end of the breadcrumb carrying a count of changes waiting to be pushed](imgs/github-sync.png)
 
 A vault can be a git repository that pushes to GitHub. Leaftext never holds a token — it runs the `git` already on your machine. A sync button appears on the breadcrumb whenever there's work that hasn't reached GitHub, and one vault can turn on automatic sync, which sends once your changes stop. **[GitHub sync →](docs/01-features/03-library.md#github-sync)**
+
+## Built to work beside AI
+
+### Have an AI tool make the hard words readable
+
+![A glossary term underlined in a paragraph, with its entry open in a bottom sheet sliding up over the page, the document still visible behind it](imgs/glossary-sheet.png)
+
+Ask the AI tool you already use to write a `GLOSSARY.md` beside a book, a manual or a folder of notes — a heading for each hard term and a short entry under it. Leaftext underlines every one of those terms wherever it appears, in a book's chapters, a Word file or your own notes, and opens its entry in a sheet over the page, so you learn the word without losing your place. **[Write a glossary →](docs/01-features/02-navigation.md#author-a-glossary)**
+
+### One set of words for a whole team
+
+The same file keeps a team's words from drifting. When everybody's notes link one entry, a term means one thing, and whoever reads it — a person or the AI tool that wrote it — reads the same definition.
+
+### Coming next
+
+Leaftext does not yet let an AI agent on your machine work in the document you have open, start outside tool servers through MCP, or define a word in a book with one press. All three are on the roadmap, and the chart that sets Leaftext beside Obsidian, Typora and Calibre marks them as coming, with a source for every other check and cross. **[How it compares →](docs/05-compare.md)**
 
 ## Move around
 

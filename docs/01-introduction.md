@@ -23,6 +23,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 | Write in the page | [Editing](01-features/07-editing.md) |
 | Change the look | [Themes](01-features/06-themes.md) |
 | Look a word up | [Glossary](GLOSSARY.md) |
+| See it beside Obsidian, Typora and Calibre | [How it compares](05-compare.md) |
 
 ## What you can do
 
@@ -106,4 +107,5 @@ That file opens as a formatted document, not as source code in an editor.
 - [Installation](02-installation.md) if you have not got it yet.
 - [Quickstart](03-quickstart.md) shows the actual reading flow.
 - [Rendering](01-features/01-rendering.md) shows what Markdown syntax, XML structure, JSON/YAML shapes, and [email files](01-features/01-rendering.md#email-eml) the app renders.
+- [How it compares](05-compare.md) sets it beside Obsidian, Typora and Calibre, and says how it works beside AI.
 - [Library](01-features/03-library.md) explains [vaults](01-features/03-library.md#vaults), search, the [graph](01-features/03-library.md#graph), and [GitHub sync](01-features/03-library.md#github-sync).
