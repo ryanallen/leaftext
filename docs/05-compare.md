@@ -6,9 +6,9 @@ Each of these apps is good at something. Obsidian is a notebook of linked Markdo
 
 ## The chart
 
-**✅** the app does this, and the link in the cell is where it says so. **❌** it says it cannot, or it only converts the file into something else first. **?** its own pages do not settle it either way. **—** the row has no counterpart in what the app is for. A **bold** row also opens the chart on the front page.
+**✅** the app does this, and the link in the cell is where it says so. **❌** it says it cannot, or it only converts the file into something else first. A mark linking to [how the marks were checked](05-compare.md#how-the-marks-were-checked) was read off the app itself rather than off its pages. **?** neither its own pages nor the app settle it either way. **—** the row has no counterpart in what the app is for. A **bold** row also opens the chart on the front page.
 
-Sources read 23 September 2026, 7:42am.
+Sources read 23 September 2026, 7:42am. The apps themselves checked 23 September 2026, 10:14am.
 
 1. [Files and formats](06-comparison-chart/01-files-and-formats.md)
 2. [Markdown and diagrams](06-comparison-chart/02-markdown-and-diagrams.md)
@@ -22,6 +22,22 @@ Sources read 23 September 2026, 7:42am.
 10. [Coming](06-comparison-chart/10-coming.md)
 
 Obsidian's cross for books and Office files is its own list of the formats it opens, which names neither and points to community plugins for the rest. Typora's is its import, which converts those files into Markdown through Pandoc rather than opening them as themselves. Calibre's is its list of conversion inputs, which converts a Word file into an ebook rather than opening it.
+
+## How the marks were checked
+
+Where an app's own pages say nothing about a row, the mark comes from the app itself, installed on Windows. A check means that copy did it; a cross means it has no command, setting or behavior that does.
+
+### Obsidian
+
+Obsidian 1.13.7, opened on an empty vault of test notes with every core plugin switched on. Its commands, hotkeys and settings were listed, notes in each text encoding were opened and saved, and its find bar, reading view and editor were tried on them. What it draws was read out of its own interface text and stylesheet.
+
+### Typora
+
+Typora 1.14.10, read through its menus, preferences and messages, the editor code it installs, the help pages it ships beside itself, and what it registers with Windows.
+
+### Calibre
+
+calibre 9.15, read through its E-book viewer, what it registers with Windows, and the viewer's own published source.
 
 ## Working beside AI
 

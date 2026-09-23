@@ -34,61 +34,61 @@
 | Dotenv files | [✅][l-source] | [❌][o-formats] | — | — |
 | GraphQL schemas | [✅][l-source] | [❌][o-formats] | — | — |
 | Docker build files | [✅][l-source] | [❌][o-formats] | — | — |
-| Extensionless text files | [✅][l-rendering] | [❌][o-formats] | ? | — |
-| UTF-8, UTF-16, UTF-32 | [✅][l-enc] | ? | ? | ? |
-| Keeps its encoding | [✅][l-enc] | ? | ? | — |
+| Extensionless text files | [✅][l-rendering] | [❌][o-formats] | [✅][t-seen] | — |
+| UTF-8, UTF-16, UTF-32 | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Keeps its encoding | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
 
 ## EPUB books
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Book as one page | [✅][l-epub] | — | — | ? |
-| Chapters in reading order | [✅][l-epub] | — | — | ? |
+| Book as one page | [✅][l-epub] | — | — | [❌][c-seen] |
+| Chapters in reading order | [✅][l-epub] | — | — | [✅][c-viewer] |
 | Linked contents page | [✅][l-epub] | — | — | [✅][c-viewer] |
-| Chapter headings from contents | [✅][l-epub] | — | — | ? |
-| Title and author byline | [✅][l-epub] | — | — | ? |
+| Chapter headings from contents | [✅][l-epub] | — | — | [❌][c-seen] |
+| Title and author byline | [✅][l-epub] | — | — | [❌][c-seen] |
 | Pictures from the book | [✅][l-epub] | — | — | [✅][c-viewer] |
-| SVG covers shown | [✅][l-epub] | — | — | ? |
-| Publisher styles, your theme | [✅][l-epub] | — | — | ? |
-| Small caps and superscripts | [✅][l-epub] | — | — | ? |
-| Hidden parts stay hidden | [✅][l-epub] | — | — | ? |
+| SVG covers shown | [✅][l-epub] | — | — | [✅][c-seen] |
+| Publisher styles, your theme | [✅][l-epub] | — | — | [✅][c-viewer] |
+| Small caps and superscripts | [✅][l-epub] | — | — | [✅][c-seen] |
+| Hidden parts stay hidden | [✅][l-epub] | — | — | [✅][c-seen] |
 | No network on open | [✅][l-epub] | — | — | ? |
-| Web and email links | [✅][l-epub] | — | — | ? |
-| Book scripts never run | [✅][l-epub] | — | — | ? |
-| Damaged book explained | [✅][l-epub] | — | — | ? |
-| Encrypted book named | [✅][l-epub] | — | — | ? |
-| Obfuscated fonts read | [✅][l-epub] | — | — | ? |
-| Picture-heavy books drawn | [✅][l-epub] | — | — | ? |
-| Outline, minimap, find, pager | [✅][l-epub] | — | — | ? |
+| Web and email links | [✅][l-epub] | — | — | [✅][c-seen] |
+| Book scripts never run | [✅][l-epub] | — | — | [✅][c-seen] |
+| Damaged book explained | [✅][l-epub] | — | — | [✅][c-seen] |
+| Encrypted book named | [✅][l-epub] | — | — | [✅][c-seen] |
+| Obfuscated fonts read | [✅][l-epub] | — | — | [✅][c-seen] |
+| Picture-heavy books drawn | [✅][l-epub] | — | — | [✅][c-seen] |
+| Outline, minimap, find, pager | [✅][l-epub] | — | — | [❌][c-seen] |
 
 ## Book details
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| NCX and nav headings | [✅][l-epub] | — | — | ? |
-| Publisher classes mapped | [✅][l-epub] | — | — | ? |
-| Inline styles mapped | [✅][l-epub] | — | — | ? |
-| Byline skips drop cap | [✅][l-epub] | — | — | ? |
-| Empty chapters skipped | [✅][l-epub] | — | — | ? |
-| SVG covers kept | [✅][l-epub] | — | — | ? |
-| Comic pages drawn once | [✅][l-epub] | — | — | ? |
-| Books open on cover | [✅][l-epub] | — | — | ? |
-| First page at top | [✅][l-epub] | — | — | ? |
+| NCX and nav headings | [✅][l-epub] | — | — | [✅][c-seen] |
+| Publisher classes mapped | [✅][l-epub] | — | — | [✅][c-seen] |
+| Inline styles mapped | [✅][l-epub] | — | — | [✅][c-seen] |
+| Byline skips drop cap | [✅][l-epub] | — | — | — |
+| Empty chapters skipped | [✅][l-epub] | — | — | [❌][c-seen] |
+| SVG covers kept | [✅][l-epub] | — | — | [✅][c-seen] |
+| Comic pages drawn once | [✅][l-epub] | — | — | [✅][c-seen] |
+| Books open on cover | [✅][l-epub] | — | — | [✅][c-seen] |
+| First page at top | [✅][l-epub] | — | — | [✅][c-seen] |
 | Every chapter outlined | [✅][l-epub] | — | — | [✅][c-viewer] |
-| Word counts in cards | [✅][l-hints] | ? | — | — |
+| Word counts in cards | [✅][l-hints] | [❌][o-seen] | — | — |
 | Slide lists and tables | [✅][l-office] | — | — | — |
 | Removed bullets drawn plain | [✅][l-office] | — | — | — |
 | OpenDocument list openings | [✅][l-office] | — | — | — |
-| Cards only when cramped | [✅][l-tables] | ? | ? | — |
+| Cards only when cramped | [✅][l-tables] | [❌][o-seen] | [❌][t-seen] | — |
 | Labels on bars | [✅][l-bars] | — | — | — |
 
 ## Plain text
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Kept exactly as typed | [✅][l-plain] | — | ? | ? |
-| Copy button | [✅][l-plain] | — | ? | — |
-| Offered, never default | [✅][l-plain] | — | ? | — |
+| Kept exactly as typed | [✅][l-plain] | — | [❌][t-seen] | — |
+| Copy button | [✅][l-plain] | — | [❌][t-seen] | — |
+| Offered, never default | [✅][l-plain] | — | [❌][t-seen] | — |
 
 ## INI files
 
@@ -250,31 +250,31 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Byte order marks | [✅][l-enc] | ? | ? | — |
-| Both byte orders | [✅][l-enc] | ? | ? | — |
-| Mark kept on save | [✅][l-enc] | ? | ? | — |
-| Windows-1252 fallback | [✅][l-enc] | ? | ? | — |
-| Binary files refused | [✅][l-enc] | ? | ? | — |
-| Unknown extensions named | [✅][l-enc] | ? | ? | — |
-| Invisible marks handled | [✅][l-enc] | ? | ? | — |
-| Four-byte marks first | [✅][l-enc] | ? | ? | — |
-| Zero byte means binary | [✅][l-enc] | ? | ? | — |
-| Extensionless files tested | [✅][l-rendering] | ? | ? | — |
-| Unsavable characters named | [✅][l-enc] | ? | ? | — |
-| Unreadable file explained | [✅][l-enc] | ? | ? | — |
+| Byte order marks | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Both byte orders | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Mark kept on save | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Windows-1252 fallback | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Binary files refused | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Unknown extensions named | [✅][l-enc] | [❌][o-seen] | [❌][t-seen] | — |
+| Invisible marks handled | [✅][l-enc] | [✅][o-seen] | [✅][t-seen] | — |
+| Four-byte marks first | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Zero byte means binary | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
+| Extensionless files tested | [✅][l-rendering] | [❌][o-seen] | [❌][t-seen] | — |
+| Unsavable characters named | [✅][l-enc] | [❌][o-seen] | [❌][t-seen] | — |
+| Unreadable file explained | [✅][l-enc] | [❌][o-seen] | [✅][t-seen] | — |
 
 ## Safety
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| YAML bomb refused early | [✅][l-data] | ? | ? | — |
+| YAML bomb refused early | [✅][l-data] | [❌][o-seen] | [❌][t-seen] | — |
 | Zip bombs refused | [✅][l-office] | — | — | ? |
 | Columns past XFD refused | [✅][l-office] | — | — | — |
 | Rows capped at 16,384 | [✅][l-office] | — | — | — |
-| Encrypted books named | [✅][l-epub] | — | — | ? |
+| Encrypted books named | [✅][l-epub] | — | — | [✅][c-seen] |
 | Book paths contained | [✅][l-epub] | — | — | ? |
-| Books size-capped | [✅][l-epub] | — | — | ? |
-| Fallback chains bounded | [✅][l-rendering] | ? | ? | ? |
+| Books size-capped | [✅][l-epub] | — | — | [❌][c-seen] |
+| Fallback chains bounded | [✅][l-rendering] | — | — | ? |
 | Saved-page SVG icons | [✅][l-html] | — | — | — |
 
 ## How formats are read
@@ -284,17 +284,17 @@
 | XHTML read as page | [✅][l-html] | — | — | — |
 | Leaf extensions parsed | [✅][l-summary] | — | — | — |
 | Bare addresses linked | [✅][l-autolinks] | [✅][o-ofm] | [✅][t-md] | — |
-| Footnotes numbered by use | [✅][l-footnotes] | ? | ? | — |
-| Picture sizes from headers | [✅][l-images] | ? | ? | — |
-| False sizes ignored | [✅][l-images] | ? | ? | — |
-| Alt text on hover | [✅][l-images] | ? | ? | — |
-| Drive paths in links | [✅][l-autolinks] | ? | ? | — |
-| Frontmatter problems said once | [✅][l-frontmatter] | ? | ? | — |
-| Unknown cssclasses named | [✅][l-frontmatter] | ? | — | — |
+| Footnotes numbered by use | [✅][l-footnotes] | [✅][o-seen] | [✅][t-seen] | — |
+| Picture sizes from headers | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | — |
+| False sizes ignored | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | — |
+| Alt text on hover | [✅][l-images] | [❌][o-seen] | [❌][t-seen] | — |
+| Drive paths in links | [✅][l-autolinks] | [✅][o-seen] | [✅][t-seen] | — |
+| Frontmatter problems said once | [✅][l-frontmatter] | [✅][o-seen] | [❌][t-seen] | — |
+| Unknown cssclasses named | [✅][l-frontmatter] | [❌][o-seen] | — | — |
 | Colors stamped after sanitizing | [✅][l-badges] | — | — | — |
-| Only note- classes | [✅][l-inline-html] | ? | ? | — |
+| Only note- classes | [✅][l-inline-html] | [❌][o-seen] | [❌][t-seen] | — |
 | Pages keep theme attributes | [✅][l-html] | — | — | — |
-| Wiki link length capped | [✅][l-wiki] | ? | — | — |
+| Wiki link length capped | [✅][l-wiki] | [❌][o-seen] | — | — |
 
 [l-rendering]: ../01-features/01-rendering.md
 [l-summary]: ../01-features/01-rendering.md#summary
@@ -328,3 +328,6 @@
 [c-viewer]: https://manual.calibre-ebook.com/viewer.html
 [c-faq]: https://manual.calibre-ebook.com/faq.html
 [c-conv]: https://manual.calibre-ebook.com/conversion.html
+[c-seen]: ../05-compare.md#calibre
+[o-seen]: ../05-compare.md#obsidian
+[t-seen]: ../05-compare.md#typora

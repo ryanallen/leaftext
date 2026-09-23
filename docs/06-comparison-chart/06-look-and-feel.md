@@ -29,51 +29,51 @@
 | Saffron theme family | [✅][l-earned] | — | — | — |
 | Sumac theme family | [✅][l-earned] | — | — | — |
 | Woad theme family | [✅][l-earned] | — | — | — |
-| Light and dark each | [✅][l-families] | [✅][o-appearance] | [✅][t-dark] | ? |
-| Family preview pictures | [✅][l-previews] | ? | ? | — |
+| Light and dark each | [✅][l-families] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
+| Family preview pictures | [✅][l-previews] | [✅][o-seen] | [❌][t-seen] | — |
 | Online theme gallery | [✅][l-see-all] | [✅][o-themes] | [✅][t-themes] | — |
 | Plant names settled | [✅][l-earned] | — | — | — |
 | Teal and rose added | [✅][l-families] | — | — | — |
 | No faked bold | [✅][l-families] | — | — | — |
 | Amaranth bold italic | [✅][l-families] | — | — | — |
 | Packs draw every control | [✅][l-icons] | — | — | — |
-| Cards hold size | [✅][l-choose] | ? | ? | — |
+| Cards hold size | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
 
 ## Choosing a look
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| New family each launch | [✅][l-random] | ? | ? | — |
+| New family each launch | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | — |
 | No repeats before all | [✅][l-random] | — | — | — |
 | Rotation survives restarts | [✅][l-random] | — | — | — |
 | Random card morphs | [✅][l-random] | — | — | — |
-| System appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | ? |
-| Light appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | ? |
-| Dark appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | ? |
-| Daylight appearance | [✅][l-appearance] | ? | ? | ? |
-| Follows system live | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | ? |
-| Palette bottom sheet | [✅][l-choose] | ? | ? | — |
-| Cards in own colors | [✅][l-choose] | ? | ? | — |
+| System appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
+| Light appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
+| Dark appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
+| Daylight appearance | [✅][l-appearance] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Follows system live | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
+| Palette bottom sheet | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
+| Cards in own colors | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
 | Current family ringed | [✅][l-choose] | ? | ? | — |
-| Applies at once | [✅][l-choose] | ? | ? | ? |
-| Four ways to close | [✅][l-choose] | ? | ? | — |
+| Applies at once | [✅][l-choose] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Four ways to close | [✅][l-choose] | [❌][o-seen] | [❌][t-seen] | — |
 | Picker scrolls to family | [✅][l-choose] | — | — | — |
 
 ## Fonts and icons
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Typeface per family | [✅][l-fonts] | ? | ? | — |
+| Typeface per family | [✅][l-fonts] | [✅][o-seen] | [✅][t-seen] | — |
 | Fonts cached | [✅][l-fonts] | ? | ? | ? |
 | GitHub uses system fonts | [✅][l-fonts] | — | — | — |
-| Picker loads fonts briefly | [✅][l-fonts] | ? | ? | — |
-| System fallback offline | [✅][l-fonts] | ? | ? | ? |
-| Fonts cached across launches | [✅][l-fonts] | ? | ? | ? |
-| Reading and interface fonts | [✅][l-fonts] | ? | ? | ? |
-| Seven icon sets | [✅][l-icons] | ? | ? | — |
-| Seven named icon packs | [✅][l-icons] | ? | ? | — |
-| Icons shipped inside | [✅][l-icons] | ? | ? | — |
-| Missing icons fall back | [✅][l-icons] | ? | ? | — |
+| Picker loads fonts briefly | [✅][l-fonts] | [❌][o-seen] | [❌][t-seen] | — |
+| System fallback offline | [✅][l-fonts] | — | — | — |
+| Fonts cached across launches | [✅][l-fonts] | — | — | — |
+| Reading and interface fonts | [✅][l-fonts] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
+| Seven icon sets | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | — |
+| Seven named icon packs | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | — |
+| Icons shipped inside | [✅][l-icons] | [✅][o-seen] | — | — |
+| Missing icons fall back | [✅][l-icons] | — | — | — |
 | Diagram icons shared | [✅][l-icons] | — | — | — |
 | One bolder weight | [✅][l-icons] | — | — | — |
 | Exports carry icon pack | [✅][l-icons] | — | — | — |
@@ -82,103 +82,103 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| One token contract | [✅][l-tokens] | ? | ? | — |
-| Per-level heading colors | [✅][l-tokens] | ? | ? | — |
-| Table bands and grid | [✅][l-tokens] | ? | ? | — |
-| Code and syntax colors | [✅][l-tokens] | ? | ? | — |
-| Focus and selection colors | [✅][l-tokens] | ? | ? | — |
+| One token contract | [✅][l-tokens] | [✅][o-seen] | ? | — |
+| Per-level heading colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
+| Table bands and grid | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
+| Code and syntax colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
+| Focus and selection colors | [✅][l-tokens] | [✅][o-seen] | [✅][t-seen] | — |
 | Readable ink on fills | [✅][l-tokens] | ? | ? | — |
 | Missing token fails build | [✅][l-tokens] | — | — | — |
 | Transparent hover wash | [✅][l-hover-token] | ? | ? | — |
 | Goldenrod hovers gold | [✅][l-hover-token] | — | — | — |
-| Boxes in theme surfaces | [✅][l-diagrams] | ? | ? | — |
+| Boxes in theme surfaces | [✅][l-diagrams] | [✅][o-seen] | [❌][t-seen] | — |
 | Arrows in muted ink | [✅][l-diagrams] | ? | ? | — |
-| Twelve categorical colors | [✅][l-diagrams] | ? | ? | — |
-| Gantt state colors | [✅][l-diagrams] | ? | ? | — |
+| Twelve categorical colors | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | — |
+| Gantt state colors | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | — |
 | Labels in document face | [✅][l-diagrams] | ? | ? | — |
-| Ink picked per fill | [✅][l-diagrams] | ? | ? | — |
-| Diagrams redrawn on theme | [✅][l-diagrams] | ? | ? | — |
+| Ink picked per fill | [✅][l-diagrams] | [❌][o-seen] | [❌][t-seen] | — |
+| Diagrams redrawn on theme | [✅][l-diagrams] | [✅][o-seen] | [❌][t-seen] | — |
 | Diagram contrast gated | [✅][l-diagrams] | — | — | — |
 
 ## Make your own
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Themes as data files | [✅][l-add-own] | [✅][o-themes] | [✅][t-themes] | ? |
+| Themes as data files | [✅][l-add-own] | [✅][o-themes] | [✅][t-themes] | [✅][c-seen] |
 | Make-your-own link | [✅][l-add-own] | [✅][o-appearance] | [✅][t-themes] | — |
-| Checked against contract | [✅][l-add-own] | ? | ? | — |
-| Themes as Markdown tables | [✅][l-add-own] | ? | ? | — |
-| Light and dark variants | [✅][l-add-own] | ? | [✅][t-themes] | — |
-| Per-variant overrides | [✅][l-add-own] | ? | ? | — |
+| Checked against contract | [✅][l-add-own] | [❌][o-seen] | [❌][t-seen] | — |
+| Themes as Markdown tables | [✅][l-add-own] | [❌][o-seen] | [❌][t-seen] | — |
+| Light and dark variants | [✅][l-add-own] | [✅][o-seen] | [✅][t-themes] | — |
+| Per-variant overrides | [✅][l-add-own] | [✅][o-seen] | [✅][t-seen] | — |
 
 ## The window
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Frameless own title bar | [✅][l-windows] | ? | ? | ? |
-| Drag and double-click | [✅][l-windows] | ? | ? | ? |
-| Own window buttons | [✅][l-windows] | ? | ? | ? |
-| Red close hover | [✅][l-windows] | ? | ? | ? |
-| F11 full screen | [✅][l-windows] | ? | [✅][t-keys] | ? |
-| Hairline edge, dotted band | [✅][l-windows] | ? | ? | ? |
+| Frameless own title bar | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Drag and double-click | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Own window buttons | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Red close hover | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| F11 full screen | [✅][l-windows] | [❌][o-seen] | [✅][t-keys] | [✅][c-seen] |
+| Hairline edge, dotted band | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | See-through Mac strip | [✅][l-macos] | [✅][o-appearance] | ? | ? |
-| Theme-colored Mac dots | [✅][l-macos] | ? | ? | ? |
-| Marks on hover | [✅][l-macos] | ? | ? | ? |
-| Dots fold away | [✅][l-macos] | ? | ? | ? |
-| Green dot full screen | [✅][l-macos] | ? | ? | ? |
-| Option-click zoom | [✅][l-macos] | ? | ? | ? |
-| Double-click zooms | [✅][l-macos] | ? | ? | ? |
-| Mac dotted band | [✅][l-macos] | ? | ? | ? |
-| Eight resize edges | [✅][l-windows] | ? | ? | ? |
-| Resize arrows per zone | [✅][l-windows] | ? | ? | ? |
+| Theme-colored Mac dots | [✅][l-macos] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Marks on hover | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Dots fold away | [✅][l-macos] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Green dot full screen | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Option-click zoom | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Double-click zooms | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Mac dotted band | [✅][l-macos] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Eight resize edges | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Resize arrows per zone | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Mac minimum size held | [✅][l-macos] | ? | ? | ? |
 | Drags leave window | [✅][l-windows] | ? | ? | ? |
-| Windows snapping kept | [✅][l-windows] | ? | ? | ? |
-| Band hidden maximized | [✅][l-windows] | ? | ? | ? |
+| Windows snapping kept | [✅][l-windows] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Band hidden maximized | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Buttons never shrink | [✅][l-windows] | ? | ? | ? |
 | Controls light gently | [✅][l-hover] | ? | ? | ? |
-| Sheets land springily | [✅][l-hover] | ? | ? | ? |
+| Sheets land springily | [✅][l-hover] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Folds slide open | [✅][l-collapsible] | ? | ? | ? |
-| One overhead light | [✅][l-tokens] | ? | ? | ? |
-| Dot grain surfaces | [✅][l-tokens] | ? | ? | ? |
-| Pane springs, bounces | [✅][l-pane] | ? | ? | ? |
-| Nub slams home | [✅][l-toolbar] | ? | ? | ? |
-| File type badges | [✅][l-tabs] | ? | ? | ? |
-| Hover-only tab controls | [✅][l-tabs] | ? | ? | ? |
+| One overhead light | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Dot grain surfaces | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pane springs, bounces | [✅][l-pane] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Nub slams home | [✅][l-toolbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| File type badges | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Hover-only tab controls | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | — |
 | Hand only on links | [✅][l-pointer] | ? | ? | ? |
 | Pixel-grid window buttons | [✅][l-windows] | ? | ? | ? |
-| Taskbar preview leaf | [✅][l-windows] | ? | ? | ? |
+| Taskbar preview leaf | [✅][l-windows] | — | — | — |
 | Drawn edge resizing | [✅][l-windows] | ? | ? | ? |
-| Own scrollbars everywhere | [✅][l-scrollbars] | ? | ? | ? |
-| Own dotted shadow | [✅][l-windows] | ? | ? | ? |
-| Rounded Mac window | [✅][l-macos] | ? | ? | ? |
+| Own scrollbars everywhere | [✅][l-scrollbars] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Own dotted shadow | [✅][l-windows] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Rounded Mac window | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Smooth trackpad glide | [✅][l-macos] | ? | ? | ? |
 | F11, middle square exit | [✅][l-windows] | ? | ? | ? |
-| Fading tab close cross | [✅][l-tabs] | ? | ? | ? |
+| Fading tab close cross | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | — |
 
 ## Motion and surfaces
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Sheets rise and settle | [✅][l-reduce-motion] | ? | ? | ? |
-| Closing pulls first | [✅][l-reduce-motion] | ? | ? | ? |
+| Sheets rise and settle | [✅][l-reduce-motion] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Closing pulls first | [✅][l-reduce-motion] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drag dismissal follows hand | [✅][l-reduce-motion] | ? | ? | ? |
 | Reduce Motion closes instantly | [✅][l-reduce-motion] | ? | ? | ? |
 | Scrim fades with sheet | [✅][l-reduce-motion] | ? | ? | ? |
-| Dot-grain shadow bands | [✅][l-tokens] | ? | ? | ? |
-| Single overhead light | [✅][l-tokens] | ? | ? | ? |
-| Lighter bands on light | [✅][l-tokens] | ? | ? | ? |
+| Dot-grain shadow bands | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Single overhead light | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Lighter bands on light | [✅][l-tokens] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Corner buttons light gradually | [✅][l-hover] | ? | ? | ? |
 | Warning buttons deepen | [✅][l-hover] | ? | ? | ? |
-| Tray rubber-bands | [✅][l-toolbar] | ? | ? | ? |
-| Pill slides, bounces | [✅][l-toolbar] | ? | ? | ? |
-| Mac-shaped window | [✅][l-macos] | ? | ? | ? |
+| Tray rubber-bands | [✅][l-toolbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Pill slides, bounces | [✅][l-toolbar] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Mac-shaped window | [✅][l-macos] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Smooth Mac moves | [✅][l-macos] | ? | ? | ? |
 | Half-strength inactive colors | [✅][l-inactive] | ? | ? | ? |
 | Accent ink checked | [✅][l-tokens] | ? | ? | ? |
 | Borders held 3:1 | [✅][l-tokens] | ? | ? | ? |
 | Striped rows readable | [✅][l-tokens] | ? | ? | ? |
-| Window dims behind | [✅][l-inactive] | ? | ? | ? |
+| Window dims behind | [✅][l-inactive] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
 | Colors at half strength | [✅][l-inactive] | ? | ? | ? |
 | Fifth-second fade | [✅][l-inactive] | ? | ? | ? |
 | Motion setting keeps state | [✅][l-inactive] | ? | ? | ? |
@@ -186,7 +186,7 @@
 | Follows system setting | [✅][l-reduce-motion] | ? | ? | ? |
 | Nothing slides or fades | [✅][l-reduce-motion] | ? | ? | ? |
 | Spinners turn slower | [✅][l-reduce-motion] | ? | ? | ? |
-| Table edge marks stay | [✅][l-reduce-motion] | ? | ? | ? |
+| Table edge marks stay | [✅][l-reduce-motion] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Placeholders stay dim | [✅][l-reduce-motion] | ? | ? | ? |
 | Tenth-second hover light | [✅][l-reduce-motion] | ? | ? | ? |
 
@@ -220,3 +220,6 @@
 [t-dark]: https://support.typora.io/Dark-Mode/
 [t-keys]: https://support.typora.io/Shortcut-Keys/
 [c-viewer]: https://manual.calibre-ebook.com/viewer.html
+[c-seen]: ../05-compare.md#calibre
+[o-seen]: ../05-compare.md#obsidian
+[t-seen]: ../05-compare.md#typora
