@@ -14153,6 +14153,34 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-500);
 }
+/* The Growth and Tree tabs under the sheet head: the chosen one in the sheet's ink over an accent underline. */
+.grove-tabs {
+  display: flex;
+  flex: none;
+  gap: var(--lt-space-20);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+}
+.grove-tabs[hidden] {
+  display: none;
+}
+.grove-tab {
+  padding: var(--lt-space-6) 0;
+  cursor: default;
+  border: 0;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+}
+.grove-tab:hover {
+  background: transparent;
+  color: var(--lt-foreground);
+}
+.grove-tab.is-chosen {
+  color: var(--lt-primary-ink);
+  box-shadow: var(--lt-shadow-under-accent);
+}
 .grove-tree-head {
   display: flex;
   flex-wrap: wrap;
@@ -14172,13 +14200,46 @@ body.is-home-row-dragging .home-list-scroll li {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-12);
 }
-/* The tree scrolls sideways inside its own frame when its columns outrun the sheet; the lines sit under the nodes at the same origin. */
+/* The Tree tab: the body stops scrolling and hands its height to the tree and the card beside it, each scrolling on its own. It is the container the card's place is decided against. */
+.grove-sheet-body.is-tree {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  container-type: inline-size;
+}
+.grove-tree-view {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--lt-space-16);
+  min-height: 0;
+}
+/* The tree climbs inside its own frame, up and down only; the stems sit under the rewards at the same origin. A press and drag across it selects no words. */
 .grove-tree {
   position: relative;
-  overflow: auto;
-  padding: var(--lt-space-20);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: var(--lt-space-20) var(--lt-space-12) 0;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-xl);
+  user-select: none;
+}
+.grove-tree-card {
+  flex: none;
+  width: 236px;
+  overflow-y: auto;
+}
+/* Narrower than the tree and its card side by side: the card stands over the tree at its full width. */
+@container (max-width: 639px) {
+  .grove-tree-view {
+    flex-direction: column;
+  }
+  .grove-tree-card {
+    order: -1;
+    width: auto;
+    max-height: 40%;
+  }
 }
 .grove-tree-links {
   position: absolute;
@@ -14187,37 +14248,155 @@ body.is-home-row-dragging .home-list-scroll li {
   overflow: visible;
   pointer-events: none;
 }
-.grove-tree-link {
+.grove-tree-link,
+.grove-tree-limb {
   fill: none;
   stroke: var(--lt-border);
   stroke-width: var(--lt-stroke-2);
 }
-.grove-tree-link.is-lit {
-  stroke: var(--lt-accent);
+.grove-tree-link.is-lit,
+.grove-tree-limb.is-lit {
+  stroke: var(--lt-primary-ink);
 }
-/* A column per band of Grove levels and a row per reward in catalog order, both handed over on the node; the band labels take row one. */
+.grove-tree-trunk,
+.grove-tree-sap {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: var(--lt-stroke-6);
+}
+.grove-tree-trunk {
+  stroke: var(--lt-border);
+}
+.grove-tree-sap {
+  stroke: var(--lt-primary-ink);
+}
+/* Four places, the trunk, four places; a row per band from the soil up, each reward handed its column and row. */
 .grove-tree-grid {
   position: relative;
   display: grid;
-  grid-auto-columns: 220px;
-  gap: var(--lt-space-16) var(--lt-space-48);
-  align-items: center;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) 76px repeat(4, minmax(0, 1fr));
+  gap: var(--lt-space-24) var(--lt-space-8);
+  justify-items: center;
 }
+/* A band's label sits on the trunk, spanning the rows the band holds, so its box is the stretch of trunk the sap fills through. */
 .grove-tree-band {
-  grid-column: var(--grove-column);
-  grid-row: 1;
-  justify-self: start;
-  padding: 0 var(--lt-space-8);
+  display: grid;
+  grid-column: 5;
+  grid-row: var(--grove-row) / span var(--grove-span);
+  place-items: center;
+}
+.grove-tree-band-words {
+  position: relative;
+  padding: 0 var(--lt-space-6);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-pill);
+  background: var(--lt-background);
   color: var(--lt-foreground);
-  font-size: var(--lt-text-11);
+  font-size: var(--lt-text-10);
   font-weight: var(--lt-weight-700);
   line-height: var(--lt-leading-1-6);
+  white-space: nowrap;
 }
+.grove-tree-band-words.is-current {
+  border-color: var(--lt-primary-ink);
+  background: var(--lt-primary-ink);
+  color: var(--lt-background);
+}
+.grove-tree-soil {
+  grid-column: 1 / -1;
+  grid-row: var(--grove-row);
+  justify-self: stretch;
+  height: 20px;
+  border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0;
+  background: var(--lt-wash-hover);
+}
+/* One reward: a round press with its name under it, over the stems. */
 .grove-tree-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   grid-column: var(--grove-column);
   grid-row: var(--grove-row);
+  align-items: center;
+  gap: var(--lt-space-4);
+  width: 100%;
+  max-width: 88px;
+  padding: 0;
+  cursor: default;
+  border: 0;
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  text-align: center;
+}
+.grove-tree-node:hover {
+  background: transparent;
+}
+.grove-tree-node.is-locked,
+.grove-tree-node.is-later {
+  color: var(--lt-muted-foreground);
+}
+.grove-tree-disc {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: var(--lt-stroke-2) solid var(--lt-border);
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-background);
+  font-size: var(--lt-text-15);
+  font-weight: var(--lt-weight-700);
+}
+.grove-tree-disc.is-owned {
+  border-color: var(--lt-primary-ink);
+  background: var(--lt-primary-ink);
+  color: var(--lt-background);
+}
+.grove-tree-disc.is-available {
+  border-color: var(--lt-accent);
+  outline: var(--lt-stroke-4) solid var(--lt-wash-hover);
+}
+.grove-tree-disc.is-short {
+  border-color: var(--lt-accent);
+}
+.grove-tree-disc.is-later {
+  border-style: dashed;
+}
+.grove-tree-disc.is-locked {
+  background: var(--lt-surface);
+}
+.grove-tree-disc.is-chosen {
+  outline: var(--lt-stroke-2) solid var(--lt-accent);
+  outline-offset: var(--lt-space-4);
+}
+.grove-tree-disc-lock {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 14px;
+  height: 14px;
+}
+.grove-tree-node-label {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-2);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.grove-tree-node-under {
+  color: var(--lt-primary-ink);
+  font-size: var(--lt-text-10);
+  font-weight: var(--lt-weight-600);
+}
+.grove-tree-node-ranks {
+  width: 36px;
+}
+/* The chosen reward whole, in the card beside the tree. */
+.grove-tree-block {
   display: grid;
   gap: var(--lt-space-6);
   padding: var(--lt-space-10) var(--lt-space-12);
@@ -14225,15 +14404,15 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-lg);
   background: var(--lt-surface-elevated);
 }
-.grove-tree-node.is-available,
-.grove-tree-node.is-short {
+.grove-tree-block.is-available,
+.grove-tree-block.is-short {
   border-color: var(--lt-accent);
 }
-.grove-tree-node.is-owned {
+.grove-tree-block.is-owned {
   border-color: var(--lt-primary-ink);
 }
-.grove-tree-node.is-locked,
-.grove-tree-node.is-later {
+.grove-tree-block.is-locked,
+.grove-tree-block.is-later {
   background: var(--lt-surface);
   color: var(--lt-muted-foreground);
 }
@@ -15739,7 +15918,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 121 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 123 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -15771,7 +15950,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>183</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>121</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>123</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -16184,7 +16363,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">121 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">123 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -16346,16 +16525,24 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="grove-areas" style="max-width:480px"><section class="grove-area"><span class="grove-area-name">Scribing</span><span class="grove-area-level">Level 12</span><span class="grove-area-about">Writing: words of prose you add.</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:0.7"></span></span><span class="grove-area-note">74 XP in all</span><div class="grove-rules-head">What earns XP here</div><dl class="grove-rules"><div class="grove-rule"><dt class="grove-rule-doing">Every 500 words written</dt><dd class="grove-rule-pays">1 XP</dd></div></dl></section><section class="grove-area"><span class="grove-area-name">Foraging</span><span class="grove-area-level">Level 20</span><span class="grove-level-bar"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-area-note">At its ceiling</span></section></div></div>
 </section>
 <section class="part">
-<header><h3>Grove tree</h3><code class="built">.grove-tree</code><span class="built">profile.js: every reward in one tree of nine Grove-level bands, each in the band its first rank opens at, connectors drawn from where the nodes landed and lit where the prerequisite is owned</span></header>
-<div class="stage"><div style="max-width:640px"><div class="grove-tree-head"><span class="grove-tree-heading">Grow with seeds</span><span class="grove-tree-hint">49 rewards, ordered by the Grove level that opens each</span></div><div class="grove-tree"><svg class="grove-tree-links" width="560" height="190"><path class="grove-tree-link is-lit" d="M 240 90 C 274 90, 274 90, 308 90"></path></svg><div class="grove-tree-grid"><span class="grove-tree-band" style="--grove-column:1">Grove 2–7</span><span class="grove-tree-band" style="--grove-column:2">Grove 20–25</span><div class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:2"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">The first letter set two lines tall.</span></div><div class="grove-tree-node is-locked" style="--grove-column:2;--grove-row:2"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-price is-locked">Locked</span></span><span class="grove-tree-node-line is-needs">Needs Grove 22</span></div></div></div></div></div>
+<header><h3>Grove tabs</h3><code class="built">.grove-tabs</code><span class="built">app-shell.html, driven by profile.js: under the Grove sheet's head, choosing between the Growth overview and the reward tree; hidden while the record is off, All XP is open or a day waits for review</span></header>
+<div class="stage"><div class="grove-tabs" role="tablist" style="max-width:520px"><button type="button" class="grove-tab is-chosen" role="tab" aria-selected="true">Growth</button><button type="button" class="grove-tab" role="tab" aria-selected="false">Tree</button></div></div>
+</section>
+<section class="part">
+<header><h3>Grove tree</h3><code class="built">.grove-tree</code><span class="built">profile.js, the Grove sheet's Tree tab: every reward on one trunk climbing from the soil, a row per band of Grove levels with its label on the trunk and the reader's own filled, each reward standing in its prerequisite's place, stems from a prerequisite's top to its reward's foot, limbs from the trunk to a reward with none, the sap filled to the reader's level, and the chosen reward whole in the card beside it</span></header>
+<div class="stage"><div class="grove-tree-view" style="max-width:560px;height:300px"><div class="grove-tree"><svg class="grove-tree-links" width="300" height="280"><path class="grove-tree-trunk" d="M 150 250 L 150 20"></path><path class="grove-tree-sap" d="M 150 250 L 150 170"></path><path class="grove-tree-limb is-lit" d="M 150 218 Q 94 218, 94 206"></path><path class="grove-tree-link is-lit" d="M 94 140 C 94 110, 94 110, 94 96"></path></svg><div class="grove-tree-grid" style="grid-template-columns:repeat(2,minmax(0,1fr)) 76px repeat(2,minmax(0,1fr))"><span class="grove-tree-band" style="grid-column:3;--grove-row:1;--grove-span:1"><span class="grove-tree-band-words">Grove 14–19</span></span><span class="grove-tree-band" style="grid-column:3;--grove-row:2;--grove-span:1"><span class="grove-tree-band-words is-current">Grove 8–13</span></span><span class="grove-tree-band" style="grid-column:3;--grove-row:3;--grove-span:1"><span class="grove-tree-band-words">Grove 2–7</span></span><button type="button" class="grove-tree-node is-locked" style="--grove-column:2;--grove-row:1"><span class="grove-tree-disc is-locked">L<span class="lt-icon lt-icon-lock-closed grove-tree-disc-lock"></span></span><span class="grove-tree-node-label">Lavender mode</span></button><button type="button" class="grove-tree-node is-available" style="--grove-column:2;--grove-row:2"><span class="grove-tree-disc is-available is-chosen">R</span><span class="grove-tree-node-label">Ribbon bookmark</span><span class="grove-tree-node-under">3 seeds</span></button><button type="button" class="grove-tree-node is-owned" style="--grove-column:2;--grove-row:3"><span class="grove-tree-disc is-owned">W</span><span class="grove-tree-node-label">Woad mode</span></button><span class="grove-tree-soil" style="--grove-row:4"></span></div></div><div class="grove-tree-card"><div class="grove-tree-block is-available"><span class="grove-tree-node-area">Wayfinding</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">R</span><span class="grove-tree-node-name">Ribbon bookmark</span><button type="button" class="grove-tree-price is-available">3 seeds</button></span><span class="grove-tree-node-line">A ribbon on the minimap at the deepest point read.</span></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Grove admin row</h3><code class="built">.grove-admin</code><span class="built">profile.js, under the Grove sheet's head while admin mode is on</span></header>
 <div class="stage"><div class="grove-admin" style="max-width:520px"><span class="grove-admin-label">Admin</span><button type="button" class="grove-tree-action">Reset all</button><button type="button" class="grove-tree-action">Unlock all</button><button type="button" class="grove-tree-action">Lock all</button><button type="button" class="grove-tree-action">Give 20 seeds</button></div></div>
 </section>
 <section class="part">
-<header><h3>Tree node</h3><code class="built">.grove-tree-node</code><span class="built">profile.js, one per catalog entry in the one tree, wearing the area that earns it: available, short of seeds, locked, not grown yet, asking, or owned</span></header>
-<div class="stage"><div style="display:grid;grid-template-columns:repeat(2,220px);gap:12px"><div class="grove-tree-node is-available"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">M</span><span class="grove-tree-node-name">More leaf lore</span><button type="button" class="grove-tree-price is-available">2 seeds</button></span><span class="grove-tree-node-line">Another sentence in the leaf voice.</span><span class="grove-tree-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></div><div class="grove-tree-node is-available is-asking"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span></span><span class="grove-tree-question">Spend 3 of your 4 seeds?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Not now</button><button type="button" class="grove-tree-action is-spend">Spend 3 seeds</button></span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-owned">Owned</span><button type="button" class="grove-switch grove-tree-switch" role="switch" aria-checked="true"><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button></span><span class="grove-tree-node-line">The speckle on the page.</span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">A</span><span class="grove-tree-node-name">A title</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">A name under Your Grove.</span><span class="grove-tree-titles"><button type="button" class="grove-tree-title is-chosen">Reader</button><button type="button" class="grove-tree-title">Scribe</button></span></div><div class="grove-tree-node is-later"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">R</span><span class="grove-tree-node-name">Rising paragraphs</span><span class="grove-tree-price is-locked">Not grown yet</span></span><span class="grove-tree-node-line">Each block rises into place.</span></div><div class="grove-tree-node is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">W</span><span class="grove-tree-node-name">Woad mode</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">Every surface a shade of blue.</span><button type="button" class="grove-tree-action">Wear it in Themes</button></div></div></div>
+<header><h3>Tree reward</h3><code class="built">.grove-tree-node</code><span class="built">profile.js, one round press per catalog entry in the tree, its letter on the disc and its name under it, the state marked on the disc: owned, open with its price, seeds still to come, not grown yet, locked, and chosen</span></header>
+<div class="stage"><div class="grove-tree-grid" style="grid-template-columns:repeat(6,88px);max-width:600px"><button type="button" class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:1"><span class="grove-tree-disc is-owned">D</span><span class="grove-tree-node-label">Drop cap</span></button><button type="button" class="grove-tree-node is-available" style="--grove-column:2;--grove-row:1"><span class="grove-tree-disc is-available">R</span><span class="grove-tree-node-label">Ribbon bookmark</span><span class="grove-tree-node-under">3 seeds</span></button><button type="button" class="grove-tree-node is-short" style="--grove-column:3;--grove-row:1"><span class="grove-tree-disc is-short">P</span><span class="grove-tree-node-label">Page grain</span><span class="grove-tree-node-under">2 to go</span></button><button type="button" class="grove-tree-node is-later" style="--grove-column:4;--grove-row:1"><span class="grove-tree-disc is-later">F</span><span class="grove-tree-node-label">Flat</span></button><button type="button" class="grove-tree-node is-locked" style="--grove-column:5;--grove-row:1"><span class="grove-tree-disc is-locked">M<span class="lt-icon lt-icon-lock-closed grove-tree-disc-lock"></span></span><span class="grove-tree-node-label">Margin mark</span></button><button type="button" class="grove-tree-node is-available is-chosen" style="--grove-column:6;--grove-row:1"><span class="grove-tree-disc is-available is-chosen">M</span><span class="grove-tree-node-label">More leaf lore</span><span class="grove-tree-node-under">2 seeds</span><span class="grove-tree-ranks grove-tree-node-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Reward card</h3><code class="built">.grove-tree-block</code><span class="built">profile.js, the chosen reward whole in the card beside the tree, wearing the area that earns it: available, short of seeds, locked, not grown yet, asking, or owned</span></header>
+<div class="stage"><div style="display:grid;grid-template-columns:repeat(2,220px);gap:12px"><div class="grove-tree-block is-available"><span class="grove-tree-node-area">Leafing</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark">M</span><span class="grove-tree-node-name">More leaf lore</span><button type="button" class="grove-tree-price is-available">2 seeds</button></span><span class="grove-tree-node-line">Another sentence in the leaf voice.</span><span class="grove-tree-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></div><div class="grove-tree-block is-available is-asking"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">D</span><span class="grove-tree-node-name">Drop cap</span></span><span class="grove-tree-question">Spend 3 of your 4 seeds?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Not now</button><button type="button" class="grove-tree-action is-spend">Spend 3 seeds</button></span></div><div class="grove-tree-block is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">P</span><span class="grove-tree-node-name">Page grain</span><span class="grove-tree-owned">Owned</span><button type="button" class="grove-switch grove-tree-switch" role="switch" aria-checked="true"><span class="grove-switch-track is-on"><span class="grove-switch-thumb is-on"></span></span></button></span><span class="grove-tree-node-line">The speckle on the page.</span></div><div class="grove-tree-block is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">A</span><span class="grove-tree-node-name">A title</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">A name under Your Grove.</span><span class="grove-tree-titles"><button type="button" class="grove-tree-title is-chosen">Reader</button><button type="button" class="grove-tree-title">Scribe</button></span></div><div class="grove-tree-block is-later"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">R</span><span class="grove-tree-node-name">Rising paragraphs</span><span class="grove-tree-price is-locked">Not grown yet</span></span><span class="grove-tree-node-line">Each block rises into place.</span></div><div class="grove-tree-block is-owned"><span class="grove-tree-node-head"><span class="grove-tree-node-mark">W</span><span class="grove-tree-node-name">Woad mode</span><span class="grove-tree-owned">Owned</span></span><span class="grove-tree-node-line">Every surface a shade of blue.</span><button type="button" class="grove-tree-action">Wear it in Themes</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Level bar</h3><code class="built">.grove-level-bar</code><span class="built">profile.js, inside each Growth area row and under the Grove number</span></header>
