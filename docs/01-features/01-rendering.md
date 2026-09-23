@@ -86,7 +86,7 @@ Leaftext opens an `.epub` as **one document**, in the order the book's own packa
 
 **A book that is not the book it claims to be says so instead of taking the machine.** A missing or damaged package document, a chapter that points outside the book, a chapter claiming more text than the app will open, a spine longer than 4,096 parts and a chain of fallbacks that points round in a circle each get one sentence. A book whose chapters are encrypted says so by name; one that only scrambles its fonts reads normally, because a book's own fonts never load here.
 
-**A very illustrated book stops drawing pictures partway and says so.** Every picture is carried inside the page, so a comic or a manga volume of a hundred and eighty megabytes cannot all be drawn at once; a book past sixteen megabytes of picture draws what fits, keeps the descriptions the book wrote for the rest, and says at the foot that the others are not shown.
+**A picture waits inside its book until the page nears it.** Leaftext gives every picture its own box from the size written in its header, so the book has its full height before the picture arrives. The desktop then reads that one picture out of the book when it is needed, and one picture past sixteen megabytes is refused. A host that cannot serve pictures out of the book still carries them inside the page and stops after sixteen megabytes across the whole book.
 
 > [!NOTE]
 > Leaftext is a reader of EPUB rather than a conforming EPUB reading system, and does not claim to be one. A fixed-layout book — a comic drawn to exact pages — opens as its pictures in reading order rather than as the pages its maker laid out. A book's scripts do not run and its audio narration has no player.
