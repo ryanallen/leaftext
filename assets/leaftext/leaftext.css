@@ -5559,15 +5559,26 @@ body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
   margin-right: 0;
 }
 
-.tab-dragging .tab-label {
-  cursor: grabbing;
-}
+
 .tab-dragging {
-  position: relative;
-  z-index: 2;
-  opacity: var(--lt-opacity-85);
+  visibility: hidden;
   cursor: grabbing;
   transition: none;
+}
+
+.tab-drag-ghost {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  --lt-shadow-host-radius: var(--lt-radius-md);
+  --lt-shadow-host-border: 0;
+  display: flex;
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-92);
+  pointer-events: none;
+}
+.tab-drag-ghost .tab {
+  flex: 1 1 auto;
 }
 .tab-bar.tabs-settling .tab {
   transition: none;
@@ -6169,6 +6180,7 @@ body.is-maximized #winMaximize .wc-restore {
 .link-hover-tip::before,
 .block-drag-ghost::before,
 .home-row-ghost::before,
+.tab-drag-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
 .reader-toolbar::before,
@@ -8390,15 +8402,48 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 
 
 .reader-drop-beside {
+  --drop-beside-share: 0.5;
+  position: relative;
+  
+  z-index: 5;
   grid-column: 2;
   grid-row: 1;
   justify-self: end;
-  width: 50%;
+  width: calc(var(--drop-beside-share) * 100%);
   margin-top: var(--app-bar-height);
+  box-sizing: border-box;
   border: var(--lt-stroke-1) dashed var(--lt-accent);
   border-radius: var(--reader-card-radius);
-  background: var(--lt-wash-hover);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-78);
   pointer-events: none;
+}
+
+.reader-drop-beside.closes-left,
+.reader-drop-beside.closes-right {
+  justify-self: stretch;
+  width: auto;
+}
+.reader-drop-beside.closes-left {
+  grid-column: 2;
+}
+.reader-drop-beside.closes-right {
+  grid-column: 5;
+}
+.reader-drop-beside-name:empty {
+  display: none;
+}
+.reader-drop-beside-name {
+  display: inline-block;
+  max-width: calc(100% - 2 * var(--lt-space-12));
+  margin: var(--lt-space-12);
+  padding: var(--lt-space-4) var(--lt-space-12);
+  overflow: hidden;
+  border: var(--lt-stroke-1) dashed var(--lt-accent);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-foreground);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .reader-drop-beside[hidden] {
   display: none;

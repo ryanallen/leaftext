@@ -5567,15 +5567,26 @@ body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
   margin-right: 0;
 }
 /* The tab standing in the column that does not have the keys. It is that card's own front tab and is drawn selected like any other, so this class carries no drawing at all: it is the mark the press arithmetic and the drag hand-over read. Which card the commands act on is said by the floating bar standing under it — a line of accent under a deselected tab said it twice and said it in a color. */
-.tab-dragging .tab-label {
-  cursor: grabbing;
-}
+/* The tab stays in its own slot holding its space while a copy of it is carried — a tab and its copy both drawn would be two of one tab — and the others slide over the slot it leaves. */
 .tab-dragging {
-  position: relative;
-  z-index: 2;
-  opacity: var(--lt-opacity-85);
+  visibility: hidden;
   cursor: grabbing;
   transition: none;
+}
+/* The tab being carried, on the pattern a dragged block and a home row already use: a copy over everything, so it never slides under the plus or out of its group's box, wearing the halftone every floating surface throws. */
+.tab-drag-ghost {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  --lt-shadow-host-radius: var(--lt-radius-md);
+  --lt-shadow-host-border: 0;
+  display: flex;
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-92);
+  pointer-events: none;
+}
+.tab-drag-ghost .tab {
+  flex: 1 1 auto;
 }
 .tab-bar.tabs-settling .tab {
   transition: none;
@@ -6177,6 +6188,7 @@ body.is-maximized #winMaximize .wc-restore {
 .link-hover-tip::before,
 .block-drag-ghost::before,
 .home-row-ghost::before,
+.tab-drag-ghost::before,
 .find-bar::before,
 .confirm-dialog::before,
 .reader-toolbar::before,
@@ -8420,17 +8432,50 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   border-radius: var(--reader-card-radius);
 }
 
-/* The half of the page a tab is dropped on to open a second column. It stands in the page's own track, held to its right half, and is drawn only while a tab is over it — a target that is always there is a target somebody hits by accident. */
+/* The second page a tab dropped here would open, drawn as a ghost of it: a see-through card over the right part of the page at the share the split would take, the dragged document's name on a ghost tab at its top. It stands in the page's own track, above the card rather than under it, and is drawn only while a tab is over the half — a target that is always there is a target somebody hits by accident. The page writes the share onto the element as the ghost opens. */
 .reader-drop-beside {
+  --drop-beside-share: 0.5;
+  position: relative;
+  /* Over the card and its edge fade (4), under the loading wash (6). */
+  z-index: 5;
   grid-column: 2;
   grid-row: 1;
   justify-self: end;
-  width: 50%;
+  width: calc(var(--drop-beside-share) * 100%);
   margin-top: var(--app-bar-height);
+  box-sizing: border-box;
   border: var(--lt-stroke-1) dashed var(--lt-accent);
   border-radius: var(--reader-card-radius);
-  background: var(--lt-wash-hover);
+  background: var(--lt-markdown-background);
+  opacity: var(--lt-opacity-78);
   pointer-events: none;
+}
+/* The same ghost laid over the card a drop would close, when that card's own tab is carried onto the other one: the card fades behind it, and with no name it says only that this page goes. The page marks the element itself with the side. */
+.reader-drop-beside.closes-left,
+.reader-drop-beside.closes-right {
+  justify-self: stretch;
+  width: auto;
+}
+.reader-drop-beside.closes-left {
+  grid-column: 2;
+}
+.reader-drop-beside.closes-right {
+  grid-column: 5;
+}
+.reader-drop-beside-name:empty {
+  display: none;
+}
+.reader-drop-beside-name {
+  display: inline-block;
+  max-width: calc(100% - 2 * var(--lt-space-12));
+  margin: var(--lt-space-12);
+  padding: var(--lt-space-4) var(--lt-space-12);
+  overflow: hidden;
+  border: var(--lt-stroke-1) dashed var(--lt-accent);
+  border-radius: var(--lt-radius-md);
+  color: var(--lt-foreground);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .reader-drop-beside[hidden] {
   display: none;
@@ -15951,7 +15996,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 123 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 124 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -15983,7 +16028,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>123</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>124</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -16395,7 +16440,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">123 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">124 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -16419,6 +16464,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Tab favorite heart</h3><code class="built">.tab-favorite</code><span class="built">render-state.js</span></header>
 <div class="stage"><div class="tab-bar"><span class="tab tab-active"><button type="button" class="tab-favorite" style="opacity:1"><span class="lt-icon lt-icon-favorite-off"></span></button><button type="button" class="tab-label">A note.md</button></span><span class="tab"><button type="button" class="tab-favorite is-on" style="opacity:1"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="tab-label">A favorite note.md</button></span></div></div>
+</section>
+<section class="part">
+<header><h3>Carried tab</h3><code class="built">.tab-drag-ghost</code><span class="built">dom.js — the copy a tab drag carries at the hand, over the plus and the page, while the tab itself holds its slot hidden</span></header>
+<div class="stage"><div class="tab-drag-ghost" style="position:static;width:160px"><span class="tab"><button type="button" class="tab-label">PLAN.md</button></span></div></div>
 </section>
 <section class="part">
 <header><h3>Overflow menu</h3><code class="built">.app-actions</code><span class="built">app-shell.html, driven by overflow.js on the app bar and by pane-foot.js at the library foot</span></header>
@@ -16829,8 +16878,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="tab-bar" style="height:44px"><div class="strip-part"><span class="tab tab-active"><button type="button" class="tab-label">one.md</button></span><span class="tab"><button type="button" class="tab-label">two.md</button></span></div><div class="strip-part strip-part-beside"><span class="tab"><button type="button" class="tab-label">three.md</button></span></div></div></div>
 </section>
 <section class="part">
-<header><h3>Split drop zone</h3><code class="built">.reader-drop-beside</code><span class="built">app-shell.html, drawn by dom.js while a tab is dragged over the page</span></header>
-<div class="stage"><div style="display:grid;grid-template-columns:1fr 1fr;height:96px"><div></div><div class="reader-drop-beside" style="grid-column:auto;grid-row:auto;margin-top:0;width:auto"></div></div></div>
+<header><h3>Split drop zone</h3><code class="built">.reader-drop-beside</code><span class="built">app-shell.html, drawn by columns.js as a ghost of the second page — see-through, at the share the split would take, carrying the dragged document's name on reader-drop-beside-name — while a tab is dragged over the right half of the page; with two pages up, the same ghost laid over the card beside, marked closes-left or closes-right, while that card's own tab is carried onto the other card, where a drop closes it</span></header>
+<div class="stage"><div style="display:grid;grid-template-columns:1fr 1fr;height:96px"><div></div><div class="reader-drop-beside" style="grid-column:auto;grid-row:auto;margin-top:0;width:auto"><span class="reader-drop-beside-name">PLAN.md</span></div></div></div>
 </section>
 <section class="part">
 <header><h3>Diagram controls</h3><code class="built">.mermaid-tool</code><span class="built">decorate.js</span></header>
