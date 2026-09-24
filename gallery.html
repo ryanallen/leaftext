@@ -14320,9 +14320,10 @@ body.is-home-row-dragging .home-list-scroll li {
   border-radius: var(--lt-radius-lg) var(--lt-radius-lg) 0 0;
   background: var(--lt-wash-hover);
 }
-/* One reward: a round press with its name under it, over the stems. */
+/* One reward: a round press with its name under it, over the stems. Its own width is what the circle and the name are sized against. */
 .grove-tree-node {
   position: relative;
+  container: grove-place / inline-size;
   display: flex;
   flex-direction: column;
   grid-column: var(--grove-column);
@@ -14351,8 +14352,8 @@ body.is-home-row-dragging .home-list-scroll li {
   display: grid;
   flex: none;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: min(42px, 100cqi);
+  aspect-ratio: 1;
   border: var(--lt-stroke-2) solid var(--lt-border);
   border-radius: var(--lt-radius-full);
   background: var(--lt-background);
@@ -14404,6 +14405,28 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 .grove-tree-node-ranks {
   width: 36px;
+}
+/* A place narrower than the circle: the circle comes down to the place, and its letter and lock with it. */
+@container grove-place (width < 42px) {
+  .grove-tree-disc {
+    font-size: var(--lt-text-11);
+  }
+  .grove-tree-disc-lock {
+    right: -3px;
+    bottom: -3px;
+    width: 10px;
+    height: 10px;
+  }
+}
+/* A place narrower than the widest name word in any theme font (Ivy's "Illuminated", 72.6): the words would run into the neighbors, so they go, and the button still names the reward for a screen reader. */
+@container grove-place (width < 73px) {
+  .grove-tree-node-label,
+  .grove-tree-node-under {
+    display: none;
+  }
+  .grove-tree-node-ranks {
+    width: 100%;
+  }
 }
 /* The chosen reward whole, in the card beside the tree. */
 .grove-tree-block {
@@ -16546,8 +16569,8 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="grove-admin" style="max-width:520px"><span class="grove-admin-label">Admin</span><button type="button" class="grove-tree-action">Reset all</button><button type="button" class="grove-tree-action">Unlock all</button><button type="button" class="grove-tree-action">Lock all</button><button type="button" class="grove-tree-action">Give 20 seeds</button></div></div>
 </section>
 <section class="part">
-<header><h3>Tree reward</h3><code class="built">.grove-tree-node</code><span class="built">profile.js, one round press per catalog entry in the tree, its letter on the disc and its name under it, the state marked on the disc: owned, open with its price, seeds still to come, not grown yet, locked, and chosen</span></header>
-<div class="stage"><div class="grove-tree-grid" style="grid-template-columns:repeat(6,88px);max-width:600px"><button type="button" class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:1"><span class="grove-tree-disc is-owned">D</span><span class="grove-tree-node-label">Drop cap</span></button><button type="button" class="grove-tree-node is-available" style="--grove-column:2;--grove-row:1"><span class="grove-tree-disc is-available">R</span><span class="grove-tree-node-label">Ribbon bookmark</span><span class="grove-tree-node-under">3 seeds</span></button><button type="button" class="grove-tree-node is-short" style="--grove-column:3;--grove-row:1"><span class="grove-tree-disc is-short">P</span><span class="grove-tree-node-label">Page grain</span><span class="grove-tree-node-under">2 to go</span></button><button type="button" class="grove-tree-node is-later" style="--grove-column:4;--grove-row:1"><span class="grove-tree-disc is-later">F</span><span class="grove-tree-node-label">Flat</span></button><button type="button" class="grove-tree-node is-locked" style="--grove-column:5;--grove-row:1"><span class="grove-tree-disc is-locked">M<span class="lt-icon lt-icon-lock-closed grove-tree-disc-lock"></span></span><span class="grove-tree-node-label">Margin mark</span></button><button type="button" class="grove-tree-node is-available is-chosen" style="--grove-column:6;--grove-row:1"><span class="grove-tree-disc is-available is-chosen">M</span><span class="grove-tree-node-label">More leaf lore</span><span class="grove-tree-node-under">2 seeds</span><span class="grove-tree-ranks grove-tree-node-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></button></div></div>
+<header><h3>Tree reward</h3><code class="built">.grove-tree-node</code><span class="built">profile.js, one round press per catalog entry in the tree, its letter on the disc and its name under it, the state marked on the disc: owned, open with its price, seeds still to come, not grown yet, locked, and chosen. The circle is never wider than its place, and in a place narrower than the widest name word the name and price under it go, leaving the circle and its rank pips</span></header>
+<div class="stage"><div class="grove-tree-grid" style="grid-template-columns:repeat(6,88px);max-width:600px"><button type="button" class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:1"><span class="grove-tree-disc is-owned">D</span><span class="grove-tree-node-label">Drop cap</span></button><button type="button" class="grove-tree-node is-available" style="--grove-column:2;--grove-row:1"><span class="grove-tree-disc is-available">R</span><span class="grove-tree-node-label">Ribbon bookmark</span><span class="grove-tree-node-under">3 seeds</span></button><button type="button" class="grove-tree-node is-short" style="--grove-column:3;--grove-row:1"><span class="grove-tree-disc is-short">P</span><span class="grove-tree-node-label">Page grain</span><span class="grove-tree-node-under">2 to go</span></button><button type="button" class="grove-tree-node is-later" style="--grove-column:4;--grove-row:1"><span class="grove-tree-disc is-later">F</span><span class="grove-tree-node-label">Flat</span></button><button type="button" class="grove-tree-node is-locked" style="--grove-column:5;--grove-row:1"><span class="grove-tree-disc is-locked">M<span class="lt-icon lt-icon-lock-closed grove-tree-disc-lock"></span></span><span class="grove-tree-node-label">Margin mark</span></button><button type="button" class="grove-tree-node is-available is-chosen" style="--grove-column:6;--grove-row:1"><span class="grove-tree-disc is-available is-chosen">M</span><span class="grove-tree-node-label">More leaf lore</span><span class="grove-tree-node-under">2 seeds</span><span class="grove-tree-ranks grove-tree-node-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></button></div><div class="grove-tree-grid" style="grid-template-columns:repeat(6,20px);max-width:600px;margin-top:24px"><button type="button" class="grove-tree-node is-owned" style="--grove-column:1;--grove-row:1"><span class="grove-tree-disc is-owned">D</span><span class="grove-tree-node-label">Drop cap</span></button><button type="button" class="grove-tree-node is-available" style="--grove-column:2;--grove-row:1"><span class="grove-tree-disc is-available">R</span><span class="grove-tree-node-label">Ribbon bookmark</span><span class="grove-tree-node-under">3 seeds</span></button><button type="button" class="grove-tree-node is-short" style="--grove-column:3;--grove-row:1"><span class="grove-tree-disc is-short">P</span><span class="grove-tree-node-label">Page grain</span><span class="grove-tree-node-under">2 to go</span></button><button type="button" class="grove-tree-node is-later" style="--grove-column:4;--grove-row:1"><span class="grove-tree-disc is-later">F</span><span class="grove-tree-node-label">Flat</span></button><button type="button" class="grove-tree-node is-locked" style="--grove-column:5;--grove-row:1"><span class="grove-tree-disc is-locked">M<span class="lt-icon lt-icon-lock-closed grove-tree-disc-lock"></span></span><span class="grove-tree-node-label">Margin mark</span></button><button type="button" class="grove-tree-node is-available is-chosen" style="--grove-column:6;--grove-row:1"><span class="grove-tree-disc is-available is-chosen">M</span><span class="grove-tree-node-label">More leaf lore</span><span class="grove-tree-node-under">2 seeds</span><span class="grove-tree-ranks grove-tree-node-ranks"><span class="grove-tree-rank is-filled"></span><span class="grove-tree-rank"></span><span class="grove-tree-rank"></span></span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Reward card</h3><code class="built">.grove-tree-block</code><span class="built">profile.js, the chosen reward whole in the card beside the tree, wearing the area that earns it: available, short of seeds, locked, not grown yet, asking, or owned</span></header>

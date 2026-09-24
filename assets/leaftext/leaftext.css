@@ -14264,6 +14264,7 @@ body.is-home-row-dragging .home-list-scroll li {
 
 .grove-tree-node {
   position: relative;
+  container: grove-place / inline-size;
   display: flex;
   flex-direction: column;
   grid-column: var(--grove-column);
@@ -14292,8 +14293,8 @@ body.is-home-row-dragging .home-list-scroll li {
   display: grid;
   flex: none;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: min(42px, 100cqi);
+  aspect-ratio: 1;
   border: var(--lt-stroke-2) solid var(--lt-border);
   border-radius: var(--lt-radius-full);
   background: var(--lt-background);
@@ -14345,6 +14346,28 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 .grove-tree-node-ranks {
   width: 36px;
+}
+
+@container grove-place (width < 42px) {
+  .grove-tree-disc {
+    font-size: var(--lt-text-11);
+  }
+  .grove-tree-disc-lock {
+    right: -3px;
+    bottom: -3px;
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@container grove-place (width < 73px) {
+  .grove-tree-node-label,
+  .grove-tree-node-under {
+    display: none;
+  }
+  .grove-tree-node-ranks {
+    width: 100%;
+  }
 }
 
 .grove-tree-block {
