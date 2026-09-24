@@ -2,7 +2,7 @@
 // What the published site serves beside its pages: the app's own renderer as a module, its document stylesheet, the version both were built from — and the two pages the publish writes into: the front page with its document already in it, and the documentation reader with the file list its sidebar is built from.
 //
 //   node scripts/site-assets.mjs           name every published path and say whether it is there
-//   node scripts/site-assets.mjs --write   build the four out of web/dist into the site tree, and bake both pages without writing either anywhere
+//   node scripts/site-assets.mjs --write   build the published files out of web/dist into the site tree, and bake both pages without writing either anywhere
 //   node scripts/site-assets.mjs --bake    bake both pages — the front page through the renderer already beside them — into the copies the deploy uploads
 //
 // **`--bake` is the public repository's half.** The source is private, so the repository that deploys leaftext.com cannot compile a module; the renderer workflow in the private repository hands it the three files above and its deploy bakes the front page through the one it was handed, and the docs page out of the documentation folder it was handed beside it. Same bake, same refusals, and no Rust anywhere near it — what `--write` adds on top is building those three files in the first place, which is the half only a checkout with the source in it can do.
@@ -37,7 +37,10 @@ export const STYLES_PATH = `${ASSET_DIR}/leaftext.css`;
 export const VERSION_PATH = `${ASSET_DIR}/version.json`;
 export const IMAGE_SIZES_PATH = `${ASSET_DIR}/image-sizes.json`;
 
-export const PUBLISHED = [MODULE_PATH, STYLES_PATH, VERSION_PATH, IMAGE_SIZES_PATH];
+/** The notices of everything compiled into the module, beside it rather than inside it, because every license they reproduce asks to go with the distribution. */
+export const LICENSES_PATH = `${ASSET_DIR}/licenses.md`;
+
+export const PUBLISHED = [MODULE_PATH, STYLES_PATH, VERSION_PATH, IMAGE_SIZES_PATH, LICENSES_PATH];
 
 /** The build these are cut from. Not published itself — it is what `just build-web` leaves behind. The local preview draws the front page through this one too, so there is one answer to which module the site is read against. */
 export const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-core.wasm');
@@ -146,7 +149,7 @@ export function bakeDocsPage(page, paths) {
 }
 
 /**
- * What each published file *is*, against the table above of what they are called: the module's bytes, the stylesheet the built module hands over, and the version out of `Cargo.toml`.
+ * What each published file *is*, against the table above of what they are called: the module's bytes, the stylesheet the built module hands over, the version out of `Cargo.toml`, and the licenses document filled with that version.
  *
  * The publish writes these to disk and the local preview answers them straight to a browser, so one table is what stops the preview drawing a page through the copy the last publish left beside it. It is handed the module's bytes rather than a file to copy, which is what lets the same answer serve a browser and write a folder.
  */
@@ -157,6 +160,7 @@ export function publishedAssets(leaf, moduleBytes) {
     // The repository rides beside the version because the public side has no `Cargo.toml` to read: this file is what a bake over there reads its own project address back out of, and it is written here, where the manifest is.
     [VERSION_PATH, `${JSON.stringify({ version: appVersion(), repository: project().url }, null, 2)}\n`],
     [IMAGE_SIZES_PATH, `${JSON.stringify(imageSizes())}\n`],
+    [LICENSES_PATH, licensesDocument(appVersion())],
   ]);
 }
 
@@ -173,9 +177,9 @@ export function siteProject({ bakeOnly = false } = {}) {
 }
 
 /**
- * Everything the local preview answers ahead of the disk, keyed by path within the repository: the four files the publish writes, and — baked — the front page with its document already in it and the docs page with its own file list already in it.
+ * Everything the local preview answers ahead of the disk, keyed by path within the repository: the files the publish writes, and — baked — the front page with its document already in it and the docs page with its own file list already in it.
  *
- * It is built here rather than in the server because this is where its two halves already live, so the gate can ask for it with a stand-in module and never wait on `just build-web`. Unbaked neither page is in it and the four still are: that first paint is a second first paint, not a second renderer.
+ * It is built here rather than in the server because this is where its two halves already live, so the gate can ask for it with a stand-in module and never wait on `just build-web`. Unbaked neither page is in it and the published files still are: that first paint is a second first paint, not a second renderer.
  *
  * The docs page is baked here as well as at publish because this preview answers a folder address the way the published host does — with the `index.html` that folder holds, which is the reader itself. Left unbaked the sidebar would be discovered over the GitHub API in local preview too.
  */
@@ -194,10 +198,22 @@ export function previewAnswers(leaf, moduleBytes, { baked = true } = {}) {
  *
  * Answered here rather than decided inside `main`, so the gate can ask it offline with no module built — and so there is one answer rather than a decision made twice.
  *
- * `--write` writes the four built files and leaves both tracked pages alone. It still bakes them, because that bake is the check that the module can draw the README and that the docs page still has a holder to write its file list into, before a byte crosses; nothing reads the result. Only `--bake` writes them, into the workspace the deploy uploads, which is the one place a written page is ever read.
+ * `--write` writes the built files and leaves both tracked pages alone. It still bakes them, because that bake is the check that the module can draw the README and that the docs page still has a holder to write its file list into, before a byte crosses; nothing reads the result. Only `--bake` writes them, into the workspace the deploy uploads, which is the one place a written page is ever read.
  */
 export function writtenPaths({ bakeOnly = false } = {}) {
   return bakeOnly ? [FRONT_PAGE, DOCS_PAGE] : [...PUBLISHED];
+}
+
+/** The token the licenses document carries where the running version goes; the desktop fills it when it opens the document. */
+export const VERSION_TOKEN = '{{version}}';
+
+/**
+ * The committed licenses document with the version filled, as every browser build publishes it beside its module.
+ *
+ * Here rather than in `bundle-notices.mjs`, which writes the document, because the site's deploy runs this file and everything it imports has to cross to the public side with it.
+ */
+export function licensesDocument(version) {
+  return readFileSync(join(root, 'src', 'assets', 'notices.md'), 'utf8').replaceAll(VERSION_TOKEN, version);
 }
 
 /** The app version, read where the release path reads it. */
