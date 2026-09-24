@@ -28,9 +28,9 @@ export function chartPagePaths(indexMarkdown, indexPath = COMPARE_INDEX) {
   return [...section[1].matchAll(/^\d+\.\s+\[[^\]]+\]\(([^)\s]+\.md)\)/gm)].map((m) => resolvePath(m[1], indexPath));
 }
 
-/** Every relative link in a drawn page made to work from the top of the site, the way the README spells its own. */
+/** Every relative link in a drawn page made to work from the top of the site, the way the README spells its own. Such a link opens here in the same tab, so the renderer's `rel` has nothing to do on it and goes — the chart carries thousands. */
 function relink(html, fromPath) {
-  return html.replace(/href="([^"]*)"/g, (whole, href) => {
+  return html.replace(/href="([^"]*)"( rel="noopener noreferrer")?/g, (whole, href) => {
     if (!href || /^(?:[a-z][a-z0-9+.-]*:|#|\/)/i.test(href)) return whole;
     return `href="${resolvePath(href, fromPath)}"`;
   });

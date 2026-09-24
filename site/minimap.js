@@ -80,6 +80,30 @@ export function initMinimap(source) {
   }
 
   // ---- the thumbnail ------------------------------------------------------
+  // A folded group draws nothing on the page but its summary line, so the copy carries that line alone: the same picture at the same height, without the thousands of folded rows the comparison chart holds. Only the path down to a folded group is walked; everything off it is copied whole.
+  function foldedCopy(root) {
+    const folded = root.querySelectorAll('details:not([open])');
+    if (!folded.length) return root.cloneNode(true);
+    const onPath = new Set();
+    for (const details of folded) {
+      for (let at = details.parentNode; at && at !== root && !onPath.has(at); at = at.parentNode) onPath.add(at);
+    }
+    const foldedSet = new Set(folded);
+    const copy = (node) => {
+      if (foldedSet.has(node)) {
+        const shell = node.cloneNode(false);
+        const summary = Array.from(node.children).find((child) => child.localName === 'summary');
+        if (summary) shell.appendChild(summary.cloneNode(true));
+        return shell;
+      }
+      if (node !== root && !onPath.has(node)) return node.cloneNode(true);
+      const shell = node.cloneNode(false);
+      for (const child of Array.from(node.childNodes)) shell.appendChild(copy(child));
+      return shell;
+    };
+    return copy(root);
+  }
+
   // Clone the live document, strip ids/links (so nothing is focusable or duplicated for assistive tech), and shrink it to the rail width with a transform. Rebuilt when the thumbnail geometry changes.
   function buildPreview() {
     previewFrame = 0;
@@ -98,7 +122,7 @@ export function initMinimap(source) {
       updateViewport(m);
       return;
     }
-    const preview = source.cloneNode(true);
+    const preview = foldedCopy(source);
     preview.removeAttribute('id');
     preview.querySelectorAll('[id]').forEach((node) => node.removeAttribute('id'));
     preview.querySelectorAll('a[href]').forEach((link) => link.removeAttribute('href'));
