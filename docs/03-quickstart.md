@@ -53,7 +53,7 @@ flowchart LR
 | Library button | Opens and closes the [library pane](01-features/03-library.md) |
 | Back / Forward | Moves through document and scroll history |
 | Tab bar, **+** at its end | Keeps multiple documents open, with the **+** that starts a [new document](01-features/07-editing.md#new-document) resting against the last tab |
-| Open, Export | Open a file, and [write the page you are reading as a PDF, a picture, a web page or an EPUB book](01-features/02-navigation.md#export-the-page). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used, and the palette that chooses a [theme](01-features/06-themes.md#choose) is at the foot of the library pane |
+| Open, Export | Open a file, and [write the page you are reading as a PDF, a picture, a web page, a Markdown note with its pictures beside it or an EPUB book](01-features/02-navigation.md#export-the-page). There is no Settings button — every control stands where it applies, so [preferences](01-features/05-settings.md) are wherever they are used, and the palette that chooses a [theme](01-features/06-themes.md#choose) is at the foot of the library pane |
 
 ### The page itself
 
