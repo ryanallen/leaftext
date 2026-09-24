@@ -5487,27 +5487,12 @@ body.has-split .strip-part {
 body.has-split .strip-part-beside {
   flex: 0 1 auto;
 }
-/* The keys in the second card, so the group without them is the left card's: the two swap places and the left card's width and the right card's inset go with them. Written pair first and group beside second, because .strip-part-beside is a .strip-part too: a declaration added after the override lands on both groups and wins, which walked the left card's tab 16px right on every press. */
-body.has-split.beside-on-the-left .strip-part {
-  order: 1;
-  flex: 0 1 auto;
-}
-body.has-split.beside-on-the-left .strip-part-beside {
-  order: 0;
-  flex: 0 1 auto;
-}
-/* A card's width is taken only while there are two groups to divide the row. One document in two views draws one group and hides the other, so a group pinned to the left card there would stretch to that card's far edge and carry the plus over the other page — which is what the strip's own mark, written by the page beside the group it draws, says. The mark is on the strip and the groups are its children, so `body.has-split` still leads: a mark left standing in a window with no split can pin nothing. Same four rules in the same order as the flexes above, pair first and group beside second, for the same reason. */
+/* A card's width is taken only while there are two groups to divide the row. One document in two views draws one group and hides the other, so a group pinned to the left card there would stretch to that card's far edge and carry the plus over the other page — which is what the strip's own mark, written by the page beside the group it draws, says. The mark is on the strip and the groups are its children, so `body.has-split` still leads: a mark left standing in a window with no split can pin nothing. Row first and right group second, because .strip-part-beside is a .strip-part too: a declaration written for the row after the right group's lands on both groups and wins. */
 body.has-split .tab-bar.has-two-groups > .strip-part {
   width: var(--strip-part-left, 50%);
 }
 body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   width: auto;
-}
-body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part {
-  width: auto;
-}
-body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
-  width: var(--strip-part-left, 50%);
 }
 /* A published site carries the folder trail in this box rather than a strip of tabs. A tab hangs off the bar's bottom edge so its top corners have room to round; a trail is a line of text, so it sits in the middle of the band instead, and it takes the whole box because it shrinks itself to whatever room it is given. */
 /* A group scrolled past its start dissolves at its left end rather than cutting a tab in half there, right beside Back, Refresh and Forward. A mask, not a scrim: the bar's dot lattice is fixed to the window, so anything painted flat over it draws as a patch. A group at rest wears no mask at all and draws its first tab whole. */
@@ -5515,7 +5500,7 @@ body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
   -webkit-mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 24px);
   mask-image: linear-gradient(to right, transparent 0, var(--lt-mask-opaque) 24px);
 }
-/* The plus, standing where the last tab ends and the next one will begin. Last however the split orders the two groups — the swap gives them order 1 and 0 — and it never shrinks, so a strip that has run out of room scrolls its tabs under it rather than squeezing it. The 16px is the bar's own, spent here because the strip spends none of its own at its sides. The gap handed back is the strip's 4px: the group's own 16px inset already stands between the last tab and the plus, and the forward arrow's side spends that inset and nothing else, so the strip's gap on top of it is what made this side read wider. */
+/* The plus, standing where the last tab ends and the next one will begin. Last after both groups, and it never shrinks, so a strip that has run out of room scrolls its tabs under it rather than squeezing it. The 16px is the bar's own, spent here because the strip spends none of its own at its sides. The gap handed back is the strip's 4px: the group's own 16px inset already stands between the last tab and the plus, and the forward arrow's side spends that inset and nothing else, so the strip's gap on top of it is what made this side read wider. */
 .tab-bar > .new-button {
   flex: 0 0 auto;
   order: 2;

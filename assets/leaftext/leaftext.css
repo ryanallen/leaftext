@@ -5480,26 +5480,11 @@ body.has-split .strip-part-beside {
   flex: 0 1 auto;
 }
 
-body.has-split.beside-on-the-left .strip-part {
-  order: 1;
-  flex: 0 1 auto;
-}
-body.has-split.beside-on-the-left .strip-part-beside {
-  order: 0;
-  flex: 0 1 auto;
-}
-
 body.has-split .tab-bar.has-two-groups > .strip-part {
   width: var(--strip-part-left, 50%);
 }
 body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   width: auto;
-}
-body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part {
-  width: auto;
-}
-body.has-split.beside-on-the-left .tab-bar.has-two-groups > .strip-part-beside {
-  width: var(--strip-part-left, 50%);
 }
 
 

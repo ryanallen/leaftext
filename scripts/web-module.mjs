@@ -81,6 +81,8 @@ export async function instantiateCore(file) {
       api.leaf_set_image_sizes(at, length);
       api.leaf_free(at, length);
     },
+    // Whether the page mints a book's pictures itself, as the embed says it does.
+    setMintsPictures: (mints) => api.leaf_set_mints_pictures(mints ? 1 : 0),
     render: (source, path) => JSON.parse(withStrings(api.leaf_render, source, path) || 'null'),
     /** The same render over a document's own bytes, which is the only way a packaged format can arrive: a Word, Excel, PowerPoint or OpenDocument file is a zip, so there is no string to hand across. `null` back means the bytes are not a document that format can read. */
     renderBytes: (bytes, path) => {
@@ -98,8 +100,8 @@ export async function instantiateCore(file) {
       open: (source, path) => {
         const [at, length] = writeBytes(source);
         const [name, nameLength] = write(path);
+        // The module takes the source as its own, so only the name is freed here.
         const handle = api.leaf_buffer_open(at, length, name, nameLength);
-        api.leaf_free(at, length);
         api.leaf_free(name, nameLength);
         return handle;
       },
@@ -119,6 +121,12 @@ export async function instantiateCore(file) {
         return answer;
       },
       edit: (handle, edit) => JSON.parse(onBuffer(api.leaf_buffer_edit, handle, JSON.stringify(edit)) || 'null'),
+      // One picture out of the buffer's own archive, as its media type and bytes, or null where the module refused it.
+      bookPicture: (handle, member) => {
+        const answer = onBuffer(api.leaf_buffer_book_picture, handle, String(member || ''), readBytes);
+        const split = answer ? answer.indexOf(0) : -1;
+        return split < 0 ? null : { type: decoder.decode(answer.subarray(0, split)), bytes: answer.subarray(split + 1) };
+      },
     },
   };
 }
