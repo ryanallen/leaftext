@@ -6447,7 +6447,7 @@ body.is-embedded .library-shell {
   position: absolute;
   inset: 0;
   width: 100%;
-  z-index: 5;
+  z-index: 8;
   transform: translateX(-100%);
   
   transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);

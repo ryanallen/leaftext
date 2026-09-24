@@ -6450,12 +6450,12 @@ body.is-embedded .library-shell {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
-/* Too narrow for a pane beside the page, so the library becomes a sheet over it: full width, parked off the left edge until the app bar's button pulls it in. Out of flow, so the grid still treats the library as closed and the page keeps the whole window. Under the app bar's z-index, which is what keeps the button that opened it reachable to close it again. */
+/* Too narrow for a pane beside the page, so the library becomes a sheet over it: full width, parked off the left edge until the app bar's button pulls it in. Out of flow, so the grid still treats the library as closed and the page keeps the whole window. Over every layer the page lays over itself — the view bar and find bar at 7, the document wait at 6, the source view's pinned rows at 5 — or they sit across the sheet's foot; under the app bar's 10, which keeps the button that opened it reachable to close it again. */
 .library-shell.library-narrow .library-pane {
   position: absolute;
   inset: 0;
   width: 100%;
-  z-index: 5;
+  z-index: 8;
   transform: translateX(-100%);
   /* The base rule is where the sheet rests and where it leaves to, so it carries the exit — quicker than the way in, because you have stopped caring about it. */
   transition: transform var(--lt-duration-160) var(--lt-ease-accelerate);
