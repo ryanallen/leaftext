@@ -5369,7 +5369,7 @@ body.frameless.is-fullscreen .startup-card {
   border-top: 0;
 }
 .app-bar::after {
-  /* The reader divider. Sits behind the tabs (z-index 0); the active tab, which is page-colored and z-index 1, covers this line so it reads as joined to the document, while inactive tabs meet it with their own bottom border. */
+  /* The reader divider. Sits behind the tab groups (z-index 0); each group stands at z-index 1, so the active tab, which is page-colored, covers this line so it reads as joined to the document, while inactive tabs meet it with their own bottom border. */
   content: "";
   position: absolute;
   /* Only as wide as the card below it, then a radius shorter again at each end: .reader-corner-tl / -tr arc from there down into the card's side borders. A pixel of overlap with each arc's tangent, so a rounding difference between the boxes can't open a gap. On the right that also clears the rail's column (0 wide when there is no rail), which is chrome the line must not cross. */
@@ -5460,6 +5460,9 @@ body.frameless.is-fullscreen .startup-card {
   overflow-x: auto;
   /* The bar's own 16px, spent inside the box that scrolls so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. It is also what caps --tab-flare: a flare wider than this inset is clipped flat by the scroll box and the end tab's corner draws as a straight run. */
   padding: 0 var(--lt-space-16);
+  /* A scrolled group's mask is a stacking context, which shuts each tab's own place above the divider inside the group; the group stands where its tabs do so the selected tab still opens into the page. */
+  position: relative;
+  z-index: 1;
 }
 /* The part scrolls and both its bars are hidden by the rule below alone: the standard property is the one that kills every `::-webkit-scrollbar` rule on the box it sits on, and the four boxes that set it are counted. This one is inside the strip, which already sets it. `height` is the horizontal bar's thickness and `width` the vertical one's, and both are needed: `overflow-x: auto` computes `overflow-y` to `auto` as well, so a vertical bar nothing can ever scroll reserved 15px inside the box, between the last tab and the group's end. */
 .strip-part::-webkit-scrollbar {
