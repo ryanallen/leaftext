@@ -79,6 +79,8 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "window_width": 1080,
   "window_height": 820,
   "window_maximized": false,
+  "window_x": 240,
+  "window_y": 120,
   "update_last_checked": 0,
   "update_staged_version": "",
   "update_auto_applied": "",
@@ -186,12 +188,12 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 - Opening the app puts up a small square window with the leaf and a turning ring in it, and that is what you meet while the page is still coming. It grows into your own window the moment the reader has something on it — the document it is opening, or the home screen where it opens none
 - The leaf and the ring are drawn before any of the app's own code runs. They are part of the page rather than something built by it, so the window fetches the front end while that first frame is painted and runs it on the frame after — which is what turns the blank moment a launch used to open with into the card you actually see
-- The window reopens at the size it had when it last closed, and maximized if it was maximized
+- The window reopens on the same spot of the screen and at the size it had when it last closed, and maximized if it was maximized
 - On Windows the page behind that small window is laid out at the size it is about to grow to, so the document is drawn once at the width you will read it at and the grow is the window opening rather than the document being laid out again. A long note reaches a window you can scroll as quickly as a short one
 - The small launch window is never remembered as your size, and a copy closed while it was still loading comes back at the size you actually left
-- Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`
+- Saved as `window_width` and `window_height` (in logical, DPI-independent pixels) plus `window_maximized`, and the top-left corner as `window_x` and `window_y` — screen pixels on Windows, points on a Mac
 - The size is stored separately from the maximized state, so un-maximizing returns to the windowed dimensions rather than the maximized ones
-- Window position is not restored — only the size and maximized state
+- A spot on a monitor that has since been unplugged, or one leaving too little of the window's top on any screen to grab it by, is not used: the window opens where the system puts it instead
 - [Full screen](06-themes.md#windows) is not saved on either platform: a reopened window returns to its saved ordinary size or maximized state
 
 ### Unsaved edits
