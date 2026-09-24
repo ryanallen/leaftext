@@ -3993,7 +3993,6 @@
   --lt-shadow-edge-strong: inset 0 0 0 1px var(--lt-border-strong);
   --lt-shadow-edge-accent: inset 0 0 0 2px var(--lt-accent);
   --lt-shadow-edge-link: inset 0 0 0 1px var(--lt-link);
-  --lt-shadow-under-accent: inset 0 -2px 0 0 var(--lt-accent);
 }
 
 /* Generated from design/icons.md by `just bundle-icons`. Do not edit. */
@@ -14153,7 +14152,7 @@ body.is-home-row-dragging .home-list-scroll li {
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-500);
 }
-/* The Growth and Tree tabs under the sheet head: the chosen one in the sheet's ink over an accent underline. */
+/* The Growth and Tree tabs under the sheet head: the chosen one marked by a straight line in its word's own ink, lying on the row's hairline. A border rather than an inset shadow, which leaves a faint upright line at a tab's fractional right edge. */
 .grove-tabs {
   display: flex;
   flex: none;
@@ -14164,9 +14163,12 @@ body.is-home-row-dragging .home-list-scroll li {
   display: none;
 }
 .grove-tab {
+  margin-bottom: calc(-1 * var(--lt-stroke-1));
   padding: var(--lt-space-6) 0;
   cursor: default;
   border: 0;
+  border-bottom: var(--lt-stroke-2) solid transparent;
+  border-radius: 0;
   background: transparent;
   color: var(--lt-muted-foreground);
   font-family: var(--app-font);
@@ -14174,12 +14176,13 @@ body.is-home-row-dragging .home-list-scroll li {
   font-weight: var(--lt-weight-600);
 }
 .grove-tab:hover {
+  border-bottom-color: transparent;
   background: transparent;
   color: var(--lt-foreground);
 }
 .grove-tab.is-chosen {
+  border-bottom-color: var(--lt-primary-ink);
   color: var(--lt-primary-ink);
-  box-shadow: var(--lt-shadow-under-accent);
 }
 .grove-tree-head {
   display: flex;
@@ -14206,6 +14209,10 @@ body.is-home-row-dragging .home-list-scroll li {
   flex-direction: column;
   overflow: hidden;
   container-type: inline-size;
+}
+/* The press a full bar draws on the Tree tab keeps its own height, so a short window squashes the tree's frame rather than the press. */
+.is-tree-claim {
+  flex: none;
 }
 .grove-tree-view {
   display: flex;
@@ -15918,7 +15925,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 183 values that do not change with the theme, all 78 icons, and all 123 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 123 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -15948,7 +15955,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>183</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>123</b></button>
 </div>
@@ -16053,7 +16060,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">183 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">182 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -16277,7 +16284,6 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="value"><code>lt-shadow-edge-strong</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-strong)"></i><code>inset 0 0 0 1px var(--lt-border-strong)</code></div>
 <div class="value"><code>lt-shadow-edge-accent</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-accent)"></i><code>inset 0 0 0 2px var(--lt-accent)</code></div>
 <div class="value"><code>lt-shadow-edge-link</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-edge-link)"></i><code>inset 0 0 0 1px var(--lt-link)</code></div>
-<div class="value"><code>lt-shadow-under-accent</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-under-accent)"></i><code>inset 0 -2px 0 0 var(--lt-accent)</code></div>
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
@@ -16566,7 +16572,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>All XP</h3><code class="built">.grove-all</code><span class="built">profile.js, the Grove sheet's whole body after **See all XP**: every gain the growth log kept, under the day it happened on, newest first</span></header>
-<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px"><div class="grove-sheet-head"><button type="button" class="icon-button grove-back" aria-label="Back to your Grove"><span class="lt-icon grove-back-icon lt-icon-back-long"></span></button><span class="grove-sheet-title">All XP <span class="grove-sheet-level">148 gains, back to 4 August</span></span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-all"><h3 class="grove-all-day">Today</h3><ol class="grove-all-list"><li class="grove-all-row"><span class="grove-all-time">9:11pm</span><span class="grove-all-doing">Grove 3</span><span class="grove-all-moved">A level of the whole Grove</span><span class="grove-all-worth">+4 seeds</span></li><li class="grove-all-row"><span class="grove-all-time">9:08pm</span><span class="grove-all-doing">1,500 words read</span><span class="grove-all-moved">Level 4 to 5 · Grove pool 28 to 31</span><span class="grove-all-worth">+3 Leafing XP</span></li></ol><h3 class="grove-all-day">Yesterday</h3><ol class="grove-all-list"><li class="grove-all-row"><span class="grove-all-time">7:42am</span><span class="grove-all-doing">Passage highlighted</span><span class="grove-all-moved">Grove pool 27 to 28</span><span class="grove-all-worth">+1 Marking XP</span></li></ol><button type="button" class="grove-tree-action grove-all-more">Show older</button></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">All XP</span></div><div class="grove-sheet-body"><p class="grove-all-note">Nothing has been kept yet. Every gain from the first one earned is listed here, with the time it happened.</p></div></div></div>
+<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px"><div class="grove-sheet-head"><button type="button" class="icon-button grove-back" aria-label="Back to your Grove"><span class="lt-icon grove-back-icon lt-icon-back-long"></span></button><span class="grove-sheet-title">All XP <span class="grove-sheet-level">148 gains, back to 4 August</span></span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-all"><h3 class="grove-all-day">Today</h3><ol class="grove-all-list"><li class="grove-all-row"><span class="grove-all-time">9:11pm</span><span class="grove-all-doing">Grove 3</span><span class="grove-all-moved">The whole Grove grew</span><span class="grove-all-worth">+4 seeds</span></li><li class="grove-all-row"><span class="grove-all-time">9:08pm</span><span class="grove-all-doing">1,500 words read</span><span class="grove-all-moved">Level 4 to 5 · Grove pool 28 to 31</span><span class="grove-all-worth">+3 Leafing XP</span></li></ol><h3 class="grove-all-day">Yesterday</h3><ol class="grove-all-list"><li class="grove-all-row"><span class="grove-all-time">7:42am</span><span class="grove-all-doing">Passage highlighted</span><span class="grove-all-moved">Grove pool 27 to 28</span><span class="grove-all-worth">+1 Marking XP</span></li></ol><button type="button" class="grove-tree-action grove-all-more">Show older</button></div></div></div><div class="leaf-sheet grove-sheet open" style="position:static;max-width:640px;margin-top:12px"><div class="grove-sheet-head"><span class="grove-sheet-title">All XP</span></div><div class="grove-sheet-body"><p class="grove-all-note">Nothing has been kept yet. Every gain from the first one earned is listed here, with the time it happened.</p></div></div></div>
 </section>
 <section class="part">
 <header><h3>Earning rules</h3><code class="built">.grove-rules</code><span class="built">profile.js, under each area's bar, one row per rule in the host's signal table</span></header>
