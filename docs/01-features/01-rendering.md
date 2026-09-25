@@ -60,7 +60,7 @@ flowchart LR
 
 ## EPUB books
 
-Leaftext opens an `.epub` as **one document**, in the order the book's own package says to read it. An EPUB is a zip of chapters with a package document naming their order, so what you get is the whole book on one scrolling page: the cover where the book puts it, the book's own contents page with every entry landing on the chapter it names, and then the chapters themselves. The minimap, find, the heading outline in the pane and Previous/Next all work on it the way they work on a note, because it is one document rather than a shelf of them.
+Leaftext opens an `.epub` as **one document**, in the order the book's own package says to read it. An EPUB is a zip of chapters with a package document naming their order, so what you get is the whole book on one scrolling page: the cover where the book puts it — or, where the book names its cover only in its package document and gives it no page of its own, drawn under the author's name in front of everything else — the book's own contents page with every entry landing on the chapter it names, and then the chapters themselves. The minimap, find, the heading outline in the pane and Previous/Next all work on it the way they work on a note, because it is one document rather than a shelf of them.
 
 | In the book | Rendered as |
 |---|---|
@@ -69,7 +69,7 @@ Leaftext opens an `.epub` as **one document**, in the order the book's own packa
 | The book's own contents page | A contents page, with every link jumping inside the document |
 | What the book's contents call each chapter | That chapter's heading, at the level the contents nest it at, where the chapter draws none of its own |
 | The title and author in the package metadata | The page heading, and the author's name under it as a quiet byline |
-| A picture the book packs | The picture, drawn out of the book itself, including a cover carried by an SVG `image` element on its own page |
+| A picture the book packs | The picture, drawn out of the book itself, including a cover carried by an SVG `image` element on its own page, and a cover the package declares that no page draws |
 | A stylesheet the book packs | The typography it describes, drawn in Leaftext's own type: italic, bold, small, raised, lowered, large, small capitals, centered or aligned, tight, and indented — and a part the book hides is not drawn. The stylesheet itself never reaches the page |
 | A script the book packs | Nothing. A book does not script the reading surface |
 | A part in a form nothing can draw | One quiet italic sentence saying so, where the part sits |

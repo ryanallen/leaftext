@@ -6222,18 +6222,24 @@ function containedPageBookMarkup() {
   return bookExportForm(block);
 }
 
+function exportedMermaidSheet(markup) {
+  const names = new Set(String(markup).match(new RegExp('(?<![\\w-])' + MERMAID_SHEET_CLASS + '\\d+(?![\\w-])', 'g')) || []);
+  const texts = [];
+  for (const name of names) if (mermaidSheetTexts.has(name)) texts.push(mermaidSheetTexts.get(name));
+  if (!texts.length) return '';
+  return texts.join('') + Array.from(mermaidSheetFrames).join('');
+}
+
 window.leafExportPageHtml = (path, asBook, book) => {
   const markup = pageExportMarkup(asBook === true);
   if (!markup) return;
-  
-  const sheet = mermaidSheetHolder;
   const root = document.documentElement;
   const theme = root.dataset.leafTheme || '';
   const answer = {
     command: 'exportPageHtml',
     path: String(path),
     markup,
-    sheet: sheet ? sheet.textContent || '' : '',
+    sheet: exportedMermaidSheet(markup),
     theme,
     appearance: root.dataset.leafAppearance || '',
     title: (currentState && currentState.document && currentState.document.title) || '',
@@ -11868,26 +11874,28 @@ window.leafSwapParagraph = (swap) => {
 };
 
 function recordParagraphSwap(doc, swap, end, delta) {
-  const move = (value) => (value >= swap.end ? value + delta : value);
-  for (const block of Array.isArray(doc.blocks) ? doc.blocks : []) {
-    if (block.start === swap.start && block.end === swap.end) block.end = end;
-    else {
+  doc.swaps = (Array.isArray(doc.swaps) ? doc.swaps : []).filter((held) => held.start !== swap.start);
+  moveKeptDocument(doc, swap.end, delta);
+  doc.swaps.push({ start: swap.start, end, html: swap.html });
+  doc.words = swap.words;
+}
+
+function moveKeptDocument(doc, at, delta) {
+  if (delta) {
+    const move = (value) => (value >= at ? value + delta : value);
+    for (const block of Array.isArray(doc.blocks) ? doc.blocks : []) {
       block.start = move(block.start);
       block.end = move(block.end);
     }
+    for (const task of Array.isArray(doc.tasks) ? doc.tasks : []) {
+      if (task && task.due_range) task.due_range = { start: move(task.due_range.start), end: move(task.due_range.end) };
+    }
+    for (const held of Array.isArray(doc.swaps) ? doc.swaps : []) {
+      held.start = move(held.start);
+      held.end = move(held.end);
+    }
   }
-  for (const task of Array.isArray(doc.tasks) ? doc.tasks : []) {
-    if (task && task.due_range) task.due_range = { start: move(task.due_range.start), end: move(task.due_range.end) };
-  }
-  const swaps = (Array.isArray(doc.swaps) ? doc.swaps : []).filter((held) => held.start !== swap.start);
-  for (const held of swaps) {
-    held.start = move(held.start);
-    held.end = move(held.end);
-  }
-  swaps.push({ start: swap.start, end, html: swap.html });
-  doc.swaps = swaps;
   doc.source = documentSourceBytes();
-  doc.words = swap.words;
 }
 
 function renderStateKeepingPlace() {
@@ -15793,6 +15801,8 @@ function advanceLiveRanges(el, edit) {
   if (typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
   const delta = written - (edit.end - edit.start);
   if (delta) shiftBlockRangesAfter(edit.end, delta, el);
+  const kept = currentState && currentState.document;
+  if (kept) moveKeptDocument(kept, edit.end, delta);
 }
 
 
@@ -23804,317 +23814,6 @@ function earnedLeafLore(all) {
 }
 
 
-
-var READING_DWELL_MS = 2000;
-var READING_IDLE_MS = 5 * 60 * 1000;
-var READING_BEAT_MS = 30 * 1000;
-
-var readingClock = () => Date.now();
-var readingLastInput = readingClock();
-
-var readingPending = 0;
-var readingPendingPicturePages = 0;
-
-var readingSeenBlocks = new Map();
-var readingCredited = new Map();
-
-var readingFinishedPaths = new Set();
-var readingFinished = 0;
-
-var readingWatch = null;
-function countWords(text) {
-  let words = 0;
-  let inWord = false;
-  const value = String(text || '');
-  for (let at = 0; at < value.length; at += 1) {
-    const code = value.charCodeAt(at);
-    const space = code === 32 || code === 10 || code === 13 || code === 9 || code === 160;
-    if (space) inWord = false;
-    else if (!inWord) {
-      words += 1;
-      inWord = true;
-    }
-  }
-  return words;
-}
-function readingIsIdle() {
-  return readingClock() - readingLastInput >= READING_IDLE_MS;
-}
-function readingBlockId(el) {
-  return el.dataset.blockId || el.id;
-}
-function isPictureReadingBlock(el) {
-  if (!el.classList.contains('book-item') && !el.classList.contains('image-lane')) return false;
-  if (!el.querySelector('img[src]')) return false;
-  return countWords(el.textContent) < 500;
-}
-function creditPicturePage() {
-  if (!leafProfile || !leafProfile.enabled) return;
-  readingPendingPicturePages += 1;
-}
-function creditReading(path, words, ceiling) {
-  if (!leafProfile || !leafProfile.enabled || words <= 0) return 0;
-  const already = readingCredited.get(path) || 0;
-  const room = ceiling > 0 ? Math.max(0, ceiling - already) : words;
-  const paid = Math.min(words, room);
-  if (paid <= 0) return 0;
-  readingCredited.set(path, already + paid);
-  readingPending += paid;
-  
-  if (ceiling > 0 && already + paid >= ceiling * 0.9 && !readingFinishedPaths.has(path)) {
-    readingFinishedPaths.add(path);
-    readingFinished = Math.max(readingFinished, ceiling);
-  }
-  return paid;
-}
-function flushReading() {
-  if (readingPending <= 0 && readingPendingPicturePages <= 0) return;
-  const words = readingPending;
-  const picturePages = readingPendingPicturePages;
-  const finished = readingFinished;
-  readingPending = 0;
-  readingPendingPicturePages = 0;
-  readingFinished = 0;
-  if (!leafProfile || !leafProfile.enabled) return;
-  const report = { command: 'reportReading', words, picturePages, today: groveLocalDay(new Date()) };
-  if (finished) report.finished = finished;
-  send(report);
-}
-
-function readingDwellEnded(watch, el) {
-  if (readingWatch !== watch) return;
-  watch.timers.delete(el);
-  if (!watch.visible.has(el)) return;
-  if (readingIsIdle()) {
-    watch.waiting.add(el);
-    return;
-  }
-  const box = watch.boxes.get(el);
-  if (box && box.height > box.view) {
-    creditReadingShare(watch, el, box, app.scrollTop);
-    return;
-  }
-  const id = readingBlockId(el);
-  const seen = readingSeenBlocks.get(watch.path) || new Set();
-  readingSeenBlocks.set(watch.path, seen);
-  if (seen.has(id)) return;
-  seen.add(id);
-  if (isPictureReadingBlock(el)) creditPicturePage();
-  else creditReading(watch.path, countWords(el.textContent), watch.words);
-  markReadingPassed(watch, el);
-}
-
-var readingBlockShare = new Map();
-
-function readingBlockBox(rect, rootTop, scroll) {
-  const height = rect.bottom - rect.top;
-  if (!scroll.page || !scroll.view || !(height > 0)) return null;
-  return { top: rect.top - rootTop + scroll.top, height, page: scroll.page, view: scroll.view };
-}
-function readingScroll() {
-  return { top: app.scrollTop, page: app.scrollHeight, view: app.clientHeight };
-}
-
-function creditReadingShare(watch, el, box, scrollTop) {
-  watch.tall.add(el);
-  const id = readingBlockId(el);
-  let shares = readingBlockShare.get(watch.path);
-  if (!shares) {
-    shares = new Map();
-    readingBlockShare.set(watch.path, shares);
-  }
-  const paid = shares.get(id) || 0;
-  const reached = Math.min(1, Math.max(0, (scrollTop + box.view - box.top) / box.height));
-  if (reached > paid) {
-    shares.set(id, reached);
-    if (isPictureReadingBlock(el)) {
-      if (reached >= 0.9) {
-        const seen = readingSeenBlocks.get(watch.path) || new Set();
-        readingSeenBlocks.set(watch.path, seen);
-        if (!seen.has(id)) {
-          seen.add(id);
-          creditPicturePage();
-        }
-      }
-      noteReadingDepth(watch.path, Math.min(1, (box.top + reached * box.height) / box.page));
-      return;
-    }
-    const words = countWords(el.textContent);
-    const owed = Math.floor(reached * words) - Math.floor(paid * words);
-    if (owed > 0) creditReading(watch.path, owed, watch.words);
-  }
-  noteReadingDepth(watch.path, Math.min(1, (box.top + Math.max(reached, paid) * box.height) / box.page));
-}
-
-function readingBlockCheck(watch) {
-  if (readingWatch !== watch || readingIsIdle()) return;
-  const tall = [...watch.tall].filter((el) => watch.visible.has(el));
-  if (!tall.length) return;
-  const scroll = readingScroll();
-  const rootTop = app.getBoundingClientRect().top;
-  for (const el of tall) {
-    const box = readingBlockBox(el.getBoundingClientRect(), rootTop, scroll);
-    if (!box) continue;
-    watch.boxes.set(el, box);
-    creditReadingShare(watch, el, box, scroll.top);
-  }
-}
-
-var readingDeepest = new Map();
-function isReadingHeading(el) {
-  return /^H[1-6]$/.test(el.tagName || '');
-}
-function markReadingPassed(watch, el) {
-  if (isReadingHeading(el)) el.classList.add('is-passed');
-  const box = watch.boxes.get(el);
-  if (box) noteReadingDepth(watch.path, Math.min(1, Math.max(0, (box.top + box.height) / box.page)));
-}
-function noteReadingDepth(path, share) {
-  if (share <= (readingDeepest.get(path) || 0)) return;
-  readingDeepest.set(path, share);
-  drawReadingRibbon();
-}
-function armReadingDwell(watch, el) {
-  if (watch.timers.has(el)) return;
-  watch.timers.set(el, columnTimer(() => readingDwellEnded(watch, el), READING_DWELL_MS));
-}
-
-function readingFallbackCheck(watch) {
-  if (readingWatch !== watch || readingIsIdle() || !app.scrollHeight) return;
-  const reached = Math.min(1, (app.scrollTop + app.clientHeight) / app.scrollHeight);
-  const target = Math.floor(reached * watch.words);
-  const already = readingCredited.get(watch.path) || 0;
-  if (target > already) creditReading(watch.path, target - already, watch.words);
-  noteReadingDepth(watch.path, reached);
-}
-function stopWatchingReading() {
-  const watch = readingWatch;
-  readingWatch = null;
-  if (!watch) return;
-  if (watch.observer) watch.observer.disconnect();
-  for (const timer of watch.timers.values()) clearTimeout(timer);
-  if (watch.fallbackTimer) clearTimeout(watch.fallbackTimer);
-  if (watch.onScroll) app.removeEventListener('scroll', watch.onScroll);
-}
-
-window.leafDocumentWords = function (path, words) {
-  const count = Number(words) || 0;
-  const held = currentState.document;
-  if (held && held.path === path) held.words = count;
-  if (readingWatch && readingWatch.path === path) readingWatch.words = count;
-};
-
-function rewatchReadingBlock(old, fresh) {
-  const watch = readingWatch;
-  if (!watch || !watch.observer) return;
-  watch.observer.unobserve(old);
-  watch.visible.delete(old);
-  watch.boxes.delete(old);
-  watch.waiting.delete(old);
-  watch.tall.delete(old);
-  const timer = watch.timers.get(old);
-  if (timer) clearTimeout(timer);
-  watch.timers.delete(old);
-  watch.observer.observe(fresh);
-}
-
-function watchReadingDocument(path, words) {
-  const arriving = !readingWatch || readingWatch.path !== path;
-  stopWatchingReading();
-  
-  if (arriving) flushReading();
-  applyPageOrnaments();
-  if (!leafProfile || !leafProfile.enabled || !path) return;
-  const watch = { path, words: Number(words) || 0, observer: null, visible: new Set(), tall: new Set(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
-  readingWatch = watch;
-  const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
-  
-  const seen = readingSeenBlocks.get(path);
-  if (seen) for (const el of blocks) if (isReadingHeading(el) && seen.has(readingBlockId(el))) el.classList.add('is-passed');
-  if (blocks.length) {
-    
-    watch.observer = new IntersectionObserver(inThisColumn((entries) => {
-      let scroll = null;
-      const boxOf = (entry) => {
-        if (!entry.rootBounds || !entry.boundingClientRect) return null;
-        scroll = scroll || readingScroll();
-        return readingBlockBox(entry.boundingClientRect, entry.rootBounds.top, scroll);
-      };
-      for (const entry of entries) {
-        const el = entry.target;
-        if (entry.isIntersecting) {
-          watch.visible.add(el);
-          const box = boxOf(entry);
-          if (box) watch.boxes.set(el, box);
-          else watch.boxes.delete(el);
-          armReadingDwell(watch, el);
-        } else {
-          
-          if (watch.tall.has(el) && !readingIsIdle()) {
-            const box = boxOf(entry);
-            if (box) creditReadingShare(watch, el, box, scroll.top);
-          }
-          watch.visible.delete(el);
-          watch.boxes.delete(el);
-          watch.waiting.delete(el);
-          const timer = watch.timers.get(el);
-          if (timer) clearTimeout(timer);
-          watch.timers.delete(el);
-        }
-      }
-    }), { root: app });
-    for (const el of blocks) watch.observer.observe(el);
-    watchReadingScroll(watch, () => readingBlockCheck(watch));
-    return;
-  }
-  watchReadingScroll(watch, () => readingFallbackCheck(watch))();
-}
-
-function watchReadingScroll(watch, run) {
-  const settle = () => {
-    if (watch.fallbackTimer) clearTimeout(watch.fallbackTimer);
-    watch.fallbackTimer = setTimeout(run, READING_DWELL_MS);
-  };
-  watch.onScroll = settle;
-  onColumn('scroll', settle);
-  return settle;
-}
-
-function forgetReadingCreditedThisLaunch() {
-  readingSeenBlocks.clear();
-  readingCredited.clear();
-  readingBlockShare.clear();
-  readingFinishedPaths.clear();
-  readingPending = 0;
-  readingPendingPicturePages = 0;
-  readingFinished = 0;
-  for (const el of app.querySelectorAll('.document-body [data-block-id].is-passed')) el.classList.remove('is-passed');
-  const watch = readingWatch;
-  if (!watch) return;
-  for (const el of watch.visible) {
-    const timer = watch.timers.get(el);
-    if (timer) clearTimeout(timer);
-    watch.timers.delete(el);
-    armReadingDwell(watch, el);
-  }
-}
-
-function readingInput() {
-  const wasIdle = readingIsIdle();
-  readingLastInput = readingClock();
-  const watch = readingWatch;
-  if (!watch) return;
-  if (wasIdle) {
-    for (const el of watch.waiting) armReadingDwell(watch, el);
-    watch.waiting.clear();
-    if (!watch.observer) readingFallbackCheck(watch);
-  }
-}
-for (const type of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove']) {
-  document.addEventListener(type, readingInput, { capture: true, passive: true });
-}
-setInterval(flushReading, READING_BEAT_MS);
-
 window.leafProfileUpdated = function (profile) {
   if (!profile) return;
   if (Array.isArray(profile.catalog)) leafCatalog = profile.catalog;
@@ -24313,6 +24012,342 @@ if (groveSheet && libraryProfile) {
   if (groveTabs) groveTabs.addEventListener('keydown', onGroveTabKey);
   drawGrovePill();
 }
+
+
+var READING_DWELL_MS = 2000;
+var READING_IDLE_MS = 5 * 60 * 1000;
+var READING_BEAT_MS = 30 * 1000;
+
+var readingClock = () => Date.now();
+var readingLastInput = readingClock();
+
+var readingPending = 0;
+var readingPendingPicturePages = 0;
+
+var readingSeenBlocks = new Map();
+var readingCredited = new Map();
+
+var readingFinishedPaths = new Set();
+var readingFinished = 0;
+
+var readingWatch = null;
+function countWords(text) {
+  let words = 0;
+  let inWord = false;
+  const value = String(text || '');
+  for (let at = 0; at < value.length; at += 1) {
+    const code = value.charCodeAt(at);
+    const space = code === 32 || code === 10 || code === 13 || code === 9 || code === 160;
+    if (space) inWord = false;
+    else if (!inWord) {
+      words += 1;
+      inWord = true;
+    }
+  }
+  return words;
+}
+function readingIsIdle() {
+  return readingClock() - readingLastInput >= READING_IDLE_MS;
+}
+function readingBlockId(el) {
+  return el.dataset.blockId || el.id;
+}
+
+var READING_TABLE_PICTURE_PX = 32;
+function tablePictureCount(table) {
+  let count = 0;
+  for (const cell of table.querySelectorAll('td, th')) {
+    const pictures = cell.querySelectorAll('img[src]');
+    if (pictures.length !== 1 || pictures[0].dataset.imageMissing === 'true' || (cell.textContent || '').trim()) continue;
+    const box = pictures[0].getBoundingClientRect();
+    if (Math.min(box.width, box.height) >= READING_TABLE_PICTURE_PX) count += 1;
+  }
+  return count;
+}
+
+function readingPictureCount(watch, el) {
+  if (watch.pictures.has(el)) return watch.pictures.get(el);
+  const page = el.classList.contains('book-item') || el.classList.contains('image-lane');
+  let count = 0;
+  if ((page || /^table$/i.test(el.tagName || '')) && countWords(el.textContent) < 500) {
+    count = page ? (el.querySelector('img[src]') ? 1 : 0) : tablePictureCount(el);
+  }
+  watch.pictures.set(el, count);
+  return count;
+}
+
+function picturesReached(count, share) {
+  return Math.floor(count * Math.min(1, share / 0.9));
+}
+function creditPicturePages(count) {
+  if (!leafProfile || !leafProfile.enabled || count <= 0) return;
+  readingPendingPicturePages += count;
+}
+function creditReading(path, words, ceiling) {
+  if (!leafProfile || !leafProfile.enabled || words <= 0) return 0;
+  const already = readingCredited.get(path) || 0;
+  const room = ceiling > 0 ? Math.max(0, ceiling - already) : words;
+  const paid = Math.min(words, room);
+  if (paid <= 0) return 0;
+  readingCredited.set(path, already + paid);
+  readingPending += paid;
+  
+  if (ceiling > 0 && already + paid >= ceiling * 0.9 && !readingFinishedPaths.has(path)) {
+    readingFinishedPaths.add(path);
+    readingFinished = Math.max(readingFinished, ceiling);
+  }
+  return paid;
+}
+function flushReading() {
+  if (readingPending <= 0 && readingPendingPicturePages <= 0) return;
+  const words = readingPending;
+  const picturePages = readingPendingPicturePages;
+  const finished = readingFinished;
+  readingPending = 0;
+  readingPendingPicturePages = 0;
+  readingFinished = 0;
+  if (!leafProfile || !leafProfile.enabled) return;
+  const report = { command: 'reportReading', words, picturePages, today: groveLocalDay(new Date()) };
+  if (finished) report.finished = finished;
+  send(report);
+}
+
+function readingDwellEnded(watch, el) {
+  if (readingWatch !== watch) return;
+  watch.timers.delete(el);
+  if (!watch.visible.has(el)) return;
+  if (readingIsIdle()) {
+    watch.waiting.add(el);
+    return;
+  }
+  const box = watch.boxes.get(el);
+  if (box && box.height > box.view) {
+    creditReadingShare(watch, el, box, app.scrollTop);
+    return;
+  }
+  const id = readingBlockId(el);
+  const seen = readingSeenBlocks.get(watch.path) || new Set();
+  readingSeenBlocks.set(watch.path, seen);
+  if (seen.has(id)) return;
+  seen.add(id);
+  const pictures = readingPictureCount(watch, el);
+  
+  const share = (readingBlockShare.get(watch.path) || new Map()).get(id) || 0;
+  if (pictures) creditPicturePages(pictures - picturesReached(pictures, share));
+  else creditReading(watch.path, countWords(el.textContent), watch.words);
+  markReadingPassed(watch, el);
+}
+
+var readingBlockShare = new Map();
+
+function readingBlockBox(rect, rootTop, scroll) {
+  const height = rect.bottom - rect.top;
+  if (!scroll.page || !scroll.view || !(height > 0)) return null;
+  return { top: rect.top - rootTop + scroll.top, height, page: scroll.page, view: scroll.view };
+}
+function readingScroll() {
+  return { top: app.scrollTop, page: app.scrollHeight, view: app.clientHeight };
+}
+
+function creditReadingShare(watch, el, box, scrollTop) {
+  watch.tall.add(el);
+  const id = readingBlockId(el);
+  let shares = readingBlockShare.get(watch.path);
+  if (!shares) {
+    shares = new Map();
+    readingBlockShare.set(watch.path, shares);
+  }
+  const paid = shares.get(id) || 0;
+  const reached = Math.min(1, Math.max(0, (scrollTop + box.view - box.top) / box.height));
+  if (reached > paid) {
+    shares.set(id, reached);
+    const pictures = readingPictureCount(watch, el);
+    if (pictures) {
+      const seen = readingSeenBlocks.get(watch.path) || new Set();
+      readingSeenBlocks.set(watch.path, seen);
+      if (!seen.has(id)) {
+        creditPicturePages(picturesReached(pictures, reached) - picturesReached(pictures, paid));
+        if (picturesReached(pictures, reached) === pictures) seen.add(id);
+      }
+      noteReadingDepth(watch.path, Math.min(1, (box.top + reached * box.height) / box.page));
+      return;
+    }
+    const words = countWords(el.textContent);
+    const owed = Math.floor(reached * words) - Math.floor(paid * words);
+    if (owed > 0) creditReading(watch.path, owed, watch.words);
+  }
+  noteReadingDepth(watch.path, Math.min(1, (box.top + Math.max(reached, paid) * box.height) / box.page));
+}
+
+function readingBlockCheck(watch) {
+  if (readingWatch !== watch || readingIsIdle()) return;
+  const tall = [...watch.tall].filter((el) => watch.visible.has(el));
+  if (!tall.length) return;
+  const scroll = readingScroll();
+  const rootTop = app.getBoundingClientRect().top;
+  for (const el of tall) {
+    const box = readingBlockBox(el.getBoundingClientRect(), rootTop, scroll);
+    if (!box) continue;
+    watch.boxes.set(el, box);
+    creditReadingShare(watch, el, box, scroll.top);
+  }
+}
+
+var readingDeepest = new Map();
+function isReadingHeading(el) {
+  return /^H[1-6]$/.test(el.tagName || '');
+}
+function markReadingPassed(watch, el) {
+  if (isReadingHeading(el)) el.classList.add('is-passed');
+  const box = watch.boxes.get(el);
+  if (box) noteReadingDepth(watch.path, Math.min(1, Math.max(0, (box.top + box.height) / box.page)));
+}
+function noteReadingDepth(path, share) {
+  if (share <= (readingDeepest.get(path) || 0)) return;
+  readingDeepest.set(path, share);
+  drawReadingRibbon();
+}
+function armReadingDwell(watch, el) {
+  if (watch.timers.has(el)) return;
+  watch.timers.set(el, columnTimer(() => readingDwellEnded(watch, el), READING_DWELL_MS));
+}
+
+function readingFallbackCheck(watch) {
+  if (readingWatch !== watch || readingIsIdle() || !app.scrollHeight) return;
+  const reached = Math.min(1, (app.scrollTop + app.clientHeight) / app.scrollHeight);
+  const target = Math.floor(reached * watch.words);
+  const already = readingCredited.get(watch.path) || 0;
+  if (target > already) creditReading(watch.path, target - already, watch.words);
+  noteReadingDepth(watch.path, reached);
+}
+function stopWatchingReading() {
+  const watch = readingWatch;
+  readingWatch = null;
+  if (!watch) return;
+  if (watch.observer) watch.observer.disconnect();
+  for (const timer of watch.timers.values()) clearTimeout(timer);
+  if (watch.fallbackTimer) clearTimeout(watch.fallbackTimer);
+  if (watch.onScroll) app.removeEventListener('scroll', watch.onScroll);
+}
+
+window.leafDocumentWords = function (path, words) {
+  const count = Number(words) || 0;
+  const held = currentState.document;
+  if (held && held.path === path) held.words = count;
+  if (readingWatch && readingWatch.path === path) readingWatch.words = count;
+};
+
+function rewatchReadingBlock(old, fresh) {
+  const watch = readingWatch;
+  if (!watch || !watch.observer) return;
+  watch.observer.unobserve(old);
+  watch.visible.delete(old);
+  watch.boxes.delete(old);
+  watch.waiting.delete(old);
+  watch.tall.delete(old);
+  watch.pictures.delete(old);
+  const timer = watch.timers.get(old);
+  if (timer) clearTimeout(timer);
+  watch.timers.delete(old);
+  watch.observer.observe(fresh);
+}
+
+function watchReadingDocument(path, words) {
+  const arriving = !readingWatch || readingWatch.path !== path;
+  stopWatchingReading();
+  
+  if (arriving) flushReading();
+  applyPageOrnaments();
+  if (!leafProfile || !leafProfile.enabled || !path) return;
+  const watch = { path, words: Number(words) || 0, observer: null, visible: new Set(), tall: new Set(), pictures: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
+  readingWatch = watch;
+  const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
+  
+  const seen = readingSeenBlocks.get(path);
+  if (seen) for (const el of blocks) if (isReadingHeading(el) && seen.has(readingBlockId(el))) el.classList.add('is-passed');
+  if (blocks.length) {
+    
+    watch.observer = new IntersectionObserver(inThisColumn((entries) => {
+      let scroll = null;
+      const boxOf = (entry) => {
+        if (!entry.rootBounds || !entry.boundingClientRect) return null;
+        scroll = scroll || readingScroll();
+        return readingBlockBox(entry.boundingClientRect, entry.rootBounds.top, scroll);
+      };
+      for (const entry of entries) {
+        const el = entry.target;
+        if (entry.isIntersecting) {
+          watch.visible.add(el);
+          const box = boxOf(entry);
+          if (box) watch.boxes.set(el, box);
+          else watch.boxes.delete(el);
+          armReadingDwell(watch, el);
+        } else {
+          
+          if (watch.tall.has(el) && !readingIsIdle()) {
+            const box = boxOf(entry);
+            if (box) creditReadingShare(watch, el, box, scroll.top);
+          }
+          watch.visible.delete(el);
+          watch.boxes.delete(el);
+          watch.waiting.delete(el);
+          const timer = watch.timers.get(el);
+          if (timer) clearTimeout(timer);
+          watch.timers.delete(el);
+        }
+      }
+    }), { root: app });
+    for (const el of blocks) watch.observer.observe(el);
+    watchReadingScroll(watch, () => readingBlockCheck(watch));
+    return;
+  }
+  watchReadingScroll(watch, () => readingFallbackCheck(watch))();
+}
+
+function watchReadingScroll(watch, run) {
+  const settle = () => {
+    if (watch.fallbackTimer) clearTimeout(watch.fallbackTimer);
+    watch.fallbackTimer = setTimeout(run, READING_DWELL_MS);
+  };
+  watch.onScroll = settle;
+  onColumn('scroll', settle);
+  return settle;
+}
+
+function forgetReadingCreditedThisLaunch() {
+  readingSeenBlocks.clear();
+  readingCredited.clear();
+  readingBlockShare.clear();
+  readingFinishedPaths.clear();
+  readingPending = 0;
+  readingPendingPicturePages = 0;
+  readingFinished = 0;
+  for (const el of app.querySelectorAll('.document-body [data-block-id].is-passed')) el.classList.remove('is-passed');
+  const watch = readingWatch;
+  if (!watch) return;
+  for (const el of watch.visible) {
+    const timer = watch.timers.get(el);
+    if (timer) clearTimeout(timer);
+    watch.timers.delete(el);
+    armReadingDwell(watch, el);
+  }
+}
+
+function readingInput() {
+  const wasIdle = readingIsIdle();
+  readingLastInput = readingClock();
+  const watch = readingWatch;
+  if (!watch) return;
+  if (wasIdle) {
+    for (const el of watch.waiting) armReadingDwell(watch, el);
+    watch.waiting.clear();
+    if (!watch.observer) readingFallbackCheck(watch);
+  }
+}
+for (const type of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove']) {
+  document.addEventListener(type, readingInput, { capture: true, passive: true });
+}
+setInterval(flushReading, READING_BEAT_MS);
 
 
 
