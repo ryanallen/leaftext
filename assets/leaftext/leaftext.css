@@ -8479,6 +8479,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   word-break: normal;
 }
 
+.document-run {
+  position: relative;
+}
+
 .is-held-below {
   display: none !important;
 }
@@ -8583,7 +8587,9 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .app-surface .document-body [data-borrowed-title] {
   cursor: text;
 }
-.document-body h1:first-of-type {
+
+.document-body h1[data-lead-heading],
+.document-body :not(.document-run) > h1:first-of-type {
   font-size: var(--type-display-size);
   font-weight: var(--type-display-weight);
   line-height: var(--type-display-line);
@@ -9011,6 +9017,18 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 .document-body .xml-comment-body {
   padding: 0.35em 0 0 1.5em;
+}
+
+.document-body .slide-notes {
+  border-left: 0.25em solid var(--lt-markdown-blockquote-border);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  margin: var(--type-spacing) 0;
+  padding: 0 1em;
+}
+.document-body .slide-notes-label {
+  font-weight: var(--lt-weight-600);
 }
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
@@ -10505,7 +10523,7 @@ body.is-block-dragging .document-body [data-src-start] {
 
 
 
-.document-body > .table-bay {
+.document-run > .table-bay {
   display: grid;
   grid-template-columns: minmax(0, max-content);
   justify-content: center;
@@ -10513,7 +10531,7 @@ body.is-block-dragging .document-body [data-src-start] {
   margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
 }
 
-.document-body > .table-bay.table-bay-is-drawn {
+.document-run > .table-bay.table-bay-is-drawn {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -10873,7 +10891,7 @@ body.is-block-dragging .document-body [data-src-start] {
       padding-top: 0;
     }
     
-    .document-body > .table-bay.table-allows-cards {
+    .document-run > .table-bay.table-allows-cards {
       grid-template-columns: minmax(0, 1fr);
       width: 100%;
       margin-inline: 0;
@@ -11017,7 +11035,7 @@ body.is-block-dragging .document-body [data-src-start] {
   padding-top: 0;
 }
 
-.document-body > .table-bay.table-is-cards {
+.document-run > .table-bay.table-is-cards {
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
   margin-inline: 0;
@@ -11271,7 +11289,7 @@ body.is-block-dragging .document-body [data-src-start] {
   width: auto;
 }
 
-.document-body > p.image-lane {
+.document-run > p.image-lane {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
@@ -11279,7 +11297,7 @@ body.is-block-dragging .document-body [data-src-start] {
   max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
 }
 
-.document-body > p.image-lane > img {
+.document-run > p.image-lane > img {
   width: 100%;
 }
 .document-body img {
@@ -15848,12 +15866,12 @@ body.leaf-paper .document-body {
   padding-bottom: var(--reader-content-pad);
 }
 
-body.leaf-paper .document-body > .table-bay {
+body.leaf-paper .document-run > .table-bay {
   width: 100%;
   margin-inline: 0;
 }
 body.leaf-paper .table-bay > .table-lane,
-body.leaf-paper .document-body > p.image-lane {
+body.leaf-paper .document-run > p.image-lane {
   position: static;
   transform: none;
   width: var(--leaf-paper-lane, 100%);
@@ -15863,7 +15881,7 @@ body.leaf-paper .document-body > p.image-lane {
 }
 
 @media screen {
-  body.leaf-paper.leaf-web .document-body > .table-bay {
+  body.leaf-paper.leaf-web .document-run > .table-bay {
     width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
     margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
   }
@@ -15874,7 +15892,7 @@ body.leaf-paper .document-body > p.image-lane {
     max-width: 100%;
     margin-inline: auto;
   }
-  body.leaf-paper.leaf-web .document-body > p.image-lane {
+  body.leaf-paper.leaf-web .document-run > p.image-lane {
     position: relative;
     transform: translateX(-50%);
     width: max-content;
@@ -15914,10 +15932,10 @@ body.leaf-web .document-minimap {
   }
 }
 
-body.leaf-paper .document-body > p.image-lane {
+body.leaf-paper .document-run > p.image-lane {
   text-align: center;
 }
-body.leaf-paper .document-body > p.image-lane > img {
+body.leaf-paper .document-run > p.image-lane > img {
   width: auto;
   max-width: 100%;
 }

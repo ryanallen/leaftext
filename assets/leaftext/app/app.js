@@ -11820,6 +11820,7 @@ window.leafSetFavorites = (favorites) => {
 };
 
 window.leafReloadDocument = (state) => {
+  if (redrawBehindTyping(state)) return;
   takePayloadSplit(state);
   
   const anchor = pendingEditAnchor || captureReaderScrollAnchor();
@@ -11848,19 +11849,15 @@ window.leafSwapParagraph = (swap) => {
   const doc = currentState && currentState.document;
   const body = app.querySelector('.document-body');
   if (!swap || !doc || doc.path !== swap.path || codeViewActive || !body) return;
+  const end = swap.start + utf8ByteLength(swap.text);
   const old = elementWithRange(body, 'block', swap.start);
-  const placed = !!old && old.parentElement === body && old.tagName === 'P' && rangeOf(old, 'block').end === swap.end;
-  const written = utf8ByteLength(swap.text);
-  const end = swap.start + written;
-  const fresh = placed ? drawSwappedParagraph(old, swap.html, swap.start, swap.end) : null;
+  const placed = !!old && isDocumentBlock(old) && old.tagName === 'P' && rangeOf(old, 'block').end === end;
+  const fresh = placed ? drawSwappedParagraph(old, swap.html, swap.start, end) : null;
   if (!fresh) {
     send({ command: 'refreshDocument' });
     return;
   }
-  spliceDocumentSource(swap.start, swap.end, swap.text);
-  const delta = written - (swap.end - swap.start);
-  if (delta) shiftBlockRangesAfter(swap.end, delta, fresh);
-  recordParagraphSwap(doc, swap, end, delta);
+  recordParagraphSwap(doc, swap, end);
   currentState.renderKey = swap.renderKey;
   rewatchReadingBlock(old, fresh);
   window.leafDocumentWords(swap.path, swap.words);
@@ -11873,9 +11870,9 @@ window.leafSwapParagraph = (swap) => {
   else placePendingCaret(body);
 };
 
-function recordParagraphSwap(doc, swap, end, delta) {
+function recordParagraphSwap(doc, swap, end) {
   doc.swaps = (Array.isArray(doc.swaps) ? doc.swaps : []).filter((held) => held.start !== swap.start);
-  moveKeptDocument(doc, swap.end, delta);
+  moveKeptDocument(doc, end, 0);
   doc.swaps.push({ start: swap.start, end, html: swap.html });
   doc.words = swap.words;
 }
@@ -12432,7 +12429,7 @@ function redoLastEdit() {
 
 
 function afterActiveEditCommits(act) {
-  window.setTimeout(act, 0);
+  window.setTimeout(() => afterEditHold(act), 0);
 }
 
 
@@ -14227,6 +14224,54 @@ function bodyHolds(body, el) {
 }
 
 
+const DOCUMENT_RUN_SIZE = 256;
+function isDocumentRun(el) {
+  return !!el && el.nodeType === 1 && !!el.classList && el.classList.contains('document-run');
+}
+
+function documentBlocks(body) {
+  const blocks = [];
+  if (!body) return blocks;
+  for (const child of Array.from(body.children)) {
+    if (isDocumentRun(child)) blocks.push(...Array.from(child.children));
+    else blocks.push(child);
+  }
+  return blocks;
+}
+
+function isDocumentBlock(el) {
+  let parent = el && el.parentElement;
+  if (isDocumentRun(parent)) parent = parent.parentElement;
+  return !!parent && !!parent.classList && parent.classList.contains('document-body');
+}
+
+function makeDocumentRuns(body) {
+  if (!body || body.classList.contains('document-body-site')) return;
+  const title = Array.from(body.children).find((block) => block.tagName === 'H1');
+  if (title) title.dataset.leadHeading = '';
+  
+  let run = null;
+  let held = 0;
+  for (const node of Array.from(body.childNodes)) {
+    if (!run || (node.nodeType === 1 && held === DOCUMENT_RUN_SIZE)) {
+      run = document.createElement('div');
+      run.className = 'document-run';
+      body.appendChild(run);
+      held = 0;
+    }
+    run.appendChild(node);
+    if (node.nodeType === 1) held += 1;
+  }
+}
+
+function blockSiblings(el) {
+  const parent = el && el.parentElement;
+  if (!parent) return [];
+  if (!isDocumentBlock(el)) return Array.from(parent.children);
+  return documentBlocks(isDocumentRun(parent) ? parent.parentElement : parent);
+}
+
+
 function blockRunRanges(elements) {
   const ranges = [];
   let previousEnd = -1;
@@ -14303,7 +14348,7 @@ function attachMarkdownBlockRanges(body, blocks) {
     for (const el of elements) {
       if (el.nodeType !== 1 || isInjected(el)) continue;
       
-      if (el.classList.contains('table-bay') || el.classList.contains('table-lane')) {
+      if (el.classList.contains('table-bay') || el.classList.contains('table-lane') || isDocumentRun(el)) {
         walk(el.children);
         continue;
       }
@@ -15207,7 +15252,110 @@ function sendEditCommand(message) {
     
     outgoing.path = path;
   }
+  
+  if (sentTextNamesFormulaCarrier(outgoing)) currentState.document.recalculates = true;
+  
+  if (outgoing.command === 'editBlock') {
+    lastEditSent += 1;
+    outgoing.seq = lastEditSent;
+  }
   send(outgoing);
+  return outgoing;
+}
+
+
+
+let lastEditSent = 0;
+let redrawDeclinedAt = 0;
+
+const armedPauses = new Set();
+
+let editHold = null;
+let keptCommits = [];
+let redrawWaitingOnHold = false;
+
+
+function liftEditHold() {
+  editHold = null;
+  while (keptCommits.length && editHold == null) keptCommits.shift()();
+  if (editHold == null && redrawWaitingOnHold) {
+    redrawWaitingOnHold = false;
+    send({ command: 'refreshDocument', keepPlace: true });
+  }
+}
+
+
+function afterEditHold(act) {
+  if (editHold == null && !keptCommits.length) act();
+  else keptCommits.push(act);
+}
+
+
+window.leafEditWritten = (answer) => {
+  if (!answer) return;
+  const writes = (Array.isArray(answer.writes) ? answer.writes : []).filter(
+    (write) => write && Number.isFinite(write.start) && Number.isFinite(write.end) && write.end >= write.start && typeof write.text === 'string',
+  );
+  for (const { start, end, text } of writes.sort((a, b) => b.start - a.start)) {
+    advanceLiveRanges(null, { start, end, text, inner: false });
+    const delta = utf8ByteLength(text) - (end - start);
+    if (delta && pendingCaret && Number.isFinite(pendingCaret.srcStart) && pendingCaret.srcStart >= end) pendingCaret.srcStart += delta;
+  }
+  if (editHold != null && answer.seq === editHold) liftEditHold();
+};
+
+
+function sendArmedPauses() {
+  for (const el of Array.from(armedPauses)) {
+    armedPauses.delete(el);
+    if (el.__liveTimer) window.clearTimeout(el.__liveTimer);
+    el.__liveTimer = 0;
+    sendLiveBlockEdit(el);
+  }
+}
+
+
+function redrawBehindTyping(state) {
+  const doc = currentState && currentState.document;
+  const next = state && state.document;
+  if (!doc || !next || doc.path !== next.path || typeof state.lastEdit !== 'number') return false;
+  
+  if (editHold != null) {
+    redrawWaitingOnHold = true;
+    return true;
+  }
+  sendArmedPauses();
+  if (state.lastEdit >= lastEditSent || redrawDeclinedAt === lastEditSent) return false;
+  redrawDeclinedAt = lastEditSent;
+  send({ command: 'refreshDocument', keepPlace: true });
+  return true;
+}
+
+
+function sentTextNamesFormulaCarrier(message) {
+  const carrier = currentState && currentState.document && currentState.document.formula_carrier;
+  if (typeof carrier !== 'string' || !carrier) return false;
+  if (typeof message.text === 'string' && message.text.includes(carrier)) return true;
+  return Array.isArray(message.blocks) && message.blocks.some((block) => typeof block.text === 'string' && block.text.includes(carrier));
+}
+
+
+function commitMovesMap(el, command) {
+  if (command.cell || command.kind === 'table' || (el && el.__officeCell)) return false;
+  const doc = currentState && currentState.document;
+  return !(doc && doc.recalculates === true) && !sentTextNamesFormulaCarrier(command);
+}
+
+
+function advanceRangesForCommit(el, sent, inner) {
+  if (!sent) return;
+  if (sent.command === 'editBlock') {
+    advanceLiveRanges(el, { start: sent.start, end: sent.end, text: sent.text, inner });
+    return;
+  }
+  if (sent.command !== 'editBlocks' || !Array.isArray(sent.blocks)) return;
+  
+  for (const write of sent.blocks.slice().sort((a, b) => b.start - a.start)) advanceLiveRanges(null, { start: write.start, end: write.end, text: write.text, inner: false });
 }
 
 function visibleTextLength(el) {
@@ -15358,8 +15506,11 @@ function deleteEmptiedBlock(el, text) {
 function blockRunForDelete(first, last) {
   if (!first || !last || first === last) return null;
   const parent = first.parentElement;
-  if (!parent || last.parentElement !== parent) return null;
-  const siblings = Array.from(parent.children).filter(blockHasSource);
+  if (!parent || !last.parentElement) return null;
+  
+  const bothInBody = isDocumentBlock(first) && isDocumentBlock(last);
+  if (!bothInBody && last.parentElement !== parent) return null;
+  const siblings = blockSiblings(first).filter(blockHasSource);
   const from = siblings.indexOf(first);
   const to = siblings.indexOf(last);
   if (from < 0 || to <= from) return null;
@@ -15440,9 +15591,8 @@ window.addEventListener('keydown', handleBlockRunDeleteKey);
 
 
 function blockSectionRun(el) {
-  const parent = el && el.parentElement;
-  if (!parent) return null;
-  const siblings = Array.from(parent.children).filter(blockHasRange);
+  if (!el || !el.parentElement) return null;
+  const siblings = blockSiblings(el).filter(blockHasRange);
   const index = siblings.indexOf(el);
   if (index < 0) return null;
   const isHeading = (node) => node.dataset.blockKind === 'heading';
@@ -15690,6 +15840,12 @@ function blockTextNeedsWriting(el, text) {
 
 function commitBlockEdit(el, text, range) {
   
+  if (editHold != null) {
+    keptCommits.push(() => commitBlockEdit(el, text, range));
+    return true;
+  }
+  
+  armedPauses.delete(el);
   if (el.__liveTimer) {
     window.clearTimeout(el.__liveTimer);
     el.__liveTimer = 0;
@@ -15711,11 +15867,13 @@ function commitBlockEdit(el, text, range) {
   
   const command = kind ? { command: 'editBlock', start, end, text, cell, kind, continuing: el.__liveStarted === true } : { command: 'editBlock', start, end, text, cell, continuing: el.__liveStarted === true };
   
-  if (commitIsOneParagraph(el, span, cell, kind)) command.paragraph = true;
-  sendEditCommand(command);
-  const delta = cell
-    ? utf8ByteLength(cell.text) - utf8ByteLength(el.__editCells[cell.row][cell.column])
-    : utf8ByteLength(text) - (end - start);
+  if (!commitMovesMap(el, command)) command.held = true;
+  
+  else if (commitIsOneParagraph(el, span, cell, kind)) command.paragraph = true;
+  const sent = sendEditCommand(command);
+  
+  if (commitMovesMap(el, sent)) advanceRangesForCommit(el, sent, !!span);
+  else if (sent.command === 'editBlock') editHold = sent.seq;
   window.setTimeout(() => {
     if (pendingCaret) return; 
     const active = document.activeElement;
@@ -15728,8 +15886,9 @@ function commitBlockEdit(el, text, range) {
     const activeStart = rangeOf(active, held.kind).start;
     if (!Number.isFinite(activeStart)) return;
     const offset = caretTextOffsetIn(active);
+    
     setPendingCaret({
-      srcStart: activeStart >= end ? activeStart + delta : activeStart,
+      srcStart: activeStart,
       kind: held.kind,
       textOffset: offset == null ? 0 : offset,
     });
@@ -15741,7 +15900,7 @@ function commitBlockEdit(el, text, range) {
 function commitIsOneParagraph(el, span, cell, kind) {
   if (span || cell || kind || currentDocumentFormat !== 'markdown') return false;
   if (el.tagName !== 'P' || el.dataset.blockKind !== 'paragraph' || el.dataset.holdsFootnote === 'true') return false;
-  return !!el.parentElement && el.parentElement.classList.contains('document-body');
+  return isDocumentBlock(el);
 }
 
 
@@ -15775,6 +15934,11 @@ function liveEditOf(el, words) {
 
 function sendLiveBlockEdit(el, words) {
   if (!el.isConnected) return;
+  
+  if (editHold != null) {
+    scheduleLiveBlockEdit(el);
+    return;
+  }
   const edit = liveEditOf(el, words);
   if (!edit) return;
   
@@ -15797,8 +15961,8 @@ function sendLiveBlockEdit(el, words) {
 function advanceLiveRanges(el, edit) {
   const written = utf8ByteLength(edit.text);
   spliceDocumentSource(edit.start, edit.end, edit.text);
-  if (edit.inner) el.__innerSpan = { start: edit.start, end: edit.start + written };
-  if (typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
+  if (el && edit.inner) el.__innerSpan = { start: edit.start, end: edit.start + written };
+  if (el && typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
   const delta = written - (edit.end - edit.start);
   if (delta) shiftBlockRangesAfter(edit.end, delta, el);
   const kept = currentState && currentState.document;
@@ -15821,8 +15985,10 @@ function shiftBlockRangesAfter(at, delta, typed) {
 
 function scheduleLiveBlockEdit(el) {
   if (el.__liveTimer) window.clearTimeout(el.__liveTimer);
+  armedPauses.add(el);
   el.__liveTimer = columnTimer(() => {
     el.__liveTimer = 0;
+    armedPauses.delete(el);
     sendLiveBlockEdit(el);
   }, LIVE_EDIT_PAUSE_MS);
 }
@@ -15980,8 +16146,18 @@ function commitActiveEditingBlock() {
 
 
 function sendBlockSplice(el, start, end, text, kind) {
-  sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text });
+  const sent = sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text });
   setEditBaseline(el);
+  return sent;
+}
+
+
+function commitBlockLeaving(el, start, end, text) {
+  const command = { command: 'editBlock', start, end, text };
+  const moves = commitMovesMap(el, command);
+  const sent = sendBlockSplice(el, start, end, text);
+  if (moves) advanceRangesForCommit(el, sent, false);
+  return moves;
 }
 
 
@@ -16625,6 +16801,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (!body) return;
   
   resetDrawnRanges();
+  
+  if (editHold != null) liftEditHold();
   currentDocumentFormat = doc.format || 'markdown';
   setDocumentSource(doc.source);
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
@@ -17969,7 +18147,7 @@ function openLineBelow(after, specId) {
     const text = blockDomToMarkdown(after);
     after.__editingActive = false;
     if (blockTextNeedsWriting(after, text)) {
-      sendBlockSplice(after, start, end, text);
+      commitBlockLeaving(after, start, end, text);
       setPendingCaret({ srcStart: start, insertBelow: true, blockSpec: specId });
       return;
     }
@@ -18038,7 +18216,7 @@ function aimBlockGutter(el, fromMargin) {
 function blockGutterOccupants() {
   const body = app.querySelector('.document-body');
   if (!body) return [];
-  return Array.from(body.children)
+  return documentBlocks(body)
     .flatMap(unwrapTableBay)
     .flatMap(unwrapEmailBody)
     .filter((el) => {
@@ -18675,7 +18853,7 @@ function gapInsertOffsetAfter(after) {
   const text = blockDomToMarkdown(after);
   after.__editingActive = false;
   if (!blockTextNeedsWriting(after, text)) return end;
-  sendBlockSplice(after, start, end, text);
+  commitBlockLeaving(after, start, end, text);
   return start + utf8ByteLength(text);
 }
 
@@ -18755,12 +18933,13 @@ function blockSiblingRun(target) {
   if (!blockGutterFormatAllowed() || !blockGutterTargetAllowed(target)) return null;
   
   let parent = target.parentElement;
-  while (parent && parent.classList && (parent.classList.contains('table-lane') || parent.classList.contains('table-bay'))) {
+  while (parent && parent.classList && (parent.classList.contains('table-lane') || parent.classList.contains('table-bay') || isDocumentRun(parent))) {
     parent = parent.parentElement;
   }
   if (!parent) return null;
+  const siblings = parent.classList && parent.classList.contains('document-body') ? documentBlocks(parent) : Array.from(parent.children);
   
-  const elements = Array.from(parent.children).map(unwrapTableLane).filter(blockHasSource);
+  const elements = siblings.map(unwrapTableLane).filter(blockHasSource);
   if (elements.length < 2 || !elements.includes(target)) return null;
   const ranges = blockRunRanges(elements);
   return ranges ? { elements, ranges } : null;
@@ -18867,7 +19046,8 @@ function commitBeforeBlockMove() {
   const text = blockDomToMarkdown(active);
   active.__editingActive = false;
   if (!blockTextNeedsWriting(active, text)) return null;
-  sendBlockSplice(active, start, end, text);
+  
+  commitBlockLeaving(active, start, end, text);
   return { start, end, delta: utf8ByteLength(text) - (end - start) };
 }
 
@@ -23774,6 +23954,11 @@ function markDropCap(body) {
         if (take(el, true)) return true;
         continue;
       }
+      
+      if (isDocumentRun(el)) {
+        if (take(el, insideAChapter)) return true;
+        continue;
+      }
       if (el.tagName === 'P') {
         el.classList.add('is-drop-cap');
         return true;
@@ -24225,6 +24410,7 @@ function stopWatchingReading() {
   readingWatch = null;
   if (!watch) return;
   if (watch.observer) watch.observer.disconnect();
+  if (watch.runObserver) watch.runObserver.disconnect();
   for (const timer of watch.timers.values()) clearTimeout(timer);
   if (watch.fallbackTimer) clearTimeout(watch.fallbackTimer);
   if (watch.onScroll) app.removeEventListener('scroll', watch.onScroll);
@@ -24240,16 +24426,60 @@ window.leafDocumentWords = function (path, words) {
 function rewatchReadingBlock(old, fresh) {
   const watch = readingWatch;
   if (!watch || !watch.observer) return;
-  watch.observer.unobserve(old);
-  watch.visible.delete(old);
-  watch.boxes.delete(old);
-  watch.waiting.delete(old);
+  forgetReadingBlock(watch, old);
   watch.tall.delete(old);
   watch.pictures.delete(old);
-  const timer = watch.timers.get(old);
-  if (timer) clearTimeout(timer);
-  watch.timers.delete(old);
+  
+  const run = watch.runOf.get(old);
+  watch.runOf.delete(old);
+  if (run) {
+    const list = watch.runBlocks.get(run);
+    const at = list ? list.indexOf(old) : -1;
+    if (at >= 0) list[at] = fresh;
+    watch.runOf.set(fresh, run);
+    if (!watch.nearRuns.has(run)) return;
+  }
   watch.observer.observe(fresh);
+}
+
+function forgetReadingBlock(watch, el) {
+  watch.observer.unobserve(el);
+  watch.visible.delete(el);
+  watch.boxes.delete(el);
+  watch.waiting.delete(el);
+  const timer = watch.timers.get(el);
+  if (timer) clearTimeout(timer);
+  watch.timers.delete(el);
+}
+
+function watchReadingRuns(watch, blocks) {
+  const loose = [];
+  for (const el of blocks) {
+    const run = el.closest('.document-run');
+    if (!run) {
+      loose.push(el);
+      continue;
+    }
+    if (!watch.runBlocks.has(run)) watch.runBlocks.set(run, []);
+    watch.runBlocks.get(run).push(el);
+    watch.runOf.set(el, run);
+  }
+  for (const el of loose) watch.observer.observe(el);
+  if (!watch.runBlocks.size) return;
+  watch.runObserver = new IntersectionObserver(inThisColumn((entries) => {
+    for (const entry of entries) {
+      const run = entry.target;
+      const list = watch.runBlocks.get(run) || [];
+      if (entry.isIntersecting) {
+        if (watch.nearRuns.has(run)) continue;
+        watch.nearRuns.add(run);
+        for (const el of list) watch.observer.observe(el);
+      } else if (watch.nearRuns.delete(run)) {
+        for (const el of list) forgetReadingBlock(watch, el);
+      }
+    }
+  }), { root: app, rootMargin: '100% 0px' });
+  for (const run of watch.runBlocks.keys()) watch.runObserver.observe(run);
 }
 
 function watchReadingDocument(path, words) {
@@ -24259,7 +24489,7 @@ function watchReadingDocument(path, words) {
   if (arriving) flushReading();
   applyPageOrnaments();
   if (!leafProfile || !leafProfile.enabled || !path) return;
-  const watch = { path, words: Number(words) || 0, observer: null, visible: new Set(), tall: new Set(), pictures: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
+  const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
   readingWatch = watch;
   const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
   
@@ -24297,7 +24527,7 @@ function watchReadingDocument(path, words) {
         }
       }
     }), { root: app });
-    for (const el of blocks) watch.observer.observe(el);
+    watchReadingRuns(watch, blocks);
     watchReadingScroll(watch, () => readingBlockCheck(watch));
     return;
   }
@@ -25608,12 +25838,12 @@ function homeScreenIsShowing() {
 }
 function readingHasHeldBlocks() {
   const body = app.querySelector('.document-body');
-  return !!body && Array.from(body.children).some((block) => block.classList.contains('is-held-below'));
+  return !!body && documentBlocks(body).some((block) => block.classList.contains('is-held-below'));
 }
 function holdReadingBlocks(layout) {
   const body = layout ? layout.querySelector('.document-body') : null;
   if (!body || layout.querySelector('.document-body-site')) return false;
-  for (const block of body.children) block.classList.add('is-held-below');
+  for (const block of documentBlocks(body)) block.classList.add('is-held-below');
   return body.childElementCount > 0;
 }
 function pendingReadingLandingTarget(path, anchor) {
@@ -25647,7 +25877,7 @@ function fillHeldBlocks() {
   let revealed = false;
   do {
     const body = app.querySelector('.document-body');
-    const block = body ? Array.from(body.children).find((one) => one.classList.contains('is-held-below')) : null;
+    const block = body ? documentBlocks(body).find((one) => one.classList.contains('is-held-below')) : null;
     if (!block) break;
     block.classList.remove('is-held-below');
     block.getBoundingClientRect().bottom;
@@ -25669,7 +25899,7 @@ function startReadingFill() {
 function revealHeldReadingNearEdge() {
   const body = app.querySelector('.document-body');
   if (!body) return;
-  const blocks = Array.from(body.children);
+  const blocks = documentBlocks(body);
   const firstHeld = blocks.findIndex((block) => block.classList.contains('is-held-below'));
   if (firstHeld <= 0) return;
   const shellTop = app.getBoundingClientRect().top;
@@ -25679,7 +25909,7 @@ function revealHeldReadingNearEdge() {
 function revealReadingPast(target) {
   const body = app.querySelector('.document-body');
   if (!body) return false;
-  const blocks = Array.from(body.children);
+  const blocks = documentBlocks(body);
   const held = blocks.filter((block) => block.classList.contains('is-held-below'));
   if (!held.length) return false;
   if (target === null) {
@@ -25968,7 +26198,7 @@ function replayParagraphSwaps(doc, body) {
   if (!doc || !Array.isArray(doc.swaps) || !body) return;
   for (const swap of doc.swaps) {
     const old = elementWithRange(body, 'block', swap.start);
-    if (old && old.parentElement === body && rangeOf(old, 'block').end === swap.end) drawSwappedParagraph(old, swap.html, swap.start, swap.end);
+    if (old && isDocumentBlock(old) && rangeOf(old, 'block').end === swap.end) drawSwappedParagraph(old, swap.html, swap.start, swap.end);
   }
 }
 
@@ -25996,6 +26226,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     
     app.innerHTML = `<div class="${layoutClass}" style="display:none">${state.document.html}</div>`;
     const readerLayout = app.firstElementChild;
+    
+    if (readerLayout) makeDocumentRuns(readerLayout.querySelector('.document-body'));
     
     resolveColumnPictures(app, readerLayout);
     const containsSite = !!(readerLayout && readerLayout.querySelector('.document-body-site'));
@@ -28447,8 +28679,17 @@ function mermaidHeightKey(source) {
 const mermaidDrawnHeights = new Map();
 
 function mermaidDocumentPastMemory() {
-  const body = app.querySelector('.document-body');
-  return !!body && body.querySelectorAll('pre.mermaid').length > MERMAID_CACHE_CAP;
+  return mermaidBodyDiagrams(app.querySelector('.document-body')).length > MERMAID_CACHE_CAP;
+}
+
+function recordMermaidDiagrams(body, diagrams) {
+  if (!body) return;
+  if (!body.__mermaidDiagrams) body.__mermaidDiagrams = new Set();
+  for (const diagram of diagrams) body.__mermaidDiagrams.add(diagram);
+}
+function mermaidBodyDiagrams(body) {
+  if (!body || !body.__mermaidDiagrams) return [];
+  return Array.from(body.__mermaidDiagrams).filter((diagram) => diagram.isConnected);
 }
 
 const MERMAID_NEAR_SCREENS = 1;
@@ -28502,6 +28743,8 @@ function renderMermaidDiagrams() {
     markMermaidWait(diagram, isNear);
     if (isNear) near.push(diagram);
   });
+  
+  recordMermaidDiagrams(body, candidates);
   watchMermaidDiagrams(candidates);
   drawMermaidDiagrams(near);
   mermaidNoteColumnWidth();
@@ -28520,8 +28763,10 @@ function mermaidWarmCandidates() {
   if (!body) return [];
   
   if (mermaidDocumentPastMemory()) return [];
-  const waiting = Array.from(body.querySelectorAll('pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-stage])'));
-  return waiting.filter((diagram) => diagram.__mermaidSource != null
+  return mermaidBodyDiagrams(body).filter((diagram) => diagram.dataset.processed !== 'true'
+    && diagram.dataset.mermaidRender !== 'failed'
+    && diagram.dataset.diagramStage == null
+    && diagram.__mermaidSource != null
     && !mermaidIsHeld(diagram)
     && !mermaidDrawnHeights.has(mermaidHeightKey(diagram.__mermaidSource)));
 }
@@ -28555,11 +28800,13 @@ let mermaidExportHolding = false;
 function mermaidWaitingForExport() {
   const body = app ? app.querySelector('.document-body') : null;
   if (!body) return [];
-  return Array.from(body.querySelectorAll('pre.mermaid')).filter((diagram) => {
+  const waiting = Array.from(body.querySelectorAll('pre.mermaid')).filter((diagram) => {
     if (diagram.dataset.processed === 'true' || diagram.dataset.mermaidRender === 'failed' || diagram.dataset.diagramStage != null) return false;
     if (diagram.__mermaidSource == null) diagram.__mermaidSource = diagram.textContent;
     return true;
   });
+  recordMermaidDiagrams(body, waiting);
+  return waiting;
 }
 
 const MERMAID_EXPORT_STALLED_ROUNDS = 3;
@@ -29472,7 +29719,7 @@ function markCellCardTable(table) {
 function laneWideTables(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
-  for (const table of Array.from(body.children)) {
+  for (const table of documentBlocks(body)) {
     if (table.tagName !== 'TABLE' || table.classList.contains('data-table')) continue;
     const bay = document.createElement('div');
     bay.className = 'table-bay';
@@ -29547,7 +29794,7 @@ function measureWideTables(root = app) {
 function laneWidePictures(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
-  for (const block of Array.from(body.children)) laneWidePicture(block);
+  for (const block of documentBlocks(body)) laneWidePicture(block);
 }
 
 function laneWidePicture(block) {
@@ -30914,7 +31161,7 @@ async function exportPictureAs(kind, picture, path) {
 function bindImageSheet(root = app) {
   if (!root) return;
   
-  const lanes = '.reader-layout > .document-body > p.image-lane';
+  const lanes = '.reader-layout > .document-body > .document-run > p.image-lane';
   
   const blocks = root.matches && root.matches(lanes) ? [root] : root.querySelectorAll(lanes);
   blocks.forEach((block) => {
@@ -31823,7 +32070,9 @@ function measureDocumentContent(source) {
   }
   const shellRect = app.getBoundingClientRect();
   const sourceRect = source.getBoundingClientRect();
-  const firstContent = source.firstElementChild;
+  
+  let firstContent = source.firstElementChild;
+  if (isDocumentRun(firstContent)) firstContent = firstContent.firstElementChild || firstContent;
   const firstContentRect = firstContent ? firstContent.getBoundingClientRect() : sourceRect;
   const rawTopOffset = Math.ceil(app.scrollTop + firstContentRect.top - shellRect.top);
   const topOffset = Math.max(0, rawTopOffset - READER_CONTENT_TOP_GAP);

@@ -8512,6 +8512,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   word-wrap: break-word;
   word-break: normal;
 }
+/* A stretch of the body's blocks, so a change lays out, paints and hit-tests one run rather than every block. No margin, border or padding, so the margins either side of its edge still collapse into one and the page is as tall as it was. Positioned so it is a paint layer of its own, which is what ends the walk over every block before paint; not `isolation`, which is as fast but makes each run a stacking context, and a menu raised inside a block would then sit under the next run's words. See reading-blocks.js. */
+.document-run {
+  position: relative;
+}
 /* Blocks below the landing leave the page entirely; skipped layout keeps guessed heights in it, so the scroll range and minimap lie until those guesses settle. */
 .is-held-below {
   display: none !important;
@@ -8617,7 +8621,9 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .app-surface .document-body [data-borrowed-title] {
   cursor: text;
 }
-.document-body h1:first-of-type {
+/* The title: the first top-level heading, which the runs hide from `:first-of-type` and so is marked as they are made, and the first heading of any box that is not a run. */
+.document-body h1[data-lead-heading],
+.document-body :not(.document-run) > h1:first-of-type {
   font-size: var(--type-display-size);
   font-weight: var(--type-display-weight);
   line-height: var(--type-display-line);
@@ -9045,6 +9051,18 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 .document-body .xml-comment-body {
   padding: 0.35em 0 0 1.5em;
+}
+/* A presenter's words follow their slide while staying visibly apart from words shown on it. */
+.document-body .slide-notes {
+  border-left: 0.25em solid var(--lt-markdown-blockquote-border);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  margin: var(--type-spacing) 0;
+  padding: 0 1em;
+}
+.document-body .slide-notes-label {
+  font-weight: var(--lt-weight-600);
 }
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
@@ -10549,7 +10567,7 @@ body.is-block-dragging .document-body [data-src-start] {
 /* A wide table reads through the reader's whole lane, less the strip the block controls need, and the wrapper is what widens rather than the table: the bands that dissolve a sliced column into the page have to be painted over the table, and a mask can only take ink away. `100cqi` is the room inside .reader-layout's padding, so this rides that container query and nothing else; `max(100%, ...)` hands a narrow window back to the measure it has today. decorate.js wraps only a body table that is not a data table, so a frontmatter table, a data file's wrapping table and a table inside <div align="center"> keep their width. */
 /* The bay is the box the centering arithmetic can name, and it exists for nothing else: it draws no paint, holds no grain and takes no gesture. Its width is a length rather than the lane's `max-content`, so the margin that centers it is computable — half the room the measure does not cover, which is zero on a window too narrow for a lane to break out at all. Never a transform: a transform makes its own box the containing block for every `background-attachment: fixed` inside it, which is what dragged the dots in a scrolled table's header sideways with the columns, and what shrank a printed sheet to fit a slid lane's phantom width. print.css carries the same arithmetic for paper off a width the render wrote down. */
 /* One column as wide as the table and centered, so the row of pills above the lane is exactly the table's width and its two buttons end on the table's right edge. A `max-content` track is what can follow the lane's width where a margin cannot. */
-.document-body > .table-bay {
+.document-run > .table-bay {
   display: grid;
   grid-template-columns: minmax(0, max-content);
   justify-content: center;
@@ -10557,7 +10575,7 @@ body.is-block-dragging .document-body [data-src-start] {
   margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
 }
 /* A board or a list takes the whole measure rather than the table's width, so the column does too. */
-.document-body > .table-bay.table-bay-is-drawn {
+.document-run > .table-bay.table-bay-is-drawn {
   grid-template-columns: minmax(0, 1fr);
 }
 /* And the lane keeps its own box inside the bay, so everything keyed on it — the bands, the corner control, the hover that reveals it, the wheel, the full-window sheet — lands where it always did. Auto margins center it because it can no longer be wider than its parent; a block box wider than its containing block has them treated as zero, which is why they cannot center the lane against the measure directly. */
@@ -10917,7 +10935,7 @@ body.is-block-dragging .document-body [data-src-start] {
       padding-top: 0;
     }
     /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
-    .document-body > .table-bay.table-allows-cards {
+    .document-run > .table-bay.table-allows-cards {
       grid-template-columns: minmax(0, 1fr);
       width: 100%;
       margin-inline: 0;
@@ -11061,7 +11079,7 @@ body.is-block-dragging .document-body [data-src-start] {
   padding-top: 0;
 }
 /* Cards need no room past the writing, so the bay gives its break-out back and the lane fills the measure inside it. */
-.document-body > .table-bay.table-is-cards {
+.document-run > .table-bay.table-is-cards {
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
   margin-inline: 0;
@@ -11315,7 +11333,7 @@ body.is-block-dragging .document-body [data-src-start] {
   width: auto;
 }
 /* A picture alone in its paragraph reads through the reader's whole lane, less the strip the block controls need. It is the table's break-out on the paragraph itself, because a picture has no sliced column for edge bands to be painted in; `max-content` of a picture whose tag carries the width the renderer read out of its header is that stamped number, decoded or not, so a small one is left where it was and an undecoded one still has its box, and the centering is a percentage transform because CSS cannot read a used width. */
-.document-body > p.image-lane {
+.document-run > p.image-lane {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
@@ -11323,7 +11341,7 @@ body.is-block-dragging .document-body [data-src-start] {
   max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
 }
 /* A percentage cap resolves against the box being measured, so `max-width: 100%` below holds the paragraph at the very measure it is escaping; a percentage width does not, so the paragraph sizes to the picture and the picture fills it. */
-.document-body > p.image-lane > img {
+.document-run > p.image-lane > img {
   width: 100%;
 }
 .document-body img {
@@ -15921,12 +15939,12 @@ body.leaf-paper .document-body {
   padding-bottom: var(--reader-content-pad);
 }
 /* The lanes a wide picture or table break out of the text measure into are what shrank the paper. On screen a picture's lane sizes itself with `100cqi` and centers itself by sliding half a measure right and transforming back; the print render measures overflow on the untransformed box, so the slid lane hung past the sheet, the renderer shrank the whole page to fit that phantom width, and the shrunken page stopped a fifth short of the sheet's foot, unpainted white — the container query is also self-referential there, growing with the very overflow it causes. So on paper a lane is a plain block: as wide as the room the page wrote down when it measured the sheet, centered by margin arithmetic the render was measured computing exactly, with nothing slid and nothing transformed. The fallback is the text measure, for a page printed before any script has run. A table's lane already arrives untransformed, centered inside a bay for the same reason; here the bay stands down to the measure so the lane's own arithmetic is the one that runs. */
-body.leaf-paper .document-body > .table-bay {
+body.leaf-paper .document-run > .table-bay {
   width: 100%;
   margin-inline: 0;
 }
 body.leaf-paper .table-bay > .table-lane,
-body.leaf-paper .document-body > p.image-lane {
+body.leaf-paper .document-run > p.image-lane {
   position: static;
   transform: none;
   width: var(--leaf-paper-lane, 100%);
@@ -15936,7 +15954,7 @@ body.leaf-paper .document-body > p.image-lane {
 }
 /* The exported page wears `leaf-paper` for ever — the one script it runs is the rail below, which never touches that class, so nothing there can raise it for a print and drop it after — and on a screen that froze every lane at the text measure. `leaf-web`, written only by `exported_page_document`, hands the lanes back the screen width above. Keyed on the medium because the class cannot come off: printing the exported page still gets the paper lane, which is what keeps the print from shrinking to fit a slid lane's phantom width. The table's bay comes back with it rather than the transform, so a published document wears the app's own lattice under its table headers instead of one tiled from a box that moves. */
 @media screen {
-  body.leaf-paper.leaf-web .document-body > .table-bay {
+  body.leaf-paper.leaf-web .document-run > .table-bay {
     width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
     margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
   }
@@ -15947,7 +15965,7 @@ body.leaf-paper .document-body > p.image-lane {
     max-width: 100%;
     margin-inline: auto;
   }
-  body.leaf-paper.leaf-web .document-body > p.image-lane {
+  body.leaf-paper.leaf-web .document-run > p.image-lane {
     position: relative;
     transform: translateX(-50%);
     width: max-content;
@@ -15989,10 +16007,10 @@ body.leaf-web .document-minimap {
   }
 }
 /* The lane is now a fixed-width box, so what sits in it says its own size again: a small picture keeps its own width and centers, a wide one fills the lane, and a table narrower than the lane centers rather than hugging the left edge. */
-body.leaf-paper .document-body > p.image-lane {
+body.leaf-paper .document-run > p.image-lane {
   text-align: center;
 }
-body.leaf-paper .document-body > p.image-lane > img {
+body.leaf-paper .document-run > p.image-lane > img {
   width: auto;
   max-width: 100%;
 }
@@ -16120,7 +16138,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 125 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 126 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -16152,7 +16170,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>125</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>126</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -16564,7 +16582,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">125 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">126 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>
@@ -16892,6 +16910,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Document comment</h3><code class="built">.xml-comment</code><span class="built">xml.rs and tei.rs, from a comment standing between two blocks of an XML file</span></header>
 <div class="stage"><div class="document-body"><h2>A section</h2><details class="xml-comment"><summary class="xml-comment-summary">Comment</summary><div class="xml-comment-body">checked against the manuscript</div></details><details class="xml-comment" open><summary class="xml-comment-summary">Comment</summary><div class="xml-comment-body">checked against the manuscript</div></details><p>The translation starts here.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Slide notes</h3><code class="built">.slide-notes</code><span class="built">office/mod.rs, from a PowerPoint notes page or an OpenDocument presentation:notes, after the slide it belongs to</span></header>
+<div class="stage"><div class="document-body"><aside class="slide-notes"><p class="slide-notes-label">Speaker notes</p><p class="slide-notes-line">Say where the sales figures came from, and do not read the table out loud.</p></aside></div></div>
 </section>
 <section class="part">
 <header><h3>Bottom sheet</h3><code class="built">.leaf-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js, theme.js and glossary.js</span></header>
