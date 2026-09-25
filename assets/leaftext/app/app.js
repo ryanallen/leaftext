@@ -9693,8 +9693,9 @@ function renderViewTools(current) {
   if (graphScopeTool) graphScopeTool.hidden = !onGraph;
   if (readerLockButton) {
     
-    readerLockButton.hidden = !editable || (current === 'reading' && !currentDocumentBindsAnything);
     const onCodeView = current === 'code';
+    readerLockButton.hidden =
+      !editable || (current === 'reading' && !currentDocumentBindsAnything) || (onCodeView && hostRefusesCodeUnlock());
     setSubtoolState(
       readerLockButton,
       onCodeView ? codeUnlocked : readingUnlocked,
@@ -13284,7 +13285,15 @@ function growlLockedForReading() {
   const now = Date.now();
   if (now - lastLockedGrowl < LOCKED_GROWL_GAP_MS) return;
   lastLockedGrowl = now;
-  leafToast('The source is locked. Click the padlock in the toolbar to edit it.');
+  leafToast(
+    hostRefusesCodeUnlock()
+      ? "This page's source can be read here, not edited."
+      : 'The source is locked. Click the padlock in the toolbar to edit it.'
+  );
+}
+
+function hostRefusesCodeUnlock() {
+  return typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('setCodeUnlocked');
 }
 
 
@@ -14318,19 +14327,54 @@ function attachMarkdownBlockRanges(body, blocks) {
   
   const isClosingHtmlBlock = (block) => block.kind === 'html_block' && rawSource(block).startsWith('</');
   
-  const isLoneOpeningTag = (text) => {
-    if (!text.startsWith('<') || text.startsWith('</')) return false;
-    const name = /^<([A-Za-z][A-Za-z0-9-]*)/.exec(text);
-    const tag = name ? name[1].toLowerCase() : '';
-    if (!tag || VOID_HTML_TAGS.has(tag)) return false;
-    let quote = '';
-    for (let i = 1; i < text.length; i += 1) {
-      const ch = text[i];
-      if (quote) quote = ch === quote ? '' : quote;
-      else if (ch === '"' || ch === "'") quote = ch;
-      else if (ch === '>') return !(text[i - 1] === '/' && FOREIGN_HTML_ROOTS.has(tag)) && text.slice(i + 1).trim() === '';
+  const openerChildren = (text) => {
+    const opening = /^<([A-Za-z][A-Za-z0-9-]*)/.exec(text);
+    const outer = opening ? opening[1].toLowerCase() : '';
+    if (!outer || VOID_HTML_TAGS.has(outer)) return null;
+    const tagEnd = (from) => {
+      let quote = '';
+      for (let i = from; i < text.length; i += 1) {
+        const ch = text[i];
+        if (quote) quote = ch === quote ? '' : quote;
+        else if (ch === '"' || ch === "'") quote = ch;
+        else if (ch === '>') return i;
+      }
+      return -1;
+    };
+    const firstEnd = tagEnd(opening[0].length);
+    if (firstEnd < 0 || (text[firstEnd - 1] === '/' && FOREIGN_HTML_ROOTS.has(outer))) return null;
+    const children = [];
+    const open = [];
+    const tagPattern = /<(\/)?([A-Za-z][A-Za-z0-9-]*)/y;
+    for (let i = firstEnd + 1; i < text.length;) {
+      if (text.startsWith('<!--', i)) {
+        const end = text.indexOf('-->', i + 4);
+        if (end < 0) return null;
+        i = end + 3;
+        continue;
+      }
+      if (text[i] !== '<') {
+        i += 1;
+        continue;
+      }
+      tagPattern.lastIndex = i;
+      const tag = tagPattern.exec(text);
+      if (!tag) {
+        i += 1;
+        continue;
+      }
+      const end = tagEnd(i + tag[0].length);
+      if (end < 0) return null;
+      const name = tag[2].toLowerCase();
+      if (tag[1]) {
+        if (open.pop() !== name) return null;
+      } else {
+        if (open.length === 0) children.push(name);
+        if (!VOID_HTML_TAGS.has(name) && !(text[end - 1] === '/' && FOREIGN_HTML_ROOTS.has(name))) open.push(name);
+      }
+      i = end + 1;
     }
-    return false;
+    return open.length === 0 ? children : null;
   };
 
   const pairs = [];
@@ -14363,11 +14407,16 @@ function attachMarkdownBlockRanges(body, blocks) {
         mismatch = true;
         return;
       }
-      
-      if (block.kind === 'html_block' && isLoneOpeningTag(rawSource(block))) {
+      const opener = block.kind === 'html_block' ? openerChildren(rawSource(block)) : null;
+      if (opener !== null) {
+        const children = Array.from(el.children);
+        if (opener.some((name, index) => !children[index] || children[index].tagName.toLowerCase() !== name)) {
+          mismatch = true;
+          return;
+        }
         containers.add(el);
         drewElement.set(block, el);
-        walk(el.children);
+        walk(children.slice(opener.length));
         
         while (cursor < blocks.length && isClosingHtmlBlock(blocks[cursor]) && closerOf.has(blocks[cursor])) cursor += 1;
         if (cursor < blocks.length && isClosingHtmlBlock(blocks[cursor])) closerOf.set(blocks[cursor], el);
@@ -15235,8 +15284,9 @@ window.addEventListener('focusout', endTypingSession);
 
 
 
-function sendEditCommand(message) {
-  const outgoing = withOrphanedNotesRemoved(message);
+
+
+function sendEditCommand(message, after) {
   const path = activeDocumentPath();
   if (path) {
     
@@ -15250,17 +15300,66 @@ function sendEditCommand(message) {
     
     updateEditingChrome();
     
-    outgoing.path = path;
+    message.path = path;
   }
+  if (editHold != null) {
+    const kept = () => releaseEditCommand(message, after);
+    kept.message = message;
+    keptCommits.push(kept);
+    return null;
+  }
+  return releaseEditCommand(message, after);
+}
+
+
+function releaseEditCommand(message, after) {
+  const outgoing = withOrphanedNotesRemoved(message);
+  if (message.path) outgoing.path = message.path;
   
   if (sentTextNamesFormulaCarrier(outgoing)) currentState.document.recalculates = true;
   
-  if (outgoing.command === 'editBlock') {
+  if (outgoing.command === 'editBlock' || outgoing.command === 'editBlocks') {
     lastEditSent += 1;
     outgoing.seq = lastEditSent;
   }
+  const el = after ? after.el : null;
+  const measured = commitMovesMap(el, outgoing);
+  if (after && after.hold && !measured && outgoing.seq != null) {
+    outgoing.held = true;
+    
+    editHold = outgoing.seq;
+  }
   send(outgoing);
+  if (after && after.el && !outgoing.held && measured) advanceRangesForCommit(after.el, outgoing, !!after.inner);
   return outgoing;
+}
+
+
+function dropKeptWrites() {
+  const dropped = keptCommits.filter((kept) => kept.message);
+  if (!dropped.length) return;
+  keptCommits = keptCommits.filter((kept) => !kept.message);
+  for (const { message } of dropped) if (message.token != null) window.leafEditAnswered(message.token, false, '');
+  leafToast('A change made while the page was being drawn again was not written. Try it again.', 'error');
+}
+
+
+function moveKeptWrites(at, delta) {
+  const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
+  for (const { message } of keptCommits) {
+    if (!message) continue;
+    if (message.command === 'editBlock') {
+      message.start = move(message.start);
+      message.end = move(message.end);
+    } else if (message.command === 'editBlocks' && Array.isArray(message.blocks)) {
+      for (const block of message.blocks) {
+        block.start = move(block.start);
+        block.end = move(block.end);
+      }
+    } else if (message.command === 'moveBlock' && Array.isArray(message.ranges)) {
+      message.ranges = message.ranges.map(([start, end]) => [move(start), move(end)]);
+    }
+  }
 }
 
 
@@ -15296,11 +15395,7 @@ window.leafEditWritten = (answer) => {
   const writes = (Array.isArray(answer.writes) ? answer.writes : []).filter(
     (write) => write && Number.isFinite(write.start) && Number.isFinite(write.end) && write.end >= write.start && typeof write.text === 'string',
   );
-  for (const { start, end, text } of writes.sort((a, b) => b.start - a.start)) {
-    advanceLiveRanges(null, { start, end, text, inner: false });
-    const delta = utf8ByteLength(text) - (end - start);
-    if (delta && pendingCaret && Number.isFinite(pendingCaret.srcStart) && pendingCaret.srcStart >= end) pendingCaret.srcStart += delta;
-  }
+  for (const { start, end, text } of writes.sort((a, b) => b.start - a.start)) advanceLiveRanges(null, { start, end, text, inner: false });
   if (editHold != null && answer.seq === editHold) liftEditHold();
 };
 
@@ -15867,13 +15962,9 @@ function commitBlockEdit(el, text, range) {
   
   const command = kind ? { command: 'editBlock', start, end, text, cell, kind, continuing: el.__liveStarted === true } : { command: 'editBlock', start, end, text, cell, continuing: el.__liveStarted === true };
   
-  if (!commitMovesMap(el, command)) command.held = true;
+  if (commitMovesMap(el, command) && commitIsOneParagraph(el, span, cell, kind)) command.paragraph = true;
   
-  else if (commitIsOneParagraph(el, span, cell, kind)) command.paragraph = true;
-  const sent = sendEditCommand(command);
-  
-  if (commitMovesMap(el, sent)) advanceRangesForCommit(el, sent, !!span);
-  else if (sent.command === 'editBlock') editHold = sent.seq;
+  sendEditCommand(command, { el, inner: !!span, hold: true });
   window.setTimeout(() => {
     if (pendingCaret) return; 
     const active = document.activeElement;
@@ -15967,6 +16058,10 @@ function advanceLiveRanges(el, edit) {
   if (delta) shiftBlockRangesAfter(edit.end, delta, el);
   const kept = currentState && currentState.document;
   if (kept) moveKeptDocument(kept, edit.end, delta);
+  if (!delta) return;
+  
+  if (pendingCaret && Number.isFinite(pendingCaret.srcStart) && pendingCaret.srcStart >= edit.end) pendingCaret.srcStart += delta;
+  moveKeptWrites(edit.end, delta);
 }
 
 
@@ -16153,11 +16248,8 @@ function sendBlockSplice(el, start, end, text, kind) {
 
 
 function commitBlockLeaving(el, start, end, text) {
-  const command = { command: 'editBlock', start, end, text };
-  const moves = commitMovesMap(el, command);
-  const sent = sendBlockSplice(el, start, end, text);
-  if (moves) advanceRangesForCommit(el, sent, false);
-  return moves;
+  sendEditCommand({ command: 'editBlock', start, end, text }, { el, inner: false, hold: true });
+  setEditBaseline(el);
 }
 
 
@@ -16802,6 +16894,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   
   resetDrawnRanges();
   
+  dropKeptWrites();
   if (editHold != null) liftEditHold();
   currentDocumentFormat = doc.format || 'markdown';
   setDocumentSource(doc.source);
@@ -18853,8 +18946,9 @@ function gapInsertOffsetAfter(after) {
   const text = blockDomToMarkdown(after);
   after.__editingActive = false;
   if (!blockTextNeedsWriting(after, text)) return end;
+  
   commitBlockLeaving(after, start, end, text);
-  return start + utf8ByteLength(text);
+  return rangeOf(after, 'block').end;
 }
 
 
@@ -19040,25 +19134,13 @@ function moveBlockDrag(event) {
 
 function commitBeforeBlockMove() {
   const active = document.activeElement;
-  if (!active || !active.__editingActive || !active.dataset) return null;
+  if (!active || !active.__editingActive || !active.dataset) return;
   const { start, end } = rangeOf(active, 'block');
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const text = blockDomToMarkdown(active);
   active.__editingActive = false;
-  if (!blockTextNeedsWriting(active, text)) return null;
-  
+  if (!blockTextNeedsWriting(active, text)) return;
   commitBlockLeaving(active, start, end, text);
-  return { start, end, delta: utf8ByteLength(text) - (end - start) };
-}
-
-
-function rangesAfterCommit(ranges, saved) {
-  if (!saved) return ranges;
-  return ranges.map(([start, end]) => {
-    if (start === saved.start && end === saved.end) return [start, end + saved.delta];
-    if (start >= saved.end) return [start + saved.delta, end + saved.delta];
-    return [start, end];
-  });
 }
 
 function endBlockDrag(commit) {
@@ -19075,17 +19157,13 @@ function endBlockDrag(commit) {
     return;
   }
   
+  commitBeforeBlockMove();
   const ranges = blockRunRanges(drag.elements);
   if (!ranges) {
     hideBlockGutter();
     return;
   }
-  sendEditCommand({
-    command: 'moveBlock',
-    ranges: rangesAfterCommit(ranges, commitBeforeBlockMove()),
-    from: drag.from,
-    to: drag.to,
-  });
+  sendEditCommand({ command: 'moveBlock', ranges, from: drag.from, to: drag.to });
   hideBlockGutter();
 }
 
@@ -24231,6 +24309,17 @@ function countWords(text) {
   }
   return words;
 }
+
+function readingBlockWords(watch, el) {
+  if (watch.blockWords.has(el)) return watch.blockWords.get(el);
+  let words = 0;
+  if (/^table$/i.test(el.tagName || '')) {
+    
+    for (const cell of el.querySelectorAll('caption, td, th')) if (cell.closest('table') === el) words += countWords(cell.textContent);
+  } else words = countWords(el.textContent);
+  watch.blockWords.set(el, words);
+  return words;
+}
 function readingIsIdle() {
   return readingClock() - readingLastInput >= READING_IDLE_MS;
 }
@@ -24254,7 +24343,7 @@ function readingPictureCount(watch, el) {
   if (watch.pictures.has(el)) return watch.pictures.get(el);
   const page = el.classList.contains('book-item') || el.classList.contains('image-lane');
   let count = 0;
-  if ((page || /^table$/i.test(el.tagName || '')) && countWords(el.textContent) < 500) {
+  if ((page || /^table$/i.test(el.tagName || '')) && readingBlockWords(watch, el) < 500) {
     count = page ? (el.querySelector('img[src]') ? 1 : 0) : tablePictureCount(el);
   }
   watch.pictures.set(el, count);
@@ -24319,7 +24408,7 @@ function readingDwellEnded(watch, el) {
   
   const share = (readingBlockShare.get(watch.path) || new Map()).get(id) || 0;
   if (pictures) creditPicturePages(pictures - picturesReached(pictures, share));
-  else creditReading(watch.path, countWords(el.textContent), watch.words);
+  else creditReading(watch.path, readingBlockWords(watch, el), watch.words);
   markReadingPassed(watch, el);
 }
 
@@ -24357,7 +24446,7 @@ function creditReadingShare(watch, el, box, scrollTop) {
       noteReadingDepth(watch.path, Math.min(1, (box.top + reached * box.height) / box.page));
       return;
     }
-    const words = countWords(el.textContent);
+    const words = readingBlockWords(watch, el);
     const owed = Math.floor(reached * words) - Math.floor(paid * words);
     if (owed > 0) creditReading(watch.path, owed, watch.words);
   }
@@ -24429,6 +24518,7 @@ function rewatchReadingBlock(old, fresh) {
   forgetReadingBlock(watch, old);
   watch.tall.delete(old);
   watch.pictures.delete(old);
+  watch.blockWords.delete(old);
   
   const run = watch.runOf.get(old);
   watch.runOf.delete(old);
@@ -24489,7 +24579,7 @@ function watchReadingDocument(path, words) {
   if (arriving) flushReading();
   applyPageOrnaments();
   if (!leafProfile || !leafProfile.enabled || !path) return;
-  const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
+  const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), blockWords: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
   readingWatch = watch;
   const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
   

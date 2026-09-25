@@ -302,10 +302,11 @@ The formatting is written into the page as you would expect it in Markdown — `
 
 Whether a document can be typed into is a padlock in the recess that rides in the tray above the button of the view you are in, on the [floating toolbar](02-navigation.md#the-floating-toolbar). A shut padlock means read-only; an open one means you can type.
 
-- **There are two of them, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
+- **In the desktop app there are two, one per editable view.** The reading view has its own and the [code view](#code-view) has its own, and they are independent — unlocking the page you read is not consent to rewrite the file by hand, and unlocking the source does not open the rendered page under your cursor. The button in the bar holds whichever one the view you are in belongs to, and its tooltip says which: *the page* or *the source*.
 - **Both open locked**, and both are remembered ([settings](05-settings.md#the-padlocks)). Reading is the default posture, and one click is a cheap price for not editing a file by brushing it. A [new document](#new-document) is the exception: it was created to be written in, so it opens with the reading view already unlocked. The source keeps its own answer.
 - **Checkboxes toggle either way**, and so do copy, highlight and annotate on the [format bar](#the-format-bar). Ticking a box is a quick action that auto-saves and records no undo; the other three are ordinary edits that wait for Save. What the shut padlock refuses is typing, not marking the words up.
-- **The reading view's padlock is absent on a page nothing can be typed into.** An [email](01-rendering.md#email-eml) whose every part is coded into the file proves nothing to open, so the button leaves the recess rather than standing there answering a press with nothing. The source keeps its padlock on every document.
+- **The reading view's padlock is absent on a page nothing can be typed into.** An [email](01-rendering.md#email-eml) whose every part is coded into the file proves nothing to open, so the button leaves the recess rather than standing there answering a press with nothing. In the desktop app, the source keeps its padlock on every document.
+- **On leaftext.com and Emptyguru, the source is for reading.** The code view opens there, but its padlock is absent and typing cannot change the site's copy.
 - Flipping the reading view's padlock commits whatever block was mid-edit rather than discarding it, and leaves you where you were reading — the same words are on screen either way.
 - Typing into a locked source is refused rather than swallowed: the keystroke does nothing and a message in the corner says the source is locked and where the padlock is.
 
@@ -407,6 +408,8 @@ The canvas does not keep a layout, so a save would drop those two silently. `cli
 ![The code view showing a Markdown file as raw source: line numbers down the left, headings and list markers colored in the theme's own syntax colors, and the editor's minimap rail standing on the window chrome at the right](../../imgs/code-view.png)
 
 The toggle is the code-brackets button on the [floating toolbar](02-navigation.md#the-floating-toolbar) under the page, beside reading and the [graph](03-library.md#graph). Click it and the rendered page is replaced by the file's raw source; click the reading button to come back.
+
+On leaftext.com and Emptyguru, the same button shows the published document's source read-only. The reading button draws the page again.
 
 Opening another document while you are in the source view opens **that** document in the source view. The view is where you are working, not a property of the file you picked.
 

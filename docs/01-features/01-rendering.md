@@ -717,6 +717,8 @@ version: "1.0"                     # quoted, so text — bare 1.0 is a number
 
 `<details>` / `<summary>` fold content away. Add `open` to start expanded.
 
+A summary may share the opening line with `<details>` or stand on the next line. Markdown blocks inside the box and after it remain editable when the box is written either way.
+
 It slides rather than jumping: opening one grows it to its height over a quarter of a second and the page below travels with it, and closing is the same move, quicker. That is true of everything in the app that folds open in the flow of the page — the [front matter of a TEI document](#tei-xml), the find bar's [replace row](02-navigation.md#find-in-this-document) and the [insert row](07-editing.md#adding-a-block) in the page's margin. It is the one piece of motion the app cannot draw everywhere: on Windows it slides, and on a Mac it opens in a single frame, because the Mac's web view cannot animate a height nobody set in advance. Under [Reduce Motion](05-settings.md#reduce-motion) it opens in one frame on both.
 
 <details open>

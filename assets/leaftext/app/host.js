@@ -91,6 +91,16 @@ async function load(url, fetchWith = fetch) {
       api.leaf_free(at, length);
     },
     render: (source, path) => JSON.parse(withStrings(api.leaf_render, source, path) || 'null'),
+    // This host cannot import the buffer wrapper; the module owns the bytes after open.
+    bufferOpen: (body, path) => {
+      if (typeof api.leaf_buffer_open !== 'function') return 0;
+      const [bytes, name] = [put(body), write(path)];
+      const handle = api.leaf_buffer_open(...bytes, ...name);
+      api.leaf_free(...name);
+      return handle;
+    },
+    bufferCodeView: (handle) => JSON.parse(read(api.leaf_buffer_code_view(handle)) || 'null'),
+    bufferClose: (handle) => api.leaf_buffer_close(handle),
     // The note a `[[wiki]]` link names and its heading's anchor, read by the renderer's own grammar. A module older than the page has none, and the link then names nothing.
     wikiLink: (inner) => (typeof api.leaf_wiki_link === 'function' ? JSON.parse(withStrings(api.leaf_wiki_link, inner) || 'null') : null),
   };
@@ -159,7 +169,7 @@ export const COMMANDS = {
   setUnlock: [REFUSED, 'a site keeps no reading record, so nothing is owned to switch — the Grove never stands and nothing sends this'],
   setProgressEnabled: [REFUSED, 'the reading record is a file on the reader’s own disk, and a site serves documents to strangers with no account — a per-browser record would be a different feature, so the Grove pill never stands and nothing sends this'],
   setReadingUnlocked: [ANSWERED],
-  setCodeUnlocked: [ANSWERED],
+  setCodeUnlocked: [REFUSED, 'nothing a reader types into the source reaches anywhere on a site, so its padlock is not drawn and nothing sends this'],
   setThemeFamily: [ANSWERED],
   setThemeMode: [ANSWERED],
   setThemeRandomBag: [ANSWERED],
@@ -204,8 +214,8 @@ export const COMMANDS = {
   calendarRange: [REFUSED, 'it counts a vault’s documents by the dates their files were written, and a site is published pages with no vault and no file dates behind them — so the calendar square never stands and nothing sends this'],
   loadPager: [ANSWERED],
   packagedPicture: [ANSWERED],
-  enterCodeView: [LATER, 'web-app-commands'],
-  exitCodeView: [LATER, 'web-app-commands'],
+  enterCodeView: [ANSWERED],
+  exitCodeView: [ANSWERED],
   spliceSource: [LATER, 'web-app-commands'],
   updateSource: [LATER, 'web-app-commands'],
   saveDocument: [ANSWERED],
@@ -330,6 +340,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   const minted = [];
   const known = new Set(documents.map((entry) => entry.path));
   let open = null;
+  // Keep the drawn bytes for the source view and return without another fetch.
+  let held = null;
+  let buffer = 0;
 
   // The marks the reader made, out of the store their theme and their pane width come out of. Held here as well as written, because a toggle and a reorder each read the list before writing it — which is why three commands share one key where every other kept choice owns its own.
   const favorites = Array.isArray((window.__leafSettings || {}).favorites)
@@ -543,17 +556,29 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (typeof window.leafScrollToFragment === 'function') window.leafScrollToFragment(anchor);
   }
 
+  /** Draw a document out of its bytes: the page, the marks and the Previous/Next strip. Opening one and leaving its source both come through here; neither the address nor the pane is touched. */
+  function drawDocument(path, bytes) {
+    for (const address of minted.splice(0)) URL.revokeObjectURL(address);
+    run('window.leafForgetMintedPictures && window.leafForgetMintedPictures();');
+    run(core.documentScript(bytes, path));
+    run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
+    run(`window.leafSetPager && window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`);
+  }
+
+  function closeBuffer() {
+    if (buffer) core.bufferClose(buffer);
+    buffer = 0;
+  }
+
   async function openDocument(path, { anchor = '', place = null, address = true } = {}) {
     if (!known.has(path)) return;
     open = path;
+    closeBuffer();
     const source = await read(path);
-    for (const address of minted.splice(0)) URL.revokeObjectURL(address);
-    run('window.leafForgetMintedPictures && window.leafForgetMintedPictures();');
-    run(core.documentScript(source, path));
-    run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
+    held = { path, bytes: source };
+    drawDocument(path, source);
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
-    run(`window.leafSetPager && window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`);
     if (address) writeAddress(path, anchor);
     repointHead(path, anchor);
     restorePlace(anchor, place);
@@ -669,6 +694,23 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       run(`window.leafSetFavoritesMissing && window.leafSetFavoritesMissing(${JSON.stringify({ paths, vaults: [] })});`);
     },
     openGlossary: ({ href }) => run(core.glossaryScript(href)),
+    // The buffer supplies the source or the refusal for a book with no single source.
+    enterCodeView: () => {
+      if (!held || held.path !== open) return;
+      if (!buffer) buffer = core.bufferOpen(held.bytes, held.path);
+      const state = buffer ? core.bufferCodeView(buffer) : null;
+      if (state && state.refusedScript) run(state.refusedScript);
+      else if (state) run(`window.leafShowCodeView(${JSON.stringify(state)});`);
+      else {
+        // Return to the page when the buffer cannot open.
+        console.warn('the module could not open', held.path, 'as a source');
+        drawDocument(held.path, held.bytes);
+      }
+    },
+    // Redraw from the bytes kept at open.
+    exitCodeView: () => {
+      if (held && held.path === open) drawDocument(held.path, held.bytes);
+    },
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
     exportPdf: () => window.print(),
     // A site has no disk to write to, so Save hands the reader the file on screen as a download, under its own name and in its own bytes. It answers for a document with no edits too, which is why a site draws Save whenever a document is open.
@@ -702,7 +744,6 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     setSpeedReaderEnabled: (command) => ({ speedReaderEnabled: !!command.enabled }),
     setCodeIntelEnabled: (command) => ({ codeIntelEnabled: !!command.enabled }),
     setReadingUnlocked: (command) => ({ readingUnlocked: !!command.enabled }),
-    setCodeUnlocked: (command) => ({ codeUnlocked: !!command.enabled }),
     setThemeFamily: (command) => ({ themeFamily: String(command.family || '') }),
     setThemeMode: (command) => ({ themeMode: String(command.mode || '') }),
     setThemeRandomBag: (command) => ({ themeRandomUsed: Array.isArray(command.used) ? command.used : [] }),
