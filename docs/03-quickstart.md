@@ -94,6 +94,7 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | --- | --- | --- |
 | Open a file | `Ctrl+O` | `Cmd+O` |
 | Close tab | `Ctrl+W` | `Cmd+W` |
+| Quit, keeping your tabs and unsaved edits for next time | `Ctrl+Q` | `Cmd+Q` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | [Two documents side by side](01-features/02-navigation.md#two-documents-side-by-side), and close the split | `Ctrl+\` | `Cmd+\` |
 | Back | `Alt+Left` | `Cmd+Left` |

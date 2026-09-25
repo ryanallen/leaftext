@@ -51,6 +51,7 @@ flowchart LR
 | --- | --- | --- |
 | Open file | `Ctrl+O` | `Cmd+O` |
 | Close tab | `Ctrl+W` | `Cmd+W` |
+| Quit, keeping your tabs and unsaved edits for next time | `Ctrl+Q` | `Cmd+Q` |
 | Back | `Alt+Left` | `Cmd+Left` |
 | Forward | `Alt+Right` | `Cmd+Right` |
 | Next tab | `Ctrl+Tab` | `Ctrl+Tab` |
