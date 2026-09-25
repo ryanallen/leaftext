@@ -61,6 +61,7 @@ async function load(url, fetchWith = fetch) {
       api.leaf_free(...name);
       return answer ? JSON.parse(answer) : null;
     },
+    graph: (documents, seed, scope) => JSON.parse(withStrings(api.leaf_graph, JSON.stringify(documents), seed, scope) || 'null'),
     // Whether this page mints a book's pictures itself. A module older than the page has no such export, and its books keep their data addresses.
     setMintsPictures: (mints) => {
       if (typeof api.leaf_set_mints_pictures === 'function') api.leaf_set_mints_pictures(mints ? 1 : 0);
@@ -213,8 +214,8 @@ export const COMMANDS = {
   removeVault: [REFUSED, 'a site is one folder, so there is no vault row to forget'],
   getFolder: [ANSWERED],
   revealInLibrary: [LATER, 'web-app-commands'],
-  getGraph: [LATER, 'web-app-commands'],
-  setGraphScope: [LATER, 'web-app-commands'],
+  getGraph: [ANSWERED],
+  setGraphScope: [ANSWERED],
   setCalendarField: [REFUSED, 'a site draws no calendar square'],
   search: [LATER, 'web-app-commands'],
   calendarRange: [REFUSED, 'it counts a vault’s documents by the dates their files were written, and a site is published pages with no vault and no file dates behind them — so the calendar square never stands and nothing sends this'],
@@ -642,6 +643,21 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
 
   // What the page sends the host. A command with no arm here is one this host cannot answer; the desktop's own event loop is where they all live.
   const commands = {
+    getGraph: ({ scope }) => {
+      let answer;
+      try {
+        if (documents.some((entry) => !entry.links || typeof entry.links !== 'object')) {
+          throw new Error('The map needs this site published again.');
+        }
+        answer = core.graph(documents, open || '', String(scope || 'small'));
+        if (!answer || !Array.isArray(answer.nodes) || !Array.isArray(answer.edges)) {
+          throw new Error('The map could not be read.');
+        }
+      } catch (error) {
+        answer = { error: { message: (error && error.message) || 'The map could not be read.' } };
+      }
+      run(`window.leafSetGraph(${JSON.stringify(answer)});`);
+    },
     openRecent: (command) => {
       stampPlace(command);
       return openDocument(command.path);
@@ -746,7 +762,7 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
     },
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
     exportPdf: () => window.print(),
-    // A site has no disk to write to, so Save hands the reader the file on screen as a download, under its own name and in its own bytes. It answers for a document with no edits too, which is why a site draws Save whenever a document is open.
+    // A site has no disk to write to, so Save hands the edited file to the reader as a download under its own name.
     saveDocument: async () => {
       if (!open) return;
       const path = open;
@@ -774,6 +790,7 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
 
   // Every choice a site can keep, and the key each command owns. The desktop writes these into a file its host owns; a browser keeps its own store, and `assets/settings.js` is what reads it back over the defaults before the first paint. Written out one command at a time so a key belongs to exactly one of them and nothing writes a neighbor.
   const KEPT = {
+    setGraphScope: (command) => ({ graphScope: String(command.scope || 'small') }),
     setSpeedReaderEnabled: (command) => ({ speedReaderEnabled: !!command.enabled }),
     setCodeIntelEnabled: (command) => ({ codeIntelEnabled: !!command.enabled }),
     setReadingUnlocked: (command) => ({ readingUnlocked: !!command.enabled }),

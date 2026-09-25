@@ -12391,7 +12391,7 @@ function updateEditingChrome() {
   renderReaderToolbar(hasDocument);
   if (saveButton) {
     
-    saveButton.hidden = !(hasDocument && (window.__leafSite || isDocumentDirty(path)));
+    saveButton.hidden = !(hasDocument && isDocumentDirty(path));
   }
   if (undoButton) {
     
@@ -12533,7 +12533,7 @@ function saveActiveDocument() {
   if (!path) return;
   commitActiveEditingBlock();
   afterActiveEditCommits(() => {
-    if (activeDocumentPath() !== path || (!window.__leafSite && !isDocumentDirty(path))) return;
+    if (activeDocumentPath() !== path || !isDocumentDirty(path)) return;
     flushSourceUpdate();
     if (isMacPlatform && activeDocumentIsUntitled() && saveButton) {
       
@@ -16278,7 +16278,6 @@ function sendCheckboxBlockEdit(el, start, end, text, cell, box) {
 }
 
 
-
 function markMarkdownEditable(el) {
   el.querySelectorAll('input[type="checkbox"]').forEach((box) => box.setAttribute('contenteditable', 'false'));
 }
@@ -16802,7 +16801,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
 
     
-    if (currentDocumentFormat === 'markdown' && !pendingCaret && !body.querySelector('[data-src-start]')) {
+    if (currentDocumentFormat === 'markdown' && !pendingCaret && Array.isArray(doc.blocks) && doc.blocks.length === 0) {
       setPendingCaret({ emptyDocument: true });
     }
     
@@ -16968,6 +16967,7 @@ function restoreStructuralCarry(target, carry) {
   placeCaretInBlock(target, at);
   sendLiveBlockEdit(target);
 }
+
 
 function splitBlockAtCaret(el) {
   const ranges = caretRangesIn(el);

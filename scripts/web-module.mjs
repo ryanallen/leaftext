@@ -63,6 +63,13 @@ export async function instantiateCore(file) {
     formats: () => read(api.leaf_formats()).split(' '),
     // The other names a Markdown document answers to, read by the same field reader the desktop uses.
     aliases: (text, label) => JSON.parse(withStrings(api.leaf_aliases, text, label) || '[]'),
+    graphLinks: (bytes, path) => {
+      const [body, name] = [writeBytes(bytes), write(path)];
+      const answer = read(api.leaf_graph_links(...body, ...name));
+      api.leaf_free(...body);
+      api.leaf_free(...name);
+      return JSON.parse(answer || '{}');
+    },
     vocabulary: () => JSON.parse(read(api.leaf_vocabulary()) || '{"rows":[]}'),
     documentScript: (source, path) => withStrings(api.leaf_document_script, source, path),
     glossaryScript: (href) => withStrings(api.leaf_glossary_script, href || ''),

@@ -347,6 +347,7 @@ What it draws over depends on where the open document lives, and you never choos
 
 - **Inside your active vault** — the map is of the whole vault. Every document in it is a node, so you see what links *to* the document you are on as well as what it links to, and `[[wiki]]` names resolve against the whole collection.
 - **Anywhere else** — the map is of that document: itself, the documents in its folder, and whatever it links to, wherever those live. A link is followed one hop out; nothing below the folder is read.
+- **On leaftext.com and Emptyguru** — the map uses the links published with the site's document list. It draws the open page, other pages in its folder, and pages it links to without fetching those pages when you open the map.
 
 The second map is **smaller, not wrong**. A document only ever records what it links to — what links *back* is written in somebody else's file — so reading the folder is what recovers incoming links, and it stops there. A link to a *document* outside the set simply draws no line. [Web addresses](#web-addresses) are unaffected — those are nodes in their own right, so a document's outbound links show up either way. Put the folder in a vault and the map widens.
 

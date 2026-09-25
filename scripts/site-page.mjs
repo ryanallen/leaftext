@@ -54,8 +54,10 @@ export async function listDocuments(leaf, folder, paths = []) {
   const documents = found.sort((a, b) => a.depth - b.depth || a.path.localeCompare(b.path));
   for (const entry of documents) {
     const label = basename(entry.path).replace(/\.[^.]*$/, '');
-    const aliases = leaf.aliases(await readFile(join(folder, entry.path.split('/').join(sep)), 'utf8'), label);
+    const bytes = await readFile(join(folder, entry.path.split('/').join(sep)));
+    const aliases = leaf.aliases(bytes.toString('utf8'), label);
     if (aliases.length) entry.aliases = aliases;
+    entry.links = leaf.graphLinks(bytes, entry.path);
   }
   return documents;
 }
