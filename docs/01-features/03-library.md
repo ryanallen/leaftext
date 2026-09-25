@@ -96,6 +96,8 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
 - The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
 
+On a published site, the breadcrumb stays at the head of the pane and follows the open page, including when a link opens a page in another folder. Folder crumbs open their folders; the current page ends the trail. The site has no vault switcher or Sync button beside it.
+
 Each call reads exactly one directory, so nothing below what you opened is ever touched.
 
 ### The open document's headings

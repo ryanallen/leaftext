@@ -27,7 +27,7 @@ One preference is not saved here at all, because it is your system's: [Reduce Mo
 
 Whether a document can be typed into is the [padlock](07-editing.md#the-padlock) on the floating toolbar, and there are two — one for the reading view, one for the source — because unlocking the page you read is not consent to rewrite the file by hand.
 
-Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave last time is the answer next launch, on every document. Both start locked.
+Both are saved (`reading_unlocked`, `code_unlocked`), so the answer you gave last time is the answer next launch, on every document. Both start locked. A published site remembers neither.
 
 ## Open
 
@@ -178,6 +178,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - **An install that does not take says so.** A failed install starts the version you already had, so the window that comes back is the window you left — the one thing you could not otherwise tell. The next launch shows a message naming the version that failed, why it failed, and the version you are still running. It appears once, on that launch and no other, and the reason is written to `journal.log` as well so it can be quoted in a bug report
 - **The updater speaks only where there is something to do.** A check that found nothing, one that could not reach GitHub, one GitHub refused, and one that found a release with no file this copy can install yet all pass in silence — there is nothing for you to do about any of them, and the next check or launch takes a release once its file is there. What it shows is the download in progress, *Restart to update*, and the message above
 - **The bell is only in the app bar while there is news.** No update, no bell — its presence is the message, and there is no control sitting there saying nothing
+- **A published site never checks.** leaftext.com and Emptyguru have no installer to hand you, so their pages ask GitHub nothing
 - The running version is printed at the foot of the home screen, so after a relaunch you can confirm which build is installed; **Licenses** beside it opens the notices of everything the app redistributes
 - Saved as `update_last_checked`, `update_staged_version`, and `update_auto_applied`
 

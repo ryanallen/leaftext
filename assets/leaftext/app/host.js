@@ -643,6 +643,7 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
 
   // What the page sends the host. A command with no arm here is one this host cannot answer; the desktop's own event loop is where they all live.
   const commands = {
+    setReadingUnlocked: () => {},
     getGraph: ({ scope }) => {
       let answer;
       try {
@@ -793,7 +794,6 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
     setGraphScope: (command) => ({ graphScope: String(command.scope || 'small') }),
     setSpeedReaderEnabled: (command) => ({ speedReaderEnabled: !!command.enabled }),
     setCodeIntelEnabled: (command) => ({ codeIntelEnabled: !!command.enabled }),
-    setReadingUnlocked: (command) => ({ readingUnlocked: !!command.enabled }),
     setThemeFamily: (command) => ({ themeFamily: String(command.family || '') }),
     setThemeMode: (command) => ({ themeMode: String(command.mode || '') }),
     setThemeRandomBag: (command) => ({ themeRandomUsed: Array.isArray(command.used) ? command.used : [] }),

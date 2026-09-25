@@ -4779,14 +4779,10 @@ if (window.__leafSite) {
   const historyActions = document.querySelector('.history-actions');
   if (historyActions) historyActions.remove();
   
-  const crumbTrail = document.getElementById('libraryCrumbTrail');
-  const strip = document.getElementById('tabBar');
-  if (crumbTrail && strip) strip.appendChild(crumbTrail);
-  
-  const crumbRow = document.getElementById('libraryCrumbs');
-  if (crumbRow) crumbRow.remove();
-  const pane = document.getElementById('libraryPane');
-  if (pane) pane.style.setProperty('--library-crumbs-height', '0px');
+  for (const id of ['libraryVaultSwitch', 'librarySyncButton']) {
+    const button = document.getElementById(id);
+    if (button) button.remove();
+  }
   
   for (const id of ['openButton', 'newButton']) {
     const button = document.getElementById(id);
@@ -11264,7 +11260,7 @@ let updateCheckInFlight = false;
 
 async function checkForUpdate(force) {
   
-  if (!LEAF_VERSION || !UPDATE_RELEASES_API || updateCheckInFlight) return;
+  if (!UPDATE_ASSET_SUFFIX || !LEAF_VERSION || !UPDATE_RELEASES_API || updateCheckInFlight) return;
   
   if (updateState.status === 'downloading') return;
 
@@ -12194,7 +12190,6 @@ function renderTabs(state) {
   
   if (window.__leafSite) {
     renderLibraryCrumbs(libraryChain);
-    refitAppBar();
     return;
   }
   const tabs = state.tabs || [];
@@ -17009,17 +17004,53 @@ function splitBlockAtCaret(el) {
 
 
 function armCarryAfterCaret(el, beforeRange, afterRange) {
+  
+  const half = textOfRange(afterRange);
+  const trimmed = half.length - half.trimStart().length;
   armStructuralCarry(
     el,
     () => {
       const offset = caretTextOffsetIn(el);
-      return {
-        nodes: copiedNodesOfRange(afterRange),
-        caret: offset == null ? 0 : Math.max(0, offset - textLengthOfRange(beforeRange)),
-      };
+      const nodes = copiedNodesOfRange(afterRange);
+      let caret = offset == null ? 0 : Math.max(0, offset - textLengthOfRange(beforeRange));
+      const texts = copiedTextNodesOf(nodes);
+      const now = texts.map((node) => node.textContent).join('');
+      if (trimmed && now.endsWith(half)) {
+        const from = now.length - half.length;
+        dropCopiedText(texts, from, trimmed);
+        if (caret > from) caret -= Math.min(trimmed, caret - from);
+      }
+      return { nodes, caret };
     },
     'replace',
   );
+}
+
+function textOfRange(range) {
+  return range.toString();
+}
+
+
+function copiedTextNodesOf(nodes) {
+  const texts = [];
+  const walk = (node) => {
+    if (node.nodeType === 3) texts.push(node);
+    else for (const child of node.childNodes || []) walk(child);
+  };
+  nodes.forEach(walk);
+  return texts;
+}
+
+
+function dropCopiedText(texts, from, count) {
+  let at = 0;
+  for (const node of texts) {
+    const words = node.textContent;
+    const cut = Math.max(from, at) - at;
+    const stop = Math.min(from + count, at + words.length) - at;
+    if (stop > cut) node.textContent = words.slice(0, cut) + words.slice(stop);
+    at += words.length;
+  }
 }
 
 

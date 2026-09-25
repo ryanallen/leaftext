@@ -21,8 +21,9 @@
   const defaults =
     window.__leafSettings && typeof window.__leafSettings === 'object' ? window.__leafSettings : {};
   const settings = Object.assign({}, defaults, kept());
-  // The source's padlock is refused here, so one an earlier visit stored opened nothing a reader could keep; the source starts locked.
+  // Each site visit starts with both padlocks closed.
   settings.codeUnlocked = false;
+  settings.readingUnlocked = false;
   window.__leafSettings = settings;
 
   // The marks are state rather than a setting — the page reads them off the state it was handed, not off its settings — so they are merged into that state here, beside the merge above and before the first render, which is the only place either of them can happen.
