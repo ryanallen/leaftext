@@ -8692,7 +8692,8 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);
 }
-.document-body .book-undrawable {
+.document-body .book-undrawable,
+.document-body .office-undrawable {
   color: var(--lt-muted-foreground);
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);

@@ -15592,8 +15592,19 @@ function deleteEmptiedBlock(el, text) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return false;
   const span = blockDeleteRange(start, end);
   const landing = caretAfterBlockDelete(el, el, span);
+  
+  const mode = !landing ? 'title' : landing.srcStart === span.start ? 'prepend' : 'append';
+  armStructuralCarry(
+    el,
+    () => {
+      const offset = caretTextOffsetIn(el);
+      return { nodes: copiedChildrenOf(el), caret: offset == null ? visibleTextLength(el) : offset };
+    },
+    mode,
+  );
   sendBlockSplice(el, span.start, span.end, '');
   if (landing) setPendingCaret(landing);
+  carryToPendingCaret();
   return true;
 }
 
@@ -16240,6 +16251,83 @@ function commitActiveEditingBlock() {
 }
 
 
+
+let structuralCarry = null;
+
+
+function armStructuralCarry(el, capture, mode) {
+  armedPauses.delete(el);
+  if (el.__liveTimer) {
+    window.clearTimeout(el.__liveTimer);
+    el.__liveTimer = 0;
+  }
+  el.__editingActive = false;
+  structuralCarry = { path: activeDocumentPath(), el, capture, mode, pending: null, taken: null };
+}
+
+
+function carryToPendingCaret() {
+  if (structuralCarry) structuralCarry.pending = pendingCaret;
+}
+
+
+function structuralCarryHolds(el) {
+  return !!structuralCarry && structuralCarry.el === el;
+}
+
+
+function captureStructuralCarry() {
+  raiseTypingChrome();
+  structuralCarry.taken = structuralCarry.capture();
+}
+
+
+function copiedChildrenOf(el) {
+  return Array.from(el.cloneNode(true).childNodes);
+}
+
+
+function copiedNodesOfRange(range) {
+  return Array.from(range.cloneContents().childNodes);
+}
+
+function textLengthOfRange(range) {
+  return range.toString().length;
+}
+
+
+function takeStructuralCarry(pending) {
+  const carry = structuralCarry;
+  structuralCarry = null;
+  if (!carry || !carry.taken || !pending) return null;
+  if (carry.path !== activeDocumentPath() || pending.path !== carry.path) return null;
+  if (carry.mode === 'title' ? !pending.emptyDocument : carry.pending !== pending) return null;
+  return carry;
+}
+
+
+function restoreStructuralCarry(target, carry) {
+  target.__editingActive = true;
+  setEditBaseline(target);
+  const own = Array.from(target.childNodes);
+  const { nodes, caret } = carry.taken;
+  let at = caret;
+  if (carry.mode === 'append') {
+    at = visibleTextLength(target) + caret;
+    target.replaceChildren(...own, ...nodes);
+  } else if (carry.mode === 'prepend') {
+    target.replaceChildren(...nodes, ...own);
+  } else {
+    target.replaceChildren(...nodes);
+  }
+  rebindRestoredCheckboxes(target);
+  beginTypingSteps(target);
+  target.__liveStarted = true;
+  placeCaretInBlock(target, at);
+  sendLiveBlockEdit(target);
+}
+
+
 function sendBlockSplice(el, start, end, text, kind) {
   const sent = sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text });
   setEditBaseline(el);
@@ -16293,11 +16381,24 @@ function splitBlockAtCaret(el) {
   if (part2Inline) {
     
     const part2 = prefix + part2Inline;
+    
+    armStructuralCarry(
+      el,
+      () => {
+        const offset = caretTextOffsetIn(el);
+        return {
+          nodes: copiedNodesOfRange(afterRange),
+          caret: offset == null ? 0 : Math.max(0, offset - textLengthOfRange(beforeRange)),
+        };
+      },
+      'replace',
+    );
     sendBlockSplice(el, start, end, part1 + separator + part2);
     setPendingCaret({
       srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator),
       textOffset: 0,
     });
+    carryToPendingCaret();
   } else if (blockDomToSource(el) !== el.__editBaseline) {
     
     sendBlockSplice(el, start, end, part1);
@@ -16356,8 +16457,20 @@ function mergeBlockIntoPrevious(el, prev) {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const junction = visibleTextLength(prev);
   const merged = blockDomToMarkdown(prev) + inlineDomToMarkdown(el).trim();
+  armStructuralCarry(
+    el,
+    () => {
+      const offset = caretTextOffsetIn(el);
+      return {
+        nodes: [...copiedChildrenOf(prev), ...copiedChildrenOf(el)],
+        caret: visibleTextLength(prev) + (offset == null ? 0 : offset),
+      };
+    },
+    'replace',
+  );
   sendBlockSplice(el, start, end, merged);
   setPendingCaret({ srcStart: start, textOffset: junction });
+  carryToPendingCaret();
 }
 
 
@@ -16532,12 +16645,17 @@ function wireMarkdownEditable(el) {
     if (selectionToolbarHoldsFocus(event.relatedTarget)) return;
     if (blockGutterHoldsFocus(event.relatedTarget)) return;
     el.__editingActive = false;
-    commitBlockEdit(el, blockDomToSource(el));
+    
+    if (!structuralCarryHolds(el)) commitBlockEdit(el, blockDomToSource(el));
     
     closeWysiwygBlock(el);
   });
   
   el.addEventListener('input', (event) => {
+    if (structuralCarryHolds(el)) {
+      captureStructuralCarry();
+      return;
+    }
     raiseTypingChrome();
     recordTypingStep(el, typedCharOf(event));
     scheduleLiveBlockEdit(el);
@@ -16853,11 +16971,19 @@ function wireDataClosedParts(body) {
 function placePendingCaret(body) {
   const pending = pendingCaret;
   pendingCaret = null;
+  
+  const carry = takeStructuralCarry(pending);
   if (!pending) return;
   
   if (pending.path && pending.path !== activeDocumentPath()) return;
   if (pending.emptyDocument) {
-    openMediumStart(body);
+    const pair = openMediumStart(body);
+    if (carry && pair) {
+      pair.title.replaceChildren(...carry.taken.nodes);
+      placeCaretInBlock(pair.title, carry.taken.caret);
+      
+      if (pair.commit(true)) setPendingCaret({ srcStart: 0, textOffset: carry.taken.caret });
+    }
     return;
   }
   
@@ -16875,7 +17001,8 @@ function placePendingCaret(body) {
   openWysiwygBlock(target, { start: offset, end });
   if (blockIsEditingHost(target)) {
     target.focus({ preventScroll: true });
-    if (end > offset) selectTextSpanInBlock(target, { start: offset, end });
+    if (carry) restoreStructuralCarry(target, carry);
+    else if (end > offset) selectTextSpanInBlock(target, { start: offset, end });
     else placeCaretInBlock(target, offset);
   }
 }
@@ -17229,7 +17356,7 @@ function openMediumStart(body) {
   body.insertBefore(title, body.firstChild);
   let committed = false;
   
-  const commit = (chainBelow, extra, chainSpec) => {
+  const commit = (chainBelow, extra, chainSpec, continuing) => {
     if (committed) return true;
     const titleText = inlineDomToMarkdown(title).trim();
     const storyText = inlineDomToMarkdown(story).trim();
@@ -17248,7 +17375,10 @@ function openMediumStart(body) {
       const blockAt = utf8ByteLength(lead);
       sendEditCommand({ command: 'editBlock', start: blockAt, end: blockAt, text: extra.text, token, kind: extra.kind });
     } else {
-      sendEditCommand({ command: 'editBlock', start: 0, end: 0, text, token, kind: extra ? extra.kind : undefined });
+      const message = { command: 'editBlock', start: 0, end: 0, text, token, kind: extra ? extra.kind : undefined };
+      
+      if (continuing === true) message.continuing = true;
+      sendEditCommand(message);
     }
     if (extra) {
       if (extra.caret) {
@@ -17332,6 +17462,8 @@ function openMediumStart(body) {
   wireStartBlock(title);
   wireStartBlock(story);
   title.focus({ preventScroll: true });
+  
+  return { title, commit: (continuing) => commit(false, null, undefined, continuing) };
 }
 
 
@@ -24026,7 +24158,7 @@ function markDropCap(body) {
         continue;
       }
       
-      if (el.classList.contains('book-byline') || el.classList.contains('book-undrawable')) continue;
+      if (el.classList.contains('book-byline') || el.classList.contains('book-undrawable') || el.classList.contains('office-undrawable')) continue;
       
       if (el.classList.contains('book-item')) {
         if (take(el, true)) return true;
