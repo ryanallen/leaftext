@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Leaftext — Documentation</title>
     <meta name="description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
-    <!-- Canonical + alternate are updated per page by docs.js as the route
-         changes; these are the defaults for the docs home. -->
     <link rel="canonical" href="https://leaftext.com/docs/" />
-    <!-- The Markdown this page renders. docs.js repoints this one at the current
-         route's own file as the reader navigates. -->
+    <!-- The documentation's own front page, as Markdown. -->
     <link rel="alternate" type="text/markdown" href="README.md" />
     <!-- The two AI indexes, plus the full list of Markdown addresses — a fetcher
          that lands here reaches every page from these three. -->
@@ -17,7 +14,6 @@
     <link rel="alternate" type="text/plain" href="../llms-full.txt" title="AI index, with a description per page" />
     <link rel="alternate" type="text/plain" href="../sitemap-md.txt" title="Every page's Markdown address" />
     <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#0d1117" />
     <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
     <link rel="apple-touch-icon" href="/assets/leaf-icon.png" />
     <meta property="og:type" content="website" />
@@ -31,78 +27,53 @@
     <meta name="twitter:title" content="Leaftext — Documentation" />
     <meta name="twitter:description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
     <meta name="twitter:image" content="https://leaftext.com/imgs/leaftext.png" />
-    <!-- Noto, linked from the address the app's own Fern theme uses, as the root site does. The KaTeX stylesheet and the reader look live one level up under site/, so this page reuses them verbatim — no second copy. -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Noto+Serif:ital,wght@0,400;0,600;0,700;0,900;1,400&amp;family=Noto+Sans+Mono:wght@400;500;600;700&amp;display=swap" />
-    <link rel="stylesheet" href="../site/vendor/katex/katex.min.css" />
-    <!-- Where the app's own renderer is served from, and the stylesheet it draws
-         a document with. Both are built when this site publishes and never
-         committed; another site can name this one here instead. -->
-    <meta name="leaftext-renderer" content="/assets/leaftext/" />
-    <link rel="stylesheet" href="/assets/leaftext/leaftext.css" />
-    <link rel="stylesheet" href="../site/styles.css" />
-    <!-- Docs-only chrome: the left navigation sidebar and the page pager. -->
-    <link rel="stylesheet" href="docs.css" />
-    <!-- The documentation folder's own file list, written in by the publish and by
-         the local preview. The sidebar is built from it, so the page needs neither a
-         directory listing a static host cannot answer nor a call to the GitHub API.
-         The repository keeps it empty: a list committed here would be whatever the
-         folder held the day somebody wrote it. -->
+    <!-- The documentation folder's own file list, written in by the publish. The script below turns an old #/route link back into the file it named with it, so the page needs no request of its own. The repository keeps it empty: a list committed here would be whatever the folder held the day somebody wrote it. -->
     <script type="application/json" id="docs-pages"></script>
-    <!-- Apply the saved theme and panel toggles before first paint (no flash).
-         Keys mirror ../site/settings.js; "System" resolves to the device theme. -->
+    <!-- Every page of the documentation is read in the app at the top of the site now. This address stays because links to it are out in the world: it sends each one on to the page it named, #/features/minimap to the minimap page, and a bare /docs/ to the documentation's own front page. A route is a file's path under docs/ with the ordering numbers and .md taken off each part, which is exactly what is undone here. -->
     <script>
       (function () {
+        var files = [];
         try {
-          var d = document.documentElement,
-            s = window.localStorage;
-          var m = s.getItem('leaf.theme') || 'system';
-          var t =
-            m === 'light' || m === 'dark'
-              ? m
-              : matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
-          d.dataset.theme = t;
-          // The document's own paint comes from the app's stylesheet, which keys on a theme family and an appearance.
-          d.dataset.leafTheme = 'github';
-          d.dataset.leafAppearance = t === 'light' ? 'light' : 'dark';
-          if (s.getItem('leaf.minimap') === '0') d.dataset.minimap = 'off';
-          if (s.getItem('leaf.library') === '0') d.dataset.library = 'off';
-          if (s.getItem('leaf.speedReader') === '1') d.dataset.speedReader = 'true';
-          if (s.getItem('leaf.lineNumbers') !== '1') d.dataset.lineNumbers = 'off';
+          files = JSON.parse(document.getElementById('docs-pages').textContent || '[]');
         } catch (e) {}
+        var clean = function (path) {
+          return path
+            .split('/')
+            .map(function (part) {
+              return part.replace(/^\d+[-_]+/, '');
+            })
+            .join('/')
+            .replace(/\.md$/i, '');
+        };
+        var hash = location.hash || '';
+        var rest = hash.indexOf('#/') === 0 ? hash.slice(2) : '';
+        var cut = rest.indexOf('#');
+        var route = (cut >= 0 ? rest.slice(0, cut) : rest).replace(/\/+$/, '');
+        var anchor = cut >= 0 ? rest.slice(cut + 1) : '';
+        try {
+          route = decodeURIComponent(route);
+        } catch (e) {}
+        var file = 'README.md';
+        if (route) {
+          for (var i = 0; i < files.length; i += 1) {
+            if (clean(files[i]) === route || files[i] === route) {
+              file = files[i];
+              break;
+            }
+          }
+        }
+        location.replace('../#docs/' + file + (anchor ? '#' + anchor : ''));
       })();
     </script>
   </head>
   <body>
-    <!-- The shadow band's alpha curve, which --lt-grain-shadow-curve names as url(#lt-shadow-halftone). It is markup rather than a data URI in the token because WebKit resolves no filter reference outside the page, which left the band an opaque white slab on every Mac. Every page that serves the reading stylesheet carries this block, byte for byte, and reading_css_grain_curve.rs holds them to each other. -->
-    <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
-    <a class="skip-link" href="#content">Skip to content</a>
-    <!-- docs.js fills the sidebar from its NAV table and the article from the
-         current doc page (chosen by the #/route in the URL). -->
-    <nav class="docs-sidebar" id="sidebar" aria-label="Documentation"></nav>
-    <main class="page">
-      <select class="docs-mobile-nav" id="mobileNav" aria-label="Documentation pages"></select>
-      <article class="markdown-body" id="content" tabindex="-1"></article>
-      <!-- The status line speaks only when something failed. It carries no waiting
-           text: a page that cannot say when it will finish should not promise
-           that it will. -->
-      <p class="status" id="status" hidden></p>
-      <!-- Nothing here is drawn when the script runs. Without it the page is
-           empty, so say where the text actually is. -->
-      <noscript>
-        <p class="status">
-          These pages are drawn from Markdown by a script. The full text of this one is
-          <a href="README.md">README.md</a>. Every page of the documentation as Markdown:
-          <a href="../sitemap-md.txt">sitemap-md.txt</a>, <a href="../llms.txt">llms.txt</a>,
-          <a href="../llms-full.txt">llms-full.txt</a>.
-        </p>
-      </noscript>
-    </main>
-    <!-- docs.js draws the document with the app's own renderer
-         (../site/leaftext-core.js) and builds the minimap (../site/minimap.js).
-         The Previous/Next strip is part of what the renderer draws, filled from
-         the sidebar's order. -->
-    <script type="module" src="docs.js"></script>
+    <noscript>
+      <p>
+        Every page of this documentation is Markdown. This one is
+        <a href="README.md">README.md</a>. Every page as Markdown:
+        <a href="../sitemap-md.txt">sitemap-md.txt</a>, <a href="../llms.txt">llms.txt</a>,
+        <a href="../llms-full.txt">llms-full.txt</a>.
+      </p>
+    </noscript>
   </body>
 </html>

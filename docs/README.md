@@ -81,22 +81,20 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 
 The glossary is not an ordinary page: every term in it is matched automatically wherever it appears across these docs, and clicking one opens that entry in a bottom sheet over the page you are reading rather than navigating away. Linking one by hand works too — `[minimap](GLOSSARY.md#minimap)`.
 
-The front page at leaftext.com reads this same file, one folder up, so this is the only copy and it stays here. `just check-site` fails on a page that asks for it anywhere else.
+leaftext.com's pages link every glossary word to this same file, so this is the only copy and it stays here.
 
 ## How this folder ships
 
-These pages are plain Markdown, but the folder is also a deployable site:
+These pages are plain Markdown, and leaftext.com reads them in the app itself: every address on the site is Leaftext's own page, with these files served where they sit and the library pane listing them.
 
 | File | Role |
 | --- | --- |
-| `index.html` | The docs shell at leaftext.com/docs — names where the renderer and its stylesheet are served from, loads the shared site styles and applies the saved theme before first paint |
-| `docs.js` | Fills the sidebar navigation and renders the page chosen by the URL route. After paint it links every term [GLOSSARY.md](GLOSSARY.md) defines, so a term opens in a sheet over the page the same way it does in the app — not on the glossary itself, where each heading would link to the entry it already is |
-| `docs.css` | Docs-only chrome: the sidebar |
-| `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here through the app's own renderer, the module the published site draws with, and fails loudly on errors or empty output. It needs `just build-web` first, which is why it is not part of `just verify` |
+| `index.html` | leaftext.com/docs — sends a link written for the old documentation reader, `#/features/editing`, on to the same page in the app. Its file list is written in when the site publishes |
+| `render-docs-check.mjs` | Headless smoke test — renders every `.md` file here through the app's own renderer and fails loudly on errors or empty output. It needs `just build-web` first, which is why it is not part of `just verify` |
 
 ### Page order and file names
 
-The sidebar is built from the real file tree, not from a hand-written list. A leading number orders a file or folder and is stripped from the label and the URL, so `01-features/07-editing.md` is shown as **Editing** and addressed as `#/features/editing`. Add a page and the nav follows; renumber one and its address does not change.
+A leading number orders a file or folder in the library pane. An old link names a page with those numbers taken off — `01-features/07-editing.md` was `#/features/editing` — and `index.html` finds the file that matches, so an old link still lands on a page that has been renumbered since.
 
 Before shipping doc changes, run the check from the repo root:
 

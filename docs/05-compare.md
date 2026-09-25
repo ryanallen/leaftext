@@ -6,7 +6,7 @@ Each of these apps is good at something. Obsidian is a notebook of linked Markdo
 
 ## The chart
 
-**✅** the app does this, and the link in the cell is where it says so. **❌** it does not do this: it says it cannot, it only converts the file into something else first, or it is not the kind of app that would. A mark linking to [how the marks were checked](05-compare.md#how-the-marks-were-checked) was read off the app itself rather than off its pages. **?** neither its own pages nor the app settle it either way. A **bold** row also opens the chart on the front page.
+**✅** the app does this, and the link in the cell is where it says so. **❌** it does not do this: it says it cannot, it only converts the file into something else first, or it is not the kind of app that would. A mark linking to [how the marks were checked](05-compare.md#how-the-marks-were-checked) was read off the app itself rather than off its pages. **?** neither its own pages nor the app settle it either way.
 
 Sources read 23 September 2026, 7:42am. The apps themselves checked 23 September 2026, 10:14am.
 

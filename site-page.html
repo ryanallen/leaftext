@@ -1,0 +1,85 @@
+<!-- keep-wrapping -->
+<!--
+  leaftext.com's own lines, and nothing else. The page a visitor is served is the app's own, written at publish by scripts/site-page.mjs with these lines in its head and the noscript block in its body, and the README already drawn into it — so every address on the site is the app, and this file is what makes it leaftext.com rather than any exported folder.
+
+  The two {{leaftext:…}} marks are filled by the bake from the version file the hand-over commits, because a repository named in a committed file is one that can disagree with the one line that owns it.
+-->
+<head>
+    <title>Leaftext — refine your mind. Your thoughts, secure and free.</title>
+    <meta
+      name="description"
+      content="A free desktop app for reading and writing your own documents on Mac and Windows. Your files stay on your device, in plain Markdown and XML you own. No account, no cloud, no telemetry."
+    />
+    <link rel="canonical" href="https://leaftext.com/" />
+    <meta name="robots" content="index, follow" />
+    <!-- Favicon / app icon: the green leaf mark shown in the browser tab and in
+         search results. Absolute path so it resolves the same from /docs/. -->
+    <link rel="icon" type="image/png" href="/assets/leaf-icon.png" />
+    <link rel="apple-touch-icon" href="/assets/leaf-icon.png" />
+    <!-- The page renders this Markdown file client-side; expose it as the
+         machine-readable alternate so crawlers and AI fetchers read the text
+         without running JavaScript. -->
+    <link rel="alternate" type="text/markdown" href="README.md" />
+    <!-- The two AI indexes: every page of the site as a raw Markdown address.
+         A fetcher that lands here needs one link to reach all of it. -->
+    <link rel="alternate" type="text/plain" href="llms.txt" title="AI index — every page as Markdown" />
+    <link rel="alternate" type="text/plain" href="llms-full.txt" title="AI index, with a description per page" />
+    <!-- Open Graph (link previews on social and chat apps). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Leaftext" />
+    <meta property="og:title" content="Leaftext — refine your mind." />
+    <meta property="og:description" content="Your thoughts, secure and free. A free desktop app for reading and writing your own documents on Mac and Windows — they never leave your device." />
+    <meta property="og:url" content="https://leaftext.com/" />
+    <meta property="og:image" content="https://leaftext.com/imgs/leaftext.png" />
+    <meta property="og:locale" content="en_US" />
+    <!-- Twitter / X card. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Leaftext — refine your mind." />
+    <meta name="twitter:description" content="Your thoughts, secure and free. A free desktop app for reading and writing your own documents on Mac and Windows — they never leave your device." />
+    <meta name="twitter:image" content="https://leaftext.com/imgs/leaftext.png" />
+    <!-- Structured data: the site, its publisher, and the app it documents. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://leaftext.com/#website",
+            "url": "https://leaftext.com/",
+            "name": "Leaftext",
+            "description": "Refine your mind. Your thoughts, secure and free.",
+            "inLanguage": "en"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://leaftext.com/#org",
+            "name": "Leaftext",
+            "url": "https://leaftext.com/",
+            "logo": "https://leaftext.com/assets/leaf-icon.png",
+            "sameAs": ["{{leaftext:repository}}"]
+          },
+          {
+            "@type": "SoftwareApplication",
+            "name": "Leaftext",
+            "applicationCategory": "Productivity",
+            "operatingSystem": "Windows, macOS",
+            "url": "https://leaftext.com/",
+            "downloadUrl": "{{leaftext:windows-download}}",
+            "image": "https://leaftext.com/assets/leaf-icon.png",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "A free desktop app for reading and writing your own Markdown and XML documents on macOS and Windows. Everything stays on your device."
+          }
+        ]
+      }
+    </script>
+</head>
+<body>
+    <noscript>
+      <p class="status">
+        This page is drawn from Markdown. Its source is
+        <a href="README.md">README.md</a>, beside this page. Every page of the site as Markdown:
+        <a href="llms.txt">llms.txt</a>, <a href="llms-full.txt">llms-full.txt</a>,
+        <a href="sitemap.xml">sitemap.xml</a>.
+      </p>
+    </noscript>
+</body>
