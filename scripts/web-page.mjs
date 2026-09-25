@@ -59,7 +59,9 @@ export function sitePage(page, bootScript, { assets = ASSETS, head = '', foot = 
   if (words) {
     const app = /(<main id="app"[^>]*>)(<\/main>)/;
     if (!app.test(shaped)) throw new Error("the app's page has no empty main element to draw the landing document into");
-    shaped = shaped.replace(app, (_, open, close) => `${open}<div class="reader-layout ${BAKED}"><article class="document-body">${words}</article></div>${close}`);
+    // Words that already arrive as an article — the renderer's own, or a laid-out landing — go in as they are, rather than inside a second one.
+    const article = /^\s*<article\b/.test(words) ? words : `<article class="document-body">${words}</article>`;
+    shaped = shaped.replace(app, (_, open, close) => `${open}<div class="reader-layout ${BAKED}">${article}</div>${close}`);
   }
   return shaped;
 }

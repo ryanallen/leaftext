@@ -29,6 +29,34 @@ async function fetched(path) {
   };
 }
 
+/** The landing's layout, its chart and its motion — the website's own modules, published beside this one — fetched only for a site whose listing names a front page. */
+async function frontPageModules() {
+  const [layout, chart, motion] = await Promise.all([import('./front-page-layout.js'), import('./compare-chart.js'), import('./front-page.js')]);
+  return { layoutFrontPage: layout.layoutFrontPage, fillCompareSeam: chart.fillCompareSeam, installFrontMotion: motion.installFrontMotion };
+}
+
+/**
+ * What the host needs to lay the landing out: the path, the layout and the motion. The chart was drawn once, at the publish, into the page this was served; it is lifted out here, before the host draws anything over it, and seamed into the README the module draws — so no chart page is fetched and none is drawn again.
+ *
+ * A page nobody baked has no chart to lift, and a module that does not arrive has no layout to hand; either way the landing is drawn plain and the console says why.
+ */
+async function frontPageFor(path) {
+  const drawn = document.querySelector('.baked-page .compare-chart');
+  if (!drawn) {
+    console.warn(`${path} is drawn plain: the page carries no comparison chart to lay it out with`);
+    return null;
+  }
+  const chart = drawn.outerHTML;
+  let modules;
+  try {
+    modules = await frontPageModules();
+  } catch (error) {
+    console.warn(`${path} is drawn plain: the front page's modules did not arrive — ${(error && error.message) || error}`);
+    return null;
+  }
+  return { path, layout: (html) => modules.layoutFrontPage(modules.fillCompareSeam(html, chart)), motion: modules.installFrontMotion };
+}
+
 try {
   // The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in. It also says where the documents are: under `source/` for a folder export, or at their own addresses for a site served in place, where every `.md` a crawler was promised has to keep answering.
   const listing = await (await fetched('documents.json')).json();
@@ -39,10 +67,13 @@ try {
     imageSizes = await (await fetched(listing.imageSizes || 'image-sizes.json')).json();
   } catch {}
   const documents = listing.documents || [];
+  // Only leaftext.com's listing names one; every other site draws its landing as the app draws any document.
+  const frontPage = typeof listing.frontPage === 'string' && listing.frontPage ? await frontPageFor(listing.frontPage) : null;
   const leaf = await startLeaftext({
     documents,
     name: listing.name || '',
     imageSizes,
+    frontPage,
     fetch: fetched,
     // The file's own bytes, not a decode of them: a Word, Excel, PowerPoint or OpenDocument file is a zip, and a page reading one as text draws it as a parse error rather than as the document it is. The glossary read below stays text, because that is a file the host reads for its words rather than one it draws.
     read: async (path) => new Uint8Array(await (await fetched(at(path))).arrayBuffer()),

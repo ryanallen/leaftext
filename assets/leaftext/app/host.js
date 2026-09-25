@@ -296,9 +296,33 @@ export function repointHead(path, anchor = '') {
   if (markdown) markdown.setAttribute('href', path);
 }
 
-export async function startLeaftext({ documents, name = '', read, imageSizes = {}, fetch: fetchWith = fetch }) {
+export async function startLeaftext({ documents, name = '', read, imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
   // Before the module loads, because the front end asks this as it draws and a control it asked about too early is one drawn on a guess.
   window.__leafHostAnswers = answers;
+  // The one document a site lays out as its front page, which the page asks about as it draws. Every other path, and a layout that throws, is drawn as the app draws it.
+  if (frontPage && frontPage.path && typeof frontPage.layout === 'function') {
+    let moving = null;
+    window.leafSiteLayout = (path, html) => {
+      if (path !== frontPage.path) return null;
+      let laid;
+      try {
+        laid = frontPage.layout(html);
+      } catch (error) {
+        console.warn(`${path} is drawn plain: ${(error && error.message) || error}`);
+        return null;
+      }
+      // Once the page has drawn what this answers, which it does before it hands control back: every redraw puts a fresh page in, so the cards rise and the clips play on whichever page is standing. The reading column's alone — the rail's copy keeps the posters.
+      if (typeof frontPage.motion === 'function') {
+        queueMicrotask(() => {
+          const laidOut = document.querySelector('.document-body.front-layout:not(.document-minimap-preview)');
+          if (!laidOut) return;
+          if (moving) moving.stop();
+          moving = frontPage.motion(laidOut);
+        });
+      }
+      return laid;
+    };
+  }
   const core = await load(assetBase() + MODULE, fetchWith);
   core.setImageSizes(imageSizes);
   core.setMintsPictures(true);

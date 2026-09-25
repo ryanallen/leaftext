@@ -202,7 +202,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Mermaid diagrams | [✅][l-mermaid] | [✅][o-adv] | [✅][t-diagrams] | [❌][c-seen] |
+| **Mermaid diagrams** | [✅][l-mermaid] | [✅][o-adv] | [✅][t-diagrams] | [❌][c-seen] |
 | Broken diagrams explained | [✅][l-mermaid] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Suggested diagram fixes | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Nearby diagrams first | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

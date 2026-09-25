@@ -91,14 +91,15 @@ export function landingOf(documents) {
 /**
  * The page and the listing that make `folder` into the app, served where its documents already are.
  *
- * `assets` is where the front end is fetched from. `fragment` is the site's own lines. The landing document is drawn into the page, so the first response carries its words for a crawler and for a reader whose module has not arrived yet; the host's first render draws the same document over it.
+ * `assets` is where the front end is fetched from. `fragment` is the site's own lines. The landing document is drawn into the page, so the first response carries its words for a crawler and for a reader whose module has not arrived yet; the host's first render draws the same document over it. `layout`, where a site has one, is what the landing's drawn words pass through before they are written in.
  */
-export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment = '', imageSizes = '' }) {
+export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment = '', imageSizes = '', layout = null }) {
   const documents = await listDocuments(leaf, folder, paths);
   const landing = landingOf(documents);
   // Drawn with no image base, because in place a picture's address as written already resolves.
   leaf.setImageBase('');
-  const words = landing ? (leaf.renderBytes(await readFile(join(folder, landing.split('/').join(sep))), landing) || {}).html || '' : '';
+  const drawn = landing ? (leaf.renderBytes(await readFile(join(folder, landing.split('/').join(sep))), landing) || {}).html || '' : '';
+  const words = layout && drawn ? layout(drawn) : drawn;
   const { head, foot } = splitFragment(fragment);
   const page = sitePage(leaf.page(), leaf.boot(), { assets, head, foot, words });
   const listing = { name, documentBase: '', landing, documents: documents.map(({ depth, ...entry }) => entry) };

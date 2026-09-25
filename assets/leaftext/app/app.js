@@ -25971,8 +25971,16 @@ function replayParagraphSwaps(doc, body) {
     if (old && old.parentElement === body && rangeOf(old, 'block').end === swap.end) drawSwappedParagraph(old, swap.html, swap.start, swap.end);
   }
 }
+
+function siteLaidOutState(state) {
+  const doc = state.document;
+  if (!doc || !window.__leafSite || typeof window.leafSiteLayout !== 'function') return state;
+  const laid = window.leafSiteLayout(doc.path || activeDocumentPath(), doc.html);
+  if (typeof laid !== 'string' || !laid) return state;
+  return { ...state, document: { ...doc, html: laid, blocks: [], tasks: [], computed: [] } };
+}
 function renderState(keepDetachedRender = false, landingAnchor = null) {
-  const state = currentState || { recent: [], favorites: [], tabs: [], active: null, document: null };
+  const state = siteLaidOutState(currentState || { recent: [], favorites: [], tabs: [], active: null, document: null });
   prepareStateRender(state, keepDetachedRender);
   if (state.document) {
     document.title = `${state.document.title} - Leaftext`;
@@ -32548,6 +32556,14 @@ function stripMinimapClone(preview) {
       link.classList.add('glossary-term');
     }
     link.removeAttribute('href');
+  });
+  
+  preview.querySelectorAll('video').forEach((clip) => {
+    const still = document.createElement('img');
+    still.className = clip.className;
+    if (clip.poster) still.src = clip.poster;
+    still.alt = '';
+    clip.replaceWith(still);
   });
   
   fillMermaidClone(preview);

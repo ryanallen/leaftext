@@ -6,7 +6,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Markdown files | [✅][l-md] | [✅][o-formats] | [✅][t-files] | [❌][c-conv] |
+| **Markdown files** | [✅][l-md] | [✅][o-formats] | [✅][t-files] | [❌][c-conv] |
 | HTML pages | [✅][l-html] | [❌][o-formats] | [❌][t-seen] | [❌][c-faq] |
 | XML files | [✅][l-anyxml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | TEI editions | [✅][l-tei] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
@@ -16,11 +16,11 @@
 | Plain text files | [✅][l-plain] | [❌][o-formats] | [✅][t-files] | [❌][c-faq] |
 | Saved email | [✅][l-eml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | Web archives | [✅][l-eml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
-| Word documents | [✅][l-office] | [❌][o-formats] | [❌][t-pandoc] | [❌][c-faq] |
+| **Word documents** | [✅][l-office] | [❌][o-formats] | [❌][t-pandoc] | [❌][c-faq] |
 | Excel workbooks | [✅][l-office] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | PowerPoint decks | [✅][l-office] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | OpenDocument files | [✅][l-office] | [❌][o-formats] | [❌][t-pandoc] | [❌][c-faq] |
-| EPUB books | [✅][l-epub] | [❌][o-formats] | [❌][t-pandoc] | [✅][c-viewer] |
+| **EPUB books** | [✅][l-epub] | [❌][o-formats] | [❌][t-pandoc] | [✅][c-viewer] |
 | TypeScript files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | JavaScript files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | JSON with comments | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |

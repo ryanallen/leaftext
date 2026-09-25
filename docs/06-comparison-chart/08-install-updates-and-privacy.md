@@ -67,7 +67,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Works fully offline | [✅][l-offline] | [✅][o-offline] | [✅][t-seen] | [✅][c-seen] |
+| **Works fully offline** | [✅][l-offline] | [✅][o-offline] | [✅][t-seen] | [✅][c-seen] |
 | Network for updates, fonts | [✅][l-offline] | ? | ? | ? |
 | Help on version line | [✅][l-help] | ? | ? | ? |
 | Public Discussions page | [✅][l-help] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |

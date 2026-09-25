@@ -20,6 +20,8 @@ import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
 import { SITE_FRAGMENT, inPlaceSite, writeDocsList } from './site-page.mjs';
+import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
+import { FRONT_LAYOUT_CLASS, layoutFrontPage } from '../site/front-page-layout.js';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -46,12 +48,15 @@ export const APP_MODULE_PATH = `${APP_DIR}/leaftext.wasm`;
 export const APP_SCRIPT_PATH = `${APP_DIR}/app.js`;
 export const APP_STYLES_PATH = `${APP_DIR}/app.css`;
 
-/** The host a browser answers the page through, its loader and its store, out of `web/preview/`; and the deadline every fetch waits under, which is the website's own file. */
-const HOST_FILES = [
+/** The host a browser answers the page through, its loader and its store, out of `web/preview/`; the deadline every fetch waits under; and the landing's layout, its chart and its motion, which the loader hands the host — the website's own files. */
+export const HOST_FILES = [
   [`${APP_DIR}/host.js`, 'web/preview/host.js'],
   [`${APP_DIR}/boot.js`, 'web/preview/boot.js'],
   [`${APP_DIR}/settings.js`, 'web/preview/settings.js'],
   [`${APP_DIR}/fetches.js`, 'site/fetches.js'],
+  [`${APP_DIR}/front-page-layout.js`, 'site/front-page-layout.js'],
+  [`${APP_DIR}/compare-chart.js`, 'site/compare-chart.js'],
+  [`${APP_DIR}/front-page.js`, 'site/front-page.js'],
 ];
 
 /** The runtimes the page fetches by name when a document needs one — a diagram, some math, the map, the source view — as the app compiles them in. */
@@ -117,9 +122,21 @@ export function fillMarks(page, project) {
 }
 
 /**
- * The front page and its listing: the app's own page with the site's lines in it and the README drawn into it, and the documents it walks — what the deploy uploads, never what the repository holds.
+ * How the landing is laid out at the bake: the comparison chart drawn under its heading out of the chart pages on disk, then the README laid out as the front page. The chart's rows are written once, in `docs/`, and the browser lifts this drawn chart out of the page rather than drawing it again.
  */
-export async function bakeSite(leaf, project, from = root) {
+export function frontLayout(leaf, from = root) {
+  const index = readFileSync(join(from, COMPARE_INDEX), 'utf8');
+  const bodies = new Map(chartPagePaths(index).map((path) => [path, readFileSync(join(from, path), 'utf8')]));
+  const render = (body, path) => leaf.render(body, path);
+  return (html) => layoutFrontPage(frontWithChart(html, index, bodies, render));
+}
+
+/**
+ * The front page and its listing: the app's own page with the site's lines in it and the README laid out into it, and the documents it walks — what the deploy uploads, never what the repository holds.
+ *
+ * `layout` is the bake's own unless a check hands it another, which is how a bake that would go out plain is proved refused.
+ */
+export async function bakeSite(leaf, project, from = root, { layout = frontLayout(leaf, from) } = {}) {
   const fragmentFile = join(from, SITE_FRAGMENT);
   if (!existsSync(fragmentFile)) throw new Error(`${SITE_FRAGMENT} is not here, so the page would carry none of leaftext.com's own lines`);
   const { page, listing } = await inPlaceSite(leaf, from, SITE_PATHS, {
@@ -127,9 +144,14 @@ export async function bakeSite(leaf, project, from = root) {
     assets: APP_BASE,
     fragment: readFileSync(fragmentFile, 'utf8'),
     imageSizes: IMAGE_SIZES_PATH,
+    layout,
   });
+  // The host lays out only the document the listing names, so a site with no landing layout — Emptyguru — draws every page as the app does.
+  listing.frontPage = FRONT_DOCUMENT;
   if (listing.landing !== FRONT_DOCUMENT) throw new Error(`the site would open on ${listing.landing || 'nothing'} rather than ${FRONT_DOCUMENT}`);
-  if (!/class="reader-layout baked-page"><article class="document-body">\s*\S/.test(page)) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} into ${FRONT_PAGE}`);
+  if (!/class="reader-layout baked-page"><article class="document-body[^"]*">\s*\S/.test(page)) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} into ${FRONT_PAGE}`);
+  // The front page is the one page whose job is to get somebody to press Download, so a publish that lost its layout stops rather than going out as the README drawn plain.
+  if (!page.includes(`<article class="document-body ${FRONT_LAYOUT_CLASS}">`)) throw new Error(`${FRONT_PAGE} came out of the bake with ${FRONT_DOCUMENT} drawn plain rather than laid out as the front page`);
   return new Map([
     [FRONT_PAGE, fillMarks(page, project)],
     [LISTING, `${JSON.stringify(listing, null, 2)}\n`],

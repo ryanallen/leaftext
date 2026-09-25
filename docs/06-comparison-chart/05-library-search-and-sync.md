@@ -275,7 +275,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Map of links | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
+| **Map of links** | [✅][l-graph] | [✅][o-graph] | [❌][t-seen] | [❌][c-seen] |
 | Web addresses as nodes | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Five link kinds mapped | [✅][l-graph] | ? | [❌][t-seen] | [❌][c-seen] |
 | View beside reading | [✅][l-graph] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |

@@ -19,7 +19,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Type in the page | [✅][l-inline] | [✅][o-edit] | [✅][t-home] | [❌][c-seen] |
+| **Type in the page** | [✅][l-inline] | [✅][o-edit] | [✅][t-home] | [❌][c-seen] |
 | Blocks edited in place | [✅][l-inline] | [✅][o-edit] | [✅][t-home] | [❌][c-seen] |
 | Markup kept for you | [✅][l-inline] | [✅][o-seen] | ? | [❌][c-seen] |
 | Exact byte splices | [✅][l-inline] | [✅][o-seen] | ? | [❌][c-seen] |
