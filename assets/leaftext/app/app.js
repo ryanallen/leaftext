@@ -855,7 +855,7 @@ window.addEventListener('keydown', (event) => {
     return;
   }
   
-  if (currentState && typeof currentState.active === 'number') send({ command: 'openBeside', index: currentState.active });
+  if (currentState && typeof currentState.active === 'number' && currentState.tabs?.length) send({ command: 'openBeside', index: (currentState.active + 1) % currentState.tabs.length });
 });
 
 
@@ -4995,6 +4995,7 @@ function endTabDrag(commit) {
     suppressTabClick = true;
     setTimeout(() => { suppressTabClick = false; }, 0);
     if (standingBeside) {
+      if (drag.index === currentState?.active) saveSessionPlace();
       send({ command: 'openBeside', index: drag.index });
     } else if (closingBeside) {
       
@@ -16251,83 +16252,6 @@ function commitActiveEditingBlock() {
 }
 
 
-
-let structuralCarry = null;
-
-
-function armStructuralCarry(el, capture, mode) {
-  armedPauses.delete(el);
-  if (el.__liveTimer) {
-    window.clearTimeout(el.__liveTimer);
-    el.__liveTimer = 0;
-  }
-  el.__editingActive = false;
-  structuralCarry = { path: activeDocumentPath(), el, capture, mode, pending: null, taken: null };
-}
-
-
-function carryToPendingCaret() {
-  if (structuralCarry) structuralCarry.pending = pendingCaret;
-}
-
-
-function structuralCarryHolds(el) {
-  return !!structuralCarry && structuralCarry.el === el;
-}
-
-
-function captureStructuralCarry() {
-  raiseTypingChrome();
-  structuralCarry.taken = structuralCarry.capture();
-}
-
-
-function copiedChildrenOf(el) {
-  return Array.from(el.cloneNode(true).childNodes);
-}
-
-
-function copiedNodesOfRange(range) {
-  return Array.from(range.cloneContents().childNodes);
-}
-
-function textLengthOfRange(range) {
-  return range.toString().length;
-}
-
-
-function takeStructuralCarry(pending) {
-  const carry = structuralCarry;
-  structuralCarry = null;
-  if (!carry || !carry.taken || !pending) return null;
-  if (carry.path !== activeDocumentPath() || pending.path !== carry.path) return null;
-  if (carry.mode === 'title' ? !pending.emptyDocument : carry.pending !== pending) return null;
-  return carry;
-}
-
-
-function restoreStructuralCarry(target, carry) {
-  target.__editingActive = true;
-  setEditBaseline(target);
-  const own = Array.from(target.childNodes);
-  const { nodes, caret } = carry.taken;
-  let at = caret;
-  if (carry.mode === 'append') {
-    at = visibleTextLength(target) + caret;
-    target.replaceChildren(...own, ...nodes);
-  } else if (carry.mode === 'prepend') {
-    target.replaceChildren(...nodes, ...own);
-  } else {
-    target.replaceChildren(...nodes);
-  }
-  rebindRestoredCheckboxes(target);
-  beginTypingSteps(target);
-  target.__liveStarted = true;
-  placeCaretInBlock(target, at);
-  sendLiveBlockEdit(target);
-}
-
-
 function sendBlockSplice(el, start, end, text, kind) {
   const sent = sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text });
   setEditBaseline(el);
@@ -16353,192 +16277,6 @@ function sendCheckboxBlockEdit(el, start, end, text, cell, box) {
   setEditBaseline(el);
 }
 
-
-function splitBlockAtCaret(el) {
-  const selection = window.getSelection();
-  if (!selection || !selection.rangeCount) return;
-  const caret = selection.getRangeAt(0);
-  if (!el.contains(caret.startContainer)) return;
-  const { start, end } = rangeOf(el, 'block');
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  const beforeRange = document.createRange();
-  beforeRange.selectNodeContents(el);
-  beforeRange.setEnd(caret.startContainer, caret.startOffset);
-  const afterRange = document.createRange();
-  afterRange.selectNodeContents(el);
-  afterRange.setStart(caret.startContainer, caret.startOffset);
-  
-  const separator = documentLineEnding().repeat(2);
-  const half = (range) =>
-    currentDocumentFormat === 'eml'
-      ? emailBlockDomToText(range.cloneContents(), documentLineEnding()).trim()
-      : inlineDomToMarkdown(range.cloneContents()).trim();
-  const part1Inline = half(beforeRange);
-  const part2Inline = half(afterRange);
-  if (!part1Inline) return;
-  const prefix = blockMarkerOf(el);
-  const part1 = prefix + part1Inline;
-  if (part2Inline) {
-    
-    const part2 = prefix + part2Inline;
-    
-    armStructuralCarry(
-      el,
-      () => {
-        const offset = caretTextOffsetIn(el);
-        return {
-          nodes: copiedNodesOfRange(afterRange),
-          caret: offset == null ? 0 : Math.max(0, offset - textLengthOfRange(beforeRange)),
-        };
-      },
-      'replace',
-    );
-    sendBlockSplice(el, start, end, part1 + separator + part2);
-    setPendingCaret({
-      srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator),
-      textOffset: 0,
-    });
-    carryToPendingCaret();
-  } else if (blockDomToSource(el) !== el.__editBaseline) {
-    
-    sendBlockSplice(el, start, end, part1);
-    setPendingCaret({ srcStart: start, insertBelow: true });
-  } else {
-    openInsertBlockAfter(el);
-  }
-}
-
-
-function splitTreeBlockAtCaret(el) {
-  const span = el.__innerSpan;
-  if (!span) return;
-  
-  if (el.dataset.blockKind !== 'paragraph') return;
-  if (el.classList && el.classList.contains('tei-doc-subtitle')) return;
-  const { start, end } = rangeOf(el, 'block');
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  const offset = caretTextOffsetIn(el);
-  if (offset == null) return;
-  const src = sliceSourceBytes(start, end);
-  const inner = xmlElementInnerSpan(src);
-  if (!inner) return;
-  const open = src.slice(0, inner.from);
-  const close = src.slice(inner.to);
-  const named = /^[ \t]*<([^\s/>]+)/.exec(open);
-  const spec = named ? 'element:' + named[1] : undefined;
-  const text = el.textContent;
-  const part1 = text.slice(0, offset).trim();
-  const part2 = text.slice(offset).trim();
-  
-  if (!part1) return;
-  if (!part2) {
-    
-    if (blockDomToSource(el) !== el.__editBaseline) {
-      sendBlockSplice(el, span.start, span.end, escapeTreeText(part1));
-      setPendingCaret({ srcStart: start, insertBelow: true, blockSpec: spec });
-      return;
-    }
-    openInsertBlockAfter(el, spec);
-    return;
-  }
-  const first = open + escapeTreeText(part1) + close;
-  const separator = blockSeparator();
-  sendBlockSplice(el, start, end, first + separator + open + escapeTreeText(part2) + close);
-  setPendingCaret({
-    srcStart: start + utf8ByteLength(first) + utf8ByteLength(separator),
-    textOffset: 0,
-  });
-}
-
-
-function mergeBlockIntoPrevious(el, prev) {
-  const start = rangeOf(prev, 'block').start;
-  const end = rangeOf(el, 'block').end;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  const junction = visibleTextLength(prev);
-  const merged = blockDomToMarkdown(prev) + inlineDomToMarkdown(el).trim();
-  armStructuralCarry(
-    el,
-    () => {
-      const offset = caretTextOffsetIn(el);
-      return {
-        nodes: [...copiedChildrenOf(prev), ...copiedChildrenOf(el)],
-        caret: visibleTextLength(prev) + (offset == null ? 0 : offset),
-      };
-    },
-    'replace',
-  );
-  sendBlockSplice(el, start, end, merged);
-  setPendingCaret({ srcStart: start, textOffset: junction });
-  carryToPendingCaret();
-}
-
-
-function handleWysiwygKeydown(el, event) {
-  if (event.key === 'Escape') {
-    event.preventDefault();
-    el.blur();
-    return;
-  }
-  if (currentDocumentFormat === 'eml') {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
-    
-    if (el.dataset.blockKind !== 'email_paragraph') return;
-    
-    if (event.shiftKey) document.execCommand('insertLineBreak');
-    else splitBlockAtCaret(el);
-    return;
-  }
-  if (currentDocumentFormat === 'xml') {
-    if (event.key !== 'Enter') return;
-    event.preventDefault();
-    
-    splitTreeBlockAtCaret(el);
-    return;
-  }
-  const kind = el.dataset.blockKind;
-  if (kind === 'table') {
-    handleTableKeydown(el, event);
-    return;
-  }
-  if (kind === 'blockquote') {
-    
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      document.execCommand('insertLineBreak');
-    }
-    return;
-  }
-  if (kind === 'list') return;
-  if (event.key === 'Enter') {
-    if (event.shiftKey) {
-      
-      
-      if (kind === 'heading') event.preventDefault();
-      return;
-    }
-    event.preventDefault();
-    splitBlockAtCaret(el);
-    return;
-  }
-  if (event.key === 'Backspace') {
-    const selection = window.getSelection();
-    if (selection && selection.isCollapsed && caretTextOffsetIn(el) === 0) {
-      const prev = el.previousElementSibling;
-      
-      if (
-        prev &&
-        prev.classList &&
-        prev.classList.contains('leaf-editable') &&
-        (prev.dataset.blockKind === 'paragraph' || prev.dataset.blockKind === 'heading')
-      ) {
-        event.preventDefault();
-        mergeBlockIntoPrevious(el, prev);
-      }
-    }
-  }
-}
 
 
 function markMarkdownEditable(el) {
@@ -16979,10 +16717,17 @@ function placePendingCaret(body) {
   if (pending.emptyDocument) {
     const pair = openMediumStart(body);
     if (carry && pair) {
-      pair.title.replaceChildren(...carry.taken.nodes);
-      placeCaretInBlock(pair.title, carry.taken.caret);
-      
-      if (pair.commit(true)) setPendingCaret({ srcStart: 0, textOffset: carry.taken.caret });
+      if (carry.taken) {
+        pair.title.replaceChildren(...carry.taken.nodes);
+        placeCaretInBlock(pair.title, carry.taken.caret);
+        
+        if (pair.commit(true)) {
+          setPendingCaret({ srcStart: 0, textOffset: carry.taken.caret });
+          if (carry.keys.length) carryKeysToNextRedraw(carry.keys);
+          return;
+        }
+      }
+      replayHeldKeys(carry.keys, pair.title);
     }
     return;
   }
@@ -16990,7 +16735,15 @@ function placePendingCaret(body) {
   const target = elementWithRange(body, pending.kind || 'block', pending.srcStart);
   if (!target) return;
   if (pending.insertBelow) {
-    openInsertBlockAfter(target, pending.blockSpec);
+    const line = openInsertBlockAfter(target, pending.blockSpec);
+    if (line && carry) {
+      
+      if (carry.taken) {
+        line.replaceChildren(...carry.taken.nodes);
+        placeCaretInBlock(line, carry.taken.caret);
+      }
+      replayHeldKeys(carry.keys, line);
+    }
     return;
   }
   
@@ -17001,9 +16754,10 @@ function placePendingCaret(body) {
   openWysiwygBlock(target, { start: offset, end });
   if (blockIsEditingHost(target)) {
     target.focus({ preventScroll: true });
-    if (carry) restoreStructuralCarry(target, carry);
+    if (carry && carry.taken) restoreStructuralCarry(target, carry);
     else if (end > offset) selectTextSpanInBlock(target, { start: offset, end });
     else placeCaretInBlock(target, offset);
+    if (carry) replayHeldKeys(carry.keys, target);
   }
 }
 
@@ -17088,6 +16842,345 @@ window.leafBlocksResynced = (state) => {
     }
   }
 };
+
+
+let structuralCarry = null;
+
+
+function armStructuralCarry(el, capture, mode) {
+  armedPauses.delete(el);
+  if (el.__liveTimer) {
+    window.clearTimeout(el.__liveTimer);
+    el.__liveTimer = 0;
+  }
+  el.__editingActive = false;
+  structuralCarry = { path: activeDocumentPath(), el, capture, mode, pending: null, taken: null, keys: [] };
+}
+
+
+function holdKeyForRedraw(event) {
+  const keys = structuralCarry.keys;
+  const bare = !event.ctrlKey && !event.metaKey && !event.altKey;
+  const edits = event.key === 'Enter' || (bare && (event.key === 'Backspace' || event.key === 'Delete'));
+  if (event.isComposing || !(edits || (bare && keys.length && event.key.length === 1))) return false;
+  event.preventDefault();
+  keys.push({ key: event.key, shiftKey: !!event.shiftKey, ctrlKey: !!event.ctrlKey, altKey: !!event.altKey, metaKey: !!event.metaKey });
+  return true;
+}
+
+
+function carryKeysToNextRedraw(keys) {
+  structuralCarry = { path: activeDocumentPath(), el: null, capture: null, mode: 'replace', pending: pendingCaret, taken: null, keys };
+}
+
+
+function replayHeldKeys(keys, fallback) {
+  for (let at = 0; at < keys.length; at++) {
+    const el = document.activeElement && document.activeElement.isConnected ? document.activeElement : fallback;
+    if (!el) return;
+    const before = pendingCaret;
+    pressHeldKey(el, keys[at]);
+    const rest = keys.slice(at + 1);
+    if (!rest.length) return;
+    if (structuralCarry) {
+      structuralCarry.keys.push(...rest);
+      return;
+    }
+    if (pendingCaret && pendingCaret !== before) {
+      carryKeysToNextRedraw(rest);
+      return;
+    }
+  }
+}
+
+
+function pressHeldKey(el, held) {
+  const event = new KeyboardEvent('keydown', { ...held, bubbles: true, cancelable: true });
+  if (!dispatchHeldKey(el, event)) return;
+  if (held.key === 'Enter') document.execCommand(held.shiftKey ? 'insertLineBreak' : 'insertParagraph');
+  else if (held.key === 'Backspace') document.execCommand('delete');
+  else if (held.key === 'Delete') document.execCommand('forwardDelete');
+  else document.execCommand('insertText', false, held.key);
+}
+
+function dispatchHeldKey(el, event) {
+  return el.dispatchEvent(event);
+}
+
+
+function carryToPendingCaret() {
+  if (structuralCarry) structuralCarry.pending = pendingCaret;
+}
+
+
+function structuralCarryHolds(el) {
+  return !!structuralCarry && structuralCarry.el === el;
+}
+
+
+function captureStructuralCarry() {
+  raiseTypingChrome();
+  structuralCarry.taken = structuralCarry.capture();
+}
+
+
+function copiedChildrenOf(el) {
+  return Array.from(el.cloneNode(true).childNodes);
+}
+
+
+function copiedNodesOfRange(range) {
+  return Array.from(range.cloneContents().childNodes);
+}
+
+function textLengthOfRange(range) {
+  return range.toString().length;
+}
+
+
+function takeStructuralCarry(pending) {
+  const carry = structuralCarry;
+  structuralCarry = null;
+  if (!carry || !(carry.taken || carry.keys.length) || !pending) return null;
+  if (carry.path !== activeDocumentPath() || pending.path !== carry.path) return null;
+  if (carry.mode === 'title' ? !pending.emptyDocument : carry.pending !== pending) return null;
+  return carry;
+}
+
+
+function restoreStructuralCarry(target, carry) {
+  target.__editingActive = true;
+  setEditBaseline(target);
+  const own = Array.from(target.childNodes);
+  const { nodes, caret } = carry.taken;
+  let at = caret;
+  if (carry.mode === 'append') {
+    at = visibleTextLength(target) + caret;
+    target.replaceChildren(...own, ...nodes);
+  } else if (carry.mode === 'prepend') {
+    target.replaceChildren(...nodes, ...own);
+  } else {
+    target.replaceChildren(...nodes);
+  }
+  rebindRestoredCheckboxes(target);
+  beginTypingSteps(target);
+  target.__liveStarted = true;
+  placeCaretInBlock(target, at);
+  sendLiveBlockEdit(target);
+}
+
+function splitBlockAtCaret(el) {
+  const ranges = caretRangesIn(el);
+  if (!ranges) return;
+  const { start, end } = rangeOf(el, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const { beforeRange, afterRange } = ranges;
+  
+  const separator = documentLineEnding().repeat(2);
+  const half = (range) =>
+    currentDocumentFormat === 'eml'
+      ? emailBlockDomToText(range.cloneContents(), documentLineEnding()).trim()
+      : inlineDomToMarkdown(range.cloneContents()).trim();
+  const part1Inline = half(beforeRange);
+  const part2Inline = half(afterRange);
+  if (!part1Inline) return;
+  const prefix = blockMarkerOf(el);
+  const part1 = prefix + part1Inline;
+  if (part2Inline) {
+    
+    const part2 = prefix + part2Inline;
+    armCarryAfterCaret(el, beforeRange, afterRange);
+    sendBlockSplice(el, start, end, part1 + separator + part2);
+    setPendingCaret({
+      srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator),
+      textOffset: 0,
+    });
+    carryToPendingCaret();
+  } else if (blockDomToSource(el) !== el.__editBaseline) {
+    
+    armCarryAfterCaret(el, beforeRange, afterRange);
+    sendBlockSplice(el, start, end, part1);
+    setPendingCaret({ srcStart: start, insertBelow: true });
+    carryToPendingCaret();
+  } else {
+    openInsertBlockAfter(el);
+  }
+}
+
+
+function armCarryAfterCaret(el, beforeRange, afterRange) {
+  armStructuralCarry(
+    el,
+    () => {
+      const offset = caretTextOffsetIn(el);
+      return {
+        nodes: copiedNodesOfRange(afterRange),
+        caret: offset == null ? 0 : Math.max(0, offset - textLengthOfRange(beforeRange)),
+      };
+    },
+    'replace',
+  );
+}
+
+
+function caretRangesIn(el) {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return null;
+  const caret = selection.getRangeAt(0);
+  if (!el.contains(caret.startContainer)) return null;
+  const beforeRange = document.createRange();
+  beforeRange.selectNodeContents(el);
+  beforeRange.setEnd(caret.startContainer, caret.startOffset);
+  const afterRange = document.createRange();
+  afterRange.selectNodeContents(el);
+  afterRange.setStart(caret.startContainer, caret.startOffset);
+  return { beforeRange, afterRange };
+}
+
+
+function splitTreeBlockAtCaret(el) {
+  const span = el.__innerSpan;
+  if (!span) return;
+  
+  if (el.dataset.blockKind !== 'paragraph') return;
+  if (el.classList && el.classList.contains('tei-doc-subtitle')) return;
+  const { start, end } = rangeOf(el, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const offset = caretTextOffsetIn(el);
+  if (offset == null) return;
+  const src = sliceSourceBytes(start, end);
+  const inner = xmlElementInnerSpan(src);
+  if (!inner) return;
+  const open = src.slice(0, inner.from);
+  const close = src.slice(inner.to);
+  const named = /^[ \t]*<([^\s/>]+)/.exec(open);
+  const spec = named ? 'element:' + named[1] : undefined;
+  const text = el.textContent;
+  const part1 = text.slice(0, offset).trim();
+  const part2 = text.slice(offset).trim();
+  
+  if (!part1) return;
+  if (!part2) {
+    
+    if (blockDomToSource(el) !== el.__editBaseline) {
+      carryTreeTyping(el);
+      sendBlockSplice(el, span.start, span.end, escapeTreeText(part1));
+      setPendingCaret({ srcStart: start, insertBelow: true, blockSpec: spec });
+      carryToPendingCaret();
+      return;
+    }
+    openInsertBlockAfter(el, spec);
+    return;
+  }
+  const first = open + escapeTreeText(part1) + close;
+  const separator = blockSeparator();
+  carryTreeTyping(el);
+  sendBlockSplice(el, start, end, first + separator + open + escapeTreeText(part2) + close);
+  setPendingCaret({
+    srcStart: start + utf8ByteLength(first) + utf8ByteLength(separator),
+    textOffset: 0,
+  });
+  carryToPendingCaret();
+}
+
+
+function carryTreeTyping(el) {
+  const ranges = caretRangesIn(el);
+  if (ranges) armCarryAfterCaret(el, ranges.beforeRange, ranges.afterRange);
+  else armStructuralCarry(el, () => null, 'replace');
+}
+
+
+function mergeBlockIntoPrevious(el, prev) {
+  const start = rangeOf(prev, 'block').start;
+  const end = rangeOf(el, 'block').end;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const junction = visibleTextLength(prev);
+  const merged = blockDomToMarkdown(prev) + inlineDomToMarkdown(el).trim();
+  armStructuralCarry(
+    el,
+    () => {
+      const offset = caretTextOffsetIn(el);
+      return {
+        nodes: [...copiedChildrenOf(prev), ...copiedChildrenOf(el)],
+        caret: visibleTextLength(prev) + (offset == null ? 0 : offset),
+      };
+    },
+    'replace',
+  );
+  sendBlockSplice(el, start, end, merged);
+  setPendingCaret({ srcStart: start, textOffset: junction });
+  carryToPendingCaret();
+}
+
+
+function handleWysiwygKeydown(el, event) {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    el.blur();
+    return;
+  }
+  if (structuralCarryHolds(el) && holdKeyForRedraw(event)) return;
+  if (currentDocumentFormat === 'eml') {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    
+    if (el.dataset.blockKind !== 'email_paragraph') return;
+    
+    if (event.shiftKey) document.execCommand('insertLineBreak');
+    else splitBlockAtCaret(el);
+    return;
+  }
+  if (currentDocumentFormat === 'xml') {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    
+    splitTreeBlockAtCaret(el);
+    return;
+  }
+  const kind = el.dataset.blockKind;
+  if (kind === 'table') {
+    handleTableKeydown(el, event);
+    return;
+  }
+  if (kind === 'blockquote') {
+    
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      document.execCommand('insertLineBreak');
+    }
+    return;
+  }
+  if (kind === 'list') return;
+  if (event.key === 'Enter') {
+    if (event.shiftKey) {
+      
+      
+      if (kind === 'heading') event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    splitBlockAtCaret(el);
+    return;
+  }
+  if (event.key === 'Backspace') {
+    const selection = window.getSelection();
+    if (selection && selection.isCollapsed && caretTextOffsetIn(el) === 0) {
+      const prev = el.previousElementSibling;
+      
+      if (
+        prev &&
+        prev.classList &&
+        prev.classList.contains('leaf-editable') &&
+        (prev.dataset.blockKind === 'paragraph' || prev.dataset.blockKind === 'heading')
+      ) {
+        event.preventDefault();
+        mergeBlockIntoPrevious(el, prev);
+      }
+    }
+  }
+}
+
 
 
 
@@ -17315,6 +17408,7 @@ function openInsertBlock(
   });
   
   if (focusNow) block.focus({ preventScroll: true });
+  return block;
 }
 
 
@@ -17333,8 +17427,8 @@ function drawBlankLinesInContainers(blankLines) {
 
 function openInsertBlockAfter(el, specId) {
   const insertAt = rangeOf(el, 'block').end;
-  if (!Number.isFinite(insertAt)) return;
-  openInsertBlock(insertAt, {
+  if (!Number.isFinite(insertAt)) return null;
+  return openInsertBlock(insertAt, {
     spec: blankBlockSpec(specId) || PLAIN_LINE_SPEC,
     place: (host) => el.insertAdjacentElement('afterend', host),
     previous: el,
@@ -27714,11 +27808,11 @@ function requestLinkPreview(key, token, { picture = true, length = false } = {})
     if (token !== activeHoverToken || linkHoverTip.hidden) return;
     const aged = staleLinkAnswers.has(key);
     
-    if (length && (!documentLengthCache.has(key) || aged)) {
+    if (length && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('documentLength')) && (!documentLengthCache.has(key) || aged)) {
       pendingLengthTokens.set(token, key);
       send({ command: 'documentLength', href: key, token });
     }
-    if (!picture) return;
+    if (!picture || (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('previewLink'))) return;
     
     if (linkPreviewCache.has(key) && !aged) {
       applyLinkHoverPreview(linkPreviewCache.get(key));
@@ -27940,15 +28034,18 @@ function startLinkHover(event) {
   
   if (entry || info.kind === 'Another page' || info.kind === 'Full glossary') {
     
-    const key = entry ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
+    let key = entry || /^glossary:/i.test(rawHref) ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
+    if (!entry && !/^glossary:/i.test(rawHref) && typeof window.__leafHostAnswers === 'function' && !document.querySelector('base[href]')) {
+      try { key = new URL(rawHref, new URL(activeDocumentPath(), location.href)).href; } catch (e) {   }
+    }
     
     const aged = staleLinkAnswers.has(key);
-    let picture = true;
+    let picture = typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('previewLink');
     if (linkPreviewCache.has(key)) {
       
       applyLinkHoverPreview(linkPreviewCache.get(key));
       picture = aged;
-    } else {
+    } else if (picture) {
       showLinkHoverPreviewPlaceholder();
     }
     
@@ -27956,7 +28053,7 @@ function startLinkHover(event) {
     if (!entry) {
       const held = documentLengthCache.get(key);
       if (held) setLinkHoverLength(held.count, held.unit);
-      length = !held || aged;
+      length = (!held || aged) && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('documentLength'));
     }
     if (picture || length) requestLinkPreview(key, token, { picture, length });
   } else {

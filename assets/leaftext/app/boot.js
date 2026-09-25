@@ -67,10 +67,12 @@ try {
     imageSizes = await (await fetched(listing.imageSizes || 'image-sizes.json')).json();
   } catch {}
   const documents = listing.documents || [];
+  const glossary = documents.find((entry) => /(^|\/)glossary\.md$/i.test(entry.path));
   // Only leaftext.com's listing names one; every other site draws its landing as the app draws any document.
   const frontPage = typeof listing.frontPage === 'string' && listing.frontPage ? await frontPageFor(listing.frontPage) : null;
   const leaf = await startLeaftext({
     documents,
+    glossary: glossary ? glossary.path : '',
     name: listing.name || '',
     imageSizes,
     frontPage,
@@ -83,7 +85,6 @@ try {
   leaf.core.setImageBase(base);
 
   // The nearest glossary, which the desktop finds by walking folders and a browser cannot. Handing it over is what auto-links its terms.
-  const glossary = documents.find((entry) => /(^|\/)glossary\.md$/i.test(entry.path));
   if (glossary) leaf.core.setGlossary(await (await fetched(at(glossary.path))).text());
 
   leaf.showFolder('');

@@ -55,6 +55,12 @@ async function load(url, fetchWith = fetch) {
       else api.leaf_free(...bytes);
       return answer;
     },
+    linkPreview: (body, path) => {
+      const [bytes, name] = [put(body), write(path)];
+      const answer = read(api.leaf_link_preview(...bytes, ...name));
+      api.leaf_free(...name);
+      return answer ? JSON.parse(answer) : null;
+    },
     // Whether this page mints a book's pictures itself. A module older than the page has no such export, and its books keep their data addresses.
     setMintsPictures: (mints) => {
       if (typeof api.leaf_set_mints_pictures === 'function') api.leaf_set_mints_pictures(mints ? 1 : 0);
@@ -152,8 +158,8 @@ export const COMMANDS = {
   openNotices: [REFUSED, 'the link that sends it sits on the start screen, which a site never draws — the leaf goes to the front page of the site instead — and no module a site or an export is served carries the licenses document: the notices ride beside it as licenses.md'],
   revealLink: [REFUSED, 'there is no file manager to show it in'],
   copyLinkPath: [REFUSED, 'a served document has no path on this machine'],
-  documentLength: [LATER, 'web-app-commands'],
-  previewLink: [LATER, 'web-app-commands'],
+  documentLength: [ANSWERED],
+  previewLink: [ANSWERED],
   goBack: [REFUSED, 'the browser draws its own Back one row above, so a site draws no pair of its own and never sends this'],
   goForward: [REFUSED, 'the browser draws its own Forward one row above, so a site draws no pair of its own and never sends this'],
   refreshDocument: [REFUSED, 'the browser reloads the published page it is showing, and a site cannot reach the source document it came from'],
@@ -306,7 +312,7 @@ export function repointHead(path, anchor = '') {
   if (markdown) markdown.setAttribute('href', path);
 }
 
-export async function startLeaftext({ documents, name = '', read, imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
+export async function startLeaftext({ documents, name = '', read, glossary = '', imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
   // Before the module loads, because the front end asks this as it draws and a control it asked about too early is one drawn on a guess.
   window.__leafHostAnswers = answers;
   // The one document a site lays out as its front page, which the page asks about as it draws. Every other path, and a layout that throws, is drawn as the app draws it.
@@ -343,6 +349,25 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // Keep the drawn bytes for the source view and return without another fetch.
   let held = null;
   let buffer = 0;
+  let cardPath = '';
+  let cardAnswer = null;
+
+  function cardTarget(href) {
+    if (/^glossary:/i.test(String(href || ''))) return known.has(glossary) ? glossary : '';
+    return resolveFrom(open || '', href)?.path || '';
+  }
+
+  function cardFor(path) {
+    if (!path) return Promise.resolve(null);
+    if (path !== cardPath || !cardAnswer) {
+      cardPath = path;
+      cardAnswer = read(path).then((bytes) => core.linkPreview(bytes, path)).catch((error) => {
+        console.warn('the card could not read', path, error);
+        return null;
+      });
+    }
+    return cardAnswer;
+  }
 
   // The marks the reader made, out of the store their theme and their pane width come out of. Held here as well as written, because a toggle and a reorder each read the list before writing it — which is why three commands share one key where every other kept choice owns its own.
   const favorites = Array.isArray((window.__leafSettings || {}).favorites)
@@ -694,6 +719,14 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       run(`window.leafSetFavoritesMissing && window.leafSetFavoritesMissing(${JSON.stringify({ paths, vaults: [] })});`);
     },
     openGlossary: ({ href }) => run(core.glossaryScript(href)),
+    previewLink: async ({ href, token }) => {
+      const answer = await cardFor(cardTarget(href));
+      run(`window.leafLinkPreview(${JSON.stringify(token)}, ${JSON.stringify(answer?.html || '')});`);
+    },
+    documentLength: async ({ href, token }) => {
+      const answer = await cardFor(cardTarget(href));
+      run(`window.leafDocumentLength(${JSON.stringify(token)}, ${JSON.stringify(answer?.count ?? -1)}, ${JSON.stringify(answer?.unit || 'line')});`);
+    },
     // The buffer supplies the source or the refusal for a book with no single source.
     enterCodeView: () => {
       if (!held || held.path !== open) return;
