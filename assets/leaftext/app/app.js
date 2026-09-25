@@ -11857,7 +11857,7 @@ window.leafSwapParagraph = (swap) => {
   }
   recordParagraphSwap(doc, swap, end);
   currentState.renderKey = swap.renderKey;
-  rewatchReadingBlock(old, fresh);
+  if (fresh !== old) rewatchReadingBlock(old, fresh);
   window.leafDocumentWords(swap.path, swap.words);
   readerAnchorBlocks = null;
   pendingEditAnchor = null;
@@ -11866,6 +11866,76 @@ window.leafSwapParagraph = (swap) => {
   const active = document.activeElement;
   if (active && active !== document.body && active.isConnected && body.contains(active)) setPendingCaret(null);
   else placePendingCaret(body);
+};
+
+window.leafReplaceDrawnBlocks = (change, beside = false) => {
+  const apply = () => {
+    const doc = currentState && currentState.document;
+    const body = app.querySelector('.document-body');
+    if (!change || !doc || doc.path !== change.path || (codeViewActive && !beside) || !body) return;
+    if (redrawBehindTyping({ document: { path: change.path }, lastEdit: change.lastEdit })) return;
+    const drawn = documentBlocks(body).filter((block) => block.dataset.blockId != null);
+    const old = drawn.slice(change.first, change.first + change.oldCount);
+    const before = drawn[change.first - 1] || null;
+    const after = drawn[change.first + change.oldCount] || null;
+    const valid = Number.isInteger(change.first) && Number.isInteger(change.oldCount) &&
+      change.first >= 0 && change.oldCount >= 0 && old.length === change.oldCount &&
+      change.first + change.oldCount <= drawn.length && Array.isArray(change.ranges);
+    const start = before ? rangeOf(before, 'block').end : 0;
+    const end = after ? rangeOf(after, 'block').start : documentSourceLength();
+    const alreadyWritten = start === change.sourceStart && end === change.sourceEnd && documentSourceLength() === change.sourceLen &&
+      sliceSourceBytes(change.sourceStart, change.sourceEnd) === change.text;
+    const delta = utf8ByteLength(change.text) - (end - start);
+    const sourceAgrees = alreadyWritten ||
+      (start === change.sourceStart && documentSourceLength() + delta === change.sourceLen &&
+        start + utf8ByteLength(change.text) === change.sourceEnd);
+    const holder = document.createElement('div');
+    holder.innerHTML = change.html || '';
+    const fresh = Array.from(holder.children);
+    const rangesAgree = change.ranges.every((pair, index) => Array.isArray(pair) && pair.length === 2 &&
+      Number.isInteger(pair[0]) && Number.isInteger(pair[1]) && pair[0] >= change.sourceStart &&
+      pair[1] <= change.sourceEnd && pair[0] <= pair[1] &&
+      (index === 0 || pair[0] >= change.ranges[index - 1][1]));
+    if (!valid || !Number.isFinite(start) || !Number.isFinite(end) || !sourceAgrees || !rangesAgree ||
+        fresh.length !== change.ranges.length || fresh.some((block) => block.tagName !== 'P')) {
+      send({ command: 'refreshDocument' });
+      return;
+    }
+    let nextId = 0;
+    for (const block of drawn) nextId = Math.max(nextId, Number(block.dataset.blockId) + 1);
+    if (!alreadyWritten) {
+      spliceDocumentSource(start, end, change.text);
+      moveDrawnRangesAfter(end, delta);
+      moveKeptDocument(doc, end, delta);
+    } else moveKeptDocument(doc, end, 0);
+    putDrawnRun(old, fresh, after, before, body);
+    const inserted = change.ranges.map((pair, index) => {
+      const block = fresh[index];
+      block.dataset.blockId = String(nextId++);
+      block.dataset.blockKind = 'paragraph';
+      setRangeOf(block, 'block', pair[0], pair[1]);
+      return { id: Number(block.dataset.blockId), kind: 'paragraph', start: pair[0], end: pair[1] };
+    });
+    if (Array.isArray(doc.blocks)) doc.blocks.splice(change.first, change.oldCount, ...inserted);
+    for (const block of fresh) {
+      stampLocalImages(block);
+      laneWidePicture(block);
+      bindImageSheet(block);
+      markLinksThatGoNowhereIn(block);
+      applySpeedReaderToDocument(block);
+    }
+    if (readerEditingAllowed()) bindEditableBlocks(currentDocumentFormat, fresh);
+    rewatchReadingRun(old, fresh);
+    doc.partialDrawn = true;
+    doc.words = change.words;
+    currentState.renderKey = change.renderKey;
+    window.leafDocumentWords(change.path, change.words);
+    readerAnchorBlocks = null;
+    pendingEditAnchor = null;
+    placePendingCaret(body);
+  };
+  if (beside) withColumn(besideColumn(), apply);
+  else apply();
 };
 
 function recordParagraphSwap(doc, swap, end) {
@@ -16527,12 +16597,13 @@ function startBlockSourceEdit(el) {
 
 
 
-function bindEditableBlocks(format) {
+function bindEditableBlocks(format, elements = null) {
   const body = app.querySelector('.document-body');
   if (!body) return;
+  const selected = (selector) => elements ? elements.flatMap((root) => [root.matches(selector) ? root : null, ...root.querySelectorAll(selector)].filter(Boolean)) : body.querySelectorAll(selector);
   const wysiwygBlocks = [];
   const sourceBlocks = [];
-  body.querySelectorAll('[data-src-start]').forEach((el) => {
+  selected('[data-src-start]').forEach((el) => {
     if (!hasRangeOf(el, 'block')) return;
     const blockRange = rangeOf(el, 'block');
     const kind = el.dataset.blockKind;
@@ -16572,7 +16643,7 @@ function bindEditableBlocks(format) {
   });
   
   if (currentDocumentFormat === 'xlsx') {
-    body.querySelectorAll('table [data-cell-start]').forEach((el) => {
+    selected('table [data-cell-start]').forEach((el) => {
       const cellSpan = officeCellTypeableInPlace(el);
       if (!cellSpan) return;
       el.__innerSpan = cellSpan;
@@ -16582,7 +16653,7 @@ function bindEditableBlocks(format) {
   }
   
   if (format === 'xml') {
-    body.querySelectorAll('table [data-cell-start]').forEach((el) => {
+    selected('table [data-cell-start]').forEach((el) => {
       if (!hasRangeOf(el, 'cell')) return;
       const cellSpan = xmlCellTypeableInPlace(el);
       if (!cellSpan) return;
@@ -16590,7 +16661,7 @@ function bindEditableBlocks(format) {
       wysiwygBlocks.push(el);
     });
     
-    body.querySelectorAll('[data-value-start]').forEach((el) => {
+    selected('[data-value-start]').forEach((el) => {
       const valueSpan = xmlValueTypeableInPlace(el);
       if (!valueSpan) return;
       const quote = valueClosingQuote(valueSpan.start);
@@ -16600,7 +16671,7 @@ function bindEditableBlocks(format) {
       wysiwygBlocks.push(el);
     });
     
-    wireXmlTableHeadings(body);
+    if (!elements) wireXmlTableHeadings(body);
   }
   wysiwygBlocks.forEach(markMarkdownEditable);
   
@@ -16616,14 +16687,16 @@ function bindEditableBlocks(format) {
 }
 
 
-function bindSwappedParagraph(el) {
+function bindSwappedParagraph(el, kept = false) {
   if (!readerEditingAllowed() || !hasRangeOf(el, 'block')) return;
   const wysiwyg = markdownBlockWysiwygSafe(el);
   if (wysiwyg) markMarkdownEditable(el);
   el.classList.add('leaf-editable');
   if (currentDocumentHasUnreachableWords) el.classList.add('leaf-editable-here');
-  if (wysiwyg) wireMarkdownEditable(el);
-  else wireSourceEditable(el);
+  if (!kept) {
+    if (wysiwyg) wireMarkdownEditable(el);
+    else wireSourceEditable(el);
+  }
 }
 
 
@@ -24789,6 +24862,26 @@ function rewatchReadingBlock(old, fresh) {
   watch.observer.observe(fresh);
 }
 
+function rewatchReadingRun(old, fresh) {
+  const watch = readingWatch;
+  if (!watch || !watch.observer) return;
+  const run = old.length ? watch.runOf.get(old[0]) : fresh[0] && fresh[0].closest('.document-run');
+  const list = run && watch.runBlocks.get(run);
+  const at = list && old.length ? list.indexOf(old[0]) : -1;
+  for (const block of old) {
+    forgetReadingBlock(watch, block);
+    watch.tall.delete(block);
+    watch.pictures.delete(block);
+    watch.blockWords.delete(block);
+    watch.runOf.delete(block);
+  }
+  if (list) list.splice(at < 0 ? list.length : at, old.length, ...fresh);
+  for (const block of fresh) {
+    if (run) watch.runOf.set(block, run);
+    if (!run || watch.nearRuns.has(run)) watch.observer.observe(block);
+  }
+}
+
 function forgetReadingBlock(watch, el) {
   watch.observer.unobserve(el);
   watch.visible.delete(el);
@@ -26516,13 +26609,23 @@ function restoreKeptReaderRenderByKey(state, kept, key, landingAnchor) {
   return true;
 }
 
-function decorateSwappedParagraph(el) {
+function decorateSwappedParagraph(el, kept = false) {
   stampLocalImages(el);
   laneWidePicture(el);
   bindImageSheet(el);
   markLinksThatGoNowhereIn(el);
   applySpeedReaderToDocument(el);
-  bindSwappedParagraph(el);
+  bindSwappedParagraph(el, kept);
+}
+function putDrawnRun(old, fresh, after, before, body) {
+  const next = old[0] || after;
+  if (next) for (const block of fresh) next.parentElement.insertBefore(block, next);
+  else if (before) before.parentElement.append(...fresh);
+  else body.append(...fresh);
+  for (const block of old) {
+    forgetDrawnRanges(block);
+    block.remove();
+  }
 }
 
 function drawSwappedParagraph(old, html, start, end) {
@@ -26530,12 +26633,25 @@ function drawSwappedParagraph(old, html, start, end) {
   holder.innerHTML = html;
   const fresh = holder.firstElementChild;
   if (!fresh || holder.children.length !== 1 || fresh.tagName !== 'P') return null;
+  const active = document.activeElement;
+  const kept = active !== old && (!active || !old.contains(active)) && markdownBlockWysiwygSafe(old) === markdownBlockWysiwygSafe(fresh);
+  if (kept) {
+    const heldBelow = old.classList.contains('is-held-below');
+    const marks = new Set(['data-block-id', 'data-block-kind', 'data-editable', 'data-src-start', 'data-src-end']);
+    for (const name of old.getAttributeNames()) if (!marks.has(name)) old.removeAttribute(name);
+    if (heldBelow) old.classList.add('is-held-below');
+    old.replaceChildren(...fresh.childNodes);
+    old.dataset.blockKind = 'paragraph';
+    forgetDrawnRanges(old);
+    setRangeOf(old, 'block', start, end);
+    decorateSwappedParagraph(old, true);
+    return old;
+  }
   if (old.dataset.blockId != null) fresh.dataset.blockId = old.dataset.blockId;
   fresh.dataset.blockKind = 'paragraph';
   if (old.dataset.editable) fresh.dataset.editable = old.dataset.editable;
   if (old.classList.contains('is-held-below')) fresh.classList.add('is-held-below');
-  old.replaceWith(fresh);
-  forgetDrawnRanges(old);
+  putDrawnRun([old], [fresh], null, null, old.parentElement);
   setRangeOf(fresh, 'block', start, end);
   decorateSwappedParagraph(fresh);
   return fresh;
@@ -26557,6 +26673,10 @@ function siteLaidOutState(state) {
   return { ...state, document: { ...doc, html: laid, blocks: [], tasks: [], computed: [] } };
 }
 function renderState(keepDetachedRender = false, landingAnchor = null) {
+  if (currentState && currentState.document && currentState.document.partialDrawn) {
+    send({ command: 'refreshDocument', keepPlace: true });
+    return;
+  }
   const state = siteLaidOutState(currentState || { recent: [], favorites: [], tabs: [], active: null, document: null });
   prepareStateRender(state, keepDetachedRender);
   if (state.document) {

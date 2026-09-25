@@ -107,6 +107,23 @@ async function load(url, fetchWith = fetch) {
       return handle;
     },
     bufferCodeView: (handle) => JSON.parse(read(api.leaf_buffer_code_view(handle)) || 'null'),
+    bufferDocumentScript: (handle) => read(api.leaf_buffer_document_script(handle)),
+    bufferState: (handle) => JSON.parse(read(api.leaf_buffer_state(handle)) || 'null'),
+    bufferEncoded: (handle) => {
+      const answer = api.leaf_buffer_encoded(handle);
+      if (!answer) return null;
+      const length = new DataView(api.memory.buffer).getUint32(answer, true);
+      const bytes = new Uint8Array(api.memory.buffer, answer + 4, length).slice();
+      api.leaf_free(answer, 4 + length);
+      return bytes;
+    },
+    bufferEdit: (handle, edit) => JSON.parse(withStrings((...args) => api.leaf_buffer_edit(handle, ...args), JSON.stringify(edit)) || 'null'),
+    bufferSaveScript: (handle, ok, error) => {
+      const [at, length] = write(error || '');
+      const answer = read(api.leaf_buffer_save_script(handle, ok ? 1 : 0, at, length));
+      api.leaf_free(at, length);
+      return answer;
+    },
     bufferClose: (handle) => api.leaf_buffer_close(handle),
     // The note a `[[wiki]]` link names and its heading's anchor, read by the renderer's own grammar. A module older than the page has none, and the link then names nothing.
     wikiLink: (inner) => (typeof api.leaf_wiki_link === 'function' ? JSON.parse(withStrings(api.leaf_wiki_link, inner) || 'null') : null),
@@ -163,7 +180,7 @@ export const COMMANDS = {
   previewLink: [ANSWERED],
   goBack: [REFUSED, 'the browser draws its own Back one row above, so a site draws no pair of its own and never sends this'],
   goForward: [REFUSED, 'the browser draws its own Forward one row above, so a site draws no pair of its own and never sends this'],
-  refreshDocument: [REFUSED, 'the browser reloads the published page it is showing, and a site cannot reach the source document it came from'],
+  refreshDocument: [ANSWERED],
   setSpeedReaderEnabled: [ANSWERED],
   setCodeIntelEnabled: [ANSWERED],
   reportReading: [REFUSED, 'the reading record is a file on the reader’s own disk, and a site keeps no record — the page reports reading reached only where the host handed it one, so nothing sends this'],
@@ -231,13 +248,13 @@ export const COMMANDS = {
   codeHoverNote: [LATER, 'web-app-commands'],
   codeLint: [LATER, 'web-app-commands'],
   tableModel: [LATER, 'rdb-web'],
-  toggleTask: [LATER, 'web-app-commands'],
-  editBlock: [LATER, 'web-app-commands'],
-  editBlocks: [LATER, 'web-app-commands'],
-  setField: [LATER, 'web-app-commands'],
-  setListField: [LATER, 'web-app-commands'],
-  renameField: [LATER, 'web-app-commands'],
-  moveBlock: [LATER, 'web-app-commands'],
+  toggleTask: [ANSWERED],
+  editBlock: [ANSWERED],
+  editBlocks: [ANSWERED],
+  setField: [ANSWERED],
+  setListField: [ANSWERED],
+  renameField: [ANSWERED],
+  moveBlock: [ANSWERED],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   pickDiagramPath: [LATER, 'web-export'],
   exportDiagram: [LATER, 'web-export'],
@@ -247,8 +264,8 @@ export const COMMANDS = {
   printPicturePdf: [LATER, 'web-export'],
   exportPdf: [ANSWERED],
   exportPageHtml: [LATER, 'web-export'],
-  undoEdit: [LATER, 'web-app-commands'],
-  redoEdit: [LATER, 'web-app-commands'],
+  undoEdit: [ANSWERED],
+  redoEdit: [ANSWERED],
   updateChecked: [REFUSED, 'a published site is already the version it serves'],
   updateDownload: [REFUSED, 'a published site is already the version it serves'],
   applyUpdate: [REFUSED, 'there is nothing installed here to replace'],
@@ -317,10 +334,11 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
   // Before the module loads, because the front end asks this as it draws and a control it asked about too early is one drawn on a guess.
   window.__leafHostAnswers = answers;
   // The one document a site lays out as its front page, which the page asks about as it draws. Every other path, and a layout that throws, is drawn as the app draws it.
+  let frontPageEditing = false;
   if (frontPage && frontPage.path && typeof frontPage.layout === 'function') {
     let moving = null;
     window.leafSiteLayout = (path, html) => {
-      if (path !== frontPage.path) return null;
+      if (path !== frontPage.path || frontPageEditing) return null;
       let laid;
       try {
         laid = frontPage.layout(html);
@@ -583,10 +601,12 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
   }
 
   /** Draw a document out of its bytes: the page, the marks and the Previous/Next strip. Opening one and leaving its source both come through here; neither the address nor the pane is touched. */
-  function drawDocument(path, bytes) {
+  function drawDocument(path, bytes, { keepPlace = false } = {}) {
     for (const address of minted.splice(0)) URL.revokeObjectURL(address);
     run('window.leafForgetMintedPictures && window.leafForgetMintedPictures();');
-    run(core.documentScript(bytes, path));
+    const script = buffer && held?.path === path ? core.bufferDocumentScript(buffer) : core.documentScript(bytes, path);
+    // An edit's redraw goes through the page's reload, as the desktop's does, so the reader stays where they were rather than landing at the top.
+    run(keepPlace && script ? script.replace(/^window\.leafSetState\(/,'window.leafReloadDocument(') : script);
     run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
     run(`window.leafSetPager && window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`);
   }
@@ -594,6 +614,31 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
   function closeBuffer() {
     if (buffer) core.bufferClose(buffer);
     buffer = 0;
+  }
+
+  function openBuffer() {
+    if (!buffer && held?.path === open) buffer = core.bufferOpen(held.bytes, held.path);
+    return buffer;
+  }
+
+  function redrawBuffer() {
+    if (buffer && held?.path === open) drawDocument(open, held.bytes, { keepPlace: true });
+  }
+
+  function applyEdit(edit) {
+    if (!openBuffer()) return null;
+    const state = core.bufferEdit(buffer, edit);
+    if (state?.changed) {
+      // A paragraph drawn alone leaves the rest of the page standing, so a press already landing on the next paragraph still finds it there.
+      if (state.swap) run(state.swap);
+      else if (state.resync) run(state.resync);
+      else redrawBuffer();
+    }
+    return state;
+  }
+
+  function answerEdit(token, took) {
+    if (typeof token === 'number') run(`window.leafEditAnswered(${token}, ${!!took}, null);`);
   }
 
   async function openDocument(path, { anchor = '', place = null, address = true } = {}) {
@@ -643,7 +688,31 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
 
   // What the page sends the host. A command with no arm here is one this host cannot answer; the desktop's own event loop is where they all live.
   const commands = {
-    setReadingUnlocked: () => {},
+    setReadingUnlocked: ({ enabled }) => { frontPageEditing = !!enabled; },
+    // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
+    refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
+    editBlock: (command) => {
+      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held };
+      if (command.live) {
+        if (openBuffer()) {
+          const state = core.bufferEdit(buffer, edit);
+          if (state) run(`window.leafBlocksResynced(${JSON.stringify(state)});`);
+        }
+      } else {
+        const state = applyEdit(edit);
+        // Typing pauses already put the words in, so the commit that ends a run usually changes nothing and only owes the page its styled paragraph back.
+        if (state && !state.changed) { if (state.swap) run(state.swap); else redrawBuffer(); }
+      }
+      answerEdit(command.token, !!buffer);
+    },
+    editBlocks: (command) => applyEdit({ edit: 'blocks', blocks: command.blocks, continuing: !!command.continuing }),
+    toggleTask: (command) => answerEdit(command.token, !!applyEdit({ edit: 'task', index: command.index })?.changed),
+    setField: (command) => applyEdit(command.value == null ? { edit: 'field', key: command.key, remove: true } : { edit: 'field', key: command.key, set: command.value }),
+    setListField: (command) => applyEdit({ edit: 'field', key: command.key, items: command.items || [] }),
+    renameField: (command) => applyEdit({ edit: 'field', key: command.key, rename: command.to }),
+    moveBlock: (command) => applyEdit({ edit: 'move', ranges: command.ranges || [], from: command.from, to: command.to }),
+    undoEdit: () => applyEdit({ edit: 'undo' }),
+    redoEdit: () => applyEdit({ edit: 'redo' }),
     getGraph: ({ scope }) => {
       let answer;
       try {
@@ -747,7 +816,7 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
     // The buffer supplies the source or the refusal for a book with no single source.
     enterCodeView: () => {
       if (!held || held.path !== open) return;
-      if (!buffer) buffer = core.bufferOpen(held.bytes, held.path);
+      openBuffer();
       const state = buffer ? core.bufferCodeView(buffer) : null;
       if (state && state.refusedScript) run(state.refusedScript);
       else if (state) run(`window.leafShowCodeView(${JSON.stringify(state)});`);
@@ -757,26 +826,32 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
         drawDocument(held.path, held.bytes);
       }
     },
-    // Redraw from the bytes kept at open.
+    // Redraw from the live buffer when the reader has changed it.
     exitCodeView: () => {
       if (held && held.path === open) drawDocument(held.path, held.bytes);
     },
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
     exportPdf: () => window.print(),
     // A site has no disk to write to, so Save hands the edited file to the reader as a download under its own name.
-    saveDocument: async () => {
-      if (!open) return;
-      const path = open;
-      const bytes = await read(path);
-      const address = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
-      const link = document.createElement('a');
-      link.href = address;
-      link.download = path.split('/').pop();
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(address), 0);
-      run(`window.leafSaved && window.leafSaved(${JSON.stringify(path)}, true, null);`);
+    saveDocument: () => {
+      if (!open || !openBuffer()) return;
+      let address = null;
+      let failed = null;
+      try {
+        const bytes = core.bufferEncoded(buffer);
+        if (!bytes) throw new Error('the edited document could not be encoded');
+        address = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+        const link = document.createElement('a');
+        link.href = address;
+        link.download = open.split('/').pop();
+        document.body.appendChild(link);
+        try { link.click(); } finally { link.remove(); }
+      } catch (error) {
+        failed = String((error && error.message) || error || 'the download failed');
+      } finally {
+        if (address) setTimeout(() => URL.revokeObjectURL(address), 0);
+      }
+      run(core.bufferSaveScript(buffer, !failed, failed || ''));
     },
     loadPager: ({ path }) => run(`window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`),
     // A book picture near the reader, made into an address in this page's own window out of the book the module kept. A member the module refused gets none, and its tag keeps the size it was drawn at.
