@@ -6521,6 +6521,8 @@ function runTableContextAction(action, cell) {
   }
 }
 function runContextAction(action, path, link, selected, picture, tableCell) {
+  if (action === 'searchTag') { searchForTag(path); return; }
+  if (action === 'renameTag') { openTagRename(path); return; }
   if (action.startsWith('table')) {
     runTableContextAction(action, tableCell);
     return;
@@ -6595,6 +6597,14 @@ function openTabCount() {
 }
 
 function contextMenuEntries() {
+  if (contextMenuTargetKind === 'tag') {
+    if (!vaultSearchAvailable()) return [];
+    const entries = [{ action: 'searchTag', label: 'Search for this tag' }];
+    if (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('prepareTagRename')) {
+      entries.push({ action: 'renameTag', label: 'Rename everywhere…' });
+    }
+    return entries;
+  }
   if (contextMenuTargetKind === 'link') {
     
     const kind = linkHoverKind(contextMenuPath);
@@ -6734,6 +6744,12 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
 }
 document.addEventListener('contextmenu', (event) => {
+  const tag = documentTagFor(event.target);
+  if (tag) {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, tag.getAttribute('data-leaf-tag'), 'tag');
+    return;
+  }
   
   const documentLink = documentLinkFor(event.target);
   if (documentLink && !event.target.closest('[contenteditable="true"]')) {
@@ -6822,6 +6838,7 @@ function hideRenameBox() {
   }
   renameBox.hidden = true;
   renamePath = null;
+  clearTagRenameChoice();
 }
 function commitNameBox() {
   if (renameSettled || !renamePath) {
@@ -6830,6 +6847,7 @@ function commitNameBox() {
   const path = renamePath;
   const typed = renameInput.value.trim();
   const action = nameBoxAction;
+  if (action === 'tagRename') { submitTagRename(path, typed); return; }
   renameSettled = true;
   hideRenameBox();
   if (action === 'rename') {
@@ -6885,6 +6903,23 @@ function openRenameBox(path, anchor) {
     renameInput.select();
   }
 }
+function openTagNameBox(name, choice) {
+  renamePath = name;
+  renameSettled = false;
+  nameBoxAction = 'tagRename';
+  nameBoxMovesThePane = false;
+  renameInput.value = name.replace(/^#/, '');
+  renameInput.setAttribute('aria-label', 'New tag name');
+  renameBox.appendChild(choice);
+  renameBox.hidden = false;
+  placeNameBox(null);
+  renameInput.focus();
+  renameInput.select();
+}
+function finishTagNameBox() {
+  renameSettled = true;
+  hideRenameBox();
+}
  
 function openMakeBox(folder, kind) {
   
@@ -6914,6 +6949,7 @@ renameInput.addEventListener('keydown', (event) => {
   }
 });
 renameInput.addEventListener('blur', () => {
+  if (nameBoxAction === 'tagRename') return;
   
   if (nameBoxAction === 'rename') {
     commitNameBox();
@@ -6943,6 +6979,7 @@ let confirmAction = null;
 let confirmReturnFocus = null;
 let confirmFadeTimer = 0;
 function openConfirm(title, detail, acceptLabel, action) {
+  confirmDialogDetail.classList.remove('leaf-tag-report');
   confirmAction = action;
   confirmReturnFocus = document.activeElement;
   confirmDialogTitle.textContent = title;
@@ -7004,10 +7041,19 @@ function refreshOpenDocument() {
   if (isDocumentDirty(path)) {
     leafToast('This file has changes nobody saved.', null, {
       label: 'Refresh anyway',
-      run: () => send({ command: 'refreshDocument' }),
+      run: inThisColumn(() => refreshSizedDocument(path)),
     });
     return;
   }
+  refreshSizedDocument(path);
+}
+function refreshSizedDocument(path) {
+  if (activeDocumentPath() !== path) return;
+  clearSizedTables();
+  const beside = besideColumn();
+  if (beside) withColumn(beside, () => {
+    if (activeDocumentPath() === path) clearSizedTables();
+  });
   send({ command: 'refreshDocument' });
 }
 
@@ -11295,6 +11341,95 @@ onSettle({
 send({ command: 'getFolder', path: libraryProjectPath });
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;
 
+function searchForTag(name) {
+  if (!vaultSearchAvailable() || !name) return;
+  openFindBar();
+  findInput.value = '#' + name.replace(/^#/, '');
+  if (findingAllFiles()) runLibrarySearch(findInput.value);
+  else setFindScope('vault');
+}
+
+function documentTagFor(target) {
+  const tag = target && target.closest ? target.closest('a.leaf-tag[data-leaf-tag]') : null;
+  return tag && tag.closest('.document-body') && !tag.closest('[contenteditable="true"]') ? tag : null;
+}
+
+document.addEventListener('click', (event) => {
+  const tag = documentTagFor(event.target);
+  if (!tag || (event.button !== undefined && event.button !== 0)) return;
+  event.preventDefault();
+  searchForTag(tag.getAttribute('data-leaf-tag'));
+});
+
+let tagRenameChoice = null;
+let tagRenameRequest = 0;
+let tagRenamePending = null;
+let tagRenameTimer = 0;
+
+function clearTagRenameChoice() {
+  if (tagRenameChoice) tagRenameChoice.remove();
+  tagRenameChoice = null;
+}
+
+function openTagRename(name) {
+  commitActiveEditingBlock();
+  flushSourceUpdate();
+  clearTagRenameChoice();
+  tagRenameChoice = document.createElement('label');
+  tagRenameChoice.className = 'leaf-tag-choice';
+  const children = document.createElement('input');
+  children.setAttribute('type', 'checkbox');
+  children.type = 'checkbox';
+  children.checked = true;
+  tagRenameChoice.appendChild(children);
+  tagRenameChoice.appendChild(document.createTextNode('Include nested tags'));
+  openTagNameBox(name, tagRenameChoice);
+}
+
+function submitTagRename(from, to) {
+  const children = !!(tagRenameChoice && tagRenameChoice.querySelector('input').checked);
+  finishTagNameBox();
+  if (!to || from.replace(/^#/, '') === to.replace(/^#/, '')) return;
+  const request = ++tagRenameRequest;
+  tagRenamePending = { request, from, to, children };
+  clearTimeout(tagRenameTimer);
+  tagRenameTimer = setTimeout(() => {
+    if (tagRenamePending && tagRenamePending.request === request) {
+      tagRenamePending = null;
+      leafToast('The tag rename did not answer. Try again.', 'error');
+    }
+  }, 60000);
+  send({ command: 'prepareTagRename', request, from, to, children });
+}
+
+window.leaftextTagRenamePrepared = (answer) => {
+  if (!tagRenamePending || answer.request !== tagRenamePending.request) return;
+  clearTimeout(tagRenameTimer);
+  const pending = tagRenamePending;
+  tagRenamePending = null;
+  if (answer.error) { leafToast(answer.error, 'error'); return; }
+  if (!answer.count) { leafToast('No files carry this tag.', 'info'); return; }
+  openConfirm(
+    `Rename #${pending.from.replace(/^#/, '')} to #${pending.to.replace(/^#/, '')}?`,
+    `This changes ${answer.count} ${answer.count === 1 ? 'file' : 'files'}${pending.children ? ', including nested tags' : ''}.`,
+    'Rename',
+    () => send({ command: 'renameTag', request: pending.request })
+  );
+};
+
+window.leaftextTagRenameFinished = (answer) => {
+  if (answer.error) {
+    const changed = answer.changed || [];
+    const unchanged = answer.unchanged || [];
+    openConfirm('The tag rename stopped', `${answer.error}\n\nChanged: ${changed.length ? changed.join('\n') : 'none'}\n\nUnchanged: ${unchanged.length ? unchanged.join('\n') : 'none'}`, 'Close', () => {});
+    confirmDialogDetail.classList.add('leaf-tag-report');
+  } else {
+    const count = (answer.changed || []).length;
+    leafToast(`Renamed the tag in ${count} ${count === 1 ? 'file' : 'files'}.`, 'success');
+    if (findingAllFiles()) runLibrarySearch(findInput.value);
+  }
+};
+
 function parseVersion(value) {
   return String(value || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
 }
@@ -11862,6 +11997,7 @@ function deliverWorkspacePayload(state, action, detail) {
 }
 
 function takePayloadSplit(state) {
+  if (state && Array.isArray(state.tabs)) discardClosedSizedTables(state.tabs);
   applySplit((state && state.beside) || null);
 }
 function failWorkspacePayload(error) {
@@ -15161,6 +15297,10 @@ function inlineDomToMarkdown(node) {
       return;
     }
     if (tag === 'a') {
+      if (child.classList && child.classList.contains('leaf-tag')) {
+        out += child.textContent;
+        return;
+      }
       out += anchorToMarkdown(child);
       return;
     }
@@ -18264,14 +18404,24 @@ function bindFrontmatterCheckbox(cell, key) {
 
 
 function bindFrontmatterChips(cell, key) {
-  const items = Array.from(cell.querySelectorAll('li')).map((item) => item.textContent);
+  const isTags = key.toLowerCase() === 'tags';
+  const items = Array.from(cell.querySelectorAll('li')).map((item) => {
+    const tag = isTags && item.querySelector('a.leaf-tag[data-leaf-tag]');
+    return tag ? tag.getAttribute('data-leaf-tag') : item.textContent;
+  });
   const chips = document.createElement('div');
   chips.className = 'frontmatter-chips';
   const write = (next) => sendEditCommand({ command: 'setListField', key, items: next });
   for (let at = 0; at < items.length; at += 1) {
     const chip = document.createElement('span');
     chip.className = 'frontmatter-chip';
-    chip.appendChild(document.createTextNode(items[at]));
+    if (isTags) {
+      const tag = document.createElement('a');
+      tag.className = 'leaf-tag';
+      tag.setAttribute('data-leaf-tag', items[at]);
+      tag.textContent = '#' + items[at].replace(/^#/, '');
+      chip.appendChild(tag);
+    } else chip.appendChild(document.createTextNode(items[at]));
     const drop = document.createElement('button');
     drop.type = 'button';
     drop.className = 'frontmatter-chip-remove';
@@ -20174,9 +20324,40 @@ function isTableControlNode(node) {
   return !!node && (node === tableRowHandle || node === tableColumnHandle);
 }
 
+let tableAimingProof = null;
 
-function tableTakesControls(table) {
-  return !!table && table.dataset.blockKind === 'table' && readerEditingAllowed() && tableWysiwygSafe(table);
+function clearTableAimingProof() {
+  if (tableAimingProof) tableAimingProof.observer.disconnect();
+  tableAimingProof = null;
+}
+
+function tableAimingSafe(table) {
+  if (tableAimingProof && tableAimingProof.table !== table) clearTableAimingProof();
+  if (!tableAimingProof) {
+    const proof = { table, safe: false, dirty: true, observer: null };
+    proof.observer = new MutationObserver(() => { proof.dirty = true; });
+    if (typeof proof.observer.takeRecords !== 'function') return tableWysiwygSafe(table);
+    proof.observer.observe(table, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    tableAimingProof = proof;
+  }
+  const proof = tableAimingProof;
+  
+  if (proof.observer.takeRecords().length) proof.dirty = true;
+  if (proof.dirty) {
+    proof.safe = tableWysiwygSafe(table);
+    proof.dirty = false;
+  }
+  return proof.safe;
+}
+
+
+function tableTakesControls(table, aiming = false) {
+  if (!aiming) return !!table && table.dataset.blockKind === 'table' && readerEditingAllowed() && tableWysiwygSafe(table);
+  if (!table || table.dataset.blockKind !== 'table' || !readerEditingAllowed()) {
+    clearTableAimingProof();
+    return false;
+  }
+  return tableAimingSafe(table);
 }
 
 function buildTableRowHandle() {
@@ -20215,10 +20396,10 @@ function hideTableColumnHandle() {
 }
 
 
-function aimTableColumnHandle(cell) {
+function aimTableColumnHandle(cell, aiming = false) {
   const table = cell && cell.closest ? cell.closest('table') : null;
   const column = tableColumnOf(cell);
-  if (!tableTakesControls(table) || column < 0) return hideTableColumnHandle();
+  if (!tableTakesControls(table, aiming) || column < 0) return hideTableColumnHandle();
   const lane = table.closest('.table-lane') || table.parentElement;
   if (!lane) return hideTableColumnHandle();
   if (!tableColumnHandle) tableColumnHandle = buildTableColumnHandle();
@@ -20241,9 +20422,9 @@ function hideTableRowHandle() {
 }
 
 
-function aimTableRowHandle(row) {
+function aimTableRowHandle(row, aiming = false) {
   const table = row && row.closest ? row.closest('table') : null;
-  if (!tableTakesControls(table)) return hideTableRowHandle();
+  if (!tableTakesControls(table, aiming)) return hideTableRowHandle();
   const lane = table.closest('.table-lane') || table.parentElement;
   if (!lane) return hideTableRowHandle();
   if (!tableRowHandle) tableRowHandle = buildTableRowHandle();
@@ -20256,11 +20437,11 @@ function aimTableRowHandle(row) {
 }
 
 
-function tableBodyRowAt(target) {
+function tableBodyRowAt(target, aiming = false) {
   if (!target || !target.closest) return null;
   const row = target.closest('tr');
   if (!row || !row.parentElement || row.parentElement.tagName !== 'TBODY') return null;
-  return tableTakesControls(row.closest('table')) ? row : null;
+  return tableTakesControls(row.closest('table'), aiming) ? row : null;
 }
 
 
@@ -20289,6 +20470,7 @@ function tableRowCrossing(event) {
 
 
 function bindTableControls() {
+  clearTableAimingProof();
   const body = app.querySelector('.document-body');
   hideTableRowHandle();
   hideTableColumnHandle();
@@ -20301,15 +20483,15 @@ function bindTableControls() {
   body.addEventListener('pointermove', (event) => {
     
     if (tableRowDragging || tableColumnDragging) return;
-    const row = tableBodyRowAt(event.target);
+    const row = tableBodyRowAt(event.target, true);
     if (!row) {
       if (!tableRowCrossing(event)) hideTableRowHandle();
       return;
     }
-    if (row !== tableRowHandleRow) aimTableRowHandle(row);
+    if (row !== tableRowHandleRow) aimTableRowHandle(row, true);
     
     const cell = event.target.closest('th, td');
-    if (cell && tableColumnOf(cell) !== tableColumnHandleAt) aimTableColumnHandle(cell);
+    if (cell && tableColumnOf(cell) !== tableColumnHandleAt) aimTableColumnHandle(cell, true);
   });
 
   
@@ -27209,6 +27391,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   watchReadingDocument(null, 0);
   
   lastRenderedDocumentPath = null;
+  clearSizedTables();
   document.title = 'Leaftext';
   writeReaderClasses(['empty']);
   libraryShell.classList.remove('has-contained-document');
@@ -31392,8 +31575,34 @@ function clearTableSizingPlacement(table) {
 function rememberTableSizing(table, shape = tableSizingShape(table)) {
   const identity = tableIdentity(table);
   if (!identity) return;
-  if (tableSizingShapeHasSize(shape)) sizedTableShapes.set(identity.ordinal, { ...shape, headings: identity.headings });
+  if (tableSizingShapeHasSize(shape)) sizedTableShapes.set(identity.ordinal, { ...shape, headings: identity.headings, table });
   else sizedTableShapes.delete(identity.ordinal);
+}
+function clearSizedTables() {
+  const tables = new Set();
+  for (const shape of sizedTableShapes.values()) if (shape.table && app.contains(shape.table)) tables.add(shape.table);
+  if (tableSizeDrag && tableSizeDrag.owner === keyedColumn) {
+    tables.add(tableSizeDrag.table);
+    endTableSizeDrag(false);
+  }
+  sizedTableShapes.clear();
+  sizedTableDocument = null;
+  for (const table of tables) {
+    const parent = table.parentElement.closest('table');
+    if (parent) tables.add(parent);
+    table.__tableSizingTurn = (table.__tableSizingTurn || 0) + 1;
+    pinTableColumnWidths(tableSizingBoundaryCells(table), []);
+    pinTableRowHeights(tableSizingOwnRows(table), []);
+    clearTableSizingPlacement(table);
+    table.classList.remove('is-reader-sized');
+    placeTableOutlineGrips(table);
+  }
+}
+function discardClosedSizedTables(tabs) {
+  for (const column of [leftColumn, rightColumn]) {
+    const path = column === keyedColumn ? sizedTableDocument : column && column.held && column.held.sizedTableDocument;
+    if (path && !tabs.some((tab) => tab.path === path)) withColumn(column, clearSizedTables);
+  }
 }
 function repinSizedTables(path) {
   if (tableSizeDrag && tableSizeDrag.owner === keyedColumn) endTableSizeDrag(false);
@@ -31407,6 +31616,7 @@ function repinSizedTables(path) {
   tables.forEach((table, ordinal) => {
     const held = sizedTableShapes.get(ordinal);
     if (!held) return;
+    held.table = table;
     const identity = tableIdentity(table, ordinal);
     const cells = tableSizingBoundaryCells(table);
     const rows = tableSizingBodyRows(table);

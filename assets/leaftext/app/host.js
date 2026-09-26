@@ -261,6 +261,8 @@ export const COMMANDS = {
   setField: [ANSWERED],
   setListField: [ANSWERED],
   renameField: [ANSWERED],
+  prepareTagRename: [REFUSED, 'a published site cannot rewrite files in a vault'],
+  renameTag: [REFUSED, 'a published site cannot rewrite files in a vault'],
   moveBlock: [ANSWERED],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   pickDiagramPath: [LATER, 'web-export'],

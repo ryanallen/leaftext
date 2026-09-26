@@ -1,6 +1,6 @@
 # Library
 
-> Point Leaftext at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Nothing is crawled, nothing is written into your folder, and a vault can sync itself to GitHub.
+> Point Leaftext at a folder and it becomes a vault: a browsable file tree, a searchable body of text, and a map of how those documents link to each other. Opening a vault adds no files to your folder. Edits and confirmed tag renames write only the notes you chose to change, and a vault can sync itself to GitHub.
 
 The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for it.
 
@@ -19,6 +19,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Search](#search) | Filename and content search across the active vault, from the [find bar](02-navigation.md#find-in-this-document)'s **All files** |
 | [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
 | [Filtering](#filtering) | More than words in the search field: `#work status:open due:<friday -draft` |
+| [Tags](#tags) | Press a tag in a Markdown note to find its notes; right-click to rename it across the vault after confirming the file count |
 | [Other names](#other-names) | A note's `aliases` field: every name in it works wherever the file's own name works |
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
@@ -268,6 +269,8 @@ That pass starts as you arrive in the vault rather than waiting to be asked, so 
 
 ## Filtering
 
+See [Tags](#tags) for the tags a note carries and how to rename them.
+
 The search field takes more than words.
 
 | You type | You get |
@@ -354,6 +357,22 @@ A few rules, so a preferred name can never quietly take a real one:
 - **Thirty-two per note.** Past that they are ignored, and the check marks the `aliases` line to say how many there were.
 
 It works outside a vault too: for a document in a plain folder, Leaftext reads the top of each file beside it — the field block and no further — for up to 500 files. One folder, never the tree below it.
+
+## Tags
+
+![Tags in a note's field block and prose, with All files showing the two notes carrying the renamed parent tag; the code span and link words still carry their original hashtag](../../imgs/tags-search-after-rename-2.png)
+
+A [tag](../GLOSSARY.md#tag) such as `#work` or `#work/reports` draws as a small pill in a Markdown note's prose and in its `tags` field. Press it to search the active vault through the [find bar](02-navigation.md#find-in-this-document)'s **All files**. A parent tag finds its children: `#work` finds `#work/reports`, while `#workshop` is a different subject. Matching ignores capitals.
+
+Tags in prose and the field block belong to the same set. A field value may include its leading `#` or leave it out. Tags inside code, link words, addresses, brace syntax and heading-only wiki references stay text. A number on its own is not a tag. Outside a vault, tags still draw as tags.
+
+![Searching for a parent tag finds both the note with that tag and a note with a nested tag](../../imgs/tags-search-after-rename.png)
+
+In the desktop app, right-click a tag for **Search for this tag** or **Rename everywhere…**. Enter the new name and choose whether to include nested tags. Leaftext counts the files before asking you to confirm. A rename keeps each note's encoding, line endings, quotes and other words. Save or discard unsaved edits in affected notes first. A read-only file or a file changed since confirmation stops the run; a stopped run lists the files changed and the files left unchanged.
+
+![Confirming a tag rename in two files, including nested tags](../../imgs/tags-rename-confirmation.png)
+
+The browser readers offer tag search where their host has a vault; they cannot rename files on your disk.
 
 ## Graph
 

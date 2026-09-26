@@ -188,6 +188,8 @@ Name matches first — the whole name beats the start of it, which beats a word 
 
 `Ctrl+F` opens one bar over the page or its source: **This file** searches the document you are reading, and **All files** searches the active vault. Match case, whole word, expressions, and replace behind the padlock belong to the file scope. **[Find in this document →](docs/01-features/02-navigation.md#find-in-this-document)**
 
+Press a [tag](docs/01-features/03-library.md#tags) in a note's prose or fields to find every note carrying it, including nested tags. Right-click it to rename it across the vault after confirming the file count.
+
 ### See how your ideas connect
 
 ![The graph view filling the page: document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating beneath the nodes](imgs/graph.png)

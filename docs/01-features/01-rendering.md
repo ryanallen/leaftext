@@ -12,6 +12,7 @@ Leaftext picks a pipeline from the file extension, and from the file's own first
 | GFM | Tables, task lists, strikethrough, autolinks |
 | Extras | Syntax highlighting, Mermaid, math, alerts, footnotes, emoji |
 | [Wiki links](#wiki-links) | `[[Note name]]`, with shown words after a `|` and a heading after a `#`, drawn as a link to that note |
+| [Tags](03-library.md#tags) | `#work` and `#work/reports` in Markdown prose or the `tags` field; pressing one searches the active vault |
 | Leaf extensions | [Buttons](#buttons-leaf-extension) — a link wrapped in braces; [badges](#badges-leaf-extension) — words as inline code with a color name, or a hex color of your own, in a comment after them; [bars](#bars-leaf-extension) — a list whose items end in an amount, drawn on one scale, in a color name or a hex color of your own |
 | Local content | [Images](#images) by relative, absolute, or `file://` path, using the page's width, opening on the whole window, and saving out as a PNG, a WebP, a JPEG, a PDF or a Markdown document |
 | Safety | Sanitized HTML allowlist |
@@ -277,7 +278,7 @@ A colon in the divider row sets a column's alignment — `:---` left, `:---:` ce
 | :--- | :----: | ----: |
 | a    | b      | c     |
 
-**Drag any table outline edge or cell divider to make that side bigger or smaller.** The left and right outlines move the side you grab while holding the opposite side still; top and bottom do the same for height. The strips cover the visible outline even after sideways scrolling, and a one-column table has all four. Internal dividers size their own column or row, including headings, body cells and joined headings. A row stops at the height its wrapped words need, and a column retains enough room to grab again. A table wider than its lane remains its own sideways scroll box. Tables inside cells keep their own sizes independently. Double-click a strip to return that boundary to its automatic size; other dimensions stay as you left them. Sizing changes the view and leaves your file and undo history unchanged. The shape survives a typing pause, live reload and theme change while the document stays open; reopening the document starts with its automatic shape.
+**Drag any table outline edge or cell divider to make that side bigger or smaller.** The left and right outlines move the side you grab while holding the opposite side still; top and bottom do the same for height. The strips cover the visible outline even after sideways scrolling, and a one-column table has all four. Internal dividers size their own column or row, including headings, body cells and joined headings. A row stops at the height its wrapped words need, and a column retains enough room to grab again. A table wider than its lane remains its own sideways scroll box. Tables inside cells keep their own sizes independently. Double-click a strip to return that boundary to its automatic size; other dimensions stay as you left them. Sizing changes the view and leaves your file and undo history unchanged. The shape survives a typing pause, live reload and theme change while the document stays open; refreshing or closing and reopening the document starts with its automatic shape.
 
 Every second body row is filled a shade back from the page, so a reader can follow one row across to its last column. The fill is the [theme](06-themes.md) family’s own recess rather than one gray for every family, which is what lets the band read on a dark page as well as a light one.
 
@@ -682,6 +683,10 @@ Footnotes collect at the foot of the page, each with a back-link.[^one] Referenc
 [^two]: With `inline code` and a [link](https://commonmark.org).
 
 ### Frontmatter
+
+The `tags` field's items draw as the same [tags](03-library.md#tags) as hashtags in prose. The field keeps its original values when you [add or remove an item](07-editing.md#the-fields-at-the-top-of-a-note).
+
+![A note's tags drawn as pills in its field block and prose, with code and link words kept as written](../../imgs/tags-reading.png)
 
 A leading `--- … ---` block becomes a metadata table at the top of the page, and **each field is drawn as the thing it is**:
 

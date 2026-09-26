@@ -8853,6 +8853,41 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   color: var(--lt-primary-ink);
 }
 /* A highlight, washed the way a search match is washed in find.css — the warning role, which is the yellow-amber every family carries in both modes, so it lands beside a search hit (the accent) and an action (the primary) without being either. Left alone the browser paints a fixed yellow with black ink over it, which reads as a foreign object in every dark family. The words keep the body's own ink, so nothing has to be picked per family for them to stay readable. */
+.document-body .leaf-tag {
+  display: inline-block;
+  color: var(--lt-muted-foreground);
+  background: var(--lt-markdown-background);
+  border: var(--lt-stroke-1) solid currentColor;
+  border-radius: var(--lt-radius-pill);
+  padding: 0 0.4em;
+  font-family: var(--app-font);
+  font-size: 0.8em;
+  font-weight: var(--lt-weight-600);
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
+  white-space: nowrap;
+  vertical-align: baseline;
+  text-decoration: none;
+  cursor: pointer;
+}
+.leaf-tag-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-6) var(--lt-space-8);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-2);
+}
+.document-body .frontmatter-chip .leaf-tag {
+  font-size: inherit;
+}
+.leaf-tag-report {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+  max-height: 240px;
+}
 .document-body mark {
   background-color: color-mix(in srgb, var(--lt-warning) 45%, transparent);
   color: inherit;
@@ -16169,7 +16204,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feComposite in="cut" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 126 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 84 colors, the 182 values that do not change with the theme, all 78 icons, and all 127 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -16201,7 +16236,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>84</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>126</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>127</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -16613,7 +16648,11 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">126 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">127 parts, each drawn here exactly as the app draws it.</p>
+<section class="part">
+<header><h3>Tag</h3><code class="built">.leaf-tag</code><span class="built">tags.rs, frontmatter-fields.js</span></header>
+<div class="stage"><div class="document-body"><p>A subject <a class="leaf-tag" data-leaf-tag="work">#work</a> and <a class="leaf-tag" data-leaf-tag="work/reports">#work/reports</a>.</p></div></div>
+</section>
 <section class="part">
 <header><h3>App surface</h3><code class="built">.app-surface</code><span class="built">app-shell.html, and state.js for everything the script adds to it</span></header>
 <div class="stage"><div class="app-surface" style="position:static;height:72px;padding:12px;background:var(--lt-background)">Everything the page has sits in this one box. A floating thing is measured from it and clipped to it, so an overlay belongs to the app rather than to the window.</div></div>

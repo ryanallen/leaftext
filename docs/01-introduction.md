@@ -53,6 +53,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Point Leaftext at a folder to make it a [vault](01-features/03-library.md#vaults) — the unit search, syncing, and the graph work over.
 - Browse it a folder at a time in the [library pane](01-features/03-library.md#file-tree), with a breadcrumb that always says where you are.
 - [Search](01-features/03-library.md#search) names and contents across the vault, with snippets. No index on disk, and nothing uploaded.
+- Press a [tag](01-features/03-library.md#tags) to find its notes and nested tags; rename it across the vault after confirming the file count.
 - See how it all connects in the [graph view](01-features/03-library.md#graph) — documents, the links between them, and the web addresses they cite.
 - Push a vault to GitHub with [sync](01-features/03-library.md#github-sync), using the `git` already on your machine.
 

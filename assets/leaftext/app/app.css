@@ -8819,6 +8819,41 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   color: var(--lt-primary-ink);
 }
 
+.document-body .leaf-tag {
+  display: inline-block;
+  color: var(--lt-muted-foreground);
+  background: var(--lt-markdown-background);
+  border: var(--lt-stroke-1) solid currentColor;
+  border-radius: var(--lt-radius-pill);
+  padding: 0 0.4em;
+  font-family: var(--app-font);
+  font-size: 0.8em;
+  font-weight: var(--lt-weight-600);
+  font-style: normal;
+  line-height: var(--lt-leading-1-2);
+  white-space: nowrap;
+  vertical-align: baseline;
+  text-decoration: none;
+  cursor: pointer;
+}
+.leaf-tag-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  padding: var(--lt-space-6) var(--lt-space-8);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-2);
+}
+.document-body .frontmatter-chip .leaf-tag {
+  font-size: inherit;
+}
+.leaf-tag-report {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow-y: auto;
+  max-height: 240px;
+}
 .document-body mark {
   background-color: color-mix(in srgb, var(--lt-warning) 45%, transparent);
   color: inherit;

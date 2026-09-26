@@ -362,6 +362,10 @@ Coloring a [code block](GLOSSARY.md#code-block) — and the whole [code view](GL
 
 One open document, with its own [Back and Forward](GLOSSARY.md#back-and-forward) history, its own scroll position, and its own edit buffer. Drag tabs to reorder them; `Ctrl+W` / `Cmd+W` closes one.
 
+## Tag
+
+A subject written as `#work` or `#work/reports` in a Markdown note's prose or `tags` field. Pressing one searches the active [vault](#vault); a parent includes its children. See [Tags](01-features/03-library.md#tags).
+
 ## Task list
 
 A checkbox list — `- [ ]` and `- [x]`. The boxes are live: click one to tick it and it saves on the spot, even with editing locked. A table cell whose whole content is `[ ]` or `[x]` becomes a checkbox too.
