@@ -43,16 +43,47 @@ function pauseIn(box) {
   if (clip) clip.pause();
 }
 
-/** Start the front page's motion over the laid-out page inside `root`, which is the reading column's own article, and answer how to stop it. */
-export function installFrontMotion(root) {
+/** What a page's motion has reached: the cards that have risen, by `data-clip-card`, and the clip made in each box, by `data-clip`. */
+function heldOn(cards, boxes) {
+  const risen = cards.filter((card) => card.classList.contains('is-in')).map((card) => card.dataset.clipCard);
+  const clips = new Map();
+  for (const box of boxes) {
+    const clip = box.querySelector('video');
+    if (clip) clips.set(box.dataset.clip, clip);
+  }
+  return { risen: new Set(risen), clips };
+}
+
+/**
+ * Start the front page's motion over the laid-out page inside `root`, which is the reading column's own article, and answer how to stop it and what it has reached.
+ *
+ * `held` is what the page this one replaces had reached, so a redraw of the standing page carries its motion across rather than starting it over: a risen card is put straight in place, and a clip already made moves into the fresh box in place of the poster and plays on from where it was, with nothing fetched again.
+ */
+export function installFrontMotion(root, held = null) {
   const cards = [...root.querySelectorAll('.front-card')];
   // Only the reading column's boxes: the rail's copy of the page keeps its posters, since a clip there would fetch and decode the same file again for a picture too small to watch.
   const boxes = [...root.querySelectorAll('.front-clip[data-clip]')].filter((box) => !box.closest('.document-minimap, .document-minimap-preview'));
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (still || typeof IntersectionObserver !== 'function') return { cards: cards.length, clips: 0, stop: () => {} };
+  if (still || typeof IntersectionObserver !== 'function') return { root, cards: cards.length, clips: 0, stop: () => {}, hold: () => null };
 
-  // Held down only once this script is running, so a page it never reaches shows every card where it belongs.
-  for (const card of cards) card.classList.add('front-rise');
+  if (held) {
+    for (const box of boxes) {
+      const clip = held.clips.get(box.dataset.clip);
+      if (!clip || box.contains(clip)) continue;
+      const poster = box.querySelector('img');
+      if (poster) poster.replaceWith(clip);
+      else box.appendChild(clip);
+    }
+  }
+  // Held down only once this script is running, so a page it never reaches shows every card where it belongs. A card that had risen gets both at once, which starts no transition on a card already in place.
+  const waiting = [];
+  for (const card of cards) {
+    if (held && held.risen.has(card.dataset.clipCard)) card.classList.add('front-rise', 'is-in');
+    else {
+      card.classList.add('front-rise');
+      waiting.push(card);
+    }
+  }
   const rising = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
@@ -63,7 +94,7 @@ export function installFrontMotion(root) {
     },
     { rootMargin: '0px 0px -10% 0px' }
   );
-  for (const card of cards) rising.observe(card);
+  for (const card of waiting) rising.observe(card);
 
   const near = new IntersectionObserver(
     (entries) => {
@@ -77,5 +108,5 @@ export function installFrontMotion(root) {
     rising.disconnect();
     near.disconnect();
   };
-  return { cards: cards.length, clips: boxes.length, stop };
+  return { root, cards: cards.length, clips: boxes.length, stop, hold: () => heldOn(cards, boxes) };
 }

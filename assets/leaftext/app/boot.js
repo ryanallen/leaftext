@@ -32,7 +32,7 @@ async function fetched(path) {
 /** The landing's layout, its chart and its motion — the website's own modules, published beside this one — fetched only for a site whose listing names a front page. */
 async function frontPageModules() {
   const [layout, chart, motion] = await Promise.all([import('./front-page-layout.js'), import('./compare-chart.js'), import('./front-page.js')]);
-  return { layoutFrontPage: layout.layoutFrontPage, fillCompareSeam: chart.fillCompareSeam, installFrontMotion: motion.installFrontMotion };
+  return { layoutFrontPage: layout.layoutFrontPage, paragraphPlace: layout.paragraphPlace, fillCompareSeam: chart.fillCompareSeam, installFrontMotion: motion.installFrontMotion };
 }
 
 /**
@@ -54,7 +54,7 @@ async function frontPageFor(path) {
     console.warn(`${path} is drawn plain: the front page's modules did not arrive — ${(error && error.message) || error}`);
     return null;
   }
-  return { path, layout: (html) => modules.layoutFrontPage(modules.fillCompareSeam(html, chart)), motion: modules.installFrontMotion };
+  return { path, layout: (html) => modules.layoutFrontPage(modules.fillCompareSeam(html, chart)), motion: modules.installFrontMotion, paragraphPlace: modules.paragraphPlace };
 }
 
 try {

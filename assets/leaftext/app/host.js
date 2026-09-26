@@ -369,19 +369,22 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         laid = lastLaid.replace(/\sdata-leaf-proof="[^"]*"/g, '');
       }
       if (!failing) lastLaid = laid;
-      // Once the page has drawn what this answers, which it does before it hands control back: every redraw puts a fresh page in, so the cards rise and the clips play on whichever page is standing. The reading column's alone — the rail's copy keeps the posters.
+      // Once the page has drawn what this answers, which it does before it hands control back: every redraw puts a fresh page in, so the cards rise and the clips play on whichever page is standing. The reading column's alone — the rail's copy keeps the posters. What the standing page's motion reached is read before that page is written over, and only while it is still the page on screen, so a visitor who went elsewhere and came back sees the rise again.
       if (typeof frontPage.motion === 'function') {
+        const held = moving && moving.root && moving.root.isConnected && typeof moving.hold === 'function' ? moving.hold() : null;
         queueMicrotask(() => {
           const laidOut = document.querySelector('.document-body.front-layout:not(.document-minimap-preview)');
           if (!laidOut) return;
           if (moving) moving.stop();
-          moving = frontPage.motion(laidOut);
+          moving = frontPage.motion(laidOut, held);
         });
       }
       return laid;
     };
     // Asked before the page proves which of the document's blocks the layout may keep for typing, so every other document is drawn without that walk.
     window.leafSiteLayout.laysOut = (path) => path === frontPage.path;
+    // Asked when a paragraph on the landing is drawn again alone: the layout class it keeps, or null where its new words would be laid out somewhere else and the whole page is drawn again.
+    window.leafSiteLayout.paragraphPlace = (path, classes, html) => (path === frontPage.path && typeof frontPage.paragraphPlace === 'function' ? frontPage.paragraphPlace(classes, html) : null);
   }
   const core = await load(assetBase() + MODULE, fetchWith);
   core.setImageSizes(imageSizes);

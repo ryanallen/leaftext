@@ -12317,15 +12317,35 @@ window.leafSwapParagraph = (swap) => {
   if (!swap || !doc || doc.path !== swap.path || codeViewActive || !body) return;
   const end = swap.start + utf8ByteLength(swap.text);
   const old = elementWithRange(body, 'block', swap.start);
-  const placed = !!old && isDocumentBlock(old) && old.tagName === 'P' && rangeOf(old, 'block').end === end;
-  const fresh = placed ? drawSwappedParagraph(old, swap.html, swap.start, end) : null;
+  const heading = !!old && /^H[1-6]$/.test(old.tagName);
+  const oldId = old && old.id;
+  
+  const laid = !!old && !isDocumentBlock(old) && isLaidOutParagraph(old);
+  const layoutClass = laid && typeof window.leafSiteLayout === 'function' && typeof window.leafSiteLayout.paragraphPlace === 'function' ? window.leafSiteLayout.paragraphPlace(doc.path, old.className.split(/\s+/).filter(Boolean), swap.html) : null;
+  let placed = !!old && (isDocumentBlock(old) || (laid && layoutClass !== null)) && (old.tagName === 'P' || heading) && rangeOf(old, 'block').end === end;
+  if (placed && heading) {
+    const holder = document.createElement('div');
+    holder.innerHTML = swap.html;
+    const newId = holder.firstElementChild && holder.firstElementChild.id;
+    
+    const taken = newId && document.getElementById(newId);
+    
+    const twin = document.getElementById(`${oldId}-1`);
+    placed = !!oldId && !!newId && oldId === swap.replacedId &&
+      !/-\d+$/.test(oldId) && !/-\d+$/.test(newId) &&
+      (!taken || taken === old) && !twin;
+  }
+  const fresh = placed ? drawSwappedBlock(old, swap.html, swap.start, end, layoutClass) : null;
   if (!fresh) {
     send({ command: 'refreshDocument' });
     return;
   }
   recordParagraphSwap(doc, swap, end);
+  
+  if (laid) doc.laidOutSwapped = true;
   currentState.renderKey = swap.renderKey;
   if (fresh !== old) rewatchReadingBlock(old, fresh);
+  if (heading) updateSwappedHeadingOutline(fresh, oldId);
   window.leafDocumentWords(swap.path, swap.words);
   readerAnchorBlocks = null;
   pendingEditAnchor = null;
@@ -12335,6 +12355,14 @@ window.leafSwapParagraph = (swap) => {
   if (active && active !== document.body && active.isConnected && body.contains(active)) setPendingCaret(null);
   else placePendingCaret(body);
 };
+
+function updateSwappedHeadingOutline(fresh, oldId) {
+  const rows = readDocumentOutlineRows();
+  if (rows.some((row) => row.id === oldId)) {
+    setDocumentOutlineRows(rows.map((row) => row.id === oldId ? { level: Number(fresh.tagName.slice(1)), text: readOutlineHeadingText(fresh), id: fresh.id } : row));
+    scheduleLibraryOutline();
+  } else publishDocumentOutline();
+}
 
 window.leafReplaceDrawnBlocks = (change, beside = false) => {
   const apply = () => {
@@ -14812,6 +14840,12 @@ function isDocumentBlock(el) {
   return !!parent && !!parent.classList && parent.classList.contains('document-body');
 }
 
+function isLaidOutParagraph(el) {
+  if (!el || el.tagName !== 'P' || !hasRangeOf(el, 'block')) return false;
+  const body = el.closest('.document-body');
+  return !!body && body.classList.contains('front-layout') && !body.classList.contains('document-minimap-preview') && !body.closest('.document-minimap');
+}
+
 function makeDocumentRuns(body) {
   if (!body || body.classList.contains('document-body-site')) return;
   const title = Array.from(body.children).find((block) => block.tagName === 'H1');
@@ -15926,8 +15960,9 @@ function releaseEditCommand(message, after) {
     
     editHold = outgoing.seq;
   }
-  send(outgoing);
+  
   if (after && after.el && !outgoing.held && measured) advanceRangesForCommit(after.el, outgoing, !!after.inner);
+  send(outgoing);
   return outgoing;
 }
 
@@ -16570,7 +16605,7 @@ function commitBlockEdit(el, text, range) {
   
   const command = kind ? { command: 'editBlock', start, end, text, cell, kind, continuing: el.__liveStarted === true } : { command: 'editBlock', start, end, text, cell, continuing: el.__liveStarted === true };
   
-  if (commitMovesMap(el, command) && commitIsOneParagraph(el, span, cell, kind)) command.paragraph = true;
+  if (commitMovesMap(el, command) && commitIsOneBlock(el, span, cell, kind)) command.paragraph = true;
   
   sendEditCommand(command, { el, inner: !!span, hold: true });
   window.setTimeout(() => {
@@ -16596,10 +16631,12 @@ function commitBlockEdit(el, text, range) {
 }
 
 
-function commitIsOneParagraph(el, span, cell, kind) {
+function commitIsOneBlock(el, span, cell, kind) {
   if (span || cell || kind || currentDocumentFormat !== 'markdown') return false;
-  if (el.tagName !== 'P' || el.dataset.blockKind !== 'paragraph' || el.dataset.holdsFootnote === 'true') return false;
-  return isDocumentBlock(el);
+  const paragraph = el.tagName === 'P' && el.dataset.blockKind === 'paragraph';
+  const heading = /^H[1-6]$/.test(el.tagName) && el.dataset.blockKind === 'heading';
+  if ((!paragraph && !heading) || el.dataset.holdsFootnote === 'true') return false;
+  return isDocumentBlock(el) || (paragraph && isLaidOutParagraph(el));
 }
 
 
@@ -24997,6 +25034,7 @@ function groveFinds() {
 var GROVE_FIND_TABLES = [
   ['format', 'format-first-read', 'format', 'formats'],
   ['language', 'language-first-read', 'source language', 'source languages'],
+  ['service', 'format-first-read', 'kind of service page', 'kinds of service page'],
   ['family', 'family-first-worn', 'theme family', 'theme families'],
 ];
 function groveForagingWords(area) {
@@ -27570,29 +27608,32 @@ function putDrawnRun(old, fresh, after, before, body) {
   }
 }
 
-function drawSwappedParagraph(old, html, start, end) {
+function drawSwappedBlock(old, html, start, end, layoutClass = '') {
   const holder = document.createElement('div');
   holder.innerHTML = html;
   const fresh = holder.firstElementChild;
-  if (!fresh || holder.children.length !== 1 || fresh.tagName !== 'P') return null;
+  const heading = /^H[1-6]$/.test(old.tagName);
+  if (!fresh || holder.children.length !== 1 || (heading ? !/^H[1-6]$/.test(fresh.tagName) : fresh.tagName !== 'P')) return null;
   const active = document.activeElement;
-  const kept = active !== old && (!active || !old.contains(active)) && markdownBlockWysiwygSafe(old) === markdownBlockWysiwygSafe(fresh);
+  const kept = fresh.tagName === old.tagName && active !== old && (!active || !old.contains(active)) && markdownBlockWysiwygSafe(old) === markdownBlockWysiwygSafe(fresh);
   if (kept) {
     const heldBelow = old.classList.contains('is-held-below');
     const marks = new Set(['data-block-id', 'data-block-kind', 'data-editable', 'data-src-start', 'data-src-end']);
     for (const name of old.getAttributeNames()) if (!marks.has(name)) old.removeAttribute(name);
     if (heldBelow) old.classList.add('is-held-below');
+    if (layoutClass) old.classList.add(layoutClass);
     old.replaceChildren(...fresh.childNodes);
-    old.dataset.blockKind = 'paragraph';
+    if (fresh.id) old.id = fresh.id;
     forgetDrawnRanges(old);
     setRangeOf(old, 'block', start, end);
     decorateSwappedParagraph(old, true);
     return old;
   }
   if (old.dataset.blockId != null) fresh.dataset.blockId = old.dataset.blockId;
-  fresh.dataset.blockKind = 'paragraph';
+  fresh.dataset.blockKind = old.dataset.blockKind;
   if (old.dataset.editable) fresh.dataset.editable = old.dataset.editable;
   if (old.classList.contains('is-held-below')) fresh.classList.add('is-held-below');
+  if (layoutClass) fresh.classList.add(layoutClass);
   putDrawnRun([old], [fresh], null, null, old.parentElement);
   setRangeOf(fresh, 'block', start, end);
   decorateSwappedParagraph(fresh);
@@ -27601,10 +27642,15 @@ function drawSwappedParagraph(old, html, start, end) {
 
 function replayParagraphSwaps(doc, body) {
   if (!doc || !Array.isArray(doc.swaps) || !body) return;
+  let headingsChanged = false;
   for (const swap of doc.swaps) {
     const old = elementWithRange(body, 'block', swap.start);
-    if (old && isDocumentBlock(old) && rangeOf(old, 'block').end === swap.end) drawSwappedParagraph(old, swap.html, swap.start, swap.end);
+    if (old && isDocumentBlock(old) && rangeOf(old, 'block').end === swap.end) {
+      const fresh = drawSwappedBlock(old, swap.html, swap.start, swap.end);
+      if (fresh && /^H[1-6]$/.test(fresh.tagName)) headingsChanged = true;
+    }
   }
+  if (headingsChanged) publishDocumentOutline();
 }
 
 function proveSiteBlocks(doc) {
@@ -27648,7 +27694,8 @@ function siteLaidOutState(state) {
   return { ...state, document: { ...doc, html: laid, blocks: [], tasks: [], computed: [], siteProofs: proved ? proved.proofs : new Map() } };
 }
 function renderState(keepDetachedRender = false, landingAnchor = null) {
-  if (currentState && currentState.document && currentState.document.partialDrawn) {
+  
+  if (currentState && currentState.document && (currentState.document.partialDrawn || currentState.document.laidOutSwapped)) {
     send({ command: 'refreshDocument', keepPlace: true });
     return;
   }

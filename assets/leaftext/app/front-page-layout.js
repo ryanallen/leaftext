@@ -70,12 +70,17 @@ const classed = (p, name) => p.replace(/^<p\b/, `<p class="${name}"`);
 /** The mark the app's page puts on a heading or paragraph it has proved the source of, so the words a visitor can type on are only the ones this layout keeps whole. Taken off everything the layout keeps without offering it for typing. */
 const unproved = (html) => html.replace(/\sdata-leaf-proof="[^"]*"/g, '');
 
+/** What places a paragraph on the page: a picture keeps a paragraph off a card and out of the promise, the download buttons are the downloads, and a link into the documentation is the foot. */
+const holdsPicture = (p) => /<img\b/.test(p);
+const isDownloads = (p) => p.includes('leaf-md-button');
+const isFoot = (p) => p.includes('href="docs/"');
+
 /** The paragraphs under a section's heading and above its first subheading. */
 function leadOf(section) {
   const top = section.replace(/^<h2\b[^>]*>[\s\S]*?<\/h2>/, '');
   const cut = top.search(/<h3\b/);
   return paragraphs(cut < 0 ? top : top.slice(0, cut))
-    .filter((p) => !/<img\b/.test(p))
+    .filter((p) => !holdsPicture(p))
     .map((p) => classed(p, 'front-card-lead'));
 }
 
@@ -93,8 +98,8 @@ function heroOf(intro) {
   if (!title) throw new Error('the README has no title for the front page to open on');
   const said = paragraphs(intro);
   const line = said[0];
-  const downloads = said.findIndex((p) => p.includes('leaf-md-button'));
-  if (!line || line.includes('<img') || downloads < 0) throw new Error('the README opens on no one-line promise and no download buttons for the hero');
+  const downloads = said.findIndex(isDownloads);
+  if (!line || holdsPicture(line) || downloads < 0) throw new Error('the README opens on no one-line promise and no download buttons for the hero');
   const small = said[downloads + 1] || '';
   // The one link beside the buttons is the install guide, which the Mac's first launch needs.
   if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
@@ -104,7 +109,7 @@ function heroOf(intro) {
 
 /** The links at the foot: the paragraph above the first section that points into the documentation. */
 function footOf(intro) {
-  const links = paragraphs(intro).find((p) => p.includes('href="docs/"'));
+  const links = paragraphs(intro).find(isFoot);
   if (!links) throw new Error('the README carries no line of links into the documentation for the front page to end on');
   return `<footer class="front-foot">${unproved(links)}</footer>`;
 }
@@ -121,6 +126,16 @@ function cardOf(card, section) {
   const lead = leadOf(section);
   if (!lead.length) throw new Error(`the README's "${card.section}" section has no lead paragraph for its card`);
   return `<article class="front-card" data-clip-card="${card.clip}"><h3 class="front-card-title" id="${card.section}">${card.title}</h3>${lead.join('')}${clipBox(card.clip, card.shows, 'front-card-clip')}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
+}
+
+/**
+ * Where a paragraph a visitor typed on would be laid out now, by the same rules the layout places it by: the one layout class of `classes` it wears, which a paragraph drawn again alone has to wear too — the empty string for the install line, which wears none — or `null` where `html`, its new words, would stand somewhere else, so the whole page has to be laid out again. A promise gaining a picture, the download buttons or a link into the documentation, and a card lead gaining a picture, each move.
+ */
+export function paragraphPlace(classes, html) {
+  const worn = Array.from(classes || []);
+  if (worn.includes('front-hero-line')) return holdsPicture(html) || isDownloads(html) || isFoot(html) ? null : 'front-hero-line';
+  if (worn.includes('front-card-lead')) return holdsPicture(html) ? null : 'front-card-lead';
+  return '';
 }
 
 /**
