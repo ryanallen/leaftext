@@ -8135,6 +8135,29 @@ function vaultMenuItems() {
     icon: MENU_PLUS_SVG,
     run: () => send({ command: 'createVault' }),
   });
+  items.push({
+    label: 'New Dropbox vault…',
+    title: 'Copy one Dropbox folder through its API',
+    icon: MENU_PLUS_SVG,
+    keepOpen: true,
+    run: showDropboxVaultForm,
+  });
+  items.push({
+    label: 'New Google Drive vault…',
+    title: 'Copy one Google Drive folder through its API',
+    icon: MENU_PLUS_SVG,
+    keepOpen: true,
+    run: showGoogleDriveVaultForm,
+  });
+  for (const [label, kind] of [['OneDrive', 'onedrive'], ['SharePoint', 'sharepoint']]) {
+    items.push({
+      label: `New ${label} vault…`,
+      title: `Copy one ${label} folder through Microsoft Graph`,
+      icon: MENU_PLUS_SVG,
+      keepOpen: true,
+      run: () => showMicrosoftVaultForm(label, kind),
+    });
+  }
   pushCloneRow(items);
   return items;
 }
@@ -8963,6 +8986,70 @@ window.leafSetVaults = (payload) => {
     }
   }
 };
+function showDropboxVaultForm() {
+  const save = () => {
+    const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
+    const appKey = fields[0] && fields[0].value.trim();
+    const folderPath = fields[1] && fields[1].value.trim();
+    if (!appKey || !folderPath) return;
+    hideCrumbMenu();
+    send({ command: 'createDropboxVault', appKey, folderPath });
+  };
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'New Dropbox vault' },
+    { note: 'Enter your Dropbox app key. Register http://127.0.0.1:37653/ as its redirect address.' },
+    { input: '', placeholder: 'Dropbox app key', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Folder path, such as /Notes', commitOnBlur: false, onEnter: save },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Connect', primary: true, run: save, keepOpen: true },
+    ] },
+  ]);
+}
+function showGoogleDriveVaultForm() {
+  
+  const save = (wholeDrive) => {
+    const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
+    const clientId = fields[0] && fields[0].value.trim();
+    const folderId = wholeDrive ? '' : fields[1] && fields[1].value.trim();
+    if (!clientId || (!wholeDrive && !folderId)) return;
+    hideCrumbMenu();
+    send({ command: 'createGoogleDriveVault', clientId, folderId, wholeDrive });
+  };
+  const connect = () => save(false);
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'New Google Drive vault' },
+    { note: 'Use a desktop OAuth client ID from your Google Cloud project. Copy the folder ID from its Drive web address.' },
+    { note: 'Set that OAuth app to In production. Left in Testing, Google ends its sign-in after 7 days.' },
+    { input: '', placeholder: 'Desktop OAuth client ID', commitOnBlur: false, onEnter: connect },
+    { input: '', placeholder: 'Google Drive folder ID', commitOnBlur: false, onEnter: connect },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Use whole Drive', run: () => save(true), keepOpen: true },
+      { label: 'Connect', primary: true, run: connect, keepOpen: true },
+    ] },
+  ]);
+}
+function showMicrosoftVaultForm(label, kind) {
+  const save = () => {
+    const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
+    const [clientId, driveId, folderId] = Array.from(fields, (field) => field.value.trim());
+    if (!clientId || !driveId || !folderId) return;
+    hideCrumbMenu();
+    send({ command: 'createMicrosoftVault', kind, clientId, driveId, folderId });
+  };
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: `New ${label} vault` },
+    { note: 'Use a Microsoft desktop app registration. Copy the drive and folder IDs from Microsoft Graph.' },
+    { input: '', placeholder: 'Desktop app client ID', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Drive ID', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Folder ID', commitOnBlur: false, onEnter: save },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Connect', primary: true, run: save, keepOpen: true },
+    ] },
+  ]);
+}
 
 
 
@@ -23224,8 +23311,6 @@ var leafTitles = (leafProfile && Array.isArray(leafProfile.titles) && leafProfil
 var leafEarning = (leafProfile && Array.isArray(leafProfile.earning) && leafProfile.earning) || [];
 var groveLastFocus = null;
 
-var groveAsking = null;
-
 var groveAllXpOpen = false;
 var groveAllXp = null;
 
@@ -23497,7 +23582,7 @@ function groveNodeState(node) {
 }
 function groveNodeCorner(node, said) {
   const id = escapeAttr(node.id);
-  if (said.state === 'available') return `<button type="button" class="grove-tree-price is-available" data-grove-ask="${id}">${escapeText(formatCountLabel(node.price, 'seed', 'seeds'))}</button>`;
+  if (said.state === 'available') return `<span class="grove-tree-price is-available">${escapeText(formatCountLabel(node.price, 'seed', 'seeds'))}</span>`;
   if (said.state === 'short') return `<span class="grove-tree-price">${escapeText(formatCount(said.short))} to go</span>`;
   if (said.state === 'locked') return '<span class="grove-tree-price is-locked">Locked</span>';
   if (said.state === 'later') return '<span class="grove-tree-price is-locked">Not grown yet</span>';
@@ -23526,16 +23611,13 @@ function groveNodeFoot(node, said) {
 
 function groveTreeBlock(node) {
   const said = groveNodeState(node);
-  const asking = groveAsking === node.id && said.state === 'available';
-  const held = Number(leafProfile.seeds) || 0;
   const line = said.state === 'locked' ? `<span class="grove-tree-node-line is-needs">${escapeText(said.needs)}</span>` : `<span class="grove-tree-node-line">${escapeText(node.line)}</span>`;
-  const body = asking
-    ? `<span class="grove-tree-question">${escapeText(`Spend ${formatCount(node.price)} of your ${formatCountLabel(held, 'seed', 'seeds')}?`)}</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action" data-grove-not-now="${escapeAttr(node.id)}">Not now</button><button type="button" class="grove-tree-action is-spend" data-grove-spend="${escapeAttr(node.id)}">Spend ${escapeText(formatCountLabel(node.price, 'seed', 'seeds'))}</button></span>`
-    : `${line}${groveNodeFoot(node, said)}`;
+  const hint = said.state === 'available' ? '<span class="grove-tree-node-line is-hint">Hold its circle to grow it</span>' : '';
+  const body = `${line}${hint}${groveNodeFoot(node, said)}`;
   const mark = escapeText(node.name.charAt(0));
-  const corner = asking ? '' : groveNodeCorner(node, said);
+  const corner = groveNodeCorner(node, said);
   const area = groveAreaOf(node.area);
-  return `<div class="grove-tree-block is-${said.state}${asking ? ' is-asking' : ''}" data-grove-card="${escapeAttr(node.id)}"><span class="grove-tree-node-area">${escapeText(area ? area.name : node.area)}</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark" aria-hidden="true">${mark}</span><span class="grove-tree-node-name">${escapeText(node.name)}</span>${corner}</span>${body}</div>`;
+  return `<div class="grove-tree-block is-${said.state}" data-grove-card="${escapeAttr(node.id)}"><span class="grove-tree-node-area">${escapeText(area ? area.name : node.area)}</span><span class="grove-tree-node-head"><span class="grove-tree-node-mark" aria-hidden="true">${mark}</span><span class="grove-tree-node-name">${escapeText(node.name)}</span>${corner}</span>${body}</div>`;
 }
 
 function groveNodeName(node, said) {
@@ -23547,7 +23629,8 @@ function groveNodeName(node, said) {
     owned: 'owned',
   }[said.state];
   const ranks = node.limit > 1 ? `, ${said.owned} of ${node.limit} ranks` : '';
-  return `${node.name}, ${words}${ranks}`;
+  const activate = said.state === 'available' && groveChosen === node.id ? ', activate again to grow' : '';
+  return `${node.name}, ${words}${ranks}${activate}`;
 }
 
 function groveTreeNode(place, rows) {
@@ -23558,7 +23641,9 @@ function groveTreeNode(place, rows) {
   const lock = said.state === 'locked' ? '<span class="lt-icon lt-icon-lock-closed grove-tree-disc-lock"></span>' : '';
   const under = said.state === 'available' ? formatCountLabel(node.price, 'seed', 'seeds') : said.state === 'short' ? `${formatCount(said.short)} to go` : '';
   const pips = node.limit > 1 ? `<span class="grove-tree-ranks grove-tree-node-ranks" aria-hidden="true">${Array.from({ length: node.limit }, (_, at) => `<span class="grove-tree-rank${at < said.owned ? ' is-filled' : ''}"></span>`).join('')}</span>` : '';
-  return `<button type="button" class="grove-tree-node ${state}" data-grove-node="${escapeAttr(node.id)}" aria-pressed="${chosen}" aria-label="${escapeAttr(groveNodeName(node, said))}" style="--grove-column:${groveTreeColumn(place.slot)};--grove-row:${rows - place.row}"><span class="grove-tree-disc ${state}" aria-hidden="true">${escapeText(node.name.charAt(0))}${lock}</span><span class="grove-tree-node-label" aria-hidden="true">${escapeText(node.name)}</span>${under ? `<span class="grove-tree-node-under" aria-hidden="true">${escapeText(under)}</span>` : ''}${pips}</button>`;
+  const grow = said.state === 'available' ? ` data-grove-grow="${escapeAttr(node.id)}" data-grove-grow-rank="${said.owned}"` : '';
+  const ring = said.state === 'available' ? '<svg class="grove-tree-ring" viewBox="0 0 42 42" aria-hidden="true"><circle class="grove-tree-ring-circle" cx="21" cy="21" r="19" pathLength="1"></circle></svg>' : '';
+  return `<button type="button" class="grove-tree-node ${state}" data-grove-node="${escapeAttr(node.id)}"${grow} aria-pressed="${chosen}" aria-label="${escapeAttr(groveNodeName(node, said))}" style="--grove-column:${groveTreeColumn(place.slot)};--grove-row:${rows - place.row}"><span class="grove-tree-disc ${state}" aria-hidden="true">${escapeText(node.name.charAt(0))}${lock}${ring}</span><span class="grove-tree-node-label" aria-hidden="true">${escapeText(node.name)}</span>${under ? `<span class="grove-tree-node-under" aria-hidden="true">${escapeText(under)}</span>` : ''}${pips}</button>`;
 }
 
 function groveChosenPlace(places) {
@@ -23678,7 +23763,6 @@ function groveTreeCard(places) {
 function groveTree() {
   const places = groveTreePlaces();
   if (!places.length) return '';
-  if (groveAsking && !places.some((place) => place.node.id === groveAsking && groveNodeState(place.node).state === 'available')) groveAsking = null;
   const card = groveTreeCard(places);
   const said = `${formatCountLabel(places.length, 'reward', 'rewards')}, climbing by the Grove level that opens each`;
   return `<div class="grove-tree-head"><span class="grove-tree-heading">Grow with seeds</span><span class="grove-tree-hint">${escapeText(said)}</span></div><div class="grove-tree-view"><div class="grove-tree leaf-scroll"><svg class="grove-tree-links" aria-hidden="true"></svg><div class="grove-tree-grid">${groveTreeGrid(places)}</div></div><div class="grove-tree-card leaf-scroll">${card}</div></div>`;
@@ -23708,7 +23792,6 @@ function drawGroveTreeCounted() {
   const card = groveSheetBody.querySelector('.grove-tree-card');
   if (!grid || !card) return drawGroveSheet();
   const places = groveTreePlaces();
-  if (groveAsking && !places.some((place) => place.node.id === groveAsking && groveNodeState(place.node).state === 'available')) groveAsking = null;
   const focused = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.groveNode : null;
   card.innerHTML = groveTreeCard(places);
   grid.innerHTML = groveTreeGrid(places);
@@ -23728,37 +23811,41 @@ function groveDoingWords(signal, amount) {
 var groveClaim = null;
 function startGroveHold(press) {
   if (groveClaim) return;
-  const fill = press.querySelector('.grove-claim-fill');
+  const fill = press.querySelector('.grove-claim-fill, .grove-tree-ring-circle');
   if (fill) fill.classList.add('is-holding');
   groveClaim = { stage: 'holding', press, fill, timer: setTimeout(() => sendGroveClaim(press), durationTokenMilliseconds('--lt-duration-600')) };
   for (const type of ['pointerup', 'pointercancel', 'pointerleave']) press.addEventListener(type, dropGroveHold);
 }
-function dropGroveHold() {
+function dropGroveHold(event) {
   if (!groveClaim || groveClaim.stage !== 'holding') return;
+  const grow = groveClaim.press.dataset.groveGrow;
   const stale = groveClaim.stale;
   stopGroveClaim();
-  
   if (stale) drawGroveSheet();
+  if (grow && event && (event.type === 'pointerup' || event.type === 'keyup')) chooseGroveNode(grow);
 }
 
 var GROVE_CLAIM_WAIT_MS = 4000;
 function sendGroveClaim(press) {
   if (groveClaim && (groveClaim.press !== press || groveClaim.stage !== 'holding')) return;
   if (groveClaim) clearTimeout(groveClaim.timer);
-  const level = Number(press.dataset.groveClaimPress);
-  const fill = press.querySelector('.grove-claim-fill');
+  const grow = press.dataset.groveGrow || null;
+  const level = grow ? null : Number(press.dataset.groveClaimPress);
+  const rank = grow ? Number(press.dataset.groveGrowRank) : null;
+  const fill = press.querySelector('.grove-claim-fill, .grove-tree-ring-circle');
   if (fill) fill.classList.add('is-holding');
-  
-  groveClaim = { stage: 'waiting', press, fill, level, stale: groveClaim ? groveClaim.stale : false, from: { grove: leafProfile ? Number(leafProfile.grove) || 0 : 0, seeds: leafProfile ? Number(leafProfile.seeds) || 0 : 0 } };
+  groveClaim = { stage: 'waiting', press, fill, level, grow, rank, focused: document.activeElement === press, stale: groveClaim ? groveClaim.stale : false, from: { grove: leafProfile ? Number(leafProfile.grove) || 0 : 0, seeds: leafProfile ? Number(leafProfile.seeds) || 0 : 0 } };
   groveClaim.timer = setTimeout(endGroveClaim, GROVE_CLAIM_WAIT_MS);
-  
-  send({ command: 'claimGroveLevel', level });
+  if (grow) {
+    groveChosen = grow;
+    send({ command: 'buyUnlock', id: grow });
+  } else send({ command: 'claimGroveLevel', level });
 }
 
 function groveClaimHeard() {
   groveClaim.stale = true;
   if (groveClaim.stage !== 'waiting') return;
-  if (Number(leafProfile.grove) >= groveClaim.level) playGroveClaim();
+  if (groveClaim.grow ? groveRanks(groveClaim.grow) > groveClaim.rank : Number(leafProfile.grove) >= groveClaim.level) playGroveClaim();
 }
 function stopGroveClaim() {
   if (!groveClaim) return;
@@ -23769,8 +23856,13 @@ function stopGroveClaim() {
 }
 
 function endGroveClaim() {
+  const focus = groveClaim && groveClaim.focused && groveClaim.grow;
   stopGroveClaim();
   if (groveSheet && !groveSheet.hidden) drawGroveSheet();
+  if (focus) {
+    const node = groveSheetBody.querySelector(`[data-grove-node="${focus}"]`);
+    if (node) node.focus();
+  }
   
   playGroveReceipts();
 }
@@ -23793,10 +23885,15 @@ function groveConfetti(x, y) {
 }
 
 function groveRoll(label, from, to) {
-  return `<span class="grove-celebration-roll"><span class="grove-celebration-from">${escapeText(`${label} ${formatCount(from)}`)}</span><span class="grove-celebration-to">${escapeText(`${label} ${formatCount(to)}`)}</span></span>`;
+  const words = (number) => label === 'seeds' ? formatCountLabel(number, 'seed', 'seeds') : `${label} ${formatCount(number)}`;
+  return `<span class="grove-celebration-roll"><span class="grove-celebration-from">${escapeText(words(from))}</span><span class="grove-celebration-to">${escapeText(words(to))}</span></span>`;
 }
 
 function groveCelebrationCount(x, y) {
+  if (groveClaim.grow) {
+    const node = leafCatalog.find((one) => one.id === groveClaim.grow);
+    return `<span class="grove-celebration-count" style="left:${x}px;top:${y}px">${groveRoll('seeds', groveClaim.from.seeds, Number(leafProfile.seeds) || 0)}<span class="grove-celebration-name">${escapeText(node ? node.name : groveClaim.grow)}</span></span>`;
+  }
   const brought = (Number(leafProfile.seeds) || 0) - groveClaim.from.seeds;
   const seeds = brought > 0 ? `<span class="grove-celebration-name">${escapeText(`+${formatCountLabel(brought, 'seed', 'seeds')}`)}</span>` : '';
   return `<span class="grove-celebration-count" style="left:${x}px;top:${y}px">${groveRoll('Grove', groveClaim.from.grove, Number(leafProfile.grove) || 0)}${seeds}</span>`;
@@ -23821,16 +23918,16 @@ function playGroveClaim() {
   groveClaim.timer = setTimeout(endGroveClaim, durationTokenMilliseconds('--lt-duration-900'));
 }
 function onGroveClaimPointerDown(event) {
-  const press = event.target && event.target.closest ? event.target.closest('[data-grove-claim-press]') : null;
+  const press = event.target && event.target.closest ? event.target.closest('[data-grove-claim-press], [data-grove-grow]') : null;
   if (press && !event.button) startGroveHold(press);
 }
 
 function onGroveClaimKey(event) {
   if (event.key !== ' ' && event.key !== 'Enter') return;
-  const press = event.target && event.target.closest ? event.target.closest('[data-grove-claim-press]') : null;
+  const press = event.target && event.target.closest ? event.target.closest('[data-grove-claim-press], [data-grove-grow]') : null;
   if (!press) return;
   event.preventDefault();
-  if (event.type === 'keyup') dropGroveHold();
+  if (event.type === 'keyup') dropGroveHold(event);
   else if (!event.repeat) startGroveHold(press);
 }
 
@@ -24012,10 +24109,6 @@ function drawGroveAllXpOff() {
   groveAllXpOpen = false;
   groveAllXp = null;
 }
-function askGroveNode(id) {
-  groveAsking = id;
-  drawGroveTreeCounted();
-}
 function onGroveBodyClick(event) {
   const target = event.target;
   const find = (selector) => (target && target.closest ? target.closest(selector) : null);
@@ -24031,6 +24124,14 @@ function onGroveBodyClick(event) {
   if (claim) {
     
     if (!event.detail) sendGroveClaim(claim);
+    return;
+  }
+  const grow = find('[data-grove-grow]');
+  if (grow) {
+    if (!event.detail) {
+      if (groveChosen === grow.dataset.groveGrow) sendGroveClaim(grow);
+      else chooseGroveNode(grow.dataset.groveGrow);
+    }
     return;
   }
   const all = find('[data-grove-all-xp]');
@@ -24051,25 +24152,6 @@ function onGroveBodyClick(event) {
     }
     return;
   }
-  const spend = find('[data-grove-spend]');
-  if (spend && groveAsking === spend.dataset.groveSpend) {
-    groveAsking = null;
-    send({ command: 'buyUnlock', id: spend.dataset.groveSpend });
-    drawGroveTreeCounted();
-    return;
-  }
-  
-  if (groveAsking) {
-    const asking = find('[data-grove-card]');
-    const reward = find('[data-grove-node]');
-    if (!asking || asking.dataset.groveCard !== groveAsking || find('[data-grove-not-now]')) {
-      groveAsking = null;
-      drawGroveTreeCounted();
-      if (!reward) return;
-    }
-  }
-  const ask = find('[data-grove-ask]');
-  if (ask) return askGroveNode(ask.dataset.groveAsk);
   const toggle = find('[data-grove-switch]');
   if (toggle) return send({ command: 'setUnlock', id: toggle.dataset.groveSwitch, on: toggle.getAttribute('aria-checked') !== 'true' });
   const title = find('[data-grove-title]');
@@ -24078,8 +24160,6 @@ function onGroveBodyClick(event) {
   if (wear) return wearGroveFamily(wear.dataset.groveWear);
   const reward = find('[data-grove-node]');
   if (reward) return chooseGroveNode(reward.dataset.groveNode);
-  const card = find('[data-grove-card]');
-  if (card && card.classList.contains('is-available')) askGroveNode(card.dataset.groveCard);
 }
 
 function wearGroveFamily(family) {
@@ -24209,7 +24289,6 @@ function drawGroveSheet() {
   groveSeeds.hidden = !on;
   
   if (!on) {
-    groveAsking = null;
     drawGroveAllXpOff();
   }
   drawGroveHead();
@@ -24256,7 +24335,6 @@ function drawGroveTabs(shown) {
 }
 function showGroveTab(name) {
   if (name !== 'growth' && name !== 'tree') return;
-  groveAsking = null;
   const moved = groveTab !== name;
   groveTab = name;
   drawGroveSheet();
@@ -24539,10 +24617,7 @@ function drawGroveTreeClaimCounted() {
 
 function onGroveKey(event) {
   if (event.key !== 'Escape') return;
-  if (groveAsking) {
-    groveAsking = null;
-    drawGroveTreeCounted();
-  } else if (groveAllXpOpen) leaveGroveAllXp();
+  if (groveAllXpOpen) leaveGroveAllXp();
   
   else closeGroveSheet();
 }
@@ -24555,7 +24630,6 @@ function openGroveSheet() {
   
   if (groveSheet.hidden) {
     groveLastFocus = document.activeElement;
-    groveAsking = null;
   }
   drawGroveSheet();
   openSheet(groveSheet, groveBackdrop);
@@ -24568,7 +24642,6 @@ function closeGroveSheet(options) {
   if (!groveSheet || groveSheet.hidden || !groveSheet.classList.contains('open')) return;
   document.removeEventListener('keydown', onGroveKey);
   stopGroveClaim();
-  groveAsking = null;
   if (groveTreeResize) groveTreeResize.disconnect();
   drawGroveAllXpOff();
   stopGroveRisers();

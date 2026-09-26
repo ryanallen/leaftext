@@ -23,6 +23,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, manually from its header or automatically once local changes stop when that vault opts in — and a repository can be [cloned](#clone-a-repository) into a new vault |
+| [Storage services](#storage-services) | Connect Dropbox, Google Drive, OneDrive, or SharePoint and keep a local copy for offline reading |
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
@@ -125,6 +126,25 @@ Two things are left out. At the top of a drive, the operating system's own folde
 Search and the [graph](#graph) go almost as wide. A note in a folder whose name starts with a dot is findable and on the map, and a shortcut is refused, because one can point back at a folder above it and make the walk run forever.
 
 The other thing that walk refuses is a folder a machine filled: one that declares itself a cache, or one named `target`, `node_modules`, `build`, `dist`, `vendor`, `venv`, `.venv`, `__pycache__`, `.next`, `.gradle` or `Pods`. A vault that is also a folder you build in can hold a hundred generated files for every note you wrote, and reading and watching all of them costs a third of your computer while you sit still. The pane still lists these folders and you can still open one; what changes is that search does not read inside them, and a change inside one is not something Leaftext goes and looks at. When a search leaves any of them out, the line above the results says how many and names them if you rest on it. A document you have actually opened from inside one still updates when it changes on disk.
+
+## Storage services
+
+The vault switcher offers **Dropbox…**, **Google Drive…**, **OneDrive…**, and **SharePoint…**. Each connects through your own app registration and opens sign-in in your browser. Your password stays in the browser; Leaftext keeps the resulting credentials in your operating system's credential store.
+
+| Service | What the connection asks for |
+| --- | --- |
+| Dropbox | Your app key and a folder path such as `/Notes`; register `http://127.0.0.1:37653/` as its redirect address |
+| Google Drive | Your desktop client ID and a folder ID; **Use whole Drive** explicitly chooses the entire drive instead of a folder |
+| OneDrive | Your desktop app client ID, drive ID, and folder ID |
+| SharePoint | Your desktop app client ID, document library drive ID, and folder ID |
+
+The connection form explains the app registration each service needs. Google registrations must be set to **In production** before connecting.
+
+Leaftext keeps a local copy of readable files, so opening, searching, and following links work offline. Google-native documents remain links to their service rather than editable local documents.
+
+The vault's settings show the account and refresh state, with **Refresh**, **Sign in**, and **Sign out**. A connected vault refreshes every five minutes. Three consecutive failures pause automatic refresh until you press **Refresh**. Signing out keeps the local files.
+
+An explicit **Save** sends your edited file using the version it was opened against. A refused save or a conflicting remote version leaves your local edit intact and unsent; refreshing preserves that edit.
 
 ## File actions
 

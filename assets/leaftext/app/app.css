@@ -14066,7 +14066,8 @@ p.front-more {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .grove-claim-fill.is-holding {
+  .grove-claim-fill.is-holding,
+  .grove-tree-ring-circle.is-holding {
     transition-duration: var(--lt-duration-600) !important;
   }
 }
@@ -14507,6 +14508,27 @@ p.front-more {
   outline: var(--lt-stroke-2) solid var(--lt-accent);
   outline-offset: var(--lt-space-4);
 }
+.grove-tree-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.grove-tree-ring-circle {
+  fill: none;
+  stroke: var(--lt-primary-ink);
+  stroke-width: var(--lt-stroke-4);
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset var(--lt-duration-160) var(--lt-ease-accelerate);
+}
+.grove-tree-ring-circle.is-holding {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--lt-duration-600) var(--lt-ease-linear);
+}
 .grove-tree-disc-lock {
   position: absolute;
   right: -4px;
@@ -14623,11 +14645,6 @@ p.front-more {
   border-color: var(--lt-accent);
   color: var(--lt-primary-ink);
 }
-.grove-tree-price:hover {
-  border-color: var(--lt-navigation-button-hover-background);
-  background: var(--lt-navigation-button-hover-background);
-  color: var(--lt-primary-foreground);
-}
 .grove-tree-owned {
   border-color: transparent;
   color: var(--lt-primary-ink);
@@ -14641,6 +14658,9 @@ p.front-more {
 }
 .grove-tree-node-line.is-needs {
   font-weight: var(--lt-weight-600);
+}
+.grove-tree-node-line.is-hint {
+  color: var(--lt-muted-foreground);
 }
 .grove-tree-ranks {
   display: flex;
@@ -14656,11 +14676,6 @@ p.front-more {
   background: var(--lt-accent);
 }
 
-.grove-tree-question {
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-12);
-  font-weight: var(--lt-weight-600);
-}
 .grove-tree-actions,
 .grove-tree-titles {
   display: flex;

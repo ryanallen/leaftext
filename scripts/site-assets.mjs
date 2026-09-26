@@ -11,7 +11,7 @@
 //
 // **The pages are baked, never written here.** The front page is the app's own page with the site's lines from `site-page.html` in it and the README already drawn into it, so a cold visitor and a crawler read the words out of the first response; `documents.json` beside it is the listing the app's pane and pager walk; the documentation page carries the folder's file list so an old `#/route` link can be sent on to its page. `--write` draws the same pages and puts them nowhere, as its check that the module can draw the README before a byte crosses.
 //
-// **The other site rides on these too.** Emptyguru has no Rust and no build, so its page names `assets/leaftext/app/` on leaftext.com for its whole front end — which works because GitHub Pages sends `access-control-allow-origin: *` on every asset. That is why the names here are a contract with another repository. The core module and its stylesheet at the top of the folder are what Emptyguru's hand-written pages read until its page is the app's too.
+// **The other site rides on these too.** Emptyguru has no Rust and no build, so its page names `assets/leaftext/app/` on leaftext.com for its whole front end — which works because GitHub Pages sends `access-control-allow-origin: *` on every asset. That is why the names here are a contract with another repository.
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -32,15 +32,11 @@ export const ASSET_DIR = 'assets/leaftext';
 export const APP_DIR = `${ASSET_DIR}/app`;
 export const APP_BASE = `${APP_DIR}/`;
 
-/** The core renderer and its stylesheet, which Emptyguru's hand-written pages read until its page is the app's. */
-export const MODULE_PATH = `${ASSET_DIR}/leaftext.wasm`;
-export const STYLES_PATH = `${ASSET_DIR}/leaftext.css`;
-
 /** Which build the site is reading through, so a reader of either site can tell how old it is. */
 export const VERSION_PATH = `${ASSET_DIR}/version.json`;
 export const IMAGE_SIZES_PATH = `${ASSET_DIR}/image-sizes.json`;
 
-/** The notices of everything compiled into the modules, beside them rather than inside them, because every license they reproduce asks to go with the distribution. */
+/** The notices of everything compiled into the module, beside it rather than inside it, because every license they reproduce asks to go with the distribution. */
 export const LICENSES_PATH = `${ASSET_DIR}/licenses.md`;
 
 /** The app's own module, page script and stylesheet — the whole app a page runs. */
@@ -76,8 +72,6 @@ function vendorFiles() {
 
 /** Every path the publish writes, in one order. */
 export const PUBLISHED = [
-  MODULE_PATH,
-  STYLES_PATH,
   VERSION_PATH,
   IMAGE_SIZES_PATH,
   LICENSES_PATH,
@@ -88,9 +82,8 @@ export const PUBLISHED = [
   ...(existsSync(join(root, VENDOR)) ? vendorFiles().map(([path]) => path) : []),
 ];
 
-/** The builds these are cut from. Not published themselves — they are what `just build-web` leaves behind. */
+/** The build this is cut from. Not published itself — it is what `just build-web` leaves behind. */
 export const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-app.wasm');
-export const BUILT_CORE = join(root, 'web', 'dist', 'leaftext-core.wasm');
 
 /** The page every address on the site is, the listing it reads, and the document it opens on. */
 export const FRONT_PAGE = 'index.html';
@@ -199,14 +192,12 @@ export function bakeDocsPage(page, paths) {
 }
 
 /**
- * What each published file *is*, against the table above of what they are called: the two modules' bytes, the stylesheets and the page script they hand over, the host files and runtimes as they sit in the tree, the version out of `Cargo.toml`, and the licenses document filled with that version.
+ * What each published file *is*, against the table above of what they are called: the app module's bytes, its stylesheet and page script, the host files and runtimes as they sit in the tree, the version out of `Cargo.toml`, and the licenses document filled with that version.
  *
  * The publish writes these to disk and the local preview answers them straight to a browser, so one table is what stops the preview drawing a page through the copy the last publish left beside it.
  */
-export function publishedAssets(app, appBytes, core, coreBytes) {
+export function publishedAssets(app, appBytes) {
   return new Map([
-    [MODULE_PATH, coreBytes],
-    [STYLES_PATH, core.styles()],
     // The repository rides beside the version because the public side has no `Cargo.toml` to read: this file is what a bake over there reads its own project address back out of.
     [VERSION_PATH, `${JSON.stringify({ version: appVersion(), repository: project().url }, null, 2)}\n`],
     [IMAGE_SIZES_PATH, `${JSON.stringify(imageSizes())}\n`],
@@ -236,8 +227,8 @@ export function siteProject({ bakeOnly = false } = {}) {
  *
  * Unbaked none of the pages is in it and the published files still are, so a browser gets the tree as it stands.
  */
-export async function previewAnswers(app, appBytes, core, coreBytes, { baked = true } = {}) {
-  const answers = new Map(publishedAssets(app, appBytes, core, coreBytes));
+export async function previewAnswers(app, appBytes, { baked = true } = {}) {
+  const answers = new Map(publishedAssets(app, appBytes));
   if (baked) {
     for (const [path, bytes] of await bakeSite(app, siteProject())) answers.set(path, bytes);
     answers.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsPaths()));
@@ -290,21 +281,17 @@ async function main() {
 
   // Which module this run is read through: the one just built, or the one already beside the pages. A repository with no source has only the second, and a deploy that quietly baked an empty page rather than saying which is missing is the blank front page nobody would think to look at.
   const appSource = bakeOnly ? join(root, APP_MODULE_PATH) : BUILT_MODULE;
-  const coreSource = bakeOnly ? null : BUILT_CORE;
-  for (const source of [appSource, coreSource].filter(Boolean)) {
-    if (!existsSync(source)) {
-      console.error(
-        bakeOnly
-          ? `${APP_MODULE_PATH} is not here, so there is no app to write the pages with. It is committed by the hand-over in the private repository; a deploy that cannot find it is one that ran before the hand-over.`
-          : 'the browser modules are not built — run: just build-web'
-      );
-      process.exit(1);
-    }
+  if (!existsSync(appSource)) {
+    console.error(
+      bakeOnly
+        ? `${APP_MODULE_PATH} is not here, so there is no app to write the pages with. It is committed by the hand-over in the private repository; a deploy that cannot find it is one that ran before the hand-over.`
+        : 'the browser module is not built — run: just build-web'
+    );
+    process.exit(1);
   }
 
   // A module that copied is not a module that answers, and a publish that replaced a working site with pages that cannot draw is worse than one that did not run. So it is asked before anything is written, and a failure here leaves the last published site standing.
   const app = await instantiateCore(appSource);
-  const core = coreSource ? await instantiateCore(coreSource) : null;
   const rendered = app.render('# Published\n\nA paragraph.\n', 'check.md');
   if (!rendered?.html.includes('<h1 id="published">')) fail('the built module did not render a document');
   const styles = app.styles();
@@ -328,7 +315,7 @@ async function main() {
   }
 
   // The bake above is a check, not an output, on `--write`: the hand-over fills its clone out of the commit and the deploy bakes its own copy.
-  const bytesFor = bakeOnly ? baked : publishedAssets(app, readFileSync(BUILT_MODULE), core, readFileSync(BUILT_CORE));
+  const bytesFor = bakeOnly ? baked : publishedAssets(app, readFileSync(BUILT_MODULE));
   for (const path of writtenPaths({ bakeOnly })) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), bytesFor.get(path));

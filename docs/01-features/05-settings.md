@@ -43,6 +43,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{config_dir}/growth-log.jsonl` | Every gain [your Grove](09-progress.md#see-xp-as-it-lands) has kept, one line each with the time it happened on your own clock, what you did and what it was worth — never a file name or a word of a document. It is trimmed back to its newest 20,000 lines when it passes 3 MB |
 | `{config_dir}/mcp.json` | Kept for outside tool servers, in the `mcpServers` shape. No part of Leaftext reads this file or starts a server yet — [outside tools are still coming](../05-compare.md#outside-tools-through-mcp). When they arrive it is read from this folder alone, never from a vault, a document or a link, and a server is switched off with `"disabled": true` rather than deleted |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
+| `{data_dir}/remote/<vault id>` | Local files for a [storage service vault](03-library.md#storage-services), including edits waiting to be sent |
 | `{data_dir}/webview2` | WebView2 data |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 | `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
