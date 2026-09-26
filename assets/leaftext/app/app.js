@@ -24384,7 +24384,7 @@ function chooseGroveNode(id) {
   drawGroveTreeCounted();
 }
 
-function groveTreeLinkPaths(places, rectOf, frame = {}) {
+function groveTreeLinkPaths(places, rectOf, frame = {}, routes = groveTreeRoutes(places, rectOf, frame)) {
   const trunk = frame.trunk;
   const grove = Number(leafProfile && leafProfile.grove) || 0;
   const paths = [];
@@ -24392,7 +24392,7 @@ function groveTreeLinkPaths(places, rectOf, frame = {}) {
     paths.push(`<path class="grove-tree-trunk" d="M ${trunk} ${frame.soil} L ${trunk} ${frame.crown}"></path>`);
     if (frame.sap < frame.soil) paths.push(`<path class="grove-tree-sap" d="M ${trunk} ${frame.soil} L ${trunk} ${frame.sap}"></path>`);
   }
-  for (const route of groveTreeRoutes(places, rectOf, frame)) {
+  for (const route of routes) {
     if (route.limb && trunk === undefined) continue;
     const lit = route.limb ? grove >= 2 + route.to.band * GROVE_BAND_LEVELS : groveRanks(route.need.id) >= route.need.rank;
     const from = route.limb ? '' : ` data-from="${escapeAttr(route.need.id)}"`;
@@ -24457,9 +24457,109 @@ function drawGroveTreeLinks(places = groveTreePlaces()) {
     frame.crown = bands[bands.length - 1].top;
     frame.sap = groveSapAt(bands, frame.soil);
   }
-  svg.setAttribute('width', String(gridBox.right));
-  svg.setAttribute('height', String(gridBox.bottom));
-  svg.innerHTML = groveTreeLinkPaths(places, (id) => rects.get(id), frame);
+  const routes = groveTreeRoutes(places, (id) => rects.get(id), frame);
+  const ports = tree.querySelector('.grove-tree-ports');
+  for (const layer of ports ? [svg, ports] : [svg]) {
+    layer.setAttribute('width', String(gridBox.right));
+    layer.setAttribute('height', String(gridBox.bottom));
+  }
+  svg.innerHTML = groveTreeLinkPaths(places, (id) => rects.get(id), frame, routes);
+  indexGroveTrace(tree, routes);
+}
+
+
+var groveTraceHovers = false;
+
+function indexGroveTrace(tree, routes) {
+  const trace = tree.groveTrace || (tree.groveTrace = { pointer: null, keyboard: null, active: null, marked: [] });
+  const nodes = new Map();
+  for (const el of tree.querySelectorAll('.grove-tree-node')) nodes.set(el.dataset.groveNode, el);
+  const paths = new Map();
+  for (const el of tree.querySelectorAll('.grove-tree-link, .grove-tree-limb')) paths.set(`${el.dataset.from || ''}/${el.dataset.to}`, el);
+  const touching = new Map();
+  for (const route of routes) {
+    const path = paths.get(route.key);
+    if (!path) continue;
+    const port = route.limb ? route.points[0] : route.fromPort;
+    for (const id of route.limb ? [route.to.node.id] : [route.need.id, route.to.node.id]) {
+      if (!touching.has(id)) touching.set(id, []);
+      touching.get(id).push({ path, other: route.limb ? null : route.need.id === id ? route.to.node.id : route.need.id, ends: [port, route.toPort] });
+    }
+  }
+  
+  const pointed = groveTraceHovers ? [...nodes.values()].find((el) => groveElementIs(el, ':hover')) : null;
+  trace.pointer = pointed ? pointed.dataset.groveNode : null;
+  const focused = document.activeElement && document.activeElement.dataset ? nodes.get(document.activeElement.dataset.groveNode) : null;
+  trace.keyboard = focused && groveElementIs(focused, ':focus-visible') ? focused.dataset.groveNode : null;
+  Object.assign(trace, { nodes, paths: [...paths.values()], touching, ports: tree.querySelector('.grove-tree-ports'), active: null });
+  applyGroveTrace(tree, true);
+}
+function groveElementIs(el, state) {
+  try {
+    return !!(el.matches && el.matches(state));
+  } catch (_) {
+    return false;
+  }
+}
+
+function applyGroveTrace(tree = groveSheetBody && groveSheetBody.querySelector('.grove-tree'), redrawn = false) {
+  const trace = tree && tree.groveTrace;
+  if (!trace || (groveClaim && !redrawn)) return;
+  const want = [trace.pointer, trace.keyboard].find((id) => id && trace.nodes.has(id)) || null;
+  if (want === trace.active && !redrawn) return;
+  for (const el of trace.marked) el.classList.remove('is-traced', 'is-connected');
+  trace.marked = [];
+  trace.active = want;
+  const links = want ? trace.touching.get(want) || [] : [];
+  const traced = new Set(links.map((link) => link.path));
+  for (const path of trace.paths) {
+    path.classList.toggle('is-traced', traced.has(path));
+    path.classList.toggle('is-quiet', !!want && !traced.has(path));
+  }
+  const mark = (id, name) => {
+    const el = trace.nodes.get(id);
+    const disc = el && el.querySelector('.grove-tree-disc');
+    for (const one of [el, disc]) if (one) {
+      one.classList.add(name);
+      trace.marked.push(one);
+    }
+  };
+  if (want) mark(want, 'is-traced');
+  for (const link of links) if (link.other && link.other !== want) mark(link.other, 'is-connected');
+  if (trace.ports) trace.ports.innerHTML = links.flatMap((link) => link.ends).map((at) => `<circle class="grove-tree-port" cx="${Math.round(at[0] * 1000) / 1000}" cy="${Math.round(at[1] * 1000) / 1000}" r="3"></circle>`).join('');
+}
+
+function groveTracedNode(target) {
+  const node = target && target.closest ? target.closest('[data-grove-node]') : null;
+  const tree = node && node.closest('.grove-tree');
+  return tree && tree.groveTrace ? { tree, id: node.dataset.groveNode, node } : null;
+}
+
+function groveEventHovers(event) {
+  return event.pointerType === 'mouse' || (event.pointerType === 'pen' && !event.buttons);
+}
+function onGroveTracePointer(event) {
+  groveTraceHovers = groveEventHovers(event);
+  if (!groveTraceHovers) return;
+  const tree = groveSheetBody.querySelector('.grove-tree');
+  if (!tree || !tree.groveTrace) return;
+  const over = groveTracedNode(event.type === 'pointerout' ? event.relatedTarget : event.target);
+  tree.groveTrace.pointer = over && over.tree === tree ? over.id : null;
+  applyGroveTrace(tree);
+}
+function onGroveTraceFocus(event) {
+  const tree = groveSheetBody.querySelector('.grove-tree');
+  if (!tree || !tree.groveTrace) return;
+  const now = groveTracedNode(event.type === 'focusout' ? event.relatedTarget : event.target);
+  tree.groveTrace.keyboard = now && now.tree === tree && groveElementIs(now.node, ':focus-visible') ? now.id : null;
+  applyGroveTrace(tree);
+}
+function clearGroveTrace() {
+  const tree = groveSheetBody && groveSheetBody.querySelector('.grove-tree');
+  if (!tree || !tree.groveTrace) return;
+  tree.groveTrace.pointer = null;
+  tree.groveTrace.keyboard = null;
+  applyGroveTrace(tree, true);
 }
 var groveTreeResize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => drawGroveTreeLinks());
 
@@ -24479,8 +24579,8 @@ function groveTree() {
   const places = groveTreePlaces();
   if (!places.length) return '';
   const card = groveTreeCard(places);
-  const said = `${formatCountLabel(places.length, 'reward', 'rewards')}, climbing by the Grove level that opens each`;
-  return `<div class="grove-tree-head"><span class="grove-tree-heading">Grow with seeds</span><span class="grove-tree-hint">${escapeText(said)}</span></div><div class="grove-tree-view"><div class="grove-tree leaf-scroll"><svg class="grove-tree-links" aria-hidden="true"></svg><div class="grove-tree-grid">${groveTreeGrid(places)}</div></div><div class="grove-tree-card leaf-scroll">${card}</div></div>`;
+  const said = 'At rest: dots join the trunk and color at their Grove band; solid lines join earlier rewards and color when the needed rank is owned. Point to trace.';
+  return `<div class="grove-tree-head"><span class="grove-tree-heading">Grow with seeds</span><span class="grove-tree-hint">${escapeText(said)}</span></div><div class="grove-tree-view"><div class="grove-tree leaf-scroll"><svg class="grove-tree-links" aria-hidden="true"></svg><div class="grove-tree-grid">${groveTreeGrid(places)}</div><svg class="grove-tree-ports" aria-hidden="true"></svg></div><div class="grove-tree-card leaf-scroll">${card}</div></div>`;
 }
 
 function settleGroveTree() {
@@ -24568,6 +24668,7 @@ function stopGroveClaim() {
   if (groveClaim.fill) groveClaim.fill.classList.remove('is-holding');
   if (groveClaim.layer) groveClaim.layer.remove();
   groveClaim = null;
+  applyGroveTrace();
 }
 
 function endGroveClaim() {
@@ -25363,6 +25464,7 @@ function closeGroveSheet(options) {
   if (!groveSheet || groveSheet.hidden || !groveSheet.classList.contains('open')) return;
   document.removeEventListener('keydown', onGroveKey);
   stopGroveClaim();
+  clearGroveTrace();
   if (groveTreeResize) groveTreeResize.disconnect();
   drawGroveAllXpOff();
   stopGroveRisers();
@@ -25396,6 +25498,8 @@ if (groveSheet && libraryProfile) {
   groveSheet.addEventListener('pointerdown', onGroveClaimPointerDown);
   groveSheet.addEventListener('keydown', onGroveClaimKey);
   groveSheet.addEventListener('keyup', onGroveClaimKey);
+  for (const type of ['pointerover', 'pointerout']) groveSheet.addEventListener(type, onGroveTracePointer);
+  for (const type of ['focusin', 'focusout']) groveSheet.addEventListener(type, onGroveTraceFocus);
   if (groveBack) groveBack.addEventListener('click', () => leaveGroveAllXp());
   if (groveTabs) groveTabs.addEventListener('keydown', onGroveTabKey);
   drawGrovePill();

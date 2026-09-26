@@ -14442,6 +14442,29 @@ p.front-more {
 .grove-tree-limb.is-lit {
   stroke: var(--lt-primary-ink);
 }
+
+.grove-tree-link.is-traced,
+.grove-tree-limb.is-traced {
+  stroke: var(--lt-primary-ink);
+}
+.grove-tree-link.is-quiet,
+.grove-tree-limb.is-quiet {
+  opacity: var(--lt-opacity-35);
+}
+
+.grove-tree-ports {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.grove-tree-port {
+  fill: var(--lt-background);
+  stroke: var(--lt-primary-ink);
+  stroke-width: var(--lt-stroke-2);
+  pointer-events: none;
+}
 .grove-tree-trunk,
 .grove-tree-sap {
   fill: none;
@@ -14551,6 +14574,14 @@ p.front-more {
 }
 .grove-tree-disc.is-locked {
   background: var(--lt-surface);
+}
+.grove-tree-disc.is-traced {
+  outline: var(--lt-stroke-2) solid var(--lt-primary-ink);
+  outline-offset: var(--lt-space-4);
+}
+.grove-tree-disc.is-connected {
+  outline: var(--lt-stroke-1) solid var(--lt-primary-ink);
+  outline-offset: var(--lt-space-2);
 }
 .grove-tree-disc.is-chosen {
   outline: var(--lt-stroke-2) solid var(--lt-accent);
