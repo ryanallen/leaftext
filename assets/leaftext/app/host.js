@@ -204,6 +204,7 @@ export const COMMANDS = {
   startupReady: [REFUSED, 'a browser tab has no native Leaftext window to grow out of the small one a launch puts up, and no startup card in the page to take off. The word is still sent, because the page says it once whatever is under it and never waits for the answer'],
   windowDrag: [REFUSED, 'a browser tab has no window frame to drag'],
   windowMinimize: [REFUSED, 'a browser tab has no window to minimize'],
+  windowActive: [REFUSED, 'a browser has no native window'],
   windowToggleMaximize: [REFUSED, 'a browser tab has no window to maximize'],
   windowToggleFullscreen: [REFUSED, 'a browser tab has no window to fill, and the reader puts their own browser into full screen'],
   windowClose: [REFUSED, 'a browser tab is closed by the reader, not by the page'],

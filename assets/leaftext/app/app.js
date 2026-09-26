@@ -5509,7 +5509,12 @@ window.leafSetWindowMaximized = (maximized) => {
 };
 
 window.leafSetWindowActive = (active) => {
+  active = !!active;
+  if (document.body.classList.contains('is-window-inactive') === !active) return;
   document.body.classList.toggle('is-window-inactive', !active);
+  themeWindowActivityChanged(active);
+  updaterWindowActivityChanged(active);
+  if (leafWindowFocusIsNative()) send({ command: 'windowActive', active });
 };
 
 const leafWindowFocusIsNative = () => typeof window.__leafHostAnswers !== 'function';
@@ -11467,7 +11472,12 @@ renderUpdateButton();
 
 checkForUpdate(true);
 
-window.setInterval(() => checkForUpdate(), 30 * 60 * 1000);
+function updaterWindowActivityChanged(active) {
+  if (active) checkForUpdate();
+}
+window.setInterval(() => {
+  if (!document.body.classList.contains('is-window-inactive')) checkForUpdate();
+}, 30 * 60 * 1000);
 initializeMinimapState();
 const READER_SCROLL_SETTLE_MS = 120;
 
@@ -11604,6 +11614,7 @@ function paintThemeRandomFrom(card) {
 }
 function startThemeRandomCycle() {
   stopThemeRandomCycle();
+  if (document.body.classList.contains('is-window-inactive')) return;
   const cards = themeFamilyCards();
   if (cards.length === 0) return;
   themeRandomIndex = 0;
@@ -11618,6 +11629,10 @@ function stopThemeRandomCycle() {
     clearInterval(themeRandomTimer);
     themeRandomTimer = 0;
   }
+}
+function themeWindowActivityChanged(active) {
+  if (active && !themeSheet.hidden && themeSheet.classList.contains('open')) startThemeRandomCycle();
+  else stopThemeRandomCycle();
 }
 
 if (themeSheetClose) {
@@ -20249,6 +20264,30 @@ function tableBodyRowAt(target) {
 }
 
 
+function tableRowCrossing(event) {
+  const row = tableRowHandleRow;
+  const handle = tableRowHandle;
+  const table = row && row.closest('table');
+  const lane = table && table.closest('.table-lane');
+  if (!row || !row.isConnected || !table || !table.isConnected || !handle || !handle.isConnected || !lane || !lane.isConnected ||
+      handle.parentElement !== lane || table.dataset.blockKind !== 'table' || !readerEditingAllowed()) return false;
+  const target = event.target;
+  if (handle.contains(target)) return true;
+  const outline = (table.__tableSizingOutlines || []).find((edge) => edge.dataset.tableEdge === 'left');
+  if (target !== lane && target !== outline) return false;
+  if (outline && (!outline.isConnected || outline.__tableSizingTable !== table)) return false;
+  const rowBox = row.getBoundingClientRect();
+  const handleBox = handle.getBoundingClientRect();
+  const edgeBox = (outline || table).getBoundingClientRect();
+  const right = outline ? edgeBox.right : edgeBox.left;
+  if (![rowBox, handleBox, edgeBox].every((box) =>
+      [box.top, box.bottom, box.left, box.right].every(Number.isFinite) && box.bottom > box.top && box.right > box.left) ||
+      ![event.clientX, event.clientY].every(Number.isFinite) || right < handleBox.right) return false;
+  return event.clientX >= handleBox.left && event.clientX <= right &&
+    event.clientY >= rowBox.top && event.clientY <= rowBox.bottom;
+}
+
+
 function bindTableControls() {
   const body = app.querySelector('.document-body');
   hideTableRowHandle();
@@ -20264,8 +20303,7 @@ function bindTableControls() {
     if (tableRowDragging || tableColumnDragging) return;
     const row = tableBodyRowAt(event.target);
     if (!row) {
-      
-      if (!(event.target && event.target.closest && event.target.closest('.table-row-handle'))) hideTableRowHandle();
+      if (!tableRowCrossing(event)) hideTableRowHandle();
       return;
     }
     if (row !== tableRowHandleRow) aimTableRowHandle(row);
@@ -20285,6 +20323,8 @@ function bindTableControls() {
       return;
     }
     if (!event.target.closest('.table-row-grip') || !tableRowHandleRow) return;
+    if (!tableRowHandleRow.isConnected || !tableTakesControls(tableRowHandleRow.closest('table')) ||
+        !tableRowHandle || !tableRowHandle.contains(event.target)) return hideTableRowHandle();
     event.preventDefault();
     tableRowDragging = { row: tableRowHandleRow, table: tableRowHandleRow.closest('table'), x: event.clientX, y: event.clientY, lift: null };
   });
@@ -20297,7 +20337,8 @@ function bindTableControls() {
       settleTableCarry(column);
       const over = event.target && event.target.closest ? event.target.closest('th, td') : null;
       
-      if (!over || over.closest('table') !== column.table) return;
+      const inside = event.target && event.target.closest ? event.target.closest('table') : null;
+      if (inside !== column.table || (!over && landing < 0)) return;
       const to = landing >= 0 ? landing : tableColumnOf(over);
       if (to !== column.column) moveTableColumn(column.table, column.column, to - column.column);
       return;
@@ -23577,8 +23618,6 @@ var GROVE_BAND_LEVELS = 6;
 
 var GROVE_TREE_PLACES = 8;
 var GROVE_TREE_NEAREST = [3, 4, 2, 5, 1, 6, 0, 7];
-
-var GROVE_STEM_GAP = 16;
 function groveBandOf(level) {
   return Math.max(0, Math.min(GROVE_BANDS - 1, Math.floor((Number(level) - 2) / GROVE_BAND_LEVELS)));
 }
@@ -23625,7 +23664,214 @@ function groveTreeLayout(nodes) {
 }
 
 function groveTreeColumn(slot) {
-  return slot < GROVE_TREE_PLACES / 2 ? slot + 1 : slot + 2;
+  return slot < GROVE_TREE_PLACES / 2 ? slot * 2 + 1 : slot * 2 + 3;
+}
+
+function groveTreeReservations(places, width, spacing = 6, clearance = 4) {
+  const byId = new Map(places.map((place) => [place.node.id, place]));
+  const edges = [];
+  const lanes = Array.from({ length: places.rows }, () => []);
+  const gaps = Array.from({ length: 8 }, () => []);
+  for (const to of places) {
+    const needs = (to.node.requires || []).map(groveRequirement).filter((need) => byId.has(need.id));
+    for (const need of needs.length ? needs : [{ id: '', rank: 0 }]) {
+      const from = byId.get(need.id);
+      const column = from && (groveTreeColumn(from.slot) - 1) / 2;
+      const side = from && (to.slot > from.slot || (to.slot === from.slot && from.slot < 4) ? 1 : -1);
+      const gap = from ? Math.max(from.slot < 4 ? 0 : 4, Math.min(from.slot < 4 ? 3 : 7, column + (side < 0 ? -1 : 0))) : -1;
+      const edge = { from, to, need, key: `${need.id}/${to.node.id}`, gap, track: 0 };
+      edges.push(edge);
+      lanes[to.row].push({ edge, end: 'to' });
+      if (from) {
+        lanes[from.row].push({ edge, end: 'from' });
+        gaps[gap].push(edge);
+      }
+    }
+  }
+  const counts = gaps.map((list) => {
+    const ends = [];
+    list.sort((a, b) => a.from.row - b.from.row || a.to.row - b.to.row || a.key.localeCompare(b.key));
+    for (const edge of list) {
+      let track = ends.findIndex((end) => end < edge.from.row);
+      if (track < 0) track = ends.length;
+      ends[track] = edge.to.row;
+      edge.track = track;
+    }
+    return ends.length;
+  });
+  
+  const inset = clearance + 7;
+  const widths = () => counts.map((count) => count ? (count - 1) * spacing + inset * 2 : clearance * 2);
+  if (76 + widths().reduce((sum, gap) => sum + gap, 0) >= width) spacing = 3;
+  const gapWidths = widths();
+  for (const list of lanes) {
+    list.sort((a, b) => a.edge.gap - b.edge.gap || a.edge.track - b.edge.track || a.edge.key.localeCompare(b.edge.key) || a.end.localeCompare(b.end));
+    list.forEach((lead, at) => { lead.edge[`${lead.end}Lane`] = at; });
+  }
+  const rowGaps = lanes.map((list, row) => (list.length + 1) * spacing + clearance * 2 + 24 + ((places.bands || []).some((band) => row >= band.row && row < band.row + band.span - 1) ? 24 : 0));
+  return { edges, counts, gapWidths, rowGaps, spacing, clearance, inset, signature: `${width}/${spacing}/${counts}/${rowGaps}` };
+}
+function groveTreeFrame(reservation, width) {
+  const rewardWidth = Math.max(0, (width - 76 - reservation.gapWidths.reduce((sum, gap) => sum + gap, 0)) / 8);
+  const columns = [];
+  const gapBounds = [];
+  let left = 0;
+  for (let at = 0; at < 9; at += 1) {
+    const size = at === 4 ? 76 : rewardWidth;
+    columns.push([left, left + size]);
+    left += size;
+    if (at < 8) {
+      gapBounds.push([left, left + reservation.gapWidths[at]]);
+      left += reservation.gapWidths[at];
+    }
+  }
+  return { columns, gapBounds, trunk: (columns[4][0] + columns[4][1]) / 2, width, reservation };
+}
+function allocateGroveTreeGrid(tree, grid, places) {
+  const width = grid.getBoundingClientRect().width;
+  if (tree.groveReservation && tree.groveReservation.width === width) return tree.groveReservation.frame;
+  const style = typeof getComputedStyle === 'function' ? getComputedStyle(grid) : null;
+  const token = (name, fallback) => parseFloat(style && typeof style.getPropertyValue === 'function' && style.getPropertyValue(name)) || fallback;
+  const clearance = token('--lt-space-4', 4);
+  const reservation = groveTreeReservations(places, width, clearance + token('--lt-stroke-2', 2), clearance);
+  const columns = [];
+  for (let at = 0; at < 9; at += 1) {
+    columns.push(at === 4 ? '76px' : 'minmax(0, 1fr)');
+    if (at < 8) columns.push(`${reservation.gapWidths[at]}px`);
+  }
+  grid.style.gridTemplateColumns = columns.join(' ');
+  grid.style.gridTemplateRows = [...reservation.rowGaps].reverse().flatMap((gap) => [`${gap}px`, 'max-content']).concat(['var(--lt-space-24)', '20px']).join(' ');
+  const frame = groveTreeFrame(reservation, width);
+  tree.groveReservation = { width, frame };
+  return frame;
+}
+
+function groveTreeRoutes(places, rectOf, frame = {}) {
+  const reservation = frame.reservation || groveTreeReservations(places, frame.width || 1400);
+  const { spacing, clearance } = reservation;
+  const rows = new Map();
+  const rects = new Map();
+  const ports = new Map();
+  const routes = [];
+  for (const place of places) {
+    const rect = rectOf(place.node.id);
+    if (!rect) continue;
+    const disc = rect.disc || { left: rect.left + (rect.width - Math.min(42, rect.width)) / 2, top: rect.top, width: Math.min(42, rect.width), height: Math.min(42, rect.width) };
+    rects.set(place.node.id, { ...rect, disc });
+    rows.set(place.row, Math.min(rows.get(place.row) ?? Infinity, disc.top));
+    ports.set(place.node.id, []);
+  }
+  for (const edge of reservation.edges) {
+    if (!rects.has(edge.to.node.id) || (edge.from && !rects.has(edge.from.node.id))) continue;
+    const route = { ...edge, points: [], cuts: [], limb: !edge.from };
+    routes.push(route);
+    ports.get(edge.to.node.id).push({ route, end: 'to', x: edge.from ? rects.get(edge.from.node.id).disc.left : frame.trunk });
+    if (edge.from) ports.get(edge.from.node.id).push({ route, end: 'from', x: rects.get(edge.to.node.id).disc.left });
+  }
+  for (const [id, list] of ports) {
+    const { disc } = rects.get(id);
+    list.sort((a, b) => a.x - b.x || a.route.key.localeCompare(b.route.key) || a.end.localeCompare(b.end));
+    list.forEach((port, at) => {
+      const angle = Math.PI * (at + 1) / (list.length + 1);
+      port.route[`${port.end}Port`] = [disc.left + disc.width / 2 - Math.cos(angle) * disc.width / 2, disc.top + disc.height / 2 - Math.sin(angle) * disc.height / 2];
+    });
+  }
+  const obstacles = [...(frame.obstacles || [])].sort((a, b) => b.bottom - a.bottom);
+  const rowLanes = new Map();
+  for (const edge of reservation.edges) {
+    for (const end of edge.from ? ['from', 'to'] : ['to']) {
+      const row = edge[end].row;
+      if (!rowLanes.has(row)) rowLanes.set(row, []);
+      rowLanes.get(row).push(edge[`${end}Lane`]);
+    }
+  }
+  for (const [row, lanes] of rowLanes) {
+    const ys = [];
+    let y = rows.get(row) - clearance * 3 - spacing;
+    for (let at = 0; at <= Math.max(...lanes); at += 1) {
+      for (const obstacle of obstacles) if (y > obstacle.top - clearance && y < obstacle.bottom + clearance) y = obstacle.top - clearance - spacing;
+      ys.push(y);
+      y -= spacing;
+    }
+    rowLanes.set(row, ys);
+  }
+  for (const route of routes) {
+    const to = route.toPort;
+    const toY = rowLanes.get(route.to.row)[route.toLane];
+    if (route.limb) route.points = [[frame.trunk, toY], [to[0], toY], to];
+    else {
+      const from = route.fromPort;
+      const fromY = rowLanes.get(route.from.row)[route.fromLane];
+      let x;
+      if (frame.gapBounds) {
+        const bounds = frame.gapBounds[route.gap];
+        x = bounds[0] + reservation.inset + spacing * route.track;
+      } else {
+        const rect = rects.get(route.from.node.id);
+        const right = route.gap === (groveTreeColumn(route.from.slot) - 1) / 2;
+        x = right ? rect.right + clearance + spacing * (route.track + 1) : rect.left - clearance - spacing * (route.track + 1);
+      }
+      route.points = [from, [from[0], fromY], [x, fromY], [x, toY], [to[0], toY], to];
+    }
+    route.cuts = route.points.slice(1).map(() => []);
+  }
+  const horizontal = [];
+  const vertical = [];
+  for (const route of routes) route.points.slice(1).forEach((b, at) => {
+    const a = route.points[at];
+    const flat = a[1] === b[1];
+    const axis = flat ? 0 : 1;
+    const segment = { route, at, a, b, low: Math.min(a[axis], b[axis]), high: Math.max(a[axis], b[axis]), line: a[1 - axis] };
+    (flat ? horizontal : vertical).push(segment);
+  });
+  for (const h of horizontal) for (const v of vertical) {
+    if (v.line <= h.low || v.line >= h.high || h.line <= v.low || h.line >= v.high || h.route === v.route) continue;
+    const x = v.line;
+    const y = h.line;
+    const lower = h.route.limb !== v.route.limb ? (h.route.limb ? h : v) : (h.route.key < v.route.key ? v : h);
+    const distance = Math.abs(x - lower.a[0]) + Math.abs(y - lower.a[1]);
+    const passingWidth = (lower === h ? v.route : h.route).limb ? 1 : 2;
+    lower.route.cuts[lower.at].push([distance - clearance - passingWidth / 2, distance + clearance + passingWidth / 2]);
+  }
+  return routes;
+}
+
+function groveTreePathData(route, radius = 2) {
+  const points = route.points;
+  const lengths = points.slice(1).map((b, at) => Math.hypot(b[0] - points[at][0], b[1] - points[at][1]));
+  const offsets = [0];
+  for (const length of lengths) offsets.push(offsets[offsets.length - 1] + length);
+  const breaks = route.cuts.flatMap((cuts, at) => cuts.map(([from, to]) => [offsets[at] + from, offsets[at] + to]));
+  const rounding = offsets.map((offset, at) => at && at < points.length - 1 && !breaks.some(([from, to]) => from < offset + radius && to > offset - radius) ? Math.min(radius, lengths[at - 1] / 2, lengths[at] / 2) : 0);
+  const moved = (a, b, distance) => {
+    const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    return length ? [a[0] + (b[0] - a[0]) * distance / length, a[1] + (b[1] - a[1]) * distance / length] : a;
+  };
+  const word = (point) => `${Math.round(point[0] * 1000) / 1000} ${Math.round(point[1] * 1000) / 1000}`;
+  let d = `M ${word(points[0])}`;
+  for (let at = 0; at < points.length - 1; at += 1) {
+    const a = points[at];
+    const b = points[at + 1];
+    const length = lengths[at];
+    const start = rounding[at];
+    const stop = length - rounding[at + 1];
+    let held = start;
+    const cuts = breaks.filter(([from, to]) => to > offsets[at] && from < offsets[at + 1]).map(([from, to]) => [from - offsets[at], to - offsets[at]]).sort((a, b) => a[0] - b[0]);
+    for (const [from, to] of cuts) {
+      if (to <= held || from >= stop) continue;
+      const end = Math.max(held, from);
+      if (end > held) d += ` L ${word(moved(a, b, end))}`;
+      held = Math.min(stop, Math.max(held, to));
+      d += ` M ${word(moved(a, b, held))}`;
+    }
+    d += ` L ${word(moved(a, b, stop))}`;
+    if (rounding[at + 1]) {
+      const next = points[at + 2];
+      const reach = rounding[at + 1];
+      d += ` Q ${word(b)} ${word(moved(b, next, reach))}`;
+    }
+  }
+  return d;
 }
 function groveJoinNames(names) {
   if (names.length < 2) return names.join('');
@@ -23722,7 +23968,7 @@ function groveTreeNode(place, rows) {
   const pips = node.limit > 1 ? `<span class="grove-tree-ranks grove-tree-node-ranks" aria-hidden="true">${Array.from({ length: node.limit }, (_, at) => `<span class="grove-tree-rank${at < said.owned ? ' is-filled' : ''}"></span>`).join('')}</span>` : '';
   const grow = said.state === 'available' ? ` data-grove-grow="${escapeAttr(node.id)}" data-grove-grow-rank="${said.owned}"` : '';
   const ring = said.state === 'available' ? '<svg class="grove-tree-ring" viewBox="0 0 42 42" aria-hidden="true"><circle class="grove-tree-ring-circle" cx="21" cy="21" r="19" pathLength="1"></circle></svg>' : '';
-  return `<button type="button" class="grove-tree-node ${state}" data-grove-node="${escapeAttr(node.id)}"${grow} aria-pressed="${chosen}" aria-label="${escapeAttr(groveNodeName(node, said))}" style="--grove-column:${groveTreeColumn(place.slot)};--grove-row:${rows - place.row}"><span class="grove-tree-disc ${state}" aria-hidden="true">${escapeText(node.name.charAt(0))}${lock}${ring}</span><span class="grove-tree-node-label" aria-hidden="true">${escapeText(node.name)}</span>${under ? `<span class="grove-tree-node-under" aria-hidden="true">${escapeText(under)}</span>` : ''}${pips}</button>`;
+  return `<button type="button" class="grove-tree-node ${state}" data-grove-node="${escapeAttr(node.id)}"${grow} aria-pressed="${chosen}" aria-label="${escapeAttr(groveNodeName(node, said))}" style="--grove-column:${groveTreeColumn(place.slot)};--grove-row:${2 * (rows - place.row)}"><span class="grove-tree-disc ${state}" aria-hidden="true">${escapeText(node.name.charAt(0))}${lock}${ring}</span><span class="grove-tree-node-label" aria-hidden="true">${escapeText(node.name)}</span>${under ? `<span class="grove-tree-node-under" aria-hidden="true">${escapeText(under)}</span>` : ''}${pips}</button>`;
 }
 
 function groveChosenPlace(places) {
@@ -23743,42 +23989,18 @@ function chooseGroveNode(id) {
 }
 
 function groveTreeLinkPaths(places, rectOf, frame = {}) {
-  const gap = frame.gap || GROVE_STEM_GAP;
-  const rise = (frame.rowGap || GROVE_STEM_GAP) / 2;
   const trunk = frame.trunk;
-  const byId = new Map(places.map((place) => [place.node.id, place]));
   const grove = Number(leafProfile && leafProfile.grove) || 0;
   const paths = [];
   if (trunk !== undefined) {
     paths.push(`<path class="grove-tree-trunk" d="M ${trunk} ${frame.soil} L ${trunk} ${frame.crown}"></path>`);
     if (frame.sap < frame.soil) paths.push(`<path class="grove-tree-sap" d="M ${trunk} ${frame.soil} L ${trunk} ${frame.sap}"></path>`);
   }
-  for (const place of places) {
-    const to = rectOf(place.node.id);
-    if (!to) continue;
-    const x2 = to.left + to.width / 2;
-    const y2 = to.top + to.height;
-    const needs = (place.node.requires || []).map(groveRequirement).filter((need) => byId.has(need.id));
-    if (!needs.length && trunk !== undefined) {
-      const lit = grove >= 2 + place.band * GROVE_BAND_LEVELS;
-      paths.push(`<path class="grove-tree-limb${lit ? ' is-lit' : ''}" data-to="${escapeAttr(place.node.id)}" d="M ${trunk} ${y2 + rise} Q ${x2} ${y2 + rise}, ${x2} ${y2}"></path>`);
-    }
-    for (const need of needs) {
-      const from = rectOf(need.id);
-      if (!from) continue;
-      const x1 = from.left + from.width / 2;
-      const y1 = from.top;
-      let d;
-      if (place.row - byId.get(need.id).row > 1) {
-        const side = x2 >= x1 ? from.right + gap / 2 : from.left - gap / 2;
-        d = `M ${x1} ${y1} Q ${x1} ${y1 - rise}, ${side} ${y1 - rise} L ${side} ${y2 + rise} Q ${x2} ${y2 + rise}, ${x2} ${y2}`;
-      } else {
-        const mid = (y1 + y2) / 2;
-        d = `M ${x1} ${y1} C ${x1} ${mid}, ${x2} ${mid}, ${x2} ${y2}`;
-      }
-      const lit = groveRanks(need.id) >= need.rank;
-      paths.push(`<path class="grove-tree-link${lit ? ' is-lit' : ''}" data-from="${escapeAttr(need.id)}" data-to="${escapeAttr(place.node.id)}" d="${d}"></path>`);
-    }
+  for (const route of groveTreeRoutes(places, rectOf, frame)) {
+    if (route.limb && trunk === undefined) continue;
+    const lit = route.limb ? grove >= 2 + route.to.band * GROVE_BAND_LEVELS : groveRanks(route.need.id) >= route.need.rank;
+    const from = route.limb ? '' : ` data-from="${escapeAttr(route.need.id)}"`;
+    paths.push(`<path class="grove-tree-${route.limb ? 'limb' : 'link'}${lit ? ' is-lit' : ''}"${from} data-to="${escapeAttr(route.to.node.id)}" d="${groveTreePathData(route)}"></path>`);
   }
   return paths.join('');
 }
@@ -23802,6 +24024,9 @@ function drawGroveTreeLinks(places = groveTreePlaces()) {
   const tree = groveSheetBody.querySelector('.grove-tree');
   const svg = tree && tree.querySelector('.grove-tree-links');
   if (!svg) return;
+  const grid = tree.querySelector('.grove-tree-grid');
+  if (!grid) return;
+  const allocated = allocateGroveTreeGrid(tree, grid, places);
   const box = tree.getBoundingClientRect();
   const local = (rect) => {
     const left = rect.left - box.left + tree.scrollLeft;
@@ -23809,20 +24034,35 @@ function drawGroveTreeLinks(places = groveTreePlaces()) {
     return { left, top, right: left + rect.width, bottom: top + rect.height, width: rect.width, height: rect.height };
   };
   const rects = new Map();
-  for (const el of tree.querySelectorAll('.grove-tree-node')) rects.set(el.dataset.groveNode, local(el.getBoundingClientRect()));
+  const obstacles = [];
+  for (const el of tree.querySelectorAll('.grove-tree-node')) {
+    const id = el.dataset.groveNode;
+    const rect = local(el.getBoundingClientRect());
+    const disc = el.querySelector('.grove-tree-disc');
+    if (disc) {
+      rect.disc = local(disc.getBoundingClientRect());
+      obstacles.push({ ...rect.disc, left: rect.disc.left - 6, top: rect.disc.top - 6, right: rect.disc.right + 6, bottom: rect.disc.bottom + 6 });
+    }
+    rects.set(id, rect);
+    for (const child of el.querySelectorAll('.grove-tree-node-label, .grove-tree-node-under, .grove-tree-node-ranks, .grove-tree-disc-lock')) {
+      const rect = local(child.getBoundingClientRect());
+      if (rect.width && rect.height) obstacles.push(rect);
+    }
+  }
   const bands = [...tree.querySelectorAll('.grove-tree-band')].map((el) => local(el.getBoundingClientRect()));
+  for (const el of tree.querySelectorAll('.grove-tree-band-words')) obstacles.push(local(el.getBoundingClientRect()));
   const soil = tree.querySelector('.grove-tree-soil');
-  const grid = tree.querySelector('.grove-tree-grid');
-  const style = grid && typeof getComputedStyle === 'function' ? getComputedStyle(grid) : null;
-  const frame = { gap: parseFloat(style && style.columnGap) || GROVE_STEM_GAP, rowGap: parseFloat(style && style.rowGap) || GROVE_STEM_GAP };
+  const gridBox = local(grid.getBoundingClientRect());
+  const offset = gridBox.left;
+  const frame = { ...allocated, obstacles, gapBounds: allocated.gapBounds.map((bounds) => bounds.map((x) => x + offset)) };
   if (bands.length && soil) {
     frame.trunk = bands[0].left + bands[0].width / 2;
     frame.soil = local(soil.getBoundingClientRect()).top;
     frame.crown = bands[bands.length - 1].top;
     frame.sap = groveSapAt(bands, frame.soil);
   }
-  svg.setAttribute('width', String(tree.scrollWidth || 0));
-  svg.setAttribute('height', String(tree.scrollHeight || 0));
+  svg.setAttribute('width', String(gridBox.right));
+  svg.setAttribute('height', String(gridBox.bottom));
   svg.innerHTML = groveTreeLinkPaths(places, (id) => rects.get(id), frame);
 }
 var groveTreeResize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => drawGroveTreeLinks());
@@ -23832,8 +24072,8 @@ function groveTreeGrid(places) {
   const grove = Number(leafProfile && leafProfile.grove) || 0;
   const rows = places.rows;
   const current = grove >= 2 ? groveBandOf(grove) : -1;
-  const bands = places.bands.map((band, at) => `<span class="grove-tree-band" data-grove-band="${at}" style="--grove-row:${rows - band.row - band.span + 1};--grove-span:${band.span}"><span class="grove-tree-band-words${at === current ? ' is-current' : ''}">${escapeText(groveBandWords(at, ceiling))}</span></span>`).join('');
-  return `${bands}${places.map((place) => groveTreeNode(place, rows)).join('')}<span class="grove-tree-soil" style="--grove-row:${rows + 1}"></span>`;
+  const bands = places.bands.map((band, at) => `<span class="grove-tree-band" data-grove-band="${at}" style="--grove-row:${2 * (rows - band.row - band.span + 1)};--grove-span:${2 * band.span - 1}"><span class="grove-tree-band-words${at === current ? ' is-current' : ''}">${escapeText(groveBandWords(at, ceiling))}</span></span>`).join('');
+  return `${bands}${places.map((place) => groveTreeNode(place, rows)).join('')}<span class="grove-tree-soil" style="--grove-row:${2 * rows + 2}"></span>`;
 }
 function groveTreeCard(places) {
   const chosen = groveChosenPlace(places);
@@ -31218,11 +31458,23 @@ function addTableGrips(table) {
   });
   placeTableOutlineGrips(table);
   if (typeof ResizeObserver !== 'undefined') {
+    let frame = 0;
+    let geometry = tableSizingAvailableGeometry(table);
     const observer = new ResizeObserver(inThisColumn(() => {
-      if (!table.isConnected) { observer.disconnect(); return; }
-      placeTableOutlineGrips(table);
+      if (!table.isConnected) { observer.disconnect(); if (frame) cancelAnimationFrame(frame); return; }
+      if (frame) return;
+      frame = columnFrame(() => {
+        frame = 0;
+        if (!table.isConnected) { observer.disconnect(); return; }
+        const next = tableSizingAvailableGeometry(table);
+        if (next !== geometry && table.__tableSizingPlacement && !(tableSizeDrag && tableSizeDrag.table === table)) refitTableSizingPlacement(table);
+        geometry = next;
+        placeTableOutlineGrips(table);
+      });
     }));
     observer.observe(table);
+    const container = tableSizingContainer(table);
+    if (container) observer.observe(container);
     table.__tableSizingObserver = observer;
   }
 }
@@ -31266,6 +31518,22 @@ function tableRowContentHeight(row) {
 function tableSizingContainer(table) {
   const lane = table.parentElement;
   return lane && lane.classList.contains('table-lane') ? lane.parentElement : lane;
+}
+function tableSizingAvailableGeometry(table) {
+  const container = tableSizingContainer(table);
+  return (container ? container.getBoundingClientRect().width : 0) + '/' + getComputedStyle(table).fontSize;
+}
+function refitTableSizingPlacement(table) {
+  const held = table.__tableSizingPlacement;
+  const container = tableSizingContainer(table);
+  if (!held || !container) return;
+  
+  table.style.width = '';
+  table.style.maxWidth = '';
+  if (table.parentElement.classList.contains('table-lane')) container.style.gridTemplateColumns = 'minmax(0, max-content)';
+  held.width = Math.max(TABLE_COLUMN_FLOOR, table.getBoundingClientRect().width, table.scrollWidth || 0);
+  applyTableSizingPlacement(table);
+  invalidateMinimapPreview();
 }
 function applyTableSizingPlacement(table) {
   const held = table.__tableSizingPlacement;
@@ -31326,7 +31594,6 @@ function applyPendingTableSize() {
     applyTableSizingPlacement(drag.table);
     drag.table.scrollLeft = drag.scrollLeft;
     const rectangle = drag.table.getBoundingClientRect();
-    if (drag.kind === 'column') held.width = rectangle.width;
     const drift = drag.edge === 'top' ? rectangle.bottom - drag.rectangle.bottom : rectangle.top - drag.rectangle.top;
     setReaderScrollTop(drag.reader.scrollTop + drift);
     recordReaderScrollPosition();
@@ -31385,7 +31652,7 @@ document.addEventListener('pointerdown', (event) => {
     if (aimed.edge === 'right' || aimed.edge === 'left') floor = Math.max(floor, base - rectangle.width + TABLE_COLUMN_FLOOR);
     const turn = (aimed.table.__tableSizingTurn || 0) + 1;
     aimed.table.__tableSizingTurn = turn;
-    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes: row ? aimed.parts.map((part) => part.style.height ? parseFloat(part.style.height) : null) : tableSizingWidths(aimed.parts), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
+    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes: row ? aimed.parts.map((part) => part.style.height ? parseFloat(part.style.height) : null) : tableSizingWidths(aimed.parts), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement, width: rectangle.width }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
     leafHoldPointer(aimed.grip, event.pointerId);
     document.body.classList.add('table-resizing');
     document.body.classList.toggle('is-row', row);

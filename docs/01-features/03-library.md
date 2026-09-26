@@ -476,6 +476,8 @@ A vault sitting *inside* someone else's repository is told so too. Creating a re
 
 ## Live updates
 
+While [another app is in front](02-navigation.md#when-another-app-is-in-front), the documents on screen and the folder list keep updating. The vault's changed-file count, search index and map catch up once when you return; any unsaved edits stay in place.
+
 The pane keeps up with changes on disk, so a file you just created shows up without a refresh.
 
 - The same file watcher that drives live reload watches the active vault **recursively**, plus the open document's folder when it sits outside the vault. With no vault, only the folder you are browsing is watched, and not recursively — browsing a drive root should not subscribe to the whole drive.
