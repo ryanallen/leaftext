@@ -67,25 +67,20 @@ try {
     imageSizes = await (await fetched(listing.imageSizes || 'image-sizes.json')).json();
   } catch {}
   const documents = listing.documents || [];
-  const glossary = documents.find((entry) => /(^|\/)glossary\.md$/i.test(entry.path));
   // Only leaftext.com's listing names one; every other site draws its landing as the app draws any document.
   const frontPage = typeof listing.frontPage === 'string' && listing.frontPage ? await frontPageFor(listing.frontPage) : null;
   const leaf = await startLeaftext({
     documents,
-    glossary: glossary ? glossary.path : '',
     name: listing.name || '',
     imageSizes,
     frontPage,
     fetch: fetched,
-    // The file's own bytes, not a decode of them: a Word, Excel, PowerPoint or OpenDocument file is a zip, and a page reading one as text draws it as a parse error rather than as the document it is. The glossary read below stays text, because that is a file the host reads for its words rather than one it draws.
+    // Documents keep their bytes; the host decodes only a glossary it reads for terms.
     read: async (path) => new Uint8Array(await (await fetched(at(path))).arrayBuffer()),
   });
 
   // Where the documents are served from, which is where their pictures are too. A folder export's page sits at the top of the site and every document under `source/`, so a picture beside a document is only reachable through that folder joined with the document's own — without this the page asks the top of the site for it and gets the broken-picture mark. A site served in place tells it nothing, because there the address as written already resolves.
   leaf.core.setImageBase(base);
-
-  // The nearest glossary, which the desktop finds by walking folders and a browser cannot. Handing it over is what auto-links its terms.
-  if (glossary) leaf.core.setGlossary(await (await fetched(at(glossary.path))).text());
 
   leaf.showFolder('');
 

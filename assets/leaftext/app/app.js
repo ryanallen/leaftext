@@ -7386,7 +7386,7 @@ function shellTrack(paneWidth, minimapColumn, besideMinimapColumn) {
 }
 
 function writePaneWidth(width) {
-  libraryShell.style.setProperty('grid-template-columns', shellTrack(`${width}px`, drawnMinimapColumn, drawnBesideMinimapColumn));
+  libraryShell.style.setProperty('grid-template-columns', shellTrack(`${window.__leafEmbedded ? 0 : width}px`, drawnMinimapColumn, drawnBesideMinimapColumn));
   appBar.style.setProperty('--library-rail-width', `${width}px`);
   writeStripShares();
 }
@@ -7439,6 +7439,7 @@ function endLibraryMotion(restarting) {
   }
   
   if (done) done();
+  if (!restarting) scheduleMinimapPreviewUpdate();
 }
 function startLibraryMotion(direction, done) {
   
@@ -32686,7 +32687,7 @@ function anchorForBlockIndex(blocks, targetIndex, shellRect) {
   const target = blocks[targetIndex];
   const rect = target.getBoundingClientRect();
   const offsetY = shellRect.top - rect.top;
-  return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), offsetY };
+  return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), index: targetIndex, offsetY };
 }
 
 function readerOffScreen() {
@@ -32796,6 +32797,8 @@ function resolveReaderAnchorElement(anchor) {
     const index = blocks.findIndex((element) => element.id === anchor.section && /^H[1-6]$/.test(element.tagName));
     if (index >= 0) {
       start = index;
+    } else if (Number.isInteger(anchor.index)) {
+      return blocks[Math.min(Math.max(0, anchor.index), blocks.length - 1)];
     }
   }
   const block = Math.max(0, Math.floor(Number(anchor.block) || 0));
@@ -32956,11 +32959,12 @@ function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {
     return;
   }
   minimapPendingSlack = Math.max(minimapPendingSlack, slack);
-  if (minimapPreviewFrame || minimapPreviewHolds) {
+  if (minimapPreviewFrame || minimapPreviewHolds || libraryPaneIsMoving()) {
     return;
   }
   minimapPreviewFrame = columnFrame(() => {
     minimapPreviewFrame = 0;
+    if (libraryPaneIsMoving()) return;
     const asked = minimapPendingSlack;
     minimapPendingSlack = 0;
     updateDocumentMinimapPreview(asked);

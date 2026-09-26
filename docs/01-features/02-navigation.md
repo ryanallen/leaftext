@@ -431,7 +431,7 @@ The overview rail down the right edge of the reading view.
 One open document, with its own Back/Forward history and scroll position.
 ```
 
-That is all the authoring you need: every mention of *Minimap* or *Tab* across your documents now opens its entry. The app finds the glossary by walking up from the open document, reading each folder and taking the first file whose name is `GLOSSARY.md` however it is capitalized, so it can sit right beside a page or many folders above at the root of a project, and each project's pages bind to that project's own glossary. Because every page draws on the same file, one glossary serves the whole set.
+That is all the authoring you need: every mention of *Minimap* or *Tab* across your documents opens its entry. The desktop finds the glossary by walking up from the open document, reading each folder and taking the first file whose name is `GLOSSARY.md` however it is capitalized, so it can sit right beside a page or many folders above at the root of a project. A published site makes the same choice from its file list for each page; where no glossary sits above a page, it uses the first glossary listed. Each project's pages bind to that project's own glossary, while one glossary can still serve the whole set.
 
 You can still link a term by hand when you want to — using the heading's slug (its text lowercased, spaces turned to hyphens — so `Bottom Sheet` becomes `bottom-sheet`):
 

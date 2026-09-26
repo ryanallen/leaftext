@@ -6419,10 +6419,6 @@ body.is-embedded .library-divider,
 body.is-embedded .reader-toolbar {
   display: none;
 }
-
-body.is-embedded .library-shell {
-  display: block;
-}
 .library-shell {
   display: grid;
   

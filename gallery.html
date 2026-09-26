@@ -6427,10 +6427,6 @@ body.is-embedded .library-divider,
 body.is-embedded .reader-toolbar {
   display: none;
 }
-/* Not a grid here, so the rail track cannot hold a column open beside the page: the track the front end writes on the shell does nothing to a block. With the pane and the handle gone the reader is the only child left, so a block gives it the whole frame. */
-body.is-embedded .library-shell {
-  display: block;
-}
 .library-shell {
   display: grid;
   /* A trailing column and a bottom row hold the reader off the window frame; the rail spans both so only the page is inset. */

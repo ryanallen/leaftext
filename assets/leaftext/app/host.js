@@ -330,7 +330,7 @@ export function repointHead(path, anchor = '') {
   if (markdown) markdown.setAttribute('href', path);
 }
 
-export async function startLeaftext({ documents, name = '', read, glossary = '', imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
+export async function startLeaftext({ documents, name = '', read, imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
   // Before the module loads, because the front end asks this as it draws and a control it asked about too early is one drawn on a guess.
   window.__leafHostAnswers = answers;
   // The one document a site lays out as its front page, which the page asks about as it draws. Every other path, and a layout that throws, is drawn as the app draws it.
@@ -371,8 +371,47 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
   let cardPath = '';
   let cardAnswer = null;
 
+  // Match the desktop's folder walk over the site's listing.
+  const glossaryIn = new Map();
+  let firstGlossary = '';
+  for (const entry of documents) {
+    if (!/(^|\/)glossary\.md$/i.test(entry.path)) continue;
+    const folder = folderOf(entry.path);
+    if (!glossaryIn.has(folder)) glossaryIn.set(folder, entry.path);
+    if (!firstGlossary) firstGlossary = entry.path;
+  }
+  // Reopening a project's glossary needs no second fetch.
+  const glossaryWords = new Map();
+  // A failed read stays retryable on the next open.
+  let glossary = '';
+
+  function folderOf(path) {
+    return path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
+  }
+
+  /** Use the nearest glossary, or the first listed for pages above every glossary. */
+  function glossaryFor(path) {
+    for (let folder = folderOf(path); ; folder = folderOf(folder)) {
+      const found = glossaryIn.get(folder);
+      if (found) return found;
+      if (!folder) return firstGlossary;
+    }
+  }
+
+  function glossaryText(path) {
+    if (!path) return Promise.resolve('');
+    if (!glossaryWords.has(path)) {
+      glossaryWords.set(path, read(path).then((bytes) => new TextDecoder().decode(bytes)).catch((error) => {
+        glossaryWords.delete(path);
+        console.warn('the glossary could not be read', path, error);
+        return null;
+      }));
+    }
+    return glossaryWords.get(path);
+  }
+
   function cardTarget(href) {
-    if (/^glossary:/i.test(String(href || ''))) return known.has(glossary) ? glossary : '';
+    if (/^glossary:/i.test(String(href || ''))) return glossary && known.has(glossary) ? glossary : '';
     return resolveFrom(open || '', href)?.path || '';
   }
 
@@ -645,8 +684,14 @@ export async function startLeaftext({ documents, name = '', read, glossary = '',
     if (!known.has(path)) return;
     open = path;
     closeBuffer();
-    const source = await read(path);
+    const chosen = glossaryFor(path);
+    const [source, words] = await Promise.all([read(path), glossaryText(chosen)]);
     held = { path, bytes: source };
+    // Set the glossary beside the render so the last page drawn holds its own terms.
+    if (chosen !== glossary) {
+      core.setGlossary(words || '');
+      glossary = words == null ? null : chosen;
+    }
     drawDocument(path, source);
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
