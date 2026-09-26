@@ -229,6 +229,9 @@ export const COMMANDS = {
   createDropboxVault: [REFUSED, 'a published site has no credential store or callback listener for Dropbox'],
   createGoogleDriveVault: [REFUSED, 'a published site has no credential store or callback listener for Google Drive'],
   createMicrosoftVault: [REFUSED, 'a published site has no credential store or callback listener for Microsoft Graph'],
+  createBoxVault: [REFUSED, 'a published site has no credential store or callback listener for Box'],
+  createWebDavVault: [REFUSED, 'a published site has no credential store to keep a WebDAV password in'],
+  createS3Vault: [REFUSED, 'a published site has no credential store to keep an S3 secret key in'],
   getCloudFolders: [REFUSED, 'nothing here can look for a sync folder on this machine'],
   cloneVault: [REFUSED, 'cloning a repository needs a disk and a process'],
   setActiveVault: [REFUSED, 'a site is one folder, so there is nothing to switch between'],
@@ -342,19 +345,30 @@ export function repointHead(path, anchor = '') {
 export async function startLeaftext({ documents, name = '', read, imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
   // Before the module loads, because the front end asks this as it draws and a control it asked about too early is one drawn on a guess.
   window.__leafHostAnswers = answers;
-  // The one document a site lays out as its front page, which the page asks about as it draws. Every other path, and a layout that throws, is drawn as the app draws it.
-  let frontPageEditing = false;
+  // The one document a site lays out as its front page, which the page asks about as it draws, locked or unlocked. Every other path is drawn as the app draws it. A layout that throws keeps the last page it drew with nothing on it to type on, so a visitor mid-edit in the source view is not thrown onto the plain README; one that has never drawn is drawn plain.
   if (frontPage && frontPage.path && typeof frontPage.layout === 'function') {
     let moving = null;
+    let lastLaid = null;
+    let failing = false;
     window.leafSiteLayout = (path, html) => {
-      if (path !== frontPage.path || frontPageEditing) return null;
+      if (path !== frontPage.path) return null;
       let laid;
       try {
         laid = frontPage.layout(html);
+        failing = false;
       } catch (error) {
-        console.warn(`${path} is drawn plain: ${(error && error.message) || error}`);
-        return null;
+        const why = (error && error.message) || String(error);
+        if (lastLaid === null) {
+          console.warn(`${path} is drawn plain: ${why}`);
+          return null;
+        }
+        // Said once per run of failures rather than at every redraw while the source is being mended.
+        if (!failing && typeof window.leafShowError === 'function') window.leafShowError(`The front page could not be laid out: ${why}`);
+        failing = true;
+        // The marks name blocks of a source that has moved on, so none may stay to type on.
+        laid = lastLaid.replace(/\sdata-leaf-proof="[^"]*"/g, '');
       }
+      if (!failing) lastLaid = laid;
       // Once the page has drawn what this answers, which it does before it hands control back: every redraw puts a fresh page in, so the cards rise and the clips play on whichever page is standing. The reading column's alone — the rail's copy keeps the posters.
       if (typeof frontPage.motion === 'function') {
         queueMicrotask(() => {
@@ -366,6 +380,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       }
       return laid;
     };
+    // Asked before the page proves which of the document's blocks the layout may keep for typing, so every other document is drawn without that walk.
+    window.leafSiteLayout.laysOut = (path) => path === frontPage.path;
   }
   const core = await load(assetBase() + MODULE, fetchWith);
   core.setImageSizes(imageSizes);
@@ -742,7 +758,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
 
   // What the page sends the host. A command with no arm here is one this host cannot answer; the desktop's own event loop is where they all live.
   const commands = {
-    setReadingUnlocked: ({ enabled }) => { frontPageEditing = !!enabled; },
+    // Answered and kept for this visit alone: the padlock is the page's own, and the next visit starts locked.
+    setReadingUnlocked: () => {},
     // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
     refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
     editBlock: (command) => {

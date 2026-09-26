@@ -61,8 +61,14 @@ function sectionOf(all, id) {
   return found;
 }
 
-/** Every top-level paragraph in a stretch of HTML. */
-const paragraphs = (html) => html.match(/<p>[\s\S]*?<\/p>/g) || [];
+/** Every top-level paragraph in a stretch of HTML, with whatever attributes the page drawing it put on it. */
+const paragraphs = (html) => html.match(/<p(?:\s[^>]*)?>[\s\S]*?<\/p>/g) || [];
+
+/** A paragraph wearing one of the layout's classes, every attribute it came with kept. */
+const classed = (p, name) => p.replace(/^<p\b/, `<p class="${name}"`);
+
+/** The mark the app's page puts on a heading or paragraph it has proved the source of, so the words a visitor can type on are only the ones this layout keeps whole. Taken off everything the layout keeps without offering it for typing. */
+const unproved = (html) => html.replace(/\sdata-leaf-proof="[^"]*"/g, '');
 
 /** The paragraphs under a section's heading and above its first subheading. */
 function leadOf(section) {
@@ -70,7 +76,7 @@ function leadOf(section) {
   const cut = top.search(/<h3\b/);
   return paragraphs(cut < 0 ? top : top.slice(0, cut))
     .filter((p) => !/<img\b/.test(p))
-    .map((p) => p.replace('<p>', '<p class="front-card-lead">'));
+    .map((p) => classed(p, 'front-card-lead'));
 }
 
 /** The box a clip plays in, holding its poster: the first frame, which is what the first response and a crawler carry, and all a reader who asked for less motion is ever shown. `site/front-page.js` puts the clip in its place as the box nears the window. */
@@ -93,21 +99,21 @@ function heroOf(intro) {
   // The one link beside the buttons is the install guide, which the Mac's first launch needs.
   if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
   const heading = title[0].replace(/^<h1\b/, '<h1 class="front-hero-title"');
-  return `<section class="front-hero" id="download">${heading}${line.replace('<p>', '<p class="front-hero-line">')}${said[downloads].replace('<p>', '<p class="front-downloads">')}${small.replace('<p>', '<p class="front-small">')}</section>`;
+  return `<section class="front-hero" id="download">${heading}${classed(line, 'front-hero-line')}${unproved(classed(said[downloads], 'front-downloads'))}${unproved(classed(small, 'front-small'))}</section>`;
 }
 
 /** The links at the foot: the paragraph above the first section that points into the documentation. */
 function footOf(intro) {
   const links = paragraphs(intro).find((p) => p.includes('href="docs/"'));
   if (!links) throw new Error('the README carries no line of links into the documentation for the front page to end on');
-  return `<footer class="front-foot">${links}</footer>`;
+  return `<footer class="front-foot">${unproved(links)}</footer>`;
 }
 
 /** The comparison: its heading, its one line and the chart drawn under it, without the prose the README carries after. */
 function compareOf(section) {
   const chart = /<section class="compare-chart">[\s\S]*?<\/section>/.exec(section);
   if (!chart) throw new Error('the README was handed over without its comparison chart, so the front page would open on no comparison');
-  return `<section class="front-compare">${section.slice(0, chart.index + chart[0].length)}</section>`;
+  return `<section class="front-compare">${unproved(section.slice(0, chart.index + chart[0].length))}</section>`;
 }
 
 /** One card: the promise, the section's own lead, its picture and where to read the rest. */
@@ -138,7 +144,7 @@ export function layoutFrontPage(html) {
     `<section class="front-cards" id="features">${cards}</section>`,
     `<section class="front-install" id="${INSTALL_ID}">${installLine}</section>`,
     footOf(intro),
-    pager,
+    unproved(pager),
     '</article>',
   ].join('\n');
 }

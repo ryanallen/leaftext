@@ -24,7 +24,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud and Google Drive become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, manually from its header or automatically once local changes stop when that vault opts in — and a repository can be [cloned](#clone-a-repository) into a new vault |
-| [Storage services](#storage-services) | Connect Dropbox, Google Drive, OneDrive, or SharePoint and keep a local copy for offline reading |
+| [Storage services](#storage-services) | Connect Dropbox, Google Drive, OneDrive, SharePoint, Box, a WebDAV server or an S3 bucket and keep a local copy for offline reading |
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
@@ -130,20 +130,27 @@ The other thing that walk refuses is a folder a machine filled: one that declare
 
 ## Storage services
 
-The vault switcher offers **Dropbox…**, **Google Drive…**, **OneDrive…**, and **SharePoint…**. Each connects through your own app registration and opens sign-in in your browser. Your password stays in the browser; Leaftext keeps the resulting credentials in your operating system's credential store.
+The vault switcher offers **Dropbox…**, **Google Drive…**, **OneDrive…**, **SharePoint…**, **Box…**, **WebDAV…** and **S3…**. The first five connect through your own app registration and open sign-in in your browser, so your password stays in the browser. A WebDAV server or an S3 bucket has no browser sign-in, so its form takes your own user name and password, or your own key pair, and Leaftext tries them against the server before it keeps them. Every credential goes in your operating system's credential store and never in a file Leaftext writes.
 
 | Service | What the connection asks for |
 | --- | --- |
 | Dropbox | Your app key and a folder path such as `/Notes`; register `http://127.0.0.1:37653/` as its redirect address |
-| Google Drive | Your desktop client ID and a folder ID; **Use whole Drive** explicitly chooses the entire drive instead of a folder |
+| Google Drive | Nothing, where this copy of Leaftext carries its own Google sign-in: press **Sign in with Google** and your whole Drive becomes a vault. **Use my own client ID…** takes your desktop client ID and a folder ID instead; **Use whole Drive** there chooses the entire drive |
 | OneDrive | Your desktop app client ID, drive ID, and folder ID |
 | SharePoint | Your desktop app client ID, document library drive ID, and folder ID |
+| Box | Your app's client ID and client secret, and a folder ID; register `http://127.0.0.1/` as its redirect address |
+| WebDAV | The folder's `https://` address, such as a Nextcloud folder's WebDAV link, your user name and your password |
+| S3 | The endpoint (blank for Amazon), region, bucket, an optional prefix, and your access key ID and secret access key |
 
 The connection form explains the app registration each service needs. Google registrations must be set to **In production** before connecting.
 
-Leaftext keeps a local copy of readable files, so opening, searching, and following links work offline. Google-native documents remain links to their service rather than editable local documents.
+Leaftext keeps a local copy of readable files, so opening, searching, and following links work offline.
 
-The vault's settings show the account and refresh state, with **Refresh**, **Sign in**, and **Sign out**. A connected vault refreshes every five minutes. Three consecutive failures pause automatic refresh until you press **Refresh**. Signing out keeps the local files.
+### Google Docs, Sheets and Slides
+
+A Google Doc, Sheet or Slide deck in a Google Drive vault opens as a page, fetched from Google each time you open it. Type into a paragraph, a heading, a cell or a slide's text box and **Save** sends only what you changed back to Google, to the place it came from. A paragraph holding something Leaftext cannot write back exactly — a color, a font, a picture, a list, a table in a Doc, a formula in a Sheet — is shown and cannot be typed into, so nothing you did not touch is ever rewritten. If somebody changed the document in Google after you opened it, Save sends nothing and your edits stay where they are. Using your own client ID, turn on the Docs, Sheets and Slides APIs in its Google Cloud project; Leaftext says which one is missing.
+
+The vault's settings show the account and refresh state, with **Refresh**, **Sign in**, and **Sign out**; a WebDAV or S3 vault shows **Enter password…** in place of **Sign in**. A connected vault refreshes every five minutes. Three consecutive failures pause automatic refresh until you press **Refresh**. Signing out keeps the local files.
 
 An explicit **Save** sends your edited file using the version it was opened against. A refused save or a conflicting remote version leaves your local edit intact and unsent; refreshing preserves that edit.
 

@@ -2,7 +2,7 @@
 
 # Licenses
 
-Leaftext 3.32.0 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
+Leaftext 3.33.0 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
 
 ## Drawings
 

@@ -8241,29 +8241,7 @@ function vaultMenuItems() {
     icon: MENU_PLUS_SVG,
     run: () => send({ command: 'createVault' }),
   });
-  items.push({
-    label: 'New Dropbox vault…',
-    title: 'Copy one Dropbox folder through its API',
-    icon: MENU_PLUS_SVG,
-    keepOpen: true,
-    run: showDropboxVaultForm,
-  });
-  items.push({
-    label: 'New Google Drive vault…',
-    title: 'Copy one Google Drive folder through its API',
-    icon: MENU_PLUS_SVG,
-    keepOpen: true,
-    run: showGoogleDriveVaultForm,
-  });
-  for (const [label, kind] of [['OneDrive', 'onedrive'], ['SharePoint', 'sharepoint']]) {
-    items.push({
-      label: `New ${label} vault…`,
-      title: `Copy one ${label} folder through Microsoft Graph`,
-      icon: MENU_PLUS_SVG,
-      keepOpen: true,
-      run: () => showMicrosoftVaultForm(label, kind),
-    });
-  }
+  pushServiceVaultRows(items);
   pushCloneRow(items);
   return items;
 }
@@ -8605,12 +8583,7 @@ function vaultRemoteItems(vault) {
     });
   } else {
     items.push({ note: 'Not signed in, so this vault is not being kept up to date.' });
-    items.push({
-      label: 'Sign in ↗',
-      title: 'Opens the service in your browser. Nothing is typed into Leaftext.',
-      keepOpen: true,
-      run: () => send({ command: 'signInVault', id: vault.id }),
-    });
+    items.push(signInVaultRow(vault));
   }
   return items;
 }
@@ -8813,7 +8786,7 @@ function showCrumbMenu(button, items, quiet) {
     }
     if (entry.input !== undefined) {
       const field = document.createElement('input');
-      field.type = 'text';
+      field.type = entry.secret ? 'password' : 'text';
       field.className = 'crumb-menu-input';
       if (entry.fieldClass) field.classList.add(entry.fieldClass);
       field.value = entry.input;
@@ -9092,6 +9065,119 @@ window.leafSetVaults = (payload) => {
     }
   }
 };
+
+const SERVICE_VAULT_ROWS = [
+  ['Dropbox', 'Copy one Dropbox folder through its API', () => showDropboxVaultForm()],
+  ['Google Drive', 'Copy one Google Drive folder through its API', () => showGoogleDriveVaultForm()],
+  ['OneDrive', 'Copy one OneDrive folder through Microsoft Graph', () => showMicrosoftVaultForm('OneDrive', 'onedrive')],
+  ['SharePoint', 'Copy one SharePoint folder through Microsoft Graph', () => showMicrosoftVaultForm('SharePoint', 'sharepoint')],
+  ['Box', 'Copy one Box folder through its API', () => showBoxVaultForm()],
+  ['WebDAV', 'Copy one folder from a WebDAV server such as Nextcloud', () => showWebDavVaultForm()],
+  ['S3', 'Copy one prefix of an S3 bucket', () => showS3VaultForm()],
+];
+function pushServiceVaultRows(items) {
+  for (const [label, title, run] of SERVICE_VAULT_ROWS) {
+    items.push({ label: `New ${label} vault…`, title, icon: MENU_PLUS_SVG, keepOpen: true, run });
+  }
+}
+
+function crumbFormValues() {
+  return Array.from(crumbMenu.querySelectorAll('.crumb-menu-input'), (field) => (field.type === 'password' ? field.value : field.value.trim()));
+}
+const OWN_CREDENTIALS_NOTE = "The address, user name and password are your own. Leaftext keeps the password in this computer's credential store, the same place it keeps every vault sign-in.";
+function showBoxVaultForm() {
+  const save = () => {
+    const [clientId, clientSecret, folderId] = crumbFormValues();
+    if (!clientId || !clientSecret || !folderId) return;
+    hideCrumbMenu();
+    send({ command: 'createBoxVault', clientId, clientSecret, folderId });
+  };
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'New Box vault' },
+    { note: 'Use your own Box app. Register http://127.0.0.1/ as its redirect address. Copy the folder ID from the folder’s Box web address.' },
+    { input: '', placeholder: 'Client ID', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Client secret', secret: true, commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Folder ID', commitOnBlur: false, onEnter: save },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Connect', primary: true, run: save, keepOpen: true },
+    ] },
+  ]);
+}
+function showWebDavVaultForm() {
+  const save = () => {
+    const [url, user, password] = crumbFormValues();
+    if (!url || !user || !password) return;
+    hideCrumbMenu();
+    send({ command: 'createWebDavVault', url, user, password });
+  };
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'New WebDAV vault' },
+    { note: OWN_CREDENTIALS_NOTE },
+    { input: '', placeholder: 'Folder address, such as https://cloud.example.com/…/Notes', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'User name', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Password', secret: true, commitOnBlur: false, onEnter: save },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Connect', primary: true, run: save, keepOpen: true },
+    ] },
+  ]);
+}
+function showS3VaultForm() {
+  const save = () => {
+    const [endpoint, region, bucket, prefix, accessKey, secretKey] = crumbFormValues();
+    if (!region || !bucket || !accessKey || !secretKey) return;
+    hideCrumbMenu();
+    send({ command: 'createS3Vault', endpoint, region, bucket, prefix, accessKey, secretKey });
+  };
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'New S3 vault' },
+    { note: "The key pair is your own. Leaftext keeps the secret access key in this computer's credential store, the same place it keeps every vault sign-in." },
+    { input: '', placeholder: 'Endpoint (leave blank for Amazon)', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Region, such as us-east-1', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Bucket', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Prefix (leave blank for the whole bucket)', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Access key ID', commitOnBlur: false, onEnter: save },
+    { input: '', placeholder: 'Secret access key', secret: true, commitOnBlur: false, onEnter: save },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Connect', primary: true, run: save, keepOpen: true },
+    ] },
+  ]);
+}
+
+function signInVaultRow(vault) {
+  if (vault.kind !== 'webdav' && vault.kind !== 's3') {
+    return {
+      label: 'Sign in ↗',
+      title: 'Opens the service in your browser. Nothing is typed into Leaftext.',
+      keepOpen: true,
+      run: () => send({ command: 'signInVault', id: vault.id }),
+    };
+  }
+  const label = vault.kind === 's3' ? 'Secret access key' : 'Password';
+  return {
+    label: 'Enter password…',
+    title: "Kept in this computer's credential store, never in a file Leaftext writes.",
+    keepOpen: true,
+    run: () => {
+      const save = () => {
+        const [secret] = crumbFormValues();
+        if (!secret) return;
+        hideCrumbMenu();
+        send({ command: 'signInVault', id: vault.id, secret });
+      };
+      showCrumbMenu(crumbMenuOwner, [
+        { heading: vault.name || 'Sign in' },
+        { input: '', placeholder: label, secret: true, commitOnBlur: false, onEnter: save },
+        { buttons: [
+          { label: 'Cancel', run: hideCrumbMenu },
+          { label: 'Connect', primary: true, run: save, keepOpen: true },
+        ] },
+      ]);
+    },
+  };
+}
 function showDropboxVaultForm() {
   const save = () => {
     const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
@@ -9112,7 +9198,27 @@ function showDropboxVaultForm() {
     ] },
   ]);
 }
+
 function showGoogleDriveVaultForm() {
+  if (!window.__leafGoogleSignIn) {
+    showOwnGoogleClientForm();
+    return;
+  }
+  const signIn = () => {
+    hideCrumbMenu();
+    send({ command: 'createGoogleDriveVault', clientId: '', folderId: '', wholeDrive: true });
+  };
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'New Google Drive vault' },
+    { note: 'Sign in with your Google account. Your Docs, Sheets and Slides open here, and nothing needs installing.' },
+    { buttons: [{ label: 'Sign in with Google', primary: true, run: signIn, keepOpen: true }] },
+    { buttons: [
+      { label: 'Cancel', run: hideCrumbMenu },
+      { label: 'Use my own client ID…', run: showOwnGoogleClientForm, keepOpen: true },
+    ] },
+  ]);
+}
+function showOwnGoogleClientForm() {
   
   const save = (wholeDrive) => {
     const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
@@ -12430,6 +12536,11 @@ window.leafRestoreScrollAnchor = (anchor) => {
 
 function documentNameParts(path) {
   const name = String(path == null ? '' : path).split(/[\\/]/).pop() || '';
+  
+  const pointer = window.__leafPointerSuffix;
+  if (pointer && name.length > pointer.length && name.toLowerCase().endsWith(pointer)) {
+    return { stem: name.slice(0, -pointer.length), extension: '' };
+  }
   const match = name.match(DOCUMENT_NAME_RE);
   return match ? { stem: name.slice(0, -match[0].length), extension: match[1].toUpperCase() } : { stem: name, extension: '' };
 }
@@ -14695,7 +14806,7 @@ const VOID_HTML_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img
 const FOREIGN_HTML_ROOTS = new Set(['svg', 'math']);
 
 
-function attachMarkdownBlockRanges(body, blocks) {
+function collectMarkdownBlockPairs(body, blocks, slice = sliceSourceBytes) {
   
   const isInjected = (el) =>
     isTableSizingGrip(el) ||
@@ -14705,7 +14816,7 @@ function attachMarkdownBlockRanges(body, blocks) {
   
   const rawSources = new Map();
   const rawSource = (block) => {
-    if (!rawSources.has(block)) rawSources.set(block, sliceSourceBytes(block.start, block.end).trim());
+    if (!rawSources.has(block)) rawSources.set(block, slice(block.start, block.end).trim());
     return rawSources.get(block);
   };
   
@@ -14813,16 +14924,50 @@ function attachMarkdownBlockRanges(body, blocks) {
   walk(body.children);
   
   if (nextBlock() !== null) mismatch = true;
-  if (mismatch) return [];
+  if (mismatch) return null;
+  return { pairs, containers, drewElement, closerOf };
+}
 
-  for (const [el, block] of pairs) {
-    el.dataset.blockId = String(block.id);
-    setRangeOf(el, 'block', block.start, block.end);
-    el.dataset.blockKind = block.kind;
-    if (block.editable) el.dataset.editable = 'true';
-    
-    if (block.holds_footnote) el.dataset.holdsFootnote = 'true';
+
+function stampMarkdownBlock(el, block) {
+  el.dataset.blockId = String(block.id);
+  setRangeOf(el, 'block', block.start, block.end);
+  el.dataset.blockKind = block.kind;
+  if (block.editable) el.dataset.editable = 'true';
+  
+  if (block.holds_footnote) el.dataset.holdsFootnote = 'true';
+}
+
+
+const SITE_PROOF_ATTRIBUTE = 'data-leaf-proof';
+
+
+const isSiteProofTable = (proofs) => !!proofs && typeof proofs.get === 'function' && typeof proofs.size === 'number';
+
+
+function bindSiteProofs(body, proofs) {
+  const marked = Array.from(body.querySelectorAll(`[${SITE_PROOF_ATTRIBUTE}]`));
+  const worn = new Map();
+  for (const el of marked) {
+    const id = el.getAttribute(SITE_PROOF_ATTRIBUTE);
+    worn.set(id, (worn.get(id) || 0) + 1);
   }
+  for (const el of marked) {
+    const id = el.getAttribute(SITE_PROOF_ATTRIBUTE);
+    el.removeAttribute(SITE_PROOF_ATTRIBUTE);
+    const block = proofs.get(id);
+    if (!block || worn.get(id) !== 1) continue;
+    const fits = block.kind === 'heading' ? /^H[1-6]$/.test(el.tagName) : block.kind === 'paragraph' && el.tagName === 'P';
+    if (fits) stampMarkdownBlock(el, block);
+  }
+}
+
+
+function attachMarkdownBlockRanges(body, blocks) {
+  const found = collectMarkdownBlockPairs(body, blocks);
+  if (!found) return [];
+  const { pairs, containers, drewElement, closerOf } = found;
+  for (const [el, block] of pairs) stampMarkdownBlock(el, block);
 
   
   const blankLines = [];
@@ -17178,7 +17323,9 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
 
   
   if (currentDocumentFormat === 'markdown') {
-    blankLinesInContainers = attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []) || [];
+    
+    if (isSiteProofTable(doc.siteProofs)) bindSiteProofs(body, doc.siteProofs);
+    else blankLinesInContainers = attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []) || [];
     bindTaskCheckboxes(doc.tasks || []);
     drawTaskDates(doc.tasks || []);
     markComputedTableCells(body, doc.computed || []);
@@ -17191,7 +17338,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
 
     
-    if (currentDocumentFormat === 'markdown' && !pendingCaret && Array.isArray(doc.blocks) && doc.blocks.length === 0) {
+    if (currentDocumentFormat === 'markdown' && !pendingCaret && !isSiteProofTable(doc.siteProofs) && Array.isArray(doc.blocks) && doc.blocks.length === 0) {
       setPendingCaret({ emptyDocument: true });
     }
     
@@ -27283,12 +27430,45 @@ function replayParagraphSwaps(doc, body) {
   }
 }
 
+function proveSiteBlocks(doc) {
+  const blocks = Array.isArray(doc.blocks) ? doc.blocks : [];
+  if (!blocks.length || (doc.format || 'markdown') !== 'markdown') return null;
+  
+  const holder = document.createElement('template');
+  holder.innerHTML = doc.html;
+  const root = holder.content || holder;
+  root.querySelectorAll(`[${SITE_PROOF_ATTRIBUTE}]`).forEach((el) => el.removeAttribute(SITE_PROOF_ATTRIBUTE));
+  const body = root.querySelector('.document-body') || root.firstElementChild;
+  if (!body) return null;
+  let bytes = null;
+  const slice = (start, end) => {
+    if (doc.source_held) return sliceSourceBytes(start, end);
+    if (bytes === null) bytes = sourceByteEncoder.encode(typeof doc.source === 'string' ? doc.source : '');
+    return sourceByteDecoder.decode(bytes.subarray(start, end));
+  };
+  const found = collectMarkdownBlockPairs(body, blocks, slice);
+  if (!found) return null;
+  const proofs = new Map();
+  for (const [el, block] of found.pairs) {
+    const heading = block.kind === 'heading' && el.tagName === 'H1';
+    const paragraph = block.kind === 'paragraph' && el.tagName === 'P';
+    if (!heading && !paragraph) continue;
+    const id = String(proofs.size);
+    proofs.set(id, block);
+    el.setAttribute(SITE_PROOF_ATTRIBUTE, id);
+  }
+  return { html: holder.innerHTML, proofs };
+}
+
 function siteLaidOutState(state) {
   const doc = state.document;
   if (!doc || !window.__leafSite || typeof window.leafSiteLayout !== 'function') return state;
-  const laid = window.leafSiteLayout(doc.path || activeDocumentPath(), doc.html);
+  const path = doc.path || activeDocumentPath();
+  const lays = window.leafSiteLayout.laysOut;
+  const proved = typeof lays === 'function' && lays(path) ? proveSiteBlocks(doc) : null;
+  const laid = window.leafSiteLayout(path, proved ? proved.html : doc.html);
   if (typeof laid !== 'string' || !laid) return state;
-  return { ...state, document: { ...doc, html: laid, blocks: [], tasks: [], computed: [] } };
+  return { ...state, document: { ...doc, html: laid, blocks: [], tasks: [], computed: [], siteProofs: proved ? proved.proofs : new Map() } };
 }
 function renderState(keepDetachedRender = false, landingAnchor = null) {
   if (currentState && currentState.document && currentState.document.partialDrawn) {
