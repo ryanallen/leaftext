@@ -11437,6 +11437,14 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: col-resize;
   touch-action: none;
 }
+.table-lane > .table-sizer-column,
+td > .table-sizer-column[data-table-edge],
+th > .table-sizer-column[data-table-edge] {
+  z-index: 2;
+}
+.table-lane > .table-sizer-row {
+  z-index: 1;
+}
 
 body.table-resizing {
   cursor: col-resize;
@@ -16024,4 +16032,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 }
 .picture-print img {
   display: block;
+}
+
+@media print {
+  body.leaf-paper-slides .document-run > [data-slide]:not([data-slide="1"]) {
+    break-before: page;
+  }
 }

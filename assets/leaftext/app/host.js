@@ -45,6 +45,8 @@ async function load(url, fetchWith = fetch) {
     page: () => read(api.leaf_page()),
     script: () => read(api.leaf_script()),
     boot: () => read(api.leaf_boot_script()),
+    codeReturnScript: (path, key, handle) => typeof api.leaf_code_return_script === 'function'
+      ? withStrings((...args) => api.leaf_code_return_script(...args, handle), path, key) : null,
     styles: () => read(api.leaf_styles()),
     // A document arrives as the file's own bytes, because a Word, Excel, PowerPoint or OpenDocument file is a zip and has no string form to hand across. A text format comes this way too and is decoded exactly as the window decodes a file off the disk. A book whose pictures this page mints is the one document the module keeps: its bytes change hands rather than being freed, so a picture can be asked for out of them later.
     documentScript: (body, path) => {
@@ -253,6 +255,7 @@ export const COMMANDS = {
   tableModel: [LATER, 'rdb-web'],
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],
+  resendDocumentSource: [REFUSED, 'This host always sends the whole document source.'],
   editBlocks: [ANSWERED],
   setField: [ANSWERED],
   setListField: [ANSWERED],
@@ -265,7 +268,7 @@ export const COMMANDS = {
   pickPicturePath: [LATER, 'web-export'],
   exportPicture: [LATER, 'web-export'],
   printPicturePdf: [LATER, 'web-export'],
-  exportPdf: [ANSWERED],
+  exportPdf: [ANSWERED], // Optional slide page height is applied by the shared paper hold.
   exportPageHtml: [LATER, 'web-export'],
   undoEdit: [ANSWERED],
   redoEdit: [ANSWERED],
@@ -874,9 +877,14 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         drawDocument(held.path, held.bytes);
       }
     },
-    // Redraw from the live buffer when the reader has changed it.
-    exitCodeView: () => {
-      if (held && held.path === open) drawDocument(held.path, held.bytes);
+    // The source is read-only, so the page still standing beneath it can return.
+    exitCodeView: ({ renderKey }) => {
+      if (!held || held.path !== open) return;
+      const script = typeof renderKey === 'string' ? core.codeReturnScript(held.path, renderKey, buffer) : null;
+      if (script) {
+        run(script);
+        run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
+      } else drawDocument(held.path, held.bytes);
     },
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
     exportPdf: () => window.print(),

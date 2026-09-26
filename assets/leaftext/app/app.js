@@ -335,7 +335,7 @@ const COLUMN_STATE_NAMES = [
   
   'readerLoadingSafety', 'readerLoadingOwner',
   
-  'heldSourceText', 'heldSourceBytes', 'drawnRanges',
+  'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'drawnRanges',
   
   'documentLinksBound',
   
@@ -347,10 +347,12 @@ const COLUMN_STATE_NAMES = [
   
   'sizedTableShapes', 'sizedTableDocument',
   
+  'slidePaperLayout',
+  
   'siteFrameListening', 'siteFramePath', 'containedPageMermaidPage', 'containedPageMermaidGeneration',
   'siteFrameHeldHeight',
   
-  'lastRenderedDocumentPath', 'readingFillFrame',
+  'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor',
   
   'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingDeepest',
   
@@ -391,6 +393,7 @@ function saveColumnState(column) {
   
   held.heldSourceText = heldSourceText;
   held.heldSourceBytes = heldSourceBytes;
+  held.heldSourceStamp = heldSourceStamp;
   held.drawnRanges = drawnRanges;
   
   held.documentLinksBound = documentLinksBound;
@@ -420,9 +423,11 @@ function saveColumnState(column) {
   held.containedPageMermaidPage = containedPageMermaidPage;
   held.containedPageMermaidGeneration = containedPageMermaidGeneration;
   held.siteFrameHeldHeight = siteFrameHeldHeight;
+  held.slidePaperLayout = slidePaperLayout;
   
   held.lastRenderedDocumentPath = lastRenderedDocumentPath;
   held.readingFillFrame = readingFillFrame;
+  held.readingHeldCursor = readingHeldCursor;
   
   held.readingPending = readingPending;
   held.readingPendingPicturePages = readingPendingPicturePages;
@@ -497,6 +502,7 @@ function loadColumnState(column) {
   
   heldSourceText = held.heldSourceText;
   heldSourceBytes = held.heldSourceBytes;
+  heldSourceStamp = held.heldSourceStamp;
   drawnRanges = held.drawnRanges;
   
   documentLinksBound = held.documentLinksBound;
@@ -526,9 +532,11 @@ function loadColumnState(column) {
   containedPageMermaidPage = held.containedPageMermaidPage;
   containedPageMermaidGeneration = held.containedPageMermaidGeneration;
   siteFrameHeldHeight = held.siteFrameHeldHeight;
+  slidePaperLayout = held.slidePaperLayout;
   
   lastRenderedDocumentPath = held.lastRenderedDocumentPath;
   readingFillFrame = held.readingFillFrame;
+  readingHeldCursor = held.readingHeldCursor;
   
   readingPending = held.readingPending;
   readingPendingPicturePages = held.readingPendingPicturePages;
@@ -6120,6 +6128,51 @@ function pageExportRows() {
 
 
 
+let slidePaperLayout = null;
+function slideExportSize(width) {
+  const body = app && app.querySelector('.document-body');
+  const marks = body ? Array.from(body.querySelectorAll('[data-slide]')) : [];
+  if (!marks.length) return null;
+  const stage = (marks[0].getAttribute('data-slide-stage') || '').trim().split(/\s+/).map(Number);
+  const ratio = stage.length === 2 && stage.every((n) => Number.isFinite(n) && n > 0) ? stage[1] / stage[0] : 9 / 16;
+  const surface = appSurface.getBoundingClientRect();
+  const tops = marks.map((mark) => mark.getBoundingClientRect().top);
+  const inset = Math.max(0, tops[0] - surface.top);
+  const tallest = tops.reduce((height, top, at) => Math.max(height, (tops[at + 1] ?? surface.bottom) - top + inset), 0);
+  const page = Math.ceil(Math.max(width * ratio, tallest, 4) / 4) * 4;
+  return { body, marks, page, height: marks.length * page };
+}
+function holdSlideExport(held) {
+  if (!held) {
+    if (!slidePaperLayout) return;
+    for (const [node, margin] of slidePaperLayout.margins) node.style.marginBottom = margin;
+    slidePaperLayout.body.style.minHeight = slidePaperLayout.minHeight;
+    document.body.classList.remove('leaf-paper-slides');
+    slidePaperLayout = null;
+    return;
+  }
+  if (slidePaperLayout) return;
+  const width = Math.max(Math.round(appSurface.getBoundingClientRect().width), 1);
+  const size = slideExportSize(width);
+  if (!size) return;
+  const { body, marks, page, height } = size;
+  slidePaperLayout = { ...size, minHeight: body.style.minHeight, margins: [] };
+  const blocks = documentBlocks(body);
+  const first = marks[0].getBoundingClientRect().top;
+  for (let at = 1; at < marks.length; at += 1) {
+    const before = blocks[blocks.indexOf(marks[at]) - 1];
+    if (!before) continue;
+    const margin = before.style.marginBottom;
+    const current = Math.max(parseFloat(getComputedStyle(before).marginBottom) || 0, parseFloat(getComputedStyle(marks[at]).marginTop) || 0);
+    const space = first + at * page - marks[at].getBoundingClientRect().top;
+    slidePaperLayout.margins.push([before, margin]);
+    before.style.marginBottom = `${current + Math.max(space, 0)}px`;
+  }
+  const box = appSurface.getBoundingClientRect();
+  const bodyBox = body.getBoundingClientRect();
+  body.style.minHeight = `${Math.max(0, bodyBox.height + height - box.height)}px`;
+  document.body.classList.add('leaf-paper-slides');
+}
 function pageExportSize() {
   const surface = appSurface;
   if (!surface) return { width: 1, height: 1 };
@@ -6128,12 +6181,14 @@ function pageExportSize() {
   if (!held && window.leafHoldAppearance) window.leafHoldAppearance(true);
   const box = surface.getBoundingClientRect();
   const size = { width: Math.max(Math.round(box.width), 1), height: Math.max(box.height, 1) };
+  const slides = slidePaperLayout;
+  if (slides) { size.page = slides.page; size.height = slides.height; }
   if (!held && window.leafHoldAppearance) window.leafHoldAppearance(false);
   return size;
 }
 function sendPageExport(format) {
   const size = pageExportSize();
-  send({ command: 'exportPdf', format: format || '', width: size.width, height: size.height });
+  send({ command: 'exportPdf', format: format || '', width: size.width, height: size.height, ...(size.page ? { page: size.page } : {}) });
 }
 
 const PAGE_EXPORT_WAIT_REARM_MS = 10000;
@@ -11907,6 +11962,10 @@ window.leafSetFavorites = (favorites) => {
 
 window.leafReloadDocument = (state) => {
   if (redrawBehindTyping(state)) return;
+  if (state && state.document && state.document.source_held && !takeHeldSource(state.document.source_held)) {
+    send({ command: 'resendDocumentSource' });
+    return;
+  }
   takePayloadSplit(state);
   
   const anchor = pendingEditAnchor || captureReaderScrollAnchor();
@@ -14216,9 +14275,11 @@ const sourceByteDecoder = new TextDecoder();
 
 let heldSourceText = '';
 let heldSourceBytes = null;
+let heldSourceStamp = null;
 
 
-function setDocumentSource(text) {
+function setDocumentSource(text, stamp) {
+  heldSourceStamp = stamp && Number.isSafeInteger(stamp.serial) ? { serial: stamp.serial, splices: 0 } : null;
   if (text instanceof Uint8Array) {
     heldSourceBytes = text;
     heldSourceText = null;
@@ -14232,6 +14293,7 @@ function captureReadingDocumentState() {
   return {
     sourceText: heldSourceText,
     sourceBytes: heldSourceBytes,
+    sourceStamp: heldSourceStamp && { ...heldSourceStamp },
     ranges: drawnRanges,
     format: currentDocumentFormat,
     dialect: currentDocumentDialect,
@@ -14244,6 +14306,7 @@ function captureReadingDocumentState() {
 function restoreReadingDocumentState(state) {
   heldSourceText = state.sourceText;
   heldSourceBytes = state.sourceBytes;
+  heldSourceStamp = state.sourceStamp && { ...state.sourceStamp };
   drawnRanges = state.ranges;
   currentDocumentFormat = state.format;
   currentDocumentDialect = state.dialect;
@@ -14275,6 +14338,21 @@ function spliceDocumentSource(start, end, text) {
   next.set(bytes.subarray(to), from + written.length);
   heldSourceBytes = next;
   heldSourceText = null;
+  if (heldSourceStamp) heldSourceStamp.splices += 1;
+}
+
+function takeHeldSource(held) {
+  if (!held || !heldSourceStamp || held.serial !== heldSourceStamp.serial || held.splices !== heldSourceStamp.splices) return false;
+  const bytes = documentSourceBytes();
+  const splice = held.splice;
+  let length = bytes.length;
+  if (splice) {
+    if (!Number.isSafeInteger(splice.start) || !Number.isSafeInteger(splice.end) || splice.start < 0 || splice.end < splice.start || splice.end > length || typeof splice.text !== 'string') return false;
+    length += sourceByteEncoder.encode(splice.text).length - (splice.end - splice.start);
+  }
+  if (!Number.isSafeInteger(held.length) || held.length !== length) return false;
+  if (splice) spliceDocumentSource(splice.start, splice.end, splice.text);
+  return true;
 }
 
 
@@ -14469,6 +14547,7 @@ const FOREIGN_HTML_ROOTS = new Set(['svg', 'math']);
 function attachMarkdownBlockRanges(body, blocks) {
   
   const isInjected = (el) =>
+    isTableSizingGrip(el) ||
     el.classList.contains('docs-pager') ||
     el.classList.contains('docs-pager-loading') ||
     el.classList.contains('frontmatter');
@@ -16933,7 +17012,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   dropKeptWrites();
   if (editHold != null) liftEditHold();
   currentDocumentFormat = doc.format || 'markdown';
-  setDocumentSource(doc.source);
+  if (!doc.source_held) setDocumentSource(doc.source, doc.source_stamp);
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
   
   currentDocumentBindsAnything =
@@ -25689,7 +25768,9 @@ window.leafHoldAppearance = (held) => {
     }
   }
   
+  if (!held) holdSlideExport(false);
   if (typeof siteFramePaperHold === 'function') siteFramePaperHold(held);
+  if (held) holdSlideExport(true);
 };
 
 var lastRenderedDocumentPath = null;
@@ -26350,14 +26431,47 @@ if (homeSheet) {
 function homeScreenIsShowing() {
   return !!currentState && !currentState.document && !codeViewActive;
 }
-function readingHasHeldBlocks() {
+
+let readingHeldCursor = null;
+
+function documentBlockFrom(el) {
+  let at = el;
+  while (at && isDocumentRun(at)) {
+    if (at.firstElementChild) return at.firstElementChild;
+    at = at.nextElementSibling;
+  }
+  return at;
+}
+function nextDocumentBlock(block) {
+  const next = block.nextElementSibling;
+  if (next) return documentBlockFrom(next);
+  return isDocumentRun(block.parentElement) ? documentBlockFrom(block.parentElement.nextElementSibling) : null;
+}
+function previousDocumentBlock(block) {
+  let at = block.previousElementSibling || (isDocumentRun(block.parentElement) ? block.parentElement.previousElementSibling : null);
+  while (at && isDocumentRun(at)) {
+    if (at.children.length) return at.children[at.children.length - 1];
+    at = at.previousElementSibling;
+  }
+  return at;
+}
+function nextHeldReadingBlock() {
+  if (!readingHeldCursor) return null;
   const body = app.querySelector('.document-body');
-  return !!body && documentBlocks(body).some((block) => block.classList.contains('is-held-below'));
+  let block = !body ? null : body.contains(readingHeldCursor) ? readingHeldCursor : documentBlockFrom(body.firstElementChild);
+  while (block && !block.classList.contains('is-held-below')) block = nextDocumentBlock(block);
+  readingHeldCursor = block;
+  return block;
+}
+function readingHasHeldBlocks() {
+  return !!nextHeldReadingBlock();
 }
 function holdReadingBlocks(layout) {
   const body = layout ? layout.querySelector('.document-body') : null;
   if (!body || layout.querySelector('.document-body-site')) return false;
-  for (const block of documentBlocks(body)) block.classList.add('is-held-below');
+  const blocks = documentBlocks(body);
+  for (const block of blocks) block.classList.add('is-held-below');
+  readingHeldCursor = blocks[0] || null;
   return body.childElementCount > 0;
 }
 function pendingReadingLandingTarget(path, anchor) {
@@ -26369,9 +26483,11 @@ function pendingReadingLandingTarget(path, anchor) {
   if (pendingViewScrollFraction) return null;
   return 0;
 }
-const READING_FILL_BUDGET_MS = 8;
+
+const READING_FILL_ELEMENTS = 4096;
 let readingFillFrame = 0;
 function cancelReadingFill() {
+  readingHeldCursor = null;
   if (!readingFillFrame) return;
   window.cancelAnimationFrame(readingFillFrame);
   readingFillFrame = 0;
@@ -26387,69 +26503,75 @@ function finishReadingFill() {
 }
 function fillHeldBlocks() {
   readingFillFrame = 0;
-  const started = performance.now();
-  let revealed = false;
-  do {
-    const body = app.querySelector('.document-body');
-    const block = body ? documentBlocks(body).find((one) => one.classList.contains('is-held-below')) : null;
-    if (!block) break;
-    block.classList.remove('is-held-below');
-    block.getBoundingClientRect().bottom;
-    revealed = true;
-  } while (readingHasHeldBlocks() && performance.now() - started < READING_FILL_BUDGET_MS);
+  let block = nextHeldReadingBlock();
+  let last = null;
+  let elements = 0;
+  while (block && elements < READING_FILL_ELEMENTS) {
+    if (block.classList.contains('is-held-below')) {
+      block.classList.remove('is-held-below');
+      elements += 1 + block.querySelectorAll('*').length;
+      last = block;
+    }
+    block = nextDocumentBlock(block);
+  }
+  if (!last) return;
+  readingHeldCursor = block;
+  
+  last.getBoundingClientRect().bottom;
   if (!readingHasHeldBlocks()) {
-    if (revealed) finishReadingFill();
+    finishReadingFill();
     return;
   }
   markMinimapWarming();
   readingFillFrame = columnFrame(fillHeldBlocks);
 }
+
 function startReadingFill() {
-  cancelReadingFill();
-  if (!readingHasHeldBlocks()) return;
+  if (readingFillFrame || !readingHasHeldBlocks()) return;
   markMinimapWarming();
   readingFillFrame = columnFrame(fillHeldBlocks);
 }
 function revealHeldReadingNearEdge() {
-  const body = app.querySelector('.document-body');
-  if (!body) return;
-  const blocks = documentBlocks(body);
-  const firstHeld = blocks.findIndex((block) => block.classList.contains('is-held-below'));
-  if (firstHeld <= 0) return;
+  const firstHeld = nextHeldReadingBlock();
+  const lastRevealed = firstHeld ? previousDocumentBlock(firstHeld) : null;
+  if (!lastRevealed) return;
   const shellTop = app.getBoundingClientRect().top;
-  const revealedBottom = blocks[firstHeld - 1].getBoundingClientRect().bottom - shellTop + app.scrollTop;
+  const revealedBottom = lastRevealed.getBoundingClientRect().bottom - shellTop + app.scrollTop;
   if (app.scrollTop + app.clientHeight * 2 >= revealedBottom) revealReadingPast(null);
 }
 function revealReadingPast(target) {
   const body = app.querySelector('.document-body');
-  if (!body) return false;
-  const blocks = documentBlocks(body);
-  const held = blocks.filter((block) => block.classList.contains('is-held-below'));
-  if (!held.length) return false;
+  const firstHeld = body ? nextHeldReadingBlock() : null;
+  if (!firstHeld) return false;
   if (target === null) {
-    for (const block of held) block.classList.remove('is-held-below');
+    for (let block = firstHeld; block; block = nextDocumentBlock(block)) block.classList.remove('is-held-below');
     finishReadingFill();
     return true;
   }
   const shellTop = app.getBoundingClientRect().top;
   const viewportHeight = Math.max(1, app.clientHeight);
   const documentBottom = (block) => block.getBoundingClientRect().bottom - shellTop + app.scrollTop;
-  const targetBlock = target && typeof target === 'object'
-    ? blocks.find((block) => block === target || block.contains(target))
-    : null;
+  let targetBlock = target && typeof target === 'object' ? target : null;
+  while (targetBlock && !isDocumentBlock(targetBlock)) targetBlock = targetBlock.parentElement;
+  if (targetBlock && !body.contains(targetBlock)) targetBlock = null;
   let neededBottom = Number.isFinite(target) ? Math.max(0, target) + viewportHeight * 2 : null;
   if (targetBlock && !targetBlock.classList.contains('is-held-below')) neededBottom = documentBottom(targetBlock) + viewportHeight * 2;
-  const firstHeld = blocks.indexOf(held[0]);
-  const lastRevealed = firstHeld > 0 ? blocks[firstHeld - 1] : null;
+  const lastRevealed = previousDocumentBlock(firstHeld);
   if (neededBottom !== null && lastRevealed && documentBottom(lastRevealed) >= neededBottom) return false;
   let changed = false;
-  for (const block of held) {
-    block.classList.remove('is-held-below');
+  let block = firstHeld;
+  while (block) {
+    const held = block.classList.contains('is-held-below');
+    const at = block;
+    block = nextDocumentBlock(block);
+    if (!held) continue;
+    at.classList.remove('is-held-below');
     changed = true;
-    if (targetBlock === block) neededBottom = documentBottom(block) + viewportHeight * 2;
-    const bottom = documentBottom(block);
+    if (targetBlock === at) neededBottom = documentBottom(at) + viewportHeight * 2;
+    const bottom = documentBottom(at);
     if (neededBottom !== null && !targetBlock?.classList.contains('is-held-below') && (bottom >= neededBottom || bottom <= 0)) break;
   }
+  readingHeldCursor = block;
   if (changed && !readingHasHeldBlocks()) finishReadingFill();
   return changed;
 }
@@ -27707,7 +27829,7 @@ function recordLinkHoverPoint(event) {
   linkHoverClientX = event.clientX;
   linkHoverClientY = event.clientY;
 }
-const DOCUMENT_LENGTH_UNITS = { line: ['line', 'lines'], word: ['word', 'words'] };
+const DOCUMENT_LENGTH_UNITS = { line: ['line', 'lines'], word: ['word', 'words'], page: ['page', 'pages'] };
 function setLinkHoverLength(count, unit) {
   const pair = DOCUMENT_LENGTH_UNITS[unit];
   const text = pair && typeof count === 'number' && count >= 0 ? formatCountLabel(count, pair[0], pair[1]) : '';
@@ -30958,32 +31080,22 @@ async function markMermaidFailed(mermaid, diagram) {
   diagram.dataset.mermaidRender = 'failed';
   showMermaidFailure(diagram, source, await mermaidStopMessage(mermaid, source));
 }
-
-
-
 const TABLE_COLUMN_FLOOR = 32;
-
-
 let sizedTableShapes = new Map();
-
 let sizedTableDocument = null;
+let tableSizeDrag = null;
 
-
+function tableSizingOwnRows(table) {
+  return [...table.querySelectorAll(':scope > thead > tr'), ...table.querySelectorAll(':scope > tbody > tr'), ...table.querySelectorAll(':scope > tfoot > tr')];
+}
 function tableSizingHeadCells(table) {
-  const rows = [...table.querySelectorAll(':scope > thead > tr'), ...table.querySelectorAll(':scope > tbody > tr')];
-  for (const row of rows) {
+  for (const row of tableSizingOwnRows(table)) {
     const cells = Array.from(row.querySelectorAll(':scope > td, :scope > th'));
     if (cells.length && cells.every((cell) => (parseInt(cell.getAttribute('colspan'), 10) || 1) === 1)) return cells;
   }
   return [];
 }
-
-
-function tableSizingBodyRows(table) {
-  return Array.from(table.querySelectorAll(':scope > tbody > tr'));
-}
-
-
+function tableSizingBodyRows(table) { return Array.from(table.querySelectorAll(':scope > tbody > tr')); }
 function tableSizingCellColumn(cell) {
   const row = cell && cell.parentElement;
   if (!row) return -1;
@@ -30994,51 +31106,57 @@ function tableSizingCellColumn(cell) {
   }
   return -1;
 }
-
-
-function tableSizingWidths(cells) {
-  return cells.map((cell) => cell.getBoundingClientRect().width);
-}
-
-
+function tableSizingWidths(cells) { return cells.map((cell) => cell.getBoundingClientRect().width); }
 function pinTableColumnWidths(cells, widths) {
+  
   cells.forEach((cell, at) => {
-    const px = widths[at] == null ? '' : Math.round(widths[at]) + 'px';
+    const px = widths[at] == null ? '' : widths[at] + 'px';
     cell.style.width = px;
     cell.style.minWidth = px;
     cell.style.maxWidth = px;
   });
 }
-
-
 function pinTableRowHeights(rows, heights) {
-  rows.forEach((row, at) => {
-    row.style.height = heights[at] == null ? '' : Math.round(heights[at]) + 'px';
-  });
+  rows.forEach((row, at) => { row.style.height = heights[at] == null ? '' : heights[at] + 'px'; });
 }
-
-
+function tableSizingBoundaryCells(table) {
+  const named = tableSizingHeadCells(table);
+  if (named.length) return named;
+  const first = tableSizingOwnRows(table)[0];
+  return first ? Array.from(first.querySelectorAll(':scope > td, :scope > th')) : [];
+}
+function tableSizingRowSignature(table) {
+  return JSON.stringify(tableSizingOwnRows(table).map((row) => [row.parentElement.tagName, ...Array.from(row.querySelectorAll(':scope > td, :scope > th')).map((cell) => [cell.tagName, cell.colSpan, cell.rowSpan || 1, cell.textContent])]));
+}
 function tableSizingShape(table) {
   return {
-    columns: tableSizingHeadCells(table).map((cell) => (cell.style.width ? parseFloat(cell.style.width) : null)),
-    rows: tableSizingBodyRows(table).map((row) => (row.style.height ? parseFloat(row.style.height) : null)),
+    columns: tableSizingBoundaryCells(table).map((cell) => cell.style.width ? parseFloat(cell.style.width) : null),
+    rows: tableSizingBodyRows(table).map((row) => row.style.height ? parseFloat(row.style.height) : null),
+    otherRows: tableSizingOwnRows(table).filter((row) => row.parentElement.tagName !== 'TBODY').map((row) => row.style.height ? parseFloat(row.style.height) : null),
+    rowSignature: tableSizingRowSignature(table),
+    placement: table.__tableSizingPlacement ? { ...table.__tableSizingPlacement } : null,
   };
 }
-
 function tableSizingShapeHasSize(shape) {
-  return [...shape.columns, ...shape.rows].some((one) => one != null);
+  return [...shape.columns, ...shape.rows, ...(shape.otherRows || [])].some((one) => one != null) || !!shape.placement;
 }
-
-
+function clearTableSizingPlacement(table) {
+  const container = tableSizingContainer(table);
+  if (table.parentElement.classList.contains('table-lane')) {
+    for (const name of ['justifyContent', 'gridTemplateColumns', 'paddingLeft', 'boxSizing', 'marginTop']) container.style[name] = '';
+    table.parentElement.style.marginInline = '';
+  }
+  for (const name of ['width', 'maxWidth', 'marginLeft', 'marginTop']) table.style[name] = '';
+  delete table.__tableSizingPlacement;
+}
 function rememberTableSizing(table, shape = tableSizingShape(table)) {
   const identity = tableIdentity(table);
   if (!identity) return;
   if (tableSizingShapeHasSize(shape)) sizedTableShapes.set(identity.ordinal, { ...shape, headings: identity.headings });
   else sizedTableShapes.delete(identity.ordinal);
 }
-
-
 function repinSizedTables(path) {
+  if (tableSizeDrag && tableSizeDrag.owner === keyedColumn) endTableSizeDrag(false);
   if (path !== sizedTableDocument) {
     sizedTableDocument = path;
     sizedTableShapes = new Map();
@@ -31050,170 +31168,276 @@ function repinSizedTables(path) {
     const held = sizedTableShapes.get(ordinal);
     if (!held) return;
     const identity = tableIdentity(table, ordinal);
-    if (!sameTableLensHeadings(held.headings, identity.headings)) return;
-    const cells = tableSizingHeadCells(table);
+    const cells = tableSizingBoundaryCells(table);
     const rows = tableSizingBodyRows(table);
-    
-    if (cells.length !== held.columns.length || rows.length !== held.rows.length) return;
-    pinTableColumnWidths(cells, held.columns);
-    pinTableRowHeights(rows, held.rows);
+    if (!sameTableLensHeadings(held.headings, identity.headings) || cells.length !== held.columns.length || rows.length !== held.rows.length) return;
+    const sameRows = rows.length === held.rows.length && held.rowSignature === tableSizingRowSignature(table);
     table.classList.add('is-reader-sized');
+    pinTableColumnWidths(cells, held.columns);
+    if (sameRows) {
+      pinTableRowHeights(rows, held.rows);
+      pinTableRowHeights(tableSizingOwnRows(table).filter((row) => row.parentElement.tagName !== 'TBODY'), held.otherRows || []);
+    }
+    if (held.placement) {
+      table.__tableSizingPlacement = { ...held.placement, block: sameRows ? held.placement.block : 0 };
+      applyTableSizingPlacement(table);
+    }
+    placeTableOutlineGrips(table);
   });
   for (const ordinal of sizedTableShapes.keys()) if (ordinal >= tables.length) sizedTableShapes.delete(ordinal);
 }
-
-
 function addTableSizingGrips(lane) {
   for (const table of Array.from(lane.querySelectorAll('table'))) addTableGrips(table);
 }
-
-
 function addTableGrips(table) {
-  
   const last = tableSizingHeadCells(table).length - 1;
-  
-  const addColumnGrip = (cell, column) => {
-    if (column >= last) return;
+  const rows = tableSizingOwnRows(table);
+  rows.forEach((row, index) => {
+    let column = 0;
+    for (const cell of Array.from(row.querySelectorAll(':scope > td, :scope > th'))) {
+      column += cell.colSpan;
+      const grip = document.createElement('span');
+      grip.className = 'table-sizer table-sizer-row';
+      if (index === rows.length - 1) grip.dataset.tableEdge = 'bottom';
+      cell.appendChild(grip);
+      if (column - 1 < last) {
+        const vertical = document.createElement('span');
+        vertical.className = 'table-sizer table-sizer-column';
+        cell.appendChild(vertical);
+      }
+    }
+  });
+  table.__tableSizingOutlines = ['left', 'right', 'top', 'bottom'].map((edge) => {
+    
     const grip = document.createElement('span');
-    grip.className = 'table-sizer table-sizer-column';
-    cell.appendChild(grip);
-  };
-  
-  Array.from(table.querySelectorAll(':scope > thead > tr')).forEach((row) => {
-    let column = 0;
-    Array.from(row.querySelectorAll(':scope > td, :scope > th')).forEach((cell) => {
-      column += cell.colSpan;
-      addColumnGrip(cell, column - 1);
-    });
+    grip.className = 'table-sizer ' + (edge === 'left' || edge === 'right' ? 'table-sizer-column' : 'table-sizer-row');
+    grip.dataset.tableEdge = edge;
+    grip.__tableSizingTable = table;
+    table.parentElement.appendChild(grip);
+    return grip;
   });
-  tableSizingBodyRows(table).forEach((row) => {
-    let column = 0;
-    Array.from(row.querySelectorAll(':scope > td, :scope > th')).forEach((cell) => {
-      column += cell.colSpan;
-      const rowGrip = document.createElement('span');
-      rowGrip.className = 'table-sizer table-sizer-row';
-      cell.appendChild(rowGrip);
-      
-      addColumnGrip(cell, column - 1);
-    });
-  });
-}
-
-
-function isTableSizingGrip(el) {
-  return !!(el && el.classList && el.classList.contains('table-sizer'));
-}
-
-let tableSizeDrag = null;
-
-
-function applyPendingTableSize() {
-  if (!tableSizeDrag) return;
-  tableSizeDrag.frame = 0;
-  if (tableSizeDrag.pending == null) return;
-  const sizes = tableSizeDrag.sizes.slice();
-  sizes[tableSizeDrag.at] = tableSizeDrag.pending;
-  if (tableSizeDrag.kind === 'row') pinTableRowHeights(tableSizeDrag.parts, sizes);
-  else pinTableColumnWidths(tableSizeDrag.parts, sizes);
-  if (!tableSizeDrag.marked) {
-    tableSizeDrag.table.classList.add('is-reader-sized');
-    tableSizeDrag.marked = true;
+  placeTableOutlineGrips(table);
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver(inThisColumn(() => {
+      if (!table.isConnected) { observer.disconnect(); return; }
+      placeTableOutlineGrips(table);
+    }));
+    observer.observe(table);
+    table.__tableSizingObserver = observer;
   }
 }
-
-
-function endTableSizeDrag(flushPending) {
-  if (!tableSizeDrag) return;
-  const { frame, table } = tableSizeDrag;
-  if (flushPending) applyPendingTableSize();
-  if (frame) cancelAnimationFrame(frame);
-  leafReleasePointer(tableSizeDrag.grip, tableSizeDrag.pointerId);
-  tableSizeDrag = null;
-  document.body.classList.remove('table-resizing', 'is-row');
-  rememberTableSizing(table);
+function placeTableOutlineGrips(table) {
+  if (!table.__tableSizingOutlines || !table.parentElement) return;
+  const box = table.getBoundingClientRect();
+  const parent = table.parentElement.getBoundingClientRect();
+  const left = box.left - parent.left + (table.parentElement.scrollLeft || 0) - (table.parentElement.clientLeft || 0);
+  const top = box.top - parent.top + (table.parentElement.scrollTop || 0) - (table.parentElement.clientTop || 0);
+  table.__tableSizingOutlines.forEach((grip) => {
+    const edge = grip.dataset.tableEdge;
+    const vertical = edge === 'left' || edge === 'right';
+    grip.style.left = (left + (edge === 'right' ? Math.max(0, box.width - 8) : 0)) + 'px';
+    grip.style.top = (top + (edge === 'bottom' ? Math.max(0, box.height - 8) : 0)) + 'px';
+    grip.style.width = (vertical ? 8 : box.width) + 'px';
+    grip.style.height = (vertical ? box.height : 8) + 'px';
+    grip.style.right = 'auto';
+    grip.style.bottom = 'auto';
+  });
 }
-
-
+function isTableSizingGrip(el) { return !!(el && el.classList && el.classList.contains('table-sizer')); }
 function tableSizingGripUnder(target) {
   const grip = target && target.closest ? target.closest('.table-sizer') : null;
   if (!grip) return null;
   const cell = grip.parentElement;
-  const table = cell && cell.closest ? cell.closest('table') : null;
+  const table = grip.__tableSizingTable || (cell && cell.closest ? cell.closest('table') : null);
   if (!table) return null;
   const row = grip.classList.contains('table-sizer-row');
-  const parts = row ? tableSizingBodyRows(table) : tableSizingHeadCells(table);
-  
-  const at = row ? parts.indexOf(cell.parentElement) : tableSizingCellColumn(cell);
-  return at < 0 ? null : { grip, cell, table, parts, at, kind: row ? 'row' : 'column' };
+  const edge = grip.dataset.tableEdge || '';
+  const parts = row ? tableSizingOwnRows(table) : edge ? tableSizingBoundaryCells(table) : tableSizingHeadCells(table);
+  const at = edge === 'left' || edge === 'top' ? 0 : edge === 'right' || edge === 'bottom' ? parts.length - 1 : row ? parts.indexOf(cell.parentElement) : tableSizingCellColumn(cell);
+  return at < 0 || at >= parts.length ? null : { grip, cell, table, parts, at, edge, direction: edge === 'left' || edge === 'top' ? -1 : 1, kind: row ? 'row' : 'column' };
 }
-
-
 function tableRowContentHeight(row) {
   const given = row.style.height;
   row.style.height = '';
   const natural = row.getBoundingClientRect().height;
   row.style.height = given;
-  return natural;
+  return Math.max(8, natural);
 }
-
+function tableSizingContainer(table) {
+  const lane = table.parentElement;
+  return lane && lane.classList.contains('table-lane') ? lane.parentElement : lane;
+}
+function applyTableSizingPlacement(table) {
+  const held = table.__tableSizingPlacement;
+  const container = tableSizingContainer(table);
+  if (!held || !container) return;
+  if (!table.parentElement.classList.contains('table-lane')) {
+    const parent = table.parentElement.closest('table');
+    if (parent && held.parentWidth) {
+      parent.classList.add('is-reader-sized');
+      parent.style.width = held.parentWidth + 'px';
+      parent.style.maxWidth = held.parentWidth + 'px';
+      if (parent.parentElement.classList.contains('table-lane') && !parent.__tableSizingPlacement) {
+        const bay = parent.parentElement.parentElement;
+        bay.style.justifyContent = 'start';
+        bay.style.gridTemplateColumns = held.parentWidth + 'px';
+        bay.style.paddingLeft = held.parentLeading + 'px';
+        bay.style.boxSizing = 'border-box';
+        parent.parentElement.style.marginInline = '0';
+      }
+    }
+  }
+  const available = container.getBoundingClientRect().width;
+  const width = available > 0 ? Math.min(held.width, Math.max(TABLE_COLUMN_FLOOR, available - held.leading)) : held.width;
+  if (table.parentElement.classList.contains('table-lane')) {
+    container.style.justifyContent = 'start';
+    container.style.gridTemplateColumns = Math.max(TABLE_COLUMN_FLOOR, width) + 'px';
+    container.style.paddingLeft = Math.max(0, held.leading) + 'px';
+    container.style.boxSizing = 'border-box';
+    container.style.marginTop = held.block + 'px';
+    table.parentElement.style.marginInline = '0';
+  } else {
+    table.style.marginLeft = Math.max(0, held.leading) + 'px';
+    table.style.marginTop = held.block + 'px';
+  }
+  table.style.width = width + 'px';
+  table.style.maxWidth = width + 'px';
+}
+function applyPendingTableSize() {
+  const drag = tableSizeDrag;
+  if (!drag) return;
+  drag.frame = 0;
+  if (drag.pending == null) return;
+  if (!drag.owner.reader.contains(drag.table)) { endTableSizeDrag(false); return; }
+  if (drag.pending === drag.applied) { drag.pending = null; return; }
+  withColumn(drag.owner, () => {
+    const sizes = drag.sizes.slice();
+    sizes[drag.at] = drag.pending;
+    drag.table.classList.add('is-reader-sized');
+    if (drag.kind === 'row') pinTableRowHeights(drag.parts, sizes);
+    else pinTableColumnWidths(drag.parts, sizes);
+    const delta = drag.pending - drag.base;
+    const held = { ...drag.placement };
+    if (drag.kind === 'column') {
+      held.width = Math.max(TABLE_COLUMN_FLOOR, drag.placement.width + delta);
+      if (drag.edge === 'left') held.leading = drag.placement.leading - delta;
+    } else if (drag.edge === 'top') held.block = Math.max(-drag.gap, drag.placement.block - delta);
+    drag.table.__tableSizingPlacement = held;
+    applyTableSizingPlacement(drag.table);
+    drag.table.scrollLeft = drag.scrollLeft;
+    const rectangle = drag.table.getBoundingClientRect();
+    if (drag.kind === 'column') held.width = rectangle.width;
+    const drift = drag.edge === 'top' ? rectangle.bottom - drag.rectangle.bottom : rectangle.top - drag.rectangle.top;
+    setReaderScrollTop(drag.reader.scrollTop + drift);
+    recordReaderScrollPosition();
+    placeTableOutlineGrips(drag.table);
+    invalidateMinimapPreview();
+    drag.applied = drag.pending;
+    drag.pending = null;
+  });
+}
+function endTableSizeDrag(flushPending) {
+  const drag = tableSizeDrag;
+  if (!drag) return;
+  if (drag.frame) cancelAnimationFrame(drag.frame);
+  if (flushPending) applyPendingTableSize();
+  if (tableSizeDrag !== drag) return;
+  tableSizeDrag = null;
+  leafReleasePointer(drag.grip, drag.pointerId);
+  document.body.classList.remove('table-resizing', 'is-row');
+  if (drag.owner.reader.contains(drag.table)) withColumn(drag.owner, () => {
+    rememberTableSizing(drag.table);
+    if (flushPending && drag.applied != null) columnFrame(() => settleTableSizingPosition(drag, 2));
+  });
+}
+function settleTableSizingPosition(drag, remaining) {
+  if (!drag.owner.reader.contains(drag.table) || drag.table.__tableSizingTurn !== drag.turn) return;
+  const rectangle = drag.table.getBoundingClientRect();
+  const drift = drag.edge === 'top' ? rectangle.bottom - drag.rectangle.bottom : rectangle.top - drag.rectangle.top;
+  if (Math.abs(drift) > 0.5) {
+    setReaderScrollTop(readerScrollElement().scrollTop + drift);
+    recordReaderScrollPosition();
+  }
+  if (remaining > 1) columnFrame(() => settleTableSizingPosition(drag, remaining - 1));
+}
 document.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
   const aimed = tableSizingGripUnder(event.target);
   if (!aimed) return;
   event.preventDefault();
-  const row = aimed.kind === 'row';
-  tableSizeDrag = {
-    pointerId: event.pointerId,
-    kind: aimed.kind,
-    grip: aimed.grip,
-    table: aimed.table,
-    parts: aimed.parts,
-    at: aimed.at,
-    
-    sizes: row ? tableSizingShape(aimed.table).rows : tableSizingWidths(aimed.parts),
-    base: row ? aimed.parts[aimed.at].getBoundingClientRect().height : aimed.parts[aimed.at].getBoundingClientRect().width,
-    floor: row ? tableRowContentHeight(aimed.parts[aimed.at]) : TABLE_COLUMN_FLOOR,
-    from: row ? event.clientY : event.clientX,
-    frame: 0,
-    pending: null,
-    marked: false,
-  };
-  leafHoldPointer(aimed.grip, event.pointerId);
-  document.body.classList.add('table-resizing');
-  if (row) document.body.classList.add('is-row');
+  if (tableSizeDrag) endTableSizeDrag(true);
+  const owner = [leftColumn, rightColumn].find((column) => column && column.reader.contains(aimed.table)) || keyedColumn;
+  withColumn(owner, () => {
+    const row = aimed.kind === 'row';
+    const rectangle = aimed.table.getBoundingClientRect();
+    const container = tableSizingContainer(aimed.table);
+    const box = container.getBoundingClientRect();
+    const nested = !aimed.table.parentElement.classList.contains('table-lane');
+    const leading = nested ? parseFloat(aimed.table.style.marginLeft) || 0 : rectangle.left - box.left;
+    const parent = nested && aimed.table.parentElement.closest('table');
+    const parentWidth = parent ? parent.getBoundingClientRect().width : null;
+    const parentLeading = parent && parent.parentElement.classList.contains('table-lane') ? parent.getBoundingClientRect().left - parent.parentElement.parentElement.getBoundingClientRect().left : 0;
+    const placement = aimed.table.__tableSizingPlacement || { leading, originLeading: leading, block: 0, width: rectangle.width, parentWidth, parentLeading };
+    const previous = container.previousElementSibling;
+    const gap = nested ? 0 : previous ? Math.max(0, box.top - previous.getBoundingClientRect().bottom - placement.block) : 0;
+    const base = aimed.parts[aimed.at].getBoundingClientRect()[row ? 'height' : 'width'];
+    let floor = row ? tableRowContentHeight(aimed.parts[aimed.at]) : TABLE_COLUMN_FLOOR;
+    if (aimed.edge === 'right' || aimed.edge === 'left') floor = Math.max(floor, base - rectangle.width + TABLE_COLUMN_FLOOR);
+    const turn = (aimed.table.__tableSizingTurn || 0) + 1;
+    aimed.table.__tableSizingTurn = turn;
+    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes: row ? aimed.parts.map((part) => part.style.height ? parseFloat(part.style.height) : null) : tableSizingWidths(aimed.parts), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
+    leafHoldPointer(aimed.grip, event.pointerId);
+    document.body.classList.add('table-resizing');
+    document.body.classList.toggle('is-row', row);
+  });
 });
-
 document.addEventListener('pointermove', (event) => {
-  if (!tableSizeDrag || event.pointerId !== tableSizeDrag.pointerId) return;
-  const along = tableSizeDrag.kind === 'row' ? event.clientY : event.clientX;
-  const reached = tableSizeDrag.base + (along - tableSizeDrag.from);
-  tableSizeDrag.pending = Math.max(tableSizeDrag.floor, reached);
-  if (!tableSizeDrag.frame) tableSizeDrag.frame = requestAnimationFrame(applyPendingTableSize);
+  const drag = tableSizeDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  const along = drag.kind === 'row' ? event.clientY : event.clientX;
+  let reached = Math.max(drag.floor, drag.base + drag.direction * (along - drag.from));
+  if (drag.edge === 'left') reached = Math.min(reached, drag.base + drag.placement.leading);
+  drag.pending = reached;
+  if (!drag.frame) drag.frame = requestAnimationFrame(applyPendingTableSize);
 });
-
-document.addEventListener('pointerup', (event) => {
-  if (!tableSizeDrag || event.pointerId !== tableSizeDrag.pointerId) return;
-  endTableSizeDrag(true);
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(type, (event) => {
+  if (tableSizeDrag && event.pointerId === tableSizeDrag.pointerId) endTableSizeDrag(true);
 });
-
-
-document.addEventListener('pointercancel', (event) => {
-  if (!tableSizeDrag || event.pointerId !== tableSizeDrag.pointerId) return;
-  endTableSizeDrag(true);
-});
-
-
 document.addEventListener('dblclick', (event) => {
   const aimed = tableSizingGripUnder(event.target);
   if (!aimed) return;
   event.preventDefault();
-  const shape = tableSizingShape(aimed.table);
-  const sizes = aimed.kind === 'row' ? shape.rows : shape.columns;
-  sizes[aimed.at] = null;
-  if (aimed.kind === 'row') pinTableRowHeights(aimed.parts, sizes);
-  else pinTableColumnWidths(aimed.parts, sizes);
-  aimed.table.classList.toggle('is-reader-sized', tableSizingShapeHasSize(shape));
-  rememberTableSizing(aimed.table, shape);
+  if (tableSizeDrag) endTableSizeDrag(true);
+  const owner = [leftColumn, rightColumn].find((column) => column && column.reader.contains(aimed.table)) || keyedColumn;
+  withColumn(owner, () => {
+    const sizes = aimed.parts.map((part) => part.style[aimed.kind === 'row' ? 'height' : 'width'] ? parseFloat(part.style[aimed.kind === 'row' ? 'height' : 'width']) : null);
+    aimed.table.__tableSizingTurn = (aimed.table.__tableSizingTurn || 0) + 1;
+    sizes[aimed.at] = null;
+    if (aimed.kind === 'row') pinTableRowHeights(aimed.parts, sizes);
+    else pinTableColumnWidths(aimed.parts, sizes);
+    if (aimed.edge) {
+      const held = aimed.table.__tableSizingPlacement;
+      if (held && aimed.edge === 'top') held.block = 0;
+      if (held && aimed.kind === 'column') {
+        const container = tableSizingContainer(aimed.table);
+        aimed.table.style.width = '';
+        aimed.table.style.maxWidth = '';
+        if (aimed.table.parentElement.classList.contains('table-lane')) container.style.gridTemplateColumns = 'minmax(0, max-content)';
+        held.width = aimed.table.getBoundingClientRect().width;
+        if (aimed.edge === 'left') held.leading = held.originLeading;
+      }
+      if (held) applyTableSizingPlacement(aimed.table);
+    }
+    const shape = tableSizingShape(aimed.table);
+    if (![...shape.columns, ...shape.rows, ...shape.otherRows].some((size) => size != null)) {
+      clearTableSizingPlacement(aimed.table);
+      shape.placement = null;
+    }
+    aimed.table.classList.toggle('is-reader-sized', tableSizingShapeHasSize(shape));
+    rememberTableSizing(aimed.table, shape);
+    placeTableOutlineGrips(aimed.table);
+    invalidateMinimapPreview();
+  });
 });
 
 function tableSheetOverlayElement() {
@@ -31236,17 +31460,23 @@ function closeTableSheet() {
 
 
 function clearReadingLaneLayout(copy) {
-  tableSizingHeadCells(copy).forEach((cell) => {
+  copy.querySelectorAll('table').forEach((nested) => clearReadingLaneTableLayout(nested));
+  clearReadingLaneTableLayout(copy);
+  copy.querySelectorAll('.table-sizer').forEach((grip) => grip.remove());
+}
+function clearReadingLaneTableLayout(copy) {
+  tableSizingBoundaryCells(copy).forEach((cell) => {
     cell.style.width = '';
     cell.style.minWidth = '';
     cell.style.maxWidth = '';
   });
-  tableSizingBodyRows(copy).forEach((row) => {
+  tableSizingOwnRows(copy).forEach((row) => {
     row.style.height = '';
   });
+  for (const name of ['width', 'maxWidth', 'marginLeft', 'marginTop']) copy.style[name] = '';
+  delete copy.__tableSizingPlacement;
   copy.classList.remove('is-reader-sized');
   if (!copy.dataset.lensLayout) copy.classList.remove('is-cards');
-  copy.querySelectorAll('.table-sizer').forEach((grip) => grip.remove());
 }
 
 function tableSheetGrid(table) {

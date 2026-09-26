@@ -2,7 +2,7 @@
 
 # Licenses
 
-Leaftext 3.30.0 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
+Leaftext 3.31.0 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
 
 ## Drawings
 
@@ -311,7 +311,7 @@ THIS SOFTWARE.
 
 ## Crates
 
-Leaftext is compiled from the 175 Rust packages below, across the two platforms it ships on. The table names every one with the version built in, the license its author declared and the notice files it carries; the texts follow, one copy of each, labeled with the file it is named in and every package that ships exactly those bytes.
+Leaftext is compiled from the 176 Rust packages below, across the two platforms it ships on. The table names every one with the version built in, the license its author declared and the notice files it carries; the texts follow, one copy of each, labeled with the file it is named in and every package that ships exactly those bytes.
 
 | package | version | license | notices |
 |---|---|---|---|
@@ -397,6 +397,7 @@ Leaftext is compiled from the 175 Rust packages below, across the two platforms 
 | objc2 | 0.6.4 | MIT | Objc2-MIT.md |
 | objc2-app-kit | 0.3.2 | Zlib OR Apache-2.0 OR MIT | Objc2-MIT.md |
 | objc2-core-foundation | 0.3.2 | Zlib OR Apache-2.0 OR MIT | Objc2-MIT.md |
+| objc2-core-graphics | 0.3.2 | Zlib OR Apache-2.0 OR MIT | Objc2-MIT.md |
 | objc2-encode | 4.1.0 | MIT | Objc2-MIT.md |
 | objc2-exception-helper | 0.1.1 | Zlib OR Apache-2.0 OR MIT | Objc2-MIT.md |
 | objc2-foundation | 0.3.2 | MIT | Objc2-MIT.md |
@@ -1907,7 +1908,7 @@ express Statement of Purpose.
     this CC0 or use of the Work.
 ```
 
-**Objc2-MIT.md — block2 0.6.2, dispatch2 0.3.1, objc2 0.6.4, objc2-app-kit 0.3.2, objc2-core-foundation 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.3.2, objc2-web-kit 0.3.2**
+**Objc2-MIT.md — block2 0.6.2, dispatch2 0.3.1, objc2 0.6.4, objc2-app-kit 0.3.2, objc2-core-foundation 0.3.2, objc2-core-graphics 0.3.2, objc2-encode 4.1.0, objc2-exception-helper 0.1.1, objc2-foundation 0.3.2, objc2-web-kit 0.3.2**
 
 ```text
 Copyright 2026 Mads Marquart
