@@ -112,7 +112,7 @@ The [library pane](GLOSSARY.md#library-pane)'s file list — one folder at a tim
 
 ## Floating toolbar
 
-The small bar over the foot of the page. It holds the three views — [reading](GLOSSARY.md#reading-view), [code](GLOSSARY.md#code-view) and [graph](GLOSSARY.md#graph-view) — with the one you are in filled in the accent color, plus [Undo](GLOSSARY.md#undo) and [Save](GLOSSARY.md#save) when there is an edit to take back or write. The settings of the view you are in ride in a tray behind the bar instead of on it: the [padlock](GLOSSARY.md#padlock), the [speed reader](GLOSSARY.md#speed-reader), the [typing help](GLOSSARY.md#typing-help) wand and the [graph size](GLOSSARY.md#graph-size), whichever of them that view has, and the tray and its handle go where a view has none. A small handle pokes above the button of the view you are in, and resting on it or reaching the tray with the Tab key slides it out over the page; moving away puts it back. No document, no bar.
+The small bar over the foot of the page. It holds the three views — [reading](GLOSSARY.md#reading-view), [code](GLOSSARY.md#code-view) and [graph](GLOSSARY.md#graph-view) — with the one you are in filled in the accent color, plus [Undo](GLOSSARY.md#undo) and [Save](GLOSSARY.md#save) when there is an edit to take back or write. The settings of the view you are in ride in a tray behind the bar instead of on it: the [padlock](GLOSSARY.md#padlock), the [speed reader](GLOSSARY.md#speed-reader), the [typing help](GLOSSARY.md#typing-help) wand and the [graph size](GLOSSARY.md#graph-size), whichever of them that view has, and the tray and its handle go where a view has none. A small handle pokes above the button of the view you are in, and resting on it or reaching the tray with the Tab key slides it out over the page; moving away puts it back. On a touchscreen a tap on that button brings it out and a second tap puts it away. No document, no bar.
 
 ## Flowchart editor
 
@@ -148,7 +148,7 @@ The shared `GLOSSARY.md` this page is one of. Leaftext finds it by walking up fr
 
 ## Graph size
 
-How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-view) draws: **Focus** (the open document and its direct links), Medium, Large, or Everything. A labeled dropdown in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar), there only while the map is up; hover the handle above the graph button to bring it out. See [Settings](01-features/05-settings.md#graph-size).
+How much of your [vault](GLOSSARY.md#vault) the [graph view](GLOSSARY.md#graph-view) draws: **Focus** (the open document and its direct links), Medium, Large, or Everything. A labeled dropdown in the tray behind the [floating toolbar](GLOSSARY.md#floating-toolbar), there only while the map is up; hover the handle above the graph button, or tap the graph button on a touchscreen, to bring it out. See [Settings](01-features/05-settings.md#graph-size).
 
 ## Graph view
 

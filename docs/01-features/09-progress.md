@@ -82,8 +82,10 @@ What you can grow today:
 
 - **Six one-color themes**, Foraging's — Woad, Sumac, Laurel, Saffron, Lavender and Birch. A theme you grow joins the [theme picker](06-themes.md) and Random; press **Wear it in Themes** in its card to open the picker there.
 - **Things on the page** — a drop cap on the document's first words, a leaf-cut divider, the chrome's speckle on the page itself, leaf bullets, headings whose first letter takes the theme's color, a small leaf beside each heading you have read, and a ribbon on the minimap at the deepest point you have read in a document. Each arrives switched on and has its own switch in its card.
-- **More leaf lore** — six more sentences for the start screen's palm-leaf voice, one each time.
-- **A title** — Reader, Scribe, Cartographer or Prism Keeper, shown under **Your Grove**.
+- **More leaf lore** — six more sentences for the start screen's palm-leaf voice, one each time. From the first sentence its card has a switch that takes every sentence you bought off the start screen and brings them back, while the next one stays for sale.
+- **A title** — Reader, Scribe, Cartographer or Prism Keeper, shown under **Your Grove**. Its card has a switch that hides the name and shows it again; you can still pick a different name while it is hidden.
+
+Hiding a reward keeps it: what you paid, its ranks and the name you chose all stay, and the Grove goes on counting.
 
 A reward you grew before the tree was ordered by Grove level stays yours, whatever level now opens it.
 

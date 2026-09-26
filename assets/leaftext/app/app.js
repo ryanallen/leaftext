@@ -7161,6 +7161,17 @@ function pickHomeMessage() {
 }
 homeMessage = pickHomeMessage();
 
+function keepHomeDescriptionOffered() {
+  if (!homeMessage) return;
+  const family = HOME_MESSAGE_FAMILIES.find((one) => one.name === homeMessage.family);
+  if (!family) return;
+  const descriptions = homeFamilyDescriptions(family);
+  if (descriptions.includes(homeMessage.description)) return;
+  homeMessage.description = descriptions[Math.floor(Math.random() * descriptions.length)];
+  const shown = app.querySelector('.empty-description');
+  if (shown) shown.textContent = homeMessage.description;
+}
+
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
 
 if (window.__leafScrollbarsAlways === true) {
@@ -9854,12 +9865,15 @@ function renderReaderToolbar(hasDocument) {
   document.body.classList.toggle('has-reader-toolbar', Boolean(hasDocument));
   if (!hasDocument) {
     readerToolbar.classList.remove('has-open-tray');
+    readerToolTrayTouchOpen = '';
     syncReaderToolDividerState();
     return;
   }
   const rendered = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
   if (pendingReaderView === rendered) pendingReaderView = null;
   const current = pendingReaderView || rendered;
+  
+  if (readerToolTrayTouchOpen && readerToolTrayTouchOpen !== readerToolTrayKey(current)) readerToolTrayTouchOpen = '';
   for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
     if (!button) continue;
     const on = button.dataset.view === current;
@@ -9901,16 +9915,50 @@ let hoveredReaderTool = null;
 let readerToolTrayHovered = false;
 let readerToolTrayKeyboardFocus = false;
 let readerToolbarKeyboardNavigation = false;
+
+let readerToolTrayTouchOpen = '';
+let readerToolPressType = '';
+function readerToolTrayKey(view) {
+  return `${activeDocumentPath()}
+${view}`;
+}
+function isTouch(event) {
+  return Boolean(event) && event.pointerType === 'touch';
+}
+function pressWasTap() {
+  return readerToolPressType === 'touch' || readerToolPressType === 'pen';
+}
+function activeReaderViewButton() {
+  return [viewReadingButton, viewCodeButton, viewGraphButton].find((button) => button && button.classList.contains('is-active')) || null;
+}
+function toggleReaderToolTrayTouch() {
+  const button = activeReaderViewButton();
+  readerToolTrayTouchOpen = readerToolTrayTouchOpen || !button ? '' : readerToolTrayKey(button.dataset.view);
+  syncReaderToolTrayState();
+}
+function closeReaderToolTrayTouch() {
+  if (!readerToolTrayTouchOpen) return;
+  readerToolTrayTouchOpen = '';
+  syncReaderToolTrayState();
+}
 document.addEventListener('keydown', (event) => {
+  readerToolPressType = '';
   if (event.key === 'Tab') readerToolbarKeyboardNavigation = true;
+  if (event.key === 'Escape') closeReaderToolTrayTouch();
 });
-document.addEventListener('pointerdown', () => {
+document.addEventListener('pointerdown', (event) => {
   readerToolbarKeyboardNavigation = false;
+  readerToolPressType = (event && event.pointerType) || '';
+  
+  const target = event && event.target;
+  const opener = activeReaderViewButton();
+  const inside = Boolean(target) && [readerToolTray, opener].some((part) => part && (part === target || part.contains(target)));
+  if (!inside) closeReaderToolTrayTouch();
 });
 function syncReaderToolTrayState() {
   if (!readerToolbar) return;
   const activeButtonHovered = hoveredReaderTool && hoveredReaderTool.classList.contains('is-active');
-  readerToolbar.classList.toggle('has-open-tray', Boolean(activeButtonHovered || readerToolTrayHovered || readerToolTrayKeyboardFocus));
+  readerToolbar.classList.toggle('has-open-tray', Boolean(activeButtonHovered || readerToolTrayHovered || readerToolTrayKeyboardFocus || readerToolTrayTouchOpen));
 }
 function syncReaderToolDividerState() {
   if (!readerToolbar) return;
@@ -9952,14 +10000,21 @@ if (readerToolTray) {
     endReaderToolTrayMotion();
   });
   
-  readerToolTray.addEventListener('pointerenter', () => {
-    readerToolTrayHovered = true;
+  readerToolTray.addEventListener('pointerenter', (event) => {
+    if (!isTouch(event)) readerToolTrayHovered = true;
     endReaderToolTrayMotion();
     syncReaderToolTrayState();
   });
-  readerToolTray.addEventListener('pointerleave', () => {
-    readerToolTrayHovered = false;
+  readerToolTray.addEventListener('pointerleave', (event) => {
+    if (!isTouch(event)) readerToolTrayHovered = false;
     syncReaderToolTrayState();
+  });
+  
+  readerToolTray.addEventListener('click', (event) => {
+    if (!pressWasTap()) return;
+    const target = event.target;
+    if (target && typeof target.closest === 'function' && target.closest('button, select')) return;
+    toggleReaderToolTrayTouch();
   });
   readerToolTray.addEventListener('focusin', (event) => {
     readerToolTrayKeyboardFocus = event.target.tagName === 'SELECT' || readerToolbarKeyboardNavigation;
@@ -10011,6 +10066,7 @@ function renderViewTools(current) {
 
 function showViewToolsIfAny() {
   const showTools = anyViewToolShowing();
+  if (!showTools) readerToolTrayTouchOpen = '';
   if (readerViewTools) readerViewTools.hidden = !showTools;
   if (readerToolTray) readerToolTray.hidden = !showTools;
 }
@@ -10027,13 +10083,13 @@ function retireViewToolsHint() {
 }
 for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
   if (button) {
-    button.addEventListener('pointerenter', () => {
-      hoveredReaderTool = button;
+    button.addEventListener('pointerenter', (event) => {
+      if (!isTouch(event)) hoveredReaderTool = button;
       retireViewToolsHint();
       syncReaderToolTrayState();
     });
-    button.addEventListener('pointerleave', () => {
-      if (hoveredReaderTool === button) hoveredReaderTool = null;
+    button.addEventListener('pointerleave', (event) => {
+      if (!isTouch(event) && hoveredReaderTool === button) hoveredReaderTool = null;
       syncReaderToolTrayState();
     });
   }
@@ -10146,7 +10202,15 @@ function setReaderView(view) {
   renderReaderToolbar(!!activeDocumentPath());
 }
 for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
-  if (button) button.addEventListener('click', () => setReaderView(button.dataset.view));
+  if (!button) continue;
+  button.addEventListener('click', () => {
+    
+    if (pressWasTap() && button.classList.contains('is-active')) {
+      toggleReaderToolTrayTouch();
+      return;
+    }
+    setReaderView(button.dataset.view);
+  });
 }
 
 function setGraphStatus(message) {
@@ -20630,15 +20694,15 @@ function bindTableControls() {
   body.addEventListener('pointermove', (event) => {
     
     if (tableRowDragging || tableColumnDragging) return;
+    
+    const cell = event.target && event.target.closest ? event.target.closest('th, td') : null;
+    if (cell && (cell.closest('table') !== tableColumnHandleTable || tableColumnOf(cell) !== tableColumnHandleAt)) aimTableColumnHandle(cell, true);
     const row = tableBodyRowAt(event.target, true);
     if (!row) {
       if (!tableRowCrossing(event)) hideTableRowHandle();
       return;
     }
     if (row !== tableRowHandleRow) aimTableRowHandle(row, true);
-    
-    const cell = event.target.closest('th, td');
-    if (cell && tableColumnOf(cell) !== tableColumnHandleAt) aimTableColumnHandle(cell, true);
   });
 
   
@@ -20647,6 +20711,8 @@ function bindTableControls() {
   body.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || !event.target || !event.target.closest) return;
     if (event.target.closest('.table-column-grip') && tableColumnHandleTable && tableColumnHandleAt >= 0) {
+      if (!tableColumnHandleTable.isConnected || !tableTakesControls(tableColumnHandleTable) ||
+          !tableColumnHandle || !tableColumnHandle.contains(event.target)) return hideTableColumnHandle();
       event.preventDefault();
       tableColumnDragging = { table: tableColumnHandleTable, column: tableColumnHandleAt, x: event.clientX, y: event.clientY, lift: null };
       return;
@@ -24234,19 +24300,20 @@ function groveNodeState(node) {
   if (held < node.price) return { state: 'short', owned, short: node.price - held };
   return { state: 'available', owned };
 }
-function groveNodeCorner(node, said) {
-  const id = escapeAttr(node.id);
+function groveNodeStatus(said, node) {
   if (said.state === 'available') return `<span class="grove-tree-price is-available">${escapeText(formatCountLabel(node.price, 'seed', 'seeds'))}</span>`;
   if (said.state === 'short') return `<span class="grove-tree-price">${escapeText(formatCount(said.short))} to go</span>`;
   if (said.state === 'locked') return '<span class="grove-tree-price is-locked">Locked</span>';
   if (said.state === 'later') return '<span class="grove-tree-price is-locked">Not grown yet</span>';
+  return '<span class="grove-tree-owned">Owned</span>';
+}
+
+function groveNodeCorner(node, said) {
+  const status = groveNodeStatus(said, node);
+  if (!node.switchable || said.owned < 1) return status;
   const on = !!(leafProfile && Array.isArray(leafProfile.on) && leafProfile.on.includes(node.id));
-  const owned = '<span class="grove-tree-owned">Owned</span>';
-  if (node.kind === 'ornament') {
-    const part = (name) => `<span class="grove-switch-${name}${on ? ' is-on' : ''}"${name === 'track' ? ' aria-hidden="true"' : ''}>`;
-    return `${owned}<button type="button" class="grove-switch grove-tree-switch" role="switch" aria-checked="${on}" aria-label="${escapeAttr(node.name)}" data-grove-switch="${id}">${part('track')}${part('thumb')}</span></span></button>`;
-  }
-  return owned;
+  const part = (name) => `<span class="grove-switch-${name}${on ? ' is-on' : ''}"${name === 'track' ? ' aria-hidden="true"' : ''}>`;
+  return `${status}<button type="button" class="grove-switch grove-tree-switch" role="switch" aria-checked="${on}" aria-label="${escapeAttr(node.name)}" data-grove-switch="${escapeAttr(node.id)}">${part('track')}${part('thumb')}</span></span></button>`;
 }
 function groveNodeFoot(node, said) {
   const id = escapeAttr(node.id);
@@ -24738,7 +24805,7 @@ function groveDayReviewView(review) {
 function drawGroveHead() {
   if (groveBack) groveBack.hidden = !groveAllXpOpen;
   groveSwitch.hidden = groveAllXpOpen;
-  const title = leafProfile && leafProfile.enabled && groveRanks('title') > 0 && leafProfile.title;
+  const title = groveRewardShown(leafProfile, 'title') && leafProfile.title;
   const named = title ? `Your Grove<span class="grove-sheet-title-name">${escapeText(title)}</span>` : 'Your Grove';
   if (!groveTitle) return;
   if (groveAllXpOpen) groveTitle.innerHTML = `All XP${groveAllXpCount()}`;
@@ -25127,10 +25194,14 @@ function drawReadingRibbon() {
 }
 
 function earnedLeafLore(all) {
-  const profile = leafProfile || window.__leafProfile;
-  if (!profile || !profile.enabled) return [];
-  const ranks = Number((profile.unlocks || {})['leaf-lore']) || 0;
-  return all.slice(0, ranks);
+  return all.slice(0, shownLeafLoreRanks(leafProfile || window.__leafProfile));
+}
+
+function groveRewardShown(profile, id) {
+  return !!(profile && profile.enabled && (Number((profile.unlocks || {})[id]) || 0) > 0 && Array.isArray(profile.on) && profile.on.includes(id));
+}
+function shownLeafLoreRanks(profile) {
+  return groveRewardShown(profile, 'leaf-lore') ? Number(profile.unlocks['leaf-lore']) || 0 : 0;
 }
 
 
@@ -25139,7 +25210,9 @@ window.leafProfileUpdated = function (profile) {
   if (Array.isArray(profile.catalog)) leafCatalog = profile.catalog;
   if (Array.isArray(profile.titles)) leafTitles = profile.titles;
   if (Array.isArray(profile.earning)) leafEarning = profile.earning;
+  const loreBefore = shownLeafLoreRanks(leafProfile);
   leafProfile = profile;
+  if (shownLeafLoreRanks(profile) !== loreBefore) keepHomeDescriptionOffered();
   if (!profile.enabled) stopGroveMoments();
   revealEarnedThemeCards(profile);
   applyPageOrnaments();
