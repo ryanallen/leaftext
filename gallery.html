@@ -10720,7 +10720,19 @@ body.is-block-dragging .document-body [data-src-start] {
   width: 16px;
   height: 16px;
 }
+/* A cell centers its content, so the corner is set before the picture and left at its static top, which is the picture's own, then stands in from the right by the cell's padding. */
+td.image-cell,
+th.image-cell {
+  position: relative;
+}
+.image-cell > .image-lane-corner {
+  top: auto;
+  margin-top: var(--lt-space-6);
+  right: calc(var(--cell-padding-inline) + var(--lt-space-6));
+}
 .image-lane:hover .image-lane-corner,
+td.image-cell:hover .image-lane-corner,
+th.image-cell:hover .image-lane-corner,
 .image-lane-corner:focus-within {
   opacity: 1;
   pointer-events: auto;
@@ -10830,8 +10842,9 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .document-body th,
 .document-body td {
+  --cell-padding-inline: 0.8125em;
   border: var(--lt-stroke-1) solid var(--lt-markdown-table-border);
-  padding: 0.375em 0.8125em;
+  padding: 0.375em var(--cell-padding-inline);
 }
 .document-body th {
   background: var(--lt-markdown-table-row-background);

@@ -111,6 +111,8 @@ async function load(url, fetchWith = fetch) {
     bufferCodeView: (handle) => JSON.parse(read(api.leaf_buffer_code_view(handle)) || 'null'),
     bufferDocumentScript: (handle) => read(api.leaf_buffer_document_script(handle)),
     bufferState: (handle) => JSON.parse(read(api.leaf_buffer_state(handle)) || 'null'),
+    // The buffer's text, or nothing for a package or book, whose text is not the file.
+    bufferSource: (handle) => (typeof api.leaf_buffer_source === 'function' ? read(api.leaf_buffer_source(handle)) : null),
     bufferEncoded: (handle) => {
       const answer = api.leaf_buffer_encoded(handle);
       if (!answer) return null;
@@ -678,6 +680,50 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     run(`window.leafSetPager && window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`);
   }
 
+  // What the visitor typed, kept in the tab so a refresh or a walk away and back comes back to it, while a new tab starts on the published file.
+  const KEPT_WORDS = 'leaftext.kept:';
+  const savedThisVisit = new Set();
+
+  /** 32-bit FNV-1a over the published bytes: says whether the file was published again under the kept words. */
+  function fingerprint(bytes) {
+    const view = ArrayBuffer.isView(bytes) ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength) : new Uint8Array(bytes);
+    let hash = 0x811c9dc5;
+    for (let at = 0; at < view.length; at += 1) hash = Math.imul(hash ^ view[at], 0x01000193) >>> 0;
+    return hash;
+  }
+
+  function byteLength(bytes) {
+    return ArrayBuffer.isView(bytes) || bytes instanceof ArrayBuffer ? bytes.byteLength : new Uint8Array(bytes).byteLength;
+  }
+
+  /** Written as the page leaves a document; a clean buffer never saved this visit leaves nothing behind. */
+  function keepWords() {
+    if (!buffer || held?.path !== open) return;
+    const key = KEPT_WORDS + held.path;
+    try {
+      const state = core.bufferState(buffer);
+      const text = state && (state.dirty || savedThisVisit.has(held.path)) ? core.bufferSource(buffer) : null;
+      if (text == null) window.sessionStorage.removeItem(key);
+      else window.sessionStorage.setItem(key, JSON.stringify({ text, length: byteLength(held.bytes), fingerprint: fingerprint(held.bytes) }));
+    } catch (error) {
+      // A full or refused store: the words still hold for this visit, as a refused setting does.
+    }
+  }
+
+  /** The kept words for a document, where the published bytes are still the ones they were typed over. */
+  function keptWords(path, bytes) {
+    const key = KEPT_WORDS + path;
+    try {
+      const record = JSON.parse(window.sessionStorage.getItem(key) || 'null');
+      if (!record) return null;
+      if (typeof record.text === 'string' && record.length === byteLength(bytes) && record.fingerprint === fingerprint(bytes)) return record.text;
+      window.sessionStorage.removeItem(key);
+    } catch (error) {
+      // Nothing readable was kept; the published file is drawn.
+    }
+    return null;
+  }
+
   function closeBuffer() {
     if (buffer) core.bufferClose(buffer);
     buffer = 0;
@@ -710,11 +756,15 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
 
   async function openDocument(path, { anchor = '', place = null, address = true } = {}) {
     if (!known.has(path)) return;
+    keepWords();
     open = path;
     closeBuffer();
     const chosen = glossaryFor(path);
     const [source, words] = await Promise.all([read(path), glossaryText(chosen)]);
     held = { path, bytes: source };
+    // Laid over the published bytes rather than opened as them, so the buffer is dirty and Save lights, as the desktop's own restore does.
+    const typed = keptWords(path, source);
+    if (typed != null && openBuffer()) core.bufferEdit(buffer, { edit: 'text', text: typed });
     // Set the glossary beside the render so the last page drawn holds its own terms.
     if (chosen !== glossary) {
       core.setGlossary(words || '');
@@ -761,8 +811,14 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
 
   // What the page sends the host. A command with no arm here is one this host cannot answer; the desktop's own event loop is where they all live.
   const commands = {
-    // Answered and kept for this visit alone: the padlock is the page's own, and the next visit starts locked.
-    setReadingUnlocked: () => {},
+    // Kept in the tab alone, so a refresh keeps the padlock and a new tab starts locked.
+    setReadingUnlocked: (command) => {
+      try {
+        window.sessionStorage.setItem('leaftext.visit', JSON.stringify({ readingUnlocked: !!command.enabled }));
+      } catch (error) {
+        // The padlock still holds for this page.
+      }
+    },
     // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
     refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
     editBlock: (command) => {
@@ -930,6 +986,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       } finally {
         if (address) setTimeout(() => URL.revokeObjectURL(address), 0);
       }
+      if (!failed) savedThisVisit.add(open);
       run(core.bufferSaveScript(buffer, !failed, failed || ''));
     },
     loadPager: ({ path }) => run(`window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`),
@@ -993,6 +1050,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
 
   // What this host can write the page out as. A browser has no save window and no disk, so its one row is the browser's own print — which is what `exportPdf` reaches here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
   window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }];
+  // A refresh, a closed tab and a walk off the site all raise it.
+  addEventListener('pagehide', keepWords);
   window.ipc = { postMessage: handle };
   // Whatever the front end sent while this was still loading.
   for (const message of window.__leafPending || []) handle(message);

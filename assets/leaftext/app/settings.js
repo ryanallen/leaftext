@@ -24,6 +24,13 @@
   // Each site visit starts with both padlocks closed.
   settings.codeUnlocked = false;
   settings.readingUnlocked = false;
+  // A refresh is not a new visit: the tab's own store brings the reading padlock back as it was left.
+  try {
+    const visit = JSON.parse(window.sessionStorage.getItem('leaftext.visit') || 'null');
+    if (visit && visit.readingUnlocked === true) settings.readingUnlocked = true;
+  } catch (error) {
+    // Nothing kept in the tab; the padlock stays shut.
+  }
   window.__leafSettings = settings;
 
   // The marks are state rather than a setting — the page reads them off the state it was handed, not off its settings — so they are merged into that state here, beside the merge above and before the first render, which is the only place either of them can happen.

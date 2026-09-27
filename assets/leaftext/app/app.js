@@ -12356,6 +12356,34 @@ window.leafSwapParagraph = (swap) => {
   else placePendingCaret(body);
 };
 
+
+window.leafSwapTableCell = (swap) => {
+  const doc = currentState && currentState.document;
+  const body = app.querySelector('.document-body');
+  if (!swap || !doc || doc.path !== swap.path || codeViewActive || !body) return;
+  const table = elementWithRange(body, 'block', swap.start);
+  const row = table && table.tagName === 'TABLE' ? tableRowElements(table)[swap.row] : null;
+  const cell = row ? row.children[swap.column] : null;
+  const active = document.activeElement;
+  
+  if (!cell || cell.tagName !== 'TD' || (active && cell.contains(active))) {
+    send({ command: 'refreshDocument' });
+    return;
+  }
+  const grips = Array.from(cell.children).filter(isTableSizingGrip);
+  const holder = document.createElement('div');
+  holder.innerHTML = swap.html;
+  cell.replaceChildren(...Array.from(holder.childNodes), ...grips);
+  if (table.__editCells) table.__editCells = tableCellTexts(table);
+  if (typeof table.__editBaseline === 'string') table.__editBaseline = blockDomToSource(table);
+  
+  doc.cellSwapped = true;
+  doc.source = documentSourceBytes();
+  currentState.renderKey = swap.renderKey;
+  window.leafDocumentWords(swap.path, swap.words);
+  refreshSwappedTableLens(table);
+};
+
 function updateSwappedHeadingOutline(fresh, oldId) {
   const rows = readDocumentOutlineRows();
   if (rows.some((row) => row.id === oldId)) {
@@ -21978,6 +22006,13 @@ function restoreTableLens(bar, table, ordinal) {
 }
 
 
+function refreshSwappedTableLens(table) {
+  const identity = tableIdentity(table);
+  const bar = identity ? tableLensRow(table.parentElement) : null;
+  if (bar && tableLensPills(bar).children.length) restoreTableLens(bar, table, identity.ordinal);
+}
+
+
 function tableLensWorthDrawing(table) {
   if (!table || table.dataset.blockKind !== 'table') return false;
   const headings = table.querySelectorAll(':scope > thead > tr > th');
@@ -27721,7 +27756,7 @@ function siteLaidOutState(state) {
 }
 function renderState(keepDetachedRender = false, landingAnchor = null) {
   
-  if (currentState && currentState.document && (currentState.document.partialDrawn || currentState.document.laidOutSwapped)) {
+  if (currentState && currentState.document && (currentState.document.partialDrawn || currentState.document.laidOutSwapped || currentState.document.cellSwapped)) {
     send({ command: 'refreshDocument', keepPlace: true });
     return;
   }
@@ -31314,6 +31349,19 @@ function laneWidePictures(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
   for (const block of documentBlocks(body)) laneWidePicture(block);
+  laneWidePictureCells(body);
+}
+
+function laneWidePictureCells(body) {
+  const cells = new Set(body.querySelectorAll('td.image-cell, th.image-cell'));
+  for (const picture of body.querySelectorAll('td > img, th > img')) cells.add(picture.parentElement);
+  for (const cell of cells) {
+    const pictures = Array.from(cell.children).filter((child) => child.tagName === 'IMG');
+    const alone =
+      pictures.length === 1 && pictures[0].dataset.imageMissing !== 'true' && !(cell.textContent || '').trim();
+    cell.classList.toggle('image-cell', alone);
+    if (!alone) cell.querySelector(':scope > .image-lane-corner')?.remove();
+  }
 }
 
 function laneWidePicture(block) {
@@ -31699,8 +31747,8 @@ function markMissingImage(img) {
   img.src = TRANSPARENT_PIXEL;
   
   const block = img.parentElement;
-  if (!block || !block.classList.contains('image-lane')) return;
-  block.classList.remove('image-lane');
+  if (!block || !(block.classList.contains('image-lane') || block.classList.contains('image-cell'))) return;
+  block.classList.remove('image-lane', 'image-cell');
   const corner = block.querySelector(':scope > .image-lane-corner');
   if (corner) corner.remove();
 }
@@ -32370,6 +32418,9 @@ function clearReadingLaneLayout(copy) {
   copy.querySelectorAll('table').forEach((nested) => clearReadingLaneTableLayout(nested));
   clearReadingLaneTableLayout(copy);
   copy.querySelectorAll('.table-sizer').forEach((grip) => grip.remove());
+  
+  copy.querySelectorAll('.image-lane-corner').forEach((corner) => corner.remove());
+  copy.querySelectorAll('.image-cell').forEach((cell) => cell.classList.remove('image-cell'));
 }
 function clearReadingLaneTableLayout(copy) {
   tableSizingBoundaryCells(copy).forEach((cell) => {
@@ -32844,7 +32895,9 @@ function bindImageSheet(root = app) {
   
   const lanes = '.reader-layout > .document-body > .document-run > p.image-lane';
   
-  const blocks = root.matches && root.matches(lanes) ? [root] : root.querySelectorAll(lanes);
+  const cells = '.reader-layout > .document-body td.image-cell, .reader-layout > .document-body th.image-cell';
+  
+  const blocks = root.matches && root.matches(lanes) ? [root] : root.querySelectorAll(`${lanes}, ${cells}`);
   blocks.forEach((block) => {
     if (block.querySelector(':scope > .image-lane-corner')) return;
     const picture = block.querySelector(':scope > img');
@@ -32869,7 +32922,8 @@ function bindImageSheet(root = app) {
       save.innerHTML = `<span class="lt-icon lt-icon-export"></span>`;
       corner.appendChild(save);
     }
-    block.appendChild(corner);
+    if (block.classList && block.classList.contains('image-cell')) block.insertBefore(corner, picture);
+    else block.appendChild(corner);
   });
 }
 
