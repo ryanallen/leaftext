@@ -140,7 +140,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 ### Minimap
 
 - **Always on.** It is not a choice any more, and there is nothing to switch
-- The rail still comes and goes with the document, and only appears on windows wide enough for it
+- The rail still comes and goes with the document, and a window 720 pixels wide or narrower [wears the self-hiding scrollbar instead](04-minimap.md#responsive-behavior)
 - Nothing is saved: a `minimap_enabled` left in an older `settings.json` is ignored and dropped on the next save
 
 ### Speed Reader

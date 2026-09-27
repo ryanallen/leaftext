@@ -9336,6 +9336,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   cursor: pointer;
 }
 
+.document-body .leaf-editable-in-place a:not(.leaf-tag) {
+  cursor: text;
+}
+
 
 .library-shell.has-contained-document .reader-edge-fade {
   display: none;
@@ -12510,9 +12514,6 @@ body.is-home-row-dragging .home-list-scroll li {
     --type-h4-size: calc(var(--type-base) * 1.25);
     --type-h5-size: calc(var(--type-base) * 1.2);
     --type-h6-size: calc(var(--type-base) * 1.1);
-  }
-  .reader-layout {
-    --minimap-preview-width: 38px;
   }
 }
 

@@ -9365,9 +9365,13 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   opacity: var(--lt-opacity-60);
   pointer-events: none;
 }
-/* Links inside an editable block keep the hand, not the block's text caret. Never the ones drawn as buttons: this rule comes later at equal specificity, so without the exception it would put the hand back on them. */
+/* Links inside a block that opens its source keep the hand, not the block's text caret. Never the ones drawn as buttons: this rule comes later at equal specificity, so without the exception it would put the hand back on them. */
 .document-body .leaf-editable a:not(.leaf-md-button) {
   cursor: pointer;
+}
+/* Except in a block typed where it is drawn: unlocked, a plain press there puts the caret in a link's or a button's words, and only Ctrl or Cmd follows it. A tag's press is still its search. Written after the rule above at its specificity, and above the button's. */
+.document-body .leaf-editable-in-place a:not(.leaf-tag) {
+  cursor: text;
 }
 
 /* And no wash over the page's own top and bottom. The edge fade dissolves a cut line of Leaftext's own text back into Leaftext's own page color, which over somebody else's page is Leaftext's color painted across the top and bottom of it — the page reads as stopping short of the card rather than filling it. The map already switches the fade off for the same reason: what is drawn there is not a column of text being sliced. */
@@ -12565,9 +12569,6 @@ body.is-home-row-dragging .home-list-scroll li {
     --type-h4-size: calc(var(--type-base) * 1.25);
     --type-h5-size: calc(var(--type-base) * 1.2);
     --type-h6-size: calc(var(--type-base) * 1.1);
-  }
-  .reader-layout {
-    --minimap-preview-width: 38px;
   }
 }
 /* leaftext.com's landing: the README laid out by `site/front-page-layout.js` inside the reading column — the promise over both downloads, the comparison, the app recorded moving, four cards, the install line and the foot. The app's own bar, pane and rail stand around it as they do around every page, and the desktop never draws it. Each element the layout styles wears a class of its own, and a rule that has to outrank the document's own names the tag beside it. */

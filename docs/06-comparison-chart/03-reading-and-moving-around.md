@@ -399,7 +399,7 @@
 | Exported pages keep rail | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Phone exports drop it | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Never printed | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Narrows, never hidden | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Narrows, then the scrollbar | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rail per column | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hidden on home, graph | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Always on, no switch | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

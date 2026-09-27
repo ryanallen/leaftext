@@ -6543,8 +6543,9 @@ function runContextAction(action, path, link, selected, picture, tableCell) {
     
     case 'copyLink': copyPlainText(path); break;
     case 'copyLinkText': if (link) copyPlainText((link.textContent || '').trim()); break;
-    case 'revealLink': send({ command: 'revealLink', href: path }); break;
-    case 'copyLinkPath': send({ command: 'copyLinkPath', href: path }); break;
+    
+    case 'revealLink': send({ command: 'revealLink', href: documentNamedByLanding(path) || path }); break;
+    case 'copyLinkPath': send({ command: 'copyLinkPath', href: documentNamedByLanding(path) || path }); break;
     
     case 'openPicture': if (picture) openImageSheet(picture); break;
     
@@ -6596,6 +6597,26 @@ function openTabCount() {
   return currentState && Array.isArray(currentState.tabs) ? currentState.tabs.length : 0;
 }
 
+function documentNamedByLanding(rawHref, kind = linkHoverKind(rawHref)) {
+  const href = String(rawHref || '');
+  const hash = href.indexOf('#');
+  if (kind !== 'In-page jump' || hash < 0) return '';
+  const landing = fragmentLanding(href.slice(hash + 1));
+  if (!landing) return '';
+  const namesAFile = (link) => linkHasAFileBehindIt(link.getAttribute('href') || '');
+  if (/^H[1-6]$/.test(landing.tagName)) {
+    const blocks = blockSiblings(landing);
+    const next = blocks[blocks.indexOf(landing) + 1];
+    const first = next && Array.from(next.childNodes).find((node) => node.nodeType !== 3 || node.textContent.trim());
+    return first && first.tagName === 'A' && namesAFile(first) ? first.getAttribute('href') : '';
+  }
+  if (landing.tagName === 'TR') {
+    const files = Array.from(landing.querySelectorAll('a[href]')).filter(namesAFile);
+    return files.length === 1 ? files[0].getAttribute('href') : '';
+  }
+  return '';
+}
+
 function contextMenuEntries() {
   if (contextMenuTargetKind === 'tag') {
     if (!vaultSearchAvailable()) return [];
@@ -6608,10 +6629,11 @@ function contextMenuEntries() {
   if (contextMenuTargetKind === 'link') {
     
     const kind = linkHoverKind(contextMenuPath);
+    const fileBehind = linkHasAFileBehindIt(contextMenuPath, kind) || !!documentNamedByLanding(contextMenuPath, kind);
     return tidySeparators(
       LINK_MENU_ITEMS.filter((entry) => {
         if (entry === 'separator') return true;
-        if (entry.fileBehind) return linkHasAFileBehindIt(contextMenuPath, kind);
+        if (entry.fileBehind) return fileBehind;
         return !entry.pageOnly || isAnotherPageHref(contextMenuPath, kind);
       }).map((entry) => labelForLinkEntry(entry, kind))
     );
@@ -7178,7 +7200,8 @@ if (window.__leafScrollbarsAlways === true) {
   appSurface.classList.add('is-scrollbars-always');
 }
 
-let minimapEnabled = true;
+const narrowWindowQuery = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
+let minimapEnabled = !(narrowWindowQuery && narrowWindowQuery.matches);
 const minimapListeners = new Set();
 window.leafMinimap = {
   getEnabled: () => minimapEnabled,
@@ -7194,6 +7217,9 @@ window.leafMinimap = {
   },
 };
 window.leafMinimap.setEnabled(minimapEnabled);
+if (narrowWindowQuery && narrowWindowQuery.addEventListener) {
+  narrowWindowQuery.addEventListener('change', (event) => window.leafMinimap.setEnabled(!event.matches));
+}
 const SPEED_READER_SKIP_SELECTOR = [
   'code',
   'pre',
@@ -9387,6 +9413,11 @@ const SYNC_MIN_SPIN_MS = 700;
 
 const SYNC_QUIET_MS = 10000;
 const SYNC_LONGEST_WAIT_MS = 120000;
+
+const SYNC_GAP_MS = 60000;
+const syncDoneAtByVault = new Map();
+let syncGapTimer = 0;
+let syncGapVaultId = 0;
 const SYNC_FADE_MS = 260;
 let syncSpinUntil = 0;
 let syncSpinTimer = 0;
@@ -9402,6 +9433,10 @@ let syncQuietTimer = 0;
 let syncLongestWaitTimer = 0;
 
 function armAutomaticSyncWait(id) {
+  
+  if (syncGapTimer && syncGapVaultId === id) return;
+  if (syncGapTimer) clearTimeout(syncGapTimer);
+  syncGapTimer = 0;
   if (syncQuietTimer) clearTimeout(syncQuietTimer);
   syncQuietTimer = setTimeout(() => startAutomaticSyncAfterWait(id), SYNC_QUIET_MS);
   if (!syncLongestWaitTimer) syncLongestWaitTimer = setTimeout(() => startAutomaticSyncAfterWait(id), SYNC_LONGEST_WAIT_MS);
@@ -9409,8 +9444,11 @@ function armAutomaticSyncWait(id) {
 function clearAutomaticSyncWait() {
   if (syncQuietTimer) clearTimeout(syncQuietTimer);
   if (syncLongestWaitTimer) clearTimeout(syncLongestWaitTimer);
+  if (syncGapTimer) clearTimeout(syncGapTimer);
   syncQuietTimer = 0;
   syncLongestWaitTimer = 0;
+  syncGapTimer = 0;
+  syncGapVaultId = 0;
 }
 
 function startAutomaticSyncAfterWait(id) {
@@ -9421,6 +9459,13 @@ function startAutomaticSyncAfterWait(id) {
   const repo = state && state.repo;
   const waiting = repo ? (repo.changed || 0) + (repo.ahead || 0) : 0;
   if (!vault || !vault.gitAutoSync || !repo || !repo.atRoot || !repo.remote || waiting <= 0 || state.error) return;
+  const doneAt = syncDoneAtByVault.get(id);
+  const gapLeft = doneAt === undefined ? 0 : doneAt + SYNC_GAP_MS - performance.now();
+  if (gapLeft > 0) {
+    syncGapVaultId = id;
+    syncGapTimer = setTimeout(() => startAutomaticSyncAfterWait(id), gapLeft);
+    return;
+  }
   if (syncInFlight || Boolean(state.busy)) owedAutomaticSyncVaults.add(id);
   else startVaultSync(id, true);
 }
@@ -9560,6 +9605,10 @@ window.leafSetVaultStatus = (id, repo) => {
 window.leafSetVaultGit = (state) => {
   if (!state || typeof state.id !== 'number') return;
   let owedVaultId = 0;
+  
+  if (syncInFlight && !state.busy && !state.error && typeof state.message === 'string' && state.message.startsWith('synced:')) {
+    syncDoneAtByVault.set(state.id, performance.now());
+  }
   
   if (!state.busy) {
     syncInFlight = false;
@@ -12027,6 +12076,8 @@ let minimapListenerArmed = false;
 window.leafMinimap.subscribe(() => {
   if (!minimapListenerArmed) return;
   renderState();
+  
+  drawPaneWidths(paneDrawingState(), libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth));
 });
 minimapListenerArmed = true;
 let composing = false;
@@ -12614,10 +12665,11 @@ function tableRowNamed(fragment) {
   }
   return null;
 }
-window.leafScrollToFragment = (fragment) => {
+
+function fragmentLanding(fragment) {
   const raw = String(fragment || '').replace(/^#/, '');
   if (!raw) {
-    return;
+    return null;
   }
   let decoded = raw;
   try {
@@ -12625,9 +12677,15 @@ window.leafScrollToFragment = (fragment) => {
   } catch (error) {
     decoded = raw;
   }
+  
+  return document.getElementById(decoded) || document.getElementById(raw) || tableRowNamed(decoded);
+}
+window.leafScrollToFragment = (fragment) => {
+  if (!String(fragment || '').replace(/^#/, '')) {
+    return;
+  }
   columnFrame(() => {
-    
-    const target = document.getElementById(decoded) || document.getElementById(raw) || tableRowNamed(decoded);
+    const target = fragmentLanding(fragment);
     if (!target) {
       return;
     }
@@ -17032,13 +17090,24 @@ function closeWysiwygBlock(el) {
 }
 
 
-function openEditableOnRelease(el, target) {
+function openEditableOnRelease(el, target, event) {
   if (blockIsEditingHost(el)) return;
-  const editsLinkedValue = hasRangeOf(el, 'value');
-  if (target && target.closest && (target.closest('input[type="checkbox"]') || (target.closest('a') && !editsLinkedValue))) return;
+  if (target && target.closest && (target.closest('input[type="checkbox"]') || pressFollowsLink(target.closest('a'), event))) return;
+  
+  if (target && target.closest && target.closest('a')) placeCaretAtPress(el, event);
   const span = selectionTextSpanIn(el);
   if (!span) return;
   openWysiwygBlock(el, span);
+}
+
+function placeCaretAtPress(el, event) {
+  if (!event || !Number.isFinite(event.clientX) || typeof document.caretRangeFromPoint !== 'function') return;
+  const range = document.caretRangeFromPoint(event.clientX, event.clientY);
+  if (!range || !el.contains(range.startContainer)) return;
+  const selection = window.getSelection();
+  if (!selection) return;
+  selection.removeAllRanges();
+  selection.addRange(range);
 }
 
 
@@ -17062,7 +17131,7 @@ function openEditableReleasedOff(event) {
   const target = event.target;
   
   if (target && (target === el || (el.contains && el.contains(target)))) return;
-  openEditableOnRelease(el, target);
+  openEditableOnRelease(el, target, event);
 }
 
 
@@ -17073,13 +17142,18 @@ window.addEventListener('pointercancel', () => {
 });
 
 
+function pressFollowsLink(link, event) {
+  if (!link) return false;
+  return (!!event && (event.ctrlKey || event.metaKey)) || (!!link.classList && link.classList.contains('leaf-tag'));
+}
+
+
 function wireMarkdownEditable(el) {
-  const editsLinkedValue = hasRangeOf(el, 'value');
   
   el.addEventListener('mousedown', (event) => {
     const target = event.target;
     if (!target || !target.closest) return;
-    if (target.closest('a') && !editsLinkedValue) {
+    if (pressFollowsLink(target.closest('a'), event)) {
       commitActiveEditingBlock();
       event.preventDefault();
     } else if (target.closest('input[type="checkbox"]')) {
@@ -17091,14 +17165,13 @@ function wireMarkdownEditable(el) {
   el.__opensOnRelease = true;
   el.addEventListener('pointerup', (event) => {
     if (event.button !== 0) return;
-    openEditableOnRelease(el, event.target);
+    openEditableOnRelease(el, event.target, event);
   });
   
-  if (editsLinkedValue) {
-    el.addEventListener('click', (event) => {
-      if (event.button === 0 && event.target && event.target.closest && event.target.closest('a')) event.preventDefault();
-    });
-  }
+  el.addEventListener('click', (event) => {
+    const link = event.button === 0 && event.target && event.target.closest ? event.target.closest('a') : null;
+    if (link && !pressFollowsLink(link, event)) event.preventDefault();
+  });
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
       el.__editingActive = true;
@@ -17340,12 +17413,14 @@ function bindEditableBlocks(format, elements = null) {
   wysiwygBlocks.forEach(markMarkdownEditable);
   
   const markHere = currentDocumentHasUnreachableWords;
-  const markEditable = (el) => {
+  const markEditable = (el, inPlace) => {
     el.classList.add('leaf-editable');
+    
+    if (inPlace) el.classList.add('leaf-editable-in-place');
     if (markHere && hasRangeOf(el, 'block')) el.classList.add('leaf-editable-here');
   };
-  wysiwygBlocks.forEach(markEditable);
-  sourceBlocks.forEach(markEditable);
+  wysiwygBlocks.forEach((el) => markEditable(el, true));
+  sourceBlocks.forEach((el) => markEditable(el, false));
   wysiwygBlocks.forEach(wireMarkdownEditable);
   sourceBlocks.forEach(wireSourceEditable);
 }
@@ -17356,6 +17431,7 @@ function bindSwappedParagraph(el, kept = false) {
   const wysiwyg = markdownBlockWysiwygSafe(el);
   if (wysiwyg) markMarkdownEditable(el);
   el.classList.add('leaf-editable');
+  el.classList.toggle('leaf-editable-in-place', wysiwyg);
   if (currentDocumentHasUnreachableWords) el.classList.add('leaf-editable-here');
   if (!kept) {
     if (wysiwyg) wireMarkdownEditable(el);

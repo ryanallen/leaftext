@@ -14,8 +14,8 @@
 | [A deck's slides](#a-decks-slides) | Beside a slide deck the rail is divided one stretch per slide, each numbered, over the same real thumbnail |
 | [Whether it appears](#whether-the-rail-appears) | Skipped entirely for an empty document; shown for every format, including XML, JSON and YAML |
 | [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
-| [Responsive widths](#responsive-behavior) | The lane narrows with the window, and is never hidden |
-| [Always there](#always-there) | The rail is the primary scroll indicator, present for every non-empty document at every window size |
+| [Responsive widths](#responsive-behavior) | The lane narrows with the window, and gives way to the self-hiding scrollbar at 720 pixels and under |
+| [Always there](#always-there) | The rail is the primary scroll indicator, present for every non-empty document in any window wider than 720 pixels |
 | [On an exported page](#on-an-exported-page) | A page [exported as a web page](02-navigation.md#export-the-page) carries the rail too, so whoever you send it to can see the shape of the whole document |
 
 ## What it is
@@ -72,7 +72,7 @@ The [code view](07-editing.md#code-view) has a rail of its own — the editor's,
 Both rails are **chrome, not page**: they stand on the window's textured surface beside the card, and the page's own right border is the line between the two. In the code view that means the editor paints no background out there, the map's own drawing surface is transparent, and the editor casts no scroll shadow across the rail's top — so the chrome's dot grain shows through between the lines of the map, and the map reads as text on the window rather than as a second, differently-colored page.
 
 > [!NOTE]
-> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose, and both are always present while their view is open.
+> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose. The code view's is present whenever that view is open; the reading view's in any window wider than 720 pixels.
 
 ## On an exported page
 
@@ -89,20 +89,20 @@ The minimap adjusts its preview lane width depending on the available space:
 | Breakpoint | Preview width |
 | ---------- | ------------- |
 | > 900 px   | 68 px         |
-| 601–900 px | 46 px         |
-| ≤ 600 px   | 38 px         |
+| 721–900 px | 46 px         |
+| ≤ 720 px   | no rail       |
 
-On screens narrower than 600 px the minimap gutters shrink alongside the preview lane, keeping the reading column as wide as possible. The minimap is never hidden on small screens — it remains the primary scroll affordance at every window size.
+At 720 pixels and under — a phone, or a window dragged narrow — the rail gives way. The page takes the whole width and wears the reader's thin [scrollbar](02-navigation.md#scrollbars), drawn while the page moves and gone a moment after it stops. It is the same edge an [exported page](#on-an-exported-page) drops its rail at, so a narrow window reads alike whichever host draws it. Widen the window past it and the rail comes back.
 
 ## Always there
 
-The minimap is not a choice. There is nothing to switch and nothing saved: it is the reader's scroll indicator at every window size, so turning it off left a page with no answer to "where am I in this".
+The minimap is not a choice. There is nothing to switch and nothing saved: in any window wider than 720 pixels it is the reader's scroll indicator, so turning it off left a page with no answer to "where am I in this". The window's width is the one thing that takes it away, and the scrollbar answers the same question there — see [Responsive behavior](#responsive-behavior).
 
-Inside another product's frame, the document scrolls within that frame and the minimap stays beside it. A wheel over either the document or the minimap moves the same page; pressing the minimap jumps through it.
+Inside another product's frame, the document scrolls within that frame and the minimap stands beside it while the frame is wider than 720 pixels; a narrower frame reads with the scrollbar, the way a narrow window does. A wheel over either the document or the minimap moves the same page; pressing the minimap jumps through it.
 
 With [two documents side by side](02-navigation.md#two-documents-side-by-side) there is a rail per column, each drawn from the document beside it and each following that column's own scrolling: the rail is the scroll indicator, so a column without one would scroll with nothing to say where it was.
 
-The rail still comes and goes with the document — there is none on the home screen, and none while the [graph](03-library.md#graph) is up. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's own thin [scrollbar](02-navigation.md#scrollbars) comes back — drawn while the page is being scrolled and gone a moment after it stops. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
+The rail still comes and goes with the document — there is none on the home screen, none while the [graph](03-library.md#graph) is up, and none in a window 720 pixels wide or less. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's own thin [scrollbar](02-navigation.md#scrollbars) comes back — drawn while the page is being scrolled and gone a moment after it stops. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 
 > [!TIP]
 > Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.

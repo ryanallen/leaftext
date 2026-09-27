@@ -669,7 +669,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (typeof window.leafScrollToFragment === 'function') window.leafScrollToFragment(anchor);
   }
 
-  /** Draw a document out of its bytes: the page, the marks and the Previous/Next strip. Opening one and leaving its source both come through here; neither the address nor the pane is touched. */
+  /** Draw a document out of its bytes: the page and the marks. The Previous/Next strip waits for the page's own ask, which a whole HTML page never makes. Opening one and leaving its source both come through here; neither the address nor the pane is touched. */
   function drawDocument(path, bytes, { keepPlace = false } = {}) {
     for (const address of minted.splice(0)) URL.revokeObjectURL(address);
     run('window.leafForgetMintedPictures && window.leafForgetMintedPictures();');
@@ -677,7 +677,6 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     // An edit's redraw goes through the page's reload, as the desktop's does, so the reader stays where they were rather than landing at the top.
     run(keepPlace && script ? script.replace(/^window\.leafSetState\(/,'window.leafReloadDocument(') : script);
     run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
-    run(`window.leafSetPager && window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`);
   }
 
   // What the visitor typed, kept in the tab so a refresh or a walk away and back comes back to it, while a new tab starts on the published file.
@@ -741,12 +740,12 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   function applyEdit(edit) {
     if (!openBuffer()) return null;
     const state = core.bufferEdit(buffer, edit);
-    if (state?.changed) {
-      // A paragraph drawn alone leaves the rest of the page standing, so a press already landing on the next paragraph still finds it there.
+    if (state) delivery(() => {
+      if (state.written) run(state.written);
       if (state.swap) run(state.swap);
-      else if (state.resync) run(state.resync);
-      else redrawBuffer();
-    }
+      else if (state.changed && state.resync) run(state.resync);
+      else if (state.changed || (edit.edit === 'block' && !edit.live && !state.written)) redrawBuffer();
+    });
     return state;
   }
 
@@ -822,16 +821,14 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
     refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
     editBlock: (command) => {
-      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held };
+      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held, seq: command.seq, live: !!command.live, autosave: !!command.autosave, kind: command.kind };
       if (command.live) {
         if (openBuffer()) {
           const state = core.bufferEdit(buffer, edit);
           if (state) run(`window.leafBlocksResynced(${JSON.stringify(state)});`);
         }
       } else {
-        const state = applyEdit(edit);
-        // Typing pauses already put the words in, so the commit that ends a run usually changes nothing and only owes the page its styled paragraph back.
-        if (state && !state.changed) { if (state.swap) run(state.swap); else redrawBuffer(); }
+        applyEdit(edit);
       }
       answerEdit(command.token, !!buffer);
     },
@@ -1022,7 +1019,19 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // Every command this host did not answer, in the order they arrived, so something other than a person watching a console can see one.
   const refused = [];
 
+  let delivering = false;
+  const waiting = [];
+
+  function delivery(draw) {
+    delivering = true;
+    try { draw(); } finally {
+      delivering = false;
+      while (!delivering && waiting.length) handle(waiting.shift());
+    }
+  }
+
   function handle(message) {
+    if (delivering) { waiting.push(message); return; }
     let command;
     try {
       command = JSON.parse(message);
