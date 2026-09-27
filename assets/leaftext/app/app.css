@@ -7149,7 +7149,8 @@ body.library-resizing button {
 .library-foot::before {
   content: "";
   position: absolute;
-  inset: var(--reader-gutter);
+  grid-column: 1 / 2;
+  inset: var(--reader-gutter) calc(0px - var(--reader-gutter) - var(--lt-stroke-1));
   z-index: -1;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--reader-card-radius);

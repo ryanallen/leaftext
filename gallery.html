@@ -7161,11 +7161,12 @@ body.library-resizing button {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
-/* The pane's stacking context keeps the card under its controls and over its grain. */
+/* The pane's stacking context keeps the card under its controls and over its grain. Both lines of the one column bound it across, so it ends 8px past the row and the band's grain shows beyond; its row stays auto, so top and bottom still sit 8px in from the band. */
 .library-foot::before {
   content: "";
   position: absolute;
-  inset: var(--reader-gutter);
+  grid-column: 1 / 2;
+  inset: var(--reader-gutter) calc(0px - var(--reader-gutter) - var(--lt-stroke-1));
   z-index: -1;
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--reader-card-radius);
@@ -7800,7 +7801,7 @@ body.library-resizing button {
   white-space: nowrap;
 }
 .library-file .file-name-stem {
-  /* Long names fade before the badge, keeping the type visible at the trailing edge. */
+  /* Long names fade before the date, the folder or the badge that follows, keeping the type visible at the trailing edge. */
   -webkit-mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
   mask-image: linear-gradient(to right, var(--lt-mask-opaque) calc(100% - 18px), transparent);
 }

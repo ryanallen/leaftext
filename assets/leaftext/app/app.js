@@ -5511,6 +5511,14 @@ function leafQueueToast(message, tone) {
   drawToast(message, tone, null, null);
 }
 
+
+window.leafShowShortcutRefusal = (sentence, label, address) => {
+  leafToast(sentence, 'error', {
+    label,
+    run: () => send({ command: 'openExternal', url: address }),
+  });
+};
+
 function drawToast(message, tone, action, link) {
   if (toastElement) coverWebSurface(false, toastElement);
   if (toastElement) {
@@ -9310,17 +9318,30 @@ function setLibraryTreeHtml(html) {
 }
 
 let librarySkippedFiles = 0;
+let librarySkippedCodeFiles = 0;
 
 function libraryEmptyText() {
   const hidden = libraryHiddenEmptyText();
   if (hidden) return hidden;
+  const opening = 'Nothing to read in this folder.';
+  const code = librarySkippedCodeFiles === 1
+    ? '1 code file lives here, which Leaftext opens but the pane does not list.'
+    : librarySkippedCodeFiles > 1
+      ? `${librarySkippedCodeFiles} code files live here, which Leaftext opens but the pane does not list.`
+      : '';
+  const other = librarySkippedFiles === 1
+    ? `1 ${code ? 'other ' : ''}file is not a kind Leaftext opens.`
+    : librarySkippedFiles > 1
+      ? `${librarySkippedFiles} ${code ? 'other ' : ''}files are not a kind Leaftext opens.`
+      : '';
+  if (code) return [opening, code, other].filter(Boolean).join(' ');
   if (librarySkippedFiles === 1) {
-    return 'Nothing to read in this folder. 1 file lives here, but it is not a kind Leaftext opens.';
+    return `${opening} 1 file lives here, but it is not a kind Leaftext opens.`;
   }
   if (librarySkippedFiles > 1) {
-    return `Nothing to read in this folder. ${librarySkippedFiles} files live here, but none is a kind Leaftext opens.`;
+    return `${opening} ${librarySkippedFiles} files live here, but none is a kind Leaftext opens.`;
   }
-  return 'Nothing to read in this folder.';
+  return opening;
 }
 
 const VAULT_INTRO_HINT = 'vaultIntro';
@@ -9381,6 +9402,7 @@ window.leafSetLibraryFolder = (payload) => {
   libraryRootName = typeof next.rootName === 'string' ? next.rootName : '';
   
   librarySkippedFiles = Number.isFinite(next.skippedFiles) ? next.skippedFiles : 0;
+  librarySkippedCodeFiles = Number.isFinite(next.skippedCodeFiles) ? next.skippedCodeFiles : 0;
   
   if (paneSentSomewhere) {
     paneSentSomewhere = false;
@@ -10478,10 +10500,11 @@ function libraryRowTime(millis, now) {
 
 function libraryRowLabel(node) {
   const name = (node && (node.name || node.path)) || '';
-  if (!node || !node.title) return documentNameMarkup(name);
-  const { extension } = documentNameParts(name);
-  const badge = extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '';
-  return `<span class="file-name-stem">${escapeText(node.title)}</span>${badge}`;
+  const { stem, extension } = documentNameParts(name);
+  return {
+    stem: `<span class="file-name-stem">${escapeText(node && node.title ? node.title : stem)}</span>`,
+    badge: extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '',
+  };
 }
 
 function keepDrawnRowHeads(entries) {
@@ -10499,19 +10522,21 @@ function keepDrawnRowHeads(entries) {
   }
 }
 
-function fileRowHtml(node) {
+function fileRowHtml(node, between) {
   const isSelected = librarySelectedPath && node.path === librarySelectedPath;
   const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '');
   const current = isSelected ? ' aria-current="true"' : '';
   const open = `data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}"`;
-  const label = `<span class="library-file-label">${libraryRowLabel(node)}</span>`;
+  const { stem, badge } = libraryRowLabel(node);
   if (typeof node.preview !== 'string') {
-    return `<button type="button" class="library-file${selected}"${current} ${open}>${LEAF_FILE_ICON}${label}</button>`;
+    const line = between ? `<span class="library-file-label">${stem}</span>${between}${badge}` : `<span class="library-file-label">${stem}${badge}</span>`;
+    return `<button type="button" class="library-file${selected}"${current} ${open}>${LEAF_FILE_ICON}${line}</button>`;
   }
+  const label = `<span class="library-file-label">${stem}</span>`;
   const time = libraryRowTime(node.modified, Date.now());
   const timeHtml = time ? `<span class="library-file-time">${escapeText(time)}</span>` : '';
   const preview = node.preview ? `<span class="library-file-preview">${escapeText(node.preview)}</span>` : '';
-  return `<button type="button" class="library-file library-file-full${selected}"${current} ${open}>${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head">${label}${timeHtml}</span>${preview}</span></button>`;
+  return `<button type="button" class="library-file library-file-full${selected}"${current} ${open}>${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head">${label}${timeHtml}${badge}</span>${preview}</span></button>`;
 }
 
 function folderRowHtml(node) {
@@ -30018,7 +30043,7 @@ function drawCalendarDayList() {
         
         const path = String(doc.path || '');
         const folder = String(doc.folder || '').split(/[\\/]/).pop();
-        return fileRowHtml({ name: path.split(/[\\/]/).pop(), path }).replace(/<\/button>$/, `<span class="library-calendar-folder">${escapeText(folder)}</span></button>`);
+        return fileRowHtml({ name: path.split(/[\\/]/).pop(), path }, `<span class="library-calendar-folder">${escapeText(folder)}</span>`);
       })
       .join('');
     if (answer.truncated) rows += `<div class="library-empty">The first ${formatCount(documents.length)}.</div>`;
@@ -35078,7 +35103,7 @@ function setMinimapMarkup(html) {
   const hadMinimap = document.body.classList.contains('has-minimap');
   if (app) app.classList.toggle('has-minimap', Boolean(html));
   document.body.classList.toggle('has-minimap', Boolean(html));
-  if (hadMinimap !== Boolean(html)) scheduleMinimapWidthSync();
+  if (hadMinimap !== Boolean(html)) scheduleMinimapWidthSync(); 
   if (readerMinimap) {
     minimapSpacerTarget = null;
     readerMinimap.innerHTML = html || '';
