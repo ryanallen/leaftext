@@ -12584,6 +12584,34 @@ window.leafSetNavigation = (state) => {
   navigationState = state || { canGoBack: false, canGoForward: false };
   renderNavigation();
 };
+
+function rowKeyOf(words) {
+  let key = '';
+  let dashed = true;
+  for (const character of String(words || '')) {
+    for (const lower of character.toLowerCase()) {
+      if (/[\p{Alphabetic}\p{N}]/u.test(lower)) {
+        key += lower;
+        dashed = false;
+      } else if (!dashed) {
+        key += '-';
+        dashed = true;
+      }
+    }
+  }
+  return key.replace(/-+$/, '');
+}
+
+function tableRowNamed(fragment) {
+  const key = rowKeyOf(fragment);
+  const body = key ? app.querySelector('.document-body') : null;
+  if (!body) return null;
+  for (const row of body.querySelectorAll('tbody > tr')) {
+    const first = row.firstElementChild;
+    if (first && rowKeyOf(first.textContent) === key) return row;
+  }
+  return null;
+}
 window.leafScrollToFragment = (fragment) => {
   const raw = String(fragment || '').replace(/^#/, '');
   if (!raw) {
@@ -12597,7 +12625,7 @@ window.leafScrollToFragment = (fragment) => {
   }
   columnFrame(() => {
     
-    const target = document.getElementById(decoded) || document.getElementById(raw);
+    const target = document.getElementById(decoded) || document.getElementById(raw) || tableRowNamed(decoded);
     if (!target) {
       return;
     }

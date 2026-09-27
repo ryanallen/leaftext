@@ -32,7 +32,7 @@ A Markdown link in a cell can point to a row in another table. For example, `[Le
 
 A relation is labeled by the target row's name. Where the first column is written as words — `| Name | Born |` with `Le Guin | 1929` — the name is that first cell, so the link above reads Le Guin. Where the first column is written as its own address — `| id | Name |` with `le-guin | Ursula K. Le Guin` — the label is the next filled cell, Ursula K. Le Guin. The same name is shown when you point at the relation, offered in a relation cell's picker, and listed in a column that shows which rows point back.
 
-Point at the relation to see the row it found. A red relation means the target row is not there. A dashed gray relation means the target file is outside the set Leaftext has read, so it may still contain the row.
+Point at the relation to see the row it found, and press it to open the target file on that row — the first row whose first cell reads as the address, unless a heading of the same name comes first. A red relation means the target row is not there. A dashed gray relation means the target file is outside the set Leaftext has read, so it may still contain the row.
 
 ## Describe a table
 
