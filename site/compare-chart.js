@@ -97,7 +97,8 @@ function drawMatrix(pages) {
 
 /** The README drawn with the chart after the paragraph under its compare heading. Refuses a README that no longer asks for it, so a renamed heading stops the publish rather than dropping the chart in silence. */
 export function fillCompareSeam(frontHtml, chartHtml) {
-  const heading = frontHtml.indexOf(`<h2 id="${COMPARE_SEAM_ID}">`);
+  // The heading may wear the mark the app's page proves it with, so it is found by its id alone.
+  const heading = frontHtml.search(new RegExp(`<h2 id="${COMPARE_SEAM_ID}"[\\s>]`));
   if (heading < 0) throw new Error(`the README has no "How Leaftext compares" heading to draw the chart under`);
   const paragraph = frontHtml.indexOf('</p>', heading);
   const next = frontHtml.indexOf('<h2', heading + 1);

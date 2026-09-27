@@ -32,7 +32,7 @@ async function fetched(path) {
 /** The landing's layout, its chart and its motion — the website's own modules, published beside this one — fetched only for a site whose listing names a front page. */
 async function frontPageModules() {
   const [layout, chart, motion] = await Promise.all([import('./front-page-layout.js'), import('./compare-chart.js'), import('./front-page.js')]);
-  return { layoutFrontPage: layout.layoutFrontPage, paragraphPlace: layout.paragraphPlace, fillCompareSeam: chart.fillCompareSeam, installFrontMotion: motion.installFrontMotion };
+  return { layoutFrontPage: layout.layoutFrontPage, holdLaidOutIds: layout.holdLaidOutIds, paragraphPlace: layout.paragraphPlace, fillCompareSeam: chart.fillCompareSeam, installFrontMotion: motion.installFrontMotion };
 }
 
 /**
@@ -54,7 +54,14 @@ async function frontPageFor(path) {
     console.warn(`${path} is drawn plain: the front page's modules did not arrive — ${(error && error.message) || error}`);
     return null;
   }
-  return { path, layout: (html) => modules.layoutFrontPage(modules.fillCompareSeam(html, chart)), motion: modules.installFrontMotion, paragraphPlace: modules.paragraphPlace };
+  // A typed heading is drawn again under an id spelled from its new words, so the ids the layout reads are held from one layout to the next.
+  let held = null;
+  const layout = (html) => {
+    const steady = modules.holdLaidOutIds(html, held);
+    held = steady.ids;
+    return modules.layoutFrontPage(modules.fillCompareSeam(steady.html, chart));
+  };
+  return { path, layout, motion: modules.installFrontMotion, paragraphPlace: modules.paragraphPlace };
 }
 
 try {

@@ -12652,7 +12652,12 @@ figure.front-clip {
   transform: none;
   transition: none;
 }
-h3.front-card-title {
+/* The README's own section heading, so it is an h2 and is written back as one; drawn as the card title it stood as before, without the rule a document's h2 wears. */
+h2.front-card-title {
+  color: var(--lt-markdown-heading-3);
+  border-bottom: none;
+  padding-bottom: 0;
+  line-height: var(--type-h3-line);
   margin: 0 0 var(--lt-space-8);
   font-size: var(--type-h4-size);
   font-weight: var(--lt-weight-600);
@@ -16926,7 +16931,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Front page</h3><code class="built">.front</code><span class="built">site/front-page-layout.js lays the README out, site/front-page.js swaps in the clips and raises the cards, and only leaftext.com draws it</span></header>
-<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body front-layout"><section class="front-hero"><h1 class="front-hero-title">Refine your mind.</h1><p class="front-hero-line">Read, understand and edit the files other readers leave closed.</p><p class="front-downloads"><a class="leaf-md-button" href="#">Download for Windows</a> <a class="leaf-md-button" href="#">Download for macOS</a></p><p class="front-small">Free · Windows 10+ and macOS Universal</p></section><section class="front-cards"><article class="front-card"><h3 class="front-card-title">Read almost anything</h3><p class="front-card-lead">A Markdown page, a sitemap, a saved email, each drawn as a page to read.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article><article class="front-card"><h3 class="front-card-title">Edit the rendered page</h3><p class="front-card-lead">A sentence typed straight into the page.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article></section><section class="front-install"><p>Leaftext is free.</p></section><footer class="front-foot"><p><a href="#">Read the docs</a></p></footer></article></div></div>
+<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body front-layout"><section class="front-hero"><h1 class="front-hero-title">Refine your mind.</h1><p class="front-hero-line">Read, understand and edit the files other readers leave closed.</p><p class="front-downloads"><a class="leaf-md-button" href="#">Download for Windows</a> <a class="leaf-md-button" href="#">Download for macOS</a></p><p class="front-small">Free · Windows 10+ and macOS Universal</p></section><section class="front-cards"><article class="front-card"><h2 class="front-card-title">Read your files</h2><p class="front-card-lead">A Markdown page, a sitemap, a saved email, each drawn as a page to read.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article><article class="front-card"><h2 class="front-card-title">Write where you read</h2><p class="front-card-lead">A sentence typed straight into the page.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article></section><section class="front-install"><p>Leaftext is free.</p></section><footer class="front-foot"><p><a href="#">Read the docs</a></p></footer></article></div></div>
 </section>
 <section class="part">
 <header><h3>Table actions</h3><code class="built">.table-sheet-open</code><span class="built">table-sheet.js</span></header>

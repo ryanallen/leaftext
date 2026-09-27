@@ -12597,7 +12597,12 @@ figure.front-clip {
   transform: none;
   transition: none;
 }
-h3.front-card-title {
+
+h2.front-card-title {
+  color: var(--lt-markdown-heading-3);
+  border-bottom: none;
+  padding-bottom: 0;
+  line-height: var(--type-h3-line);
   margin: 0 0 var(--lt-space-8);
   font-size: var(--type-h4-size);
   font-weight: var(--lt-weight-600);

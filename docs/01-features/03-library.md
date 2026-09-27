@@ -560,7 +560,7 @@ The active vault is saved in `manifest.db` beside the vault list, not in [settin
 
 ![A narrow Leaftext window with the library open as a full-width sheet over the document, the vault name and breadcrumb at its top, the leaf and library button still visible above it, the palette, history and search launchers with the Grove pill along the sheet's foot, and the floating bar's three view buttons on the middle of the page](../../imgs/library-sheet.png)
 
-Below the point where a pane and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with the vault name and path at the top — or arrives in place, with no slide, under [Reduce Motion](05-settings.md#reduce-motion). Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it.
+Below the point where a pane at the width it opens at and a usable reader both fit, the library stops being a column beside the page and becomes a sheet over it. The same panel button opens it: it slides in from the left at full width, covering the document, with the vault name and path at the top — or arrives in place, with no slide, under [Reduce Motion](05-settings.md#reduce-motion). Picking a document dismisses it, since the page you just opened is behind it. The app bar stays above the sheet, so the button that opened it also closes it.
 
 The sheet is not saved. It describes the current view rather than a preference, so widening the window puts the pane back beside the page and there is no sheet to restore.
 

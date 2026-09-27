@@ -7467,7 +7467,7 @@ if (libraryWidth === DEFAULT_PANE_WIDTH) {
 }
 
 function libraryTooNarrow() {
-  return leafShellWidth() < SNAP_SHUT + MIN_READER_WIDTH;
+  return leafShellWidth() < DEFAULT_PANE_WIDTH + MIN_READER_WIDTH;
 }
 function libraryIsClosed() {
   return libraryUserClosed || libraryTooNarrow();
@@ -15160,6 +15160,7 @@ function anchorToMarkdown(el) {
   if (href.startsWith('glossary:') || el.classList.contains('github-ref')) {
     return text;
   }
+  if (el.classList.contains('leaf-md-button')) return buttonToMarkdown(el, href);
   if (
     href === text ||
     href === 'mailto:' + text ||
@@ -15169,6 +15170,24 @@ function anchorToMarkdown(el) {
     return text;
   }
   return '[' + inlineDomToMarkdown(el) + '](' + href + ')';
+}
+
+
+function buttonToMarkdown(el, href) {
+  const braces = el.classList.contains('leaf-md-button--ghost')
+    ? 1
+    : el.classList.contains('leaf-md-button--secondary')
+      ? 2
+      : 3;
+  const label = el.cloneNode(true);
+  const mark = label.firstElementChild;
+  const icon =
+    mark && mark === label.firstChild && mark.classList.contains('lt-icon')
+      ? mark.className.split(' ').find((name) => name.startsWith('lt-icon-'))
+      : '';
+  if (icon) mark.remove();
+  const name = icon ? 'icon:' + icon.slice('lt-icon-'.length) : '';
+  return '{'.repeat(braces) + name + '[' + inlineDomToMarkdown(label) + '](' + href + ')' + '}'.repeat(braces);
 }
 
 const MARKDOWN_RAW_INLINE_TAGS = new Set(['abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div']);
@@ -21969,6 +21988,11 @@ function tableLensWorthDrawing(table) {
 }
 
 
+function hostAnswersTableModel() {
+  return typeof window.__leafHostAnswers !== 'function' || !!window.__leafHostAnswers('tableModel');
+}
+
+
 function bindTableLens(path) {
   
   if (path !== heldTableLensDocument) {
@@ -21978,6 +22002,7 @@ function bindTableLens(path) {
   }
   if (!app || currentDocumentFormat !== 'markdown') return;
   bindTableLensPickers();
+  const answered = hostAnswersTableModel();
   app.querySelectorAll('.table-lane > table[data-block-kind="table"]').forEach((table) => {
     const identity = tableIdentity(table);
     if (!identity) return;
@@ -21989,6 +22014,7 @@ function bindTableLens(path) {
       buildCellCardBar(table, identity, bar);
       return;
     }
+    if (!answered) return;
     buildTableLensBar(table, identity.ordinal, bar);
     restoreTableLens(bar, table, identity.ordinal);
   });
@@ -27673,7 +27699,7 @@ function proveSiteBlocks(doc) {
   if (!found) return null;
   const proofs = new Map();
   for (const [el, block] of found.pairs) {
-    const heading = block.kind === 'heading' && el.tagName === 'H1';
+    const heading = block.kind === 'heading' && /^H[1-6]$/.test(el.tagName);
     const paragraph = block.kind === 'paragraph' && el.tagName === 'P';
     if (!heading && !paragraph) continue;
     const id = String(proofs.size);

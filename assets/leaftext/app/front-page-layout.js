@@ -17,12 +17,12 @@ export const INSTALL_ID = 'install-it';
 /** Where the recorded clips and their posters are published: `<clip>.webm` and `<clip>.jpg`, written by `scripts/record-site-demo.mjs`. */
 export const DEMO_DIR = 'imgs/demos';
 
-/** The four cards, in order: the README section each is read from, the promise it makes, the clip that shows it, what that clip shows in words, and the documentation page that tells the rest. */
+/** The four cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, and the documentation page that tells the rest. */
 export const FRONT_CARDS = [
-  { section: 'read-your-files', title: 'Read almost anything', clip: 'read', shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
-  { section: 'write-where-you-read', title: 'Edit the rendered page', clip: 'edit', shows: 'A sentence being typed straight into the rendered page of a note', more: 'docs/01-features/07-editing.md' },
-  { section: 'keep-a-library', title: 'See the whole library', clip: 'library', shows: 'The documentation index opening into the graph of how its pages link', more: 'docs/01-features/03-library.md' },
-  { section: 'your-thoughts-stay-yours', title: 'Keep it yours', clip: 'own', shows: 'One page drawn in six themes in turn, the file never leaving the machine', more: 'docs/01-introduction.md' },
+  { section: 'read-your-files', clip: 'read', shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
+  { section: 'write-where-you-read', clip: 'edit', shows: 'A sentence being typed straight into the rendered page of a note', more: 'docs/01-features/07-editing.md' },
+  { section: 'keep-a-library', clip: 'library', shows: 'The documentation index opening into the graph of how its pages link', more: 'docs/01-features/03-library.md' },
+  { section: 'your-thoughts-stay-yours', clip: 'own', shows: 'One page drawn in six themes in turn, the file never leaving the machine', more: 'docs/01-introduction.md' },
 ];
 
 /** The clip beside the comparison, which shows the whole window reading, and what it shows in words. */
@@ -48,7 +48,7 @@ function inner(html) {
 /** The drawn README cut at every `h2`: the part above the first one, then each section by its id. */
 function sections(body) {
   const found = new Map();
-  const starts = [...body.matchAll(/<h2 id="([^"]*)">/g)];
+  const starts = [...body.matchAll(/<h2 id="([^"]*)"[^>]*>/g)];
   found.set('', body.slice(0, starts.length ? starts[0].index : body.length));
   starts.forEach((start, at) => found.set(start[1], body.slice(start.index, at + 1 < starts.length ? starts[at + 1].index : body.length)));
   return found;
@@ -67,7 +67,7 @@ const paragraphs = (html) => html.match(/<p(?:\s[^>]*)?>[\s\S]*?<\/p>/g) || [];
 /** A paragraph wearing one of the layout's classes, every attribute it came with kept. */
 const classed = (p, name) => p.replace(/^<p\b/, `<p class="${name}"`);
 
-/** The mark the app's page puts on a heading or paragraph it has proved the source of, so the words a visitor can type on are only the ones this layout keeps whole. Taken off everything the layout keeps without offering it for typing. */
+/** The mark the app's page puts on a heading or paragraph it has proved the source of, so the words a visitor can type on are only the ones this layout keeps whole. Taken off the chart, whose words are another document's, and off the Previous and Next strip. */
 const unproved = (html) => html.replace(/\sdata-leaf-proof="[^"]*"/g, '');
 
 /** What places a paragraph on the page: a picture keeps a paragraph off a card and out of the promise, the download buttons are the downloads, and a link into the documentation is the foot. */
@@ -104,38 +104,57 @@ function heroOf(intro) {
   // The one link beside the buttons is the install guide, which the Mac's first launch needs.
   if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
   const heading = title[0].replace(/^<h1\b/, '<h1 class="front-hero-title"');
-  return `<section class="front-hero" id="download">${heading}${classed(line, 'front-hero-line')}${unproved(classed(said[downloads], 'front-downloads'))}${unproved(classed(small, 'front-small'))}</section>`;
+  return `<section class="front-hero" id="download">${heading}${classed(line, 'front-hero-line')}${classed(said[downloads], 'front-downloads')}${classed(small, 'front-small')}</section>`;
 }
 
 /** The links at the foot: the paragraph above the first section that points into the documentation. */
 function footOf(intro) {
   const links = paragraphs(intro).find(isFoot);
   if (!links) throw new Error('the README carries no line of links into the documentation for the front page to end on');
-  return `<footer class="front-foot">${unproved(links)}</footer>`;
+  return `<footer class="front-foot">${classed(links, 'front-foot-line')}</footer>`;
 }
 
 /** The comparison: its heading, its one line and the chart drawn under it, without the prose the README carries after. */
 function compareOf(section) {
   const chart = /<section class="compare-chart">[\s\S]*?<\/section>/.exec(section);
   if (!chart) throw new Error('the README was handed over without its comparison chart, so the front page would open on no comparison');
-  return `<section class="front-compare">${unproved(section.slice(0, chart.index + chart[0].length))}</section>`;
+  return `<section class="front-compare">${section.slice(0, chart.index)}${unproved(chart[0])}</section>`;
 }
 
-/** One card: the promise, the section's own lead, its picture and where to read the rest. */
+/** One card: the section's own heading and lead, its picture and where to read the rest. The heading stays an h2 with its id and its mark, so a visitor types on the README's words and a typed title is written back at its own level. */
 function cardOf(card, section) {
+  const heading = /^<h2\b[^>]*>[\s\S]*?<\/h2>/.exec(section);
   const lead = leadOf(section);
   if (!lead.length) throw new Error(`the README's "${card.section}" section has no lead paragraph for its card`);
-  return `<article class="front-card" data-clip-card="${card.clip}"><h3 class="front-card-title" id="${card.section}">${card.title}</h3>${lead.join('')}${clipBox(card.clip, card.shows, 'front-card-clip')}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
+  return `<article class="front-card" data-clip-card="${card.clip}">${heading[0].replace(/^<h2\b/, '<h2 class="front-card-title"')}${lead.join('')}${clipBox(card.clip, card.shows, 'front-card-clip')}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
 }
 
 /**
- * Where a paragraph a visitor typed on would be laid out now, by the same rules the layout places it by: the one layout class of `classes` it wears, which a paragraph drawn again alone has to wear too — the empty string for the install line, which wears none — or `null` where `html`, its new words, would stand somewhere else, so the whole page has to be laid out again. A promise gaining a picture, the download buttons or a link into the documentation, and a card lead gaining a picture, each move.
+ * Where a paragraph a visitor typed on would be laid out now, by the same rules the layout places it by: the one layout class of `classes` it wears, which a paragraph drawn again alone has to wear too — the empty string for the install line, which wears none — or `null` where `html`, its new words, would stand somewhere else, so the whole page has to be laid out again. A promise gaining a picture, the download buttons or a link into the documentation, a card lead gaining a picture, downloads losing their buttons, small print losing the installation guide and a foot losing its link into the documentation each move, and so does any of those three gaining the foot's link, since the first line carrying it is the foot.
  */
 export function paragraphPlace(classes, html) {
   const worn = Array.from(classes || []);
   if (worn.includes('front-hero-line')) return holdsPicture(html) || isDownloads(html) || isFoot(html) ? null : 'front-hero-line';
   if (worn.includes('front-card-lead')) return holdsPicture(html) ? null : 'front-card-lead';
+  if (worn.includes('front-downloads')) return isDownloads(html) && !isFoot(html) ? 'front-downloads' : null;
+  if (worn.includes('front-small')) return html.includes(`href="${INSTALL_GUIDE}`) && !isFoot(html) ? 'front-small' : null;
+  if (worn.includes('front-foot-line')) return isFoot(html) ? 'front-foot-line' : null;
   return '';
+}
+
+/**
+ * The README's section headings with the ids the layout finds its parts by held where they were, so a visitor typing a word into the comparison heading or a card title does not rename the section out from under the layout. `held` is the list this answered last time, or nothing; a README with a different number of sections starts the list again. Only the ids the layout reads are held, and each stays on the heading at its own place in the README.
+ */
+export function holdLaidOutIds(html, held) {
+  const laidOut = new Set([COMPARE_ID, INSTALL_ID, ...FRONT_CARDS.map((card) => card.section)]);
+  const ids = [...html.matchAll(/<h2 id="([^"]*)"/g)].map((found) => found[1]);
+  if (!held || held.length !== ids.length) return { html, ids };
+  let at = 0;
+  const steady = html.replace(/<h2 id="([^"]*)"/g, (tag, id) => {
+    const was = held[at++];
+    return id !== was && laidOut.has(was) && !ids.includes(was) ? `<h2 id="${was}"` : tag;
+  });
+  return { html: steady, ids: held };
 }
 
 /**
