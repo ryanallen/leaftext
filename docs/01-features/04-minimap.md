@@ -1,5 +1,9 @@
 # Minimap
 
+## Web pages
+
+A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scrolling without taking another picture. Click the rail to jump, drag the box to move through the page, or scroll over the rail. At a window width of 720 pixels or less, the live page uses its own scrollbar.
+
 > Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll; turn the wheel over the rail and the page scrolls just as it does under the pointer.
 
 ![The minimap rail down the right edge of the window, showing a scaled clone of the document with recognizable headings, rules and dense paragraphs, and the viewport indicator box marking the part currently on screen](../../imgs/minimap.png)

@@ -9,6 +9,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Feature | What it means |
 | --- | --- |
 | [Tabs](#tabs) | Open multiple documents at once |
+| [Web tabs](#web-tabs) | Browse a live web page beside your documents |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
@@ -31,6 +32,14 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [When another app is in front](#when-another-app-is-in-front) | The whole window settles together the moment it falls behind another app — chrome, document, pictures and the little picture of the page all keep some color at half strength, with black text going less dark, faded in and out over the same beat |
 | [When the bar runs out of room](#when-the-bar-runs-out-of-room) | On a window too narrow for the whole app bar, its buttons fold into a chevron menu one at a time — and the window's own close, minimize and maximize stay on the bar |
 | [Code view](07-editing.md) | Toggle any document to its raw, editable source |
+
+## Web tabs
+
+Press **+** and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. Typing the first character of a note removes this field.
+
+A web tab takes its name from the page's title. Rest the pointer over the app bar to slide its address open, or press **Ctrl+L** to select it. **Enter** opens the new address, **Escape** closes the bar, and **Copy** copies the current address. The bar stays open while you edit and closes after the pointer leaves it and the app bar.
+
+Back, Forward and Refresh control the live page. Closing, switching and dragging work as they do on document tabs. A saved web tab reopens at its last address when you bring it forward. Links asking for a new window open in another web tab. The [minimap](04-minimap.md#web-pages) shows a picture of the page and follows its scroll position.
 
 ## Model
 

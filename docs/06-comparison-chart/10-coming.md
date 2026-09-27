@@ -70,7 +70,6 @@
 | --- | --- | --- | --- | --- |
 | Terminal rendering | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Folder console | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Live web tabs | [❌][l-roadmap] | [✅][o-web-viewer] | [❌][t-seen] | [❌][c-seen] |
 | Serve local site | [❌][l-roadmap] | ? | ? | [✅][c-server] |
 | Theme editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Every view in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-server] |
@@ -205,7 +204,6 @@
 [o-dnd]: https://obsidian.md/help/drag-and-drop
 [o-backlinks]: https://obsidian.md/help/plugins/backlinks
 [o-tags]: https://obsidian.md/help/tags
-[o-web-viewer]: https://obsidian.md/help/plugins/web-viewer
 [t-export]: https://support.typora.io/Export/
 [t-md-export]: https://support.typora.io/Markdown-Export/
 [t-images]: https://support.typora.io/Images/

@@ -8822,6 +8822,78 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .reader-edge-fade-second[hidden] {
   display: none;
 }
+.web-address-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  width: min(520px, calc(100% - 48px));
+  box-sizing: border-box;
+  margin: var(--lt-space-32) auto;
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface);
+  color: var(--lt-muted-foreground);
+}
+.web-address {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--lt-space-4) 0;
+  border: 0;
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-16);
+  line-height: var(--lt-leading-1-5);
+}
+.web-address::placeholder {
+  color: var(--lt-muted-foreground);
+}
+.web-address:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-link);
+  outline-offset: var(--lt-space-2);
+}
+.web-address-bar {
+  position: fixed;
+  z-index: var(--lt-z-20);
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  height: 0;
+  box-sizing: border-box;
+  padding: 0 var(--lt-space-12);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--lt-surface);
+  border-bottom: 0 solid var(--lt-border);
+  transition: height var(--lt-duration-200) var(--lt-ease-decelerate), opacity var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+.web-address-bar.is-open {
+  border-bottom-width: var(--lt-stroke-1);
+  height: 48px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.web-address-copy {
+  flex: none;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+}
+@media (prefers-reduced-motion: reduce) {
+  .web-address-bar { transition: none; }
+}
+.web-address-minimap {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .document-body {
   width: min(var(--type-measure-body), 100%);
   margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;

@@ -320,6 +320,298 @@ function releaseShellWidth() {
 
 let libraryOutlineOpen = false;
 
+const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
+  bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0,
+  metrics: null, image: '', railTab: null };
+function activeWebTab() {
+  const tab = currentState && currentState.tabs && currentState.tabs[currentState.active];
+  return tab && tab.kind === 'web' ? tab : null;
+}
+function resolvedWebAddress(line) {
+  const typed = String(line || '').trim();
+  if (!typed) return null;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(typed)) {
+    try { return new URL(typed).href; } catch (_) { return typed; }
+  }
+  const host = typed.split(/[/?#]/, 1)[0];
+  if (!/\s/.test(typed) && /^(?:localhost|\[[\da-f:]+\]|[a-z\d.-]+\.[a-z]{2,}|(?:\d{1,3}\.){3}\d{1,3})(?::\d{1,5})?$/i.test(host)) {
+    try { return new URL('https://' + typed).href; } catch (_) {}
+  }
+  return 'https://www.google.com/search?q=' + encodeURIComponent(typed);
+}
+function sendWebAddress(input) {
+  const url = resolvedWebAddress(input.value);
+  if (url) send({command:'openWebAddress', url});
+}
+function hideNewWebAddress(body) {
+  const field = body && body.querySelector('.web-address-wrap');
+  if (field) field.remove();
+}
+function showNewWebAddress(body, title, story) {
+  if (window.__leafSite || window.__leafEmbedded) return;
+  const tab = currentState && currentState.tabs && currentState.tabs[currentState.active];
+  if (!tab || !tab.untitled || documentSourceLength() !== 0) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'web-address-wrap';
+  wrap.innerHTML = '<span class="lt-icon lt-icon-search" aria-hidden="true"></span><input class="web-address" type="text" aria-label="Search Google or enter an address" placeholder="Search Google or enter an address" autocomplete="off" spellcheck="false">';
+  body.appendChild(wrap);
+  const input = wrap.querySelector('input');
+  input.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
+    event.preventDefault();
+    event.stopPropagation();
+    sendWebAddress(input);
+  });
+  const typed = () => { if (title.textContent || story.textContent) hideNewWebAddress(body); };
+  title.addEventListener('input', typed);
+  story.addEventListener('input', typed);
+}
+function coverWebSurface(covered, owner) {
+  if (!owner) return;
+  if (covered) webAddressState.covers.add(owner);
+  else webAddressState.covers.delete(owner);
+  if (covered && typeof owner === 'object' && !webAddressState.watched.has(owner) && typeof MutationObserver === 'function') {
+    webAddressState.watched.add(owner);
+    new MutationObserver(scheduleWebSurfaceBounds).observe(owner, {attributes:true, attributeFilter:['hidden']});
+  }
+  scheduleWebSurfaceBounds();
+}
+function scheduleWebSurfaceBounds() {
+  if (!activeWebTab() && !webAddressState.lastBounds) return;
+  if (webAddressState.frame || !webAddressState.booted) return;
+  webAddressState.frame = window.requestAnimationFrame(() => {
+    webAddressState.frame = 0;
+    const tab = activeWebTab();
+    for (const owner of webAddressState.covers) {
+      if (owner && typeof owner === 'object' && (owner.isConnected === false || owner.hidden)) webAddressState.covers.delete(owner);
+    }
+    const cell = app.getBoundingClientRect();
+    const bar = appBar.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+    let top = Math.max(cell.top, bar.bottom);
+    const addressBar = webAddressState.bar;
+    if (addressBar && tab) {
+      const surface = appSurface.getBoundingClientRect();
+      addressBar.style.left = (cell.left - surface.left) + 'px';
+      addressBar.style.top = (top - surface.top) + 'px';
+      addressBar.style.width = cell.width + 'px';
+      top = Math.max(top, addressBar.getBoundingClientRect().bottom);
+    }
+    const rail = readerMinimap && !readerMinimap.hidden ? readerMinimap.getBoundingClientRect() : null;
+    const right = rail && rail.width > 0 ? Math.min(cell.right, rail.left) : cell.right;
+    const bounds = {
+      command: 'webSurfaceBounds', x: Math.max(0, Math.round(cell.left * ratio)),
+      y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round((right - cell.left) * ratio)),
+      height: Math.max(0, Math.round((cell.bottom - top) * ratio)),
+      visible: !!tab && webAddressState.covers.size === 0,
+    };
+    const spelling = JSON.stringify(bounds);
+    if (spelling === webAddressState.lastBounds) {
+      if (performance.now() < webAddressState.motionUntil) scheduleWebSurfaceBounds();
+      return;
+    }
+    webAddressState.lastBounds = spelling;
+    send(bounds);
+    if (performance.now() < webAddressState.motionUntil) scheduleWebSurfaceBounds();
+  });
+}
+function renderWebSurface(state) {
+  const tab = state.tabs && state.tabs[state.active];
+  if (!tab || tab.kind !== 'web') { webAddressState.railTab = null; closeWebAddressBar(true); scheduleWebSurfaceBounds(); return false; }
+  app.innerHTML = '';
+  writeReaderClasses([]);
+  renderTabs(state);
+  clearReaderLoading();
+  webAddressState.metrics = null;
+  webAddressState.image = '';
+  webAddressState.railTab = tab;
+  drawWebMinimap();
+  syncWebAddressBar();
+  scheduleWebSurfaceBounds();
+  return true;
+}
+function bootWebAddress() {
+  if (webAddressState.booted || window.__leafSite || window.__leafEmbedded) return;
+  webAddressState.booted = true;
+  window.addEventListener('resize', () => { if (activeWebTab()) drawWebMinimap(); scheduleWebSurfaceBounds(); });
+  appBar.addEventListener('pointerenter', () => {
+    webAddressState.overApp = true;
+    armWebAddressOpen();
+  });
+  appBar.addEventListener('pointerleave', () => {
+    webAddressState.overApp = false;
+    window.clearTimeout(webAddressState.openTimer);
+    webAddressState.openTimer = 0;
+    armWebAddressClose();
+  });
+  document.addEventListener('keydown', event => {
+    if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 'l' || !activeWebTab()) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    openWebAddressBar(true);
+  }, true);
+}
+function armWebAddressOpen() {
+  window.clearTimeout(webAddressState.closeTimer);
+  window.clearTimeout(webAddressState.openTimer);
+  if (!activeWebTab()) return;
+  webAddressState.openTimer = window.setTimeout(() => {
+    webAddressState.openTimer = 0;
+    if (webAddressState.overApp && activeWebTab()) openWebAddressBar(false);
+  }, 250);
+}
+function armWebAddressClose() {
+  window.clearTimeout(webAddressState.closeTimer);
+  if (webAddressState.overApp || webAddressState.overAddress || webAddressState.editing) return;
+  webAddressState.closeTimer = window.setTimeout(() => {
+    webAddressState.closeTimer = 0;
+    if (!webAddressState.overApp && !webAddressState.overAddress && !webAddressState.editing) closeWebAddressBar();
+  }, 300);
+}
+function ensureWebAddressBar() {
+  if (webAddressState.bar) return webAddressState.bar;
+  const bar = document.createElement('div');
+  bar.className = 'web-address-bar';
+  bar.inert = true;
+  bar.innerHTML = '<input class="web-address" type="text" aria-label="Web address" autocomplete="off" spellcheck="false"><button type="button" class="web-address-copy">Copy</button>';
+  appSurface.appendChild(bar);
+  webAddressState.bar = bar;
+  const input = bar.querySelector('input');
+  input.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeWebAddressBar(); input.blur(); }
+    else if (event.key === 'Enter' && !event.isComposing && !event.repeat) { event.preventDefault(); event.stopPropagation(); sendWebAddress(input); input.blur(); closeWebAddressBar(); }
+  });
+  input.addEventListener('focus', () => { webAddressState.editing = true; window.clearTimeout(webAddressState.closeTimer); });
+  input.addEventListener('blur', () => { webAddressState.editing = false; armWebAddressClose(); });
+  bar.querySelector('button').addEventListener('click', () => { const tab = activeWebTab(); if (tab) copyPlainText(tab.url); });
+  bar.addEventListener('pointerenter', () => { webAddressState.overAddress = true; window.clearTimeout(webAddressState.closeTimer); });
+  bar.addEventListener('pointerleave', () => { webAddressState.overAddress = false; armWebAddressClose(); });
+  return bar;
+}
+function syncWebAddressBar() {
+  const tab = activeWebTab();
+  const bar = webAddressState.bar;
+  if (!tab) { closeWebAddressBar(true); return; }
+  if (bar && !webAddressState.editing) bar.querySelector('input').value = tab.url || '';
+  scheduleWebSurfaceBounds();
+}
+function openWebAddressBar(select) {
+  const tab = activeWebTab();
+  if (!tab) return;
+  window.clearTimeout(webAddressState.closeTimer);
+  const bar = ensureWebAddressBar();
+  const input = bar.querySelector('input');
+  if (!webAddressState.editing) input.value = tab.url || '';
+  bar.classList.add('is-open');
+  bar.inert = false;
+  webAddressState.motionUntil = performance.now() + durationTokenMilliseconds('--lt-duration-200') + 64;
+  scheduleWebSurfaceBounds();
+  if (select) { input.focus({preventScroll:true}); input.select(); }
+}
+function closeWebAddressBar(leaving) {
+  window.clearTimeout(webAddressState.openTimer);
+  window.clearTimeout(webAddressState.closeTimer);
+  webAddressState.openTimer = 0;
+  webAddressState.closeTimer = 0;
+  const bar = webAddressState.bar;
+  if (!bar) return;
+  bar.classList.remove('is-open');
+  bar.inert = true;
+  webAddressState.motionUntil = performance.now() + durationTokenMilliseconds('--lt-duration-200') + 64;
+  if (leaving) {
+    webAddressState.editing = false;
+    webAddressState.overAddress = false;
+    bar.remove();
+    webAddressState.bar = null;
+  }
+  scheduleWebSurfaceBounds();
+}
+window.leafOpenWebAddress = () => openWebAddressBar(true);
+
+function webRailScroll(top) {
+  const metrics = webAddressState.metrics;
+  if (!activeWebTab() || !metrics || !Number.isFinite(top)) return;
+  send({command:'webScroll', top:Math.max(0, Math.min(metrics.height - metrics.viewport, top))});
+}
+function webRailTarget(metrics, geometry, position, offset) {
+  if (offset !== null) return (position - offset) / Math.max(1, geometry.travel) * geometry.scrollable;
+  const hidden = Math.max(0, metrics.height * geometry.scale - geometry.height);
+  const shift = geometry.scrollable > 0 ? metrics.scroll / geometry.scrollable * hidden : 0;
+  return (position + shift) / geometry.scale - metrics.viewport / 2;
+}
+function drawWebMinimap() {
+  if (!activeWebTab()) return;
+  if (window.innerWidth <= 720) { setMinimapMarkup(''); return; }
+  setMinimapMarkup(documentMinimapMarkup().replace(' is-loading', ''));
+  const rail = currentMinimap();
+  if (!rail) return;
+  const spinner = rail.querySelector('.document-minimap-spinner');
+  if (spinner) spinner.remove();
+  const track = rail.querySelector('.document-minimap-track');
+  const content = rail.querySelector('.document-minimap-content');
+  const picture = document.createElement('img');
+  picture.className = 'web-address-minimap';
+  picture.alt = '';
+  if (webAddressState.image) picture.src = webAddressState.image;
+  content.appendChild(picture);
+  let pointer = null, offset = null, geometry = null;
+  const move = event => {
+    if (!geometry) return;
+    const position = event.clientY - geometry.top;
+    const top = webRailTarget(webAddressState.metrics, geometry, position, offset);
+    webRailScroll(top);
+  };
+  track.addEventListener('pointerdown', event => {
+    const metrics = webAddressState.metrics;
+    if (event.button !== 0 || !metrics) return;
+    event.preventDefault();
+    const rect = track.getBoundingClientRect();
+    const scale = content.getBoundingClientRect().width / metrics.width;
+    const height = Math.min(rect.height, Math.max(22, metrics.viewport * scale));
+    const top = metrics.height === metrics.viewport ? 0 : metrics.scroll / (metrics.height - metrics.viewport) * (rect.height - height);
+    geometry = {top:rect.top, height:rect.height, scale, viewport:metrics.viewport, travel:rect.height-height, scrollable:metrics.height-metrics.viewport};
+    offset = event.target.closest('.document-minimap-viewport') ? event.clientY - rect.top - top : null;
+    pointer = event.pointerId;
+    leafHoldPointer(track, pointer);
+    move(event);
+  });
+  track.addEventListener('pointermove', event => { if (event.pointerId === pointer) move(event); });
+  const release = event => { if (event.pointerId === pointer) { pointer = null; geometry = null; } };
+  track.addEventListener('pointerup', release);
+  track.addEventListener('pointercancel', release);
+  track.addEventListener('lostpointercapture', release);
+  track.addEventListener('wheel', event => {
+    const metrics = webAddressState.metrics;
+    if (!metrics) return;
+    event.preventDefault();
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? metrics.viewport : 1);
+    webRailScroll(metrics.scroll + delta);
+  }, {passive:false});
+  updateWebMinimap();
+}
+function updateWebMinimap() {
+  const metrics = webAddressState.metrics;
+  const rail = currentMinimap();
+  if (!metrics || !rail || !activeWebTab()) return;
+  const track = rail.querySelector('.document-minimap-track');
+  const content = rail.querySelector('.document-minimap-content');
+  const height = Math.max(1, app.getBoundingClientRect().height - appBar.getBoundingClientRect().height);
+  track.style.height = height + 'px';
+  const scale = Math.max(1, content.getBoundingClientRect().width) / metrics.width;
+  placeMinimapViewport(rail, {scaledDocumentHeight:metrics.height*scale, scrollTop:metrics.scroll,
+    scrollable:Math.max(0, metrics.height-metrics.viewport), viewportHeight:metrics.viewport, previewScale:scale, trackHeight:height}, null);
+}
+window.leafWebMinimap = payload => {
+  if (!activeWebTab() || !payload || !payload.metrics) return;
+  webAddressState.metrics = payload.metrics;
+  if (typeof payload.image === 'string' && payload.image !== webAddressState.image) {
+    webAddressState.image = payload.image;
+    const picture = readerMinimap && readerMinimap.querySelector('.web-address-minimap');
+    if (picture && payload.image) picture.src = payload.image;
+  }
+  updateWebMinimap();
+};
+
 
 
 
@@ -2276,6 +2568,7 @@ function openFlowSheet({ title, text, save }) {
   setFlowText(flowSession.text, 'open');
   flowBackdrop.hidden = false;
   flowSheet.hidden = false;
+  coverWebSurface(true, flowSheet);
   requestAnimationFrame(() => {
     flowBackdrop.classList.add('open');
     flowSheet.classList.add('open');
@@ -2313,6 +2606,7 @@ function closeFlowSheet() {
   flowSheet.classList.remove('open');
   const hide = () => {
     flowSheet.hidden = true;
+    coverWebSurface(false, flowSheet);
     flowBackdrop.hidden = true;
     flowSheet.removeEventListener('transitionend', hide);
     
@@ -4932,6 +5226,7 @@ function startTabDragGhost(drag) {
   ghost.style.top = drag.box.top + 'px';
   ghost.style.width = drag.box.width + 'px';
   appSurface.appendChild(ghost);
+  coverWebSurface(true, ghost);
   drag.ghost = ghost;
 }
 
@@ -4968,7 +5263,7 @@ function endTabDrag(commit) {
   const drag = tabDrag;
   tabDrag = null;
   drawSplitDropZone(false);
-  if (drag.ghost) drag.ghost.remove();
+  if (drag.ghost) { coverWebSurface(false, drag.ghost); drag.ghost.remove(); }
   
   const standingBeside = drag.moved && commit && drag.beside;
   const closingBeside = !standingBeside && drag.moved && commit && !!drag.closing;
@@ -5079,6 +5374,7 @@ function openSheet(sheet, backdrop, options) {
   const already = !sheet.hidden && sheet.classList.contains('open');
   if (backdrop) backdrop.hidden = false;
   sheet.hidden = false;
+  coverWebSurface(true, sheet);
   if (already) {
     
     if (!(options && options.keepParked)) resetSheetDrag(sheet);
@@ -5110,6 +5406,7 @@ function closeSheet(sheet, backdrop, options) {
     
     resetSheetDrag(sheet);
     sheet.hidden = true;
+    coverWebSurface(false, sheet);
     if (backdrop) {
       backdrop.hidden = true;
       backdrop.classList.remove('is-held');
@@ -5215,6 +5512,7 @@ function leafQueueToast(message, tone) {
 }
 
 function drawToast(message, tone, action, link) {
+  if (toastElement) coverWebSurface(false, toastElement);
   if (toastElement) {
     toastElement.remove();
     toastElement = null;
@@ -5228,6 +5526,7 @@ function drawToast(message, tone, action, link) {
   const toast = document.createElement('div');
   const error = tone === 'error';
   toast.className = error ? 'app-toast is-error' : 'app-toast';
+  coverWebSurface(true, toast);
   
   toast.setAttribute('role', 'status');
   if (action) {
@@ -5274,6 +5573,7 @@ function drawToast(message, tone, action, link) {
     
     setTimeout(() => {
       toast.remove();
+      coverWebSurface(false, toast);
       if (toastElement !== toast) return;
       toastElement = null;
       
@@ -5529,6 +5829,7 @@ const LEAF_FLOAT_MARGIN = 8;
 function leafPlaceFloating(el, x, y) {
   
   el.hidden = false;
+  coverWebSurface(true, el);
   const at = leafClampToApp(x, y, el.offsetWidth, el.offsetHeight, LEAF_FLOAT_MARGIN);
   el.style.left = at.left + 'px';
   el.style.top = at.top + 'px';
@@ -5707,7 +6008,7 @@ function hideHintBubble() {
   hintShowing = null;
   bubble.classList.remove('is-shown');
   
-  window.setTimeout(() => bubble.remove(), 400);
+  window.setTimeout(() => { bubble.remove(); coverWebSurface(false, bubble); }, 400);
 }
 
 
@@ -5818,6 +6119,7 @@ function drawHintBubble(hint, target) {
   bubble.appendChild(text);
   bubble.appendChild(tail);
   appSurface.appendChild(bubble);
+  coverWebSurface(true, bubble);
   const rect = bubble.getBoundingClientRect();
   const app = leafAppRect();
   const placement = hintPlacement(hintTargetInApp(targetRect, app), { width: rect.width, height: rect.height }, { width: app.width, height: app.height });
@@ -5927,6 +6229,7 @@ function markEmptyActionGroups() {
   }
 }
 function closeOverflowMenu() {
+  coverWebSurface(false, 'overflow');
   appTrailing.classList.remove('overflow-open');
   overflowToggle.setAttribute('aria-expanded', 'false');
 }
@@ -6079,6 +6382,7 @@ function refitAppBar() {
 overflowToggle.addEventListener('click', (event) => {
   event.stopPropagation();
   const open = appTrailing.classList.toggle('overflow-open');
+  coverWebSurface(open, 'overflow');
   overflowToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
 });
 
@@ -6490,6 +6794,7 @@ function hideContextMenu() {
     return;
   }
   contextMenu.hidden = true;
+  coverWebSurface(false, contextMenu);
   contextMenuPath = null;
   contextMenuLink = null;
   contextMenuSelectionText = '';
@@ -6864,6 +7169,7 @@ function hideRenameBox() {
     return;
   }
   renameBox.hidden = true;
+  coverWebSurface(false, renameBox);
   renamePath = null;
   clearTagRenameChoice();
 }
@@ -7017,6 +7323,7 @@ function openConfirm(title, detail, acceptLabel, action) {
     confirmFadeTimer = 0;
   }
   confirmBackdrop.hidden = false;
+  coverWebSurface(true, confirmBackdrop);
   confirmDialog.hidden = false;
   
   window.requestAnimationFrame(() => confirmBackdrop.classList.add('open'));
@@ -7031,6 +7338,7 @@ function closeConfirm() {
   confirmBackdrop.classList.remove('open');
   confirmFadeTimer = setTimeout(() => {
     confirmBackdrop.hidden = true;
+    coverWebSurface(false, confirmBackdrop);
     confirmFadeTimer = 0;
   }, CONFIRM_FADE_MS);
   confirmAction = null;
@@ -7063,6 +7371,7 @@ function sendNavigationCommand(command) {
   send({ command, scroll_anchor: currentScrollAnchor() });
 }
 function refreshOpenDocument() {
+  if (activeWebTab()) { send({command:'refreshDocument'}); return; }
   const path = activeDocumentPath();
   if (!path) return;
   if (isDocumentDirty(path)) {
@@ -7211,8 +7520,11 @@ const minimapListeners = new Set();
 window.leafMinimap = {
   getEnabled: () => minimapEnabled,
   setEnabled(nextEnabled) {
+    const moved = Boolean(nextEnabled) !== minimapEnabled;
     minimapEnabled = Boolean(nextEnabled);
     document.documentElement.dataset.minimapEnabled = String(minimapEnabled);
+    
+    if (!moved) return;
     minimapListeners.forEach((listener) => listener(minimapEnabled));
   },
   subscribe(listener) {
@@ -9060,6 +9372,7 @@ window.leafSetLibraryFolder = (payload) => {
   const folder = typeof next.path === 'string' ? next.path : '';
   
   if (folder !== libraryProjectPath) clearLibraryPicks();
+  else if (next.partial) keepDrawnRowHeads(next.entries);
   libraryProjectPath = folder;
   
   libraryChain = Array.isArray(next.chain) ? next.chain : [];
@@ -10171,6 +10484,21 @@ function libraryRowLabel(node) {
   return `<span class="file-name-stem">${escapeText(node.title)}</span>${badge}`;
 }
 
+function keepDrawnRowHeads(entries) {
+  if (!Array.isArray(entries)) return;
+  const drawn = new Map(libraryEntries.filter(Boolean).map((node) => [node.path, node]));
+  for (const node of entries) {
+    const was = node && drawn.get(node.path);
+    if (!was || was.modified !== node.modified) continue;
+    if (node.kind === 'folder') {
+      if (!Number.isFinite(node.count) && Number.isFinite(was.count)) node.count = was.count;
+    } else if (typeof node.preview !== 'string' && typeof was.preview === 'string') {
+      node.title = was.title;
+      node.preview = was.preview;
+    }
+  }
+}
+
 function fileRowHtml(node) {
   const isSelected = librarySelectedPath && node.path === librarySelectedPath;
   const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '');
@@ -10466,6 +10794,7 @@ function startLibraryCarry() {
   chip.className = 'library-carry-chip';
   chip.textContent = libraryCarryLabel(carry.paths);
   appSurface.appendChild(chip);
+  coverWebSurface(true, chip);
   carry.chip = chip;
   const corner = appSurface.getBoundingClientRect();
   carry.origin = { left: corner.left || 0, top: corner.top || 0 };
@@ -10475,7 +10804,7 @@ function endLibraryCarry() {
   libraryCarry = null;
   if (!carry) return;
   if (carry.frame) cancelAnimationFrame(carry.frame);
-  if (carry.chip) carry.chip.remove();
+  if (carry.chip) { coverWebSurface(false, carry.chip); carry.chip.remove(); }
   if (carry.target) carry.target.element.classList.remove('is-drop-target');
   leafReleasePointer(libraryTree, carry.pointerId);
 }
@@ -13379,6 +13708,8 @@ window.leafSetColumn = (state, anchor) => {
     beside: next.beside || null,
   });
   renderTabs(currentState);
+  scheduleWebSurfaceBounds();
+  syncWebAddressBar();
   drawBesideColumn(next, anchor || null);
 };
 window.leafSetFavorites = (favorites) => {
@@ -13927,6 +14258,9 @@ function writeTabGroups(markup) {
   tabBar.classList.toggle('has-two-groups', !beside.hidden);
 }
 
+function tabCloseMarkup(index) {
+  return `<button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button>`;
+}
 function renderTabs(state) {
   
   if (window.__leafSite) {
@@ -13943,13 +14277,16 @@ function renderTabs(state) {
     if (tab.redoable) redoableByPath.set(tab.path, true);
   });
   const markup = tabs.map((tab, index) => {
+    if (tab.kind === 'web') {
+      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${tabCloseMarkup(index)}</span>`;
+    }
     const favorite = isFavoritePath(tab.path);
     const mark = favorite ? 'Unfavorite' : 'Favorite';
     const label = tab.path || tab.title || '';
     const name = String(label).split(/[\\/]/).pop() || '';
     
     const front = index === active || index === besideTabIndex();
-    return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span><button type="button" class="tab-close" data-tab-close="${index}" aria-label="Close tab" title="Close tab"><span class="lt-icon lt-icon-tab-close"></span></button></span>`;
+    return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
   }).join('');
   
   if (markup === lastTabsMarkup) return;
@@ -17160,6 +17497,7 @@ function releaseEditCommand(message, after) {
     outgoing.held = true;
     
     editHold = outgoing.seq;
+    holdRailForEdit();
   }
   
   if (after && after.el && !outgoing.held && measured) advanceRangesForCommit(after.el, outgoing, !!after.inner);
@@ -17206,6 +17544,25 @@ let editHold = null;
 let keptCommits = [];
 let redrawWaitingOnHold = false;
 
+let editHoldRailResume = null;
+let editHoldAwaitsResync = false;
+
+function holdRailForEdit() {
+  editHoldAwaitsResync = true;
+  
+  if (editHoldRailResume) return;
+  pauseMinimapPreview();
+  editHoldRailResume = inThisColumn(() => resumeMinimapPreview(0));
+}
+
+
+function releaseRailAfterEdit() {
+  if (!editHoldRailResume || editHold != null || editHoldAwaitsResync) return;
+  const resume = editHoldRailResume;
+  editHoldRailResume = null;
+  resume();
+}
+
 
 function liftEditHold() {
   editHold = null;
@@ -17214,6 +17571,7 @@ function liftEditHold() {
     redrawWaitingOnHold = false;
     send({ command: 'refreshDocument', keepPlace: true });
   }
+  releaseRailAfterEdit();
 }
 
 
@@ -18638,6 +18996,9 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   
   dropKeptWrites();
   if (editHold != null) liftEditHold();
+  
+  editHoldAwaitsResync = false;
+  releaseRailAfterEdit();
   currentDocumentFormat = doc.format || 'markdown';
   if (!doc.source_held) setDocumentSource(doc.source, doc.source_stamp);
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
@@ -18691,6 +19052,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
 
 window.leafBlocksResynced = (state) => {
   if (!state) return;
+  editHoldAwaitsResync = false;
+  releaseRailAfterEdit();
   if (state.splice) spliceDocumentSource(state.splice.start, state.splice.end, state.splice.text);
   const path = activeDocumentPath();
   if (path) {
@@ -19455,6 +19818,7 @@ function openMediumStart(body) {
   };
   wireStartBlock(title);
   wireStartBlock(story);
+  showNewWebAddress(body, title, story);
   title.focus({ preventScroll: true });
   
   return { title, commit: (continuing) => commit(false, null, undefined, continuing) };
@@ -28297,6 +28661,7 @@ function startHomeRowGhost(drag, box) {
   ghost.style.top = box.top + 'px';
   ghost.style.width = box.width + 'px';
   appSurface.appendChild(ghost);
+  coverWebSurface(true, ghost);
   drag.ghost = ghost;
 }
 
@@ -28346,7 +28711,7 @@ function endHomeRowDrag() {
   drag.row.classList.remove('is-dragging');
   drag.item.classList.remove('is-dropzone');
   document.body.classList.remove('is-home-row-dragging');
-  if (drag.ghost) drag.ghost.remove();
+  if (drag.ghost) { coverWebSurface(false, drag.ghost); drag.ghost.remove(); }
   drag.item.style.transform = '';
   drag.others.forEach((one) => {
     one.style.transform = '';
@@ -28962,6 +29327,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   }
   const state = siteLaidOutState(currentState || { recent: [], favorites: [], tabs: [], active: null, document: null });
   prepareStateRender(state, keepDetachedRender);
+  if (renderWebSurface(state)) return;
   if (state.document) {
     document.title = `${state.document.title} - Leaftext`;
     const renderedPath = state.document.path || activeDocumentPath();
@@ -30160,6 +30526,7 @@ function showLinkHoverTip(event) {
   linkHoverLeaveFrame = 0;
   endLinkHoverFade();
   linkHoverTip.hidden = false;
+  coverWebSurface(true, linkHoverTip);
   positionLinkHoverTip(event);
   if (linkHoverShowFrame) window.cancelAnimationFrame(linkHoverShowFrame);
   linkHoverShowFrame = requestAnimationFrame(() => {
@@ -30189,6 +30556,7 @@ function hideLinkHoverTip() {
     if (event && event.target !== linkHoverTip) return;
     endLinkHoverFade();
     linkHoverTip.hidden = true;
+    coverWebSurface(false, linkHoverTip);
     hideLinkHoverPreview();
   };
   linkHoverEndFade = hide;
@@ -33633,6 +34001,7 @@ function closeTableSheet() {
   const opener = overlay.__tableSheetOpener;
   const scrim = overlay.__tableSheetScrim;
   overlay.remove();
+  coverWebSurface(false, overlay);
   if (scrim) scrim.remove();
   leafFocusForKeyboard(opener);
   
@@ -33717,6 +34086,7 @@ function openTableSheet(table, opener) {
   grid.addEventListener('wheel', scrollTableSheetHorizontally, { passive: false });
   overlay.append(head, grid);
   app.append(scrim, overlay);
+  coverWebSurface(true, overlay);
   
   suspendHintForSheet(overlay);
   if (window.__leafFrameless || window.__leafMacFrame) dragWindowFrom(head);
@@ -33800,6 +34170,7 @@ function closeImageSheet() {
   const opener = overlay.__imageSheetOpener;
   const scrim = overlay.__imageSheetScrim;
   overlay.remove();
+  coverWebSurface(false, overlay);
   if (scrim) scrim.remove();
   leafFocusForKeyboard(opener);
   
@@ -33842,6 +34213,7 @@ function openImageSheet(picture, opener) {
   });
   overlay.append(shown, corner);
   app.append(scrim, overlay);
+  coverWebSurface(true, overlay);
   
   suspendHintForSheet(overlay);
   window.requestAnimationFrame(() => {
@@ -34276,6 +34648,7 @@ function openDiagramOverlay(diagram, opener) {
   overlay.appendChild(stage);
   app.appendChild(scrim);
   app.appendChild(overlay);
+  coverWebSurface(true, overlay);
   
   suspendHintForSheet(overlay);
   window.requestAnimationFrame(() => {
@@ -34290,6 +34663,7 @@ function closeDiagramOverlay() {
   const overlay = diagramOverlayElement();
   if (!overlay) return;
   overlay.remove();
+  coverWebSurface(false, overlay);
   if (overlay.__diagramScrim) overlay.__diagramScrim.remove();
   leafFocusForKeyboard(overlay.__diagramOpener);
   
@@ -34509,6 +34883,7 @@ let windowWidthQuietTimer = 0;
 
 const WINDOW_WIDTH_QUIET_MS = 200;
 function scheduleMinimapWidthSync() {
+  scheduleWebSurfaceBounds();
   if (minimapWidthFrame || windowWidthFrame || windowWidthDrawing || document.body.classList.contains('library-resizing')) return;
   minimapWidthFrame = columnFrame(() => {
     minimapWidthFrame = 0;
@@ -35429,13 +35804,14 @@ function pauseMinimapPreview() {
     minimapPreviewFrame = 0;
   }
 }
-function resumeMinimapPreview() {
+
+function resumeMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   if (!minimapPreviewHolds) {
     return;
   }
   minimapPreviewHolds -= 1;
   if (!minimapPreviewHolds) {
-    scheduleMinimapPreviewUpdate();
+    scheduleMinimapPreviewUpdate(slack);
   }
 }
 
@@ -36072,6 +36448,7 @@ function scheduleMinimapViewportUpdate() {
   });
 }
 function updateMinimapViewport() {
+  if (activeWebTab()) { updateWebMinimap(); return; }
   const minimap = currentMinimap();
   if (!minimap) {
     return;
@@ -36091,6 +36468,7 @@ function updateMinimapViewport() {
 }
 
 function updateMinimapViewportFromScroll() {
+  if (activeWebTab()) { updateWebMinimap(); return; }
   const minimap = currentMinimap();
   if (!minimap) {
     return;
@@ -36170,6 +36548,7 @@ function cancelReaderScrollSettle() {
 if (readerMinimap) {
   
   const bringColumnAlong = () => {
+    if (activeWebTab()) return;
     if (!minimapDragging) {
       syncMinimapColumnToReader();
     }
@@ -36177,6 +36556,7 @@ if (readerMinimap) {
   readerMinimap.addEventListener('pointerenter', bringColumnAlong, { passive: true });
   readerMinimap.addEventListener('pointermove', bringColumnAlong, { passive: true });
   readerMinimap.addEventListener('scroll', () => {
+    if (activeWebTab()) return;
     const top = readerMinimap.scrollTop;
     
     if (Math.round(top) === Math.round(minimapMirroredColumnScrollTop)) {
@@ -36276,6 +36656,7 @@ function undoLastDelete() {
 
 settleColumnState();
 
+bootWebAddress();
 runSettlePass();
 
 window.__leafBooted = true;

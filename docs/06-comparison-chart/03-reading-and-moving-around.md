@@ -96,6 +96,7 @@
 | Background presses honored | [✅][l-tabs] | ? | [❌][t-seen] | [❌][c-seen] |
 | Arrow over tabs | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ellipsis inside tabs | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Live web tabs | [✅][l-web-tabs] | [✅][o-web-viewer] | [❌][t-seen] | [❌][c-seen] |
 
 ## Side by side
 
@@ -437,6 +438,7 @@
 [l-appbar]: ../01-features/02-navigation.md#the-app-bar
 [l-toolbar]: ../01-features/02-navigation.md#the-floating-toolbar
 [l-tabs]: ../01-features/02-navigation.md#tabs
+[l-web-tabs]: ../01-features/02-navigation.md#web-tabs
 [l-split]: ../01-features/02-navigation.md#two-documents-side-by-side
 [l-history]: ../01-features/02-navigation.md#history
 [l-recent]: ../01-features/02-navigation.md#recent-files
@@ -464,6 +466,7 @@
 [l-window]: ../01-features/05-settings.md#window-size
 [l-speed-reader]: ../01-features/05-settings.md#speed-reader
 [o-tabs]: https://obsidian.md/help/tabs
+[o-web-viewer]: https://obsidian.md/help/plugins/web-viewer
 [o-shortcuts]: https://obsidian.md/help/editing-shortcuts
 [o-cursors]: https://obsidian.md/help/multiple-cursors
 [o-edit]: https://obsidian.md/help/edit-and-read

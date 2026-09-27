@@ -360,7 +360,7 @@ Coloring a [code block](GLOSSARY.md#code-block) — and the whole [code view](GL
 
 ## Tab
 
-One open document, with its own [Back and Forward](GLOSSARY.md#back-and-forward) history, its own scroll position, and its own edit buffer. Drag tabs to reorder them; `Ctrl+W` / `Cmd+W` closes one.
+One open document or [web page](GLOSSARY.md#web-tab), with its own [Back and Forward](GLOSSARY.md#back-and-forward) history, its own scroll position, and — for a document — its own edit buffer. Drag tabs to reorder them; `Ctrl+W` / `Cmd+W` closes one.
 
 ## Tag
 
@@ -429,6 +429,10 @@ The box on the [minimap](GLOSSARY.md#minimap) marking the part of the document y
 ## Web address node
 
 An `http` or `https` link drawn in the [graph view](GLOSSARY.md#graph-view) as a ring with a dot in it, labeled by its domain. Two documents citing one page share a single node. Clicking one opens your browser and leaves the map up.
+
+## Web tab
+
+A [tab](GLOSSARY.md#tab) showing a live web page instead of a document. Type an address or a search into a new tab to open one; it takes its name from the page, and Back, Forward and Refresh drive the page. See [Navigation](01-features/02-navigation.md#web-tabs).
 
 ## Wikilink
 

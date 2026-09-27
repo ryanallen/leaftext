@@ -8856,6 +8856,78 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .reader-edge-fade-second[hidden] {
   display: none;
 }
+.web-address-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  width: min(520px, calc(100% - 48px));
+  box-sizing: border-box;
+  margin: var(--lt-space-32) auto;
+  padding: var(--lt-space-12) var(--lt-space-16);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface);
+  color: var(--lt-muted-foreground);
+}
+.web-address {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--lt-space-4) 0;
+  border: 0;
+  background: transparent;
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-16);
+  line-height: var(--lt-leading-1-5);
+}
+.web-address::placeholder {
+  color: var(--lt-muted-foreground);
+}
+.web-address:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-link);
+  outline-offset: var(--lt-space-2);
+}
+.web-address-bar {
+  position: fixed;
+  z-index: var(--lt-z-20);
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-12);
+  height: 0;
+  box-sizing: border-box;
+  padding: 0 var(--lt-space-12);
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--lt-surface);
+  border-bottom: 0 solid var(--lt-border);
+  transition: height var(--lt-duration-200) var(--lt-ease-decelerate), opacity var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+.web-address-bar.is-open {
+  border-bottom-width: var(--lt-stroke-1);
+  height: 48px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.web-address-copy {
+  flex: none;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+}
+@media (prefers-reduced-motion: reduce) {
+  .web-address-bar { transition: none; }
+}
+.web-address-minimap {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .document-body {
   width: min(var(--type-measure-body), 100%);
   margin: calc(-1 * var(--reader-scroll-origin, 0px)) 0 0;
@@ -16846,7 +16918,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 181 values that do not change with the theme, all 78 icons, and all 127 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 181 values that do not change with the theme, all 78 icons, and all 129 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -16878,7 +16950,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>181</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>127</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>129</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -17290,7 +17362,15 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">127 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">129 parts, each drawn here exactly as the app draws it.</p>
+<section class="part">
+<header><h3>Web address</h3><code class="built">.web-address</code><span class="built">web-address.js — an empty tab's address or search field, and the live tab's editable address</span></header>
+<div class="stage"><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" placeholder="Search Google or enter an address"></div></div>
+</section>
+<section class="part">
+<header><h3>Live web address bar</h3><code class="built">.web-address-bar</code><span class="built">web-address.js — opens after resting over the app bar or pressing Ctrl+L; moves the native surface below it</span></header>
+<div class="stage"><div class="web-address-bar is-open" style="position:static"><input class="web-address" type="text" value="https://ryanallen.com/"><button type="button" class="web-address-copy">Copy</button></div></div>
+</section>
 <section class="part">
 <header><h3>Tag</h3><code class="built">.leaf-tag</code><span class="built">tags.rs, frontmatter-fields.js</span></header>
 <div class="stage"><div class="document-body"><p>A subject <a class="leaf-tag" data-leaf-tag="work">#work</a> and <a class="leaf-tag" data-leaf-tag="work/reports">#work/reports</a>.</p></div></div>

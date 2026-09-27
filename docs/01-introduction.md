@@ -41,6 +41,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 ### Move around
 
 - Keep several documents open at once in [tabs](01-features/02-navigation.md#tabs).
+- Open a live web page in a [web tab](01-features/02-navigation.md#web-tabs) beside your documents: type an address or a search into a new tab.
 - Jump to any section from the [outline](01-features/02-navigation.md#outline) in the pane beside the document, or from the [minimap](01-features/04-minimap.md) rail on its other side.
 - Move [back and forward](01-features/02-navigation.md#history) through documents and in-page jumps, like a browser.
 - Read a folder in order with the [pager](01-features/02-navigation.md#pager) at the foot of each page.
