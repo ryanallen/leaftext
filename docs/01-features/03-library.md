@@ -93,7 +93,9 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 - Click a folder row — or its `›` chevron — to go into it. The folder you open is on screen in one frame, with nothing fading and nothing sliding.
 - The row above the list steps back out one level. So does a crumb.
 - The **breadcrumb** under the app bar is the path you are on: `Fieldwork › docs › features`. Click any crumb to step back to that level. It shows as much of the path as fits the band, so widening the pane reveals more crumbs and dragging the divider refits it mid-drag. Whatever does not fit collapses behind a `…` button that opens a menu of the skipped folders.
-- Folders sort before files, each alphabetized. Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
+- Folders sort before files, each alphabetized unless you [sort the folder another way](#sorting-and-drawing-a-folder). Every folder is listed, including the ones whose names start with a dot and the ones a shortcut points at.
+- A file row says what the file is: its title — a `title` in its [field block](07-editing.md#the-fields-at-the-top-of-a-note), else its name — when it last changed, and the first two lines of its prose. A folder row says how many documents sit directly inside it. A folder of more than five hundred files reads the first five hundred and draws the rest as one line each.
+- A favorite that lives in the folder you are in comes first, under a **Favorites** heading, with **Files** over the rest.
 - Pointing at a row washes it and nothing else — no shadow, no change of shape, nothing sliding — [what a control does under the pointer](02-navigation.md#what-a-control-does-under-the-pointer). The row you have open keeps its own tint instead, so what is open still reads as open.
 - Opening a file moves the pane to that file's folder and highlights the row. A file inside a vault switches to that vault first; a file in none switches to the whole library.
 - The folder you are in is saved, so a restart reopens it. If the folder has gone, the pane falls back to the top of the vault.
@@ -101,6 +103,37 @@ The pane lists one folder at a time — the folder you are in, not a whole hiera
 On a published site, the breadcrumb stays at the head of the pane and follows the open page, including when a link opens a page in another folder. Folder crumbs open their folders; the current page ends the trail. The site has no vault switcher or Sync button beside it.
 
 Each call reads exactly one directory, so nothing below what you opened is ever touched.
+
+### Walking the pane from the keyboard
+
+Tab into the list and a ring marks the row you are on — separate from the tint on the document you have open, and never drawn under the mouse.
+
+- **Up** and **Down** move a row; **Home** and **End** go to the first and last; **Page Up** and **Page Down** move a pane's height.
+- A **letter** jumps to the next row whose name starts with it.
+- **Right** or **Enter** on a folder goes into it; **Left** steps back out, and lands on the folder you came from. **Enter** on a file opens it.
+- When the folder is read again under you — a paste, a rename, a change on disk — the ring stays on the same file.
+- The same keys walk the search results under the find bar, and the Tags and Fields lists, where **Right** and **Left** open and shut a branch.
+
+### Sorting and drawing a folder
+
+The button at the end of the folder trail opens the view menu for the folder you are in. It is lit whenever the folder is drawn any way but the default, and resting on it says how.
+
+- **Sort by** name, date modified, date created or size, either way round. Folders stay above files in every order.
+- **Group by date** puts headings between the files — Today, Yesterday, Previous 7 days, Previous 30 days, then a month at a time — while the folder is sorted by a date.
+- **Compact rows** goes back to one line a row, the name and nothing else.
+- **Show hidden**, two fields that hide names like `draft-*` and notes whose field says `status:done`, and a **Stop hiding** row for each rule standing. **Hide from the pane** on a row's right-click menu hides that one; nothing on disk moves, and **Show hidden** draws them dimmed.
+- **Arrangements** keep what is on screen under a name. The arrangement in use is how every folder with no choice of its own is drawn, and it brings the list it was saved on with it; deleting the last one goes back to the defaults.
+
+Each folder keeps its own choice, so a restart draws it the same way.
+
+### Tags and Fields
+
+In a vault, the top of the same menu switches the pane between **Folders**, **Tags** and **Fields**.
+
+- **Tags** is every tag in the vault, nested, each with how many notes carry it. The mark before a tag opens the tags under it; pressing the tag searches it through the [find bar](02-navigation.md#find-in-this-document)'s **All files**, the same as pressing a tag in a note. Right-click one to hide it from the list.
+- **Fields** is every field the vault's notes set. Pressing one opens the values it holds; pressing a value searches `field:value`.
+
+Neither list is a filter of its own: every press goes to the one search box.
 
 ### The open document's headings
 
@@ -168,7 +201,9 @@ Right-click a file row for a context menu of file actions:
 | Cut | Puts the file on the system clipboard to move on paste |
 | Copy | Puts the file on the system clipboard to copy on paste |
 | Copy path | Copies the file's full path as text |
-| Rename | Edits the name inline; press Enter to apply, Escape to cancel. A name another file in the folder already has is refused; changing only the capitals of the file's own name is not, so `notes.md` can become `Notes.md`. The same box opens over a page [headed with its own file name](07-editing.md#renaming-from-the-heading) |
+| Duplicate | Makes a copy beside the file, named `… copy`, then `… copy 2` |
+| Hide from the pane | Keeps the row out of the pane without touching the file; **Show in the pane** takes it back while [Show hidden](#sorting-and-drawing-a-folder) is on |
+| Rename | Edits the name inline; press Enter to apply, Escape to cancel. A name another file in the folder already has is refused; changing only the capitals of the file's own name is not, so `notes.md` can become `Notes.md`. A name holding `<`, `>`, `:`, `"`, `\|`, `?` or `*`, or one Windows keeps for a device such as `CON`, is refused on both platforms, so a file can always travel to a Windows machine. The same box opens over a page [headed with its own file name](07-editing.md#renaming-from-the-heading) |
 | Reveal file | Shows the file in your OS file manager |
 | Properties | Opens the OS file-properties view |
 | Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
@@ -231,9 +266,41 @@ Right-clicking a **folder row** — or the empty space below the rows, which sta
 | Reveal folder | Shows the folder in your OS file manager |
 | Properties | Opens the OS folder-properties view |
 
+### Picking several files
+
+Hold Ctrl (Cmd on a Mac) and click rows to pick them one at a time, or hold Shift and click to pick every row from the last one you clicked. Picked rows are tinted and outlined; the row of the document you have open keeps its own tint as well. A plain click, Escape, opening another folder, opening a document or clicking the empty space below the rows lets them go.
+
+With rows picked and the pane in use, Ctrl+X and Ctrl+C cut and copy all of them, Ctrl+V pastes into the folder you are looking at, and Delete sends them to the Recycle Bin (Cmd+X, Cmd+C, Cmd+V and Cmd+Backspace on a Mac). Right-clicking a picked row acts on every picked row. Ctrl+C anywhere else still copies the words highlighted in the document.
+
+### Carrying files onto a folder
+
+Press a row and drag it: a small tag follows the pointer naming the file, or how many you are carrying when the row is one of several picked. Let go over a folder row, a folder in the path at the top of the pane, or the empty space of the pane itself, and the files move there. Hold Ctrl as you let go to copy instead (Option on a Mac). A folder does not light up for itself or for a folder inside it, and neither does the folder the files are already in. Escape puts them down where they were.
+
+Keep going past the edge of the window and the files come with you: let go over an Explorer or Finder window, the desktop, or a mail being written, and that program takes them the way it takes a file dragged from one of its own windows.
+
+### Dropping files in from outside
+
+Drag files in from Explorer or Finder and they land on whatever you let go over. Over a folder row or the pane, they are copied into that folder; hold Shift as you let go to move them instead. Over the tab strip, or anywhere that is not one of these, they open as tabs, the way a drop always has.
+
+Over the open document, a dropped file is written into it as a reference, at the place you let go, spelled the way that kind of document names another file. The path is relative to the document's own folder, and absolute only when the file is on another drive.
+
+| The open document | A file | A picture |
+| --- | --- | --- |
+| Markdown | `[name](path)` | `![name](path)` |
+| HTML | `<a href="path">name</a>` | `<img src="path" alt="name">` |
+| XML | `<link href="path"/>` | `<img src="path"/>` |
+| JSON | `{ "$ref": "path" }` | the same |
+| YAML | `{ $ref: path }` | the same |
+| Text, INI, source code | the path on its own | the same |
+| Email, Word, Excel, PowerPoint, OpenDocument, EPUB, a service page | nothing: the drop is refused and says why | the same |
+
+In JSON and YAML there is nowhere between two values to put one, so a file dropped on a text value replaces that value, and a drop anywhere else is refused. In the source view the reference goes in at the cursor. A path in an XML, JSON or YAML value draws as a link you can click, and so does any `$ref`.
+
+A file Leaftext cannot read can still be dropped into a folder or written into a document as a link; dropped on the tab strip, it is refused with the reason.
+
 ### Cut, copy, paste
 
-Cut or Copy a file, then Paste it into a folder to move or copy it there. A cut is used up by the paste; a copy can be pasted again.
+Cut or Copy a file, then Paste it into a folder to move or copy it there. A cut is used up by the paste; a copy can be pasted again. When some of several files cannot go — a name already taken — the rest still land, and one message says which did not and why.
 
 Two things are worth knowing:
 

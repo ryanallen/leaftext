@@ -31,6 +31,7 @@ Black, white and gray only: every surface, border, heading and accent is a shade
 | surface-sunken                          | `#f0f0f0`                   |
 | border                                  | `#e0e0e0`                   |
 | border-strong                           | `#bdbdbd`                   |
+| shadow-ink                              | `#cccccc`                   |
 | muted-foreground                        | `#575757`                   |
 | primary                                 | `#6e6e6e`                   |
 | primary-foreground                      | `#ffffff`                   |
@@ -117,6 +118,7 @@ Black, white and gray only: every surface, border, heading and accent is a shade
 | surface-sunken                          | `#181818`                   |
 | border                                  | `#363636`                   |
 | border-strong                           | `#555555`                   |
+| shadow-ink                              | `#000000`                   |
 | muted-foreground                        | `#999999`                   |
 | primary                                 | `#a2a2a2`                   |
 | primary-foreground                      | `#1e1e1e`                   |

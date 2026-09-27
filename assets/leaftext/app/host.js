@@ -129,6 +129,11 @@ async function load(url, fetchWith = fetch) {
       return answer;
     },
     bufferClose: (handle) => api.leaf_buffer_close(handle),
+    // Which of the listed paths one table's relations read, asked before they are fetched, and then the model over what was fetched as the line the page answers to. A module older than the page has neither, and the lens is then refused rather than left waiting.
+    tableWants: (handle, snapshot, listing) => (typeof api.leaf_table_wants === 'function'
+      ? JSON.parse(withStrings((...args) => api.leaf_table_wants(handle, ...args), JSON.stringify({ snapshot, listing })) || 'null') : null),
+    tableModel: (handle, token, snapshot, library, truncated) => (typeof api.leaf_table_model === 'function'
+      ? withStrings((...args) => api.leaf_table_model(handle, token, ...args), JSON.stringify({ snapshot, library, truncated })) : null),
     // The note a `[[wiki]]` link names and its heading's anchor, read by the renderer's own grammar. A module older than the page has none, and the link then names nothing.
     wikiLink: (inner) => (typeof api.leaf_wiki_link === 'function' ? JSON.parse(withStrings(api.leaf_wiki_link, inner) || 'null') : null),
   };
@@ -151,6 +156,8 @@ export const COMMANDS = {
   revealFile: [REFUSED, 'there is no file manager to show it in'],
   copyFile: [REFUSED, 'nothing here writes to a disk'],
   copyPath: [REFUSED, 'a served document has no path on this machine'],
+  dragFilesOut: [REFUSED, 'a served document is no file on this machine, so there is nothing to carry into another program'],
+  openPaths: [REFUSED, 'a published page is not a window anything can be dropped on from the desktop'],
   toggleFavorite: [ANSWERED],
   checkFavorites: [ANSWERED],
   repointFavorite: [REFUSED, 'it reopens the file picker, which a static site has not got'],
@@ -158,6 +165,7 @@ export const COMMANDS = {
   newFile: [REFUSED, 'nothing here writes to a disk'],
   newFolder: [REFUSED, 'nothing here writes to a disk'],
   renameFile: [REFUSED, 'nothing here writes to a disk'],
+  duplicateFile: [REFUSED, 'nothing here writes to a disk'],
   deleteFile: [REFUSED, 'nothing here writes to a disk'],
   undoDelete: [REFUSED, 'nothing here writes to a disk'],
   showProperties: [REFUSED, 'there is no file on this machine to describe'],
@@ -245,6 +253,13 @@ export const COMMANDS = {
   getGraph: [ANSWERED],
   setGraphScope: [ANSWERED],
   setCalendarField: [REFUSED, 'a site draws no calendar square'],
+  getTagTree: [LATER, 'web-app-commands'],
+  setLibraryList: [REFUSED, 'a site’s pane lists its folders, because Tags and Fields are offered only where the vault can be searched'],
+  saveArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
+  useArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
+  renameArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
+  deleteArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
+  setFolderView: [REFUSED, 'a site’s folders are published in the order they were written out, and the view button is not drawn on one'],
   search: [LATER, 'web-app-commands'],
   calendarRange: [REFUSED, 'it counts a vault’s documents by the dates their files were written, and a site is published pages with no vault and no file dates behind them — so the calendar square never stands and nothing sends this'],
   loadPager: [ANSWERED],
@@ -258,7 +273,7 @@ export const COMMANDS = {
   codeCompleteHeadings: [LATER, 'web-app-commands'],
   codeHoverNote: [LATER, 'web-app-commands'],
   codeLint: [LATER, 'web-app-commands'],
-  tableModel: [LATER, 'rdb-web'],
+  tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],
   resendDocumentSource: [REFUSED, 'This host always sends the whole document source.'],
@@ -749,6 +764,41 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     return state;
   }
 
+  // What one table's relations read: the text of each listed document the model asked for, fetched once and let go when another document opens, so a second press or a lens put back after a redraw reads nothing twice. A read that failed is forgotten, so the next press tries it again.
+  const MOST_TABLE_DOCUMENTS = 64;
+  let tableTexts = new Map();
+
+  function tableText(path) {
+    if (!tableTexts.has(path)) {
+      const texts = tableTexts;
+      texts.set(path, read(path).then((bytes) => new TextDecoder().decode(bytes)).catch((error) => {
+        texts.delete(path);
+        console.warn('a table could not read', path, error);
+        return null;
+      }));
+    }
+    return tableTexts.get(path);
+  }
+
+  /** Answer one lens: ask the module which of the site's documents this table reads, fetch at most 64 of them, and hand the rest over as not read rather than as missing. A document that did not arrive is not read either, so one failed fetch never refuses the table. */
+  async function answerTableModel({ snapshot, token }) {
+    const asked = Number(token) >>> 0;
+    let line = null;
+    try {
+      openBuffer();
+      const wanted = core.tableWants(buffer, snapshot, order)?.wants || [];
+      const reading = wanted.slice(0, MOST_TABLE_DOCUMENTS);
+      const texts = await Promise.all(reading.map(tableText));
+      const library = reading.flatMap((path, at) => (texts[at] == null ? [] : [{ path, label: label(path), aliases: [], text: texts[at] }]));
+      const truncated = wanted.length > reading.length || library.length < reading.length;
+      line = core.tableModel(buffer, asked, snapshot, library, truncated);
+    } catch (error) {
+      console.warn('the table could not be modeled', error);
+    }
+    // The bar raised a waiting state before it asked, and only an answer takes it down.
+    run(line || `window.leafTableModel(${JSON.stringify({ token: asked, refused: 'this site could not model the table' })});`);
+  }
+
   function answerEdit(token, took) {
     if (typeof token === 'number') run(`window.leafEditAnswered(${token}, ${!!took}, null);`);
   }
@@ -756,6 +806,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   async function openDocument(path, { anchor = '', place = null, address = true } = {}) {
     if (!known.has(path)) return;
     keepWords();
+    if (open !== path) tableTexts = new Map();
     open = path;
     closeBuffer();
     const chosen = glossaryFor(path);
@@ -834,6 +885,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     },
     editBlocks: (command) => applyEdit({ edit: 'blocks', blocks: command.blocks, continuing: !!command.continuing }),
     toggleTask: (command) => answerEdit(command.token, !!applyEdit({ edit: 'task', index: command.index })?.changed),
+    tableModel: (command) => answerTableModel(command),
     setField: (command) => applyEdit(command.value == null ? { edit: 'field', key: command.key, remove: true } : { edit: 'field', key: command.key, set: command.value }),
     setListField: (command) => applyEdit({ edit: 'field', key: command.key, items: command.items || [] }),
     renameField: (command) => applyEdit({ edit: 'field', key: command.key, rename: command.to }),

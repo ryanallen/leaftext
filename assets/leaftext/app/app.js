@@ -6358,6 +6358,10 @@ const CONTEXT_MENU_ITEMS = [
   { action: 'copyPath', label: 'Copy path' },
   'separator',
   { action: 'rename', label: 'Rename' },
+  { action: 'duplicate', label: 'Duplicate' },
+  
+  { action: 'hideRow', label: 'Hide from the pane', paneRow: 'hide' },
+  { action: 'showRow', label: 'Show in the pane', paneRow: 'show' },
   'separator',
   { action: 'reveal', label: 'Reveal file' },
   { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
@@ -6373,6 +6377,8 @@ const FOLDER_MENU_ITEMS = [
   { action: 'newFile', label: 'New file' },
   { action: 'newFolder', label: 'New folder' },
   'separator',
+  { action: 'hideRow', label: 'Hide from the pane', paneRow: 'hide', folderOnly: true },
+  { action: 'showRow', label: 'Show in the pane', paneRow: 'show', folderOnly: true },
   { action: 'paste', label: 'Paste' },
   'separator',
   
@@ -6492,8 +6498,6 @@ function hideContextMenu() {
   contextMenuTableCell = null;
 }
 
-let libraryTransfer = null;
-
 function runTableContextAction(action, cell) {
   const table = cell && cell.closest ? cell.closest('table') : null;
   const row = cell && cell.closest ? cell.closest('tr') : null;
@@ -6555,38 +6559,23 @@ function runContextAction(action, path, link, selected, picture, tableCell) {
     case 'revealImage': send({ command: 'revealImage', src: path }); break;
     case 'showImageProperties': send({ command: 'showImageProperties', src: path }); break;
     case 'openFolder': setLibraryFolder(path); break;
-    case 'cut':
-      libraryTransfer = { path, cut: true };
-      send({ command: 'copyFile', path, cut: true });
-      break;
-    case 'copy':
-      libraryTransfer = { path, cut: false };
-      send({ command: 'copyFile', path, cut: false });
-      break;
-    case 'paste': {
-      
-      const transfer = libraryTransfer;
-      if (!transfer) break;
-      if (transfer.cut) libraryTransfer = null;
-      send({ command: 'pasteFile', path: transfer.path, intoFolder: path, cut: transfer.cut });
-      break;
-    }
+    
+    case 'cut': cutLibraryFiles(libraryPathsFor(path), true); break;
+    case 'copy': cutLibraryFiles(libraryPathsFor(path), false); break;
+    case 'paste': pasteLibraryFiles(path); break;
     case 'favorite': toggleFavorite(path, contextMenuTargetKind === 'folder' ? 'folder' : 'document'); break;
     case 'copyPath': send({ command: 'copyPath', path }); break;
     case 'reveal': send({ command: 'revealFile', path }); break;
     case 'properties': send({ command: 'showProperties', path }); break;
     
-    case 'delete':
-      openConfirm(
-        `Delete “${fileBaseName(path)}”?`,
-        isMacPlatform
-          ? 'It goes to the Trash, so you can put it back.'
-          : 'It goes to the Recycle Bin, so you can put it back.',
-        'Delete',
-        () => send({ command: 'deleteFile', path })
-      );
-      break;
+    case 'delete': deleteLibraryFiles(libraryPathsFor(path)); break;
     case 'rename': openRenameBox(path); break;
+    
+    case 'duplicate': send({ command: 'duplicateFile', path }); break;
+    case 'hideRow':
+    case 'showRow': toggleLibraryRowHidden(path); break;
+    case 'hideTag':
+    case 'showTag': toggleLibraryTagHidden(path); break;
     
     case 'newFile': openMakeBox(path, 'file'); break;
     case 'newFolder': openMakeBox(path, 'folder'); break;
@@ -6618,6 +6607,15 @@ function documentNamedByLanding(rawHref, kind = linkHoverKind(rawHref)) {
 }
 
 function contextMenuEntries() {
+  
+  if (contextMenuTargetKind === 'paneTag') {
+    const hidden = libraryTagIsHidden(contextMenuPath);
+    return [
+      { action: 'searchTag', label: 'Search for this tag' },
+      'separator',
+      hidden ? { action: 'showTag', label: 'Show in the pane' } : { action: 'hideTag', label: 'Hide from the pane' },
+    ].filter((entry) => entry === 'separator' || entry.action === 'searchTag' || libraryTagView);
+  }
   if (contextMenuTargetKind === 'tag') {
     if (!vaultSearchAvailable()) return [];
     const entries = [{ action: 'searchTag', label: 'Search for this tag' }];
@@ -6662,7 +6660,8 @@ function contextMenuEntries() {
     entries
       .filter((entry) => {
         if (entry === 'separator') return true;
-        if (entry.action === 'paste') return !!libraryTransfer;
+        if (entry.action === 'paste') return libraryHoldsTransfer();
+        if (entry.paneRow) return libraryRowMenuShows(contextMenuPath, entry.paneRow, contextMenuTargetKind);
         if (entry.selectionOnly) return !!contextMenuSelectionText;
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         
@@ -6766,6 +6765,12 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
 }
 document.addEventListener('contextmenu', (event) => {
+  const paneTag = event.target.closest ? event.target.closest('.library-axis-row[data-axis-tag]') : null;
+  if (paneTag) {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, paneTag.getAttribute('data-axis-tag'), 'paneTag');
+    return;
+  }
   const tag = documentTagFor(event.target);
   if (tag) {
     event.preventDefault();
@@ -7836,6 +7841,8 @@ function revealSelectedInLibrary() {
 }
 
 function followFileInLibrary(path, focus, forceRefresh) {
+  
+  if (path && path !== librarySelectedPath) clearLibraryPicks();
   librarySelectedPath = path || null;
   
   libraryOutlineOpen = !!path;
@@ -7845,13 +7852,6 @@ function followFileInLibrary(path, focus, forceRefresh) {
   
   if (graphViewOpen) graphSetActive(librarySelectedPath, focus, forceRefresh);
   renderLibrary();
-}
-function fileRowHtml(node) {
-  const label = (node && (node.name || node.title || node.path)) || '';
-  const isSelected = librarySelectedPath && node.path === librarySelectedPath;
-  const selected = isSelected ? ' is-selected' : '';
-  const current = isSelected ? ' aria-current="true"' : '';
-  return `<button type="button" class="library-file${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}">${LEAF_FILE_ICON}<span class="library-file-label">${documentNameMarkup(label)}</span></button>`;
 }
 
 function libraryParentCrumb() {
@@ -7868,15 +7868,7 @@ function renderProject(entries) {
   const rows = [];
   const parent = libraryParentCrumb();
   if (parent) rows.push(upRowHtml(parent));
-  for (const node of entries || []) {
-    if (node.kind === 'folder') {
-      
-      rows.push(`<button type="button" class="library-nav-folder" data-nav-into="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" data-folder-path="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span><span class="library-nav-chevron" aria-hidden="true">›</span></button>`);
-    } else {
-      rows.push(fileRowHtml(node));
-    }
-  }
-  return `<div class="library-project">${rows.join('')}</div>`;
+  return `<div class="library-project">${rows.join('')}${libraryRowsHtml(entries)}</div>`;
 }
 
 function renderLibraryLists() {
@@ -7911,6 +7903,7 @@ window.leafRefreshLibraryFolder = () => {
   send({ command: 'getFolder', path: libraryProjectPath });
 };
 function bindLibraryRows() {
+  markLibraryPicks();
   libraryTree.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
   libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
   const intro = libraryTree.querySelector('.library-intro-action');
@@ -7929,13 +7922,22 @@ function bindLibraryRowPress(button, act) {
     if (event.pointerType !== 'mouse' || event.button !== 0) return;
     
     button.leafPressEntered = true;
-    act();
+    
+    if (!libraryRowCarries(button)) {
+      clearLibraryPicks();
+      act();
+      return;
+    }
+    
+    holdLibraryPress(button, event, pickLibraryRow(button, event) ? null : act);
   });
-  button.addEventListener('click', () => {
+  button.addEventListener('click', (event) => {
     if (button.leafPressEntered) {
       button.leafPressEntered = false;
       return;
     }
+    if (pickLibraryRow(button, event)) return;
+    clearLibraryPicks();
     act();
   });
 }
@@ -8000,7 +8002,7 @@ function crumbElisionHtml() {
 
 let libraryCrumbFitKey = null;
 function crumbFitKey(segments) {
-  return segments.map((segment) => segment.path + '>' + segment.name).join('|') + '@' + isFavoritePath(activeDocumentPath());
+  return segments.map((segment) => segment.path + '>' + segment.name).join('|') + '@' + isFavoritePath(activeDocumentPath()) + trailViewKey();
 }
 
 let crumbFit = null;
@@ -8021,7 +8023,7 @@ function prepareCrumbFit() {
   
   if (crumbMenuOwner && libraryCrumbTrail.contains(crumbMenuOwner)) hideCrumbMenu();
   libraryCrumbTrail.classList.add('is-measuring');
-  libraryCrumbTrail.innerHTML = fullHtml + trailFavoriteHtml() + CRUMB_SEP_HTML + crumbElisionHtml();
+  libraryCrumbTrail.innerHTML = fullHtml + trailFavoriteHtml() + trailViewHtml() + CRUMB_SEP_HTML + crumbElisionHtml();
   return segments;
 }
 
@@ -8034,7 +8036,7 @@ function readCrumbFit(segments) {
     
     avail: libraryCrumbTrail.clientWidth,
     crumbWidths: segments.map((_, index) => widthOf(parts[index * 2])),
-    favoriteWidth: widthOf(libraryCrumbTrail.querySelector('[data-trail-favorite]')),
+    favoriteWidth: trailEndWidth(widthOf),
     sepWidth: widthOf(parts[1]),
     moreWidth: widthOf(parts[parts.length - 1]),
     gap: parseFloat(getComputedStyle(libraryCrumbTrail).columnGap) || 0,
@@ -8052,7 +8054,7 @@ function keepCrumbWidths(reading) {
   const trail = [drawn[0], CRUMB_SEP_HTML, crumbElisionHtml()]
     .concat(drawn.slice(1).flatMap((html) => [CRUMB_SEP_HTML, html]))
     .join('');
-  libraryCrumbTrail.innerHTML = trail + trailFavoriteHtml();
+  libraryCrumbTrail.innerHTML = trail + trailFavoriteHtml() + trailViewHtml();
   const parts = Array.from(libraryCrumbTrail.children);
   crumbFit = {
     segments,
@@ -8152,6 +8154,7 @@ function bindCrumbTrailButtons() {
       toggleCrumbMenu(more, folderMenuItems(crumbHiddenSegments));
     });
   }
+  bindTrailViewButton();
 }
 
 let crumbFitSettling = false;
@@ -8988,13 +8991,17 @@ let libraryTreeHtml = null;
 function setLibraryTreeHtml(html) {
   if (html === libraryTreeHtml) return false;
   libraryTreeHtml = html;
+  const focused = libraryFocusBeforeRedraw();
   libraryTree.innerHTML = html;
+  libraryFocusAfterRedraw(focused);
   return true;
 }
 
 let librarySkippedFiles = 0;
 
 function libraryEmptyText() {
+  const hidden = libraryHiddenEmptyText();
+  if (hidden) return hidden;
   if (librarySkippedFiles === 1) {
     return 'Nothing to read in this folder. 1 file lives here, but it is not a kind Leaftext opens.';
   }
@@ -9032,6 +9039,13 @@ function renderLibrary() {
     return setLibraryTreeHtml(`<p class="library-empty">${escapeText(libraryError.message || '')}</p>`);
   }
   
+  const axis = libraryAxisHtml();
+  if (axis !== null) {
+    if (!setLibraryTreeHtml(axis)) return false;
+    bindLibraryAxisRows();
+    return true;
+  }
+  
   const empty = libraryEntries.length
     ? ''
     : `<p class="library-empty">${escapeText(libraryEmptyText())}</p>`;
@@ -9043,10 +9057,14 @@ function renderLibrary() {
 window.leafSetLibraryFolder = (payload) => {
   const next = payload || {};
   libraryError = null;
-  libraryProjectPath = typeof next.path === 'string' ? next.path : '';
+  const folder = typeof next.path === 'string' ? next.path : '';
+  
+  if (folder !== libraryProjectPath) clearLibraryPicks();
+  libraryProjectPath = folder;
   
   libraryChain = Array.isArray(next.chain) ? next.chain : [];
   libraryEntries = Array.isArray(next.entries) ? next.entries : [];
+  keepLibraryFolderView(next);
   libraryRootName = typeof next.rootName === 'string' ? next.rootName : '';
   
   librarySkippedFiles = Number.isFinite(next.skippedFiles) ? next.skippedFiles : 0;
@@ -9816,6 +9834,830 @@ libraryOutlineScroll.addEventListener('scroll', () => {
 window.addEventListener('resize', () => {
   if (libraryOutlineShowing()) scheduleLibraryOutline();
 });
+
+const LIBRARY_WALK_ROWS = '.library-file, .library-nav-folder, .library-hit, .library-axis-row';
+
+let libraryDrawnFolder = null;
+function libraryWalkRows(list) {
+  return Array.from(list.querySelectorAll(LIBRARY_WALK_ROWS));
+}
+function libraryRowName(row) {
+  const label = row.querySelector('.library-file-label') || row.querySelector('.library-hit-title') || row;
+  return String(label.textContent || '').trim().toLowerCase();
+}
+
+function libraryRowKey(row) {
+  if (row.classList.contains('library-nav-up')) return 'up';
+  return row.dataset.axisKey || row.dataset.revealPath || row.dataset.openPath || row.dataset.navInto || '';
+}
+
+function focusLibraryRow(row) {
+  if (!row) return;
+  row.focus({ preventScroll: true });
+  row.scrollIntoView({ block: 'nearest' });
+}
+
+function libraryRowAPageAway(rows, index, direction) {
+  const scroller = rows[index].closest('.library-scroll') || rows[index].parentElement;
+  const height = (scroller && scroller.clientHeight) || 0;
+  const goal = rows[index].offsetTop + direction * height;
+  let target = index;
+  while (target + direction >= 0 && target + direction < rows.length && (direction > 0 ? rows[target + direction].offsetTop <= goal : rows[target + direction].offsetTop >= goal)) {
+    target += direction;
+  }
+  return target === index ? index + direction : target;
+}
+
+function libraryRowByLetter(rows, index, letter) {
+  for (let step = 1; step <= rows.length; step += 1) {
+    const row = rows[(index + step) % rows.length];
+    if (!row.classList.contains('library-nav-up') && libraryRowName(row).startsWith(letter)) return row;
+  }
+  return null;
+}
+function walkLibraryList(list, event) {
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+  const row = event.target && event.target.closest ? event.target.closest(LIBRARY_WALK_ROWS) : null;
+  if (!row || !list.contains(row)) return;
+  const rows = libraryWalkRows(list);
+  const index = rows.indexOf(row);
+  if (index < 0) return;
+  const inFolder = list === libraryTree;
+  const key = event.key;
+  
+  if (inFolder && row.classList.contains('library-axis-row') && (key === 'ArrowRight' || key === 'ArrowLeft')) {
+    if (libraryAxisKey(row, key)) event.preventDefault();
+    return;
+  }
+  let target = null;
+  if (key === 'ArrowUp') target = rows[Math.max(index - 1, 0)];
+  else if (key === 'ArrowDown') target = rows[Math.min(index + 1, rows.length - 1)];
+  else if (key === 'Home') target = rows[0];
+  else if (key === 'End') target = rows[rows.length - 1];
+  else if (key === 'PageUp') target = rows[Math.max(libraryRowAPageAway(rows, index, -1), 0)];
+  else if (key === 'PageDown') target = rows[Math.min(libraryRowAPageAway(rows, index, 1), rows.length - 1)];
+  else if (inFolder && key === 'ArrowRight') {
+    
+    if (!row.dataset.navInto || row.classList.contains('library-nav-up')) return;
+    event.preventDefault();
+    setLibraryFolder(row.dataset.navInto);
+    return;
+  } else if (inFolder && key === 'ArrowLeft') {
+    
+    const up = list.querySelector('.library-nav-up');
+    if (!up) return;
+    event.preventDefault();
+    setLibraryFolder(up.dataset.navInto);
+    return;
+  } else if (key && key.length === 1 && key.trim()) {
+    target = libraryRowByLetter(rows, index, key.toLowerCase());
+    if (!target) return;
+  } else return;
+  event.preventDefault();
+  focusLibraryRow(target);
+}
+libraryTree.addEventListener('keydown', (event) => walkLibraryList(libraryTree, event));
+librarySearchResults.addEventListener('keydown', (event) => walkLibraryList(librarySearchResults, event));
+
+function libraryFocusBeforeRedraw() {
+  const active = document.activeElement;
+  if (!active || !libraryTree.contains(active)) return null;
+  const rows = libraryWalkRows(libraryTree);
+  return { key: libraryRowKey(active), index: rows.indexOf(active), folder: libraryDrawnFolder };
+}
+
+function libraryFocusAfterRedraw(held) {
+  const folder = libraryDrawnFolder;
+  libraryDrawnFolder = libraryProjectPath;
+  
+  if (!held || !leafKeyboardDriving) return;
+  const rows = libraryWalkRows(libraryTree);
+  if (!rows.length) return;
+  if (held.folder === libraryProjectPath && folder === held.folder) {
+    const same = rows.find((row) => libraryRowKey(row) === held.key);
+    focusLibraryRow(same || rows[Math.min(Math.max(held.index, 0), rows.length - 1)]);
+    return;
+  }
+  const cameFrom = rows.find((row) => !row.classList.contains('library-nav-up') && row.dataset.navInto === held.folder);
+  focusLibraryRow(cameFrom || rows.find((row) => !row.classList.contains('library-nav-up')) || rows[0]);
+}
+
+
+
+let libraryFolderView = null;
+
+let libraryHiddenRows = 0;
+const LIBRARY_SORT_WORDS = { name: 'name', modified: 'date modified', created: 'date created', size: 'size' };
+
+const LIBRARY_SORT_DIRECTIONS = {
+  name: [{ descending: false, label: 'A to Z' }, { descending: true, label: 'Z to A' }],
+  modified: [{ descending: true, label: 'Newest first' }, { descending: false, label: 'Oldest first' }],
+  created: [{ descending: true, label: 'Newest first' }, { descending: false, label: 'Oldest first' }],
+  size: [{ descending: true, label: 'Largest first' }, { descending: false, label: 'Smallest first' }],
+};
+const LIBRARY_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const LIBRARY_DAY_MS = 24 * 60 * 60 * 1000;
+
+function keepLibraryFolderView(next) {
+  const view = next && next.view;
+  libraryFolderView = view && next.path && !window.__leafSite && !window.__leafEmbedded ? libraryViewOf(view) : null;
+  libraryHiddenRows = Number.isFinite(next && next.hiddenRows) ? next.hiddenRows : 0;
+}
+
+function libraryViewOf(view) {
+  const list = (value) => (Array.isArray(value) ? value.filter((one) => typeof one === 'string') : []);
+  return {
+    sort: LIBRARY_SORT_WORDS[view && view.sort] ? view.sort : 'name',
+    descending: !!(view && view.descending),
+    groupByDate: !!(view && view.groupByDate),
+    compact: !!(view && view.compact),
+    hidden: list(view && view.hidden),
+    hidePatterns: list(view && view.hidePatterns),
+    hideFields: list(view && view.hideFields),
+    showHidden: !!(view && view.showHidden),
+  };
+}
+function libraryViewHides(view) {
+  return !!view && (view.hidden.length + view.hidePatterns.length + view.hideFields.length) > 0;
+}
+function libraryViewIsDefault(view) {
+  return !view || (view.sort === 'name' && !view.descending && !view.groupByDate && !view.compact && !view.showHidden && !libraryViewHides(view));
+}
+
+function libraryViewWords(view) {
+  const direction = LIBRARY_SORT_DIRECTIONS[view.sort].find((one) => one.descending === view.descending);
+  const grouped = view.groupByDate && libraryViewGroups(view) ? ', grouped by date' : '';
+  const compact = view.compact ? ', compact rows' : '';
+  const hiding = view.showHidden ? ', hidden rows shown' : (libraryViewHides(view) ? ', some rows hidden' : '');
+  return `Sorted by ${LIBRARY_SORT_WORDS[view.sort]}, ${direction.label.toLowerCase()}${grouped}${compact}${hiding}`;
+}
+
+function libraryViewGroups(view) {
+  return view.sort === 'modified' || view.sort === 'created';
+}
+
+function trailViewKey() {
+  return libraryFolderView ? `#${JSON.stringify(libraryFolderView)}` : '';
+}
+function trailViewHtml() {
+  if (!libraryFolderView) return '';
+  const view = libraryFolderView;
+  const words = escapeAttr(libraryViewWords(view));
+  const lit = libraryViewIsDefault(view) ? '' : ' is-on';
+  const icon = view.descending ? 'sort-descending' : 'sort-ascending';
+  return `<button type="button" class="library-view-button${lit}" data-trail-view="1" aria-haspopup="menu" aria-expanded="false" aria-label="${words}" title="${words}"><span class="lt-icon lt-icon-${icon}"></span></button>`;
+}
+
+function trailEndWidth(widthOf) {
+  const boxes = Array.from(libraryCrumbTrail.querySelectorAll('[data-trail-favorite], [data-trail-view]')).map(widthOf).filter((width) => width > 0);
+  if (!boxes.length) return 0;
+  const gap = parseFloat(getComputedStyle(libraryCrumbTrail).columnGap) || 0;
+  return boxes.reduce((sum, width) => sum + width, 0) + (boxes.length - 1) * gap;
+}
+
+function sendFolderView(change) {
+  send({ command: 'setFolderView', path: libraryProjectPath, view: { ...libraryFolderView, ...change } });
+}
+function libraryViewMenuItems() {
+  const view = libraryFolderView;
+  const lists = libraryListMenuItems();
+  
+  if (libraryListShowing() !== 'folders') return lists.concat(['separator'], libraryArrangementItems());
+  const items = lists.concat(lists.length ? ['separator'] : [], [{ heading: 'Sort by' }]);
+  for (const sort of Object.keys(LIBRARY_SORT_WORDS)) {
+    const word = LIBRARY_SORT_WORDS[sort];
+    items.push({
+      label: word.charAt(0).toUpperCase() + word.slice(1),
+      selected: view.sort === sort,
+      run: () => sendFolderView({ sort, descending: LIBRARY_SORT_DIRECTIONS[sort][0].descending, groupByDate: view.groupByDate && (sort === 'modified' || sort === 'created') }),
+    });
+  }
+  items.push('separator');
+  for (const direction of LIBRARY_SORT_DIRECTIONS[view.sort]) {
+    items.push({
+      label: direction.label,
+      selected: view.descending === direction.descending,
+      run: () => sendFolderView({ descending: direction.descending }),
+    });
+  }
+  items.push('separator');
+  const groups = libraryViewGroups(view);
+  items.push({
+    label: 'Group by date',
+    switch: true,
+    checked: groups && view.groupByDate,
+    disabled: !groups,
+    title: groups ? '' : 'Sort by a date to group by it',
+    run: () => sendFolderView({ groupByDate: !view.groupByDate }),
+  });
+  items.push({
+    label: 'Compact rows',
+    switch: true,
+    checked: view.compact,
+    title: 'One line a row, the name and nothing else',
+    run: () => sendFolderView({ compact: !view.compact }),
+  });
+  return items.concat(['separator'], libraryHideMenuItems(view, sendFolderView, false), ['separator'], libraryArrangementItems());
+}
+
+function libraryHideMenuItems(view, sendView, tagsOnly) {
+  const items = [{
+    label: 'Show hidden',
+    switch: true,
+    checked: view.showHidden,
+    title: 'Draw what is hidden, dimmed',
+    run: () => sendView({ showHidden: !view.showHidden }),
+  }];
+  if (!tagsOnly) {
+    items.push(
+      { input: '', placeholder: 'Hide names like draft-*', commit: (pattern) => pattern && sendView({ hidePatterns: view.hidePatterns.concat([pattern]) }) },
+      { input: '', placeholder: 'Hide notes whose field says status:done', commit: (rule) => rule.includes(':') && sendView({ hideFields: view.hideFields.concat([rule]) }) },
+    );
+  }
+  const stop = (rule, kind) => ({
+    label: `Stop hiding ${rule}`,
+    run: () => sendView({ [kind]: view[kind].filter((one) => one !== rule) }),
+  });
+  const hidden = tagsOnly ? view.hidden.filter((one) => one.startsWith('#')) : view.hidden.filter((one) => !one.startsWith('#'));
+  for (const rule of hidden) items.push(stop(rule, 'hidden'));
+  if (!tagsOnly) {
+    for (const rule of view.hidePatterns) items.push(stop(rule, 'hidePatterns'));
+    for (const rule of view.hideFields) items.push(stop(rule, 'hideFields'));
+  }
+  return items;
+}
+
+function libraryHiddenEmptyText() {
+  if (!libraryHiddenRows || (libraryFolderView && libraryFolderView.showHidden)) return '';
+  const rows = libraryHiddenRows === 1 ? 'The one row here is hidden' : `All ${libraryHiddenRows} rows here are hidden`;
+  return `${rows}. Show hidden, in the menu at the end of the folder trail, draws them.`;
+}
+
+function libraryRowCanHide(path) {
+  return !!libraryFolderView && libraryFolderEntry(path) !== null;
+}
+function libraryFolderEntry(path) {
+  return libraryEntries.find((node) => node && node.path === path) || null;
+}
+function toggleLibraryRowHidden(path) {
+  const node = libraryFolderEntry(path);
+  if (!node || !libraryFolderView) return;
+  const hidden = libraryFolderView.hidden;
+  sendFolderView({ hidden: hidden.includes(node.name) ? hidden.filter((name) => name !== node.name) : hidden.concat([node.name]) });
+}
+function bindTrailViewButton() {
+  const button = libraryCrumbTrail.querySelector('[data-trail-view]');
+  if (!button) return;
+  
+  button.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    if (libraryFolderView) toggleCrumbMenu(button, libraryViewMenuItems());
+  });
+  button.addEventListener('click', (event) => {
+    if (event.detail !== 0 || !libraryFolderView) return;
+    toggleCrumbMenu(button, libraryViewMenuItems());
+  });
+}
+
+function libraryDateGroup(millis, now) {
+  if (!Number.isFinite(millis)) return 'Date unknown';
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const start = today.getTime();
+  if (millis >= start) return 'Today';
+  if (millis >= start - LIBRARY_DAY_MS) return 'Yesterday';
+  if (millis >= start - 7 * LIBRARY_DAY_MS) return 'Previous 7 days';
+  if (millis >= start - 30 * LIBRARY_DAY_MS) return 'Previous 30 days';
+  const day = new Date(millis);
+  return `${LIBRARY_MONTHS[day.getMonth()]} ${day.getFullYear()}`;
+}
+
+function libraryDateHeadings() {
+  const view = libraryFolderView;
+  if (!view || !view.groupByDate || !libraryViewGroups(view)) return () => '';
+  const now = Date.now();
+  let last = null;
+  return (node) => {
+    const group = libraryDateGroup(view.sort === 'created' ? node.created : node.modified, now);
+    if (group === last) return '';
+    last = group;
+    return libraryHeadingHtml(group);
+  };
+}
+const LIBRARY_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function libraryRowTime(millis, now) {
+  if (!Number.isFinite(millis)) return '';
+  const when = new Date(millis);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  if (millis >= today.getTime()) {
+    const hours = when.getHours();
+    const minutes = String(when.getMinutes()).padStart(2, '0');
+    return `${hours % 12 || 12}:${minutes}${hours < 12 ? 'am' : 'pm'}`;
+  }
+  if (millis >= today.getTime() - 6 * LIBRARY_DAY_MS) return LIBRARY_WEEKDAYS[when.getDay()];
+  const day = `${LIBRARY_MONTHS[when.getMonth()].slice(0, 3)} ${when.getDate()}`;
+  return when.getFullYear() === today.getFullYear() ? day : `${day}, ${when.getFullYear()}`;
+}
+
+function libraryRowLabel(node) {
+  const name = (node && (node.name || node.path)) || '';
+  if (!node || !node.title) return documentNameMarkup(name);
+  const { extension } = documentNameParts(name);
+  const badge = extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '';
+  return `<span class="file-name-stem">${escapeText(node.title)}</span>${badge}`;
+}
+
+function fileRowHtml(node) {
+  const isSelected = librarySelectedPath && node.path === librarySelectedPath;
+  const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '');
+  const current = isSelected ? ' aria-current="true"' : '';
+  const open = `data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}"`;
+  const label = `<span class="library-file-label">${libraryRowLabel(node)}</span>`;
+  if (typeof node.preview !== 'string') {
+    return `<button type="button" class="library-file${selected}"${current} ${open}>${LEAF_FILE_ICON}${label}</button>`;
+  }
+  const time = libraryRowTime(node.modified, Date.now());
+  const timeHtml = time ? `<span class="library-file-time">${escapeText(time)}</span>` : '';
+  const preview = node.preview ? `<span class="library-file-preview">${escapeText(node.preview)}</span>` : '';
+  return `<button type="button" class="library-file library-file-full${selected}"${current} ${open}>${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head">${label}${timeHtml}</span>${preview}</span></button>`;
+}
+
+function folderRowHtml(node) {
+  const count = Number.isFinite(node.count) ? `<span class="library-folder-count">${node.count >= 999 ? '999+' : node.count}</span>` : '';
+  const hidden = node.hidden ? ' is-hidden' : '';
+  return `<button type="button" class="library-nav-folder${hidden}" data-nav-into="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" data-folder-path="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span>${count}<span class="library-nav-chevron" aria-hidden="true">›</span></button>`;
+}
+function libraryHeadingHtml(words) {
+  return `<div class="library-group-heading">${escapeText(words)}</div>`;
+}
+function libraryRowHtml(node, headingFor) {
+  return node.kind === 'folder' ? folderRowHtml(node) : headingFor(node) + fileRowHtml(node);
+}
+
+function libraryRowsHtml(entries) {
+  const list = entries || [];
+  const favorites = list.filter((node) => isFavoritePath(node.path));
+  if (!favorites.length) {
+    const headingFor = libraryDateHeadings();
+    return list.map((node) => libraryRowHtml(node, headingFor)).join('');
+  }
+  const noHeadings = () => '';
+  const headingFor = libraryDateHeadings();
+  const rest = list.filter((node) => !isFavoritePath(node.path));
+  return libraryHeadingHtml('Favorites')
+    + favorites.map((node) => libraryRowHtml(node, noHeadings)).join('')
+    + (rest.length ? libraryHeadingHtml('Files') + rest.map((node) => libraryRowHtml(node, headingFor)).join('') : '');
+}
+
+function libraryRowMenuShows(path, which, kind) {
+  if (kind !== 'file' && kind !== 'folder') return false;
+  const node = libraryRowCanHide(path) ? libraryFolderEntry(path) : null;
+  if (!node) return false;
+  return which === 'hide' ? !node.hidden : !!node.hidden && libraryFolderView.hidden.includes(node.name);
+}
+
+let libraryArrangements = Array.isArray(LEAF_SETTINGS.arrangements) ? LEAF_SETTINGS.arrangements : [];
+let libraryArrangement = typeof LEAF_SETTINGS.arrangement === 'string' ? LEAF_SETTINGS.arrangement : '';
+
+function libraryArrangementItems() {
+  const items = [{ heading: 'Arrangements' }];
+  items.push({ label: 'None', selected: !libraryArrangement, run: () => send({ command: 'useArrangement', name: '' }) });
+  for (const kept of libraryArrangements) {
+    if (!kept || typeof kept.name !== 'string') continue;
+    items.push({ label: kept.name, selected: kept.name === libraryArrangement, run: () => send({ command: 'useArrangement', name: kept.name }) });
+  }
+  items.push({
+    input: '',
+    placeholder: 'Save this arrangement as…',
+    commit: (name) => name && send({ command: 'saveArrangement', name, view: libraryFolderView || libraryViewOf(null), list: libraryList }),
+  });
+  if (libraryArrangement) {
+    const using = libraryArrangement;
+    items.push(
+      { input: using, placeholder: `Rename ${using}`, commit: (to) => to && to !== using && send({ command: 'renameArrangement', from: using, to }) },
+      { label: `Delete ${using}`, danger: true, run: () => send({ command: 'deleteArrangement', name: using }) },
+    );
+  }
+  return items;
+}
+
+window.leafSetArrangements = (payload) => {
+  const data = payload || {};
+  libraryArrangements = Array.isArray(data.arrangements) ? data.arrangements : [];
+  libraryArrangement = typeof data.active === 'string' ? data.active : '';
+  takeLibraryList(data.list);
+  renderLibrary();
+};
+
+
+
+let libraryPicks = [];
+let libraryPickAnchor = null;
+
+function libraryPickableRows() {
+  return Array.from(libraryTree.querySelectorAll('[data-reveal-path]'));
+}
+
+function nextLibraryPicks(rows, picked, anchor, path, keys) {
+  const toggle = !!(keys && (keys.ctrlKey || keys.metaKey));
+  const range = !!(keys && keys.shiftKey);
+  if (!toggle && !range) return null;
+  if (range && anchor != null && rows.includes(anchor)) {
+    const from = rows.indexOf(anchor);
+    const to = rows.indexOf(path);
+    const span = rows.slice(Math.min(from, to), Math.max(from, to) + 1);
+    
+    const kept = toggle ? picked.filter((one) => !span.includes(one)) : [];
+    const union = new Set([...kept, ...span]);
+    return { picks: rows.filter((one) => union.has(one)), anchor };
+  }
+  const has = picked.includes(path);
+  const next = has ? picked.filter((one) => one !== path) : [...picked, path];
+  const inOrder = new Set(next);
+  return { picks: rows.filter((one) => inOrder.has(one)), anchor: path };
+}
+
+function pickLibraryRow(button, event) {
+  if (!libraryRowCarries(button)) return false;
+  const path = button.dataset.revealPath;
+  const rows = libraryPickableRows().map((row) => row.dataset.revealPath);
+  const next = nextLibraryPicks(rows, libraryPicks, libraryPickAnchor, path, event);
+  if (!next) return false;
+  libraryPicks = next.picks;
+  libraryPickAnchor = next.anchor;
+  markLibraryPicks();
+  return true;
+}
+function clearLibraryPicks() {
+  libraryPickAnchor = null;
+  if (!libraryPicks.length) return;
+  libraryPicks = [];
+  markLibraryPicks();
+}
+
+function markLibraryPicks() {
+  const picked = new Set(libraryPicks);
+  for (const row of libraryPickableRows()) {
+    row.classList.toggle('is-marked', picked.has(row.dataset.revealPath));
+  }
+}
+
+function libraryPathsFor(path) {
+  return path && libraryPicks.includes(path) ? libraryPicks.slice() : [path];
+}
+
+function libraryDeleteQuestion(paths) {
+  return paths.length === 1 ? `Delete “${fileBaseName(paths[0])}”?` : `Delete ${paths.length} files?`;
+}
+
+let libraryTransfer = null;
+function libraryHoldsTransfer() {
+  return !!libraryTransfer;
+}
+function cutLibraryFiles(paths, cut) {
+  libraryTransfer = { paths, cut };
+  send({ command: 'copyFile', paths, cut });
+}
+function pasteLibraryFiles(folder) {
+  
+  const transfer = libraryTransfer;
+  if (!transfer || !folder) return;
+  if (transfer.cut) libraryTransfer = null;
+  send({ command: 'pasteFile', paths: transfer.paths, intoFolder: folder, cut: transfer.cut });
+}
+function deleteLibraryFiles(paths) {
+  openConfirm(
+    libraryDeleteQuestion(paths),
+    isMacPlatform
+      ? (paths.length === 1 ? 'It goes to the Trash, so you can put it back.' : 'They go to the Trash, so you can put them back.')
+      : (paths.length === 1 ? 'It goes to the Recycle Bin, so you can put it back.' : 'They go to the Recycle Bin, so you can put them back.'),
+    'Delete',
+    () => send({ command: 'deleteFile', paths })
+  );
+}
+
+function keysAreInLibraryPane(event) {
+  const target = event.target;
+  if (!target || !libraryTree.contains(target)) return false;
+  return !isEditableMouseTarget(target);
+}
+
+function libraryFileKey(event) {
+  if (!keysAreInLibraryPane(event)) return false;
+  const command = (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey;
+  const key = event.key.toLowerCase();
+  if (command && (key === 'x' || key === 'c') && libraryPicks.length) {
+    event.preventDefault();
+    cutLibraryFiles(libraryPicks.slice(), key === 'x');
+    return true;
+  }
+  if (command && key === 'v' && libraryTransfer) {
+    event.preventDefault();
+    pasteLibraryFiles(libraryFolderHere());
+    return true;
+  }
+  
+  const deleting = (event.key === 'Delete' && !event.ctrlKey && !event.metaKey && !event.altKey)
+    || (isMacPlatform && event.metaKey && event.key === 'Backspace');
+  if (deleting && libraryPicks.length) {
+    event.preventDefault();
+    deleteLibraryFiles(libraryPicks.slice());
+    return true;
+  }
+  if (event.key === 'Escape' && libraryPicks.length) {
+    event.preventDefault();
+    clearLibraryPicks();
+    return true;
+  }
+  return false;
+}
+
+libraryTree.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || !libraryPicks.length) return;
+  if (event.target.closest && event.target.closest('[data-reveal-path], .library-nav-up')) return;
+  clearLibraryPicks();
+});
+
+
+
+const LIBRARY_CARRY_THRESHOLD = 5;
+
+let libraryCarry = null;
+
+function libraryRowCarries(button) {
+  return !!(button && button.dataset && button.dataset.revealPath && libraryTree.contains(button));
+}
+
+function holdLibraryPress(button, event, act) {
+  const path = button.dataset.revealPath;
+  libraryCarry = {
+    button,
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    act,
+    paths: path ? libraryPathsFor(path) : [],
+    chip: null,
+    target: null,
+    frame: 0,
+    at: null,
+  };
+  
+  leafHoldPointer(libraryTree, event.pointerId);
+}
+
+function libraryCarryLabel(paths) {
+  return paths.length === 1 ? fileBaseName(paths[0]) : `${paths.length} items`;
+}
+function libraryPathIsInside(path, folder) {
+  const inner = samePathKey(path);
+  const outer = samePathKey(folder);
+  return inner === outer || inner.startsWith(`${outer}/`);
+}
+function libraryParentKey(path) {
+  const key = samePathKey(path);
+  return key.slice(0, Math.max(key.lastIndexOf('/'), 0));
+}
+
+function libraryFolderTakes(folder, paths) {
+  if (!folder || !paths.length) return false;
+  if (paths.some((path) => libraryPathIsInside(folder, path))) return false;
+  const here = samePathKey(folder);
+  return !paths.every((path) => libraryParentKey(path) === here);
+}
+
+function libraryDropTargetAt(x, y) {
+  const hit = document.elementFromPoint(x, y);
+  if (!hit || !hit.closest) return null;
+  const row = hit.closest('[data-folder-path]');
+  if (row && libraryTree.contains(row)) return { element: row, folder: row.dataset.folderPath };
+  const crumb = hit.closest('[data-crumb-path]');
+  if (crumb && libraryCrumbTrail.contains(crumb)) return { element: crumb, folder: realFolderPath(crumb.dataset.crumbPath) };
+  if (libraryTree.contains(hit)) return { element: libraryTree, folder: libraryFolderHere() };
+  return null;
+}
+function lightLibraryTarget(target) {
+  const carry = libraryCarry;
+  const next = target && libraryFolderTakes(target.folder, carry.paths) ? target : null;
+  if ((carry.target && carry.target.element) === (next && next.element)) {
+    carry.target = next;
+    return;
+  }
+  if (carry.target) carry.target.element.classList.remove('is-drop-target');
+  if (next) next.element.classList.add('is-drop-target');
+  carry.target = next;
+}
+function drawLibraryCarry() {
+  const carry = libraryCarry;
+  if (!carry) return;
+  carry.frame = 0;
+  if (!carry.at) return;
+  
+  carry.chip.style.transform = `translate(${carry.at.x - carry.origin.left}px, ${carry.at.y - carry.origin.top}px)`;
+  lightLibraryTarget(libraryDropTargetAt(carry.at.x, carry.at.y));
+}
+function startLibraryCarry() {
+  const carry = libraryCarry;
+  const chip = document.createElement('div');
+  chip.className = 'library-carry-chip';
+  chip.textContent = libraryCarryLabel(carry.paths);
+  appSurface.appendChild(chip);
+  carry.chip = chip;
+  const corner = appSurface.getBoundingClientRect();
+  carry.origin = { left: corner.left || 0, top: corner.top || 0 };
+}
+function endLibraryCarry() {
+  const carry = libraryCarry;
+  libraryCarry = null;
+  if (!carry) return;
+  if (carry.frame) cancelAnimationFrame(carry.frame);
+  if (carry.chip) carry.chip.remove();
+  if (carry.target) carry.target.element.classList.remove('is-drop-target');
+  leafReleasePointer(libraryTree, carry.pointerId);
+}
+document.addEventListener('pointermove', (event) => {
+  const carry = libraryCarry;
+  if (!carry || event.pointerId !== carry.pointerId) return;
+  if (!carry.chip) {
+    if (Math.hypot(event.clientX - carry.x, event.clientY - carry.y) < LIBRARY_CARRY_THRESHOLD || !carry.paths.length) return;
+    startLibraryCarry();
+  }
+  event.preventDefault();
+  
+  if (libraryCarryLeftTheWindow(event.clientX, event.clientY)) {
+    endLibraryCarry();
+    send({ command: 'dragFilesOut', paths: carry.paths });
+    clearLibraryPicks();
+    return;
+  }
+  carry.at = { x: event.clientX, y: event.clientY };
+  if (!carry.frame) carry.frame = requestAnimationFrame(drawLibraryCarry);
+});
+
+function libraryCarryLeftTheWindow(x, y) {
+  if (window.__leafSite || window.__leafEmbedded) return false;
+  return x < 0 || y < 0 || x >= window.innerWidth || y >= window.innerHeight;
+}
+document.addEventListener('pointerup', (event) => {
+  const carry = libraryCarry;
+  if (!carry || event.pointerId !== carry.pointerId) return;
+  
+  carry.button.leafPressEntered = false;
+  if (!carry.chip) {
+    endLibraryCarry();
+    
+    if (carry.act) {
+      clearLibraryPicks();
+      carry.act();
+    }
+    return;
+  }
+  
+  lightLibraryTarget(libraryDropTargetAt(event.clientX, event.clientY));
+  const target = carry.target;
+  endLibraryCarry();
+  if (!target) return;
+  send({ command: 'pasteFile', paths: carry.paths, intoFolder: target.folder, cut: !libraryCarryCopies(event) });
+  clearLibraryPicks();
+});
+
+libraryTree.addEventListener('dragstart', (event) => {
+  event.preventDefault();
+});
+document.addEventListener('pointercancel', (event) => {
+  if (libraryCarry && event.pointerId === libraryCarry.pointerId) endLibraryCarry();
+});
+
+function libraryCarryCopies(event) {
+  return isMacPlatform ? !!event.altKey : !!event.ctrlKey;
+}
+
+window.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !libraryCarry || !libraryCarry.chip) return;
+  event.preventDefault();
+  event.stopPropagation();
+  endLibraryCarry();
+}, true);
+
+
+
+let outsideDropFiles = [];
+let outsideDropLit = null;
+
+function outsideDropPlaceAt(x, y) {
+  const folder = libraryDropTargetAt(x, y);
+  if (folder) return { kind: 'folder', element: folder.element, folder: folder.folder };
+  const hit = document.elementFromPoint(x, y);
+  if (!hit || !hit.closest) return { kind: 'elsewhere' };
+  if (codeViewActive && monacoEditor && monacoEditor.getDomNode && monacoEditor.getDomNode().contains(hit)) return { kind: 'code' };
+  const body = hit.closest('.document-body');
+  if (body) return { kind: 'document', body, element: hit.closest('[data-src-start]') };
+  return { kind: 'elsewhere' };
+}
+
+function outsideDropRefusal(format) {
+  if (format === 'eml') return 'A message has already arrived, so nothing can be written into it.';
+  if (format === 'pointer') return 'This page is kept by its service, so nothing can be written into it here.';
+  return 'This kind of document has no text of its own to write a link into.';
+}
+
+function outsideDropValueIsText(format, source) {
+  const value = String(source || '').trim();
+  if (format === 'json') return value.startsWith('"');
+  return value !== '' && !/^(true|false|yes|no|null|~|[-+]?[0-9][0-9_.eE+-]*)$/i.test(value);
+}
+
+function outsideDropRoute(place, files, drop, format) {
+  const paths = files.map((file) => file.path);
+  if (!files.length) return { action: 'nothing' };
+  if (place.kind === 'folder') return { action: 'paste', paths, intoFolder: place.folder, cut: !!drop.shift };
+  if (place.kind === 'document' || place.kind === 'code') {
+    const references = files.map((file) => file.reference);
+    if (references.some((reference) => typeof reference !== 'string')) return { action: 'refuse', words: outsideDropRefusal(format) };
+    if (place.kind === 'code') return { action: 'code', text: references.join('\n') };
+    if (format === 'json' || format === 'yaml') {
+      if (files.length !== 1) return { action: 'refuse', words: 'Drop one file on a value to put it there.' };
+      if (!place.element || !place.element.matches || !place.element.matches('dd')) return { action: 'refuse', words: 'Drop the file on a value to put it there — there is nowhere between two values for it to go.' };
+      return { action: 'value', element: place.element, text: references[0] };
+    }
+    return { action: 'insert', element: place.element, text: references.join(blockSeparator()), picture: files.every((file) => file.picture) };
+  }
+  const readable = files.filter((file) => file.readable);
+  const unread = files.filter((file) => !file.readable);
+  const words = unread.length === 1
+    ? `Leaftext can’t open ${unread[0].name || 'that file'}, so it was not opened.`
+    : unread.length ? `Leaftext can’t open ${unread.length} of those files, so they were not opened.` : '';
+  return { action: 'open', paths: readable.map((file) => file.path), words };
+}
+function lightOutsideDrop(place) {
+  const next = place && place.kind === 'folder' && libraryFolderTakes(place.folder, outsideDropFiles.map((file) => file.path)) ? place.element : null;
+  if (outsideDropLit === next) return;
+  if (outsideDropLit) outsideDropLit.classList.remove('is-drop-target');
+  if (next) next.classList.add('is-drop-target');
+  outsideDropLit = next;
+}
+function landOutsideDrop(route) {
+  switch (route.action) {
+    case 'paste': send({ command: 'pasteFile', paths: route.paths, intoFolder: route.intoFolder, cut: route.cut }); break;
+    case 'refuse': leafToast(route.words, 'error'); break;
+    case 'code':
+      if (!codeUnlocked) {
+        growlLockedForReading();
+        break;
+      }
+      monacoEditor.executeEdits('leaf-drop', [{ range: monacoEditor.getSelection(), text: route.text, forceMoveMarkers: true }]);
+      break;
+    case 'value':
+    case 'insert': {
+      if (!readerEditingAllowed()) {
+        leafToast('The page is locked. Click the padlock in the toolbar to edit it.');
+        break;
+      }
+      if (route.action === 'value') {
+        const range = rangeOf(route.element, 'block');
+        if (!Number.isFinite(range.start) || !outsideDropValueIsText(currentDocumentFormat, sliceSourceBytes(range.start, range.end))) {
+          leafToast('Drop the file on a value that is text to put it there.', 'error');
+          break;
+        }
+        sendEditCommand({ command: 'editBlock', start: range.start, end: range.end, text: route.text });
+        break;
+      }
+      
+      const blocks = documentBlocks(app.querySelector('.document-body'));
+      const block = (route.element && blocks.find((one) => one === route.element || one.contains(route.element))) || blocks[blocks.length - 1];
+      if (!block) break;
+      runGapInsert(pastePictureGap(block), { id: 'drop', text: route.text, kind: route.picture ? 'image' : undefined });
+      break;
+    }
+    case 'open':
+      if (route.paths.length) send({ command: 'openPaths', paths: route.paths });
+      if (route.words) leafToast(route.words, 'error');
+      break;
+    default: break;
+  }
+}
+window.leafOutsideDrop = (drop) => {
+  const moment = drop || {};
+  if (Array.isArray(moment.files)) outsideDropFiles = moment.files;
+  if (moment.phase === 'leave') {
+    lightOutsideDrop(null);
+    outsideDropFiles = [];
+    return;
+  }
+  const place = outsideDropPlaceAt(moment.x, moment.y);
+  if (moment.phase !== 'drop') {
+    lightOutsideDrop(place);
+    return;
+  }
+  lightOutsideDrop(null);
+  const files = outsideDropFiles;
+  outsideDropFiles = [];
+  landOutsideDrop(outsideDropRoute(place, files, moment, currentDocumentFormat));
+};
 
 
 
@@ -11427,6 +12269,8 @@ window.leafSetFilterHints = (payload) => {
   const data = payload || {};
   filterHintFields = Array.isArray(data.fields) ? data.fields : [];
   
+  if (libraryListShowing() === 'fields') renderLibrary();
+  
   if (findingAllFiles() && document.activeElement === librarySearch) openFilterMenu();
 };
 
@@ -11647,6 +12491,212 @@ window.leaftextTagRenameFinished = (answer) => {
     leafToast(`Renamed the tag in ${count} ${count === 1 ? 'file' : 'files'}.`, 'success');
     if (findingAllFiles()) runLibrarySearch(findInput.value);
   }
+};
+
+
+
+let libraryList = LEAF_SETTINGS.libraryList === 'tags' || LEAF_SETTINGS.libraryList === 'fields' ? LEAF_SETTINGS.libraryList : 'folders';
+
+let libraryTagTree = null;
+let libraryTagError = '';
+let libraryTagAsked = false;
+
+let libraryTagRoot = '';
+let libraryTagView = null;
+
+const libraryOpenBranches = new Set();
+
+function libraryListShowing() {
+  return libraryList !== 'folders' && vaultSearchAvailable() ? libraryList : 'folders';
+}
+
+function takeLibraryList(list) {
+  if (list !== 'folders' && list !== 'tags' && list !== 'fields') return;
+  if (libraryListShowing() === 'tags' && list !== 'tags') {
+    libraryTagAsked = false;
+    send({ command: 'getTagTree', stop: true });
+  }
+  libraryList = list;
+}
+function setLibraryList(list) {
+  const was = libraryListShowing();
+  libraryList = list;
+  send({ command: 'setLibraryList', list });
+  if (was === 'tags' && libraryListShowing() !== 'tags') {
+    libraryTagAsked = false;
+    send({ command: 'getTagTree', stop: true });
+  }
+  renderLibrary();
+}
+
+function sendTagView(change) {
+  if (!libraryTagView) return;
+  send({ command: 'setFolderView', path: libraryTagRoot, view: { ...libraryTagView, ...change } });
+}
+function libraryTagIsHidden(name) {
+  return !!libraryTagView && libraryTagView.hidden.includes(`#${name}`);
+}
+function toggleLibraryTagHidden(name) {
+  if (!libraryTagView || !name) return;
+  const rule = `#${name}`;
+  const hidden = libraryTagView.hidden;
+  sendTagView({ hidden: hidden.includes(rule) ? hidden.filter((one) => one !== rule) : hidden.concat([rule]) });
+}
+
+function libraryListMenuItems() {
+  if (!vaultSearchAvailable()) return [];
+  const showing = libraryListShowing();
+  const hiding = showing === 'tags' && libraryTagView ? ['separator'].concat(libraryHideMenuItems(libraryTagView, sendTagView, true)) : [];
+  return [
+    { heading: 'Show' },
+    { label: 'Folders', selected: showing === 'folders', run: () => setLibraryList('folders') },
+    { label: 'Tags', selected: showing === 'tags', run: () => setLibraryList('tags') },
+    { label: 'Fields', selected: showing === 'fields', run: () => setLibraryList('fields') },
+  ].concat(hiding);
+}
+function libraryBranchRowHtml({ key, depth, label, count, branch, open, hidden, data }) {
+  const mark = branch ? `<span class="library-axis-branch${open ? ' is-open' : ''}" data-axis-toggle="1" aria-hidden="true">›</span>` : '<span class="library-axis-branch" aria-hidden="true"></span>';
+  const expanded = branch ? ` aria-expanded="${open}"` : '';
+  const counted = Number.isFinite(count) ? `<span class="library-folder-count">${count}</span>` : '';
+  return `<button type="button" class="library-axis-row library-axis-depth-${Math.min(depth, 4)}${hidden ? ' is-hidden' : ''}" data-axis-key="${escapeAttr(key)}" ${data}${expanded} title="${escapeAttr(label)}">${mark}<span class="library-file-label">${escapeText(label)}</span>${counted}</button>`;
+}
+
+function libraryTagRowsHtml() {
+  const tags = libraryTagTree || [];
+  const children = new Map();
+  for (const tag of tags) {
+    const parent = tag.parent || '';
+    if (!children.has(parent)) children.set(parent, []);
+    children.get(parent).push(tag);
+  }
+  const rows = [];
+  const walk = (parent, depth) => {
+    for (const tag of children.get(parent) || []) {
+      const key = `tag:${tag.name}`;
+      const branch = children.has(tag.name);
+      const open = branch && libraryOpenBranches.has(key);
+      const label = '#' + tag.name.slice(tag.parent ? tag.parent.length + 1 : 0);
+      rows.push(libraryBranchRowHtml({ key, depth, label, count: tag.count, branch, open, hidden: !!tag.hidden, data: `data-axis-tag="${escapeAttr(tag.name)}"` }));
+      if (open) walk(tag.name, depth + 1);
+    }
+  };
+  walk('', 0);
+  return rows.join('');
+}
+
+function libraryFieldRowsHtml() {
+  const rows = [];
+  for (const field of filterHintFields || []) {
+    if (!field || !field.name) continue;
+    const key = `field:${field.name}`;
+    const values = Array.isArray(field.values) ? field.values : [];
+    const branch = values.length > 0;
+    const open = branch && libraryOpenBranches.has(key);
+    rows.push(libraryBranchRowHtml({ key, depth: 0, label: field.name, count: values.length || undefined, branch, open, data: `data-axis-field="${escapeAttr(field.name)}"` }));
+    if (!open) continue;
+    for (const value of values) {
+      rows.push(libraryBranchRowHtml({ key: `${key}=${value}`, depth: 1, label: String(value), branch: false, open: false, data: `data-axis-field="${escapeAttr(field.name)}" data-axis-value="${escapeAttr(String(value))}"` }));
+    }
+  }
+  return rows.join('');
+}
+
+function libraryAxisHtml() {
+  const showing = libraryListShowing();
+  if (showing === 'folders') return null;
+  if (showing === 'tags') {
+    if (!libraryTagAsked) {
+      libraryTagAsked = true;
+      send({ command: 'getTagTree' });
+    }
+    if (libraryTagError) return `<p class="library-empty">${escapeText(libraryTagError)}</p>`;
+    if (!libraryTagTree) return '<p class="library-empty">Counting the vault’s tags.</p>';
+    const rows = libraryTagRowsHtml();
+    return rows ? `<div class="library-project">${rows}</div>` : '<p class="library-empty">No note in this vault carries a tag.</p>';
+  }
+  const rows = libraryFieldRowsHtml();
+  return rows ? `<div class="library-project">${rows}</div>` : '<p class="library-empty">No note in this vault sets a field.</p>';
+}
+function toggleLibraryBranch(row, open) {
+  const key = row.dataset.axisKey;
+  if (!row.hasAttribute('aria-expanded')) return false;
+  const isOpen = libraryOpenBranches.has(key);
+  if (open === isOpen) return false;
+  if (open) libraryOpenBranches.add(key);
+  else libraryOpenBranches.delete(key);
+  renderLibrary();
+  return true;
+}
+
+function searchForFieldValue(name, value) {
+  if (!vaultSearchAvailable() || !name) return;
+  const written = /\s/.test(value) ? `"${value.replace(/"/g, '')}"` : value;
+  openFindBar();
+  findInput.value = `${name}:${written}`;
+  if (findingAllFiles()) runLibrarySearch(findInput.value);
+  else setFindScope('vault');
+}
+function pressLibraryAxisRow(row, onBranchMark) {
+  if (row.dataset.axisTag !== undefined) {
+    if (onBranchMark) toggleLibraryBranch(row, !libraryOpenBranches.has(row.dataset.axisKey));
+    else searchForTag(row.dataset.axisTag);
+  } else if (row.dataset.axisValue !== undefined) {
+    searchForFieldValue(row.dataset.axisField, row.dataset.axisValue);
+  } else {
+    toggleLibraryBranch(row, !libraryOpenBranches.has(row.dataset.axisKey));
+  }
+}
+function bindLibraryAxisRows() {
+  for (const row of libraryTree.querySelectorAll('.library-axis-row')) {
+    bindLibraryRowPress(row, () => pressLibraryAxisRow(row, false));
+  }
+}
+
+let libraryBranchMarkPressed = false;
+function libraryBranchMarkRow(event) {
+  const mark = event.target && event.target.closest ? event.target.closest('[data-axis-toggle]') : null;
+  return mark ? mark.closest('.library-axis-row') : null;
+}
+libraryTree.addEventListener('pointerdown', (event) => {
+  const row = libraryBranchMarkRow(event);
+  if (!row || event.pointerType !== 'mouse' || event.button !== 0) return;
+  event.stopPropagation();
+  event.preventDefault();
+  libraryBranchMarkPressed = true;
+  pressLibraryAxisRow(row, true);
+}, true);
+libraryTree.addEventListener('click', (event) => {
+  const row = libraryBranchMarkRow(event);
+  if (!row) return;
+  event.stopPropagation();
+  event.preventDefault();
+  if (libraryBranchMarkPressed) libraryBranchMarkPressed = false;
+  else pressLibraryAxisRow(row, true);
+}, true);
+
+function libraryAxisKey(row, key) {
+  if (key === 'ArrowRight') return toggleLibraryBranch(row, true);
+  if (key !== 'ArrowLeft') return false;
+  if (toggleLibraryBranch(row, false)) return true;
+  const rows = libraryWalkRows(libraryTree);
+  const depth = Number((row.className.match(/library-axis-depth-(\d)/) || [])[1] || 0);
+  for (let at = rows.indexOf(row) - 1; at >= 0 && depth > 0; at -= 1) {
+    const above = Number((rows[at].className.match(/library-axis-depth-(\d)/) || [])[1] || 0);
+    if (above < depth) {
+      focusLibraryRow(rows[at]);
+      return true;
+    }
+  }
+  return true;
+}
+
+window.leafSetTagTree = (payload) => {
+  const data = payload || {};
+  libraryTagTree = Array.isArray(data.tags) ? data.tags : [];
+  libraryTagError = typeof data.error === 'string' ? data.error : '';
+  libraryTagRoot = typeof data.root === 'string' ? data.root : '';
+  libraryTagView = libraryTagRoot && !window.__leafSite && !window.__leafEmbedded ? libraryViewOf(data.view) : null;
+  if (libraryListShowing() === 'tags') renderLibrary();
 };
 
 function parseVersion(value) {
@@ -12102,6 +13152,10 @@ window.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'w' && currentState.active != null) {
     event.preventDefault();
     send({ command: 'closeTab', index: currentState.active });
+    return;
+  }
+  
+  if (libraryFileKey(event)) {
     return;
   }
   
@@ -33643,9 +34697,13 @@ function recordMinimapColumnPlacedByRender() {
 
 
 
+
+
 function setMinimapMarkup(html) {
+  const hadMinimap = document.body.classList.contains('has-minimap');
   if (app) app.classList.toggle('has-minimap', Boolean(html));
   document.body.classList.toggle('has-minimap', Boolean(html));
+  if (hadMinimap !== Boolean(html)) scheduleMinimapWidthSync();
   if (readerMinimap) {
     minimapSpacerTarget = null;
     readerMinimap.innerHTML = html || '';

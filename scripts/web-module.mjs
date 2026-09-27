@@ -128,6 +128,14 @@ export async function instantiateCore(file) {
         return answer;
       },
       edit: (handle, edit) => JSON.parse(onBuffer(api.leaf_buffer_edit, handle, JSON.stringify(edit)) || 'null'),
+      // Which of `listing` one table's relations read, and the model over the documents handed back, as the line the page answers to.
+      tableWants: (handle, snapshot, listing) => JSON.parse(onBuffer(api.leaf_table_wants, handle, JSON.stringify({ snapshot, listing })) || 'null'),
+      tableModel: (handle, token, snapshot, library = [], truncated = false) => {
+        const [at, length] = write(JSON.stringify({ snapshot, library, truncated }));
+        const answer = read(api.leaf_table_model(handle, token, at, length));
+        api.leaf_free(at, length);
+        return answer;
+      },
       // One picture out of the buffer's own archive, as its media type and bytes, or null where the module refused it.
       bookPicture: (handle, member) => {
         const answer = onBuffer(api.leaf_buffer_book_picture, handle, String(member || ''), readBytes);

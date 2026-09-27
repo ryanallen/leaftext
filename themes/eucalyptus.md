@@ -27,6 +27,7 @@
 | surface-sunken                          | `#d9ece9`                 |
 | border                                  | `#b9d6d2`                 |
 | border-strong                           | `#5f8a86`                 |
+| shadow-ink                              | `#c2c9c8`                 |
 | muted-foreground                        | `#46615f`                 |
 | primary                                 | `#00787b`                 |
 | primary-foreground                      | `#ffffff`                 |
@@ -112,6 +113,7 @@
 | surface-sunken                          | `#0a1416`                  |
 | border                                  | `#24403f`                  |
 | border-strong                           | `#4f7c79`                  |
+| shadow-ink                              | `#000000`                  |
 | muted-foreground                        | `#8fb0ad`                  |
 | primary                                 | `#5fd6d2`                  |
 | primary-foreground                      | `#0e1a1c`                  |

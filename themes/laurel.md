@@ -31,6 +31,7 @@ One hue, green: every surface, border, heading and accent is a shade of it, and 
 | surface-sunken                          | `#e9f3ec`                 |
 | border                                  | `#d1e5d7`                 |
 | border-strong                           | `#9cc7a9`                 |
+| shadow-ink                              | `#cccccc`                 |
 | muted-foreground                        | `#366043`                 |
 | primary                                 | `#108031`                 |
 | primary-foreground                      | `#ffffff`                 |
@@ -117,6 +118,7 @@ One hue, green: every surface, border, heading and accent is a shade of it, and 
 | surface-sunken                          | `#131a15`                 |
 | border                                  | `#2a3a2f`                 |
 | border-strong                           | `#425b49`                 |
+| shadow-ink                              | `#000000`                 |
 | muted-foreground                        | `#7ea188`                 |
 | primary                                 | `#17bb48`                 |
 | primary-foreground                      | `#17201a`                 |
