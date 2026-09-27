@@ -12374,6 +12374,8 @@ window.leafSwapTableCell = (swap) => {
   const holder = document.createElement('div');
   holder.innerHTML = swap.html;
   cell.replaceChildren(...Array.from(holder.childNodes), ...grips);
+  
+  if (table.__lensPending) table.__lensPending.delete(`${swap.row},${swap.column}`);
   if (table.__editCells) table.__editCells = tableCellTexts(table);
   if (typeof table.__editBaseline === 'string') table.__editBaseline = blockDomToSource(table);
   
@@ -15810,13 +15812,18 @@ function tableDelimiterCells(headCells) {
 
 function tableCellMarkdown(cell) {
   const box = cell.querySelector('input[type="checkbox"]');
-  const text = inlineDomToMarkdown(cell)
+  const text = tableCellWords(inlineDomToMarkdown(cell));
+  if (box && !text) return box.checked ? '[x]' : '[ ]';
+  return text;
+}
+
+
+function tableCellWords(markdown) {
+  return markdown
     .trim()
     .replace(/\|/g, '\\|')
     .replace(/\\\n/g, ' ')
     .replace(/\n+/g, ' ');
-  if (box && !text) return box.checked ? '[x]' : '[ ]';
-  return text;
 }
 
 
@@ -15867,12 +15874,19 @@ function tableCellPosition(el, cell) {
 
 function tableDomToMarkdown(el) {
   const headCells = Array.from(el.querySelectorAll(':scope > thead > tr > th'));
-  const lines = ['| ' + headCells.map(tableCellMarkdown).join(' | ') + ' |'];
-  lines.push(tableDelimiterRow(el, headCells));
+  const rows = [headCells.map(tableCellMarkdown)];
   tableBodyRowsInSource(el).forEach((tr) => {
-    const cells = Array.from(tr.querySelectorAll(':scope > td'));
-    lines.push('| ' + cells.map(tableCellMarkdown).join(' | ') + ' |');
+    rows.push(Array.from(tr.querySelectorAll(':scope > td')).map(tableCellMarkdown));
   });
+  return tableTextsToMarkdown(el, rows);
+}
+
+
+function tableTextsToMarkdown(el, rows) {
+  const headCells = Array.from(el.querySelectorAll(':scope > thead > tr > th'));
+  const line = (cells) => '| ' + cells.join(' | ') + ' |';
+  const lines = [line(rows[0] || []), tableDelimiterRow(el, headCells)];
+  rows.slice(1).forEach((cells) => lines.push(line(cells)));
   return lines.join('\n');
 }
 
@@ -16651,10 +16665,17 @@ function blockTextNeedsWriting(el, text) {
 
 
 
-function commitBlockEdit(el, text, range) {
+
+
+function commitBlockEdit(el, text, range, cells) {
   
   if (editHold != null) {
-    keptCommits.push(() => commitBlockEdit(el, text, range));
+    
+    const baseline = el.__editCells;
+    keptCommits.push(() => {
+      if (cells) el.__editCells = baseline;
+      commitBlockEdit(el, text, range, cells);
+    });
     return true;
   }
   
@@ -16674,7 +16695,7 @@ function commitBlockEdit(el, text, range) {
   if (!blockTextNeedsWriting(el, text)) return false;
   if (!span && deleteEmptiedBlock(el, text)) return true;
   
-  const cell = span ? null : tableCellChange(el.__editCells, tableCellTexts(el));
+  const cell = span ? null : tableCellChange(el.__editCells, cells || tableCellTexts(el));
   
   const kind = !cell && el.tagName === 'TABLE' ? 'table' : undefined;
   
@@ -21405,13 +21426,32 @@ function drawTableLensLayout(table, order) {
 
 
 
-function writeTableLensCell(table, cell, markdown) {
+function writeTableLensCell(table, cell, picked) {
   if (!tableTakesControls(table)) return false;
+  const markdown = tableCellWords(picked);
   const range = rangeOf(table, 'block');
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return false;
-  table.__editCells = tableCellTexts(table);
-  cell.textContent = markdown;
-  return commitBlockEdit(table, tableDomToMarkdown(table));
+  const place = tableCellPosition(table, cell);
+  const baseline = tableCellTexts(table);
+  if (!place || !baseline) return false;
+  const pending = table.__lensPending || (table.__lensPending = new Map());
+  pending.forEach((text, key) => {
+    const [row, column] = key.split(',').map(Number);
+    if (baseline[row] && column < baseline[row].length) baseline[row][column] = text;
+  });
+  if (baseline[place.row][place.column] === markdown) return false;
+  const rows = baseline.map((cells) => cells.slice());
+  rows[place.row][place.column] = markdown;
+  const key = `${place.row},${place.column}`;
+  const before = pending.get(key);
+  table.__editCells = baseline;
+  pending.set(key, markdown);
+  const written = commitBlockEdit(table, tableTextsToMarkdown(table, rows), undefined, rows);
+  if (!written) {
+    if (before === undefined) pending.delete(key);
+    else pending.set(key, before);
+  }
+  return written;
 }
 
 
@@ -21433,9 +21473,11 @@ function openTableLensPicker(table, cell, at) {
   const menu = document.createElement('div');
   menu.className = 'table-lens-menu table-lens-picker leaf-scroll';
   menu.__lensCell = cell;
+  
   const written = (markdown) => {
-    writeTableLensCell(table, cell, markdown);
+    menu.remove();
     closeTableLensPicker();
+    writeTableLensCell(table, cell, markdown);
   };
 
   if (kind === 'date') {
@@ -29221,6 +29263,7 @@ function linkKindFromHref(rawHref) {
   if (/^glossary:\s*$/i.test(rawHref)) return 'Full glossary';
   if (glossaryAnchorFromHref(rawHref)) return 'Glossary entry';
   if (sameDocumentFragmentHref(rawHref)) return 'In-page jump';
+  if (hrefNamesTheOpenDocument(rawHref)) return 'In-page jump';
   if (/^mailto:/i.test(rawHref)) return 'Email link';
   if (/^https?:\/\//i.test(rawHref)) return 'External site';
   
@@ -29235,6 +29278,31 @@ function linkKindFromHref(rawHref) {
   if (DOCUMENT_HREF_RE.test(rawHref)) return 'Another page';
   
   return 'Opens in another app';
+}
+
+function hrefNamesTheOpenDocument(rawHref) {
+  const href = String(rawHref || '');
+  if (!DOCUMENT_HREF_RE.test(href) || (/^[a-z][a-z0-9+.-]+:/i.test(href) && !/^file:/i.test(href))) return false;
+  const open = activeDocumentPath();
+  if (!open || activeDocumentIsUntitled()) return false;
+  let name = strippedHref(href);
+  try { name = decodeURIComponent(name); } catch (e) {   }
+  if (/^file:/i.test(name)) name = localPathFromFileHref(name);
+  const whole = /^[/\\]/.test(name) || /^[a-z]:[/\\]/i.test(name);
+  const openParts = foldedPathParts(String(open).split(/[\\/]/));
+  const linkParts = foldedPathParts((whole ? [] : openParts.slice(0, -1)).concat(name.split(/[\\/]/)));
+  const fold = (part) => (isMacPlatform ? part : part.toLowerCase());
+  return openParts.length === linkParts.length && openParts.every((part, i) => fold(part) === fold(linkParts[i]));
+}
+
+function foldedPathParts(parts) {
+  const at = [];
+  parts.forEach((part, i) => {
+    if (part === '.' || (part === '' && i > 0)) return;
+    if (part === '..' && at.length && at[at.length - 1] !== '..' && at[at.length - 1] !== '') at.pop();
+    else at.push(part);
+  });
+  return at;
 }
 
 function hoverDetailForKind(kind, rawHref) {

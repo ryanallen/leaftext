@@ -346,7 +346,7 @@ A [Mermaid diagram](01-rendering.md#mermaid-diagrams) in that opening is drawn i
 | --- | --- |
 | Glossary entry | A `glossary:` term link, or a link to `GLOSSARY.md#term`. The entry itself is drawn in the card |
 | Full glossary | A bare `glossary:` link that opens the whole glossary. It draws the file's opening and its length, the same as that file linked by name |
-| In-page jump | A `#fragment` link to a heading on the current page |
+| In-page jump | A `#fragment` link to a heading on the current page, and a link naming the current page by its own file name, such as `DEVS-WITH.md#a-heading` inside `DEVS-WITH.md`, since a press on it only scrolls |
 | Another page | A link to any document Leaftext reads — `.md`, [`.xml`](01-rendering.md#xml), [`.json`, `.yaml`](01-rendering.md#data-files-json-and-yaml), [`.txt`](01-rendering.md#plain-text-files), [`.ini`](01-rendering.md#ini-files), [`.eml`](01-rendering.md#email-eml), a [source file](01-rendering.md#source-files), an [EPUB book](01-rendering.md#epub-books), a [Word, Excel, PowerPoint or OpenDocument file](01-rendering.md#office-and-opendocument-files), and a file with no ending whose opening bytes are text, such as `CHANGELOG` — including a [Previous / Next](#pager) button (its line count is shown too) |
 | External site | An `http://` or `https://` link |
 | Email link | A `mailto:` link |

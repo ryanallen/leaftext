@@ -6354,9 +6354,12 @@ button {
 .tab-modified:focus-within .tab-dirty-dot {
   display: none;
 }
-button:hover {
-  background: var(--lt-navigation-button-hover-background);
-  border-color: var(--lt-navigation-button-hover-background);
+/* A phone keeps :hover on the last button tapped, so the fill waits for a pointer that can hover. */
+@media (hover: hover) {
+  button:hover {
+    background: var(--lt-navigation-button-hover-background);
+    border-color: var(--lt-navigation-button-hover-background);
+  }
 }
 button:disabled {
   border-color: var(--lt-navigation-button-disabled-background);
@@ -6704,10 +6707,13 @@ body.is-library-opening .library-scroll {
   background: transparent;
   color: var(--lt-muted-foreground);
 }
-.library-open:hover {
-  background: var(--lt-navigation-button-hover-background);
-  border-color: var(--lt-navigation-button-hover-background);
-  color: var(--lt-primary-foreground);
+/* Only where a pointer can hover: a phone keeps :hover on the last button tapped, so the toggle stayed lit after the sheet had gone. */
+@media (hover: hover) {
+  .library-open:hover {
+    background: var(--lt-navigation-button-hover-background);
+    border-color: var(--lt-navigation-button-hover-background);
+    color: var(--lt-primary-foreground);
+  }
 }
 .library-open .lt-icon {
   width: 16px;
