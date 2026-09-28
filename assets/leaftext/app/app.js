@@ -10402,7 +10402,7 @@ function libraryViewOf(view) {
     sort: LIBRARY_SORT_WORDS[view && view.sort] ? view.sort : 'name',
     descending: !!(view && view.descending),
     groupByDate: !!(view && view.groupByDate),
-    compact: !!(view && view.compact),
+    compact: !view || view.compact !== false,
     hidden: list(view && view.hidden),
     hidePatterns: list(view && view.hidePatterns),
     hideFields: list(view && view.hideFields),
@@ -10413,15 +10413,15 @@ function libraryViewHides(view) {
   return !!view && (view.hidden.length + view.hidePatterns.length + view.hideFields.length) > 0;
 }
 function libraryViewIsDefault(view) {
-  return !view || (view.sort === 'name' && !view.descending && !view.groupByDate && !view.compact && !view.showHidden && !libraryViewHides(view));
+  return !view || (view.sort === 'name' && !view.descending && !view.groupByDate && view.compact && !view.showHidden && !libraryViewHides(view));
 }
 
 function libraryViewWords(view) {
   const direction = LIBRARY_SORT_DIRECTIONS[view.sort].find((one) => one.descending === view.descending);
   const grouped = view.groupByDate && libraryViewGroups(view) ? ', grouped by date' : '';
-  const compact = view.compact ? ', compact rows' : '';
+  const details = view.compact ? '' : ', details shown';
   const hiding = view.showHidden ? ', hidden rows shown' : (libraryViewHides(view) ? ', some rows hidden' : '');
-  return `Sorted by ${LIBRARY_SORT_WORDS[view.sort]}, ${direction.label.toLowerCase()}${grouped}${compact}${hiding}`;
+  return `Sorted by ${LIBRARY_SORT_WORDS[view.sort]}, ${direction.label.toLowerCase()}${grouped}${details}${hiding}`;
 }
 
 function libraryViewGroups(view) {
@@ -10483,10 +10483,10 @@ function libraryViewMenuItems() {
     run: () => sendFolderView({ groupByDate: !view.groupByDate }),
   });
   items.push({
-    label: 'Compact rows',
+    label: 'Show details',
     switch: true,
-    checked: view.compact,
-    title: 'One line a row, the name and nothing else',
+    checked: !view.compact,
+    title: 'Each file with its title, when it changed and its opening lines',
     run: () => sendFolderView({ compact: !view.compact }),
   });
   return items.concat(['separator'], libraryHideMenuItems(view, sendFolderView, false), ['separator'], libraryArrangementItems());
@@ -28807,9 +28807,23 @@ function homeInvitesAVault() {
 function homeFavoritesDrawn(favorites) {
   if (!homeDropping || !homeDropping.size) return favorites;
   const drawn = favorites.slice();
-  for (const dropped of homeDropping.values()) {
-    drawn.splice(Math.min(dropped.at, drawn.length), 0, dropped.favorite);
+  const waiting = [...homeDropping.values()];
+  const isKnown = (path) => homeDropping.has(path) || favorites.some((one) => one && one.path === path);
+  for (let round = 0; waiting.length && round < homeDropping.size; round += 1) {
+    for (let i = 0; i < waiting.length; ) {
+      const dropped = waiting[i];
+      const at = dropped.before == null || !isKnown(dropped.before)
+        ? drawn.length
+        : drawn.findIndex((one) => one && one.path === dropped.before);
+      if (at < 0) {
+        i += 1;
+        continue;
+      }
+      drawn.splice(at, 0, dropped.favorite);
+      waiting.splice(i, 1);
+    }
   }
+  waiting.forEach((dropped) => drawn.push(dropped.favorite));
   return drawn;
 }
 
@@ -29198,21 +29212,31 @@ document.addEventListener('pointercancel', endHomeRowDrag);
 function pressHomeHeart(path, kind) {
   const key = String(path || '');
   if (!key) return;
+  const drawn = homeFavoritesDrawn(currentFavorites());
+  const at = drawn.findIndex((one) => one && one.path === key);
   const dropped = homeDropping.get(key);
   if (dropped) {
     clearTimeout(dropped.timer);
     homeDropping.delete(key);
     
     toggleFavorite(key, kind);
+    const next = drawn.slice(at + 1).find((one) => one && !homeDropping.has(one.path));
+    if (at >= 0 && next) {
+      const favorites = currentFavorites();
+      const back = favorites.find((one) => one.path === key);
+      const rest = favorites.filter((one) => one.path !== key);
+      rest.splice(rest.findIndex((one) => one.path === next.path), 0, back);
+      currentState.favorites = rest;
+      dropHomeRow(key, next.path);
+    }
     redrawHomeHearts();
     return;
   }
-  const favorites = currentFavorites();
-  const at = favorites.findIndex((one) => one && one.path === key);
   if (at < 0) return;
+  const after = drawn[at + 1];
   homeDropping.set(key, {
-    at,
-    favorite: favorites[at],
+    before: after ? after.path : null,
+    favorite: drawn[at],
     timer: columnTimer(() => endHomeDrop(key), HOME_UNDO_MS),
   });
   toggleFavorite(key, kind);
@@ -29228,6 +29252,10 @@ function endHomeDrop(key) {
   const dropped = homeDropping.get(key);
   if (!dropped) return;
   homeDropping.delete(key);
+  
+  homeDropping.forEach((other) => {
+    if (other.before === key) other.before = dropped.before;
+  });
   
   const going = (homeScreenIsShowing() ? app : homeSheetBody).querySelectorAll('.home-row.is-going');
   let leaving = null;

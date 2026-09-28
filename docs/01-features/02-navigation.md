@@ -39,7 +39,7 @@ Press **+** and enter an address in the field in the middle of the empty page. A
 
 A web tab takes its name from the page's title. Rest the pointer over the app bar to slide its address open, or press **Ctrl+L** to select it. **Enter** opens the new address, **Escape** closes the bar, and **Copy** copies the current address. The bar stays open while you edit and closes after the pointer leaves it and the app bar.
 
-Back, Forward and Refresh control the live page. Closing, switching and dragging work as they do on document tabs. A saved web tab reopens at its last address when you bring it forward. Links asking for a new window open in another web tab. The [minimap](04-minimap.md#web-pages) shows a picture of the page and follows its scroll position.
+Back, Forward and Refresh control the live page. Refresh keeps your place as the page loads, even when its own script adds content later. Closing, switching and dragging work as they do on document tabs. A saved web tab reopens at its last address when you bring it forward. Links asking for a new window open in another web tab. The [minimap](04-minimap.md#web-pages) shows a picture of the page and follows its scroll position.
 
 The live page fits inside the reading card's rounded bottom corners and thin border. Its main scroll bar is hidden because the minimap shows the page's place; scrolling inside a page element still uses that element's own bar. The active web tab takes a solid page background when one is available and chooses readable light or dark letters for it.
 
