@@ -270,6 +270,7 @@ export const COMMANDS = {
   loadPager: [ANSWERED],
   packagedPicture: [ANSWERED],
   enterCodeView: [ANSWERED],
+  selectSourceMember: [REFUSED, 'this published page cannot change a package member; open the file in the desktop app'],
   exitCodeView: [ANSWERED],
   spliceSource: [LATER, 'web-app-commands'],
   updateSource: [LATER, 'web-app-commands'],
@@ -1010,6 +1011,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         drawDocument(held.path, held.bytes);
       }
     },
+    selectSourceMember: () => run("window.leafShowError('Open this package in the desktop app to select another source member.');"),
     // The source is read-only, so the page still standing beneath it can return.
     exitCodeView: ({ renderKey }) => {
       if (!held || held.path !== open) return;

@@ -20,7 +20,7 @@ Leaftext picks a pipeline from the file extension, and from the file's own first
 | [TEI XML](#tei-xml) | Scholarly and archival markup; headings, paragraphs, verse, footnotes |
 | [JSON and YAML](#data-files-json-and-yaml) | Any `.json`, `.yaml`, or `.yml` file, read by the same shape rules as XML |
 | [Email](#email-eml) | Any `.eml`, `.mht`, or `.mhtml` file: headers, the message body, inline images, attachments |
-| [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place — on its first sheet or slide where it has several |
+| [Word, Excel, PowerPoint and OpenDocument](#office-and-opendocument-files) | Any `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp` file, read as the document it is and edited in place — on the slide or sheet selected in the code view where it has several |
 | [EPUB books](#epub-books) | Any `.epub` file, read as one document in the order the book's own package says to read it |
 | [Plain text](#plain-text-files) | Any `.txt` file, kept exactly as typed |
 | [INI](#ini-files) | Any `.ini` file: sections, keys and values, each key drawn as it was written |
@@ -572,7 +572,7 @@ A grid wraps the cards, and each card holds whatever Markdown you like:
 
 `note-card-grid` sets prose cards two across the reading column. Add `note-card-grid-compact` beside it — `<div class="note-card-grid note-card-grid-compact">` — for short cards, three or four across. Cards keep the order you wrote them in, each keeps its own height rather than stretching to its neighbor's, a last card on its own row keeps the width of the ones above it, and when the window is too narrow for two the cards stack into one column.
 
-**The blank lines are load-bearing here too**, for the same reason as in a [framed figure](#framed-figures-leaf-extension): around each wrapper and around every block inside a card. **You do not have to type it**: on an empty line the [plus in the margin](07-editing.md) offers **Cards**, then **Prose cards** (two) or **Compact cards** (four). Each card opens on an empty heading with the caret in the first one, so the first thing you type is the first card's title.
+**The blank lines are load-bearing here too**, for the same reason as in a [framed figure](#framed-figures-leaf-extension): around each wrapper and around every block inside a card. **You do not have to type it**: on an empty line the [plus in the margin](07-editing.md) offers **Cards**, then **Prose cards** (two), **Compact cards** (four) or **Picture cards** (two). Each card opens on an empty heading with the caret in the first one, so the first thing you type is the first card's title.
 
 **A figure in a card** is a one-column table with one row, which reads as a label over its value:
 
@@ -587,6 +587,84 @@ A grid wraps the cards, and each card holds whatever Markdown you like:
 ```
 
 **A color swatch.** A card whose own line is nothing but one code span starting with a color — `` `#14b8a6` `` — is drawn with a band of that color across its top. It takes an opaque hex color in its three- or six-digit spelling, and words may follow it inside the span: `` `#b45309 brand amber` ``. Anything else stays ordinary code: a four- or eight-digit color, one without the `#`, a color written inside a sentence, or a code span beside other words on its line. The band is your color rather than the theme's, like a picture, so it looks the same in light and dark.
+
+**Picture cards.** Add `note-card-grid-pictures` to the grid for cards that each carry a title, a few words, a picture and a More link, the way a set of features is shown on a product page:
+
+<div class="note-card-grid note-card-grid-pictures">
+
+<div class="note-card">
+
+#### Read almost anything
+
+A page you want to read.
+
+<div class="note-card-media">
+
+![Leaftext](../../imgs/leaftext.png)
+
+</div>
+
+<div class="note-card-more">
+
+[More →](#cards-across-the-page-leaf-extension)
+
+</div>
+
+</div>
+
+<div class="note-card">
+
+#### Edit the rendered page
+
+Click into the page and type. A longer description makes this card taller, and the picture and the link still line up with the card beside it.
+
+<div class="note-card-media">
+
+![Leaftext](../../imgs/leaftext.png)
+
+</div>
+
+<div class="note-card-more">
+
+[More →](07-editing.md)
+
+</div>
+
+</div>
+
+</div>
+
+Put the picture in a `note-card-media` wrapper and the link in a `note-card-more` wrapper. **Picture cards** in the plus's Cards row writes two of them empty, with a line to type on for each part. One card filled in reads:
+
+```markdown
+<div class="note-card-grid note-card-grid-pictures">
+
+<div class="note-card">
+
+## Read almost anything
+
+A page you want to read.
+
+<div class="note-card-media">
+
+![A document open in Leaftext](pictures/reading.png)
+
+</div>
+
+<div class="note-card-more">
+
+[More →](reading.md)
+
+</div>
+
+</div>
+
+</div>
+```
+
+Repeat the card for as many as you want. Picture cards sit two across when the reading column has room and one above the next when it does not, never three. Every card in a row is as tall as the tallest one, so however long each description runs, the pictures start at the same height and the More links line up under them. Each picture fills the same wide area, cut from its top left, and hovering it shows the same buttons as any picture alone in its paragraph, so the whole picture is one press away. A card's title, words and link are ordinary Markdown you type in place.
+
+**Leave out what a card does not have.** A card with no picture leaves out its `note-card-media` wrapper and its link follows straight after its words; a card with no link leaves out `note-card-more`. Nothing holds an empty space for the missing part. A picture Leaftext cannot find keeps its own small mark rather than an empty wide area. Long titles, words and links wrap rather than being cut off.
 
 **Anywhere else, it is still a document.** A reader that has never heard of Leaftext drops the classes and draws every card's contents one after the next, in the order you wrote them, with nothing arriving as visible syntax — a swatch card is its heading and its code line.
 
@@ -719,6 +797,7 @@ version: "1.0"                     # quoted, so text — bare 1.0 is a number
 - Only the **leading** block counts; a later `---` is a horizontal rule.
 - Malformed frontmatter still renders — just without the table.
 - **Nested fields are not read.** A `person:` with `name:` indented under it is refused rather than turned into a top-level `name`, and a key set twice keeps the first. Anything the block could not read arrives as one message when the note opens.
+- **The table waits behind a small `Frontmatter` edge above the title**, so a note opens on its own first line rather than on its fields. Rest the pointer on the edge and the sheet drops far enough to show the first field; press it and the whole table opens in a sheet hung from the top, over the page, until its close button, `Escape` or a press outside puts it away. The page does not move under any of the three, and a note with no fields shows no edge at all.
 - **The table is edited in place**, and so is the document under it — see [the fields at the top of a note](07-editing.md#the-fields-at-the-top-of-a-note).
 
 ### Collapsible sections
@@ -955,7 +1034,7 @@ Leaftext opens `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.o
 
 **An edit is written back into the file it came out of, and nothing else in that file is touched.** Only the part holding the words is rewritten; the styles, the theme, the comments, the tracked changes, the charts and the macros are copied across exactly as they were. Charts are read from their saved numbers without rewriting them. An OpenDocument file keeps the first part that says what it is, in the place a computer looks for it.
 
-A document with more than one part of words — a workbook of several sheets, a deck of several slides — is read whole and typed into on its first sheet or first slide. A block anywhere else is read rather than typed into, the same treatment a value the app cannot vouch for gets in a data file. So nothing has to be pressed to find out which is which: with the padlock open, every block that can be typed in wears a thin accent bar on its leading edge, and the app says once, as the padlock opens, that the rest is read in the page and edited in the source view. A Word file or an OpenDocument file keeps all its words in one part, so it wears no bar and hears nothing. The [code view](07-editing.md#code-view) shows the XML of the part the page is anchored to.
+A document with more than one part of words — a workbook of several sheets, a deck of several slides — is read whole and typed into on the sheet or slide selected in the [code view](07-editing.md#code-view). The first part is selected when the file opens. A block anywhere else is read rather than typed into, the same treatment a value the app cannot vouch for gets in a data file. So nothing has to be pressed to find out which is which: with the padlock open, every block that can be typed in wears a thin accent bar on its leading edge, and the app says once, as the padlock opens, that the rest is read in the page and edited in the source view. A Word file or an OpenDocument file keeps all its words in one part, so it wears no bar and hears nothing. The code view names the XML part it shows and lets you choose another readable slide or sheet.
 
 A cell in a spreadsheet is typed into where it is drawn. Excel keeps almost every cell's text in one shared table rather than in the sheet, so what Leaftext writes is the cell itself, saying its own words: a cell that shared its text with another one stops sharing it, and the other cell reads what it always read.
 

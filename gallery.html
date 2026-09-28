@@ -9951,6 +9951,63 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body .note-card > :last-child {
   margin-bottom: 0;
 }
+/* Picture cards: one column, two where the reader has room and never three, and every card in a row as tall as the tallest so the pictures and More links line up however long each description runs. */
+.document-body .note-card-grid.note-card-grid-pictures {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: var(--lt-space-24);
+}
+@container (min-width: 600px) {
+  .document-body .note-card-grid.note-card-grid-pictures {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.document-body .note-card-grid-pictures > .note-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--lt-space-24);
+  border-radius: var(--lt-radius-xl);
+}
+/* The card's title, without the rule a document's h2 wears. */
+.document-body .note-card-grid-pictures > .note-card > :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--lt-markdown-heading-3);
+  border-bottom: none;
+  padding-bottom: 0;
+  margin: 0 0 var(--lt-space-8);
+  font-size: var(--type-h4-size);
+  line-height: var(--type-h3-line);
+  font-weight: var(--lt-weight-600);
+  letter-spacing: var(--lt-tracking-tight-01);
+}
+.document-body .note-card-grid-pictures > .note-card > p {
+  color: var(--lt-muted-foreground);
+}
+/* The automatic top margin takes up whatever the description left, so the picture starts at the same height in every card of the row. */
+.document-body .note-card-grid-pictures .note-card-media {
+  margin-top: auto;
+}
+.document-body .note-card-grid-pictures .note-card-media > p {
+  margin: 0;
+}
+/* Only a picture that arrived: the mark goes on in decorate.js, so an empty line or the missing-picture glyph keeps its own size. The top of the picture is where the subject is, the way the front page's clips are cut. */
+.document-body .note-card-grid-pictures .note-card-media > p.image-lane {
+  position: relative;
+  aspect-ratio: 16 / 10;
+}
+.document-body .note-card-grid-pictures .note-card-media > p.image-lane > img {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: cover;
+  object-position: top left;
+  border-radius: var(--lt-radius-md);
+}
+.document-body .note-card-grid-pictures .note-card-more {
+  margin-top: var(--lt-space-16);
+}
+.document-body .note-card-grid-pictures .note-card-more > p {
+  margin: 0;
+}
 
 /* What the Grove sells for the page. Each is one class on the document's body, written by `profile.js` from the unlocks switched on, so turning one on or off restyles one element. */
 /* The capped paragraph holds its own float, so a paragraph shorter than the cap does not push the next block aside. */
@@ -10960,6 +11017,47 @@ body.is-block-dragging .document-body [data-src-start] {
   position: absolute;
   inset: var(--app-bar-height) 0 0 0;
 }
+.code-view-source-wrap {
+  position: absolute;
+  inset: var(--app-bar-height) 0 0 0;
+  display: flex;
+  flex-direction: column;
+}
+.code-view-source-wrap .code-view-monaco {
+  position: relative;
+  inset: auto;
+  flex: 1;
+  min-height: 0;
+}
+.code-member-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-2);
+  margin-right: calc(var(--cv-minimap-width, 0px) + var(--cv-minimap-standoff));
+  padding: var(--lt-space-2) var(--lt-space-4);
+  color: var(--lt-foreground);
+  background: var(--lt-syntax-background);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  z-index: var(--lt-z-20);
+}
+.code-member-label {
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-500);
+}
+.code-member-picker,
+.code-member-name {
+  color: var(--lt-foreground);
+  font: inherit;
+}
+.code-member-picker {
+  max-width: 100%;
+  min-width: 0;
+  background: var(--lt-syntax-background);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  padding: var(--lt-space-1) var(--lt-space-2);
+}
 /* Neither box that carries editor.background may paint: both cover the minimap rail as well as the text, and neither can be stopped at the divider — the root box is the whole editor, and the lines layer is a 16,777,216px square bounded only by the overflow guard around it. The shell's ::before paints the page instead. That is all it takes, because the minimap's canvas writes only the pixels a glyph lands in and fills no background of its own — what looked like the map's background was always one of these two behind it. Off, the rail shows the shell's grain between the map's lines: text on the chrome, as the reading view's rail has always drawn it. */
 .code-view-monaco .monaco-editor,
 .code-view-monaco .monaco-editor .monaco-editor-background {
@@ -11677,6 +11775,53 @@ th.image-cell {
   cursor: default;
   font-family: var(--app-font);
   font-weight: var(--lt-weight-700);
+}
+/* The slot the field block's top sheet hangs in: as tall as the resting handle, so the document starts one line down and never moves when the sheet drops over it. Above the runs that follow, which are positioned too and would otherwise paint over the drop. */
+.document-body .frontmatter-sheet {
+  --top-sheet-rest: calc(var(--lt-text-12) * var(--lt-leading-1-5) + var(--lt-space-8) * 2);
+  position: relative;
+  z-index: 2;
+  height: var(--top-sheet-rest);
+  margin: 0 0 var(--type-spacing);
+}
+/* Open, the slot rises over the reader's edge fades too, so the scrim dims them with the rest of the page rather than leaving two pale bands across it. */
+.document-body .frontmatter-sheet.is-open {
+  z-index: 5;
+}
+.frontmatter-handle {
+  flex: none;
+  padding: var(--lt-space-8) var(--lt-space-16);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-5);
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color var(--lt-duration-120) var(--lt-ease);
+}
+.leaf-top-sheet.is-preview .frontmatter-handle,
+.leaf-top-sheet.open .frontmatter-handle {
+  color: var(--lt-foreground);
+}
+.frontmatter-handle:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-shadow-focus);
+}
+/* The preview's room under the first field would otherwise show the top of the second one, cut through. */
+.document-body .leaf-top-sheet.is-preview .frontmatter tr:not(:first-child) {
+  visibility: hidden;
+}
+/* Inside the sheet the table takes the sheet's padding instead of the page's gap under it. */
+.document-body .leaf-top-sheet .frontmatter {
+  flex: none;
+  margin: 0;
+  padding: 0 var(--lt-space-16) var(--lt-space-12);
+}
+.document-body .leaf-top-sheet .frontmatter table {
+  margin: 0;
 }
 /* The leading frontmatter block is already a key-and-value card: small Noto Sans (the UI font), tight rows, no table chrome — distinct from body. */
 .document-body .frontmatter {
@@ -13647,6 +13792,54 @@ p.front-more {
 .leaf-sheet-close .lt-icon {
   width: 18px;
   height: 18px;
+}
+/* A sheet hung from the top edge of what it belongs to rather than risen from the window's foot. It rests as its handle alone, drops far enough on a hover to show what it holds, and opens whole over the scrim. It is laid over what follows it rather than pushing it down, so none of the three moves the page under it; its owner sizes the slot it hangs in to the resting height. */
+.leaf-top-sheet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: var(--top-sheet-rest);
+  overflow: hidden;
+  border: var(--lt-stroke-1) solid transparent;
+  border-top: 0;
+  border-radius: 0 0 var(--lt-radius-2xl) var(--lt-radius-2xl);
+  background-color: transparent;
+  /* Folding away, so it accelerates and is over sooner than the drop. */
+  transition: max-height var(--lt-duration-200) var(--lt-ease-accelerate), background-color var(--lt-duration-200) var(--lt-ease-accelerate), border-color var(--lt-duration-200) var(--lt-ease-accelerate);
+}
+.leaf-top-sheet.is-preview,
+.leaf-top-sheet.open {
+  border-color: var(--lt-border);
+  background-color: var(--lt-surface-elevated);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-repeat: repeat;
+  background-attachment: fixed;
+  transition: max-height var(--lt-duration-260) var(--lt-ease-sheet), background-color var(--lt-duration-200) var(--lt-ease-decelerate), border-color var(--lt-duration-200) var(--lt-ease-decelerate);
+}
+/* The first field and no more: the page measures where the first row ends and writes it here, and the fallback is the handle and a row's worth under it. */
+.leaf-top-sheet.is-preview {
+  max-height: var(--top-sheet-preview, calc(var(--top-sheet-rest) + var(--lt-space-32)));
+}
+/* Over its own scrim, as tall as a bottom sheet is ever allowed to be, and scrolling inside itself past that. */
+.leaf-top-sheet.open {
+  z-index: var(--lt-z-41);
+  max-height: 78vh;
+  overflow-y: auto;
+}
+.leaf-top-sheet-close {
+  display: none;
+  position: absolute;
+  top: var(--lt-space-4);
+  right: var(--lt-space-8);
+}
+.leaf-top-sheet.open .leaf-top-sheet-close {
+  display: grid;
 }
 .glossary-sheet > .leaf-sheet-close,
 .flow-picker > .leaf-sheet-close {
@@ -16876,6 +17069,21 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
     break-before: page;
   }
 }
+/* Paper cannot be pointed at or pressed, so a note's fields print laid flat where the page draws the resting handle: the whole table in the slot's place, with no scrim, no close button and no sheet surface. */
+body.leaf-paper .frontmatter-sheet {
+  height: auto;
+}
+body.leaf-paper .leaf-top-sheet {
+  position: static;
+  max-height: none;
+  overflow: visible;
+  border-color: transparent;
+  background: none;
+}
+body.leaf-paper .frontmatter-handle,
+body.leaf-paper .leaf-top-sheet-close {
+  display: none;
+}
 </style>
 <style>
   html, body { overflow: visible; height: auto; }
@@ -16926,7 +17134,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 181 values that do not change with the theme, all 78 icons, and all 129 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 181 values that do not change with the theme, all 78 icons, and all 134 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -16958,7 +17166,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>181</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>129</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>134</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -17370,7 +17578,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">129 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">134 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Web address</h3><code class="built">.web-address</code><span class="built">web-address.js — an empty tab's address or search field, and the live tab's editable address</span></header>
 <div class="stage"><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" placeholder="Search Google or enter an address"></div></div>
@@ -17460,16 +17668,24 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="document-body"><figure class="note-frame"><div class="note-frame-head">Cost of a cover<span class="note-frame-aside">Per 1,000 covers</span></div><p>The body holds whatever blocks the writer put in the box &mdash; prose, a list, a table or a diagram &mdash; and each keeps the drawing it already has.</p><ul><li>A first point.</li><li>A second point.</li></ul><figcaption class="note-frame-caption">A caption under a line, on a sunken strip.</figcaption></figure></div></div>
 </section>
 <section class="part">
-<header><h3>Document card grid</h3><code class="built">.note-card-grid</code><span class="built">The note's own author, from a note-card-grid wrapper in the document, or note-card-grid note-card-grid-compact for short cards</span></header>
-<div class="stage"><div class="document-body"><div class="note-card-grid"><div class="note-card"><h2>Can do today</h2><ul><li>Read a note</li><li>Edit it in place</li></ul></div><div class="note-card"><h2>Cannot do today</h2><ul><li>Sync a vault</li><li>Share a link</li><li>Print a range</li><li>Record a voice note</li></ul></div></div><div class="note-card-grid note-card-grid-compact"><div class="note-card"><p>Readers</p><p><strong>1,204</strong></p></div><div class="note-card"><p>Notes</p><p><strong>86</strong></p></div><div class="note-card"><p>Vaults</p><p><strong>3</strong></p></div><div class="note-card"><p>Themes</p><p><strong>12</strong></p></div></div></div></div>
+<header><h3>Document card grid</h3><code class="built">.note-card-grid</code><span class="built">The note's own author, from a note-card-grid wrapper in the document, note-card-grid note-card-grid-compact for short cards, or note-card-grid note-card-grid-pictures for picture cards — at most two across, each row as tall as its tallest card</span></header>
+<div class="stage"><div class="document-body"><div class="note-card-grid"><div class="note-card"><h2>Can do today</h2><ul><li>Read a note</li><li>Edit it in place</li></ul></div><div class="note-card"><h2>Cannot do today</h2><ul><li>Sync a vault</li><li>Share a link</li><li>Print a range</li><li>Record a voice note</li></ul></div></div><div class="note-card-grid note-card-grid-compact"><div class="note-card"><p>Readers</p><p><strong>1,204</strong></p></div><div class="note-card"><p>Notes</p><p><strong>86</strong></p></div><div class="note-card"><p>Vaults</p><p><strong>3</strong></p></div><div class="note-card"><p>Themes</p><p><strong>12</strong></p></div></div><div class="note-card-grid note-card-grid-pictures"><div class="note-card"><h2>Read almost anything</h2><p>A page you want to read.</p><div class="note-card-media"><p class="image-lane"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='400'%3E%3Crect width='640' height='400' fill='%23b7c4b0'/%3E%3C/svg%3E" alt="A document open in Leaftext"><span class="image-lane-corner" style="opacity:1"><button type="button" class="image-sheet-open"><span class="lt-icon lt-icon-expand"></span></button><button type="button" class="image-export-open"><span class="lt-icon lt-icon-export"></span></button></span></p></div><div class="note-card-more"><p><a href="#">More →</a></p></div></div><div class="note-card"><h2>Edit the rendered page</h2><p>Click into the page and type. A longer description makes this card taller, and the picture and link still line up.</p><div class="note-card-media"><p class="image-lane"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='400'%3E%3Crect width='640' height='400' fill='%23b7c4b0'/%3E%3C/svg%3E" alt="A document open in Leaftext"><span class="image-lane-corner" style="opacity:1"><button type="button" class="image-sheet-open"><span class="lt-icon lt-icon-expand"></span></button><button type="button" class="image-export-open"><span class="lt-icon lt-icon-export"></span></button></span></p></div><div class="note-card-more"><p><a href="#">More →</a></p></div></div></div></div></div>
 </section>
 <section class="part">
-<header><h3>Document card</h3><code class="built">.note-card</code><span class="built">The note's own author, from a note-card wrapper inside a card grid</span></header>
+<header><h3>Document card</h3><code class="built">.note-card</code><span class="built">The note's own author, from a note-card wrapper inside a card grid; inside a picture grid it is a column with an unruled title, quiet words, the picture pushed to the same height across the row and the link below it</span></header>
 <div class="stage"><div class="document-body"><div class="note-card-grid"><div class="note-card"><h2>A card</h2><p>Whatever Markdown the writer put in it, keeping its own drawing.</p></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Document swatch card</h3><code class="built">.note-card</code><span class="built">decorateNoteCards in decorate.js, from a card whose own paragraph is one code span starting with an opaque #RGB or #RRGGBB</span></header>
 <div class="stage"><div class="document-body"><div class="note-card-grid note-card-grid-compact"><div class="note-card is-swatch-card" style="--note-card-swatch:#14b8a6"><h3>Teal</h3><p><code>#14b8a6</code></p></div><div class="note-card is-swatch-card" style="--note-card-swatch:#b45309"><h3>Amber</h3><p><code>#b45309 brand</code></p></div><div class="note-card is-swatch-card" style="--note-card-swatch:#f0a"><h3>Pink</h3><p><code>#f0a</code></p></div><div class="note-card"><h3>Not a swatch</h3><p>A color like <code>#3b82f6</code> inside a sentence stays words.</p></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Document card media</h3><code class="built">.note-card-media</code><span class="built">The note's own author, from a note-card-media wrapper around one Markdown picture in a picture card; decorate.js marks a picture that arrived with image-lane so it fills a 16:10 area cut from its top left and wears the picture corner, and a missing one keeps its own glyph</span></header>
+<div class="stage"><div class="document-body"><div class="note-card-grid note-card-grid-pictures"><div class="note-card"><h2>A title</h2><p>Words.</p><div class="note-card-media"><p class="image-lane"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='400'%3E%3Crect width='640' height='400' fill='%23b7c4b0'/%3E%3C/svg%3E" alt="A document open in Leaftext"><span class="image-lane-corner" style="opacity:1"><button type="button" class="image-sheet-open"><span class="lt-icon lt-icon-expand"></span></button><button type="button" class="image-export-open"><span class="lt-icon lt-icon-export"></span></button></span></p></div><div class="note-card-more"><p><a href="#">More →</a></p></div></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Document card footer</h3><code class="built">.note-card-more</code><span class="built">The note's own author, from a note-card-more wrapper around the Markdown More link at the foot of a picture card</span></header>
+<div class="stage"><div class="document-body"><div class="note-card-grid note-card-grid-pictures"><div class="note-card"><h2>No picture</h2><p>A card with no picture puts its link straight after its words.</p><div class="note-card-more"><p><a href="#">More →</a></p></div></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Flowchart sheet</h3><code class="built">.flow-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js</span></header>
@@ -17672,6 +17888,10 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <div class="stage"><div class="code-frame"><div class="code-toolbar"><button type="button" class="code-copy">Copy</button></div></div></div>
 </section>
 <section class="part">
+<header><h3>Source member</h3><code class="built">.code-member</code><span class="built">code-view.js</span></header>
+<div class="stage"><div class="code-view-source-wrap"><div class="code-member-bar"><label class="code-member-label" for="codeMemberPicker">Source member</label><select id="codeMemberPicker" class="code-member-picker"><option>ppt/slides/slide1.xml</option></select></div><div class="code-view-monaco"></div></div></div>
+</section>
+<section class="part">
 <header><h3>Pinned headings</h3><code class="built">.code-sticky</code><span class="built">code-sticky.js</span></header>
 <div class="stage"><div class="code-sticky"><div class="code-sticky-row">A pinned heading</div></div></div>
 </section>
@@ -17718,6 +17938,14 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 <section class="part">
 <header><h3>Bottom sheet</h3><code class="built">.leaf-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js, theme.js and glossary.js</span></header>
 <div class="stage"><div class="leaf-sheet open" style="position:static"><span class="sheet-shadow-face" aria-hidden="true"></span><span class="sheet-shadow-band sheet-shadow-band-top" aria-hidden="true"></span><span class="sheet-shadow-band sheet-shadow-band-bottom" aria-hidden="true"></span><span class="sheet-shadow-band sheet-shadow-band-left" aria-hidden="true"></span><span class="sheet-shadow-band sheet-shadow-band-right" aria-hidden="true"></span><div class="leaf-sheet-grip"></div><button type="button" class="leaf-sheet-close" style="align-self:flex-end"><span class="lt-icon lt-icon-close"></span></button><p style="padding:0 20px 20px">Whatever the sheet is for goes here: a theme picker, a glossary entry, a flowchart.</p></div></div>
+</section>
+<section class="part">
+<header><h3>Top sheet</h3><code class="built">.leaf-top-sheet</code><span class="built">frontmatter-sheet.js — hung from the top of what it belongs to: its handle alone at rest, the first row on a hover, everything over the scrim once pressed</span></header>
+<div class="stage"><div style="position:relative;height:120px"><div class="leaf-top-sheet open" style="position:static;max-height:none"><div class="frontmatter-handle">Frontmatter</div><button type="button" class="leaf-sheet-close leaf-top-sheet-close" aria-label="Close"><span class="lt-icon lt-icon-close"></span></button><p style="padding:0 16px 12px;margin:0">Whatever the sheet holds goes here.</p></div></div></div>
+</section>
+<section class="part">
+<header><h3>Frontmatter sheet</h3><code class="built">.frontmatter-sheet</code><span class="built">markdown/mod.rs draws it round the field table, frontmatter-sheet.js binds its handle</span></header>
+<div class="stage"><div class="document-body"><div class="frontmatter-sheet" style="height:auto"><div class="leaf-top-sheet is-preview" style="position:static;max-height:none"><div class="frontmatter-handle" role="button" tabindex="0">Frontmatter</div><div class="frontmatter"><table><tbody><tr><th>title</th><td>Design system</td></tr></tbody></table></div></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Sheet scrim</h3><code class="built">.lt-backdrop</code><span class="built">app-shell.html</span></header>

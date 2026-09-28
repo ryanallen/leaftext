@@ -41,6 +41,10 @@ A web tab takes its name from the page's title. Rest the pointer over the app ba
 
 Back, Forward and Refresh control the live page. Closing, switching and dragging work as they do on document tabs. A saved web tab reopens at its last address when you bring it forward. Links asking for a new window open in another web tab. The [minimap](04-minimap.md#web-pages) shows a picture of the page and follows its scroll position.
 
+The live page fits inside the reading card's rounded bottom corners and thin border. Its main scroll bar is hidden because the minimap shows the page's place; scrolling inside a page element still uses that element's own bar. The active web tab takes a solid page background when one is available and chooses readable light or dark letters for it.
+
+The view bar stands over a web tab with **Reading** and **Code**. **Code** shows the page's markup the way a browser's Inspect does — the page as it stands now, including what its own script built, one element to a line and indented by depth. It is read-only, since there is no file behind it; find works as it does on a document. It is a copy taken when you press **Code**, so **Refresh** and **Code** again take a fresh one. **Reading** brings the live page back.
+
 ## Model
 
 ```mermaid

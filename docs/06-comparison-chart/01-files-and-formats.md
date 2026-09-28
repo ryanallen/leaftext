@@ -231,6 +231,7 @@
 | Type in Word paragraphs | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Type in spreadsheet cells | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Part XML in source | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Choose source slide/sheet | [✅][l-office-editing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No sign-in needed | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | One zip reader | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Every zip member kind | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -307,6 +308,7 @@
 [l-plain]: ../01-features/01-rendering.md#plain-text-files
 [l-eml]: ../01-features/01-rendering.md#email-eml
 [l-office]: ../01-features/01-rendering.md#office-and-opendocument-files
+[l-office-editing]: ../01-features/07-editing.md#code-view
 [l-epub]: ../01-features/01-rendering.md#epub-books
 [l-source]: ../01-features/01-rendering.md#source-files
 [l-enc]: ../01-features/01-rendering.md#file-encodings

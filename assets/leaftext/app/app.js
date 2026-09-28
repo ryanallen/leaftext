@@ -326,7 +326,35 @@ let libraryOutlineOpen = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
   bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0,
-  metrics: null, image: '', railTab: null };
+  metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map() };
+function pruneWebTabPalettes(state) {
+  const ids = new Set((state.tabs || []).filter(tab => tab.kind === 'web').map(tab => tab.webId));
+  for (const id of webAddressState.palettes.keys()) if (!ids.has(id)) webAddressState.palettes.delete(id);
+  for (const id of webAddressState.paletteGenerations.keys()) if (!ids.has(id)) webAddressState.paletteGenerations.delete(id);
+}
+function webTabPaletteStyle(tab, active) {
+  if (!active) return '';
+  const palette = webAddressState.palettes.get(tab.webId);
+  const fill = palette ? palette.fill : 'var(--lt-background)';
+  const ink = palette ? palette.ink : 'var(--lt-foreground)';
+  return ` style="--tab-page-fill:${fill};--tab-page-ink:${ink}"`;
+}
+window.leafWebPalette = payload => {
+  if (!payload || !Number.isSafeInteger(payload.id) || payload.id <= 0 || !Number.isSafeInteger(payload.generation)) return;
+  const tab = currentState && (currentState.tabs || []).find(one => one.kind === 'web' && one.webId === payload.id);
+  if (!tab) return;
+  const last = webAddressState.paletteGenerations.get(payload.id) || 0;
+  if (payload.generation < last) return;
+  webAddressState.paletteGenerations.set(payload.id, payload.generation);
+  const fill = pageCanvasColor(payload.readings);
+  if (fill) {
+    const ink = colorContrast(fill, '#000') >= colorContrast(fill, '#fff') ? '#000' : '#fff';
+    webAddressState.palettes.set(payload.id, {fill, ink});
+  } else {
+    webAddressState.palettes.delete(payload.id);
+  }
+  if (activeWebTab()?.webId === payload.id) renderTabs(currentState);
+};
 function activeWebTab() {
   const tab = currentState && currentState.tabs && currentState.tabs[currentState.active];
   return tab && tab.kind === 'web' ? tab : null;
@@ -390,9 +418,13 @@ function scheduleWebSurfaceBounds() {
       if (owner && typeof owner === 'object' && (owner.isConnected === false || owner.hidden)) webAddressState.covers.delete(owner);
     }
     const cell = app.getBoundingClientRect();
+    const cardStyle = getComputedStyle(app);
+    const left = cell.left + parseFloat(cardStyle.borderLeftWidth || 0);
+    const bottom = cell.bottom - parseFloat(cardStyle.borderBottomWidth || 0);
+    const cardRight = cell.right - parseFloat(cardStyle.borderRightWidth || 0);
     const bar = appBar.getBoundingClientRect();
     const ratio = window.devicePixelRatio || 1;
-    let top = Math.max(cell.top, bar.bottom);
+    let top = Math.max(cell.top + parseFloat(cardStyle.borderTopWidth || 0), bar.bottom);
     const addressBar = webAddressState.bar;
     if (addressBar && tab) {
       const surface = appSurface.getBoundingClientRect();
@@ -402,11 +434,13 @@ function scheduleWebSurfaceBounds() {
       top = Math.max(top, addressBar.getBoundingClientRect().bottom);
     }
     const rail = readerMinimap && !readerMinimap.hidden ? readerMinimap.getBoundingClientRect() : null;
-    const right = rail && rail.width > 0 ? Math.min(cell.right, rail.left) : cell.right;
+    const right = rail && rail.width > 0 ? Math.min(cardRight, rail.left) : cardRight;
+    const radius = Math.max(0, parseFloat(cardStyle.borderBottomLeftRadius || 0));
     const bounds = {
-      command: 'webSurfaceBounds', x: Math.max(0, Math.round(cell.left * ratio)),
-      y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round((right - cell.left) * ratio)),
-      height: Math.max(0, Math.round((cell.bottom - top) * ratio)),
+      command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
+      y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round(right * ratio) - Math.round(left * ratio)),
+      height: Math.max(0, Math.round(bottom * ratio) - Math.round(top * ratio)),
+      radius: Math.max(0, Math.round(radius * ratio)),
       visible: !!tab && webAddressState.covers.size === 0,
     };
     const spelling = JSON.stringify(bounds);
@@ -429,6 +463,8 @@ function renderWebSurface(state) {
   webAddressState.metrics = null;
   webAddressState.image = '';
   webAddressState.railTab = tab;
+  
+  updateEditingChrome();
   drawWebMinimap();
   syncWebAddressBar();
   scheduleWebSurfaceBounds();
@@ -544,7 +580,8 @@ function webRailTarget(metrics, geometry, position, offset) {
   return (position + shift) / geometry.scale - metrics.viewport / 2;
 }
 function drawWebMinimap() {
-  if (!activeWebTab()) return;
+  
+  if (!activeWebTab() || codeViewActive) return;
   if (window.innerWidth <= 720) { setMinimapMarkup(''); return; }
   setMinimapMarkup(documentMinimapMarkup().replace(' is-loading', ''));
   const rail = currentMinimap();
@@ -606,7 +643,7 @@ function updateWebMinimap() {
     scrollable:Math.max(0, metrics.height-metrics.viewport), viewportHeight:metrics.viewport, previewScale:scale, trackHeight:height}, null);
 }
 window.leafWebMinimap = payload => {
-  if (!activeWebTab() || !payload || !payload.metrics) return;
+  if (!activeWebTab() || codeViewActive || !payload || !payload.metrics) return;
   webAddressState.metrics = payload.metrics;
   if (typeof payload.image === 'string' && payload.image !== webAddressState.image) {
     webAddressState.image = payload.image;
@@ -11186,9 +11223,13 @@ function applyGraphView() {
   writeViewFades();
   
   drawPaneWidths(paneDrawingState(), libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth));
-  renderReaderToolbar(!!activeDocumentPath());
+  renderReaderToolbar(readerViewsStand());
   
   if (!graphViewOpen) runHeldReadingLanding();
+}
+
+function readerViewsStand() {
+  return Boolean(activeDocumentPath() || activeWebTab());
 }
 
 function renderExportPdfAction(hasDocument) {
@@ -11202,12 +11243,14 @@ function renderExportPdfAction(hasDocument) {
 
 
 
-function renderReaderToolbar(hasDocument) {
-  renderExportPdfAction(hasDocument);
+function renderReaderToolbar(viewsStand) {
+  
+  renderExportPdfAction(viewsStand && !activeWebTab());
   if (!readerToolbar) return;
-  readerToolbar.hidden = !hasDocument;
-  document.body.classList.toggle('has-reader-toolbar', Boolean(hasDocument));
-  if (!hasDocument) {
+  readerToolbar.hidden = !viewsStand;
+  document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
+  if (viewGraphButton) viewGraphButton.hidden = Boolean(activeWebTab());
+  if (!viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
     readerToolTrayTouchOpen = '';
     syncReaderToolDividerState();
@@ -11237,7 +11280,7 @@ function renderReaderToolbar(hasDocument) {
 function clearPendingReaderView() {
   if (!pendingReaderView) return;
   pendingReaderView = null;
-  renderReaderToolbar(!!activeDocumentPath());
+  renderReaderToolbar(readerViewsStand());
 }
 const GRAPH_ERROR = 'Graph failed to load.';
 const GRAPH_SCOPES = ['small', 'medium', 'large', 'xl'];
@@ -11384,7 +11427,9 @@ function viewLockTooltip(onCodeView) {
 function renderViewTools(current) {
   
   endReaderToolTrayMotion();
-  const editable = current === 'reading' || current === 'code';
+  
+  const onWebTab = Boolean(activeWebTab());
+  const editable = !onWebTab && (current === 'reading' || current === 'code');
   const onGraph = current === 'graph';
   if (graphScopeTool) graphScopeTool.hidden = !onGraph;
   if (readerLockButton) {
@@ -11400,10 +11445,10 @@ function renderViewTools(current) {
   }
   if (speedReaderButton) {
     
-    speedReaderButton.hidden = current !== 'reading' || readingIsContainedPage();
+    speedReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
     setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
   }
-  renderCodeTools(current === 'code');
+  renderCodeTools(current === 'code' && !onWebTab);
   showViewToolsIfAny();
   anchorToolTray(current);
 }
@@ -11490,7 +11535,7 @@ function setCodeUnlocked(unlocked) {
   codeUnlocked = next;
   send({ command: 'setCodeUnlocked', enabled: codeUnlocked });
   applyCodeViewReadOnly();
-  renderReaderToolbar(!!activeDocumentPath());
+  renderReaderToolbar(readerViewsStand());
 }
 
 if (readerLockButton) {
@@ -11514,7 +11559,7 @@ if (speedReaderButton) {
 
 function setReaderView(view) {
   pendingReaderView = view;
-  renderReaderToolbar(!!activeDocumentPath());
+  renderReaderToolbar(readerViewsStand());
   if (view === 'graph') {
     
     if (codeViewActive) toggleCodeView();
@@ -11534,7 +11579,7 @@ function setReaderView(view) {
     window.requestAnimationFrame(() =>
       columnFrame(() => {
         setGraphView(false);
-        renderReaderToolbar(!!activeDocumentPath());
+        renderReaderToolbar(readerViewsStand());
         window.requestAnimationFrame(() => clearReaderLoading('graph'));
       })
     );
@@ -11543,7 +11588,7 @@ function setReaderView(view) {
   setGraphView(false);
   
   if ((view === 'code') !== codeViewActive) toggleCodeView();
-  renderReaderToolbar(!!activeDocumentPath());
+  renderReaderToolbar(readerViewsStand());
 }
 for (const button of [viewReadingButton, viewCodeButton, viewGraphButton]) {
   if (!button) continue;
@@ -14399,6 +14444,7 @@ function renderTabs(state) {
     return;
   }
   const tabs = state.tabs || [];
+  pruneWebTabPalettes(state);
   const active = state.active;
   
   tabs.forEach((tab) => {
@@ -14409,7 +14455,7 @@ function renderTabs(state) {
   });
   const markup = tabs.map((tab, index) => {
     if (tab.kind === 'web') {
-      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${tabCloseMarkup(index)}</span>`;
+      return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""${webTabPaletteStyle(tab, index === active)}><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${tabCloseMarkup(index)}</span>`;
     }
     const favorite = isFavoritePath(tab.path);
     const mark = favorite ? 'Unfavorite' : 'Favorite';
@@ -14592,7 +14638,7 @@ if (readerToolbar) new ResizeObserver(holdViewButtonsStill).observe(readerToolba
 function updateEditingChrome() {
   const path = activeDocumentPath();
   const hasDocument = !!path;
-  renderReaderToolbar(hasDocument);
+  renderReaderToolbar(readerViewsStand());
   if (saveButton) {
     
     saveButton.hidden = !(hasDocument && isDocumentDirty(path));
@@ -14942,7 +14988,17 @@ function scrollReadingToSrcOffset(srcOffset) {
 }
 
 
+function toggleWebCodeView() {
+  beginReaderLoading();
+  send({ command: codeViewActive ? 'exitCodeView' : 'enterCodeView' });
+}
+
+
 function toggleCodeView() {
+    if (activeWebTab()) {
+      toggleWebCodeView();
+      return;
+    }
     const path = activeDocumentPath();
     if (!path) return;
     const handoff = viewHandoffFor(path);
@@ -15478,9 +15534,14 @@ function monacoEditorPadding() {
 }
 
 
+function codeViewIsLocked() {
+  return !codeUnlocked || Boolean(activeWebTab());
+}
+
+
 function applyCodeViewReadOnly() {
   if (!monacoEditor) return;
-  monacoEditor.updateOptions({ readOnly: !codeUnlocked });
+  monacoEditor.updateOptions({ readOnly: codeViewIsLocked() });
 }
 
 
@@ -15491,7 +15552,7 @@ function growlLockedForReading() {
   if (now - lastLockedGrowl < LOCKED_GROWL_GAP_MS) return;
   lastLockedGrowl = now;
   leafToast(
-    hostRefusesCodeUnlock()
+    hostRefusesCodeUnlock() || activeWebTab()
       ? "This page's source can be read here, not edited."
       : 'The source is locked. Click the padlock in the toolbar to edit it.'
   );
@@ -15541,7 +15602,7 @@ function createMonacoEditor(monaco, container, state, text) {
     wordWrap: 'bounded',
     wordWrapColumn: 120,
     
-    readOnly: !codeUnlocked,
+    readOnly: codeViewIsLocked(),
     
     minimap: { enabled: true, showSlider: 'always' },
     automaticLayout: true,
@@ -15606,7 +15667,13 @@ function createMonacoEditor(monaco, container, state, text) {
 }
 
 
+let webCodeCover = null;
+
 function disposeMonacoEditor() {
+  if (webCodeCover) {
+    coverWebSurface(false, webCodeCover);
+    webCodeCover = null;
+  }
   if (!monacoEditor) return;
   teardownCodeIntel();
   teardownStickyHeadings();
@@ -15668,14 +15735,56 @@ function renderCodeView(state) {
   lastSentSourceText = text;
   codeViewText = text;
   sourceTextPath = activeDocumentPath();
-  if (held) {
-    const editorHost = document.createElement('div');
-    editorHost.className = 'code-view-monaco';
-    app.appendChild(editorHost);
-  } else {
-    app.innerHTML = '<div class="code-view-monaco"></div>';
+  const sourceWrap = document.createElement('div');
+  sourceWrap.className = 'code-view-source-wrap';
+  if (state.member) {
+    const bar = document.createElement('div');
+    bar.className = 'code-member-bar';
+    const label = document.createElement('label');
+    label.className = 'code-member-label';
+    label.textContent = 'Source member';
+    bar.appendChild(label);
+    if (Array.isArray(state.members) && state.members.length > 1) {
+      const picker = document.createElement('select');
+      picker.className = 'code-member-picker';
+      picker.id = 'codeMemberPicker';
+      label.htmlFor = picker.id;
+      state.members.forEach((member) => {
+        const option = document.createElement('option');
+        option.value = member;
+        option.textContent = member;
+        picker.appendChild(option);
+      });
+      picker.value = state.member;
+      picker.addEventListener('change', () => {
+        const member = picker.value;
+        picker.value = state.member;
+        flushSourceUpdate();
+        send({ command: 'selectSourceMember', member });
+      });
+      bar.appendChild(picker);
+    } else {
+      const name = document.createElement('span');
+      name.className = 'code-member-name';
+      name.textContent = state.member;
+      bar.appendChild(name);
+    }
+    sourceWrap.appendChild(bar);
   }
-  const container = app.querySelector('.code-view-monaco');
+  const editorHost = document.createElement('div');
+  editorHost.className = 'code-view-monaco';
+  sourceWrap.appendChild(editorHost);
+  if (held) {
+    app.appendChild(sourceWrap);
+  } else {
+    app.replaceChildren(sourceWrap);
+  }
+  const container = editorHost;
+  
+  if (activeWebTab()) {
+    webCodeCover = sourceWrap;
+    coverWebSurface(true, webCodeCover);
+  }
   
   Promise.resolve().then(() => {
     if (codeViewActive && !window.LeafMonaco) beginReaderLoading();
@@ -16548,6 +16657,7 @@ function collectMarkdownBlockPairs(body, blocks, slice = sliceSourceBytes) {
     isTableSizingGrip(el) ||
     el.classList.contains('docs-pager') ||
     el.classList.contains('docs-pager-loading') ||
+    el.classList.contains('frontmatter-sheet') ||
     el.classList.contains('frontmatter');
   
   const rawSources = new Map();
@@ -19166,6 +19276,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();
     bindFrontmatterFields(body);
+    
+    bindFrontmatterSheet(body, doc.path);
   }
   
   bindBlockControls();
@@ -20640,6 +20752,116 @@ function bindFrontmatterFields(root) {
 }
 
 
+function frontmatterSheetIsOpen(sheet) {
+  return !!sheet && sheet.classList.contains('open');
+}
+
+
+function previewFrontmatterSheet(sheet, on) {
+  if (!sheet || frontmatterSheetIsOpen(sheet)) return;
+  if (on) {
+    const row = sheet.querySelector('.frontmatter tr');
+    if (row) {
+      
+      const reach = row.getBoundingClientRect().bottom - sheet.getBoundingClientRect().top + 12;
+      if (reach > 0) sheet.style.setProperty('--top-sheet-preview', `${Math.ceil(reach)}px`);
+    }
+    sheet.classList.remove('is-resting');
+    sheet.classList.add('is-preview');
+  } else {
+    sheet.classList.remove('is-preview');
+    sheet.classList.add('is-resting');
+  }
+}
+
+function frontmatterSheetParts(sheet) {
+  const slot = sheet.parentElement;
+  return {
+    handle: sheet.querySelector('.frontmatter-handle'),
+    close: sheet.querySelector('.leaf-top-sheet-close'),
+    scrim: slot && slot.querySelector('.lt-backdrop'),
+  };
+}
+
+
+function openFrontmatterSheet(sheet) {
+  if (!sheet || frontmatterSheetIsOpen(sheet)) return;
+  const { handle, close, scrim } = frontmatterSheetParts(sheet);
+  sheet.classList.remove('is-resting', 'is-preview');
+  sheet.classList.add('open');
+  if (sheet.parentElement) sheet.parentElement.classList.add('is-open');
+  if (scrim) {
+    scrim.hidden = false;
+    scrim.classList.add('open');
+  }
+  if (handle) handle.setAttribute('aria-expanded', 'true');
+  app.dataset.frontmatterSheetOpen = sheet.dataset.frontmatterFor || '';
+  leafFocusForKeyboard(close);
+}
+
+function closeFrontmatterSheet(sheet) {
+  if (!frontmatterSheetIsOpen(sheet)) return;
+  const { handle, scrim } = frontmatterSheetParts(sheet);
+  sheet.classList.remove('open', 'is-preview');
+  sheet.classList.add('is-resting');
+  if (sheet.parentElement) sheet.parentElement.classList.remove('is-open');
+  if (scrim) {
+    scrim.classList.remove('open');
+    scrim.hidden = true;
+  }
+  if (handle) handle.setAttribute('aria-expanded', 'false');
+  delete app.dataset.frontmatterSheetOpen;
+  leafFocusForKeyboard(handle);
+}
+
+
+function bindFrontmatterSheet(root, path) {
+  const sheet = root && root.querySelector('.frontmatter-sheet > .leaf-top-sheet');
+  const handle = sheet && sheet.querySelector('.frontmatter-handle');
+  
+  if (handle && sheet.querySelector('.leaf-top-sheet-close')) return;
+  const kept = app.dataset.frontmatterSheetOpen;
+  delete app.dataset.frontmatterSheetOpen;
+  if (!handle) return;
+  sheet.dataset.frontmatterFor = path || '';
+  handle.setAttribute('role', 'button');
+  handle.setAttribute('tabindex', '0');
+  handle.setAttribute('aria-expanded', 'false');
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'leaf-sheet-close leaf-top-sheet-close';
+  close.setAttribute('aria-label', 'Close frontmatter');
+  close.innerHTML = '<span class="lt-icon lt-icon-close"></span>';
+  sheet.appendChild(close);
+  const scrim = document.createElement('div');
+  scrim.className = 'lt-backdrop';
+  scrim.hidden = true;
+  sheet.parentElement.insertBefore(scrim, sheet);
+  sheet.addEventListener('pointerenter', () => previewFrontmatterSheet(sheet, true));
+  sheet.addEventListener('pointerleave', () => previewFrontmatterSheet(sheet, false));
+  handle.addEventListener('click', () => (frontmatterSheetIsOpen(sheet) ? closeFrontmatterSheet(sheet) : openFrontmatterSheet(sheet)));
+  handle.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    if (frontmatterSheetIsOpen(sheet)) closeFrontmatterSheet(sheet);
+    else openFrontmatterSheet(sheet);
+  });
+  close.addEventListener('click', () => closeFrontmatterSheet(sheet));
+  scrim.addEventListener('click', () => closeFrontmatterSheet(sheet));
+  if (kept !== undefined && kept === sheet.dataset.frontmatterFor) openFrontmatterSheet(sheet);
+}
+
+leafOnEscape(() => {
+  for (const sheet of app.querySelectorAll('.leaf-top-sheet.open')) closeFrontmatterSheet(sheet);
+});
+
+document.addEventListener('pointerdown', (event) => {
+  for (const sheet of app.querySelectorAll('.leaf-top-sheet.open')) {
+    if (!sheet.contains(event.target)) closeFrontmatterSheet(sheet);
+  }
+}, true);
+
+
 
 
 
@@ -20684,9 +20906,17 @@ function noteCardGridSource(count, compact) {
 }
 
 
+function notePictureCardGridSource(count) {
+  const line = '\n\n\n\n';
+  const card = `<div class="note-card">\n\n## ${line}<div class="note-card-media">${line}</div>\n\n<div class="note-card-more">${line}</div>\n\n</div>\n\n`;
+  return `<div class="note-card-grid note-card-grid-pictures">\n\n${card.repeat(count)}</div>`;
+}
+
+
 const NOTE_CARD_GRID_STARTERS = [
   { id: 'cards:prose', label: 'Prose cards', icon: `<span class="lt-icon lt-icon-text"></span>`, text: noteCardGridSource(2, false) },
   { id: 'cards:compact', label: 'Compact cards', icon: `<span class="lt-icon lt-icon-table"></span>`, text: noteCardGridSource(4, true) },
+  { id: 'cards:pictures', label: 'Picture cards', icon: `<span class="lt-icon lt-icon-image"></span>`, text: notePictureCardGridSource(2) },
 ].map((option) => ({ ...option, caret: 'start', caretAt: option.text.indexOf('## ') }));
 
 
@@ -28137,7 +28367,7 @@ function containedPageSelectionText(page) {
   return selection.toString();
 }
 
-function containedPageCanvasColor(page) {
+function containedPageCanvasReadings(page) {
   const view = page.defaultView;
   if (!view || !view.getComputedStyle || !page.documentElement || !page.body || !page.createElement) return null;
   const probe = page.createElement('i');
@@ -28146,19 +28376,26 @@ function containedPageCanvasColor(page) {
   probe.style.setProperty('height', '1px', 'important');
   probe.style.setProperty('background', 'Canvas', 'important');
   page.body.appendChild(probe);
-  let layers;
+  let readings;
   try {
-    layers = [page.documentElement, page.body, probe].map((element) => {
+    readings = [page.documentElement, page.body, probe].map((element) => {
       const style = view.getComputedStyle(element);
-      if (style.backgroundImage && style.backgroundImage !== 'none') return null;
-      return colorRgb(style.backgroundColor || '');
+      return {color: style.backgroundColor || '', image: !!style.backgroundImage && style.backgroundImage !== 'none'};
     });
   } finally {
     probe.remove();
   }
+  return readings;
+}
+
+function pageCanvasColor(readings) {
+  if (!Array.isArray(readings) || readings.length !== 3) return null;
+  if (readings[0]?.image || readings[1]?.image) return null;
   let painted = [0, 0, 0, 0];
-  for (let index = layers.length - 1; index >= 0; index -= 1) {
-    const layer = layers[index];
+  for (let index = readings.length - 1; index >= 0; index -= 1) {
+    const reading = readings[index];
+    if (!reading || typeof reading.color !== 'string' || reading.color.length > 256 || typeof reading.image !== 'boolean') return null;
+    const layer = reading.image ? null : colorRgb(reading.color);
     if (!layer || layer[3] <= 0) continue;
     const alpha = layer[3] + painted[3] * (1 - layer[3]);
     painted = [
@@ -28170,6 +28407,10 @@ function containedPageCanvasColor(page) {
   }
   if (painted[3] < 1) return null;
   return `rgb(${painted.slice(0, 3).map(Math.round).join(', ')})`;
+}
+
+function containedPageCanvasColor(page) {
+  return pageCanvasColor(containedPageCanvasReadings(page));
 }
 
 function applyContainedPageTabPalette(page) {
@@ -33165,8 +33406,11 @@ function laneWidePictures(root = app) {
   const body = root.querySelector('.document-body');
   if (!body) return;
   for (const block of documentBlocks(body)) laneWidePicture(block);
+  for (const block of body.querySelectorAll(PICTURE_CARD_MEDIA)) laneWidePicture(block);
   laneWidePictureCells(body);
 }
+
+const PICTURE_CARD_MEDIA = '.note-card-grid-pictures > .note-card > .note-card-media > p';
 
 function laneWidePictureCells(body) {
   const cells = new Set(body.querySelectorAll('td.image-cell, th.image-cell'));
@@ -34713,7 +34957,7 @@ async function exportPictureAs(kind, picture, path) {
 function bindImageSheet(root = app) {
   if (!root) return;
   
-  const lanes = '.reader-layout > .document-body > .document-run > p.image-lane';
+  const lanes = `.reader-layout > .document-body > .document-run > p.image-lane, .reader-layout > .document-body ${PICTURE_CARD_MEDIA}.image-lane`;
   
   const cells = '.reader-layout > .document-body td.image-cell, .reader-layout > .document-body th.image-cell';
   

@@ -154,7 +154,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![A Markdown file as raw source in the code view, line numbers down the left and the editor’s minimap rail at the right](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of the part a Word, Excel, PowerPoint or OpenDocument file is anchored to; a book is the one thing with no single source to show, and says so — with line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of a Word or OpenDocument file; for a deck or workbook, choose the slide or sheet above the editor. A book is the one thing with no single source to show, and says so. The editor has line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
