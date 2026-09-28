@@ -1002,13 +1002,13 @@ On disk such a file is wild: delivery and signature headers on top, then every p
 | In the file | Rendered as |
 |---|---|
 | `Subject:` | The page title and heading (encoded-word headers decoded) |
-| `From:`, `To:`, `Cc:`, `Date:` | A field list; each address a `mailto:` link |
+| Every other header, in the file's order | The header card a note's fields are drawn in; `To`, `Cc`, `Bcc` and `Reply-To` one address each |
 | The HTML body | The message, sanitized through the [inline HTML](#inline-html) allowlist plus one mail-only rule: a control takes its unusable content with it |
-| A plain-text body | Paragraphs, with bare URLs linked |
+| A plain-text body | Note syntax — lists, quoted replies, bold and links drawn as a note draws them — with every line break kept and any HTML in it shown as the text it is |
 | Inline images (`cid:` references) | Embedded in place, straight from the message's own parts |
 | Attachments | A list of name, type, and size |
 
-The delivery, routing, and anti-spam headers are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. Nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
+The headers that say how the rest of the file is read (`MIME-Version` and every `Content-` header) and the ones a server wrote and signed on the way through (`Received`, `Return-Path`, `DKIM-Signature`, the `ARC-` headers, `Authentication-Results`, `Received-SPF`) are not shown — they are machine plumbing, and the [code view](07-editing.md#code-view) has all of them when you want the raw message. Nothing in the message can reach the network: inline images come from the file itself, never from a remote server.
 
 **A message body takes the rendered allowlist and one rule of its own: a control goes with the words inside it.** A note keeps its task boxes, because that is what a checklist is written with; a message has none, so a button, a dropdown, a text box, a frame's fallback markup and a tick box are all dropped whole rather than left as loose words and a blank control in the middle of somebody's mail. Ordinary prose inside a form or a fieldset still reads, and so does the fallback an author wrote for a picture or an embed the reader does not draw — that fallback is what you have instead of the thing itself.
 

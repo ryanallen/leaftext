@@ -4021,6 +4021,7 @@
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   /* The hover wash */
   --lt-wash-hover: color-mix(in srgb, var(--lt-hover-tint) 16%, transparent);
+  --lt-wash-rest: color-mix(in srgb, var(--lt-hover-tint) 7%, transparent);
   --lt-hover-lift: 1.08;
   /* Inset edges */
   --lt-shadow-edge-strong: inset 0 0 0 1px var(--lt-border-strong);
@@ -7677,6 +7678,25 @@ body.library-resizing button {
 
 .library-file-full {
   align-items: flex-start;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  margin-bottom: var(--lt-space-6);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-wash-rest);
+}
+@media (hover: hover) {
+  .library-file-full:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+.library-file-full .file-name-stem {
+  font-weight: var(--lt-weight-600);
+}
+.library-file-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
 }
 .library-file-text {
   flex: 1;

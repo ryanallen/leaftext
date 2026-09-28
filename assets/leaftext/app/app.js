@@ -10486,7 +10486,7 @@ function libraryViewMenuItems() {
     label: 'Show details',
     switch: true,
     checked: !view.compact,
-    title: 'Each file with its title, when it changed and its opening lines',
+    title: 'Each file as a card with its title, when it changed and what it is about',
     run: () => sendFolderView({ compact: !view.compact }),
   });
   return items.concat(['separator'], libraryHideMenuItems(view, sendFolderView, false), ['separator'], libraryArrangementItems());
@@ -10595,13 +10595,19 @@ function libraryRowTime(millis, now) {
   return when.getFullYear() === today.getFullYear() ? day : `${day}, ${when.getFullYear()}`;
 }
 
-function libraryRowLabel(node) {
+function libraryRowLabel(node, byName) {
   const name = (node && (node.name || node.path)) || '';
   const { stem, extension } = documentNameParts(name);
   return {
-    stem: `<span class="file-name-stem">${escapeText(node && node.title ? node.title : stem)}</span>`,
+    stem: `<span class="file-name-stem">${escapeText(!byName && node && node.title ? node.title : stem)}</span>`,
     badge: extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '',
+    plainStem: stem,
   };
+}
+
+function libraryTitleSaysMore(title, stem) {
+  const key = (words) => String(words || '').toLowerCase().replace(/[-_\s]+/g, '');
+  return Boolean(title) && key(title) !== key(stem);
 }
 
 function keepDrawnRowHeads(entries) {
@@ -10624,16 +10630,18 @@ function fileRowHtml(node, between) {
   const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '');
   const current = isSelected ? ' aria-current="true"' : '';
   const open = `data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}"`;
-  const { stem, badge } = libraryRowLabel(node);
-  if (typeof node.preview !== 'string') {
+  const full = typeof node.preview === 'string';
+  const { stem, badge, plainStem } = libraryRowLabel(node, full);
+  if (!full) {
     const line = between ? `<span class="library-file-label">${stem}</span>${between}${badge}` : `<span class="library-file-label">${stem}${badge}</span>`;
     return `<button type="button" class="library-file${selected}"${current} ${open}>${LEAF_FILE_ICON}${line}</button>`;
   }
   const label = `<span class="library-file-label">${stem}</span>`;
   const time = libraryRowTime(node.modified, Date.now());
   const timeHtml = time ? `<span class="library-file-time">${escapeText(time)}</span>` : '';
+  const title = libraryTitleSaysMore(node.title, plainStem) ? `<span class="library-file-title">${escapeText(node.title)}</span>` : '';
   const preview = node.preview ? `<span class="library-file-preview">${escapeText(node.preview)}</span>` : '';
-  return `<button type="button" class="library-file library-file-full${selected}"${current} ${open}>${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head">${label}${timeHtml}${badge}</span>${preview}</span></button>`;
+  return `<button type="button" class="library-file library-file-full${selected}"${current} ${open}>${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head">${label}${timeHtml}${badge}</span>${title}${preview}</span></button>`;
 }
 
 function folderRowHtml(node) {
@@ -15215,7 +15223,6 @@ function leafColorNumber(part) {
 function leafHexColor(digits) {
   const len = digits.length;
   if (len !== 3 && len !== 4 && len !== 6 && len !== 8) return null;
-  if (len <= 4 && !/[a-f]/i.test(digits)) return null;
   const wide = len <= 4 ? digits.replace(/./g, (d) => d + d) : digits;
   const at = (i) => Number.parseInt(wide.slice(i * 2, i * 2 + 2), 16) / 255;
   return { red: at(0), green: at(1), blue: at(2), alpha: wide.length === 8 ? at(3) : 1 };
@@ -17815,6 +17822,16 @@ window.leafEditWritten = (answer) => {
     (write) => write && Number.isFinite(write.start) && Number.isFinite(write.end) && write.end >= write.start && typeof write.text === 'string',
   );
   for (const { start, end, text } of writes.sort((a, b) => b.start - a.start)) advanceLiveRanges(null, { start, end, text, inner: false });
+  if (pendingCaret && pendingCaret.packedSplit) {
+    for (const write of writes) {
+      const breakAt = write.text.lastIndexOf('\r\n\r\n');
+      const shortAt = breakAt < 0 ? write.text.lastIndexOf('\n\n') : breakAt;
+      if (shortAt < 0) continue;
+      pendingCaret.srcStart = write.start + utf8ByteLength(write.text.slice(0, shortAt + (breakAt < 0 ? 2 : 4)));
+      delete pendingCaret.packedSplit;
+      break;
+    }
+  }
   if (editHold != null && answer.seq === editHold) liftEditHold();
 };
 
@@ -17855,7 +17872,7 @@ function sentTextNamesFormulaCarrier(message) {
 
 
 function commitMovesMap(el, command) {
-  if (command.cell || command.kind === 'table' || (el && el.__officeCell)) return false;
+  if (command.cell || command.kind === 'table' || (el && (el.__officeCell || el.dataset.packed === 'true'))) return false;
   const doc = currentState && currentState.document;
   return !(doc && doc.recalculates === true) && !sentTextNamesFormulaCarrier(command);
 }
@@ -18179,7 +18196,7 @@ function setEditBaseline(el) {
 
 
 function blockDomToSource(el) {
-  if (currentDocumentFormat === 'eml') return emailBlockDomToText(el);
+  if (currentDocumentFormat === 'eml') return emailBlockIsNote(el) ? emailNoteBlockToSource(el) : emailBlockDomToText(el);
   if (currentDocumentFormat === 'xml') {
     return blockHoldsCommentWords(el) ? el.textContent : escapeTreeText(el.textContent);
   }
@@ -18249,6 +18266,29 @@ function emailBlockDomToText(el, ending) {
 }
 
 
+const EMAIL_OWN_KINDS = ['email_header', 'email_body', 'email_paragraph'];
+
+
+function emailBlockIsNote(el) {
+  const kind = el && el.dataset && el.dataset.blockKind;
+  return currentDocumentFormat === 'eml' && !!kind && !EMAIL_OWN_KINDS.includes(kind);
+}
+
+
+function emailNoteText(markdown, ending) {
+  return String(markdown).replace(/\r\n/g, '\n').replace(/<br>/g, '\n').replace(/\n/g, ending);
+}
+
+
+function emailNoteBlockToSource(el, ending) {
+  if (ending === undefined) {
+    const { start, end } = rangeOf(el, 'block');
+    ending = sliceSourceBytes(start, end).includes('\r\n') ? '\r\n' : documentLineEnding();
+  }
+  return emailNoteText(blockDomToMarkdown(el), ending);
+}
+
+
 function documentLineEnding() {
   if (currentDocumentFormat !== 'eml') return '\n';
   const bytes = documentSourceBytes();
@@ -18270,8 +18310,9 @@ function escapeTreeText(text) {
 
 
 function typedBlockText(block) {
+  
   if (currentDocumentFormat === 'eml') {
-    return emailBlockDomToText(block, documentLineEnding()).trim();
+    return emailNoteText(inlineDomToMarkdown(block), documentLineEnding()).trim();
   }
   if (currentDocumentFormat === 'xml') return escapeTreeText(block.textContent).trim();
   return inlineDomToMarkdown(block).trim();
@@ -18282,6 +18323,15 @@ function emailBlockTypeableInPlace(el) {
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   const src = sliceSourceBytes(start, end);
+  if (el.dataset.packed === 'true') return /^[\x00-\x7f]*$/.test(src);
+  
+  if (emailBlockIsNote(el)) {
+    const kind = el.dataset.blockKind;
+    const safe = ((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el))
+      || (kind === 'list' && listWysiwygSafe(el))
+      || (kind === 'blockquote' && blockquoteWysiwygSafe(el));
+    return safe && emailNoteBlockToSource(el, src.includes('\r\n') ? '\r\n' : '\n') === src;
+  }
   return emailBlockDomToText(el, src.includes('\r\n') ? '\r\n' : '\n') === src;
 }
 
@@ -18449,7 +18499,7 @@ function liveEditOf(el, words) {
   if (!el.__editingActive) return null;
   if (el.dataset.blockKind === 'table' && currentDocumentFormat === 'markdown') return null;
   
-  if (el.__officeCell) return null;
+  if (el.__officeCell || el.dataset.packed === 'true') return null;
   const text = words === undefined ? blockDomToSource(el) : words;
   const span = el.__innerSpan;
   if (span) return { start: span.start, end: span.end, text, inner: true };
@@ -18680,7 +18730,9 @@ function commitActiveEditingBlock() {
 
 
 function sendBlockSplice(el, start, end, text, kind) {
-  const sent = sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text });
+  const sent = el.dataset.packed === 'true'
+    ? sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text }, { el, inner: false, hold: true })
+    : sendEditCommand(kind ? { command: 'editBlock', start, end, text, kind } : { command: 'editBlock', start, end, text });
   setEditBaseline(el);
   return sent;
 }
@@ -19088,10 +19140,6 @@ function wireEmailClosedParts(body) {
     if (target.closest('[data-src-start]')) return;
     if (target.closest('.email-body')) {
       leafToast('These words are packed into the message. Edit them in the source view.');
-      return;
-    }
-    if (target.closest('.email-headers')) {
-      leafToast('This line is folded or coded in the message. Edit it in the source view.');
     }
   });
 }
@@ -19232,7 +19280,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
   
   currentDocumentBindsAnything =
-    currentDocumentFormat === 'markdown' || (Array.isArray(doc.blocks) && doc.blocks.length > 0);
+    currentDocumentFormat === 'markdown' || (Array.isArray(doc.blocks) && doc.blocks.length > 0)
+    || (currentDocumentFormat === 'eml' && !!frontmatterBlock());
   currentDocumentHasUnreachableWords = doc.words_outside_the_anchor === true;
   
   let blankLinesInContainers = [];
@@ -19260,6 +19309,8 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     
     drawBlankLinesInContainers(blankLinesInContainers);
   }
+  
+  if (currentDocumentFormat === 'eml') bindFrontmatterFields(body);
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();
     bindFrontmatterFields(body);
@@ -19434,10 +19485,13 @@ function splitBlockAtCaret(el) {
   const { beforeRange, afterRange } = ranges;
   
   const separator = documentLineEnding().repeat(2);
+  
   const half = (range) =>
-    currentDocumentFormat === 'eml'
-      ? emailBlockDomToText(range.cloneContents(), documentLineEnding()).trim()
-      : inlineDomToMarkdown(range.cloneContents()).trim();
+    emailBlockIsNote(el)
+      ? emailNoteText(inlineDomToMarkdown(range.cloneContents()), documentLineEnding()).trim()
+      : currentDocumentFormat === 'eml'
+        ? emailBlockDomToText(range.cloneContents(), documentLineEnding()).trim()
+        : inlineDomToMarkdown(range.cloneContents()).trim();
   const part1Inline = half(beforeRange);
   const part2Inline = half(afterRange);
   if (!part1Inline) return;
@@ -19448,10 +19502,9 @@ function splitBlockAtCaret(el) {
     const part2 = prefix + part2Inline;
     armCarryAfterCaret(el, beforeRange, afterRange);
     sendBlockSplice(el, start, end, part1 + separator + part2);
-    setPendingCaret({
-      srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator),
-      textOffset: 0,
-    });
+    setPendingCaret(el.dataset.packed === 'true'
+      ? { srcStart: start, packedSplit: true, textOffset: 0 }
+      : { srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator), textOffset: 0 });
     carryToPendingCaret();
   } else if (blockDomToSource(el) !== el.__editBaseline) {
     
@@ -19614,7 +19667,8 @@ function handleWysiwygKeydown(el, event) {
     return;
   }
   if (structuralCarryHolds(el) && holdKeyForRedraw(event)) return;
-  if (currentDocumentFormat === 'eml') {
+  
+  if (currentDocumentFormat === 'eml' && !emailBlockIsNote(el)) {
     if (event.key !== 'Enter') return;
     event.preventDefault();
     
@@ -19673,7 +19727,6 @@ function handleWysiwygKeydown(el, event) {
     }
   }
 }
-
 
 
 
@@ -19825,6 +19878,12 @@ function openInsertBlock(
     if (!text) return false;
     block.__committed = true;
     const at = startNow();
+    if (previous && previous.dataset.packed === 'true') {
+      const range = rangeOf(previous, 'block');
+      sendEditCommand({ command: 'editBlock', start: range.start, end: range.end, text: blockDomToSource(previous) + prefix + text + close + suffix }, { el: previous, inner: false, hold: true });
+      if (chainBelow) setPendingCaret({ srcStart: range.start, packedSplit: true, insertBelow: true, blockSpec: chainSpec });
+      return true;
+    }
     sendEditCommand({
       command: 'editBlock',
       start: at,
@@ -20328,23 +20387,33 @@ function wireXmlTableHeadings(body) {
 
 
 
-const FRONTMATTER_KNOWN_KEYS = ['aliases', 'cssclasses', 'tags', 'leaftext-types'];
+const FRONTMATTER_KNOWN_KEYS = {
+  markdown: ['aliases', 'cssclasses', 'tags', 'leaftext-types'],
+  eml: ['To', 'Cc', 'Bcc', 'Reply-To'],
+};
 
 
 const FRONTMATTER_KEY_LIST_ID = 'frontmatterKnownKeys';
 
 let frontmatterKeyListHolder = null;
+let frontmatterKeyListFormat = null;
 function frontmatterKnownKeyList() {
   if (!frontmatterKeyListHolder) {
     const list = document.createElement('datalist');
     list.id = FRONTMATTER_KEY_LIST_ID;
     frontmatterKeyListHolder = list;
-    for (const name of FRONTMATTER_KNOWN_KEYS) {
+    appSurface.appendChild(list);
+  }
+  const format = currentDocumentFormat === 'eml' ? 'eml' : 'markdown';
+  if (frontmatterKeyListFormat !== format) {
+    frontmatterKeyListFormat = format;
+    const list = frontmatterKeyListHolder;
+    list.textContent = '';
+    for (const name of FRONTMATTER_KNOWN_KEYS[format]) {
       const option = document.createElement('option');
       option.value = name;
       list.appendChild(option);
     }
-    appSurface.appendChild(list);
   }
   return FRONTMATTER_KEY_LIST_ID;
 }
@@ -21028,7 +21097,7 @@ function blockGutterFormatAllowed() {
 
 
 function blockGutterTargetAllowed(el) {
-  return currentDocumentFormat !== 'eml' || (!!el && el.dataset.blockKind === 'email_paragraph');
+  return currentDocumentFormat !== 'eml' || (!!el && (el.dataset.blockKind === 'email_paragraph' || emailBlockIsNote(el)));
 }
 
 
@@ -21176,7 +21245,7 @@ function openLineBelow(after, specId) {
   
   if (!Number.isFinite(start) || !Number.isFinite(end) || end === start) return;
   if (after.__editingActive) {
-    const text = blockDomToMarkdown(after);
+    const text = currentDocumentFormat === 'eml' ? blockDomToSource(after) : blockDomToMarkdown(after);
     after.__editingActive = false;
     if (blockTextNeedsWriting(after, text)) {
       commitBlockLeaving(after, start, end, text);
@@ -21882,7 +21951,7 @@ window.leafImagePicked = (token, destination, alt) => {
 function gapInsertOffsetAfter(after) {
   const { start, end } = rangeOf(after, 'block');
   if (!after.__editingActive || !Number.isFinite(start) || !Number.isFinite(end)) return end;
-  const text = blockDomToMarkdown(after);
+  const text = currentDocumentFormat === 'eml' ? blockDomToSource(after) : blockDomToMarkdown(after);
   after.__editingActive = false;
   if (!blockTextNeedsWriting(after, text)) return end;
   
@@ -22076,7 +22145,7 @@ function commitBeforeBlockMove() {
   if (!active || !active.__editingActive || !active.dataset) return;
   const { start, end } = rangeOf(active, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
-  const text = blockDomToMarkdown(active);
+  const text = currentDocumentFormat === 'eml' ? blockDomToSource(active) : blockDomToMarkdown(active);
   active.__editingActive = false;
   if (!blockTextNeedsWriting(active, text)) return;
   commitBlockLeaving(active, start, end, text);
@@ -24212,6 +24281,8 @@ function selectionEditableBlock(node) {
   const block = el.closest(readerEditingAllowed() ? '[data-src-start].leaf-editable' : '[data-src-start]');
   if (!block || block.dataset.editingSource === 'true') return null;
   if (!app.contains(block)) return null;
+  
+  if (currentDocumentFormat === 'eml' && !emailBlockIsNote(block)) return null;
   return block;
 }
 
@@ -24915,6 +24986,11 @@ function selectionToolbarButton(format, onPress) {
 }
 
 
+function messageBodyHoldsNoteBlocks() {
+  return Array.from(app.querySelectorAll('.email-body [data-block-kind]')).some(emailBlockIsNote);
+}
+
+
 function bindSelectionToolbar() {
   
   disarmSelectionInputOutsidePress();
@@ -24927,7 +25003,9 @@ function bindSelectionToolbar() {
   selectionToolbarRange = null;
   const layout = app.querySelector('.reader-layout');
   if (!layout) return;
-  if (currentDocumentFormat !== 'markdown') return;
+  
+  const onMessage = currentDocumentFormat === 'eml';
+  if (currentDocumentFormat !== 'markdown' && !(onMessage && messageBodyHoldsNoteBlocks())) return;
 
   selectionToolbar = document.createElement('div');
   selectionToolbar.className = 'selection-toolbar';
@@ -24956,13 +25034,13 @@ function bindSelectionToolbar() {
     selectionToolbarRow.appendChild(button);
   }
   
-  {
+  if (!onMessage) {
     const button = selectionToolbarButton(BADGE_FORMAT, () => openSelectionToneRow());
     selectionToolbarButtons.set(BADGE_FORMAT.id, button);
     selectionToolbarRow.appendChild(button);
   }
   
-  for (const format of READING_FORMATS) {
+  for (const format of READING_FORMATS.filter((item) => !onMessage || item.id === 'copy')) {
     const button = selectionToolbarButton(format, () => applyReadingFormat(format));
     selectionToolbarButtons.set(format.id, button);
     selectionToolbarRow.appendChild(button);

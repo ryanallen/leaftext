@@ -45,7 +45,7 @@
 ## Relational tables
 - Page: https://leaftext.com/docs/01-features/08-relational-tables.md
 - Markdown: https://leaftext.com/docs/01-features/08-relational-tables.md
-- Summary: Leaftext calls this RDB: a relational table view over a Markdown table. The table remains ordinary GFM, so it opens everywhere it did before. Leaftext adds the view while you read it — in the deskt...
+- Summary: Put each row's key in the first column and write a relation as a link to the row with that key in another note, and Leaftext reads the table as linked records.
 
 ## Your Grove
 - Page: https://leaftext.com/docs/01-features/09-progress.md

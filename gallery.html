@@ -4029,6 +4029,7 @@
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   /* The hover wash */
   --lt-wash-hover: color-mix(in srgb, var(--lt-hover-tint) 16%, transparent);
+  --lt-wash-rest: color-mix(in srgb, var(--lt-hover-tint) 7%, transparent);
   --lt-hover-lift: 1.08;
   /* Inset edges */
   --lt-shadow-edge-strong: inset 0 0 0 1px var(--lt-border-strong);
@@ -7690,9 +7691,28 @@ body.library-resizing button {
   outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
   outline-offset: calc(var(--lt-stroke-2) * -1);
 }
-/* A row that says what its file is: the name and when it changed on one line, two lines of its prose under them. The mark stays level with the name rather than centering on the block. */
+/* A row that says what its file is, drawn as a filled card with no edge: the name and when it changed on one line, its title and two lines of its prose under them. The mark stays level with the name rather than centering on the block. The open and picked tints outrank the rest fill by their own selectors, as they outrank hover. */
 .library-file-full {
   align-items: flex-start;
+  padding: var(--lt-space-6) var(--lt-space-8);
+  margin-bottom: var(--lt-space-6);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-wash-rest);
+}
+@media (hover: hover) {
+  .library-file-full:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+.library-file-full .file-name-stem {
+  font-weight: var(--lt-weight-600);
+}
+.library-file-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--lt-text-12);
+  color: var(--lt-muted-foreground);
 }
 .library-file-text {
   flex: 1;
@@ -17129,7 +17149,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 181 values that do not change with the theme, all 78 icons, and all 134 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 182 values that do not change with the theme, all 78 icons, and all 134 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17159,7 +17179,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>181</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>134</b></button>
 </div>
@@ -17265,7 +17285,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">181 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">182 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -17482,6 +17502,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <h3>The hover wash</h3><div class="wall wide">
 <div class="value"><code>lt-wash-hover</code><code>color-mix(in srgb, var(--lt-hover-tint) 16%, transparent)</code></div>
+<div class="value"><code>lt-wash-rest</code><code>color-mix(in srgb, var(--lt-hover-tint) 7%, transparent)</code></div>
 <div class="value"><code>lt-hover-lift</code><code>1.08</code></div>
 </div>
 <h3>Inset edges</h3><div class="wall wide">
@@ -17707,8 +17728,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row — title, the time it changed and two lines of its prose — and a folder row's count; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep)</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:280px"><div class="library-tree"><div class="library-group-heading">Today</div><button type="button" class="library-file is-selected is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-file is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">Picked.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button><button type="button" class="library-nav-folder is-drop-target"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">Where they land</span></button><div class="library-carry-chip" style="position:static;display:inline-block">2 items</div></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
+<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep)</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:380px"><div class="library-tree"><div class="library-group-heading">Today</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">round-1</span></span><span class="library-file-time">9:14am</span><span class="file-type-badge">MD</span></span><span class="library-file-title">Magic link, round 1: how far one email reaches</span><span class="library-file-preview">One email serves the step after a password and signup, with the password kept.</span></span></button><button type="button" class="library-file is-selected is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-file is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">Picked.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button><button type="button" class="library-nav-folder is-drop-target"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">Where they land</span></button><div class="library-carry-chip" style="position:static;display:inline-block">2 items</div></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js, under the find bar</span></header>

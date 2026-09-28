@@ -2,6 +2,8 @@
 
 > Turn an ordinary Markdown table into cards, a board or a linked record view without giving up the file.
 
+Put each row's key in the first column and write a relation as a link to the row with that key in another note, and Leaftext reads the table as linked records.
+
 Leaftext calls this **RDB**: a [relational table](../GLOSSARY.md#relational-table) view over a Markdown table. The table remains ordinary [GFM](../GLOSSARY.md#gfm), so it opens everywhere it did before. Leaftext adds the view while you read it — in the desktop app, on a published Leaftext site and in a document embedded in another product — it does not move your records into a separate database or create a companion file.
 
 ## Open a relational table
