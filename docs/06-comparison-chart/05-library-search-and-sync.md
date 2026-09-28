@@ -192,6 +192,7 @@
 | Five scored fields | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Capped density scoring | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Web links on map | [✅][l-graph] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Web page link map | [✅][l-graph] | ? | ? | ? |
 | CACHEDIR.TAG respected | [✅][l-skipped] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Searchable before listing | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Smallest read first | [✅][l-search] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

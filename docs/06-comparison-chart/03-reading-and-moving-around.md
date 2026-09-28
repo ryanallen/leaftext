@@ -97,6 +97,7 @@
 | Arrow over tabs | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ellipsis inside tabs | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Live web tabs | [✅][l-web-tabs] | [✅][o-web-viewer] | [❌][t-seen] | [❌][c-seen] |
+| Local pages run live | [✅][l-web-tabs] | ? | ? | ? |
 
 ## Side by side
 

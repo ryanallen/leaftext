@@ -13103,13 +13103,13 @@ body.mac-frame .document-minimap-frame {
   padding: var(--lt-space-8) var(--lt-space-10);
   text-align: left;
 }
-/* The heart the tab strip wears, doing the same job on the same call. Outside the row's own button because a button inside a button is not markup. */
+/* The heart the tab strip wears, doing the same job on the same call. Outside the row's own button because a button inside a button is not markup. The button reaches well past the mark, so a press just beside the heart lands on the heart rather than on the file. */
 .home-row-heart {
   grid-column: 1;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: var(--lt-radius-md);

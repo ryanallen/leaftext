@@ -474,6 +474,7 @@ function renderWebSurface(state) {
   webAddressState.metrics = null;
   webAddressState.image = '';
   webAddressState.railTab = tab;
+  if (graphViewOpen) graphSetActive(webGraphAddress(), true, false);
   
   updateEditingChrome();
   drawWebMinimap();
@@ -5190,6 +5191,8 @@ const readerGraph = document.getElementById('readerGraph');
 const readerGraphCanvas = document.getElementById('readerGraphCanvas');
 const readerGraphStatus = document.getElementById('readerGraphStatus');
 const readerGraphLegend = document.getElementById('readerGraphLegend');
+const graphLocalLabel = document.getElementById('graphLocalLabel');
+const graphExternalLabel = document.getElementById('graphExternalLabel');
 const readerToolbar = document.getElementById('readerToolbar');
 const viewReadingButton = document.getElementById('viewReadingButton');
 const viewCodeButton = document.getElementById('viewCodeButton');
@@ -11146,8 +11149,7 @@ let graphRebuildTimer = 0;
 
 
 function setGraphView(open) {
-  
-  const next = Boolean(open) && Boolean(activeDocumentPath());
+  const next = Boolean(open) && readerViewsStand();
   if (next === graphViewOpen) return;
   
   if (next) takeGraphExitPlace();
@@ -11156,7 +11158,10 @@ function setGraphView(open) {
   
   send({ command: 'setGraphView', open: graphViewOpen });
   if (graphViewOpen) showGraph();
-  else pauseGraph();
+  else {
+    pauseGraph();
+    if (activeWebTab()) invalidateGraph();
+  }
 }
 
 function closeGraphView() {
@@ -11176,6 +11181,7 @@ function applyGraphView() {
     if (!graphViewOpen) app.hidden = false;
   }
   if (readerMinimap) readerMinimap.classList.toggle('is-under-map', graphViewOpen);
+  coverWebSurface(graphViewOpen, readerGraph);
   
   document.documentElement.dataset.graphView = graphViewOpen ? 'true' : 'false';
   writeViewFades();
@@ -11189,6 +11195,17 @@ function applyGraphView() {
 function readerViewsStand() {
   return Boolean(activeDocumentPath() || activeWebTab());
 }
+function webGraphAddress() {
+  const tab = activeWebTab();
+  if (!tab) return null;
+  try {
+    const url = new URL(tab.url);
+    url.hash = '';
+    return url.href;
+  } catch (_) {
+    return tab.url;
+  }
+}
 
 function renderExportPdfAction(hasDocument) {
   if (!exportPdfButton) return;
@@ -11197,17 +11214,13 @@ function renderExportPdfAction(hasDocument) {
   if (wasHidden !== exportPdfButton.hidden) refitAppBar();
 }
 
-
-
-
-
 function renderReaderToolbar(viewsStand) {
   
   renderExportPdfAction(viewsStand && !activeWebTab());
   if (!readerToolbar) return;
   readerToolbar.hidden = !viewsStand;
   document.body.classList.toggle('has-reader-toolbar', Boolean(viewsStand));
-  if (viewGraphButton) viewGraphButton.hidden = Boolean(activeWebTab());
+  if (viewGraphButton) viewGraphButton.hidden = false;
   if (!viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
     readerToolTrayTouchOpen = '';
@@ -11389,7 +11402,7 @@ function renderViewTools(current) {
   const onWebTab = Boolean(activeWebTab());
   const editable = !onWebTab && (current === 'reading' || current === 'code');
   const onGraph = current === 'graph';
-  if (graphScopeTool) graphScopeTool.hidden = !onGraph;
+  if (graphScopeTool) graphScopeTool.hidden = !onGraph || onWebTab;
   if (readerLockButton) {
     
     const onCodeView = current === 'code';
@@ -11572,6 +11585,8 @@ function setGraphStatus(message) {
 
 function setGraphLegend(hasExternal) {
   if (readerGraphLegend) readerGraphLegend.hidden = !hasExternal;
+  if (graphLocalLabel) graphLocalLabel.textContent = activeWebTab() ? 'pages on this site' : 'your documents';
+  if (graphExternalLabel) graphExternalLabel.textContent = activeWebTab() ? 'pages on another site' : 'web addresses';
 }
 
 function loadScriptOnce(src) {
@@ -11646,6 +11661,8 @@ function graphNodeRadius(degree) {
 
 
 function graphSeeds() {
+  const web = webGraphAddress();
+  if (web) return [web];
   const active = activeDocumentPath();
   if (active) return [active];
   return ((currentState && currentState.recent) || []).slice(0, GRAPH_RECENT_SEED_CAP);
@@ -11666,17 +11683,17 @@ function requestGraphData() {
 
 
 function graphRequestKey(seeds) {
-  return graphScope + '|' + (seeds || graphSeeds()).join('\n');
+  return (activeWebTab() ? 'web|' : graphScope + '|') + (seeds || graphSeeds()).join('\n');
 }
 
 
 function graphSeedsChanged() {
-  return (graphScope === 'small' || !activeVaultId) && graphRequestKey() !== graphSeedKey;
+  return (Boolean(activeWebTab()) || graphScope === 'small' || !activeVaultId) && graphRequestKey() !== graphSeedKey;
 }
 
 
 function graphKeptForAnotherRequest() {
-  if (!graphSeedKey || !graphSeedKey.startsWith(graphScope + '|')) return true;
+  if (!graphSeedKey || !graphSeedKey.startsWith(activeWebTab() ? 'web|' : graphScope + '|')) return true;
   if (graphSeedsChanged()) return true;
   return !!graphActivePath && !!graphScene && !graphScene.nodeByPath.has(graphActivePath);
 }
@@ -11685,7 +11702,7 @@ function graphKeptForAnotherRequest() {
 
 
 function showGraph() {
-  graphActivePath = activeDocumentPath();
+  graphActivePath = webGraphAddress() || activeDocumentPath();
   if (graphRequested && graphKeptForAnotherRequest()) invalidateGraph();
   if (!graphRequested) {
     requestGraphData();
@@ -11708,7 +11725,7 @@ function showGraph() {
 function graphSignature(data) {
   const nodes = (data && data.nodes) || [];
   const edges = (data && data.edges) || [];
-  const marks = nodes.map((node) => node.path + ':' + (node.degree || 0)).sort();
+  const marks = nodes.map((node) => node.path + ':' + node.label + ':' + Boolean(node.external) + ':' + (node.degree || 0)).sort();
   const wires = edges.map((edge) => edge.source + '>' + edge.target).sort();
   return marks.join('\n') + '\n--\n' + wires.join('\n');
 }
@@ -11772,6 +11789,14 @@ function invalidateGraph() {
 window.leafInvalidateGraph = () => {
   if (!graphViewOpen) invalidateGraph();
 };
+window.leafWebMapLoaded = () => {
+  if (!graphViewOpen || !activeWebTab()) return;
+  graphActivePath = webGraphAddress();
+  graphFocusPending = false;
+  window.setTimeout(() => {
+    if (graphViewOpen && webGraphAddress() === graphActivePath) requestGraphData();
+  }, 0);
+};
 
 function keptGraphCameraFor(data) {
   const kept = keptGraphCamera;
@@ -11834,7 +11859,7 @@ async function buildGraphScene() {
     setGraphStatus(emptyGraphStatus(graphScope, activeVaultId));
     return;
   }
-  setGraphLegend(data.nodes.some((node) => node.external));
+  setGraphLegend(Boolean(activeWebTab()) || data.nodes.some((node) => node.external));
   try {
     await loadGraphLibs();
   } catch (err) {
@@ -11868,7 +11893,7 @@ async function buildGraphScene() {
   app.ticker.stop();
   readerGraphCanvas.appendChild(app.canvas);
   setGraphStatus(data.truncated
-    ? `Showing the ${formatCount(data.nodes.length)} most-linked documents.`
+    ? (activeWebTab() ? `Showing the first ${formatCount(data.nodes.length - 1)} linked pages.` : `Showing the ${formatCount(data.nodes.length)} most-linked documents.`)
     : '');
 
   const colors = graphColors();
@@ -12271,7 +12296,9 @@ function wireGraphPointer(scene) {
       
       const moved = scene.pressGlobal
         && Math.hypot(event.global.x - scene.pressGlobal.x, event.global.y - scene.pressGlobal.y) > 4;
-      if (!moved && node.external) {
+      if (!moved && activeWebTab()) {
+        send({ command: 'openWebAddress', url: node.path });
+      } else if (!moved && node.external) {
         
         send({ command: 'openExternal', url: node.path });
       } else if (!moved) {
@@ -14137,6 +14164,7 @@ window.leafSwitchTabCached = (state, anchor, key) => {
 
 window.leafSetWorkspace = (state) => {
   const next = state || {};
+  const previousWebId = activeWebTab()?.webId;
   
   takePayloadSplit(next);
   currentState = Object.assign({}, currentState || {}, {
@@ -14146,6 +14174,7 @@ window.leafSetWorkspace = (state) => {
     active: next.active == null ? null : next.active,
     beside: next.beside || null,
   });
+  if (graphViewOpen && activeWebTab() && activeWebTab().webId !== previousWebId) graphSetActive(activeWebTab().url, true, false);
   renderTabs(currentState);
   
   const path = activeDocumentPath();

@@ -13053,8 +13053,8 @@ body.mac-frame .document-minimap-frame {
   grid-column: 1;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: var(--lt-radius-md);

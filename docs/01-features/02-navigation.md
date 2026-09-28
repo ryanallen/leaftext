@@ -43,6 +43,8 @@ Back, Forward and Refresh control the live page. Closing, switching and dragging
 
 The live page fits inside the reading card's rounded bottom corners and thin border. Its main scroll bar is hidden because the minimap shows the page's place; scrolling inside a page element still uses that element's own bar. The active web tab takes a solid page background when one is available and chooses readable light or dark letters for it.
 
+An [HTML file](01-rendering.md#html-files) opened on the desktop is a live page the same way, served from its own folder on an address only this computer can reach. Its address is in the same bar, Back steps through its pages and then through the documents read in the tab before it, and a link out of the site makes it an ordinary web tab. Its **Code** is the file itself, to edit and save, rather than a copy of the markup.
+
 The view bar stands over a web tab with **Reading** and **Code**. **Code** shows the page's markup the way a browser's Inspect does — the page as it stands now, including what its own script built, one element to a line and indented by depth. It is read-only, since there is no file behind it; find works as it does on a document. It is a copy taken when you press **Code**, so **Refresh** and **Code** again take a fresh one. **Reading** brings the live page back.
 
 ## Model
