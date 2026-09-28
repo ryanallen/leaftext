@@ -325,7 +325,7 @@ function releaseShellWidth() {
 let libraryOutlineOpen = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
-  bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0,
+  bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
   metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map() };
 function pruneWebTabPalettes(state) {
   const ids = new Set((state.tabs || []).filter(tab => tab.kind === 'web').map(tab => tab.webId));
@@ -408,6 +408,17 @@ function coverWebSurface(covered, owner) {
   }
   scheduleWebSurfaceBounds();
 }
+
+function webSurfaceCovered(page) {
+  webAddressState.coverStanding = false;
+  for (const owner of webAddressState.covers) {
+    if (!owner || typeof owner !== 'object' || typeof owner.getBoundingClientRect !== 'function') return true;
+    webAddressState.coverStanding = true;
+    const rect = owner.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0 && rect.left < page.right && rect.right > page.left && rect.top < page.bottom && rect.bottom > page.top) return true;
+  }
+  return false;
+}
 function scheduleWebSurfaceBounds() {
   if (!activeWebTab() && !webAddressState.lastBounds) return;
   if (webAddressState.frame || !webAddressState.booted) return;
@@ -441,7 +452,7 @@ function scheduleWebSurfaceBounds() {
       y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round(right * ratio) - Math.round(left * ratio)),
       height: Math.max(0, Math.round(bottom * ratio) - Math.round(top * ratio)),
       radius: Math.max(0, Math.round(radius * ratio)),
-      visible: !!tab && webAddressState.covers.size === 0,
+      visible: !!tab && !webSurfaceCovered({ left, top, right, bottom }),
     };
     const spelling = JSON.stringify(bounds);
     if (spelling === webAddressState.lastBounds) {
@@ -474,6 +485,7 @@ function bootWebAddress() {
   if (webAddressState.booted || window.__leafSite || window.__leafEmbedded) return;
   webAddressState.booted = true;
   window.addEventListener('resize', () => { if (activeWebTab()) drawWebMinimap(); scheduleWebSurfaceBounds(); });
+  document.addEventListener('pointermove', () => { if (webAddressState.coverStanding) scheduleWebSurfaceBounds(); }, { passive: true });
   appBar.addEventListener('pointerenter', () => {
     webAddressState.overApp = true;
     armWebAddressOpen();
@@ -6056,7 +6068,8 @@ function hintPlacement(target, size, view) {
     below: view.height - HINT_EDGE - (target.bottom + HINT_GAP) >= size.height,
   };
   
-  const side = HINT_SIDES.find((name) => room[name]) || HINT_SIDES[HINT_SIDES.length - 1];
+  const fitting = HINT_SIDES.find((name) => room[name]);
+  const side = fitting || HINT_SIDES[HINT_SIDES.length - 1];
   const clamp = (value, extent, span) => Math.max(HINT_EDGE, Math.min(value, extent - HINT_EDGE - span));
   const sideways = side === 'right' || side === 'left';
   let left;
@@ -6073,7 +6086,23 @@ function hintPlacement(target, size, view) {
   const origin = sideways ? top : left;
   const inset = Math.min(HINT_TAIL_INSET, span / 2);
   const tail = Math.max(inset, Math.min(center - origin, span - inset));
-  return { side, left: Math.round(left), top: Math.round(top), tail: Math.round(tail) };
+  return { side, fits: !!fitting, left: Math.round(left), top: Math.round(top), tail: Math.round(tail) };
+}
+
+
+function hintPaneRegion(element, app) {
+  if (!libraryPane || !libraryPane.contains(element)) return null;
+  const pane = libraryPane.getBoundingClientRect();
+  const width = pane.width - 2 * HINT_EDGE;
+  if (width <= 0 || pane.height <= 0) return null;
+  return { left: pane.left - app.left, top: pane.top - app.top, width: pane.width, height: pane.height, bubbleWidth: width };
+}
+
+
+function hintPlacementIn(region, target, size) {
+  const inRegion = { ...target, left: target.left - region.left, right: target.right - region.left, top: target.top - region.top, bottom: target.bottom - region.top };
+  const placement = hintPlacement(inRegion, size, { width: region.width, height: region.height });
+  return { ...placement, left: placement.left + Math.round(region.left), top: placement.top + Math.round(region.top) };
 }
 
 
@@ -6211,9 +6240,23 @@ function drawHintBubble(hint, target) {
   bubble.appendChild(tail);
   appSurface.appendChild(bubble);
   coverWebSurface(true, bubble);
-  const rect = bubble.getBoundingClientRect();
   const app = leafAppRect();
-  const placement = hintPlacement(hintTargetInApp(targetRect, app), { width: rect.width, height: rect.height }, { width: app.width, height: app.height });
+  const inApp = hintTargetInApp(targetRect, app);
+  const pane = hintPaneRegion(element, app);
+  let placement = null;
+  if (pane) {
+    bubble.style.maxWidth = pane.bubbleWidth + 'px';
+    const fitted = bubble.getBoundingClientRect();
+    placement = hintPlacementIn(pane, inApp, { width: fitted.width, height: fitted.height });
+    if (!placement.fits) {
+      placement = null;
+      bubble.style.maxWidth = '';
+    }
+  }
+  if (!placement) {
+    const rect = bubble.getBoundingClientRect();
+    placement = hintPlacement(inApp, { width: rect.width, height: rect.height }, { width: app.width, height: app.height });
+  }
   bubble.classList.add('is-' + placement.side);
   bubble.style.left = placement.left + 'px';
   bubble.style.top = placement.top + 'px';
@@ -8612,8 +8655,6 @@ let crumbMenuOwner = null;
 let crumbMenuVault = null;
 let crumbMenuHoldsForm = false;
 
-let crumbMenuPinned = false;
-
 const CRUMB_MENU_DROP = 4;
 
 let changeRepoRevealed = false;
@@ -8623,14 +8664,8 @@ const previousRemoteByVault = new Map();
 let cloudFolders = null;
 
 let cloneRevealed = false;
-
-function pinCrumbMenu() {
-  crumbMenuPinned = true;
-}
 function hideCrumbMenu() {
   if (crumbMenu.hidden) return;
-  
-  holdCrumbMenuOpen();
   
   const returnFocus = crumbMenu.contains(document.activeElement);
   crumbMenu.hidden = true;
@@ -8641,7 +8676,6 @@ function hideCrumbMenu() {
   crumbMenuOwner = null;
   crumbMenuVault = null;
   crumbMenuHoldsForm = false;
-  crumbMenuPinned = false;
   changeRepoRevealed = false;
   cloneRevealed = false;
 }
@@ -9195,19 +9229,11 @@ function toggleCrumbMenu(button, items) {
   showCrumbMenu(button, items);
 }
 
-function openCrumbList(button, items, hover) {
+function openCrumbList(button, items) {
   crumbMenuVault = null;
-  if (hover) {
-    if (!crumbMenu.hidden && crumbMenuOwner === button) return;
-    showCrumbMenu(button, items, true);
-    return;
-  }
   toggleCrumbMenu(button, items);
-  
-  if (!crumbMenu.hidden) crumbMenuPinned = true;
 }
-
-function showCrumbMenu(button, items, quiet) {
+function showCrumbMenu(button, items) {
   
   const reopening = crumbMenuOwner === button && !crumbMenu.hidden;
   if (!reopening) hideCrumbMenu();
@@ -9356,7 +9382,7 @@ function showCrumbMenu(button, items, quiet) {
   const anchor = button.getBoundingClientRect();
   leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
   
-  if (firstFocusable && !reopening && !quiet) leafFocusForKeyboard(firstFocusable);
+  if (firstFocusable && !reopening) leafFocusForKeyboard(firstFocusable);
 }
 
 window.addEventListener('pointerdown', (event) => {
@@ -9791,60 +9817,6 @@ function showMicrosoftVaultForm(label, kind) {
 
 
 
-
-
-const CRUMB_MENU_LEAVE_MS = 500;
-let crumbMenuLeaveTimer = 0;
-let crumbMenuFadeTimer = 0;
-let crumbMenuEndFade = null;
-
-function holdCrumbMenuOpen() {
-  if (crumbMenuLeaveTimer) clearTimeout(crumbMenuLeaveTimer);
-  crumbMenuLeaveTimer = 0;
-  if (crumbMenuFadeTimer) clearTimeout(crumbMenuFadeTimer);
-  crumbMenuFadeTimer = 0;
-  if (crumbMenuEndFade) crumbMenu.removeEventListener('transitionend', crumbMenuEndFade);
-  crumbMenuEndFade = null;
-  crumbMenu.classList.remove('is-leaving');
-}
-
-function crumbMenuAnswersTheLeave() {
-  return !crumbMenu.hidden && !crumbMenuPinned && !crumbMenuVault;
-}
-
-function leavesTheCrumbMenu(event) {
-  const into = event && event.relatedTarget;
-  
-  if (!into) return true;
-  return into !== crumbMenu && !crumbMenu.contains(into) && into !== crumbMenuOwner;
-}
-
-function armCrumbMenuLeave(event) {
-  if (!leavesTheCrumbMenu(event)) return;
-  if (!crumbMenuAnswersTheLeave()) return;
-  if (crumbMenuLeaveTimer) clearTimeout(crumbMenuLeaveTimer);
-  crumbMenuLeaveTimer = setTimeout(() => {
-    crumbMenuLeaveTimer = 0;
-    if (crumbMenuAnswersTheLeave()) fadeCrumbMenuOut();
-  }, CRUMB_MENU_LEAVE_MS);
-}
-
-function fadeCrumbMenuOut() {
-  if (crumbMenu.hidden || crumbMenuEndFade) return;
-  crumbMenu.classList.add('is-leaving');
-  const done = (event) => {
-    if (event && event.target !== crumbMenu) return;
-    hideCrumbMenu();
-  };
-  crumbMenuEndFade = done;
-  crumbMenu.addEventListener('transitionend', done);
-  
-  crumbMenuFadeTimer = setTimeout(done, durationTokenMilliseconds('--lt-duration-300'));
-}
-
-crumbMenu.addEventListener('pointerenter', holdCrumbMenuOpen);
-crumbMenu.addEventListener('pointerleave', armCrumbMenuLeave);
-
 function renderLibraryVaultSwitch() {
   if (!libraryVaultSwitch) return;
   
@@ -9867,25 +9839,11 @@ function bindVaultSwitch(button, retire) {
     if (retire) retireHint('libraryVault');
     retireLibraryIntro();
   };
-  
-  button.addEventListener('pointerenter', (event) => {
-    if (event.pointerType !== 'mouse') return;
-    
-    holdCrumbMenuOpen();
-    opening();
-    openCrumbList(button, vaultMenuItems(), true);
-  });
-  button.addEventListener('pointerleave', armCrumbMenuLeave);
   button.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
     opening();
-    
-    if (!crumbMenu.hidden && crumbMenuOwner === button && !crumbMenuPinned) {
-      pinCrumbMenu();
-      return;
-    }
     openCrumbList(button, vaultMenuItems());
   });
 }
@@ -18745,7 +18703,7 @@ function closeWysiwygBlock(el) {
 
 function openEditableOnRelease(el, target, event) {
   if (blockIsEditingHost(el)) return;
-  if (target && target.closest && (target.closest('input[type="checkbox"]') || pressFollowsLink(target.closest('a'), event))) return;
+  if (target && target.closest && (target.closest('input[type="checkbox"]') || pressFollowsLink(el, target.closest('a'), event))) return;
   
   if (target && target.closest && target.closest('a')) placeCaretAtPress(el, event);
   const span = selectionTextSpanIn(el);
@@ -18795,9 +18753,9 @@ window.addEventListener('pointercancel', () => {
 });
 
 
-function pressFollowsLink(link, event) {
+function pressFollowsLink(el, link, event) {
   if (!link) return false;
-  return (!!event && (event.ctrlKey || event.metaKey)) || (!!link.classList && link.classList.contains('leaf-tag'));
+  return (!!event && (event.ctrlKey || event.metaKey)) || (!!link.classList && link.classList.contains('leaf-tag')) || !hasRangeOf(el, 'value');
 }
 
 
@@ -18806,7 +18764,7 @@ function wireMarkdownEditable(el) {
   el.addEventListener('mousedown', (event) => {
     const target = event.target;
     if (!target || !target.closest) return;
-    if (pressFollowsLink(target.closest('a'), event)) {
+    if (pressFollowsLink(el, target.closest('a'), event)) {
       commitActiveEditingBlock();
       event.preventDefault();
     } else if (target.closest('input[type="checkbox"]')) {
@@ -18823,7 +18781,7 @@ function wireMarkdownEditable(el) {
   
   el.addEventListener('click', (event) => {
     const link = event.button === 0 && event.target && event.target.closest ? event.target.closest('a') : null;
-    if (link && !pressFollowsLink(link, event)) event.preventDefault();
+    if (link && !pressFollowsLink(el, link, event)) event.preventDefault();
   });
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
@@ -19822,6 +19780,12 @@ function openInsertBlock(
   },
 ) {
   const { host, block } = makeBlankHost(spec, insertAt);
+  
+  const width = replaceEnd - insertAt;
+  const startNow = () => {
+    const at = rangeOf(block, 'block').start;
+    return Number.isFinite(at) ? at : insertAt;
+  };
   const prefix = separator + spec.marker;
   
   const close = spec.close || '';
@@ -19831,15 +19795,16 @@ function openInsertBlock(
     const text = typedBlockText(block);
     if (!text) return false;
     block.__committed = true;
+    const at = startNow();
     sendEditCommand({
       command: 'editBlock',
-      start: insertAt,
-      end: replaceEnd,
+      start: at,
+      end: at + width,
       text: prefix + text + close + suffix,
     });
     if (chainBelow) {
       setPendingCaret({
-        srcStart: insertAt + utf8ByteLength(separator),
+        srcStart: at + utf8ByteLength(separator),
         insertBelow: true,
         blockSpec: chainSpec,
       });
@@ -19854,16 +19819,17 @@ function openInsertBlock(
     const typed = typedBlockText(block);
     const lead = typed ? prefix + typed + close + separator : separator;
     const token = insertEditToken(option);
+    const at = startNow();
     
     if (typed && option.kind !== undefined) {
-      sendEditCommand({ command: 'editBlock', start: insertAt, end: replaceEnd, text: lead, live: true });
-      const blockAt = insertAt + utf8ByteLength(lead);
+      sendEditCommand({ command: 'editBlock', start: at, end: at + width, text: lead, live: true });
+      const blockAt = at + utf8ByteLength(lead);
       sendEditCommand({ command: 'editBlock', start: blockAt, end: blockAt, text: option.text + suffix, token, kind: option.kind });
     } else {
-      sendEditCommand({ command: 'editBlock', start: insertAt, end: replaceEnd, text: lead + option.text + suffix, token, kind: option.kind });
+      sendEditCommand({ command: 'editBlock', start: at, end: at + width, text: lead + option.text + suffix, token, kind: option.kind });
     }
     if (option.caret) {
-      setPendingCaret({ srcStart: insertAt + utf8ByteLength(lead) });
+      setPendingCaret({ srcStart: at + utf8ByteLength(lead) });
     }
     return token === undefined ? true : token;
   };
@@ -19873,15 +19839,17 @@ function openInsertBlock(
     const typed = typedBlockText(block);
     if (!typed) return;
     block.__committed = true;
-    sendEditCommand({ command: 'editBlock', start: insertAt, end: replaceEnd, text: separator + marker + typed + suffix });
-    setPendingCaret({ srcStart: insertAt + utf8ByteLength(separator), textOffset: 0 });
+    const at = startNow();
+    sendEditCommand({ command: 'editBlock', start: at, end: at + width, text: separator + marker + typed + suffix });
+    setPendingCaret({ srcStart: at + utf8ByteLength(separator), textOffset: 0 });
   };
   
   block.__becomeBlock = (specId) => {
     const next = blankBlockSpec(specId);
     if (!next || block.__committed || inlineDomToMarkdown(block).trim()) return;
+    const at = startNow();
     host.remove();
-    openInsertBlock(insertAt, { spec: next, separator, suffix, place, previous, keepEmpty, replaceEnd, focusNow: true });
+    openInsertBlock(at, { spec: next, separator, suffix, place, previous, keepEmpty, replaceEnd: at + width, focusNow: true });
   };
   block.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -29207,7 +29175,7 @@ function pressHomeHeart(path, kind) {
     homeDropping.delete(key);
     
     toggleFavorite(key, kind);
-    renderState();
+    redrawHomeHearts();
     return;
   }
   const favorites = currentFavorites();
@@ -29219,21 +29187,27 @@ function pressHomeHeart(path, kind) {
     timer: columnTimer(() => endHomeDrop(key), HOME_UNDO_MS),
   });
   toggleFavorite(key, kind);
-  renderState();
+  redrawHomeHearts();
+}
+
+function redrawHomeHearts() {
+  if (homeScreenIsShowing()) renderState();
+  else refreshHomeSheet();
 }
 
 function endHomeDrop(key) {
   const dropped = homeDropping.get(key);
   if (!dropped) return;
   homeDropping.delete(key);
-  const going = app.querySelectorAll('.home-row.is-going');
+  
+  const going = (homeScreenIsShowing() ? app : homeSheetBody).querySelectorAll('.home-row.is-going');
   let leaving = null;
   going.forEach((row) => {
     if (row.getAttribute('data-reveal-path') === key) leaving = row;
   });
   const li = leaving && leaving.parentElement;
   if (!li) {
-    renderState();
+    redrawHomeHearts();
     return;
   }
   li.classList.add('is-leaving');
@@ -29244,7 +29218,7 @@ function endHomeDrop(key) {
   });
   const motionMs = duration.length && duration.every(Number.isFinite) ? Math.max(...duration) : 300;
   if (motionMs === 0) {
-    renderState();
+    redrawHomeHearts();
     return;
   }
   let timer = 0;
@@ -29253,7 +29227,7 @@ function endHomeDrop(key) {
     if (event && event.target !== li) return;
     li.removeEventListener('transitionend', settled);
     clearTimeout(timer);
-    renderState();
+    redrawHomeHearts();
   });
   li.addEventListener('transitionend', settled);
   timer = columnTimer(settled, motionMs + 80);
@@ -29263,8 +29237,15 @@ function onHomeSheetKey(event) {
 }
 
 function openHomeSheet(which) {
-  const list = homeList(which, currentState || {});
   homeSheetShowing = which;
+  fillHomeSheet();
+  if (homeSheet.hidden) homeSheetLastFocus = document.activeElement;
+  openSheet(homeSheet, homeSheetBackdrop);
+  document.addEventListener('keydown', onHomeSheetKey);
+  leafFocusForKeyboard(homeSheetClose);
+}
+function fillHomeSheet() {
+  const list = homeList(homeSheetShowing, currentState || {});
   homeSheetTitle.textContent = list.count ? `${list.title} (${formatCount(list.count)})` : list.title;
   homeSheet.setAttribute('aria-label', list.title);
   homeSheetBody.innerHTML = homeListBox(list.rows);
@@ -29272,10 +29253,24 @@ function openHomeSheet(which) {
   bindScheduledRows(homeSheetBody);
   watchHomeLists(homeSheetBody);
   markHomeFavorites(homeSheetBody);
-  if (homeSheet.hidden) homeSheetLastFocus = document.activeElement;
-  openSheet(homeSheet, homeSheetBackdrop);
-  document.addEventListener('keydown', onHomeSheetKey);
-  leafFocusForKeyboard(homeSheetClose);
+}
+
+function refreshHomeSheet() {
+  if (!homeSheetShowing) return;
+  const scroller = homeSheetBody.querySelector('.home-list-scroll');
+  const listTop = scroller ? scroller.scrollTop : 0;
+  const bodyTop = homeSheetBody.scrollTop;
+  const held = document.activeElement;
+  
+  const heldName = held && held !== homeSheetBody && homeSheetBody.contains(held) ? ['data-home-unfavorite', 'data-home-repair', 'data-path'].find((name) => held.hasAttribute(name)) : null;
+  const heldValue = heldName ? held.getAttribute(heldName) : null;
+  fillHomeSheet();
+  const fresh = homeSheetBody.querySelector('.home-list-scroll');
+  if (fresh) fresh.scrollTop = listTop;
+  homeSheetBody.scrollTop = bodyTop;
+  if (!heldName) return;
+  const again = Array.from(homeSheetBody.querySelectorAll(`[${heldName}]`)).find((one) => one.getAttribute(heldName) === heldValue);
+  if (again) again.focus({ preventScroll: true });
 }
 function closeHomeSheet(options) {
   if (!homeSheet || homeSheet.hidden) return;
@@ -29922,7 +29917,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   if (app.querySelector('[data-home-favorite]')) send({ command: 'checkFavorites' });
   bindHomeShowAll(app);
   
-  if (homeSheetShowing) openHomeSheet(homeSheetShowing);
+  if (homeSheetShowing) refreshHomeSheet();
   refreshPaneFoot();
   sayStartupDrawn(false);
 }

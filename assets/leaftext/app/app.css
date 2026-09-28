@@ -7531,11 +7531,6 @@ body.library-resizing button {
 .crumb-menu {
   min-width: 132px;
   max-width: 300px;
-  
-  transition: opacity var(--lt-duration-300) var(--lt-ease-accelerate);
-}
-.crumb-menu.is-leaving {
-  opacity: 0;
 }
 
 .crumb-menu.is-bridged::after {
@@ -9805,7 +9800,7 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   cursor: pointer;
 }
 
-.document-body .leaf-editable-in-place a:not(.leaf-tag) {
+.document-body .leaf-editable-in-place[data-value-start] a {
   cursor: text;
 }
 
