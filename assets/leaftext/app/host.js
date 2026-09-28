@@ -191,6 +191,8 @@ export const COMMANDS = {
   openNotices: [REFUSED, 'the link that sends it sits on the start screen, which a site never draws — the leaf goes to the front page of the site instead — and no module a site or an export is served carries the licenses document: the notices ride beside it as licenses.md'],
   revealLink: [REFUSED, 'there is no file manager to show it in'],
   copyLinkPath: [REFUSED, 'a served document has no path on this machine'],
+  openLinkInBrowser: [REFUSED, 'the page is already in a browser, which follows the link itself'],
+  openPageInBrowser: [REFUSED, 'the page is already in a browser'],
   documentLength: [ANSWERED],
   previewLink: [ANSWERED],
   goBack: [REFUSED, 'the browser draws its own Back one row above, so a site draws no pair of its own and never sends this'],

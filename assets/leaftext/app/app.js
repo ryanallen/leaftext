@@ -177,6 +177,10 @@ const DOCUMENT_NAME_RE = new RegExp(`\\.(${DOCUMENT_EXTS})$`, 'i');
  
 const DOCUMENT_HREF_RE = new RegExp(`\\.(${DOCUMENT_EXTS})(?:[#?].*)?$`, 'i');
 
+const HTML_EXTS = (((window.__leafDocumentFormats || []).find((entry) => entry.format === 'html') || {}).exts || []).join('|');
+ 
+const HTML_HREF_RE = HTML_EXTS ? new RegExp(`\\.(${HTML_EXTS})(?:[#?].*)?$`, 'i') : /(?!)/;
+
 function wikiSpellingFromHref(rawHref) {
   const href = String(rawHref || '');
   if (!/^leaf-wiki:/i.test(href)) return '';
@@ -2613,7 +2617,9 @@ function closeFlowSheet() {
     restoreHintAfterSheet(flowSheet);
   };
   flowSheet.addEventListener('transitionend', hide);
-  window.setTimeout(hide, 320);
+  
+  const durations = (getComputedStyle(flowSheet).transitionDuration || '').split(',').map((value) => (parseFloat(value) || 0) * (value.trim().endsWith('ms') ? 1 : 1000));
+  window.setTimeout(hide, Math.max(...durations, 0) + SHEET_LEG_SLACK_MS);
   leafFocusForKeyboard(flowLastFocus);
 }
 
@@ -5322,9 +5328,34 @@ function resetSheetDrag(sheet) {
   sheet.style.removeProperty('--sheet-grow');
 }
 
-const SHEET_LAND_MS = 400;
-const SHEET_LEAVE_MS = 280;
-const SHEET_BOOST_MS = 160;
+const boostedSheets = new WeakSet();
+function clearSheetBoost(sheet) {
+  if (!boostedSheets.delete(sheet)) return;
+  sheet.style.removeProperty('animation-duration');
+  sheet.style.removeProperty('animation-timing-function');
+}
+
+function sheetReleaseMotion(distance, speed) {
+  const stiffness = 0.0004;
+  const damping = 0.04;
+  const omega = Math.sqrt(stiffness);
+  const velocity = Math.max(0, Math.min(speed, 20)) / Math.max(distance, 1);
+  const points = [{ progress: 0, ms: 0 }];
+  points.push({ progress: 1 - (1 + omega - velocity) * Math.exp(-damping / 2), ms: 1 });
+  let duration = 0;
+  for (let ms = 12; ms <= 720; ms += 12) {
+    const decay = Math.exp((-damping / 2) * ms);
+    const progress = 1 - (1 + (omega - velocity) * ms) * decay;
+    const remainingSpeed = (velocity + omega * (omega - velocity) * ms) * decay;
+    points.push({ progress, ms });
+    duration = ms;
+    if (ms >= 120 && Math.abs(1 - progress) < 0.002 && Math.abs(remainingSpeed) < 0.00004) break;
+  }
+  points[points.length - 1].progress = 1;
+  const easing = `linear(${points.map((point) => `${point.progress.toFixed(4)} ${((point.ms / duration) * 100).toFixed(2)}%`).join(', ')})`;
+  return { easing, duration };
+}
+
 const SHEET_LEG_SLACK_MS = 80;
 const SHEET_MOVING = ['is-landing', 'is-leaving', 'is-boosting'];
 
@@ -5337,11 +5368,12 @@ function dropSheetMotion(sheet) {
   SHEET_MOVING.forEach((name) => sheet.classList.remove(name));
 }
 
-function sheetMotionOff(sheet) {
-  return parseFloat(getComputedStyle(sheet).getPropertyValue('animation-duration')) === 0;
+function sheetMotionDuration(sheet) {
+  const value = getComputedStyle(sheet).getPropertyValue('animation-duration').trim();
+  return parseFloat(value) * (value.endsWith('ms') ? 1 : 1000);
 }
 
-function runSheetMotion(sheet, className, ms, done) {
+function runSheetMotion(sheet, className, done, prepare) {
   cancelSheetLegs(sheet);
   const run = sheetRun.get(sheet);
   dropSheetMotion(sheet);
@@ -5355,12 +5387,17 @@ function runSheetMotion(sheet, className, ms, done) {
     clearTimeout(timer);
     done();
   };
-  if (sheetMotionOff(sheet)) {
+  let duration = sheetMotionDuration(sheet);
+  if (duration === 0) {
     finish(null);
     return;
   }
+  if (prepare) {
+    prepare();
+    duration = sheetMotionDuration(sheet);
+  }
   sheet.addEventListener('animationend', finish);
-  timer = setTimeout(() => finish(null), ms + SHEET_LEG_SLACK_MS);
+  timer = setTimeout(() => finish(null), duration + SHEET_LEG_SLACK_MS);
 }
 
 function openSheet(sheet, backdrop, options) {
@@ -5386,23 +5423,26 @@ function openSheet(sheet, backdrop, options) {
     backdrop.classList.add('open');
   }
   resetSheetDrag(sheet);
+  clearSheetBoost(sheet);
   sheet.classList.add('open');
   
-  runSheetMotion(sheet, 'is-landing', SHEET_LAND_MS, () => sheet.classList.remove('is-landing'));
+  runSheetMotion(sheet, 'is-landing', () => sheet.classList.remove('is-landing'));
 }
 
 function closeSheet(sheet, backdrop, options) {
   if (!sheet || sheet.hidden) return;
   const dragged = !!(options && options.dragged);
   const leg = dragged ? 'is-boosting' : 'is-leaving';
+  clearSheetBoost(sheet);
   sheet.classList.remove('open');
   if (backdrop) {
     
     if (!dragged) backdrop.classList.add('is-held');
     backdrop.classList.remove('open');
   }
-  runSheetMotion(sheet, leg, dragged ? SHEET_BOOST_MS : SHEET_LEAVE_MS, () => {
+  runSheetMotion(sheet, leg, () => {
     sheet.classList.remove(leg);
+    clearSheetBoost(sheet);
     
     resetSheetDrag(sheet);
     sheet.hidden = true;
@@ -5413,7 +5453,11 @@ function closeSheet(sheet, backdrop, options) {
     }
     
     restoreHintAfterSheet(sheet);
-  });
+  }, dragged && options.motion ? () => {
+    boostedSheets.add(sheet);
+    sheet.style.setProperty('animation-duration', options.motion.duration + 'ms');
+    sheet.style.setProperty('animation-timing-function', options.motion.easing);
+  } : null);
 }
 
 function makeSheetDraggable(sheet, grip, dismiss, options) {
@@ -5428,6 +5472,7 @@ function makeSheetDraggable(sheet, grip, dismiss, options) {
     
     cancelSheetLegs(sheet);
     dropSheetMotion(sheet);
+    clearSheetBoost(sheet);
     
     const parked = parseFloat(sheet.style.getPropertyValue('--sheet-drag')) || 0;
     
@@ -5461,6 +5506,7 @@ function makeSheetDraggable(sheet, grip, dismiss, options) {
     
     const tall = sheet.getBoundingClientRect().height || 1;
     const dy = drag.dy;
+    const speed = drag.speed;
     const leaving =
       dy > tall * SHEET_DISMISS_FRACTION ||
       (drag.speed > SHEET_FLICK_PX_PER_MS && dy > tall * SHEET_FLICK_FRACTION);
@@ -5473,7 +5519,7 @@ function makeSheetDraggable(sheet, grip, dismiss, options) {
       return;
     }
     
-    dismiss({ dragged: true });
+    dismiss({ dragged: true, motion: sheetReleaseMotion(tall - dy, speed) });
   };
   grip.addEventListener('pointerup', finish);
   grip.addEventListener('pointercancel', finish);
@@ -6701,6 +6747,8 @@ const FOLDER_MENU_ITEMS = [
 const LINK_MENU_ITEMS = [
   { action: 'openLink', label: 'Open' },
   { action: 'openLinkInNewPage', label: 'Open in new page', pageOnly: true },
+  
+  { action: 'openLinkInBrowser', label: 'Open in browser', savedPage: true },
   'separator',
   { action: 'copyLink', label: 'Copy link' },
   { action: 'copyLinkText', label: 'Copy link text' },
@@ -6791,6 +6839,8 @@ const PAGE_MENU_ITEMS = [
   'separator',
   { action: 'favorite', label: 'Favorite' },
   'separator',
+  
+  { action: 'openPageInBrowser', label: 'Open in browser', savedPageOpen: true },
   { action: 'copyPath', label: 'Copy path' },
   { action: 'reveal', label: 'Reveal file' },
   { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
@@ -6857,6 +6907,8 @@ function runContextAction(action, path, link, selected, picture, tableCell) {
     case 'copySelection': copyPlainText(selected); break;
     case 'openLink': if (link) sendDocumentLink(link, false); break;
     case 'openLinkInNewPage': if (link) sendDocumentLink(link, true); break;
+    case 'openLinkInBrowser': send({ command: 'openLinkInBrowser', href: path }); break;
+    case 'openPageInBrowser': send({ command: 'openPageInBrowser' }); break;
     
     case 'copyLink': copyPlainText(path); break;
     case 'copyLinkText': if (link) copyPlainText((link.textContent || '').trim()); break;
@@ -6945,6 +6997,7 @@ function contextMenuEntries() {
       LINK_MENU_ITEMS.filter((entry) => {
         if (entry === 'separator') return true;
         if (entry.fileBehind) return fileBehind;
+        if (entry.savedPage) return linkIsSavedPage(contextMenuPath, kind);
         return !entry.pageOnly || isAnotherPageHref(contextMenuPath, kind);
       }).map((entry) => labelForLinkEntry(entry, kind))
     );
@@ -6976,6 +7029,7 @@ function contextMenuEntries() {
         if (entry.action === 'paste') return libraryHoldsTransfer();
         if (entry.paneRow) return libraryRowMenuShows(contextMenuPath, entry.paneRow, contextMenuTargetKind);
         if (entry.selectionOnly) return !!contextMenuSelectionText;
+        if (entry.savedPageOpen) return currentDocumentFormat === 'html' && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('openPageInBrowser'));
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         
         if (entry.whileSplit) return contextMenuTargetKind === 'tab' && splitOpen();
@@ -8519,6 +8573,7 @@ appSurface.appendChild(crumbMenu);
 let crumbMenuOwner = null;
 
 let crumbMenuVault = null;
+let crumbMenuHoldsForm = false;
 
 let crumbMenuPinned = false;
 
@@ -8548,6 +8603,7 @@ function hideCrumbMenu() {
   }
   crumbMenuOwner = null;
   crumbMenuVault = null;
+  crumbMenuHoldsForm = false;
   crumbMenuPinned = false;
   changeRepoRevealed = false;
   cloneRevealed = false;
@@ -8625,6 +8681,7 @@ function pushChangeRepoPanel(items, vault, repo) {
   };
   items.push({
     input: '',
+    form: true,
     fieldClass: 'repo-url-field',
     commitOnBlur: false,
     onEnter: saveRepo,
@@ -9119,6 +9176,7 @@ function showCrumbMenu(button, items, quiet) {
   if (!reopening) hideCrumbMenu();
   if (!items.length) return;
   crumbMenuOwner = button;
+  crumbMenuHoldsForm = items.some((entry) => entry && entry.form === true);
   crumbMenu.textContent = '';
   let firstFocusable = null;
   for (const entry of items) {
@@ -9150,6 +9208,7 @@ function showCrumbMenu(button, items, quiet) {
       field.className = 'crumb-menu-input';
       if (entry.fieldClass) field.classList.add(entry.fieldClass);
       field.value = entry.input;
+      if (entry.onInput) field.addEventListener('input', () => entry.onInput(field.value));
       field.spellcheck = false;
       field.setAttribute('autocomplete', 'off');
       field.placeholder = entry.placeholder || '';
@@ -9267,7 +9326,7 @@ window.addEventListener('pointerdown', (event) => {
   if (!crumbMenu.contains(event.target)) hideCrumbMenu();
 });
 
-window.addEventListener('blur', () => { if (!crumbMenuVault) hideCrumbMenu(); });
+window.addEventListener('blur', () => { if (!crumbMenuVault && !crumbMenuHoldsForm) hideCrumbMenu(); });
 leafOnEscape(hideCrumbMenu);
 
 let crumbFitFrame = 0;
@@ -9474,15 +9533,62 @@ function pushServiceVaultRows(items) {
 function crumbFormValues() {
   return Array.from(crumbMenu.querySelectorAll('.crumb-menu-input'), (field) => (field.type === 'password' ? field.value : field.value.trim()));
 }
+const serviceFormDrafts = new Map();
+function clearServiceFormDraft(heading) {
+  serviceFormDrafts.delete(heading);
+}
+function showServiceForm(items) {
+  const heading = items.find((entry) => entry && entry.heading).heading;
+  const draft = serviceFormDrafts.get(heading) || {};
+  let fieldIndex = 0;
+  for (const entry of items) {
+    if (entry.heading) entry.form = true;
+    if (entry.input !== undefined) {
+      const index = fieldIndex++;
+      if (!entry.secret) {
+        entry.input = draft[index] || '';
+        entry.onInput = (value) => {
+          const current = serviceFormDrafts.get(heading) || {};
+          current[index] = value;
+          serviceFormDrafts.set(heading, current);
+        };
+      }
+    }
+    for (const button of entry.buttons || []) {
+      if (button.label !== 'Cancel') continue;
+      button.run = () => { clearServiceFormDraft(heading); hideCrumbMenu(); };
+    }
+  }
+  showCrumbMenu(crumbMenuOwner, items);
+}
+let waitingServiceForm = null;
+function startServiceWait(heading, service, command, checksServer = false) {
+  clearServiceFormDraft(heading);
+  if (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers(command.command)) {
+    hideCrumbMenu();
+    send(command);
+    return;
+  }
+  showCrumbMenu(crumbMenuOwner, [
+    { heading, form: true },
+    { note: checksServer ? 'Checking these with the server.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
+    { buttons: [{ label: 'Cancel', keepOpen: true, run: hideCrumbMenu }] },
+  ]);
+  waitingServiceForm = crumbMenu.querySelector('.crumb-menu-note');
+  send(command);
+}
+window.leafSignInEnded = () => {
+  if (!crumbMenu.hidden && waitingServiceForm && crumbMenu.contains(waitingServiceForm)) hideCrumbMenu();
+  waitingServiceForm = null;
+};
 const OWN_CREDENTIALS_NOTE = "The address, user name and password are your own. Leaftext keeps the password in this computer's credential store, the same place it keeps every vault sign-in.";
 function showBoxVaultForm() {
   const save = () => {
     const [clientId, clientSecret, folderId] = crumbFormValues();
     if (!clientId || !clientSecret || !folderId) return;
-    hideCrumbMenu();
-    send({ command: 'createBoxVault', clientId, clientSecret, folderId });
+    startServiceWait('New Box vault', 'Box', { command: 'createBoxVault', clientId, clientSecret, folderId });
   };
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: 'New Box vault' },
     { note: 'Use your own Box app. Register http://127.0.0.1/ as its redirect address. Copy the folder ID from the folder’s Box web address.' },
     { input: '', placeholder: 'Client ID', commitOnBlur: false, onEnter: save },
@@ -9498,10 +9604,9 @@ function showWebDavVaultForm() {
   const save = () => {
     const [url, user, password] = crumbFormValues();
     if (!url || !user || !password) return;
-    hideCrumbMenu();
-    send({ command: 'createWebDavVault', url, user, password });
+    startServiceWait('New WebDAV vault', 'WebDAV', { command: 'createWebDavVault', url, user, password }, true);
   };
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: 'New WebDAV vault' },
     { note: OWN_CREDENTIALS_NOTE },
     { input: '', placeholder: 'Folder address, such as https://cloud.example.com/…/Notes', commitOnBlur: false, onEnter: save },
@@ -9517,10 +9622,9 @@ function showS3VaultForm() {
   const save = () => {
     const [endpoint, region, bucket, prefix, accessKey, secretKey] = crumbFormValues();
     if (!region || !bucket || !accessKey || !secretKey) return;
-    hideCrumbMenu();
-    send({ command: 'createS3Vault', endpoint, region, bucket, prefix, accessKey, secretKey });
+    startServiceWait('New S3 vault', 'S3', { command: 'createS3Vault', endpoint, region, bucket, prefix, accessKey, secretKey }, true);
   };
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: 'New S3 vault' },
     { note: "The key pair is your own. Leaftext keeps the secret access key in this computer's credential store, the same place it keeps every vault sign-in." },
     { input: '', placeholder: 'Endpoint (leave blank for Amazon)', commitOnBlur: false, onEnter: save },
@@ -9554,10 +9658,9 @@ function signInVaultRow(vault) {
       const save = () => {
         const [secret] = crumbFormValues();
         if (!secret) return;
-        hideCrumbMenu();
-        send({ command: 'signInVault', id: vault.id, secret });
+        startServiceWait(vault.name || 'Sign in', vault.kind === 's3' ? 'S3' : 'WebDAV', { command: 'signInVault', id: vault.id, secret }, true);
       };
-      showCrumbMenu(crumbMenuOwner, [
+      showServiceForm([
         { heading: vault.name || 'Sign in' },
         { input: '', placeholder: label, secret: true, commitOnBlur: false, onEnter: save },
         { buttons: [
@@ -9574,10 +9677,9 @@ function showDropboxVaultForm() {
     const appKey = fields[0] && fields[0].value.trim();
     const folderPath = fields[1] && fields[1].value.trim();
     if (!appKey || !folderPath) return;
-    hideCrumbMenu();
-    send({ command: 'createDropboxVault', appKey, folderPath });
+    startServiceWait('New Dropbox vault', 'Dropbox', { command: 'createDropboxVault', appKey, folderPath });
   };
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: 'New Dropbox vault' },
     { note: 'Enter your Dropbox app key. Register http://127.0.0.1:37653/ as its redirect address.' },
     { input: '', placeholder: 'Dropbox app key', commitOnBlur: false, onEnter: save },
@@ -9595,10 +9697,9 @@ function showGoogleDriveVaultForm() {
     return;
   }
   const signIn = () => {
-    hideCrumbMenu();
-    send({ command: 'createGoogleDriveVault', clientId: '', folderId: '', wholeDrive: true });
+    startServiceWait('New Google Drive vault', 'Google Drive', { command: 'createGoogleDriveVault', clientId: '', folderId: '', wholeDrive: true });
   };
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: 'New Google Drive vault' },
     { note: 'Sign in with your Google account. Your Docs, Sheets and Slides open here, and nothing needs installing.' },
     { buttons: [{ label: 'Sign in with Google', primary: true, run: signIn, keepOpen: true }] },
@@ -9615,11 +9716,10 @@ function showOwnGoogleClientForm() {
     const clientId = fields[0] && fields[0].value.trim();
     const folderId = wholeDrive ? '' : fields[1] && fields[1].value.trim();
     if (!clientId || (!wholeDrive && !folderId)) return;
-    hideCrumbMenu();
-    send({ command: 'createGoogleDriveVault', clientId, folderId, wholeDrive });
+    startServiceWait('New Google Drive vault', 'Google Drive', { command: 'createGoogleDriveVault', clientId, folderId, wholeDrive });
   };
   const connect = () => save(false);
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: 'New Google Drive vault' },
     { note: 'Use a desktop OAuth client ID from your Google Cloud project. Copy the folder ID from its Drive web address.' },
     { note: 'Set that OAuth app to In production. Left in Testing, Google ends its sign-in after 7 days.' },
@@ -9637,10 +9737,9 @@ function showMicrosoftVaultForm(label, kind) {
     const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
     const [clientId, driveId, folderId] = Array.from(fields, (field) => field.value.trim());
     if (!clientId || !driveId || !folderId) return;
-    hideCrumbMenu();
-    send({ command: 'createMicrosoftVault', kind, clientId, driveId, folderId });
+    startServiceWait(`New ${label} vault`, label, { command: 'createMicrosoftVault', kind, clientId, driveId, folderId });
   };
-  showCrumbMenu(crumbMenuOwner, [
+  showServiceForm([
     { heading: `New ${label} vault` },
     { note: 'Use a Microsoft desktop app registration. Copy the drive and folder IDs from Microsoft Graph.' },
     { input: '', placeholder: 'Desktop app client ID', commitOnBlur: false, onEnter: save },
@@ -12625,8 +12724,15 @@ window.leafSetFilterHints = (payload) => {
   
   if (libraryListShowing() === 'fields') renderLibrary();
   
+  redrawFrontmatterPickers();
+  
   if (findingAllFiles() && document.activeElement === librarySearch) openFilterMenu();
 };
+
+function filterHintField(name) {
+  const folded = String(name || '').toLowerCase();
+  return filterHintFields.find((entry) => String(entry.name).toLowerCase() === folded) || null;
+}
 
 function filterTokenAt() {
   const text = librarySearch.value || '';
@@ -20194,12 +20300,13 @@ function frontmatterInput({ value, label, known, commit, abandon }) {
 }
 
 
-function editFrontmatterCell(cell, label, write, known) {
+function editFrontmatterCell(cell, label, write, known, settled) {
   if (cell.classList.contains('is-editing')) return;
   const before = cell.textContent;
   const settle = (text) => {
     cell.classList.remove('is-editing');
     cell.textContent = text;
+    if (settled) settled(text);
   };
   const field = frontmatterInput({
     value: before,
@@ -20254,6 +20361,79 @@ function editFrontmatterDate(cell, key) {
   cell.textContent = '';
   cell.appendChild(field);
   field.focus();
+}
+
+
+const FRONTMATTER_PICKER_MOST = 12;
+
+const FRONTMATTER_TYPE_A_VALUE = 'type';
+
+const frontmatterCellValues = new WeakMap();
+
+
+function frontmatterPickerValues(key) {
+  const entry = filterHintField(key);
+  const values = entry && Array.isArray(entry.values) ? entry.values : [];
+  if (values.length < 2 || values.length > FRONTMATTER_PICKER_MOST) return null;
+  return Number(entry.notes) > values.length ? values : null;
+}
+
+
+function drawFrontmatterTextCell(cell, key) {
+  if (cell.classList.contains('is-editing')) return;
+  const own = frontmatterCellValues.get(cell);
+  const values = frontmatterPickerValues(key);
+  if (!values) {
+    if (cell.querySelector('.frontmatter-select')) cell.textContent = own;
+    return;
+  }
+  const picker = document.createElement('label');
+  picker.className = 'leaf-select frontmatter-select';
+  const select = document.createElement('select');
+  select.setAttribute('aria-label', key);
+  const row = (value, text) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    select.appendChild(option);
+  };
+  
+  if (!values.includes(own)) row(own, own);
+  for (const value of values) row(value, value);
+  row(FRONTMATTER_TYPE_A_VALUE, 'Type a value…');
+  select.value = own;
+  select.addEventListener('keydown', frontmatterKeyLeavesBox);
+  select.addEventListener('change', () => {
+    const picked = select.value;
+    if (picked === FRONTMATTER_TYPE_A_VALUE) {
+      cell.textContent = own;
+      editFrontmatterCell(cell, key, (text) => sendFieldEdit(key, text), false, (text) => {
+        frontmatterCellValues.set(cell, text);
+        drawFrontmatterTextCell(cell, key);
+      });
+      return;
+    }
+    if (picked === own) return;
+    frontmatterCellValues.set(cell, picked);
+    sendFieldEdit(key, picked);
+    drawFrontmatterTextCell(cell, key);
+  });
+  const chevron = document.createElement('span');
+  chevron.className = 'lt-icon lt-icon-chevron-down';
+  chevron.setAttribute('aria-hidden', 'true');
+  picker.appendChild(select);
+  picker.appendChild(chevron);
+  cell.textContent = '';
+  cell.appendChild(picker);
+}
+
+
+function redrawFrontmatterPickers() {
+  const block = frontmatterBlock();
+  if (!block || !block.classList.contains('is-editable')) return;
+  for (const cell of block.querySelectorAll('td[data-leaf-field][data-leaf-field-kind="text"]')) {
+    if (frontmatterCellValues.has(cell)) drawFrontmatterTextCell(cell, cell.dataset.leafField);
+  }
 }
 
 
@@ -20437,7 +20617,14 @@ function bindFrontmatterFields(root) {
     } else if (kind === 'date' && frontmatterDateValue(cell.textContent.trim())) {
       cell.addEventListener('click', () => editFrontmatterDate(cell, key));
     } else {
-      cell.addEventListener('click', () => editFrontmatterCell(cell, key, (text) => sendFieldEdit(key, text)));
+      cell.addEventListener('click', (event) => {
+        if (event.target.closest('.frontmatter-select')) return;
+        editFrontmatterCell(cell, key, (text) => sendFieldEdit(key, text));
+      });
+      if (kind === 'text') {
+        frontmatterCellValues.set(cell, cell.textContent);
+        drawFrontmatterTextCell(cell, key);
+      }
     }
     const row = cell.parentElement;
     const name = row && row.querySelector('th');
@@ -31002,6 +31189,11 @@ function linkHasAFileBehindIt(rawHref, kind = linkHoverKind(rawHref)) {
   return kind === 'Another page' || kind === 'Opens in another app';
 }
 
+function linkIsSavedPage(rawHref, kind = linkHoverKind(rawHref)) {
+  if (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('openLinkInBrowser')) return false;
+  return kind === 'Another page' && HTML_HREF_RE.test(String(rawHref || '').trim());
+}
+
 function isAnotherPageHref(rawHref, kind = linkHoverKind(rawHref)) {
   return kind === 'Another page';
 }
@@ -31021,6 +31213,11 @@ function bindDocumentLinks() {
       return;
     }
     event.preventDefault();
+    
+    if (event.shiftKey && linkIsSavedPage(link.getAttribute('href'))) {
+      send({ command: 'openLinkInBrowser', href: link.getAttribute('href') });
+      return;
+    }
     sendDocumentLink(link, newPageModifierHeld(event));
   });
   

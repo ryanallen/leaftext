@@ -210,7 +210,7 @@ Right-click a file row for a context menu of file actions:
 | Properties | Opens the OS file-properties view |
 | Delete | Asks first, then moves the file to the Recycle Bin / Trash — and offers it back |
 
-Right-click anywhere on the rendered page, including the blank space around its text, for the actions about the document you are reading: **Favorite** or **Unfavorite**, **Copy path**, **Reveal file**, **Properties**, and **Delete**. With words highlighted, **Copy** leads the menu and puts exactly those words on the clipboard — `Ctrl+C`, or `Cmd+C` on a Mac, does the same thing without the menu. **Open**, **Cut**, **Copy** and **Rename** stay on a file row because they act on a row in a folder. A link inside a document has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), and a block being typed in keeps its text menu.
+Right-click anywhere on the rendered page, including the blank space around its text, for the actions about the document you are reading: **Favorite** or **Unfavorite**, **Copy path**, **Reveal file**, **Properties**, and **Delete**. Over a saved web page — an `.html` or `.htm` file — **Open in browser** stands above **Copy path** and sends the page to your browser, where its own layout, type and color are drawn. With words highlighted, **Copy** leads the menu and puts exactly those words on the clipboard — `Ctrl+C`, or `Cmd+C` on a Mac, does the same thing without the menu. **Open**, **Cut**, **Copy** and **Rename** stay on a file row because they act on a row in a folder. A link inside a document has [its own menu](02-navigation.md#opening-a-link-in-a-new-page), and a block being typed in keeps its text menu.
 
 Reveal and Properties map to each OS:
 
@@ -440,7 +440,7 @@ It works outside a vault too: for a document in a plain folder, Leaftext reads t
 
 A [tag](../GLOSSARY.md#tag) such as `#work` or `#work/reports` draws as a small pill in a Markdown note's prose and in its `tags` field. Press it to search the active vault through the [find bar](02-navigation.md#find-in-this-document)'s **All files**. A parent tag finds its children: `#work` finds `#work/reports`, while `#workshop` is a different subject. Matching ignores capitals.
 
-Tags in prose and the field block belong to the same set. A field value may include its leading `#` or leave it out. Tags inside code, link words, addresses, brace syntax and heading-only wiki references stay text. A number on its own is not a tag. Outside a vault, tags still draw as tags.
+Tags in prose and the field block belong to the same set. A field value may include its leading `#` or leave it out. Tags inside code, link words, addresses, brace syntax and heading-only wiki references stay text. A tag needs a letter: a number on its own, or held together by slashes or dashes as in `#2/` or `#2-`, is not a tag, and a slash at the end of a tag is not part of it. Outside a vault, tags still draw as tags.
 
 ![Searching for a parent tag finds both the note with that tag and a note with a nested tag](../../imgs/tags-search-after-rename.png)
 

@@ -8219,10 +8219,6 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 .reader-subselect select {
   height: 26px;
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
   font-family: var(--app-font);
   
   font-size: var(--lt-text-9);
@@ -8233,9 +8229,14 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .leaf-select {
   position: relative;
 }
+
 .leaf-select select {
   appearance: none;
   padding-inline: var(--lt-space-8) var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
 }
 .leaf-select > .lt-icon-chevron-down {
   position: absolute;
@@ -11751,6 +11752,15 @@ th.image-cell {
   font-size: inherit;
   line-height: var(--lt-leading-1-5);
 }
+
+.frontmatter-select select {
+  min-width: 120px;
+  padding-block: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: var(--lt-leading-1-5);
+  cursor: pointer;
+}
 .frontmatter-input:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
@@ -13523,6 +13533,7 @@ p.front-more {
   animation: sheet-leave var(--lt-duration-280) both;
 }
 .leaf-sheet.is-boosting {
+  
   animation: sheet-boost var(--lt-duration-160) var(--lt-ease-accelerate) both;
 }
 
@@ -15670,10 +15681,6 @@ p.front-more {
 }
 .flow-sheet-direction select {
   padding-block: var(--lt-space-4);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
   font: inherit;
   font-size: var(--lt-text-12);
 }

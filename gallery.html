@@ -8237,10 +8237,6 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 .reader-subselect select {
   height: 26px;
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
   font-family: var(--app-font);
   /* The smallest the tokens carry: the list is the whole of what the tray holds on the map, and it stood wider than the bar under it. */
   font-size: var(--lt-text-9);
@@ -8251,9 +8247,14 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .leaf-select {
   position: relative;
 }
+/* The box itself, drawn once for every list box in the app; each place that uses one keeps only its own size. */
 .leaf-select select {
   appearance: none;
   padding-inline: var(--lt-space-8) var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
 }
 .leaf-select > .lt-icon-chevron-down {
   position: absolute;
@@ -11795,6 +11796,15 @@ th.image-cell {
   font-size: inherit;
   line-height: var(--lt-leading-1-5);
 }
+/* A field picked from the vault's own values: the app's list box at the row's own size, so drawing one moves no other line of the table. */
+.frontmatter-select select {
+  min-width: 120px;
+  padding-block: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: var(--lt-leading-1-5);
+  cursor: pointer;
+}
 .frontmatter-input:focus {
   outline: none;
   border-color: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
@@ -13582,6 +13592,7 @@ p.front-more {
   animation: sheet-leave var(--lt-duration-280) both;
 }
 .leaf-sheet.is-boosting {
+  /* A drag writes its spring curve and length on the sheet; every other close keeps these. */
   animation: sheet-boost var(--lt-duration-160) var(--lt-ease-accelerate) both;
 }
 /* The scrim waits out the wind-up so the two leave together — a sheet still on screen over an undimmed window is the one thing the scrim is there to prevent. A drag dismissal has no wind-up and takes no delay. */
@@ -15730,10 +15741,6 @@ p.front-more {
 }
 .flow-sheet-direction select {
   padding-block: var(--lt-space-4);
-  border: var(--lt-stroke-1) solid var(--lt-border);
-  border-radius: var(--lt-radius-md);
-  background: var(--lt-surface-elevated);
-  color: var(--lt-foreground);
   font: inherit;
   font-size: var(--lt-text-12);
 }
@@ -17874,7 +17881,7 @@ body.leaf-paper-picture .app-surface > :not(.picture-print) {
 </section>
 <section class="part">
 <header><h3>Editable fields</h3><code class="built">.frontmatter-input</code><span class="built">frontmatter-fields.js</span></header>
-<div class="stage"><div class="document-body"><div class="frontmatter is-editable"><table><tbody><tr><th>title</th><td data-leaf-field="title">A note</td><td class="frontmatter-actions"><button type="button" class="frontmatter-remove" style="opacity:1"><span class="lt-icon lt-icon-close"></span></button></td></tr><tr><th>status</th><td data-leaf-field="status" class="is-editing"><input type="text" class="frontmatter-input" value="draft"></td><td class="frontmatter-actions"></td></tr><tr><th>tags</th><td data-leaf-field="tags"><div class="frontmatter-chips"><span class="frontmatter-chip">one<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><span class="frontmatter-chip">two<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><button type="button" class="frontmatter-chip-add"><span class="lt-icon lt-icon-new"></span></button></div></td><td class="frontmatter-actions"></td></tr><tr><th>due</th><td data-leaf-field="due" class="is-editing"><input type="date" class="frontmatter-input frontmatter-date" value="2026-08-10"></td><td class="frontmatter-actions"></td></tr><tr class="frontmatter-add"><td colspan="3"><button type="button" class="frontmatter-add-button"><span class="lt-icon lt-icon-new"></span><span>Add a field</span></button></td></tr></tbody></table></div></div></div>
+<div class="stage"><div class="document-body"><div class="frontmatter is-editable"><table><tbody><tr><th>title</th><td data-leaf-field="title">A note</td><td class="frontmatter-actions"><button type="button" class="frontmatter-remove" style="opacity:1"><span class="lt-icon lt-icon-close"></span></button></td></tr><tr><th>status</th><td data-leaf-field="status" class="is-editing"><input type="text" class="frontmatter-input" value="draft"></td><td class="frontmatter-actions"></td></tr><tr><th>priority</th><td data-leaf-field="priority"><label class="leaf-select frontmatter-select"><select aria-label="priority"><option>High</option><option selected>Medium</option><option>Low</option><option>Type a value…</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></td><td class="frontmatter-actions"></td></tr><tr><th>tags</th><td data-leaf-field="tags"><div class="frontmatter-chips"><span class="frontmatter-chip">one<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><span class="frontmatter-chip">two<button type="button" class="frontmatter-chip-remove"><span class="lt-icon lt-icon-close"></span></button></span><button type="button" class="frontmatter-chip-add"><span class="lt-icon lt-icon-new"></span></button></div></td><td class="frontmatter-actions"></td></tr><tr><th>due</th><td data-leaf-field="due" class="is-editing"><input type="date" class="frontmatter-input frontmatter-date" value="2026-08-10"></td><td class="frontmatter-actions"></td></tr><tr class="frontmatter-add"><td colspan="3"><button type="button" class="frontmatter-add-button"><span class="lt-icon lt-icon-new"></span><span>Add a field</span></button></td></tr></tbody></table></div></div></div>
 </section>
 <section class="part">
 <header><h3>Syntax colors</h3><code class="built">.syn</code><span class="built">markdown/code.rs, whose SYNTAX_STYLE_RULES is the one table of these</span></header>

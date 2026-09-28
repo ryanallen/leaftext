@@ -314,6 +314,7 @@
 | No duplicate tab | [✅][l-open-links] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Heading links land | [✅][l-open-links] | [✅][o-links] | [✅][t-md] | [✅][c-seen] |
 | Browser, app or mail | [✅][l-open-links] | [✅][o-seen] | [✅][t-seen] | [✅][c-seen] |
+| Saved page to browser | [✅][l-open-links] | ? | ? | ? |
 | Open in new page | [✅][l-open-links] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
 | Copy link | [✅][l-open-links] | [✅][o-seen] | [✅][t-seen] | ? |
 | Copy link text | [✅][l-open-links] | [❌][o-seen] | [❌][t-seen] | ? |

@@ -98,6 +98,7 @@
 | Enter keeps, Escape abandons | [✅][l-fields] | ? | [❌][t-seen] | [❌][c-seen] |
 | Save from a field | [✅][l-fields] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Date field calendar | [✅][l-fields] | [✅][o-props] | [❌][t-seen] | [❌][c-seen] |
+| Shared values listed | [✅][l-fields] | ? | [❌][t-seen] | [❌][c-seen] |
 | Real tick boxes | [✅][l-fields] | [✅][o-props] | [❌][t-seen] | [❌][c-seen] |
 | Removable tag chips | [✅][l-fields] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No guessed controls | [✅][l-fields] | ? | [❌][t-seen] | [❌][c-seen] |
