@@ -23,5 +23,6 @@ https://leaftext.com/docs/06-comparison-chart/07-progress.md
 https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
 https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
 https://leaftext.com/docs/06-comparison-chart/10-coming.md
+https://leaftext.com/docs/07-privacy.md
 https://leaftext.com/docs/GLOSSARY.md
 https://leaftext.com/docs/README.md

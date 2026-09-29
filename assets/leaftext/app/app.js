@@ -18791,6 +18791,11 @@ function commitActiveEditingBlock() {
     active.blur();
     return;
   }
+  
+  if (active.__commitNow) {
+    active.__commitNow();
+    return;
+  }
   if (!active.__editingActive) return;
   active.__editingActive = false;
   
@@ -20034,6 +20039,8 @@ function openInsertBlock(
   block.__lineBelow = (specId) => {
     if (!commit(true, specId)) block.focus({ preventScroll: true });
   };
+  
+  block.__commitNow = () => commit(false);
   block.addEventListener('blur', (event) => {
     
     if (blockGutterHoldsFocus(event.relatedTarget)) return;
@@ -20151,6 +20158,7 @@ function openMediumStart(body) {
     block.__lineBelow = title.__lineBelow;
     block.__becomeBlock = title.__becomeBlock;
     block.__commitAs = title.__commitAs;
+    block.__commitNow = () => commit(false);
   };
   const inPair = (node) => !!node && (title.contains(node) || story.contains(node));
   const wireStartBlock = (block) => {

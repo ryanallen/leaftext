@@ -33,7 +33,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
-| [Exporting a diagram](#export) | The diagram's own corner, and the flowchart sheet, write it out as its own file — Markdown, PNG, WebP, PDF or JPEG |
+| [Exporting a diagram](#export) | The diagram's own corner, and the diagram sheet, write it out as its own file — Markdown, PNG, WebP, PDF or JPEG |
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them, or under them where there is no room above: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code, link and badge as well, then text, bigger/smaller heading and quote for the whole block |
 | [Interactive checkboxes](#inline-editing-the-reading-view) | Click a task checkbox — in a list or a table cell — to check or uncheck it; it saves on the spot and works even with editing off |
 | [A date on a checkbox](01-rendering.md#task-lists) | A task line's `📅 09/16/2026` is drawn as a short colored badge; press it for today, tomorrow, next Monday, a box for any other date, or a row that clears it |
@@ -400,10 +400,10 @@ The canvas fails closed: a diagram it cannot fully model opens with the canvas s
 
 The canvas does not keep a layout, so a save would drop those two silently. `click A call fn()` is the other thing it will not act on: it is read, written back, and does nothing — the page renders diagrams at Mermaid's strict level with no `unsafe-eval`, so a document cannot name a function inside the app and have it run. When the canvas does switch off it names the line that stopped it and what on that line did, rather than leaving you to find it.
 
-**Every other kind of Mermaid diagram** — sequence, class, state, pie, Gantt and the rest — opens the same sheet as a **live preview** beside its text: drawn as you type, pannable and zoomable, but without handles, because the canvas draws flowcharts. Export works on all of them.
+**Every other kind of Mermaid diagram** — sequence, class, state, pie, Gantt and the rest — opens the same sheet as a **live preview** beside its text: drawn as you type, pannable and zoomable, but without handles, because the canvas draws flowcharts. The sheet is named for what it holds — **Sankey**, **Pie chart**, **Quadrant chart** and so on, or **Diagram** for a kind it has no name for — and the name follows the text if you retype its first line. The **Flow** picker stands in the bar only while the canvas holds a flowchart it can draw on. Export works on all of them.
 
 > [!NOTE]
-> Saving rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, every box declared on its own line, and each shape spelled the shorter of its two ways. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied. The sheet says so above the text pane.
+> Saving a flowchart the canvas draws rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, every box declared on its own line, and each shape spelled the shorter of its two ways. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied. Every other diagram, and a flowchart the canvas cannot draw, is saved exactly as typed. The sheet says which of the two Save will do, above the text pane and on the Save button.
 
 ## Working in the source
 
