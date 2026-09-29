@@ -15880,6 +15880,9 @@ p.front-more {
     color: var(--lt-foreground);
   }
 }
+.flow-sheet-direction[hidden] {
+  display: none;
+}
 .flow-sheet-direction {
   display: flex;
   align-items: center;

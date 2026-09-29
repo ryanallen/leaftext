@@ -1927,6 +1927,79 @@ function flowRefused(why) {
 }
 
 
+function flowHeaderLine(lines) {
+  let at = 0;
+  if (lines.length && lines[0].trim() === '---') {
+    at = -1;
+    for (let i = 1; i < lines.length; i += 1) {
+      if (lines[i].trim() === '---') {
+        at = i + 1;
+        break;
+      }
+    }
+    if (at < 0) return -1;
+  }
+  while (at < lines.length && (FLOW_COMMENT_RE.test(lines[at]) || !lines[at].trim())) at += 1;
+  return at;
+}
+
+function diagramHeaderWord(lines, at) {
+  const word = /^[A-Za-z0-9_-]+/.exec(at >= 0 && at < lines.length ? lines[at].trim() : '');
+  return word ? word[0] : '';
+}
+
+
+const DIAGRAM_SHEET_TITLES = Object.freeze({
+  'flowchart': 'Flowchart',
+  'graph': 'Flowchart',
+  'flowchart-elk': 'Flowchart',
+  'sequencediagram': 'Sequence diagram',
+  'zenuml': 'Sequence diagram',
+  'classdiagram': 'Class diagram',
+  'classdiagram-v2': 'Class diagram',
+  'statediagram': 'State diagram',
+  'statediagram-v2': 'State diagram',
+  'erdiagram': 'Entity relationship diagram',
+  'journey': 'User journey',
+  'gantt': 'Gantt chart',
+  'pie': 'Pie chart',
+  'quadrantchart': 'Quadrant chart',
+  'requirementdiagram': 'Requirement diagram',
+  'requirement': 'Requirement diagram',
+  'gitgraph': 'Git graph',
+  'c4context': 'C4 diagram',
+  'c4container': 'C4 diagram',
+  'c4component': 'C4 diagram',
+  'c4dynamic': 'C4 diagram',
+  'c4deployment': 'C4 diagram',
+  'mindmap': 'Mind map',
+  'timeline': 'Timeline',
+  'sankey': 'Sankey',
+  'sankey-beta': 'Sankey',
+  'xychart': 'XY chart',
+  'xychart-beta': 'XY chart',
+  'block': 'Block diagram',
+  'block-beta': 'Block diagram',
+  'packet': 'Packet diagram',
+  'packet-beta': 'Packet diagram',
+  'kanban': 'Kanban board',
+  'architecture': 'Architecture diagram',
+  'architecture-beta': 'Architecture diagram',
+  'radar': 'Radar chart',
+  'radar-beta': 'Radar chart',
+  'treemap': 'Treemap',
+  'treemap-beta': 'Treemap',
+});
+
+
+function diagramSheetTitle(text) {
+  const lines = typeof text === 'string' ? text.replace(/\r\n/g, '\n').split('\n') : [];
+  const word = diagramHeaderWord(lines, flowHeaderLine(lines));
+  const key = word.toLowerCase();
+  return Object.hasOwn(DIAGRAM_SHEET_TITLES, key) ? DIAGRAM_SHEET_TITLES[key] : 'Diagram';
+}
+
+
 function flowQuoteLeftOpen(text) {
   return (String(text).split('"').length - 1) % 2 === 1;
 }
@@ -1980,31 +2053,16 @@ function flowRefusal(text) {
 function walkFlow(text) {
   if (typeof text !== 'string') return flowRefused('There is nothing here to read.');
   const lines = text.replace(/\r\n/g, '\n').split('\n');
-  const prelude = [];
-  let at = 0;
-  if (lines.length && lines[0].trim() === '---') {
-    let close = -1;
-    for (let i = 1; i < lines.length; i += 1) {
-      if (lines[i].trim() === '---') {
-        close = i;
-        break;
-      }
-    }
-    if (close < 0) return flowRefused('The front matter above it never closes.');
-    for (let i = 0; i <= close; i += 1) prelude.push(lines[i]);
-    at = close + 1;
-  }
-  while (at < lines.length && (FLOW_COMMENT_RE.test(lines[at]) || !lines[at].trim())) {
-    prelude.push(lines[at]);
-    at += 1;
-  }
+  let at = flowHeaderLine(lines);
+  if (at < 0) return flowRefused('The front matter above it never closes.');
+  const prelude = lines.slice(0, at);
   const header = FLOW_HEADER_RE.exec(at < lines.length ? lines[at] : '');
   if (!header) {
     
-    const word = /^[A-Za-z0-9_-]+/.exec(at < lines.length ? lines[at].trim() : '');
+    const word = diagramHeaderWord(lines, at);
     return flowRefused(
       word
-        ? 'Only flowcharts open on the canvas, and this one starts with “' + word[0] + '”.'
+        ? 'Only flowcharts open on the canvas, and this one starts with “' + word + '”.'
         : 'This has no flowchart line to start it.',
     );
   }
@@ -2512,6 +2570,8 @@ const flowSheetExport = document.getElementById('flowSheetExport');
 const flowUndoButton = document.getElementById('flowUndo');
 const flowRedoButton = document.getElementById('flowRedo');
 const flowDirectionPicker = document.getElementById('flowDirection');
+const flowDirectionLabel = document.getElementById('flowDirectionLabel');
+const flowCodeNote = document.getElementById('flowCodeNote');
 const flowHint = document.getElementById('flowHint');
 const flowCanvas = document.getElementById('flowCanvas');
 const flowZoomIn = document.getElementById('flowZoomIn');
@@ -2564,6 +2624,8 @@ const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delet
 
 const FLOW_SAVE_REWRITES = 'Save rewrites the whole block: one box to a line, every label quoted.';
 
+const FLOW_SAVE_AS_TYPED = 'Save writes the text below as typed.';
+
 const FLOW_SAVE_GONE =
   'The document changed underneath this diagram, so there is nowhere left to save it. Copy the text below before closing.';
 
@@ -2606,13 +2668,13 @@ function openFlowSheet({ title, text, save }) {
   suspendHintForSheet(flowSheet);
   dropFlowSaveWait();
   flowLastFocus = document.activeElement;
-  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null };
+  
+  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, title: title || '', titledText: null };
   flowSelection = null;
   flowDrawn = null;
   
   flowLastDrawCost = 0;
   flowZoom = 1;
-  if (flowSheetTitle) flowSheetTitle.textContent = title || 'Flowchart';
   readyFlowPicker();
   buildFlowControls();
   loadFlowChips();
@@ -2823,8 +2885,9 @@ function updateFlowSaveState() {
   const empty = !!graph && !graph.nodes.length;
   if (flowSheetSave) {
     flowSheetSave.disabled = empty;
-    flowSheetSave.title = empty ? 'Add a box before saving' : FLOW_SAVE_REWRITES;
+    flowSheetSave.title = empty ? 'Add a box before saving' : graph ? FLOW_SAVE_REWRITES : FLOW_SAVE_AS_TYPED;
   }
+  if (flowCodeNote) flowCodeNote.textContent = graph ? FLOW_SAVE_REWRITES : FLOW_SAVE_AS_TYPED;
   if (flowSheetExport) {
     flowSheetExport.disabled = empty;
     flowSheetExport.title = empty ? 'Add a box before exporting' : 'Save this diagram as its own file';
@@ -3228,12 +3291,20 @@ function paintFlowDrawing(svg, text, themeVersion) {
 }
 
 function redrawFlowSheet() {
+  drawFlowSheetTitle();
   drawFlowNotice();
   queueFlowDiagram();
   drawFlowOverlay();
   drawFlowPicker();
   updateFlowSaveState();
   updateFlowHistoryButtons();
+}
+
+
+function drawFlowSheetTitle() {
+  if (!flowSession || !flowSheetTitle || flowSession.titledText === flowSession.text) return;
+  flowSession.titledText = flowSession.text;
+  flowSheetTitle.textContent = flowSession.title || diagramSheetTitle(flowSession.text);
 }
 
 function drawFlowNotice() {
@@ -3250,6 +3321,7 @@ function drawFlowNotice() {
   flowNotice.textContent = message || '';
   flowNotice.classList.toggle('is-error', !!problem);
   if (flowCanvas) flowCanvas.classList.toggle('is-disabled', !graph);
+  if (flowDirectionLabel) flowDirectionLabel.hidden = !graph;
   if (flowDirectionPicker) {
     flowDirectionPicker.disabled = !graph;
     if (graph) flowDirectionPicker.value = graph.direction === 'TB' ? 'TD' : graph.direction;
@@ -3697,7 +3769,6 @@ function openMermaidBlockSheet(block) {
   const span = flowBlockSpan(block);
   if (!span) return;
   openFlowSheet({
-    title: 'Flowchart',
     text: span.text,
     
     save: (text) => {
