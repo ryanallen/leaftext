@@ -111,6 +111,8 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | [Open a link in a new page](01-features/02-navigation.md#opening-a-link-in-a-new-page) | `Ctrl`+click | `Cmd`+click |
 | [Find](01-features/02-navigation.md#find-in-this-document) in this document | `Ctrl+F` | `Cmd+F` |
 | [Find and replace](01-features/02-navigation.md#find-in-this-document) | `Ctrl+H` | `Cmd+H` |
+| [Put a cursor on every match](01-features/02-navigation.md#find-in-this-document), from the find field | `Alt+Enter` | `Alt+Enter` |
+| [Add a cursor where you click](01-features/02-navigation.md#find-in-this-document) | `Ctrl`+click | `Cmd`+click |
 
 Mouse side buttons also trigger Back and Forward on Windows.
 

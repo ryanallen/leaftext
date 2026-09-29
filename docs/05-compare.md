@@ -45,15 +45,11 @@ A glossary is where Leaftext and an AI tool meet today. Ask the tool you already
 
 ## On our roadmap
 
-Every row in [Coming](06-comparison-chart/10-coming.md) is planned, or built and not yet switched on. Three of them change how Leaftext works beside AI.
+Every row in [Coming](06-comparison-chart/10-coming.md) is planned, or built and not yet switched on. Two of them change how Leaftext works beside AI. [Your own agent can already reach the open document](01-features/10-agents.md).
 
 ### Outside tools through MCP
 
 Leaftext will start the tool servers you list, for an assistant working inside the app.
-
-### Your own AI agent in the open document
-
-An AI agent on your machine will be able to read, edit, tick and save the document you have open, through MCP.
 
 ### Define a word in a book with one press
 

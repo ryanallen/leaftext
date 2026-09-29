@@ -16881,6 +16881,40 @@ p.front-more {
 .leaf-find-current {
   background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
 }
+/* A set of cursors in the reading view: what each place covers, washed the way the match you are on is, and a cursor at the end of each drawn as a bar in a layer of its own inside the reader. The layer scrolls with the page and stands outside every block, so no commit reads a mark back into the file. The layer blinks every bar at once on the pace a caret does and rests, still and hidden, while the window is behind another — the page's own caret does both. */
+::highlight(leaf-cursor-selection) {
+  background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
+}
+.reading-cursor-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  animation: reading-cursor-blink var(--lt-duration-1100) var(--lt-ease-linear) infinite;
+}
+.reading-cursor-layer.is-resting {
+  visibility: hidden;
+  animation: none;
+}
+.reading-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--lt-stroke-2);
+  background: var(--lt-primary);
+}
+@keyframes reading-cursor-blink {
+  0%,
+  49% {
+    visibility: visible;
+  }
+  50%,
+  100% {
+    visibility: hidden;
+  }
+}
 /* Printing, which is also the Save as PDF every desktop print panel offers — the app's one route to a PDF of the page it is drawing. A browser prints the page as it is laid out, and this page is laid out to fill a window exactly once: the app surface is fixed and paint-contained, the reader carries its own scroller, and the window's overflow is hidden. Unprepared, that prints a single sheet holding the app's frame and whatever of the document happened to be on screen. These rules unwind those three, drop everything on the page that is a control rather than the document, and force the colors so the panel's own Background graphics box cannot take the theme away.
 
    Keyed on `.app-surface` and `body.leaf-app`, never on a bare `html`, `body` or `:root`: this whole file is what leaftext.com and empty.guru are handed too, and `scripts/check-page-frame.mjs` refuses a rule here that would take somebody else's page frame. Both sites draw their documents through these same classes, so a reader printing from one of them gets this printable page as well, which is wanted rather than a leak. */
@@ -17152,7 +17186,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 182 values that do not change with the theme, all 78 icons, and all 134 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 182 values that do not change with the theme, all 78 icons, and all 135 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17184,7 +17218,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>182</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>134</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>135</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -17597,7 +17631,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">134 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">135 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Web address</h3><code class="built">.web-address</code><span class="built">web-address.js — an empty tab's address or search field, and the live tab's editable address</span></header>
 <div class="stage"><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" placeholder="Search Google or enter an address"></div></div>
@@ -17901,6 +17935,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Find bar</h3><code class="built">.find</code><span class="built">app-shell.html, driven by find-bar.js</span></header>
 <div class="stage"><div class="find-bar" style="position:static"><div class="find-row"><span class="find-field"><button type="button" class="find-scope"><span class="find-scope-label">This file</span><span class="find-scope-caret" aria-hidden="true">▾</span></button><input class="find-input" type="text" placeholder="Find" value="stage"><span class="find-count">3 of 41</span></span><span class="find-flags"><button type="button" class="find-flag icon-button" aria-pressed="true">Aa</button><button type="button" class="find-flag icon-button">ab&#124;</button><button type="button" class="find-flag icon-button">.*</button><button type="button" class="find-flag icon-button"><span class="lt-icon lt-icon-text"></span></button></span><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-select-all"></span></button><button type="button" class="find-step icon-button" aria-pressed="true"><span class="lt-icon lt-icon-replace"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div><div class="find-row"><span class="find-field"><input class="find-input" type="text" placeholder="Replace with"></span><button type="button" class="find-action icon-button">Replace</button><button type="button" class="find-action icon-button">All</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Reading cursor</h3><code class="built">.reading-cursor</code><span class="built">reading-cursors.js, one per place in a set of cursors on the page being read — every match taken from the find bar, or a place added with Ctrl or Cmd and a click — in a layer inside the reader that blinks them together and rests while the window is behind another</span></header>
+<div class="stage"><div style="position:relative;height:48px"><p style="margin:0">Rename the <span style="background:color-mix(in srgb, var(--lt-primary) 45%, transparent)">meadow</span><span class="reading-cursor" style="position:relative;display:inline-block;height:1.2em;vertical-align:text-bottom"></span> here and the <span style="background:color-mix(in srgb, var(--lt-primary) 45%, transparent)">meadow</span><span class="reading-cursor" style="position:relative;display:inline-block;height:1.2em;vertical-align:text-bottom"></span> there.</p></div></div>
 </section>
 <section class="part">
 <header><h3>Code view</h3><code class="built">.code</code><span class="built">code-view.js</span></header>

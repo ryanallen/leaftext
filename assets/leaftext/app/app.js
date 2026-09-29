@@ -2665,6 +2665,8 @@ function onFlowSaveAnswered(held, why) {
 function openFlowSheet({ title, text, save }) {
   if (!flowSheet || !flowBackdrop) return;
   
+  cancelSheetLegs(flowSheet);
+  
   suspendHintForSheet(flowSheet);
   dropFlowSaveWait();
   flowLastFocus = document.activeElement;
@@ -2720,11 +2722,14 @@ function closeFlowSheet() {
   document.removeEventListener('keydown', onFlowSheetKey);
   flowBackdrop.classList.remove('open');
   flowSheet.classList.remove('open');
+  cancelSheetLegs(flowSheet);
+  const run = sheetRun.get(flowSheet);
   const hide = () => {
+    flowSheet.removeEventListener('transitionend', hide);
+    if (sheetRun.get(flowSheet) !== run) return;
     flowSheet.hidden = true;
     coverWebSurface(false, flowSheet);
     flowBackdrop.hidden = true;
-    flowSheet.removeEventListener('transitionend', hide);
     
     restoreHintAfterSheet(flowSheet);
   };
@@ -25359,7 +25364,7 @@ function updateFindScopeChrome() {
   findPrevButton.disabled = vault;
   findNextButton.disabled = vault;
   
-  findSelectAllButton.disabled = vault || !findInSourceView();
+  findSelectAllButton.disabled = vault;
   findReplaceToggle.disabled = vault;
   findReplaceInput.disabled = vault;
   findReplaceOneButton.disabled = vault;
@@ -25598,6 +25603,11 @@ function clearRenderedHighlights() {
 
 
 function paintRenderedMatches() {
+  
+  if (readingCursorsLive()) {
+    clearRenderedHighlights();
+    return;
+  }
   if (!window.CSS || !CSS.highlights || typeof Highlight !== 'function') {
     const match = findMatches[findCurrent];
     const range = match ? findRangeFor(match) : null;
@@ -25690,6 +25700,7 @@ function revealSourceMatch() {
 
 
 function findCountText() {
+  if (readingCursorsLive()) return `${readingCursorSet.length} selected`;
   if (findInvalidPattern) return 'Bad expression';
   if (!findInput.value) return '';
   if (!findMatches.length) return 'No results';
@@ -26016,7 +26027,11 @@ function findReplace(all) {
 
 
 function findSelectAllOccurrences() {
-  if (!findInSourceView() || !findMatches.length) return;
+  if (findingAllFiles() || !findMatches.length) return;
+  if (!findInSourceView()) {
+    readingCursorsFromMatches();
+    return;
+  }
   if (!codeUnlocked) {
     growlLockedForReading();
     return;
@@ -26118,6 +26133,530 @@ window.addEventListener('keydown', (event) => {
   if (!flag) return;
   event.preventDefault();
   toggleFindFlag(flag);
+});
+
+
+
+
+const READING_CURSOR_HIGHLIGHT = 'leaf-cursor-selection';
+
+const READING_CURSOR_CAP = 999;
+
+
+let readingCursorSet = [];
+
+let readingCursorPath = null;
+let readingCursorLayer = null;
+let readingCursorMarks = [];
+let readingCursorWatch = null;
+let readingCursorDrawQueued = 0;
+
+let readingCursorsWrote = false;
+
+function readingCursorsLive() {
+  return readingCursorSet.length > 0;
+}
+
+
+function readingCursorsInReadingView() {
+  return !codeViewActive && !!app.querySelector('.document-body');
+}
+
+
+
+
+function readingCursorBlockOf(node) {
+  if (currentDocumentFormat !== 'markdown' || !node) return null;
+  const element = node.nodeType === 1 ? node : node.parentElement;
+  const block = element && element.closest ? element.closest('[data-src-start]') : null;
+  if (!block) return null;
+  const { start, end } = rangeOf(block, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  if (readingUnlocked && !block.classList.contains('leaf-editable-in-place')) return null;
+  return block;
+}
+
+
+function readingCursorOffsetIn(el, container, offset) {
+  const before = document.createRange();
+  before.selectNodeContents(el);
+  before.setEnd(container, offset);
+  return before.toString().length;
+}
+
+
+
+function readingCursorPlace(el, start, end) {
+  return { el, blockStart: rangeOf(el, 'block').start, start, end };
+}
+
+
+function sortReadingCursorPlaces(places) {
+  return places.sort((one, other) => one.blockStart - other.blockStart || one.start - other.start);
+}
+
+function setReadingCursors(places) {
+  readingCursorSet = sortReadingCursorPlaces(places).slice(0, READING_CURSOR_CAP);
+  readingCursorsWrote = false;
+  readingCursorPath = activeDocumentPath();
+  watchReadingCursorRender();
+  drawReadingCursors();
+  if (typeof findCount !== 'undefined' && findOpen) findCount.textContent = findCountText();
+}
+
+
+function dropReadingCursors() {
+  if (!readingCursorsLive() && !readingCursorLayer) return;
+  readingCursorSet = [];
+  readingCursorPath = null;
+  unwatchReadingCursorRender();
+  if (window.CSS && CSS.highlights) CSS.highlights.delete(READING_CURSOR_HIGHLIGHT);
+  if (readingCursorLayer) readingCursorLayer.remove();
+  readingCursorLayer = null;
+  readingCursorMarks = [];
+  if (findOpen) {
+    findCount.textContent = findCountText();
+    paintRenderedMatches();
+  }
+}
+
+
+function readingCursorsFromMatches() {
+  if (currentDocumentFormat !== 'markdown') {
+    leafToast('Cursors on every match work in Markdown. Open the source view for this file.');
+    return;
+  }
+  const byBlock = new Map();
+  let outside = 0;
+  findMatches.forEach((match) => {
+    const range = findRangeFor(match);
+    const block = range && readingCursorBlockOf(range.startContainer);
+    if (!block || !block.contains(range.endContainer)) {
+      outside += 1;
+      return;
+    }
+    const group = byBlock.get(block) || { matches: [] };
+    group.matches.push(match);
+    byBlock.set(block, group);
+  });
+  const places = [];
+  let split = 0;
+  byBlock.forEach((group, el) => {
+    const { start, end } = rangeOf(el, 'block');
+    const ranks = group.matches.map((match, rank) => rank);
+    
+    if (findRewriteBlock({ start, end, ranks, total: ranks.length }, '') == null) {
+      split += ranks.length;
+      return;
+    }
+    const first = findEdgeRecord(el, false);
+    if (!first) {
+      outside += ranks.length;
+      return;
+    }
+    group.matches.forEach((match) => places.push(readingCursorPlace(el, match.start - first.start, match.end - first.start)));
+  });
+  growlReadingCursorsLeftOut(split, outside);
+  if (!places.length) return;
+  setReadingCursors(places);
+  
+  findInput.blur();
+}
+
+
+function growlReadingCursorsLeftOut(split, outside) {
+  const parts = [];
+  if (split) parts.push(`${formatCountLabel(split, 'match is', 'matches are')} split by formatting`);
+  if (outside) parts.push(`${formatCountLabel(outside, 'match is', 'matches are')} not in a block that can be typed on`);
+  if (!parts.length) return;
+  leafToast(`${parts.join(', and ')} — change ${split + outside === 1 ? 'that one' : 'those'} in the source view.`);
+}
+
+
+function addReadingCursorAt(event) {
+  const point = typeof document.caretRangeFromPoint === 'function' ? document.caretRangeFromPoint(event.clientX, event.clientY) : null;
+  const block = point && readingCursorBlockOf(point.startContainer);
+  if (!block) {
+    leafToast('A cursor cannot go there. Change that part in the source view.');
+    return;
+  }
+  const places = readingCursorsLive() ? readingCursorSet.slice() : readingCursorsKeptCaret();
+  const at = readingCursorOffsetIn(block, point.startContainer, point.startOffset);
+  const place = readingCursorPlace(block, at, at);
+  
+  if (!places.some((one) => one.el === block && one.start === at && one.end === at)) places.push(place);
+  setReadingCursors(places);
+}
+
+
+function readingCursorsKeptCaret() {
+  const active = document.activeElement;
+  if (!active || !blockIsEditingHost(active)) return [];
+  const block = readingCursorBlockOf(active);
+  const at = block === active ? caretTextOffsetIn(active) : null;
+  active.blur();
+  if (at == null || !block.isConnected) return [];
+  return [readingCursorPlace(block, at, at)];
+}
+
+
+
+
+function relocateReadingCursors({ settled = false } = {}) {
+  if (!readingCursorsLive()) return;
+  if (readingCursorPath !== activeDocumentPath() || codeViewActive) {
+    dropReadingCursors();
+    return;
+  }
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  const kept = [];
+  readingCursorSet.forEach((place) => {
+    const el = place.el.isConnected ? place.el : elementWithRange(body, 'block', place.blockStart);
+    if (!el) {
+      if (!settled) kept.push(place);
+      return;
+    }
+    const length = el.textContent.length;
+    kept.push({ el, blockStart: place.blockStart, start: Math.min(place.start, length), end: Math.min(place.end, length) });
+  });
+  readingCursorSet = kept;
+  if (!kept.length) dropReadingCursors();
+}
+
+
+function readingCursorsRedrawn() {
+  if (!readingCursorsLive()) return;
+  relocateReadingCursors({ settled: true });
+  drawReadingCursors();
+}
+
+function watchReadingCursorRender() {
+  if (readingCursorWatch || typeof MutationObserver !== 'function') return;
+  readingCursorWatch = new MutationObserver((records) => {
+    
+    if (records.every((record) => readingCursorLayer && readingCursorLayer.contains(record.target))) return;
+    queueReadingCursorDraw();
+  });
+  readingCursorWatch.observe(app, { childList: true, subtree: true });
+}
+
+function unwatchReadingCursorRender() {
+  if (!readingCursorWatch) return;
+  readingCursorWatch.disconnect();
+  readingCursorWatch = null;
+}
+
+function queueReadingCursorDraw() {
+  if (readingCursorDrawQueued) return;
+  readingCursorDrawQueued = window.requestAnimationFrame(() => {
+    readingCursorDrawQueued = 0;
+    relocateReadingCursors();
+    drawReadingCursors();
+  });
+}
+
+
+
+
+function readingCursorRange(place) {
+  if (!place.el.isConnected) return null;
+  const range = document.createRange();
+  if (place.end > place.start) {
+    const from = blockTextPoint(place.el, place.start, true);
+    const to = blockTextPoint(place.el, place.end);
+    if (!from || !to) return null;
+    range.setStart(from.node, from.offset);
+    range.setEnd(to.node, to.offset);
+    return range;
+  }
+  const point = blockTextPoint(place.el, place.start);
+  if (point) range.setStart(point.node, point.offset);
+  else range.selectNodeContents(place.el);
+  range.collapse(true);
+  return range;
+}
+
+
+function readingCursorLayerElement() {
+  if (readingCursorLayer && readingCursorLayer.isConnected) return readingCursorLayer;
+  readingCursorLayer = document.createElement('div');
+  readingCursorLayer.className = 'reading-cursor-layer';
+  readingCursorLayer.setAttribute('aria-hidden', 'true');
+  readingCursorLayer.classList.toggle('is-resting', typeof document.hasFocus === 'function' && !document.hasFocus());
+  readingCursorMarks = [];
+  app.appendChild(readingCursorLayer);
+  return readingCursorLayer;
+}
+
+
+function drawReadingCursors() {
+  if (!readingCursorsLive()) return;
+  const ranges = readingCursorSet.map(readingCursorRange);
+  if (window.CSS && CSS.highlights && typeof Highlight === 'function') {
+    const selected = new Highlight();
+    ranges.forEach((range, index) => {
+      const place = readingCursorSet[index];
+      if (range && place.end > place.start) selected.add(range);
+    });
+    CSS.highlights.set(READING_CURSOR_HIGHLIGHT, selected);
+  }
+  const layer = readingCursorLayerElement();
+  const base = layer.getBoundingClientRect();
+  const boxes = ranges.map((range) => {
+    if (!range) return null;
+    const end = range.cloneRange();
+    end.collapse(false);
+    const rects = end.getClientRects();
+    return rects.length ? rects[0] : end.getBoundingClientRect();
+  });
+  while (readingCursorMarks.length < boxes.length) {
+    const mark = document.createElement('span');
+    mark.className = 'reading-cursor';
+    layer.appendChild(mark);
+    readingCursorMarks.push(mark);
+  }
+  while (readingCursorMarks.length > boxes.length) readingCursorMarks.pop().remove();
+  boxes.forEach((box, index) => {
+    const mark = readingCursorMarks[index];
+    mark.hidden = !box;
+    if (!box) return;
+    mark.style.transform = `translate(${box.left - base.left}px, ${box.top - base.top}px)`;
+    mark.style.height = `${box.height}px`;
+  });
+}
+
+
+
+
+function readingCursorSplices(places, action, length) {
+  let shift = 0;
+  return places.map((place) => {
+    let from = place.start + shift;
+    let to = place.end + shift;
+    let text = action.text || '';
+    if (from === to && action.remove === 'back') from = Math.max(0, from - 1);
+    if (from === to && action.remove === 'forward') to = Math.min(length + shift, to + 1);
+    if (action.remove && from === to) return { from, to, text: '', place: { start: from, end: from } };
+    if (action.remove) text = '';
+    shift += text.length - (to - from);
+    return { from, to, text, place: { start: from + text.length, end: from + text.length } };
+  });
+}
+
+
+function spliceReadingCursorText(el, from, to, text) {
+  const range = document.createRange();
+  if (to > from) {
+    const start = blockTextPoint(el, from, true);
+    const end = blockTextPoint(el, to);
+    if (!start || !end) return false;
+    range.setStart(start.node, start.offset);
+    range.setEnd(end.node, end.offset);
+    range.deleteContents();
+  } else {
+    const point = blockTextPoint(el, from);
+    if (!point) return false;
+    range.setStart(point.node, point.offset);
+    range.collapse(true);
+  }
+  if (!text) return true;
+  const container = range.startContainer;
+  if (container.nodeType === 3) container.insertData(range.startOffset, text);
+  else range.insertNode(document.createTextNode(text));
+  return true;
+}
+
+
+function writeAtReadingCursors(action) {
+  relocateReadingCursors();
+  
+  readingCursorSet = readingCursorSet.filter((place) => place.el.isConnected);
+  if (!readingCursorsLive()) {
+    dropReadingCursors();
+    return;
+  }
+  if (!readingUnlocked) {
+    leafToast('The page is locked. Click the padlock in the toolbar to edit it.');
+    return;
+  }
+  const blocks = new Map();
+  for (const place of readingCursorSet) {
+    if (!place.el.classList.contains('leaf-editable-in-place')) {
+      leafToast('A cursor is somewhere that cannot be typed on here. Change it in the source view.');
+      return;
+    }
+    const list = blocks.get(place.el) || [];
+    list.push(place);
+    blocks.set(place.el, list);
+  }
+  const writes = [];
+  const next = [];
+  for (const [el, places] of blocks) {
+    const length = el.textContent.length;
+    const splices = readingCursorSplices(places, action, length);
+    const written = splices.reduce((total, splice) => total + splice.text.length - (splice.to - splice.from), length);
+    
+    if (written === 0) return;
+    writes.push({ el, splices });
+  }
+  if (writes.every(({ splices }) => splices.every((splice) => splice.to === splice.from && !splice.text))) return;
+  const sent = [];
+  for (const { el, splices } of writes) {
+    splices.forEach((splice) => spliceReadingCursorText(el, splice.from, splice.to, splice.text));
+    const { start, end } = rangeOf(el, 'block');
+    sent.push({ start, end, text: blockDomToSource(el) });
+    splices.forEach((splice) => next.push({ el, blockStart: start, start: splice.place.start, end: splice.place.end }));
+  }
+  sent.sort((one, other) => one.start - other.start);
+  raiseTypingChrome();
+  sendEditCommand({ command: 'editBlocks', blocks: sent, continuing: readingCursorsWrote }, { el: writes[0].el, hold: true });
+  readingCursorsWrote = true;
+  
+  next.forEach((place) => {
+    const { start } = rangeOf(place.el, 'block');
+    if (Number.isFinite(start)) place.blockStart = start;
+  });
+  readingCursorSet = sortReadingCursorPlaces(next);
+  drawReadingCursors();
+}
+
+
+function collapseReadingCursors() {
+  const last = readingCursorSet[readingCursorSet.length - 1];
+  dropReadingCursors();
+  if (!last || !last.el.isConnected) return;
+  if (readingUnlocked && last.el.classList.contains('leaf-editable-in-place')) {
+    openWysiwygBlock(last.el, { start: last.end, end: last.end });
+    placeCaretInBlock(last.el, last.end);
+    return;
+  }
+  const range = readingCursorRange({ el: last.el, start: last.end, end: last.end });
+  const selection = window.getSelection();
+  if (!range || !selection) return;
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+
+
+const READING_CURSOR_COLLAPSE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
+
+
+function readingCursorKeysElsewhere() {
+  const active = document.activeElement;
+  if (!active || active === document.body || active === app) return false;
+  if (active.closest && active.closest('#findBar')) return true;
+  const tag = active.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable === true;
+}
+
+
+window.addEventListener(
+  'keydown',
+  (event) => {
+    if (!readingCursorsLive()) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      dropReadingCursors();
+      return;
+    }
+    if (readingCursorKeysElsewhere()) return;
+    const command = event.ctrlKey || event.metaKey;
+    
+    if (command && !event.altKey && ['z', 'y'].includes((event.key || '').toLowerCase())) {
+      dropReadingCursors();
+      return;
+    }
+    
+    if (command && !(event.ctrlKey && event.altKey)) return;
+    const take = () => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    if (READING_CURSOR_COLLAPSE_KEYS.has(event.key)) {
+      take();
+      collapseReadingCursors();
+    } else if (event.key === 'Backspace' || event.key === 'Delete') {
+      take();
+      writeAtReadingCursors({ remove: event.key === 'Backspace' ? 'back' : 'forward' });
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      
+      take();
+    } else if (event.key && event.key.length === 1 && !event.isComposing) {
+      take();
+      writeAtReadingCursors({ text: event.key });
+    }
+  },
+  true
+);
+
+
+document.addEventListener(
+  'paste',
+  (event) => {
+    if (!readingCursorsLive() || readingCursorKeysElsewhere()) return;
+    const text = event.clipboardData ? event.clipboardData.getData('text/plain') : '';
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const words = text.replace(/\s*[\r\n]+\s*/g, ' ');
+    if (words) writeAtReadingCursors({ text: words });
+  },
+  true
+);
+
+
+let readingCursorPressTaken = false;
+window.addEventListener(
+  'pointerdown',
+  (event) => {
+    readingCursorPressTaken = false;
+    if (event.button !== 0 || !readingCursorsInReadingView()) return;
+    const body = app.querySelector('.document-body');
+    const target = event.target;
+    if (!body || !target || !target.closest || !body.contains(target)) return;
+    
+    const adding = isMacPlatform ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+    if (!adding || event.altKey || event.shiftKey) {
+      dropReadingCursors();
+      return;
+    }
+    if (target.closest('a, input, button, summary')) return;
+    readingCursorPressTaken = true;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    addReadingCursorAt(event);
+  },
+  true
+);
+for (const type of ['mousedown', 'pointerup', 'mouseup', 'click']) {
+  window.addEventListener(
+    type,
+    (event) => {
+      if (!readingCursorPressTaken) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (type === 'click') readingCursorPressTaken = false;
+    },
+    true
+  );
+}
+
+
+for (const button of [undoButton, redoButton]) {
+  if (button) button.addEventListener('click', () => dropReadingCursors(), true);
+}
+
+
+window.addEventListener('blur', () => {
+  if (readingCursorLayer) readingCursorLayer.classList.add('is-resting');
+});
+window.addEventListener('focus', () => {
+  if (readingCursorLayer) readingCursorLayer.classList.remove('is-resting');
+});
+window.addEventListener('resize', () => {
+  if (readingCursorsLive()) queueReadingCursorDraw();
 });
 
 
@@ -30114,6 +30653,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     watchCodeFences();
     watchPackagedPictures();
     placeDeferredReadingCaret();
+    
+    readingCursorsRedrawn();
     
     bindDocumentSiteFrame(renderedPath);
     bindDocumentLinks();

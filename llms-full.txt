@@ -52,6 +52,11 @@
 - Markdown: https://leaftext.com/docs/01-features/09-progress.md
 - Summary: Leaftext keeps a quiet record of what you do in it and shows it as your Grove: thirteen Growth areas, each leveled by its own kind of use, and one Grove level that everything you do fills. XP is ea...
 
+## Your own AI agent in Leaftext
+- Page: https://leaftext.com/docs/01-features/10-agents.md
+- Markdown: https://leaftext.com/docs/01-features/10-agents.md
+- Summary: Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, add the app as a tool server in your agent's settings, and the agent can read the document, edit and save it, tick task...
+
 ## Meet Leaftext
 - Page: https://leaftext.com/docs/01-introduction.md
 - Markdown: https://leaftext.com/docs/01-introduction.md

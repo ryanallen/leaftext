@@ -599,6 +599,28 @@
 | Put back favorites | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Blank-page right-click menu | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 
+## Built for agents
+
+| Feature | Leaftext | Obsidian | Typora | Calibre |
+| --- | --- | --- | --- | --- |
+| Agent reaches document | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Run page scripts | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Read document source | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Splice with fingerprint | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Tick tasks by place | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Save through page | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
+| Export to named path | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
+| Play pointer gestures | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Quit like closing | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
+| Local question pipe | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Close ends reliably | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
+| Agents edit documents | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Agents tick tasks | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
+| Seventeen document tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Written agent workflow | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
+| Untitled saves refused | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drawings described to agents | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+
 [l-new]: ../01-features/07-editing.md#new-document
 [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view
 [l-rename]: ../01-features/07-editing.md#renaming-from-the-heading
@@ -662,3 +684,5 @@
 [c-seen]: ../05-compare.md#calibre
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora
+[l-agent]: ../01-features/10-agents.md
+[o-cli]: https://obsidian.md/help/cli

@@ -134,6 +134,34 @@ Installing Leaftext offers it under **Open with** for `.ini` without taking the 
 
 Leaftext opens source and configuration files as a file-name heading above one highlighted source block. It recognizes TypeScript, TSX, JavaScript, JSX, JSONC, CSS, SCSS, shell, TOML, Rust, Python, SQL, diff, dotenv, GraphQL, and Dockerfile files. A dotenv file opens under its variant names too — `.env.local`, `.env.example`, `.env.production` and any other `.env.` name — unless its last ending already names a format, so `.env.json` still opens as JSON. JSON, HTML, XML, YAML, INI, plain text, and Markdown keep their dedicated reading views. Source files open when you choose one or follow a link, and stay out of vault search, graphs, and Previous/Next pages. Folder listings leave them out too, except the two known by their whole name — `.env` and `Dockerfile` — which the [library pane](03-library.md#file-types) lists beside a `.gitignore`.
 
+## Reading at a prompt
+
+Type `leaftext --print notes.md` at a cmd or PowerShell prompt and the document prints right there, rendered, and the prompt comes back under the last line. Every format above prints, through the same render the window draws, so a JSON file prints as its tree, a message as its headers and body, and a Word file as its words.
+
+Three words may follow the file, in any order:
+
+- `--styled` prints in the terminal's own colors even where the text is going somewhere other than a terminal.
+- `--plain` prints no colors at all, and wins over `--styled`.
+- `--width <columns>` wraps paragraphs at that many columns.
+
+At a prompt the text is styled and wraps at the terminal's width. Sent through a pipe or into a file it is plain and wraps nowhere, so `leaftext --print notes.md > notes.txt` writes clean text. A `NO_COLOR` variable holding anything turns colors off everywhere.
+
+What prints as what:
+
+- A heading sits between blank lines, bold and underlined.
+- A paragraph wraps at the width, and stays on one line where there is none.
+- A list indents under its markers, and a task prints `[x]` or `[ ]`.
+- A quote and an alert print behind a bar, the alert's kind leading it.
+- A code block, a math block and a diagram print as written, indented, because the window is what draws math and diagrams.
+- A table lines its columns up under its headers and keeps each column's alignment.
+- A link prints its words with its address beside them, once where the two are the same.
+- A picture prints `[picture: its description]`.
+- Footnotes print at the foot.
+
+Printing opens no window, reads only the one file, writes nothing, and a copy open in a window never hears of it.
+
+On a Mac the program is inside the app: run `/Applications/leaftext.app/Contents/MacOS/leaftext --print notes.md` in Terminal, or add `alias leaftext=/Applications/leaftext.app/Contents/MacOS/leaftext` to your shell's profile and type `leaftext --print notes.md` from then on.
+
 ## Markdown
 
 Everything in this section is a live example: what you are reading is drawn by the same engine that draws your documents. Leaftext parses [CommonMark](../GLOSSARY.md#commonmark) and [GFM](../GLOSSARY.md#gfm), then adds the GitHub extras people actually use.

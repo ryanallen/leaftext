@@ -49,6 +49,7 @@ How the app behaves, page by page. They are numbered in reading order, and each 
 | [Editing](01-features/07-editing.md) | Writing in the rendered page (blocks, the gutter, the format bar, the flowchart editor), the raw-source code view with typing help, and the explicit Save flow |
 | [Relational tables](01-features/08-relational-tables.md) | RDB views over Markdown tables: cards, boards, sorting, filtering, relations, and optional descriptions |
 | [Your Grove](01-features/09-progress.md) | The reading record: the Grove pill at the library's foot, the thirteen Growth areas and seeds, where `profile.json` is kept, and the switch that turns it off |
+| [Your own AI agent](01-features/10-agents.md) | Connect an agent on your computer to the document open in Leaftext |
 
 ### Which page answers which question
 

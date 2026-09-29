@@ -23,6 +23,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 | Write in the page | [Editing](01-features/07-editing.md) |
 | Change the look | [Themes](01-features/06-themes.md) |
 | Look a word up | [Glossary](GLOSSARY.md) |
+| Connect your AI agent | [Your own AI agent in Leaftext](01-features/10-agents.md) |
 | See it beside Obsidian, Typora and Calibre | [How it compares](05-compare.md) |
 
 ## What you can do

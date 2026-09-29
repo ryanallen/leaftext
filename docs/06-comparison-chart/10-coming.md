@@ -59,7 +59,6 @@
 | Agents work notes | [❌][l-roadmap] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Outside MCP servers | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Unattended agent runs | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Agent reaches document | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Agents add diagrams | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | One-press word definitions | [❌][l-define] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Talking document buddy | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -115,27 +114,11 @@
 | Games unlock | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Buddy unlock | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
-## Built for agents
+## AI and agents still coming
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Run page scripts | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Read document source | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Splice with fingerprint | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Tick tasks by place | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Save through page | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
-| Export to named path | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
-| Play pointer gestures | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Quit like closing | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
-| Local question pipe | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Close ends reliably | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
-| Agents edit documents | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Agents tick tasks | [❌][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Agent work counted | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Fourteen document tools | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Written agent workflow | [❌][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
-| Untitled saves refused | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Drawings described to agents | [❌][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent work counted | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | MCP tool servers | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Servers start on demand | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Servers end on close | [❌][l-mcp] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
