@@ -9291,7 +9291,8 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 :is(.document-body, .app-surface) .doc-badge {
   display: inline-block;
   text-indent: 0;
-  border: var(--lt-stroke-1) solid currentColor;
+  /* The one-and-a-half step rather than the hairline: at 150% a hairline draws one screen dot beside semibold words two dots thick, and this draws two. */
+  border: var(--lt-stroke-1-5) solid currentColor;
   border-radius: var(--lt-radius-sm);
   background: var(--lt-markdown-background);
   padding: 0 0.4em;
@@ -9305,7 +9306,7 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   white-space: nowrap;
   vertical-align: baseline;
 }
-/* `.doc-badge` is the base a tag is drawn from as well, and the two differ in exactly the two things that carry meaning: a tag swaps the corner for `--lt-radius-pill` and takes the press that finds every note carrying it, because a pill says press me and a square says read me. Everything else — the box, the em sizing, the hairline edge in `currentColor`, the page behind it — is shared, so the pair reads as one family. The tag's own class is `tags`'s to ship; this rule is what it takes. */
+/* `.doc-badge` is the base a tag is drawn from as well, and the two differ in exactly the two things that carry meaning: a tag swaps the corner for `--lt-radius-pill` and takes the press that finds every note carrying it, because a pill says press me and a square says read me. Everything else — the box, the em sizing, the one-and-a-half step edge in `currentColor`, the page behind it — is shared, so the pair reads as one family. The tag's own class is `tags`'s to ship; this rule is what it takes. */
 /* The four tones, each one a role color eleven families already set, so retinting a badge is editing a theme. Gray is a class of its own rather than the bare rule's color: the renderer then has one name to emit whether the author wrote the tone or left it out. A tag has no state, so it takes the gray tone: green is `--lt-success` and would say shipped about every subject somebody files under. */
 :is(.document-body, .app-surface) .doc-badge--green {
   color: var(--lt-success);
@@ -9328,7 +9329,7 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   display: inline-block;
   color: var(--lt-muted-foreground);
   background: var(--lt-markdown-background);
-  border: var(--lt-stroke-1) solid currentColor;
+  border: var(--lt-stroke-1-5) solid currentColor;
   border-radius: var(--lt-radius-pill);
   padding: 0 0.4em;
   font-family: var(--app-font);

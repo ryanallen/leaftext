@@ -9257,7 +9257,8 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 :is(.document-body, .app-surface) .doc-badge {
   display: inline-block;
   text-indent: 0;
-  border: var(--lt-stroke-1) solid currentColor;
+  
+  border: var(--lt-stroke-1-5) solid currentColor;
   border-radius: var(--lt-radius-sm);
   background: var(--lt-markdown-background);
   padding: 0 0.4em;
@@ -9294,7 +9295,7 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   display: inline-block;
   color: var(--lt-muted-foreground);
   background: var(--lt-markdown-background);
-  border: var(--lt-stroke-1) solid currentColor;
+  border: var(--lt-stroke-1-5) solid currentColor;
   border-radius: var(--lt-radius-pill);
   padding: 0 0.4em;
   font-family: var(--app-font);

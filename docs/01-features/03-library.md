@@ -177,11 +177,13 @@ The vault switcher offers **Dropbox…**, **Google Drive…**, **OneDrive…**, 
 
 The connection form explains the app registration each service needs. Google registrations must be set to **In production** before connecting.
 
+While a new service vault is waiting for sign-in or a server check, **Cancel** stops that attempt and removes the new vault. The library returns to the vault and folder you were browsing unless you have moved elsewhere. Canceling **Enter password…** on an existing WebDAV or S3 vault keeps that vault and its earlier sign-in. A canceled attempt cannot later add a credential or show a sign-in failure.
+
 Leaftext keeps a local copy of readable files, so opening, searching, and following links work offline.
 
 ### Google Docs, Sheets and Slides
 
-A Google Doc, Sheet or Slide deck in a Google Drive vault opens as a page, fetched from Google each time you open it. Type into a paragraph, a heading, a cell or a slide's text box and **Save** sends only what you changed back to Google, to the place it came from. A paragraph holding something Leaftext cannot write back exactly — a color, a font, a picture, a list, a table in a Doc, a formula in a Sheet — is shown and cannot be typed into, so nothing you did not touch is ever rewritten. If somebody changed the document in Google after you opened it, Save sends nothing and your edits stay where they are. Using your own client ID, turn on the Docs, Sheets and Slides APIs in its Google Cloud project; Leaftext says which one is missing.
+A Google Doc, Sheet or Slide deck in a Google Drive vault opens as a page in a tab named after the document, fetched from Google each time you open it. Type into a paragraph, a heading, a cell or a slide's text box and **Save** sends only what you changed back to Google, to the place it came from. A paragraph holding something Leaftext cannot write back exactly — a color, a font, a picture, a list, a table in a Doc, a formula in a Sheet — is shown and cannot be typed into, so nothing you did not touch is ever rewritten. If somebody changed the document in Google after you opened it, Save sends nothing and your edits stay where they are. Using your own client ID, turn on the Docs, Sheets and Slides APIs in its Google Cloud project; Leaftext says which one is missing.
 
 The Google Drive app puts the same documents on its own drive as shortcuts ending `.gsheet`, `.gdoc` and `.gslides`. Leaftext opens one through your Google Drive vault for that drive's account and reads, edits and saves it exactly as above. With no such vault signed in, it says what the file is and offers **Open in Google Sheets** — or Docs, or Slides — which opens it in your browser.
 

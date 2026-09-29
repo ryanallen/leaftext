@@ -711,6 +711,7 @@ const COLUMN_STATE_NAMES = [
   'minimapSpacerFrame', 'minimapSpacerTarget', 'readerLayoutFrame', 'readerScrollSettleTimer',
   'readerReflowObserver', 'readerAnchorBlocksCount', 'readerAnchorBlocksSource', 'resetReaderScrollFrame',
   'readerSectionSaid', 'readerLayoutHoldsAnchor', 'minimapPreviewHolds',
+  'minimapCloneMap', 'minimapCloneHeight', 'minimapChangedCells',
 ];
 
 
@@ -786,6 +787,9 @@ function saveColumnState(column) {
   held.minimapViewportFrame = minimapViewportFrame;
   held.minimapPreviewFrame = minimapPreviewFrame;
   held.minimapContentVersion = minimapContentVersion;
+  held.minimapCloneMap = minimapCloneMap;
+  held.minimapCloneHeight = minimapCloneHeight;
+  held.minimapChangedCells = minimapChangedCells;
   held.minimapBuiltVersion = minimapBuiltVersion;
   held.minimapBuiltSourceWidth = minimapBuiltSourceWidth;
   held.minimapBuiltPreviewWidth = minimapBuiltPreviewWidth;
@@ -895,6 +899,9 @@ function loadColumnState(column) {
   minimapViewportFrame = held.minimapViewportFrame;
   minimapPreviewFrame = held.minimapPreviewFrame;
   minimapContentVersion = held.minimapContentVersion;
+  minimapCloneMap = held.minimapCloneMap;
+  minimapCloneHeight = held.minimapCloneHeight;
+  minimapChangedCells = held.minimapChangedCells;
   minimapBuiltVersion = held.minimapBuiltVersion;
   minimapBuiltSourceWidth = held.minimapBuiltSourceWidth;
   minimapBuiltPreviewWidth = held.minimapBuiltPreviewWidth;
@@ -5798,7 +5805,7 @@ window.leafReadHeld = (path, mac) => {
     clearTimeout(readerLoadingSafety);
     readerLoadingSafety = 0;
   }
-  const name = String(path == null ? '' : path).split(/[\\/]/).pop() || String(path || 'the document');
+  const name = documentFileName(path) || String(path || 'the document');
   const permission = mac ? ' If macOS is asking whether Leaftext may read this folder, answer it to go on.' : '';
   leafToast(`Still opening ${name}.${permission}`, 'ok');
 };
@@ -9730,6 +9737,7 @@ function showServiceForm(items) {
   showCrumbMenu(crumbMenuOwner, items);
 }
 let waitingServiceForm = null;
+let serviceWaitSequence = Date.now() * 1000 + Math.floor(Math.random() * 1000);
 function startServiceWait(heading, service, command, checksServer = false) {
   clearServiceFormDraft(heading);
   if (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers(command.command)) {
@@ -9737,21 +9745,28 @@ function startServiceWait(heading, service, command, checksServer = false) {
     send(command);
     return;
   }
+  const attemptId = `service-${++serviceWaitSequence}`;
   showCrumbMenu(crumbMenuOwner, [
     { heading, form: true },
     { note: checksServer ? 'Checking these with the server.' : service === 'Google Drive' ? 'Finish signing in to Google in the tab beside this. This closes by itself when Google answers.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
-    { buttons: [{ label: 'Cancel', keepOpen: true, run: hideCrumbMenu }] },
+    { buttons: [{ label: 'Cancel', keepOpen: true, run: () => {
+      send({ command: 'cancelServiceSignIn', attemptId });
+      waitingServiceForm = null;
+      hideCrumbMenu();
+    } }] },
   ]);
-  waitingServiceForm = crumbMenu.querySelector('.crumb-menu-note');
+  waitingServiceForm = { note: crumbMenu.querySelector('.crumb-menu-note'), attemptId };
+  command.attemptId = attemptId;
   send(command);
 }
-window.leafSignInEnded = () => {
-  if (!crumbMenu.hidden && waitingServiceForm && crumbMenu.contains(waitingServiceForm)) hideCrumbMenu();
+window.leafSignInEnded = (attemptId) => {
+  if (!waitingServiceForm || waitingServiceForm.attemptId !== attemptId) return;
+  if (!crumbMenu.hidden && crumbMenu.contains(waitingServiceForm.note)) hideCrumbMenu();
   waitingServiceForm = null;
 };
 window.leafSignInBrowserFallback = () => {
-  if (waitingServiceForm && crumbMenu.contains(waitingServiceForm)) {
-    waitingServiceForm.textContent = 'Finish signing in to Google Drive in your browser. This closes by itself when Google answers.';
+  if (waitingServiceForm && crumbMenu.contains(waitingServiceForm.note)) {
+    waitingServiceForm.note.textContent = 'Finish signing in to Google Drive in your browser. This closes by itself when Google answers.';
   }
 };
 const OWN_CREDENTIALS_NOTE = "The address, user name and password are your own. Leaftext keeps the password in this computer's credential store, the same place it keeps every vault sign-in.";
@@ -14405,12 +14420,23 @@ window.leafRestoreScrollAnchor = (anchor) => {
   });
 };
 
+function pointerEndingLength(name) {
+  const pointer = window.__leafPointerSuffix;
+  return pointer && name.length > pointer.length && name.toLowerCase().endsWith(pointer) ? pointer.length : 0;
+}
+
+function documentFileName(path) {
+  const name = String(path == null ? '' : path).split(/[\\/]/).pop() || '';
+  const pointer = pointerEndingLength(name);
+  return pointer ? name.slice(0, -pointer) : name;
+}
+
 function documentNameParts(path) {
   const name = String(path == null ? '' : path).split(/[\\/]/).pop() || '';
   
-  const pointer = window.__leafPointerSuffix;
-  if (pointer && name.length > pointer.length && name.toLowerCase().endsWith(pointer)) {
-    return { stem: name.slice(0, -pointer.length), extension: '' };
+  const pointer = pointerEndingLength(name);
+  if (pointer) {
+    return { stem: name.slice(0, -pointer), extension: '' };
   }
   const match = name.match(DOCUMENT_NAME_RE);
   return match ? { stem: name.slice(0, -match[0].length), extension: match[1].toUpperCase() } : { stem: name, extension: '' };
@@ -14561,8 +14587,7 @@ function renderTabs(state) {
     }
     const favorite = isFavoritePath(tab.path);
     const mark = favorite ? 'Unfavorite' : 'Favorite';
-    const label = tab.path || tab.title || '';
-    const name = String(label).split(/[\\/]/).pop() || '';
+    const name = documentFileName(tab.path || tab.title || '');
     
     const front = index === active || index === besideTabIndex();
     return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
@@ -36289,6 +36314,7 @@ var readerAnchorBlocksCount;
 var readerAnchorBlocksSource;
 
 function initializeMinimapState() {
+  resetMinimapClonePatches();
   minimapViewportFrame = 0;
   minimapPreviewFrame = 0;
   minimapContentVersion = 0;
@@ -36585,8 +36611,10 @@ function minimapRecordIsTableControlOnly(record) {
   const moved = [...record.addedNodes, ...record.removedNodes];
   return moved.length > 0 && moved.every(isTableControlNode);
 }
+
 function minimapBodyChanged(records) {
-  if (records.some((record) => !minimapRecordIsTableControlOnly(record))) invalidateMinimapPreview();
+  if (records.every(minimapRecordIsTableControlOnly)) return;
+  if (!noteMinimapCellChanges(records)) invalidateMinimapPreview();
 }
 function bindDocumentMinimapPreview(track) {
   disconnectMinimapPreviewObservers();
@@ -36636,6 +36664,7 @@ function bindDocumentMinimapPreview(track) {
   scheduleMinimapPreviewUpdate();
 }
 function disconnectMinimapPreviewObservers() {
+  resetMinimapClonePatches();
   if (minimapBodyObserver) {
     minimapBodyObserver.disconnect();
     minimapBodyObserver = null;
@@ -37139,6 +37168,7 @@ function bookMinimapWiden() {
 
 function invalidateMinimapPreview() {
   minimapContentVersion += 1;
+  minimapChangedCells.clear();
   invalidateMinimapMetrics();
   cancelMinimapWiden();
   scheduleMinimapPreviewUpdate(0);
@@ -37163,6 +37193,10 @@ function minimapVisibleDocumentRange(metrics, scrollTop) {
   const top = metrics.previewScale > 0 ? -previewTop / metrics.previewScale : 0;
   const height = metrics.previewScale > 0 ? metrics.trackHeight / metrics.previewScale : 0;
   return { top, bottom: top + height, height };
+}
+
+function moveMinimapBuiltFoot(by) {
+  if (minimapBuiltRange) minimapBuiltRange = { top: minimapBuiltRange.top, bottom: minimapBuiltRange.bottom + by };
 }
 
 function minimapWindowCoversView(metrics, scrollTop) {
@@ -37221,6 +37255,15 @@ function minimapNothingInFlowPast(kids, index, step) {
     if (!minimapRowIsOutOfFlow(kids[at])) return false;
   }
   return true;
+}
+
+function minimapClaimReaches(rows, index, step, edge, appTop, scrollTop) {
+  for (let at = index + step; at >= 0 && at < rows.length; at += step) {
+    if (minimapRowIsOutOfFlow(rows[at])) continue;
+    const facing = minimapBlockEdges(rows[at], appTop, scrollTop);
+    return step < 0 ? Math.min(edge, facing.bottom) : Math.max(edge, facing.top);
+  }
+  return edge;
 }
 
 function minimapRowIsAtomic(row) {
@@ -37317,11 +37360,14 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
     const throughIndex = Array.prototype.indexOf.call(from.childNodes, lastNode);
     for (let i = fromIndex; i >= 0 && i <= throughIndex; i += 1) {
       const node = from.childNodes[i];
-      into.appendChild(node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true));
+      const clone = node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true);
+      into.appendChild(clone);
+      if (node.nodeType === 1) recordMinimapClone(node, clone, true);
     }
   };
   
   const preview = source.cloneNode(false);
+  recordMinimapClone(source, preview, false);
   resetPadding(preview);
   
   const block = window.path === '' ? -1 : Number(window.path.split('/')[0]);
@@ -37341,6 +37387,7 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
       const sliced = index === crossing ? windowCarriedMinimapRow(row, cut, edge) : null;
       if (!sliced) {
         const whole = row.cloneNode(true);
+        recordMinimapClone(row, whole, true);
         preview.appendChild(whole);
         if (edge === 'top') leads(whole, topOf(row));
         continue;
@@ -37371,6 +37418,7 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
         ? windowCarriedMinimapRow(kid, cut, edge)
         : null;
       const clone = sliced ? sliced.preview : kid.cloneNode(true);
+      if (!sliced) recordMinimapClone(kid, clone, true);
       into.appendChild(clone);
       if (inFlow && edge === 'top') leads(clone, sliced ? sliced.firstTop : topOf(kid));
     }
@@ -37381,6 +37429,7 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
   for (let depth = 0; depth < window.wrappers.length; depth += 1) {
     const wrapper = window.wrappers[depth];
     const clone = wrapper.cloneNode(false);
+    recordMinimapClone(wrapper, clone, false);
     resetPadding(clone);
     
     const level = depth > 0 && window.levels ? window.levels[depth] : null;
@@ -37409,43 +37458,6 @@ function windowCarriedMinimapRow(row, cut, edge) {
   if (nested.first > nested.last) return null;
   if (!nested.wrappers.length && nested.first <= 0 && nested.last >= nested.rows.length - 1) return null;
   return buildWindowedMinimapClone(row, nested, nested.first, nested.last, cut, edge);
-}
-
-function stripMinimapClone(preview) {
-  preview.removeAttribute('id');
-  
-  preview.querySelectorAll('textarea').forEach((node) => node.remove());
-  
-  preview.querySelectorAll('.table-row-handle, .table-column-handle').forEach((node) => node.remove());
-  preview.querySelectorAll('[id]').forEach((node) => {
-    
-    if (node.closest('svg')) return;
-    node.removeAttribute('id');
-  });
-  preview.querySelectorAll('a[href]').forEach((link) => {
-    
-    const href = link.getAttribute('href') || '';
-    if (/^glossary:/i.test(href) || /GLOSSARY\.md#/i.test(href)) {
-      link.classList.add('glossary-term');
-    }
-    link.removeAttribute('href');
-  });
-  
-  preview.querySelectorAll('video').forEach((clip) => {
-    const still = document.createElement('img');
-    still.className = clip.className;
-    if (clip.poster) still.src = clip.poster;
-    still.alt = '';
-    clip.replaceWith(still);
-  });
-  
-  fillMermaidClone(preview);
-  
-  drawCodeFencesIn(preview);
-  preview.classList.add('document-minimap-preview');
-  preview.setAttribute('aria-hidden', 'true');
-  
-  preview.inert = true;
 }
 
 function minimapFrameWidth(fallbackWidth) {
@@ -37588,6 +37600,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   const previewScale = previewWidth / metrics.sourceWidth;
   const frameWidth = minimapFrameWidth(metrics.sourceWidth);
   const scrollTop = metrics.scrollTop;
+  if (!patchMinimapPreview(metrics)) minimapContentVersion++;
   
   if (
     content.querySelector('.document-minimap-preview') &&
@@ -37630,6 +37643,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   }
   
   const frame = document.createElement('div');
+  beginMinimapClone(metrics.scrollHeight);
   frame.className = 'document-minimap-frame';
   frame.setAttribute('aria-hidden', 'true');
   frame.style.width = `${frameWidth}px`;
@@ -37639,6 +37653,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   let firstNode = null;
   if (!windowsIt) {
     preview = source.cloneNode(true);
+    recordMinimapClone(source, preview, true);
     stripMinimapClone(preview);
     preview.style.width = `${metrics.sourceWidth}px`;
     
@@ -37670,7 +37685,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
         ? cut.top
         : (window.beforeFirst >= 0
           ? (window.beforeFirst === 0 ? 0 : firstTop)
-          : (empty ? cut.top : (first === 0 ? (outerEdges ? outerEdges.top : 0) : firstTop))),
+          : (empty ? cut.top : (first === 0 ? (outerEdges ? outerEdges.top : 0) : minimapClaimReaches(rows, first, -1, firstTop, appTop, scrollTop)))),
       bottom: built.slicedBottom
         ? cut.bottom
         : (window.afterLast >= 0
@@ -37679,7 +37694,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
             ? cut.bottom
             : (last >= rows.length - 1
               ? (outerEdges ? outerEdges.bottom : metrics.scrollHeight)
-              : minimapBlockEdges(rows[last], appTop, scrollTop).bottom))),
+              : minimapClaimReaches(rows, last, 1, minimapBlockEdges(rows[last], appTop, scrollTop).bottom, appTop, scrollTop)))),
     };
     minimapBuiltFirstRow = first;
     minimapBuiltLastRow = last;
@@ -37933,6 +37948,120 @@ function undoLastDelete() {
   undoableDelete = null;
   send({ command: 'undoDelete', path });
 }
+const MINIMAP_CLONE_DROPS = 'textarea, .table-row-handle, .table-column-handle';
+var minimapCloneMap;
+var minimapCloneHeight;
+var minimapChangedCells;
+
+function resetMinimapClonePatches() {
+  minimapCloneMap = new WeakMap();
+  minimapCloneHeight = -1;
+  minimapChangedCells = new Set();
+}
+
+function beginMinimapClone(height) {
+  minimapCloneMap = new WeakMap();
+  minimapCloneHeight = height;
+  minimapChangedCells.clear();
+}
+
+function recordMinimapClone(source, clone, whole) {
+  minimapCloneMap.set(source, { clone, whole });
+}
+
+
+function minimapChangedCell(record) {
+  const target = record.target && (record.target.nodeType === 3 ? record.target.parentElement : record.target);
+  const source = minimapSourceElement();
+  if (!target || !source || target === source || isDocumentRun(target) || !source.contains(target)) return null;
+  const cell = target.closest('td, th, .table-lens-bar');
+  if (cell) return cell;
+  return target.closest('pre') ? null : target;
+}
+
+function noteMinimapCellChanges(records) {
+  if (readingIsContainedPage()) return false;
+  const cells = records.filter((record) => !minimapRecordIsTableControlOnly(record)).map(minimapChangedCell);
+  if (!cells.length || cells.some((cell) => !cell)) return false;
+  cells.forEach((cell) => minimapChangedCells.add(cell));
+  invalidateMinimapMetrics();
+  scheduleMinimapPreviewUpdate(0);
+  return true;
+}
+
+function patchMinimapPreview(metrics) {
+  if (!minimapChangedCells.size) return true;
+  const cells = [...minimapChangedCells];
+  minimapChangedCells.clear();
+  if (!minimapCloneMap?.has(minimapSourceElement())) return false;
+  
+  const grown = metrics.scrollHeight - minimapCloneHeight;
+  if (grown && minimapSlides && minimapSlides.length) return false;
+  for (const cell of cells) {
+    const path = [];
+    let source = cell;
+    while (source && !minimapCloneMap.has(source)) {
+      path.unshift(source);
+      source = source.parentNode;
+    }
+    if (!source) {
+      if (grown) return false;
+      continue;
+    }
+    const entry = minimapCloneMap.get(source);
+    
+    if (!entry.whole && (grown || !path.length)) return false;
+    if (!entry.whole) continue;
+    let copy = entry.clone;
+    for (const step of path) {
+      const siblings = [...source.childNodes].filter((node) => node.nodeType !== 1 || !node.matches(MINIMAP_CLONE_DROPS));
+      const at = siblings.indexOf(step);
+      copy = at < 0 ? null : copy.childNodes[at];
+      if (!copy || copy.tagName !== step.tagName) return false;
+      source = step;
+    }
+    if (!copy || copy.nodeType !== 1) return false;
+    copy.replaceChildren(...[...cell.childNodes].map((node) => (node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true))));
+    stripMinimapCloneContent(copy);
+  }
+  if (grown) {
+    minimapCloneHeight = metrics.scrollHeight;
+    moveMinimapBuiltFoot(grown);
+    const content = currentMinimap()?.querySelector('.document-minimap-content');
+    if (content) content.style.height = `${metrics.scaledDocumentHeight}px`;
+  }
+  return true;
+}
+
+function stripMinimapCloneContent(node) {
+  node.querySelectorAll(MINIMAP_CLONE_DROPS).forEach((child) => child.remove());
+  node.querySelectorAll('[id]').forEach((child) => {
+    if (!child.closest('svg')) child.removeAttribute('id');
+  });
+  node.querySelectorAll('a[href]').forEach((link) => {
+    const href = link.getAttribute('href') || '';
+    if (/^glossary:/i.test(href) || /GLOSSARY\.md#/i.test(href)) link.classList.add('glossary-term');
+    link.removeAttribute('href');
+  });
+  node.querySelectorAll('video').forEach((clip) => {
+    const still = document.createElement('img');
+    still.className = clip.className;
+    if (clip.poster) still.src = clip.poster;
+    still.alt = '';
+    clip.replaceWith(still);
+  });
+  fillMermaidClone(node);
+  drawCodeFencesIn(node);
+}
+
+function stripMinimapClone(preview) {
+  preview.removeAttribute('id');
+  stripMinimapCloneContent(preview);
+  preview.classList.add('document-minimap-preview');
+  preview.setAttribute('aria-hidden', 'true');
+  preview.inert = true;
+}
+
 
 settleColumnState();
 

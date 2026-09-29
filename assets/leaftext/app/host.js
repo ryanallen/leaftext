@@ -238,6 +238,7 @@ export const COMMANDS = {
   setGitIdentity: [REFUSED, 'it writes who git commits as into the git settings on a machine, and a site is a folder on somebody else’s host with no machine and no git under it'],
   refreshVault: [REFUSED, 'a site is one folder already published, and nothing here can reach the source it came from'],
   signInVault: [REFUSED, 'a site has no window to open a browser sign-in from, no port to be answered on and nowhere to keep a token'],
+  cancelServiceSignIn: [REFUSED, 'a site has no sign-in listener or credential store to cancel'],
   signOutVault: [REFUSED, 'there is no signed-in account on a site, so there is nothing to sign out of'],
   setLibraryLayout: [ANSWERED],
   createVault: [REFUSED, 'a vault is a folder picked on a disk'],
