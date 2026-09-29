@@ -8099,6 +8099,29 @@ function readerGutterPx() {
 let libraryMotionTimer = 0;
 let libraryMotionDone = null;
 let libraryMotionStage = '';
+
+function holdTableWidths() {
+  for (const layout of document.querySelectorAll('.reader-layout')) {
+    if (layout.classList.contains('is-library-table-width-held') || layout.closest('.document-minimap')) continue;
+    const bays = layout.querySelectorAll('.document-run > .table-bay');
+    const width = bays.length ? Number.parseFloat(getComputedStyle(bays[0]).width) : 0;
+    if (!width) continue;
+    for (const bay of bays) {
+      bay.style.width = `${width}px`;
+      bay.style.marginInline = `calc((100% - ${width}px) / 2)`;
+    }
+    layout.classList.add('is-library-table-width-held');
+  }
+}
+function releaseTableWidths() {
+  for (const layout of document.querySelectorAll('.reader-layout.is-library-table-width-held')) {
+    layout.classList.remove('is-library-table-width-held');
+    for (const bay of layout.querySelectorAll('.document-run > .table-bay')) {
+      bay.style.width = '';
+      bay.style.marginInline = '';
+    }
+  }
+}
 function endLibraryMotion(restarting) {
   window.clearTimeout(libraryMotionTimer);
   libraryMotionTimer = 0;
@@ -8110,6 +8133,7 @@ function endLibraryMotion(restarting) {
   scheduleMinimapWidthSync();
   
   if (!restarting) {
+    releaseTableWidths();
     forgetAppBarLeadWidth();
     floorAppBarLead();
   }
@@ -8153,6 +8177,8 @@ function toggleLibrary() {
     applyPaneLayout();
     return;
   }
+  
+  holdTableWidths();
   if (libraryIsClosed()) {
     libraryUserClosed = false;
     libraryWidth = openPaneFloor(DEFAULT_PANE_WIDTH);
@@ -8199,7 +8225,7 @@ function paneDrawingState() {
     
     besideColumnOpen: besideRailColumnOpen(),
     
-    toolbarRailOpen: hasMinimap || document.documentElement.dataset.codeView === 'true',
+    toolbarRailOpen: hasMinimap || !!(window.leafMinimap && window.leafMinimap.getEnabled()) || document.documentElement.dataset.codeView === 'true',
     minimapWidth: null,
   };
 }
@@ -9708,7 +9734,7 @@ function startServiceWait(heading, service, command, checksServer = false) {
   }
   showCrumbMenu(crumbMenuOwner, [
     { heading, form: true },
-    { note: checksServer ? 'Checking these with the server.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
+    { note: checksServer ? 'Checking these with the server.' : service === 'Google Drive' ? 'Finish signing in to Google in the tab beside this. This closes by itself when Google answers.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
     { buttons: [{ label: 'Cancel', keepOpen: true, run: hideCrumbMenu }] },
   ]);
   waitingServiceForm = crumbMenu.querySelector('.crumb-menu-note');
@@ -9717,6 +9743,11 @@ function startServiceWait(heading, service, command, checksServer = false) {
 window.leafSignInEnded = () => {
   if (!crumbMenu.hidden && waitingServiceForm && crumbMenu.contains(waitingServiceForm)) hideCrumbMenu();
   waitingServiceForm = null;
+};
+window.leafSignInBrowserFallback = () => {
+  if (waitingServiceForm && crumbMenu.contains(waitingServiceForm)) {
+    waitingServiceForm.textContent = 'Finish signing in to Google Drive in your browser. This closes by itself when Google answers.';
+  }
 };
 const OWN_CREDENTIALS_NOTE = "The address, user name and password are your own. Leaftext keeps the password in this computer's credential store, the same place it keeps every vault sign-in.";
 function showBoxVaultForm() {
@@ -16975,10 +17006,9 @@ function anchorToMarkdown(el) {
   }
   if (el.classList.contains('leaf-md-button')) return buttonToMarkdown(el, href);
   if (
-    href === text ||
+    (href === text && /^https?:\/\//.test(text)) ||
     href === 'mailto:' + text ||
-    href === 'http://' + text ||
-    href === 'https://' + text
+    (href === 'http://' + text && text.startsWith('www.'))
   ) {
     return text;
   }
@@ -17481,6 +17511,11 @@ function listDomToMarkdown(listEl, indent) {
       (child) => child.tagName && child.tagName.toLowerCase() === 'input' && child.type === 'checkbox',
     );
     if (box) task = box.checked ? '[x] ' : '[ ] ';
+    const paragraphs = Array.from(li.children).filter((child) => child.tagName && child.tagName.toLowerCase() === 'p');
+    if (paragraphs.length > 1) {
+      items.push(itemWithParagraphsToMarkdown(li, indent + marker + task, indent + ' '.repeat(marker.length)));
+      return;
+    }
     
     const clone = li.cloneNode(true);
     Array.from(clone.children).forEach((child) => {
@@ -17498,7 +17533,24 @@ function listDomToMarkdown(listEl, indent) {
     });
     items.push(lines.join('\n'));
   });
-  return items.join(listIsSpacedApart(listEl) ? '\n\n' : '\n');
+  const gap = typeof listEl.__listItemGap === 'string' ? listEl.__listItemGap : listIsSpacedApart(listEl) ? '\n\n' : '\n';
+  return items.join(gap);
+}
+
+
+function itemWithParagraphsToMarkdown(li, lead, childIndent) {
+  const oneLine = (p) => inlineDomToMarkdown(p).trim().replace(/\\\n/g, ' ').replace(/\n+/g, ' ');
+  const lines = [];
+  Array.from(li.children).forEach((child) => {
+    const tag = child.tagName ? child.tagName.toLowerCase() : '';
+    if (tag === 'p') {
+      if (lines.length === 0) lines.push(lead + oneLine(child));
+      else lines.push('', childIndent + oneLine(child));
+    } else if (tag === 'ul' || tag === 'ol') {
+      lines.push(listDomToMarkdown(child, childIndent));
+    }
+  });
+  return lines.join('\n');
 }
 
 
@@ -17667,10 +17719,7 @@ function markdownBlockWysiwygSafe(el) {
 
 
 function listWysiwygSafe(el) {
-  if (el.querySelector('pre, blockquote, table, img, .katex, .mermaid')) return false;
-  return Array.from(el.querySelectorAll('li')).every(
-    (item) => Array.from(item.children).filter((child) => child.tagName.toLowerCase() === 'p').length <= 1,
-  );
+  return !el.querySelector('pre, blockquote, table, img, .katex, .mermaid');
 }
 
 
@@ -18407,6 +18456,21 @@ function emailBlockTypeableInPlace(el) {
 }
 
 
+function listTypeableInPlace(el) {
+  if (!listWysiwygSafe(el)) return false;
+  if (!listIsSpacedApart(el)) return true;
+  const { start, end } = rangeOf(el, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  const src = sliceSourceBytes(start, end);
+  for (const gap of ['\n\n', '\n']) {
+    el.__listItemGap = gap;
+    if (blockDomToMarkdown(el) === src) return true;
+  }
+  delete el.__listItemGap;
+  return false;
+}
+
+
 function xmlElementInnerSpan(src) {
   const open = /^[ \t]*<([^\s/>!?][^\s/>]*)(?:\s[^>]*)?>/.exec(src);
   if (!open) return null;
@@ -19132,7 +19196,7 @@ function bindEditableBlocks(format, elements = null) {
           ? !!innerSpan
           : format === 'markdown' &&
             (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
-              (kind === 'list' && listWysiwygSafe(el)) ||
+              (kind === 'list' && listTypeableInPlace(el)) ||
               (kind === 'table' && tableWysiwygSafe(el)) ||
               (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
               (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));

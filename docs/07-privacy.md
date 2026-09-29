@@ -25,6 +25,7 @@ When you add a Google Drive vault with **Sign in with Google**, Google asks you 
 
 What happens to it:
 
+- **You sign in on Google's own page.** It opens in a tab inside Leaftext kept apart from your documents, so your password goes to Google and never to Leaftext, and the tab closes once Google answers.
 - **The sign-in stays on your computer.** The token Google hands back is kept in your system's own credential store — Credential Manager on Windows, the Keychain on macOS — and never in a file the app writes.
 - **Your files stay between your computer and Google.** The copies the app keeps so your Drive opens quickly sit in the app's data folder on your computer. The app reads and writes Google Drive only when you are using the vault, and only the files in it.
 - **Nothing is shared, sold or used for anything else.** Leaftext uses what it reads from Google only to show and edit your own files for you, and does not use it for advertising or to train any model. Its use of information received from Google APIs follows the [Google API Services User Data Policy](https://developers.google.com/terms/api-services-user-data-policy), including the Limited Use requirements.
