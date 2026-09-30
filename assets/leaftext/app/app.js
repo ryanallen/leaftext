@@ -14437,7 +14437,8 @@ window.leafScrollToFragment = (fragment) => {
     target.scrollIntoView({ block: 'start' });
     setReaderScrollTop(app.scrollTop);
     
-    refreshReaderScrollAnchor();
+    if (readingHasHeldBlocks()) anchorReaderOn(target);
+    else refreshReaderScrollAnchor();
     updateMinimapViewport();
     columnFrame(() => {
       restoreReaderScrollAnchor(readerScrollAnchor);
@@ -15179,12 +15180,7 @@ function scrollReadingToSrcOffset(srcOffset) {
   const rect = target.getBoundingClientRect();
   setReaderScrollTop(app.scrollTop + rect.top - shellRect.top);
   
-  if (pendingReadingChapter) {
-    const body = app.querySelector('.document-body');
-    const blocks = body ? readerAnchorBlockList(body) : [];
-    const index = blocks.findIndex((block) => block === target || target.contains(block));
-    if (index >= 0) readerScrollAnchor = anchorForBlockIndex(blocks, index, app.getBoundingClientRect());
-  }
+  anchorReaderOn(target);
   return true;
 }
 
@@ -30622,15 +30618,28 @@ function revealReadingPast(target) {
   let changed = false;
   let block = firstHeld;
   while (block) {
-    const held = block.classList.contains('is-held-below');
-    const at = block;
-    block = nextDocumentBlock(block);
-    if (!held) continue;
-    at.classList.remove('is-held-below');
+    const opened = [];
+    while (block) {
+      const held = block.classList.contains('is-held-below');
+      const at = block;
+      block = nextDocumentBlock(block);
+      if (!held) continue;
+      at.classList.remove('is-held-below');
+      opened.push(at);
+      if (targetBlock === at) neededBottom = documentBottom(at) + viewportHeight * 2;
+      const bottom = documentBottom(at);
+      if (neededBottom !== null && !targetBlock?.classList.contains('is-held-below') && (bottom >= neededBottom || bottom <= 0)) break;
+    }
+    if (!opened.length) break;
     changed = true;
-    if (targetBlock === at) neededBottom = documentBottom(at) + viewportHeight * 2;
-    const bottom = documentBottom(at);
-    if (neededBottom !== null && !targetBlock?.classList.contains('is-held-below') && (bottom >= neededBottom || bottom <= 0)) break;
+    
+    const lanes = opened.flatMap((at) => Array.from(at.querySelectorAll('.table-lane')));
+    if (!lanes.length) break;
+    decideTableLanes(lanes);
+    if (!block || neededBottom === null) break;
+    if (targetBlock && !targetBlock.classList.contains('is-held-below')) neededBottom = documentBottom(targetBlock) + viewportHeight * 2;
+    const bottom = documentBottom(opened[opened.length - 1]);
+    if (bottom >= neededBottom || bottom <= 0) break;
   }
   readingHeldCursor = block;
   if (changed && !readingHasHeldBlocks()) finishReadingFill();
@@ -31046,6 +31055,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     
     if (readerLayout) {
       readerLayout.style.removeProperty('display');
+      
+      measureWideTables();
       revealReadingPast(pendingReadingLandingTarget(renderedPath, landingAnchor));
       setMinimapMarkup(minimapHtml);
     }
@@ -34558,7 +34569,6 @@ function laneWideTables(root = app) {
     syncTableLaneState(table);
     addTableSizingGrips(lane);
   }
-  measureWideTables(root);
 }
 
 
@@ -34567,32 +34577,33 @@ function laneWantsCards(lane) {
 }
 
 
+function decideTableLanes(changed) {
+  const pairs = [];
+  for (const lane of changed) {
+    const table = lane.querySelector('table');
+    if (!table) continue;
+    if (table.classList.contains('is-cell-card')) continue;
+    
+    if (table.dataset.lensLayout && table.dataset.lensLayout !== 'grid') continue;
+    
+    if (table.classList.contains('is-reader-sized')) continue;
+    table.classList.remove('is-cards');
+    table.classList.add('no-cards');
+    syncTableLaneState(table);
+    pairs.push({ lane, table });
+  }
+  
+  const cards = pairs.map(({ lane, table }) => laneWantsCards(lane) && table.scrollWidth > lane.clientWidth + 2);
+  pairs.forEach(({ table }, at) => {
+    table.classList.toggle('is-cards', cards[at]);
+    syncTableLaneState(table);
+  });
+}
+
 function measureWideTables(root = app) {
   if (wideTableResizeObserver) wideTableResizeObserver.disconnect();
   const lanes = Array.from(root.querySelectorAll('.table-lane'));
-  const decide = (changed) => {
-    const pairs = [];
-    for (const lane of changed) {
-      const table = lane.querySelector('table');
-      if (!table) continue;
-      if (table.classList.contains('is-cell-card')) continue;
-      
-      if (table.dataset.lensLayout && table.dataset.lensLayout !== 'grid') continue;
-      
-      if (table.classList.contains('is-reader-sized')) continue;
-      table.classList.remove('is-cards');
-      table.classList.add('no-cards');
-      syncTableLaneState(table);
-      pairs.push({ lane, table });
-    }
-    
-    const cards = pairs.map(({ lane, table }) => laneWantsCards(lane) && table.scrollWidth > lane.clientWidth + 2);
-    pairs.forEach(({ table }, at) => {
-      table.classList.toggle('is-cards', cards[at]);
-      syncTableLaneState(table);
-    });
-  };
-  decide(lanes);
+  decideTableLanes(lanes);
   if (typeof ResizeObserver !== 'undefined') {
     
     const changed = new Set();
@@ -34605,15 +34616,15 @@ function measureWideTables(root = app) {
         const moved = Array.from(changed);
         changed.clear();
         if (wideTableResizeObserver !== observer) return;
-        decide(moved);
+        decideTableLanes(moved);
       });
     });
     wideTableResizeObserver = observer;
     lanes.forEach((lane) => observer.observe(lane));
   }
   
-  if (document.fonts?.ready) {
-    document.fonts.ready.then(() => decide(lanes));
+  if (document.fonts?.ready && document.fonts.status !== 'loaded') {
+    document.fonts.ready.then(() => decideTableLanes(lanes));
   }
 }
 
@@ -37241,7 +37252,46 @@ function anchorForBlockIndex(blocks, targetIndex, shellRect) {
   const target = blocks[targetIndex];
   const rect = target.getBoundingClientRect();
   const offsetY = shellRect.top - rect.top;
-  return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), index: targetIndex, offsetY };
+  const anchor = { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), index: targetIndex, offsetY };
+  
+  const readingLine = shellRect.top + READER_CONTENT_TOP_GAP;
+  if (target.tagName === 'TABLE' && rect.top < readingLine) {
+    const row = tableRowAtReadingLine(target, readingLine);
+    if (row) anchor.row = { index: row.index, offsetY: shellRect.top - row.top };
+  }
+  return anchor;
+}
+
+function tableRowAtReadingLine(table, readingLine) {
+  const rows = table.rows;
+  if (!rows || !rows.length) return null;
+  let lo = 0;
+  let hi = rows.length - 1;
+  let found = rows.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].getBoundingClientRect().bottom > readingLine) {
+      found = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return { index: found, top: rows[found].getBoundingClientRect().top };
+}
+
+function anchorReaderOn(target) {
+  const body = app.querySelector('.document-body');
+  const blocks = body ? readerAnchorBlockList(body) : [];
+  let index = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    if (blocks[i] === target || blocks[i].contains(target)) index = i;
+  }
+  if (index < 0) index = blocks.findIndex((block) => target.contains(block));
+  if (index < 0) return false;
+  readerScrollAnchor = anchorForBlockIndex(blocks, index, app.getBoundingClientRect());
+  announceReaderSection();
+  return true;
 }
 
 
@@ -37370,6 +37420,11 @@ function restoreReaderScrollAnchor(anchor) {
   
   correctReaderScrollOrigin();
   const shellRect = app.getBoundingClientRect();
+  const heldRow = element.tagName === 'TABLE' && Number.isInteger(anchor?.row?.index) && Number.isFinite(anchor.row.offsetY) && element.rows ? element.rows[anchor.row.index] : null;
+  if (heldRow) {
+    setReaderScrollTop(app.scrollTop + heldRow.getBoundingClientRect().top - shellRect.top + anchor.row.offsetY);
+    return;
+  }
   const rect = element.getBoundingClientRect();
   const offsetY = Number.isFinite(anchor?.offsetY) ? anchor.offsetY : 0;
   setReaderScrollTop(app.scrollTop + rect.top - shellRect.top + offsetY);

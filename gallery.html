@@ -6635,6 +6635,8 @@ body.is-library-settling .app-bar::after {
   padding-top: var(--app-bar-height);
   overflow-y: auto;
   overflow-x: hidden;
+  /* Only the mirror places the column. A copy filling in above its place would otherwise scroll it, and its listener reads any scroll it did not write as a hand on the rail and carries the reader with it. */
+  overflow-anchor: none;
   /* The rail is what shows where you are, so a bar beside it says the same thing twice. Two rules, kept apart: in Chromium `scrollbar-width` anywhere on an element kills every ::-webkit-scrollbar rule on it (see .reader-shell.has-minimap). */
   scrollbar-width: none;
 }

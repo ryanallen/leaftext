@@ -617,7 +617,7 @@ Under the row sits the **Grove** pill, which opens [Your Grove](09-progress.md),
 
 | Behavior | Rule |
 | --- | --- |
-| Toggle | The panel button in the app bar, left of Back, opens and closes the pane. It never folds into the app bar's overflow menu, so it is reachable at every window size |
+| Toggle | The panel button in the app bar, left of Back, opens and closes the pane. It never folds into the app bar's overflow menu, so it is reachable at every window size. Opening or closing it keeps what you were reading at the top of the page, and inside a long table that is the row you were reading, even though the page's new width wraps every row to a new height |
 | Motion | Opening springs slightly past its width and settles; closing slams to the page's padding, bounces off it once and seats there, the pane's contents fading with the travel. The pane, the tabs above it and the page edge move as one, dragging the divider tracks the pointer exactly, and under [Reduce Motion](05-settings.md#reduce-motion) both land instantly |
 | Opening width | 240 px, or the width of the buttons at the left end of the app bar where those come to more — the leaf, the panel button and the history arrows, and on macOS the window's own three dots beside them. That group is sized to the pane so the tab strip begins at the pane's edge, and a pane opening inside it would leave the first tab over the page. A width you dragged to is restored exactly as you left it, at any size |
 | Snap shut | Drag narrower than 40 px |

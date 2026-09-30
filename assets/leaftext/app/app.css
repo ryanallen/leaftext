@@ -6626,6 +6626,8 @@ body.is-library-settling .app-bar::after {
   overflow-y: auto;
   overflow-x: hidden;
   
+  overflow-anchor: none;
+  
   scrollbar-width: none;
 }
 .reader-minimap::-webkit-scrollbar {
