@@ -272,6 +272,7 @@ export const COMMANDS = {
   packagedPicture: [ANSWERED],
   enterCodeView: [ANSWERED],
   selectSourceMember: [REFUSED, 'this published page cannot change a package member; open the file in the desktop app'],
+  openMember: [LATER, 'a-book-in-a-browser-types-into-its-chapters'],
   exitCodeView: [ANSWERED],
   spliceSource: [LATER, 'web-app-commands'],
   updateSource: [LATER, 'web-app-commands'],

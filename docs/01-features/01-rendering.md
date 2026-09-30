@@ -83,7 +83,7 @@ Leaftext opens an `.epub` as **one document**, in the order the book's own packa
 
 **Nothing is fetched from the network when a book opens.** A book may name a picture, a font, a sound or a film on the internet, and every one of those loads itself the moment the page draws — so a tracking picture in a book somebody sent you would call home before you read a word. Leaftext removes every such address and draws only the pictures packed inside the book. A **link** is different, because a link is a press: a book's links to the web and to an email address are kept and open the way any other document's do.
 
-**A book is read-only.** Nothing writes back into an `.epub`, the reading view has no editable text in it, and the source button says a book is made of several source files rather than opening an editor over one. [Typing into a chapter](07-editing.md) is separate work.
+**A book is edited a chapter at a time.** With the padlock open, [typing into a paragraph or heading](07-editing.md#formats) changes that chapter's own source file inside the book, the source button opens the chapter you are reading, and Save writes only the chapters you typed in, leaving every other file in the book byte for byte as it was.
 
 **A book that is not the book it claims to be says so instead of taking the machine.** A missing or damaged package document, a chapter that points outside the book, a chapter claiming more text than the app will open, a spine longer than 4,096 parts and a chain of fallbacks that points round in a circle each get one sentence. A book whose chapters are encrypted says so by name; one that only scrambles its fonts reads normally, because a book's own fonts never load here.
 

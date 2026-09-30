@@ -14126,6 +14126,19 @@ p.front-more {
 .theme-item.is-active .theme-item-check {
   display: block;
 }
+
+.theme-item.is-locked {
+  opacity: var(--lt-opacity-60);
+}
+
+.theme-item-price {
+  order: -1;
+  margin-top: calc(var(--lt-space-8) * -1);
+  padding: 0 var(--lt-space-14) var(--lt-space-12);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-500);
+  white-space: nowrap;
+}
 .theme-sheet-footer {
   display: flex;
   justify-content: center;

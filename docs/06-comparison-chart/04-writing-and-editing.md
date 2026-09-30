@@ -534,7 +534,8 @@
 | --- | --- | --- | --- | --- |
 | Source for every format | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Office part XML | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| No book source view | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Book chapter source | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [✅][c-edit] |
+| Type into EPUB | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [✅][c-edit] |
 | Tables fully editable | [✅][l-formats] | [✅][o-seen] | [✅][t-tables] | [❌][c-seen] |
 | Hidden HTML editable | [✅][l-formats] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Raw HTML read-only | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

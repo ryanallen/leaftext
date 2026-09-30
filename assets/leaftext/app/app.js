@@ -244,6 +244,8 @@ let pendingCodeViewSrcOffset = null;
 
 let pendingReadingSrcOffset = null;
 
+let pendingReadingChapter = null;
+
 let pendingViewAtTop = false;
 
 let pendingViewLandingPath = null;
@@ -681,7 +683,11 @@ const COLUMN_STATE_NAMES = [
   
   'readerLoadingSafety', 'readerLoadingOwner',
   
-  'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'drawnRanges',
+  'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'drawnRanges', 'chapterMembers', 'heldChapterMember',
+  
+  'pendingChapterPress',
+  
+  'pendingReadingChapter',
   
   'documentLinksBound',
   
@@ -742,6 +748,11 @@ function saveColumnState(column) {
   held.heldSourceBytes = heldSourceBytes;
   held.heldSourceStamp = heldSourceStamp;
   held.drawnRanges = drawnRanges;
+  held.chapterMembers = chapterMembers;
+  held.heldChapterMember = heldChapterMember;
+  
+  held.pendingChapterPress = pendingChapterPress;
+  held.pendingReadingChapter = pendingReadingChapter;
   
   held.documentLinksBound = documentLinksBound;
   
@@ -854,6 +865,11 @@ function loadColumnState(column) {
   heldSourceBytes = held.heldSourceBytes;
   heldSourceStamp = held.heldSourceStamp;
   drawnRanges = held.drawnRanges;
+  chapterMembers = held.chapterMembers;
+  heldChapterMember = held.heldChapterMember;
+  
+  pendingChapterPress = held.pendingChapterPress;
+  pendingReadingChapter = held.pendingReadingChapter;
   
   documentLinksBound = held.documentLinksBound;
   
@@ -6577,6 +6593,16 @@ function forgetAppBarLeadWidth() {
   appBarLeadOwnWidth = 0;
 }
 
+function appBarLeadChanged() {
+  forgetAppBarLeadWidth();
+  if (!libraryPaneIsMoving()) floorAppBarLead();
+}
+const appBarLeadWatch = appBarLead && typeof MutationObserver !== 'undefined' ? new MutationObserver(appBarLeadChanged) : null;
+if (appBarLeadWatch) appBarLeadWatch.observe(appBarLead, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+if (document.fonts && typeof document.fonts.addEventListener === 'function') {
+  document.fonts.addEventListener('loadingdone', appBarLeadChanged);
+}
+
 function floorAppBarLead() {
   if (!appBarLead) return;
   const width = appBarLeadWidth();
@@ -6586,14 +6612,17 @@ function refitAppBar() {
   
   if (refittingAppBar) return;
   refittingAppBar = true;
+  const folded = overflowPanel.children.length;
   try {
     
     if (foldAppBar()) foldAppBar();
   } finally {
     refittingAppBar = false;
     
-    if (!libraryPaneIsMoving()) {
-      forgetAppBarLeadWidth();
+    if (overflowPanel.children.length !== folded) {
+      if (appBarLeadWatch) appBarLeadWatch.takeRecords();
+      appBarLeadChanged();
+    } else if (!libraryPaneIsMoving()) {
       floorAppBarLead();
     }
     restTabGroupsAtEnd();
@@ -8146,12 +8175,12 @@ function endLibraryMotion(restarting) {
   
   if (!restarting) {
     releaseTableWidths();
-    forgetAppBarLeadWidth();
     floorAppBarLead();
   }
   
   if (done) done();
-  if (!restarting) scheduleMinimapPreviewUpdate();
+  
+  if (!restarting) columnFrame(() => scheduleMinimapPreviewUpdate());
 }
 function startLibraryMotion(direction, done) {
   
@@ -13592,7 +13621,7 @@ function ensureThemeCardFont(card) {
 
 function themeFamilyCards() {
   return Array.from(themeSheetGrid.querySelectorAll('.theme-item[data-family]')).filter(
-    (card) => !card.classList.contains('theme-item-random') && !(card.parentElement && card.parentElement.hidden),
+    (card) => !card.classList.contains('theme-item-random') && !card.classList.contains('is-locked') && !(card.parentElement && card.parentElement.hidden),
   );
 }
 
@@ -13600,8 +13629,27 @@ function revealEarnedThemeCards(profile) {
   if (!themeSheetGrid) return;
   if (window.leafTheme.setOwnedUnlocks) window.leafTheme.setOwnedUnlocks(profile);
   const unlocks = (profile && profile.unlocks) || {};
+  
+  const catalog = (profile && Array.isArray(profile.catalog) && profile.catalog) || leafCatalog || [];
   themeSheetGrid.querySelectorAll('li[data-unlock]').forEach((item) => {
-    item.hidden = !(Number(unlocks[item.dataset.unlock]) > 0);
+    const owned = Number(unlocks[item.dataset.unlock]) > 0;
+    const card = item.querySelector('.theme-item');
+    item.hidden = !owned && !profile;
+    if (!card) return;
+    const locked = !owned && !!profile;
+    card.classList.toggle('is-locked', locked);
+    let price = card.querySelector('.theme-item-price');
+    if (!locked) {
+      if (price) price.remove();
+      return;
+    }
+    const node = catalog.find((one) => one.id === item.dataset.unlock);
+    if (!price) {
+      price = document.createElement('span');
+      price.className = 'theme-item-price';
+      card.appendChild(price);
+    }
+    price.textContent = node ? `${formatCountLabel(Number(node.price) || 0, 'seed', 'seeds')} in the Grove` : 'In the Grove';
   });
 }
 revealEarnedThemeCards(window.__leafProfile);
@@ -13677,11 +13725,14 @@ themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
     send({ command: 'setThemeMode', mode: btn.dataset.mode });
   });
 });
-themeSheetGrid.querySelectorAll('.theme-item').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    window.leafTheme.setFamily(btn.dataset.family);
-    send({ command: 'setThemeFamily', family: btn.dataset.family });
-  });
+
+themeSheetGrid.addEventListener('click', (event) => {
+  const btn = event.target && event.target.closest ? event.target.closest('.theme-item') : null;
+  if (!btn) return;
+  
+  if (btn.classList.contains('is-locked')) return openGroveAtReward(btn.dataset.family);
+  window.leafTheme.setFamily(btn.dataset.family);
+  send({ command: 'setThemeFamily', family: btn.dataset.family });
 });
 
 if (themeSheetBrowse) {
@@ -15092,6 +15143,10 @@ function recordReaderLanded() {
 function readingBlockForSrcOffset(srcOffset) {
   const body = app.querySelector('.document-body');
   if (!body) return null;
+  
+  if (pendingReadingChapter && pendingReadingChapter !== heldMember()) {
+    return Array.from(body.querySelectorAll('[data-src-member]')).find((item) => memberOf(item) === pendingReadingChapter) || null;
+  }
   const blocks = body.querySelectorAll('[data-src-start]');
   if (!blocks.length) return null;
   let target = null;
@@ -15111,7 +15166,24 @@ function scrollReadingToSrcOffset(srcOffset) {
   const shellRect = app.getBoundingClientRect();
   const rect = target.getBoundingClientRect();
   setReaderScrollTop(app.scrollTop + rect.top - shellRect.top);
+  
+  if (pendingReadingChapter) {
+    const body = app.querySelector('.document-body');
+    const blocks = body ? readerAnchorBlockList(body) : [];
+    const index = blocks.findIndex((block) => block === target || target.contains(block));
+    if (index >= 0) readerScrollAnchor = anchorForBlockIndex(blocks, index, app.getBoundingClientRect());
+  }
   return true;
+}
+
+
+function topChapterMember() {
+  const top = app.getBoundingClientRect().top;
+  const body = app.querySelector('.document-body');
+  if (!body) return null;
+  const items = Array.from(body.querySelectorAll('[data-src-member]')).filter((item) => memberOf(item));
+  const reading = items.find((item) => item.getBoundingClientRect().bottom > top);
+  return reading ? memberOf(reading) : null;
 }
 
 
@@ -15144,8 +15216,16 @@ function toggleCodeView() {
       handoff.restoreExact =
         handoff.readerScrollTop != null && viewStillLanded(handoff.codeScrollTop, handoff.codeLanded);
       const lineIndex = topVisibleCodeLineIndex();
+      const chapterShown = app.querySelector('.code-member-name');
+      pendingReadingChapter = currentDocumentFormat === 'epub' && chapterShown ? chapterShown.textContent : null;
       syncCodeViewText();
       pendingReadingSrcOffset = lineIndex == null ? null : byteOffsetAtLineIndex(sourceByteEncoder.encode(codeViewText), lineIndex);
+      
+      if (pendingReadingChapter) {
+        pendingViewAtTop = false;
+        handoff.restoreExact = false;
+        if (pendingReadingSrcOffset == null) pendingReadingSrcOffset = 0;
+      }
     } else {
       pendingReadingSrcOffset = null;
       
@@ -15158,9 +15238,17 @@ function toggleCodeView() {
     
     beginReaderLoading();
     if (!codeViewActive) {
+      
+      const chapter = currentDocumentFormat === 'epub' ? topChapterMember() : null;
+      if (chapter) {
+        if (chapter !== heldMember()) pendingCodeViewSrcOffset = null;
+        send({ command: 'openMember', member: chapter, quiet: true });
+      }
       send({ command: 'enterCodeView' });
       return;
     }
+    
+    if (currentDocumentFormat === 'epub' && heldMember()) send({ command: 'openMember', member: heldMember(), quiet: true });
     
     const command = { command: 'exitCodeView' };
     if (readerHeldUnderEditor && readerHeldUnderEditor.key) command.renderKey = readerHeldUnderEditor.key;
@@ -16527,6 +16615,8 @@ function captureReadingDocumentState() {
     bindsAnything: currentDocumentBindsAnything,
     hasUnreachableWords: currentDocumentHasUnreachableWords,
     outlineRows: documentOutlineRows,
+    chapterMembers,
+    heldChapterMember,
   };
 }
 
@@ -16540,6 +16630,8 @@ function restoreReadingDocumentState(state) {
   currentDocumentBindsAnything = state.bindsAnything;
   currentDocumentHasUnreachableWords = state.hasUnreachableWords;
   setDocumentOutlineRows(state.outlineRows);
+  chapterMembers = state.chapterMembers || new Map();
+  heldChapterMember = state.heldChapterMember || null;
 }
 
 
@@ -16640,6 +16732,40 @@ function setRangeOf(el, kind, start, end) {
   drawnRanges.set(el, held);
   el.dataset[names.start] = RANGE_HELD_IN_TABLE;
   el.dataset[names.end] = RANGE_HELD_IN_TABLE;
+}
+
+
+
+
+const MEMBER_HELD_IN_TABLE = '-';
+let chapterMembers = new Map();
+let heldChapterMember = null;
+
+
+function resetChapterMembers(held) {
+  chapterMembers = new Map();
+  heldChapterMember = typeof held === 'string' && held ? held : null;
+}
+
+
+function adoptChapterMembers(body) {
+  if (!body) return;
+  body.querySelectorAll('[data-src-member]').forEach((item) => {
+    const member = item.dataset.srcMember;
+    if (member && member !== MEMBER_HELD_IN_TABLE) chapterMembers.set(item, member);
+    item.dataset.srcMember = MEMBER_HELD_IN_TABLE;
+  });
+}
+
+
+function memberOf(el) {
+  const item = el && el.closest ? el.closest('[data-src-member]') : null;
+  return item ? chapterMembers.get(item) || null : null;
+}
+
+
+function heldMember() {
+  return heldChapterMember;
 }
 
 
@@ -17875,6 +18001,8 @@ function releaseEditCommand(message, after) {
   if (outgoing.command === 'editBlock' || outgoing.command === 'editBlocks') {
     lastEditSent += 1;
     outgoing.seq = lastEditSent;
+    
+    if (heldMember()) outgoing.member = heldMember();
   }
   const el = after ? after.el : null;
   const measured = commitMovesMap(el, outgoing);
@@ -19302,6 +19430,34 @@ function bindSwappedParagraph(el, kept = false) {
 }
 
 
+const CHAPTER_BLOCKS = 'p, h1, h2, h3, h4, h5, h6';
+let pendingChapterPress = null;
+
+
+function wireChapterPresses(body) {
+  openPendingChapterPress(body);
+  body.addEventListener('pointerdown', (event) => {
+    if (!readerEditingAllowed() || event.button !== 0) return;
+    const block = event.target && event.target.closest ? event.target.closest(CHAPTER_BLOCKS) : null;
+    const member = block ? memberOf(block) : null;
+    if (!member || member === heldMember() || hasRangeOf(block, 'block')) return;
+    const item = block.closest('[data-src-member]');
+    pendingChapterPress = { member, index: Array.from(item.querySelectorAll(CHAPTER_BLOCKS)).indexOf(block) };
+    send({ command: 'openMember', member });
+  });
+}
+
+
+function openPendingChapterPress(body) {
+  const pressed = pendingChapterPress;
+  if (!pressed || pressed.member !== heldMember()) return;
+  pendingChapterPress = null;
+  const item = Array.from(body.querySelectorAll('[data-src-member]')).find((el) => chapterMembers.get(el) === pressed.member);
+  const block = item ? item.querySelectorAll(CHAPTER_BLOCKS)[pressed.index] : null;
+  if (block && hasRangeOf(block, 'block') && typeof block.__startSourceEdit === 'function') block.__startSourceEdit();
+}
+
+
 function wireEmailClosedParts(body) {
   body.addEventListener('pointerdown', (event) => {
     const target = event.target;
@@ -19467,8 +19623,11 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   }
   
   adoptDrawnRanges(body);
+  resetChapterMembers(doc.source_member);
+  adoptChapterMembers(body);
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
+    if (currentDocumentFormat === 'epub') wireChapterPresses(body);
     if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
     if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
 
@@ -26718,6 +26877,8 @@ var groveAllXp = null;
 var groveTreeScroll = null;
 
 var groveChosen = null;
+
+var groveTreeAimed = false;
 var groveListScroll = 0;
 
 function groveBarIsFull(profile) {
@@ -27478,7 +27639,9 @@ function settleGroveTree() {
   }
   drawGroveTreeLinks();
   if (groveTreeScroll === null) {
-    const mark = tree.querySelector('.grove-tree-band-words.is-current') || tree.querySelector('.grove-tree-soil');
+    const aimed = groveTreeAimed && groveChosen ? tree.querySelector(`[data-grove-node="${groveChosen}"]`) : null;
+    groveTreeAimed = false;
+    const mark = aimed || tree.querySelector('.grove-tree-band-words.is-current') || tree.querySelector('.grove-tree-soil');
     if (mark) {
       const at = mark.getBoundingClientRect().top - tree.getBoundingClientRect().top + tree.scrollTop;
       tree.scrollTop = Math.max(0, at - tree.clientHeight / 2);
@@ -28346,6 +28509,14 @@ function openGroveSheet() {
   leafFocusForKeyboard(groveSheetBody.querySelector('[data-grove-day-keep], [data-grove-claim-press]') || groveSwitch);
   
   playGroveReceipts();
+}
+
+function openGroveAtReward(id) {
+  groveTab = 'tree';
+  groveChosen = id;
+  groveTreeScroll = null;
+  groveTreeAimed = true;
+  openGroveSheet();
 }
 function closeGroveSheet(options) {
   if (!groveSheet || groveSheet.hidden || !groveSheet.classList.contains('open')) return;
@@ -37196,7 +37367,10 @@ function minimapVisibleDocumentRange(metrics, scrollTop) {
 }
 
 function moveMinimapBuiltFoot(by) {
-  if (minimapBuiltRange) minimapBuiltRange = { top: minimapBuiltRange.top, bottom: minimapBuiltRange.bottom + by };
+  if (!minimapBuiltRange) return;
+  
+  const { placedAt, ...range } = minimapBuiltRange;
+  minimapBuiltRange = { ...range, bottom: range.bottom + (placedAt === undefined ? by : minimapCloneHeight - placedAt) };
 }
 
 function minimapWindowCoversView(metrics, scrollTop) {
@@ -37217,134 +37391,6 @@ function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, fir
     && minimapBuiltRowPath === rowPath
     && !minimapBuiltSliced
     && minimapBuiltSlack >= slack;
-}
-
-function minimapBlockEdges(el, appTop, scrollTop) {
-  const rect = el.getBoundingClientRect();
-  return { top: rect.top - appTop + scrollTop, bottom: rect.bottom - appTop + scrollTop };
-}
-
-function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
-  let lo = 0;
-  let hi = rows.length - 1;
-  let found = rows.length;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (minimapBlockEdges(rows[mid], appTop, scrollTop).bottom > offset) {
-      found = mid;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-  return found;
-}
-
-function minimapRowMeetsWindow(row, appTop, scrollTop, top, bottom) {
-  const edges = minimapBlockEdges(row, appTop, scrollTop);
-  return edges.bottom > top && edges.top < bottom;
-}
-
-function minimapRowIsOutOfFlow(row) {
-  const placed = getComputedStyle(row).position;
-  return placed === 'absolute' || placed === 'fixed';
-}
-
-function minimapNothingInFlowPast(kids, index, step) {
-  for (let at = index + step; at >= 0 && at < kids.length; at += step) {
-    if (!minimapRowIsOutOfFlow(kids[at])) return false;
-  }
-  return true;
-}
-
-function minimapClaimReaches(rows, index, step, edge, appTop, scrollTop) {
-  for (let at = index + step; at >= 0 && at < rows.length; at += step) {
-    if (minimapRowIsOutOfFlow(rows[at])) continue;
-    const facing = minimapBlockEdges(rows[at], appTop, scrollTop);
-    return step < 0 ? Math.min(edge, facing.bottom) : Math.max(edge, facing.top);
-  }
-  return edge;
-}
-
-function minimapRowIsAtomic(row) {
-  return row.tagName === 'TR';
-}
-
-function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
-  let holder = source;
-  const wrappers = [];
-  
-  const indexes = [];
-  const runs = [];
-  while (true) {
-    
-    const rows = holder.children;
-    let first = minimapFirstBlockPast(rows, appTop, scrollTop, top);
-    let last = Math.min(rows.length - 1, minimapFirstBlockPast(rows, appTop, scrollTop, bottom));
-    
-    if (first > last && wrappers.length > 0) {
-      let walkedFirst = -1;
-      let walkedLast = -1;
-      for (let index = 0; index < rows.length; index += 1) {
-        if (!minimapRowMeetsWindow(rows[index], appTop, scrollTop, top, bottom)) continue;
-        if (walkedFirst < 0) walkedFirst = index;
-        walkedLast = index;
-      }
-      if (walkedFirst >= 0) {
-        first = walkedFirst;
-        last = walkedLast;
-      }
-    }
-    
-    if (first <= last) {
-      while (first > 0 && minimapRowMeetsWindow(rows[first - 1], appTop, scrollTop, top, bottom)) first -= 1;
-      while (last < rows.length - 1 && minimapRowMeetsWindow(rows[last + 1], appTop, scrollTop, top, bottom)) last += 1;
-    }
-    runs.push({ first, last });
-    const windowHeight = Math.max(0, bottom - top);
-    let deeper = -1;
-    
-    if (first <= last) {
-      const firstEdges = minimapBlockEdges(rows[first], appTop, scrollTop);
-      if (rows[first].children.length && !minimapRowIsAtomic(rows[first]) && firstEdges.bottom - firstEdges.top > windowHeight) {
-        deeper = first;
-      } else if (last !== first) {
-        const lastEdges = minimapBlockEdges(rows[last], appTop, scrollTop);
-        if (rows[last].children.length && !minimapRowIsAtomic(rows[last]) && lastEdges.bottom - lastEdges.top > windowHeight) deeper = last;
-      }
-    }
-    if (deeper < 0) {
-      
-      const levels = new Array(indexes.length);
-      let flushTop = minimapNothingInFlowPast(rows, first, -1);
-      let flushBottom = minimapNothingInFlowPast(rows, last, 1);
-      for (let pass = indexes.length - 1; pass >= 0; pass -= 1) {
-        const run = runs[pass];
-        const at = indexes[pass];
-        const kids = pass === 0 ? source.children : wrappers[pass - 1].children;
-        levels[pass] = { run, at, first: flushTop ? run.first : at, last: flushBottom ? run.last : at };
-        flushTop = flushTop && minimapNothingInFlowPast(kids, run.first, -1);
-        flushBottom = flushBottom && minimapNothingInFlowPast(kids, run.last, 1);
-      }
-      
-      const block = indexes.length ? indexes[0] : -1;
-      const head = levels[0];
-      return {
-        holder,
-        rows,
-        wrappers,
-        levels,
-        path: indexes.join('/'),
-        first,
-        last,
-        beforeFirst: head && head.first < block ? head.first : -1,
-        afterLast: head && head.last > block ? head.last : -1,
-      };
-    }
-    indexes.push(deeper);
-    wrappers.push(rows[deeper]);
-    holder = rows[deeper];
-  }
 }
 
 function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'both') {
@@ -37372,12 +37418,13 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
   
   const block = window.path === '' ? -1 : Number(window.path.split('/')[0]);
   
-  const built = { preview, firstTop: NaN, firstNode: null, slicedTop: false, slicedBottom: false };
+  const built = { preview, firstTop: NaN, firstNode: null, firstSource: null, slicedTop: false, slicedBottom: false };
   
-  const leads = (node, top) => {
+  const leads = (node, top, from) => {
     if (built.firstNode) return;
     built.firstNode = node;
     built.firstTop = top;
+    built.firstSource = from;
   };
   const topOf = (row) => (cut && row ? minimapBlockEdges(row, cut.appTop, cut.scrollTop).top : NaN);
   const carry = (from, through, edge) => {
@@ -37389,13 +37436,13 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
         const whole = row.cloneNode(true);
         recordMinimapClone(row, whole, true);
         preview.appendChild(whole);
-        if (edge === 'top') leads(whole, topOf(row));
+        if (edge === 'top') leads(whole, topOf(row), row);
         continue;
       }
       preview.appendChild(sliced.preview);
       if (edge === 'top') {
         built.slicedTop = true;
-        leads(sliced.preview, sliced.firstTop);
+        leads(sliced.preview, sliced.firstTop, sliced.firstSource);
       } else {
         built.slicedBottom = true;
       }
@@ -37420,7 +37467,7 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
       const clone = sliced ? sliced.preview : kid.cloneNode(true);
       if (!sliced) recordMinimapClone(kid, clone, true);
       into.appendChild(clone);
-      if (inFlow && edge === 'top') leads(clone, sliced ? sliced.firstTop : topOf(kid));
+      if (inFlow && edge === 'top') leads(clone, sliced ? sliced.firstTop : topOf(kid), sliced ? sliced.firstSource : kid);
     }
   };
   if (window.beforeFirst >= 0) carry(window.beforeFirst, block - 1, 'top');
@@ -37441,7 +37488,7 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
   slice(window.holder, into);
   if (window.afterLast >= 0) carry(block + 1, window.afterLast, 'bottom');
   
-  if (!built.firstNode && into.firstElementChild) leads(into.firstElementChild, topOf(window.rows[first]));
+  if (!built.firstNode && into.firstElementChild) leads(into.firstElementChild, topOf(window.rows[first]), window.rows[first]);
   return built;
 }
 
@@ -37614,6 +37661,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     updateMinimapViewport();
     return;
   }
+  if (reflowMinimapClone(content, source, metrics, previewWidth, previewScale, frameWidth, slack)) return;
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
   const appTop = windowsIt ? app.getBoundingClientRect().top : 0;
@@ -37696,6 +37744,11 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
               ? (outerEdges ? outerEdges.bottom : metrics.scrollHeight)
               : minimapClaimReaches(rows, last, 1, minimapBlockEdges(rows[last], appTop, scrollTop).bottom, appTop, scrollTop)))),
     };
+    
+    minimapBuiltRange.lead = built.firstSource;
+    minimapBuiltRange.node = firstNode;
+    minimapBuiltRange.atHead = minimapBuiltRange.top <= 0;
+    minimapBuiltRange.atFoot = minimapBuiltRange.bottom >= metrics.scrollHeight;
     minimapBuiltFirstRow = first;
     minimapBuiltLastRow = last;
     minimapBuiltRowPath = window.path;
@@ -37732,6 +37785,51 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     bookMinimapWiden();
   }
   updateMinimapViewport();
+}
+
+function reflowMinimapClone(content, source, metrics, previewWidth, previewScale, roomWidth, slack) {
+  const frame = content.firstElementChild;
+  const preview = frame && frame.className === 'document-minimap-frame' ? frame.firstElementChild : null;
+  const range = minimapBuiltRange;
+  if (
+    !preview ||
+    content.children.length !== 1 ||
+    minimapBuiltVersion !== minimapContentVersion ||
+    minimapBuiltSlack < slack ||
+    (metrics.sourceWidth === minimapBuiltSourceWidth && previewWidth === minimapBuiltPreviewWidth && roomWidth === minimapBuiltFrameWidth) ||
+    (range && !(range.lead && range.node && range.node.isConnected !== false && source.contains(range.lead)))
+  ) {
+    return false;
+  }
+  frame.style.width = `${roomWidth}px`;
+  preview.style.width = `${metrics.sourceWidth}px`;
+  if (!range) {
+    const at = metrics.sourceTop * previewScale;
+    frame.style.transform = `translateY(${at}px) scale(${previewScale})`;
+  } else {
+    
+    const firstTop = minimapBlockEdges(range.lead, app.getBoundingClientRect().top, metrics.scrollTop).top;
+    const wanted = firstTop * previewScale;
+    frame.style.transform = `translateY(${wanted}px) scale(${previewScale})`;
+    const contentTop = content.getBoundingClientRect().top;
+    const landedAt = range.node.getBoundingClientRect().top - contentTop;
+    const footAt = preview.getBoundingClientRect().bottom - contentTop;
+    const delta = wanted - landedAt;
+    if (Math.abs(delta) > 0.5) frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
+    minimapBuiltRange = {
+      ...range,
+      top: range.atHead ? 0 : firstTop,
+      bottom: range.atFoot ? metrics.scrollHeight : firstTop + Math.max(0, footAt - landedAt) / previewScale,
+      placedAt: metrics.scrollHeight,
+    };
+  }
+  content.style.height = `${metrics.scaledDocumentHeight}px`;
+  minimapBuiltSourceWidth = metrics.sourceWidth;
+  minimapBuiltPreviewWidth = previewWidth;
+  minimapBuiltFrameWidth = roomWidth;
+  
+  updateMinimapViewport();
+  return true;
 }
 function scheduleMinimapViewportUpdate() {
   if (minimapViewportFrame) {
@@ -37948,6 +38046,138 @@ function undoLastDelete() {
   undoableDelete = null;
   send({ command: 'undoDelete', path });
 }
+
+
+
+
+
+function minimapBlockEdges(el, appTop, scrollTop) {
+  const rect = el.getBoundingClientRect();
+  return { top: rect.top - appTop + scrollTop, bottom: rect.bottom - appTop + scrollTop };
+}
+
+function minimapFirstBlockPast(rows, appTop, scrollTop, offset) {
+  let lo = 0;
+  let hi = rows.length - 1;
+  let found = rows.length;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (minimapBlockEdges(rows[mid], appTop, scrollTop).bottom > offset) {
+      found = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return found;
+}
+
+function minimapRowMeetsWindow(row, appTop, scrollTop, top, bottom) {
+  const edges = minimapBlockEdges(row, appTop, scrollTop);
+  return edges.bottom > top && edges.top < bottom;
+}
+
+function minimapRowIsOutOfFlow(row) {
+  const placed = getComputedStyle(row).position;
+  return placed === 'absolute' || placed === 'fixed';
+}
+
+function minimapNothingInFlowPast(kids, index, step) {
+  for (let at = index + step; at >= 0 && at < kids.length; at += step) {
+    if (!minimapRowIsOutOfFlow(kids[at])) return false;
+  }
+  return true;
+}
+
+function minimapClaimReaches(rows, index, step, edge, appTop, scrollTop) {
+  for (let at = index + step; at >= 0 && at < rows.length; at += step) {
+    if (minimapRowIsOutOfFlow(rows[at])) continue;
+    const facing = minimapBlockEdges(rows[at], appTop, scrollTop);
+    return step < 0 ? Math.min(edge, facing.bottom) : Math.max(edge, facing.top);
+  }
+  return edge;
+}
+
+function minimapRowIsAtomic(row) {
+  return row.tagName === 'TR';
+}
+
+function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
+  let holder = source;
+  const wrappers = [];
+  
+  const indexes = [];
+  const runs = [];
+  while (true) {
+    
+    const rows = holder.children;
+    let first = minimapFirstBlockPast(rows, appTop, scrollTop, top);
+    let last = Math.min(rows.length - 1, minimapFirstBlockPast(rows, appTop, scrollTop, bottom));
+    
+    if (first > last && wrappers.length > 0) {
+      let walkedFirst = -1;
+      let walkedLast = -1;
+      for (let index = 0; index < rows.length; index += 1) {
+        if (!minimapRowMeetsWindow(rows[index], appTop, scrollTop, top, bottom)) continue;
+        if (walkedFirst < 0) walkedFirst = index;
+        walkedLast = index;
+      }
+      if (walkedFirst >= 0) {
+        first = walkedFirst;
+        last = walkedLast;
+      }
+    }
+    
+    if (first <= last) {
+      while (first > 0 && minimapRowMeetsWindow(rows[first - 1], appTop, scrollTop, top, bottom)) first -= 1;
+      while (last < rows.length - 1 && minimapRowMeetsWindow(rows[last + 1], appTop, scrollTop, top, bottom)) last += 1;
+    }
+    runs.push({ first, last });
+    const windowHeight = Math.max(0, bottom - top);
+    let deeper = -1;
+    
+    if (first <= last) {
+      const firstEdges = minimapBlockEdges(rows[first], appTop, scrollTop);
+      if (rows[first].children.length && !minimapRowIsAtomic(rows[first]) && firstEdges.bottom - firstEdges.top > windowHeight) {
+        deeper = first;
+      } else if (last !== first) {
+        const lastEdges = minimapBlockEdges(rows[last], appTop, scrollTop);
+        if (rows[last].children.length && !minimapRowIsAtomic(rows[last]) && lastEdges.bottom - lastEdges.top > windowHeight) deeper = last;
+      }
+    }
+    if (deeper < 0) {
+      
+      const levels = new Array(indexes.length);
+      let flushTop = minimapNothingInFlowPast(rows, first, -1);
+      let flushBottom = minimapNothingInFlowPast(rows, last, 1);
+      for (let pass = indexes.length - 1; pass >= 0; pass -= 1) {
+        const run = runs[pass];
+        const at = indexes[pass];
+        const kids = pass === 0 ? source.children : wrappers[pass - 1].children;
+        levels[pass] = { run, at, first: flushTop ? run.first : at, last: flushBottom ? run.last : at };
+        flushTop = flushTop && minimapNothingInFlowPast(kids, run.first, -1);
+        flushBottom = flushBottom && minimapNothingInFlowPast(kids, run.last, 1);
+      }
+      
+      const block = indexes.length ? indexes[0] : -1;
+      const head = levels[0];
+      return {
+        holder,
+        rows,
+        wrappers,
+        levels,
+        path: indexes.join('/'),
+        first,
+        last,
+        beforeFirst: head && head.first < block ? head.first : -1,
+        afterLast: head && head.last > block ? head.last : -1,
+      };
+    }
+    indexes.push(deeper);
+    wrappers.push(rows[deeper]);
+    holder = rows[deeper];
+  }
+}
 const MINIMAP_CLONE_DROPS = 'textarea, .table-row-handle, .table-column-handle';
 var minimapCloneMap;
 var minimapCloneHeight;
@@ -37976,7 +38206,7 @@ function minimapChangedCell(record) {
   if (!target || !source || target === source || isDocumentRun(target) || !source.contains(target)) return null;
   const cell = target.closest('td, th, .table-lens-bar');
   if (cell) return cell;
-  return target.closest('pre') ? null : target;
+  return target.closest('pre') || target;
 }
 
 function noteMinimapCellChanges(records) {
@@ -38021,6 +38251,15 @@ function patchMinimapPreview(metrics) {
       source = step;
     }
     if (!copy || copy.nodeType !== 1) return false;
+    if (cell.tagName === 'PRE') {
+      
+      const holder = document.createElement('div');
+      const fresh = holder.appendChild(cell.cloneNode(true));
+      stripMinimapCloneContent(holder);
+      copy.replaceWith(fresh);
+      if (!path.length) recordMinimapClone(cell, fresh, true);
+      continue;
+    }
     copy.replaceChildren(...[...cell.childNodes].map((node) => (node.nodeType === 3 ? document.createTextNode(node.nodeValue) : node.cloneNode(true))));
     stripMinimapCloneContent(copy);
   }

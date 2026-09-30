@@ -31,7 +31,6 @@
 | Edit whole emails | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Threaded comments | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rendered multiple cursors | [❌][l-roadmap] | [✅][o-cursors] | [❌][t-seen] | [❌][c-seen] |
-| Type into EPUB | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-edit] |
 | Slide editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Presentation builds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -194,7 +193,6 @@
 [c-gui]: https://manual.calibre-ebook.com/gui.html
 [c-viewer]: https://manual.calibre-ebook.com/viewer.html
 [c-faq]: https://manual.calibre-ebook.com/faq.html
-[c-edit]: https://manual.calibre-ebook.com/edit.html
 [c-seen]: ../05-compare.md#calibre
 [c-server]: https://manual.calibre-ebook.com/server.html
 [o-bases-formulas]: https://obsidian.md/help/formulas

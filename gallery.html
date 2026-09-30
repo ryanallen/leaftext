@@ -14185,6 +14185,19 @@ p.front-more {
 .theme-item.is-active .theme-item-check {
   display: block;
 }
+/* A family the Grove sells and the reader has not bought: dimmed, kept in its place, with the price under its name. */
+.theme-item.is-locked {
+  opacity: var(--lt-opacity-60);
+}
+/* Last in the markup and ordered first, so the reversed column sets it under the name. */
+.theme-item-price {
+  order: -1;
+  margin-top: calc(var(--lt-space-8) * -1);
+  padding: 0 var(--lt-space-14) var(--lt-space-12);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-500);
+  white-space: nowrap;
+}
 .theme-sheet-footer {
   display: flex;
   justify-content: center;
@@ -17971,7 +17984,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Theme card</h3><code class="built">.theme-item</code><span class="built">theme.js, lib.rs</span></header>
-<div class="stage"><ul class="theme-sheet-grid" style="max-width:320px"><li><button type="button" class="theme-item" aria-pressed="true"><span class="theme-item-name">Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span></button></li></ul></div>
+<div class="stage"><ul class="theme-sheet-grid" style="max-width:320px"><li><button type="button" class="theme-item" aria-pressed="true"><span class="theme-item-name">Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span></button></li><li><button type="button" class="theme-item is-locked" aria-pressed="false"><span class="theme-item-name">Woad</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span><span class="theme-item-price">8 seeds in the Grove</span></button></li></ul></div>
 </section>
 <section class="part">
 <header><h3>Update bell</h3><code class="built">.update</code><span class="built">updater.js, app-shell.html</span></header>

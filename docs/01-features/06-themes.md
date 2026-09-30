@@ -6,7 +6,7 @@ From the user side, themes are simple: open the theme picker, tap a family, pick
 
 ## Families
 
-Pick a family in the theme picker. Fifteen ship free and six more are earned with seeds in [the Grove](09-progress.md), listed alphabetically; an earned family joins the picker once it is bought. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
+Pick a family in the theme picker. Fifteen ship free and six more are earned with seeds in [the Grove](09-progress.md), listed alphabetically; a family you have not earned yet stands in the picker dimmed, with its price in seeds, and pressing it opens that family in the Grove. A fresh install opens on [Random](#random) family with a [Daylight](#appearance) appearance; **Fern** is the fallback family if a saved choice can't be read. To see them rather than read them, open [**leaftext.com/gallery.html**](https://leaftext.com/gallery.html) — every family drawn on one page, in light and dark, along with every color, icon and part of the interface. Each family is also a plain Markdown file that opens with a screenshot of its own palette — browse those in the [**themes gallery**](https://github.com/ryanallen/leaftext/blob/main/themes/README.md), which shows that preview plus a light-vs-dark swatch table per family, or open one below:
 
 | Family | Palette | Icons |
 | --- | --- | --- |
@@ -94,7 +94,7 @@ Every family rendering the same reference document, split diagonally so the ligh
 
 ### Earned families
 
-The six one-color families are bought with seeds in the Grove's Foraging area, and appear in the picker once they are yours.
+The six one-color families are bought with seeds in the Grove's Foraging area. Until one is yours, its card in the picker is dimmed and shows its price, and pressing it opens the Grove's Tree tab on that family; once bought, it is worn like any other.
 
 ### Birch
 
