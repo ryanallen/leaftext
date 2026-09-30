@@ -17944,6 +17944,178 @@ function footnoteDefinitionWysiwygSafe(el) {
   if (el.querySelector('ul, ol, pre, table, blockquote, img, .katex, .mermaid, input')) return false;
   return !!footnoteNameOf(el) && inlineMarkdownDomWysiwygSafe(paragraphs[0]);
 }
+
+function escapeTreeText(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+
+
+function xmlElementInnerSpan(src) {
+  const open = /^[ \t]*<([^\s/>!?][^\s/>]*)(?:\s[^>]*)?>/.exec(src);
+  if (!open) return null;
+  const close = new RegExp('</' + open[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*>[ \\t]*$').exec(src);
+  if (!close) return null;
+  const from = open[0].length;
+  
+  if (close.index < from) return null;
+  return { from, to: close.index };
+}
+
+
+function xmlBlockTypeableInPlace(el) {
+  const { start, end } = rangeOf(el, 'block');
+  return xmlRangeTypeableInPlace(el, start, end);
+}
+
+
+function xmlCellTypeableInPlace(el) {
+  const { start, end } = rangeOf(el, 'cell');
+  return xmlRangeTypeableInPlace(el, start, end);
+}
+
+
+function xmlValueTypeableInPlace(el) {
+  const { start, end } = rangeOf(el, 'value');
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  if (escapeTreeText(el.textContent) !== sliceSourceBytes(start, end)) return null;
+  return { start, end };
+}
+
+
+function valueClosingQuote(start) {
+  const quote = sliceSourceBytes(start - 1, start);
+  return quote === '"' || quote === "'" ? quote : null;
+}
+
+
+function xmlRangeTypeableInPlace(el, start, end) {
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const src = sliceSourceBytes(start, end);
+  const span = xmlElementInnerSpan(src);
+  if (!span) return null;
+  if (escapeTreeText(el.textContent) !== src.slice(span.from, span.to)) return null;
+  
+  return {
+    start: start + utf8ByteLength(src.slice(0, span.from)),
+    end: start + utf8ByteLength(src.slice(0, span.to)),
+  };
+}
+
+
+function xmlCommentTypeableInPlace(el, words) {
+  const { start, end } = rangeOf(el, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const src = sliceSourceBytes(start, end);
+  if (!src.startsWith('<!--') || !src.endsWith('-->') || src.length < 7) return null;
+  const inner = src.slice(4, src.length - 3);
+  const text = inner.trim();
+  if (text !== words) return null;
+  const from = 4 + (inner.length - inner.trimStart().length);
+  return {
+    start: start + utf8ByteLength(src.slice(0, from)),
+    end: start + utf8ByteLength(src.slice(0, from + text.length)),
+  };
+}
+
+
+function epubTextRuns(el, span) {
+  const source = sliceSourceBytes(span.start, span.end);
+  const pieces = source.match(/<[^>]*>|[^<]+/g) || [];
+  if (pieces.join('') !== source) return null;
+  const tokens = [];
+  const stack = [];
+  const tags = [];
+  let words = '';
+  let byteCursor = 0;
+  for (const raw of pieces) {
+    if (raw.startsWith('<')) {
+      const close = /^<\/([A-Za-z][\w:-]*)\s*>$/.exec(raw);
+      const open = /^<([A-Za-z][\w:-]*)(?:\s[^<>]*)?>$/.exec(raw);
+      if (close) {
+        const tag = stack.pop();
+        if (!tag || tag.name !== close[1].toLowerCase()) return null;
+        tag.end = words.length;
+        tokens.push({ raw, tag });
+      } else if (open && !raw.endsWith('/>')) {
+        const tag = { name: open[1].toLowerCase(), start: words.length, end: null };
+        stack.push(tag);
+        tags.push(tag);
+        tokens.push({ raw, tag });
+      } else return null;
+      byteCursor += utf8ByteLength(raw);
+      continue;
+    }
+    const decoder = document.createElement('span');
+    decoder.innerHTML = raw;
+    const value = decoder.textContent;
+    const token = { raw, value, start: words.length, end: words.length + value.length, byteStart: byteCursor };
+    words += value;
+    tokens.push(token);
+    byteCursor += utf8ByteLength(raw);
+  }
+  if (stack.length || (el && words !== el.textContent) || !tokens.some((token) => token.value !== undefined)) return null;
+  return { tokens, tags, words };
+}
+
+function epubRunTypeableInPlace(el) {
+  const { start, end } = rangeOf(el, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const src = sliceSourceBytes(start, end);
+  const inner = xmlElementInnerSpan(src);
+  if (!inner) return null;
+  const span = {
+    start: start + utf8ByteLength(src.slice(0, inner.from)),
+    end: start + utf8ByteLength(src.slice(0, inner.to)),
+  };
+  const map = epubTextRuns(el, span);
+  if (!map) return null;
+  el.__epubRunMap = map;
+  return span;
+}
+
+
+function epubRunEdit(el, words) {
+  const span = el.__innerSpan;
+  const map = span && (el.__epubRunMap || epubTextRuns(null, span));
+  if (!map) return null;
+  const before = map.words;
+  if (before === words) return { start: span.start, end: span.end, text: sliceSourceBytes(span.start, span.end), inner: true };
+  let from = 0;
+  while (from < before.length && from < words.length && before[from] === words[from]) from += 1;
+  let oldEnd = before.length;
+  let newEnd = words.length;
+  while (oldEnd > from && newEnd > from && before[oldEnd - 1] === words[newEnd - 1]) { oldEnd -= 1; newEnd -= 1; }
+  const replacement = words.slice(from, newEnd);
+  const runs = map.tokens.filter((token) => token.value !== undefined);
+  let first = runs.find((run) => run.start <= from && (from < run.end || (from === oldEnd && from === run.end)));
+  if (!first) first = runs[0];
+  let last = runs.find((run) => run.start <= oldEnd && oldEnd <= run.end);
+  if (!last) last = runs[runs.length - 1];
+  if (first === last) {
+    return {
+      start: span.start + first.byteStart,
+      end: span.start + first.byteStart + utf8ByteLength(first.raw),
+      text: escapeTreeText(first.value.slice(0, from - first.start) + replacement + first.value.slice(oldEnd - first.start)),
+      inner: true,
+    };
+  }
+  const crossed = new Set(map.tags.filter((tag) => oldEnd > from && ((from < tag.start && oldEnd > tag.start) || (from < tag.end && oldEnd > tag.end) || (replacement.length === 0 && from <= tag.start && oldEnd >= tag.end))));
+  let result = '';
+  for (const token of map.tokens) {
+    if (token.tag) {
+      if (!crossed.has(token.tag)) result += token.raw;
+    } else if (token === first && token === last) {
+      result += escapeTreeText(token.value.slice(0, from - token.start) + replacement + token.value.slice(oldEnd - token.start));
+    } else if (token === first) {
+      result += escapeTreeText(token.value.slice(0, from - token.start) + replacement);
+    } else if (token === last) {
+      result += escapeTreeText(token.value.slice(oldEnd - token.start));
+    } else if (token.end <= from || token.start >= oldEnd) {
+      result += token.raw;
+    }
+  }
+  return { start: span.start, end: span.end, text: result, inner: true };
+}
 function utf8ByteLength(text) {
   return sourceByteEncoder.encode(text).length;
 }
@@ -18510,6 +18682,7 @@ function selectAllTargetFor(block) {
 
 function setEditBaseline(el) {
   el.__editBaseline = blockDomToSource(el);
+  if (el.__epubRuns) el.__lastRunWords = el.textContent;
   el.__editCells = tableCellTexts(el);
   beginTypingRun(el);
 }
@@ -18517,7 +18690,7 @@ function setEditBaseline(el) {
 
 function blockDomToSource(el) {
   if (currentDocumentFormat === 'eml') return emailBlockIsNote(el) ? emailNoteBlockToSource(el) : emailBlockDomToText(el);
-  if (currentDocumentFormat === 'xml') {
+  if (currentDocumentFormat === 'xml' || currentDocumentFormat === 'epub') {
     return blockHoldsCommentWords(el) ? el.textContent : escapeTreeText(el.textContent);
   }
   
@@ -18624,17 +18797,12 @@ function blockSeparator() {
 }
 
 
-function escapeTreeText(text) {
-  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;');
-}
-
-
 function typedBlockText(block) {
   
   if (currentDocumentFormat === 'eml') {
     return emailNoteText(inlineDomToMarkdown(block), documentLineEnding()).trim();
   }
-  if (currentDocumentFormat === 'xml') return escapeTreeText(block.textContent).trim();
+  if (currentDocumentFormat === 'xml' || currentDocumentFormat === 'epub') return escapeTreeText(block.textContent).trim();
   return inlineDomToMarkdown(block).trim();
 }
 
@@ -18671,74 +18839,6 @@ function listTypeableInPlace(el) {
 }
 
 
-function xmlElementInnerSpan(src) {
-  const open = /^[ \t]*<([^\s/>!?][^\s/>]*)(?:\s[^>]*)?>/.exec(src);
-  if (!open) return null;
-  const close = new RegExp('</' + open[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[ \\t]*>[ \\t]*$').exec(src);
-  if (!close) return null;
-  const from = open[0].length;
-  
-  if (close.index < from) return null;
-  return { from, to: close.index };
-}
-
-
-function xmlBlockTypeableInPlace(el) {
-  const { start, end } = rangeOf(el, 'block');
-  return xmlRangeTypeableInPlace(el, start, end);
-}
-
-
-function xmlCellTypeableInPlace(el) {
-  const { start, end } = rangeOf(el, 'cell');
-  return xmlRangeTypeableInPlace(el, start, end);
-}
-
-
-function xmlValueTypeableInPlace(el) {
-  const { start, end } = rangeOf(el, 'value');
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-  if (escapeTreeText(el.textContent) !== sliceSourceBytes(start, end)) return null;
-  return { start, end };
-}
-
-
-function valueClosingQuote(start) {
-  const quote = sliceSourceBytes(start - 1, start);
-  return quote === '"' || quote === "'" ? quote : null;
-}
-
-
-function xmlRangeTypeableInPlace(el, start, end) {
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
-  const src = sliceSourceBytes(start, end);
-  const span = xmlElementInnerSpan(src);
-  if (!span) return null;
-  if (escapeTreeText(el.textContent) !== src.slice(span.from, span.to)) return null;
-  
-  return {
-    start: start + utf8ByteLength(src.slice(0, span.from)),
-    end: start + utf8ByteLength(src.slice(0, span.to)),
-  };
-}
-
-
-function xmlCommentTypeableInPlace(el, words) {
-  const { start, end } = rangeOf(el, 'block');
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const src = sliceSourceBytes(start, end);
-  if (!src.startsWith('<!--') || !src.endsWith('-->') || src.length < 7) return null;
-  const inner = src.slice(4, src.length - 3);
-  const text = inner.trim();
-  if (text !== words) return null;
-  const from = 4 + (inner.length - inner.trimStart().length);
-  return {
-    start: start + utf8ByteLength(src.slice(0, from)),
-    end: start + utf8ByteLength(src.slice(0, from + text.length)),
-  };
-}
-
-
 function blockTextNeedsWriting(el, text) {
   return text !== el.__editBaseline || el.__liveStarted === true;
 }
@@ -18770,12 +18870,16 @@ function commitBlockEdit(el, text, range, cells) {
   
   if (!el.isConnected) return false;
   if (treeTextRefused(el, text)) return false;
-  const span = range || el.__innerSpan || null;
+  const needsWriting = blockTextNeedsWriting(el, text);
+  const runEdit = el.__epubRuns ? epubRunEdit(el, el.textContent) : null;
+  if (el.__epubRuns && !runEdit) return false;
+  if (runEdit) text = runEdit.text;
+  const span = range || (runEdit ? { start: runEdit.start, end: runEdit.end } : el.__innerSpan) || null;
   const blockRange = rangeOf(el, 'block');
   const start = span ? span.start : blockRange.start;
   const end = span ? span.end : blockRange.end;
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-  if (!blockTextNeedsWriting(el, text)) return false;
+  if (!needsWriting) return false;
   if (!span && deleteEmptiedBlock(el, text)) return true;
   
   const cell = span ? null : tableCellChange(el.__editCells, cells || tableCellTexts(el));
@@ -18836,6 +18940,7 @@ function liveEditOf(el, words) {
   
   if (el.__officeCell || el.dataset.packed === 'true') return null;
   const text = words === undefined ? blockDomToSource(el) : words;
+  if (el.__epubRuns) return epubRunEdit(el, el.textContent);
   const span = el.__innerSpan;
   if (span) return { start: span.start, end: span.end, text, inner: true };
   const { start, end } = rangeOf(el, 'block');
@@ -18849,6 +18954,7 @@ function liveEditOf(el, words) {
 
 function sendLiveBlockEdit(el, words) {
   if (!el.isConnected) return;
+  if (el.__epubRuns && el.__lastRunWords === el.textContent) return;
   
   if (editHold != null) {
     scheduleLiveBlockEdit(el);
@@ -18870,15 +18976,21 @@ function sendLiveBlockEdit(el, words) {
   el.__liveStarted = true;
   el.__liveText = edit.text;
   advanceLiveRanges(el, edit);
+  if (el.__epubRuns) el.__lastRunWords = el.textContent;
 }
 
 
 function advanceLiveRanges(el, edit) {
   const written = utf8ByteLength(edit.text);
-  spliceDocumentSource(edit.start, edit.end, edit.text);
-  if (el && edit.inner) el.__innerSpan = { start: edit.start, end: edit.start + written };
-  if (el && typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
   const delta = written - (edit.end - edit.start);
+  spliceDocumentSource(edit.start, edit.end, edit.text);
+  if (el && edit.inner) {
+    el.__innerSpan = el.__epubRuns
+      ? { start: el.__innerSpan.start, end: el.__innerSpan.end + delta }
+      : { start: edit.start, end: edit.start + written };
+    if (el.__epubRuns) el.__epubRunMap = epubTextRuns(null, el.__innerSpan);
+  }
+  if (el && typeof el.__liveSourceMoved === 'function') el.__liveSourceMoved(edit.start + written);
   if (delta) shiftBlockRangesAfter(edit.end, delta, el);
   const kept = currentState && currentState.document;
   if (kept) moveKeptDocument(kept, edit.end, delta);
@@ -19327,7 +19439,7 @@ function wireSourceEditable(el) {
     if (el.dataset.processed === 'true' && el.classList.contains('mermaid')) return;
     event.preventDefault();
     
-    if (currentDocumentFormat === 'xml') {
+    if (currentDocumentFormat === 'xml' || currentDocumentFormat === 'epub') {
       leafToast('This one carries markup, so the file’s own text opens instead.');
     }
     el.__startSourceEdit();
@@ -19388,11 +19500,14 @@ function bindEditableBlocks(format, elements = null) {
       }
     }
     
-    const innerSpan = format === 'xml' ? xmlBlockTypeableInPlace(el) : null;
+    const bookBlock = format === 'epub' && (kind === 'paragraph' || kind === 'heading');
+    const plainSpan = format === 'xml' || bookBlock ? xmlBlockTypeableInPlace(el) : null;
+    const runSpan = bookBlock && !plainSpan ? epubRunTypeableInPlace(el) : null;
+    const innerSpan = plainSpan || runSpan;
     const wysiwyg =
       format === 'eml'
         ? emailBlockTypeableInPlace(el)
-        : format === 'xml'
+        : format === 'xml' || bookBlock
           ? !!innerSpan
           : format === 'markdown' &&
             (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
@@ -19402,6 +19517,7 @@ function bindEditableBlocks(format, elements = null) {
               (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
     if (wysiwyg) {
       if (innerSpan) el.__innerSpan = innerSpan;
+      if (runSpan) el.__epubRuns = true;
       wysiwygBlocks.push(el);
     } else if (format === 'xml' && kind === 'table') {
       
@@ -19453,20 +19569,31 @@ function bindEditableBlocks(format, elements = null) {
   };
   wysiwygBlocks.forEach((el) => markEditable(el, true));
   sourceBlocks.forEach((el) => markEditable(el, false));
-  wysiwygBlocks.forEach(wireMarkdownEditable);
+  wysiwygBlocks.forEach((el) => {
+    wireMarkdownEditable(el);
+    if (format === 'epub') el.__startInPlaceEdit = () => openWysiwygBlock(el);
+  });
   sourceBlocks.forEach(wireSourceEditable);
 }
 
 
 function bindSwappedParagraph(el, kept = false) {
   if (!readerEditingAllowed() || !hasRangeOf(el, 'block')) return;
-  const wysiwyg = markdownBlockWysiwygSafe(el);
+  const plainSpan = currentDocumentFormat === 'epub' ? xmlBlockTypeableInPlace(el) : null;
+  const runSpan = currentDocumentFormat === 'epub' && !plainSpan ? epubRunTypeableInPlace(el) : null;
+  const innerSpan = plainSpan || runSpan;
+  const wysiwyg = currentDocumentFormat === 'epub' ? !!innerSpan : markdownBlockWysiwygSafe(el);
+  if (innerSpan) el.__innerSpan = innerSpan;
+  if (runSpan) el.__epubRuns = true;
   if (wysiwyg) markMarkdownEditable(el);
   el.classList.add('leaf-editable');
   el.classList.toggle('leaf-editable-in-place', wysiwyg);
   if (currentDocumentHasUnreachableWords) el.classList.add('leaf-editable-here');
   if (!kept) {
-    if (wysiwyg) wireMarkdownEditable(el);
+    if (wysiwyg) {
+      wireMarkdownEditable(el);
+      if (currentDocumentFormat === 'epub') el.__startInPlaceEdit = () => openWysiwygBlock(el);
+    }
     else wireSourceEditable(el);
   }
 }
@@ -19496,7 +19623,10 @@ function openPendingChapterPress(body) {
   pendingChapterPress = null;
   const item = Array.from(body.querySelectorAll('[data-src-member]')).find((el) => chapterMembers.get(el) === pressed.member);
   const block = item ? item.querySelectorAll(CHAPTER_BLOCKS)[pressed.index] : null;
-  if (block && hasRangeOf(block, 'block') && typeof block.__startSourceEdit === 'function') block.__startSourceEdit();
+  if (block && hasRangeOf(block, 'block')) {
+    if (typeof block.__startInPlaceEdit === 'function') block.__startInPlaceEdit();
+    else if (typeof block.__startSourceEdit === 'function') block.__startSourceEdit();
+  }
 }
 
 
