@@ -704,7 +704,7 @@ const COLUMN_STATE_NAMES = [
   'siteFrameListening', 'siteFramePath', 'containedPageMermaidPage', 'containedPageMermaidGeneration',
   'siteFrameHeldHeight',
   
-  'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor',
+  'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor', 'exactReadingRestore',
   
   'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingDeepest',
   
@@ -786,6 +786,7 @@ function saveColumnState(column) {
   held.lastRenderedDocumentPath = lastRenderedDocumentPath;
   held.readingFillFrame = readingFillFrame;
   held.readingHeldCursor = readingHeldCursor;
+  held.exactReadingRestore = exactReadingRestore;
   
   held.readingPending = readingPending;
   held.readingPendingPicturePages = readingPendingPicturePages;
@@ -903,6 +904,7 @@ function loadColumnState(column) {
   lastRenderedDocumentPath = held.lastRenderedDocumentPath;
   readingFillFrame = held.readingFillFrame;
   readingHeldCursor = held.readingHeldCursor;
+  exactReadingRestore = held.exactReadingRestore;
   
   readingPending = held.readingPending;
   readingPendingPicturePages = held.readingPendingPicturePages;
@@ -11308,6 +11310,7 @@ let graphRebuildTimer = 0;
 
 
 function setGraphView(open) {
+  if (open) cancelExactReadingRestore();
   const next = Boolean(open) && readerViewsStand();
   if (next === graphViewOpen) return;
   
@@ -12642,6 +12645,8 @@ let librarySearchUnknownFields = [];
 
 let librarySearchSkipped = [];
 
+let librarySearchTextCut = false;
+
 let filterHintFields = [];
 
 let filterMenuItems = [];
@@ -12775,17 +12780,21 @@ function searchCountHtml(hits) {
 
 function searchCountText(hits) {
   if (!librarySearchTruncated) {
-    return `${formatCountLabel(hits.length, 'result', 'results')}${librarySearchPartial ? ' so far' : ''}${skippedClause()}`;
+    return `${formatCountLabel(hits.length, 'result', 'results')}${librarySearchPartial ? ' so far' : ''}${skippedClause()}${textCutClause()}`;
   }
   const files = new Set(hits.map((hit) => (hit && hit.absPath) || '')).size;
   const read = librarySearchPartial ? ' read so far' : '';
-  return `${formatCountLabel(hits.length, 'result', 'results')} in the first ${formatCountLabel(files, 'file', 'files')}${read}${skippedClause()}`;
+  return `${formatCountLabel(hits.length, 'result', 'results')} in the first ${formatCountLabel(files, 'file', 'files')}${read}${skippedClause()}${textCutClause()}`;
 }
 
 function skippedClause() {
   const count = librarySearchSkipped.length;
   if (!count) return '';
   return ` · ${formatCountLabel(count, 'folder', 'folders')} of generated files not read`;
+}
+
+function textCutClause() {
+  return librarySearchTextCut ? " · part of the vault's text not read" : '';
 }
 
 function searchNoteHtml() {
@@ -12885,6 +12894,7 @@ window.leafSetSearchResults = (payload) => {
     librarySearchError = data.error;
     librarySearchHits = null;
     librarySearchTruncated = false;
+    librarySearchTextCut = false;
     librarySearchPartial = false;
     librarySearchLoading = false;
     librarySearchHitsQuery = '';
@@ -12901,6 +12911,7 @@ window.leafSetSearchResults = (payload) => {
     librarySearchUnderstood = typeof data.understood === 'string' ? data.understood : '';
     librarySearchUnknownFields = Array.isArray(data.unknownFields) ? data.unknownFields : [];
     librarySearchSkipped = Array.isArray(data.skipped) ? data.skipped : [];
+    librarySearchTextCut = !!data.textCut;
   }
   
   findSettling('vault', query, librarySearchError ? 0 : (librarySearchHits || []).length);
@@ -15092,6 +15103,7 @@ function viewHandoffFor(path) {
       
       readerLanded: null,
       codeLanded: null,
+      codeMoved: false,
       
       graphFromCodeView: false,
       graphReaderScrollTop: null,
@@ -15214,7 +15226,7 @@ function toggleCodeView() {
       pendingCodeViewSrcOffset = null;
       handoff.codeScrollTop = monacoEditor ? monacoEditor.getScrollTop() : null;
       handoff.restoreExact =
-        handoff.readerScrollTop != null && viewStillLanded(handoff.codeScrollTop, handoff.codeLanded);
+        handoff.readerScrollTop != null && !handoff.codeMoved && viewStillLanded(handoff.codeScrollTop, handoff.codeLanded);
       const lineIndex = topVisibleCodeLineIndex();
       const chapterShown = app.querySelector('.code-member-name');
       pendingReadingChapter = currentDocumentFormat === 'epub' && chapterShown ? chapterShown.textContent : null;
@@ -15775,6 +15787,14 @@ function growlLockedForReading() {
 function hostRefusesCodeUnlock() {
   return typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('setCodeUnlocked');
 }
+function settleCodeLanding() {
+  columnFrame(() => {
+    const path = activeDocumentPath();
+    if (monacoEditor && path && viewHandoff?.path === path && !viewHandoff.codeMoved) {
+      viewHandoff.codeLanded = monacoEditor.getScrollTop();
+    }
+  });
+}
 
 
 function landNewCodeEditor(text) {
@@ -15798,7 +15818,9 @@ function landNewCodeEditor(text) {
     }
   }
   
-  viewHandoffFor(path).codeLanded = monacoEditor.getScrollTop();
+  const handoff = viewHandoffFor(path);
+  handoff.codeLanded = monacoEditor.getScrollTop();
+  handoff.codeMoved = false;
   pendingViewAtTop = false;
   pendingViewScrollFraction = null;
 }
@@ -15857,10 +15879,30 @@ function createMonacoEditor(monaco, container, state, text) {
     scheduleSourceUpdate();
   });
   monacoReadOnlySub = monacoEditor.onDidAttemptReadOnlyEdit(growlLockedForReading);
-  monacoEditor.onDidScrollChange(() => scheduleSessionPlace());
+  const markCodeMoved = () => {
+    const path = activeDocumentPath();
+    if (path && viewHandoff?.path === path) viewHandoff.codeMoved = true;
+  };
+  let codeScrollIntent = false;
+  const armCodeScroll = () => {
+    codeScrollIntent = true;
+    columnTimer(() => { codeScrollIntent = false; }, 300);
+  };
+  container.addEventListener('wheel', () => { markCodeMoved(); armCodeScroll(); }, { capture: true, passive: true });
+  container.addEventListener('pointerdown', armCodeScroll, true);
+  container.addEventListener('touchstart', armCodeScroll, { capture: true, passive: true });
+  container.addEventListener('keydown', (event) => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) armCodeScroll();
+  }, true);
+  monacoEditor.onDidScrollChange((event) => {
+    if (event.scrollTopChanged && codeScrollIntent) markCodeMoved();
+    if (event.scrollHeightChanged) settleCodeLanding();
+    scheduleSessionPlace();
+  });
   
   monacoLayoutSub = monacoEditor.onDidLayoutChange(() => {
     applyCodeViewWrapColumn();
+    settleCodeLanding();
     
     clampMinimapSliderToRail();
   });
@@ -25820,6 +25862,7 @@ function revealRenderedMatch() {
   const match = findMatches[findCurrent];
   const range = match ? findRangeFor(match) : null;
   if (!range) return;
+  cancelExactReadingRestore();
   const matchNode = range.commonAncestorContainer;
   const matchElement = matchNode?.nodeType === Node.ELEMENT_NODE ? matchNode : matchNode?.parentElement;
   revealReadingPast(matchElement?.closest('[data-src-start]') || matchElement);
@@ -25877,6 +25920,7 @@ function clearSourceMatches() {
 function revealSourceMatch() {
   const range = findMatches[findCurrent];
   if (!range || !monacoEditor) return;
+  if (viewHandoff) viewHandoff.codeMoved = true;
   monacoEditor.setSelection(range);
   monacoEditor.revealRangeInCenterIfOutsideViewport(range);
 }
@@ -30357,6 +30401,22 @@ function pendingReadingLandingTarget(path, anchor) {
 
 const READING_FILL_ELEMENTS = 4096;
 let readingFillFrame = 0;
+let exactReadingRestore = null;
+function cancelExactReadingRestore() {
+  exactReadingRestore = null;
+}
+function settleExactReadingRestore() {
+  const restore = exactReadingRestore;
+  if (!restore || readingHasHeldBlocks()) return false;
+  exactReadingRestore = null;
+  if (codeViewActive || activeDocumentPath() !== restore.path || readerOffScreen()) return false;
+  setReaderScrollTop(restore.scrollTop);
+  recordReaderLanded();
+  readerScrollAnchor = null;
+  refreshReaderScrollAnchor();
+  updateMinimapViewport();
+  return true;
+}
 function cancelReadingFill() {
   readingHeldCursor = null;
   if (!readingFillFrame) return;
@@ -30448,6 +30508,15 @@ function revealReadingPast(target) {
 }
 
 function runReadingLanding(path) {
+  if (pendingSearchJump || pendingLinkHeading) {
+    takeExactViewRestore(path);
+    cancelExactReadingRestore();
+    pendingViewAtTop = false;
+    pendingReadingSrcOffset = null;
+    pendingViewScrollFraction = null;
+    resetReaderScrollOnNextRender = false;
+    return;
+  }
   
   const exactRestore = takeExactViewRestore(path);
   if (exactRestore) {
@@ -30460,16 +30529,20 @@ function runReadingLanding(path) {
       revealReadingPast(exactRestore.readerScrollTop);
       setReaderScrollTop(exactRestore.readerScrollTop);
       recordReaderLanded();
-      refreshReaderScrollAnchor();
+      exactReadingRestore = { path, scrollTop: exactRestore.readerScrollTop };
+      readerScrollAnchor = null;
+      scheduleReaderLayoutUpdate(true);
       updateMinimapViewport();
     });
   } else if (pendingViewAtTop) {
+    cancelExactReadingRestore();
     
     pendingViewAtTop = false;
     pendingReadingSrcOffset = null;
     resetReaderScrollOnNextRender = false;
     resetReaderScrollToContentStart();
   } else if (pendingReadingSrcOffset != null) {
+    cancelExactReadingRestore();
     const srcOffset = pendingReadingSrcOffset;
     pendingReadingSrcOffset = null;
     resetReaderScrollOnNextRender = false;
@@ -30487,6 +30560,7 @@ function runReadingLanding(path) {
       updateMinimapViewport();
     });
   } else if (resetReaderScrollOnNextRender) {
+    cancelExactReadingRestore();
     resetReaderScrollOnNextRender = false;
     resetReaderScrollToContentStart();
   } else {
@@ -30605,6 +30679,7 @@ function showReaderHeldUnderEditor(state, held) {
   finishRestoredReaderRender(state, held);
 }
 function prepareStateRender(state, keepDetachedRender) {
+  cancelExactReadingRestore();
   
   if (graphViewOpen && app) app.hidden = true;
   
@@ -37039,8 +37114,10 @@ function anchorForBlockIndex(blocks, targetIndex, shellRect) {
   return { section, block: targetIndex - (sectionIndex < 0 ? 0 : sectionIndex), index: targetIndex, offsetY };
 }
 
+
+
 function readerOffScreen() {
-  return !app || app.hidden === true;
+  return !app || app.hidden === true || Boolean(readerHeldUnderEditor && readerHeldUnderEditor.layout.parentElement === app);
 }
 
 
@@ -37188,6 +37265,10 @@ function scheduleReaderLayoutUpdate(holdAnchor = false) {
     correctReaderScrollOrigin();
     
     if (minimapDragging || readerScrolling) {
+      return;
+    }
+    if (exactReadingRestore) {
+      if (!readingHasHeldBlocks()) settleExactReadingRestore();
       return;
     }
     
