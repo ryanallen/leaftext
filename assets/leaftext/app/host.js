@@ -129,6 +129,20 @@ async function load(url, fetchWith = fetch) {
       return answer;
     },
     bufferClose: (handle) => api.leaf_buffer_close(handle),
+    // One picture out of the open buffer's own archive, against what its last draw admitted. A module older than the page has no such export.
+    bufferBookPicture: (handle, member) => {
+      if (typeof api.leaf_buffer_book_picture !== 'function') return null;
+      const [at, length] = write(member);
+      const answer = api.leaf_buffer_book_picture(handle, at, length);
+      api.leaf_free(at, length);
+      if (!answer) return null;
+      const size = new DataView(api.memory.buffer).getUint32(answer, true);
+      const whole = new Uint8Array(api.memory.buffer, answer + 4, size);
+      const split = whole.indexOf(0);
+      const picture = split < 0 ? null : { type: decoder.decode(whole.subarray(0, split)), bytes: whole.slice(split + 1) };
+      api.leaf_free(answer, 4 + size);
+      return picture;
+    },
     // Which of the listed paths one table's relations read, asked before they are fetched, and then the model over what was fetched as the line the page answers to. A module older than the page has neither, and the lens is then refused rather than left waiting.
     tableWants: (handle, snapshot, listing) => (typeof api.leaf_table_wants === 'function'
       ? JSON.parse(withStrings((...args) => api.leaf_table_wants(handle, ...args), JSON.stringify({ snapshot, listing })) || 'null') : null),
@@ -272,7 +286,7 @@ export const COMMANDS = {
   packagedPicture: [ANSWERED],
   enterCodeView: [ANSWERED],
   selectSourceMember: [REFUSED, 'this published page cannot change a package member; open the file in the desktop app'],
-  openMember: [LATER, 'a-book-in-a-browser-types-into-its-chapters'],
+  openMember: [ANSWERED],
   exitCodeView: [ANSWERED],
   spliceSource: [LATER, 'web-app-commands'],
   updateSource: [LATER, 'web-app-commands'],
@@ -764,6 +778,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (!openBuffer()) return null;
     const state = core.bufferEdit(buffer, edit);
     if (state) delivery(() => {
+      if (state.refused) run(state.refused);
       if (state.written) run(state.written);
       if (state.swap) run(state.swap);
       else if (state.changed && state.resync) run(state.resync);
@@ -880,10 +895,11 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
     refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
     editBlock: (command) => {
-      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held, seq: command.seq, live: !!command.live, autosave: !!command.autosave, kind: command.kind };
+      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held, seq: command.seq, live: !!command.live, autosave: !!command.autosave, kind: command.kind, member: command.member };
       if (command.live) {
         if (openBuffer()) {
           const state = core.bufferEdit(buffer, edit);
+          if (state?.refused) run(state.refused);
           if (state) run(`window.leafBlocksResynced(${JSON.stringify(state)});`);
         }
       } else {
@@ -891,7 +907,16 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       }
       answerEdit(command.token, !!buffer);
     },
-    editBlocks: (command) => applyEdit({ edit: 'blocks', blocks: command.blocks, continuing: !!command.continuing }),
+    editBlocks: (command) => applyEdit({ edit: 'blocks', blocks: command.blocks, continuing: !!command.continuing, standing: !!command.standing, member: command.member }),
+    // A press into a book's other chapter: the buffer holds that chapter and the book is drawn again from it, which hands the page the chapter to type in. A quiet hold is the source view's, which opens next and draws nothing here.
+    openMember: (command) => {
+      if (!openBuffer()) return;
+      const state = core.bufferEdit(buffer, { edit: 'hold', member: String(command.member || '') });
+      if (state) delivery(() => {
+        if (state.refused) run(state.refused);
+        else if (state.changed && !command.quiet) redrawBuffer();
+      });
+    },
     toggleTask: (command) => answerEdit(command.token, !!applyEdit({ edit: 'task', index: command.index })?.changed),
     tableModel: (command) => answerTableModel(command),
     setField: (command) => applyEdit(command.value == null ? { edit: 'field', key: command.key, remove: true } : { edit: 'field', key: command.key, set: command.value }),
@@ -1048,9 +1073,10 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       run(core.bufferSaveScript(buffer, !failed, failed || ''));
     },
     loadPager: ({ path }) => run(`window.leafSetPager(${JSON.stringify({ path, html: pagerHtml(path) })});`),
-    // A book picture near the reader, made into an address in this page's own window out of the book the module kept. A member the module refused gets none, and its tag keeps the size it was drawn at.
+    // A book picture near the reader, made into an address in this page's own window — out of the buffer's own archive once the book is drawn from a buffer, and out of the book the module kept before that. A member the module refused gets none, and its tag keeps the size it was drawn at.
     packagedPicture: ({ member }) => {
-      const picture = core.bookPicture(String(member || ''));
+      const asked = String(member || '');
+      const picture = buffer && held?.path === open ? core.bufferBookPicture(buffer, asked) : core.bookPicture(asked);
       if (!picture) return;
       const address = URL.createObjectURL(new Blob([picture.bytes], { type: picture.type }));
       minted.push(address);

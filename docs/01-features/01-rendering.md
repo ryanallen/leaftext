@@ -148,15 +148,15 @@ At a prompt the text is styled and wraps at the terminal's width. Sent through a
 
 What prints as what:
 
-- A heading sits between blank lines, bold and underlined.
+- A heading sits between blank lines, in bold. A top heading is underlined with a double rule `═` its width under it, a second-level heading has a single rule `─`, and deeper headings are bold alone. The rules print in plain text too, so a file written this way still shows its structure.
 - A paragraph wraps at the width, and stays on one line where there is none.
 - A list indents under its markers, and a task prints `[x]` or `[ ]`.
 - A quote and an alert print behind a bar, the alert's kind leading it.
 - A code block, a math block and a diagram print as written, indented, because the window is what draws math and diagrams.
 - A table lines its columns up under its headers and keeps each column's alignment.
-- A link prints its words with its address beside them, once where the two are the same.
-- A picture prints `[picture: its description]`.
-- Footnotes print at the foot.
+- A link prints its words followed by a number in angle brackets, like `install notes<1>`, and the addresses are listed after everything else, one to a line under a short rule, `<1> docs/install.md`. An address linked more than once keeps one number. A link whose words are its address prints the address once and takes no number, and a link within the same document prints its words alone.
+- A picture prints `[picture: its description]`, dimmed.
+- Footnotes print at the foot, their references in square brackets, like `[1]`.
 
 Printing opens no window, reads only the one file, writes nothing, and a copy open in a window never hears of it.
 

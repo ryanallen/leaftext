@@ -326,6 +326,8 @@ function releaseShellWidth() {
 
 let libraryOutlineOpen = false;
 
+let changeRepoRevealed = false;
+
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
   bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
   metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map() };
@@ -718,6 +720,7 @@ const COLUMN_STATE_NAMES = [
   'readerReflowObserver', 'readerAnchorBlocksCount', 'readerAnchorBlocksSource', 'resetReaderScrollFrame',
   'readerSectionSaid', 'readerLayoutHoldsAnchor', 'minimapPreviewHolds',
   'minimapCloneMap', 'minimapCloneHeight', 'minimapChangedCells',
+  'minimapHeldBays', 'minimapHeldBlock', 'minimapHeldReleaseFrame',
 ];
 
 
@@ -802,6 +805,9 @@ function saveColumnState(column) {
   held.minimapCloneMap = minimapCloneMap;
   held.minimapCloneHeight = minimapCloneHeight;
   held.minimapChangedCells = minimapChangedCells;
+  held.minimapHeldBays = minimapHeldBays;
+  held.minimapHeldBlock = minimapHeldBlock;
+  held.minimapHeldReleaseFrame = minimapHeldReleaseFrame;
   held.minimapBuiltVersion = minimapBuiltVersion;
   held.minimapBuiltSourceWidth = minimapBuiltSourceWidth;
   held.minimapBuiltPreviewWidth = minimapBuiltPreviewWidth;
@@ -920,6 +926,9 @@ function loadColumnState(column) {
   minimapCloneMap = held.minimapCloneMap;
   minimapCloneHeight = held.minimapCloneHeight;
   minimapChangedCells = held.minimapChangedCells;
+  minimapHeldBays = held.minimapHeldBays;
+  minimapHeldBlock = held.minimapHeldBlock;
+  minimapHeldReleaseFrame = held.minimapHeldReleaseFrame;
   minimapBuiltVersion = held.minimapBuiltVersion;
   minimapBuiltSourceWidth = held.minimapBuiltSourceWidth;
   minimapBuiltPreviewWidth = held.minimapBuiltPreviewWidth;
@@ -6737,6 +6746,7 @@ function pageExportSize() {
   const surface = appSurface;
   if (!surface) return { width: 1, height: 1 };
   revealReadingPast(null);
+  finishTableRelease();
   const held = document.body.classList.contains('leaf-paper');
   if (!held && window.leafHoldAppearance) window.leafHoldAppearance(true);
   const box = surface.getBoundingClientRect();
@@ -8143,27 +8153,69 @@ let libraryMotionTimer = 0;
 let libraryMotionDone = null;
 let libraryMotionStage = '';
 
+let skippedTableBays = new Map();
+let tableReleaseQueue = [];
+let tableReleaseFrame = 0;
 function holdTableWidths() {
+  window.cancelAnimationFrame(tableReleaseFrame);
+  tableReleaseFrame = 0;
   for (const layout of document.querySelectorAll('.reader-layout')) {
     if (layout.classList.contains('is-library-table-width-held') || layout.closest('.document-minimap')) continue;
-    const bays = layout.querySelectorAll('.document-run > .table-bay');
+    const bays = [...layout.querySelectorAll('.document-run > .table-bay')].filter((bay) => !skippedTableBays.has(bay));
     const width = bays.length ? Number.parseFloat(getComputedStyle(bays[0]).width) : 0;
     if (!width) continue;
-    for (const bay of bays) {
+    
+    const rects = bays.map((bay) => bay.getBoundingClientRect());
+    bays.forEach((bay, index) => {
       bay.style.width = `${width}px`;
       bay.style.marginInline = `calc((100% - ${width}px) / 2)`;
-    }
+      const rect = rects[index];
+      if (rect.bottom >= 0 && rect.top <= window.innerHeight) return;
+      bay.style.containIntrinsicSize = `${rect.width}px ${rect.height}px`;
+      bay.style.contentVisibility = 'auto';
+      skippedTableBays.set(bay, rect.bottom < 0 ? -rect.bottom : rect.top - window.innerHeight);
+    });
     layout.classList.add('is-library-table-width-held');
   }
 }
+function letTableBayGo(bay) {
+  bay.style.width = '';
+  bay.style.marginInline = '';
+  bay.style.contentVisibility = '';
+  bay.style.containIntrinsicSize = '';
+}
+
 function releaseTableWidths() {
   for (const layout of document.querySelectorAll('.reader-layout.is-library-table-width-held')) {
     layout.classList.remove('is-library-table-width-held');
-    for (const bay of layout.querySelectorAll('.document-run > .table-bay')) {
-      bay.style.width = '';
-      bay.style.marginInline = '';
-    }
+    for (const bay of layout.querySelectorAll('.document-run > .table-bay')) if (!skippedTableBays.has(bay)) letTableBayGo(bay);
   }
+  tableReleaseQueue = [...skippedTableBays].sort((a, b) => a[1] - b[1]).map(([bay]) => bay);
+  window.cancelAnimationFrame(tableReleaseFrame);
+  tableReleaseFrame = tableReleaseQueue.length ? window.requestAnimationFrame(letNextTableBayGo) : 0;
+}
+function letNextTableBayGo() {
+  tableReleaseFrame = 0;
+  let bay = tableReleaseQueue.shift();
+  
+  while (bay && !bay.isConnected) {
+    skippedTableBays.delete(bay);
+    bay = tableReleaseQueue.shift();
+  }
+  if (!bay) return;
+  skippedTableBays.delete(bay);
+  letTableBayGo(bay);
+  if (tableReleaseQueue.length) tableReleaseFrame = window.requestAnimationFrame(letNextTableBayGo);
+}
+
+function finishTableRelease() {
+  if (!skippedTableBays.size) return false;
+  window.cancelAnimationFrame(tableReleaseFrame);
+  tableReleaseFrame = 0;
+  for (const bay of skippedTableBays.keys()) letTableBayGo(bay);
+  skippedTableBays.clear();
+  tableReleaseQueue = [];
+  return true;
 }
 function endLibraryMotion(restarting) {
   window.clearTimeout(libraryMotionTimer);
@@ -8221,6 +8273,7 @@ function toggleLibrary() {
     return;
   }
   
+  holdMinimapFarTables();
   holdTableWidths();
   if (libraryIsClosed()) {
     libraryUserClosed = false;
@@ -8800,8 +8853,6 @@ let crumbMenuHoldsForm = false;
 
 const CRUMB_MENU_DROP = 4;
 
-let changeRepoRevealed = false;
-
 const previousRemoteByVault = new Map();
 
 let cloudFolders = null;
@@ -8874,317 +8925,6 @@ function vaultMenuItems() {
   pushServiceVaultRows(items);
   pushCloneRow(items);
   return items;
-}
-
-function pushChangeRepoPanel(items, vault, repo) {
-  const current = repo.remoteUrl || repo.remote || '';
-  items.push({ note: `Now pointing at: ${current}` });
-  items.push({ note: 'Paste a new address and press Save. This only changes where it points — your files are sent when you Sync, not now.' });
-  const closePanel = () => {
-    changeRepoRevealed = false;
-    showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
-  };
-  const saveRepo = () => {
-    const field = crumbMenu.querySelector('.repo-url-field');
-    const url = field ? field.value.trim() : '';
-    if (url && url !== current) {
-      if (current) previousRemoteByVault.set(vault.id, current);
-      send({ command: 'linkVaultRemote', id: vault.id, url });
-    }
-    closePanel();
-  };
-  items.push({
-    input: '',
-    form: true,
-    fieldClass: 'repo-url-field',
-    commitOnBlur: false,
-    onEnter: saveRepo,
-    onEscape: closePanel,
-    placeholder: 'Paste the repository address',
-  });
-  items.push({
-    buttons: [
-      {
-        label: 'Cancel',
-        keepOpen: true,
-        run: closePanel,
-      },
-      {
-        label: 'Save',
-        icon: MENU_CHECK_SVG,
-        primary: true,
-        keepOpen: true,
-        run: saveRepo,
-      },
-    ],
-  });
-  
-  const previous = previousRemoteByVault.get(vault.id);
-  if (previous && previous !== current) {
-    items.push({
-      label: `Put back ${previous}`,
-      keepOpen: true,
-      run: () => {
-        const field = crumbMenu.querySelector('.repo-url-field');
-        if (field) {
-          field.value = previous;
-          field.focus();
-        }
-      },
-    });
-  }
-}
-
-function vaultGitItems(vault) {
-  const items = ['separator', { heading: 'GitHub' }];
-  const state = vaultGitByVault.get(vault.id);
-  if (!state) {
-    items.push({ note: 'Checking this folder…' });
-    return items;
-  }
-  if (!state.tooling.git) {
-    
-    items.push({ note: 'Syncing needs git, which is not installed.' });
-    items.push({
-      label: 'Install git ↗',
-      run: () => send({ command: 'openExternal', url: 'https://git-scm.com/downloads' }),
-    });
-    return items;
-  }
-  const repo = state.repo;
-  const busy = Boolean(state.busy);
-  if (repo.atRoot) {
-    items.push({ note: repoSummary(repo) });
-    if (repo.nested && repo.nested.length) {
-      
-      items.push({ note: `Repositories inside this vault: ${repo.nested.join(', ')}` });
-      pushIgnoreOffer(items, vault, repo, busy);
-    }
-    if (repo.remote) {
-      items.push({
-        label: busy ? SYNC_WORKING : 'Sync',
-        icon: SYNC_ICON_SVG,
-        disabled: busy,
-        keepOpen: true,
-        run: () => startVaultSync(vault.id),
-      });
-      items.push({
-        label: 'Sync automatically',
-        switch: true,
-        checked: Boolean(vault.gitAutoSync),
-        disabled: busy,
-        keepOpen: true,
-        run: () => send({ command: 'setVaultGitAutoSync', id: vault.id, enabled: !vault.gitAutoSync }),
-      });
-      
-      if (!changeRepoRevealed) {
-        items.push({
-          label: 'Change repo…',
-          keepOpen: true,
-          run: () => {
-            changeRepoRevealed = true;
-            showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
-            const field = crumbMenu.querySelector('.repo-url-field');
-            if (field) field.focus();
-          },
-        });
-      } else {
-        pushChangeRepoPanel(items, vault, repo);
-      }
-    } else {
-      
-      pushCreateRoutes(items, vault, state, busy);
-    }
-  } else {
-    if (repo.outer) {
-      items.push({ note: `This folder sits inside ${repo.outer}. A repository here is separate from it.` });
-    }
-    if (repo.nested && repo.nested.length) {
-      items.push({
-        note: `Already repositories, and left alone: ${repo.nested.join(', ')}`,
-      });
-    }
-    pushCreateRoutes(items, vault, state, busy);
-  }
-  
-  if (!state.tooling.identity) {
-    items.push({ note: 'git does not know who you are yet. Put your name and email here and it will — git keeps them for this machine.', danger: true });
-    pushIdentityFields(items, vault, busy);
-  }
-  if (!state.tooling.credentialHelper) {
-    
-    items.push({ note: 'git has no way to sign in to GitHub. Install GitHub CLI and run gh auth login, or a credential manager.', danger: true });
-  }
-  
-  if (!state.tooling.credentialHelper || state.message === 'failed:signin') {
-    items.push({
-      label: 'How to sign in ↗',
-      title: 'Opens GitHub’s own page on letting git remember your sign-in.',
-      run: () => send({
-        command: 'openExternal',
-        url: 'https://docs.github.com/get-started/git-basics/caching-your-github-credentials-in-git',
-      }),
-    });
-  }
-  const outcome = syncOutcomeText(state);
-  if (outcome) items.push({ note: outcome, danger: Boolean(state.error) });
-  if (vault.gitAutoSync && state.error && !busy) {
-    items.push({ note: 'Automatic sync stopped. Press Sync to start it again.' });
-  }
-  return items;
-}
-
-function pushIgnoreOffer(items, vault, repo, busy) {
-  const loose = repo.unhandled || [];
-  if (!loose.length) return;
-  items.push({
-    note: `Syncing would swallow ${loose.join(', ')} as a pointer nobody else can resolve. Ignoring them keeps their own history theirs.`,
-    danger: true,
-  });
-  items.push({
-    label: busy ? SYNC_WORKING : 'Ignore them',
-    title: 'Writes them into this vault’s .gitignore, with the reason beside them.',
-    disabled: busy,
-    keepOpen: true,
-    run: () => send({ command: 'ignoreVaultRepos', id: vault.id, paths: loose }),
-  });
-}
-
-function pushIdentityFields(items, vault, busy) {
-  const setIdentity = () => {
-    const name = crumbMenu.querySelector('.git-name-field');
-    const email = crumbMenu.querySelector('.git-email-field');
-    send({
-      command: 'setGitIdentity',
-      id: vault.id,
-      name: name ? name.value.trim() : '',
-      email: email ? email.value.trim() : '',
-    });
-    
-    showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
-  };
-  items.push({
-    input: '',
-    fieldClass: 'git-name-field',
-    onEnter: setIdentity,
-    placeholder: 'Your name',
-  });
-  items.push({
-    input: '',
-    fieldClass: 'git-email-field',
-    onEnter: setIdentity,
-    placeholder: 'you@example.com',
-  });
-  items.push({
-    label: busy ? SYNC_WORKING : 'Set who I am',
-    disabled: busy,
-    keepOpen: true,
-    run: setIdentity,
-  });
-}
-
-function pushCreateRoutes(items, vault, state, busy) {
-  if (state.tooling.gh) {
-    items.push({
-      label: busy ? SYNC_WORKING : 'Create a private repo',
-      icon: SYNC_ICON_SVG,
-      disabled: busy,
-      keepOpen: true,
-      run: () => send({ command: 'createVaultRepo', id: vault.id }),
-    });
-  }
-  items.push({
-    label: 'Create it on GitHub ↗',
-    title: 'Opens GitHub with the name filled in. Copy the address it gives you and paste it below.',
-    
-    keepOpen: true,
-    run: () => send({
-      command: 'openExternal',
-      url: `https://github.com/new?name=${encodeURIComponent(state.suggested)}&visibility=private`,
-    }),
-  });
-  items.push({
-    input: '',
-    placeholder: 'Paste the repository address',
-    commit: (url) => {
-      if (url) send({ command: 'linkVaultRemote', id: vault.id, url });
-    },
-  });
-}
-
-function repoSummary(repo) {
-  const parts = [repo.remote || 'A repository here, with nowhere to push'];
-  if (repo.branch) parts.push(repo.branch);
-  const waiting = [];
-  if (repo.changed) waiting.push(`${repo.changed} changed`);
-  if (repo.ahead) waiting.push(`${repo.ahead} to push`);
-  if (repo.behind) waiting.push(`${repo.behind} to pull`);
-  if (!waiting.length && repo.remote) waiting.push('up to date');
-  return parts.join(' · ') + (waiting.length ? ' — ' + waiting.join(', ') : '');
-}
-
-function syncOutcomeText(state) {
-  const message = state.message;
-  if (!message) return '';
-  
-  if (state.error) {
-    if (message === 'failed:signin') return 'GitHub refused the push because nothing is signed in. Sign in above, then Sync again.';
-    if (message === 'failed:identity') return 'git had nothing to commit as, because it does not know who you are. Fill in your name and email above, press Set, then Sync again.';
-    return message;
-  }
-  if (message === 'identity-set') return 'git knows who you are now.';
-  if (message === 'ignored') return 'Written into this vault’s .gitignore, with the reason beside them.';
-  if (message === 'created') return 'Created on GitHub and pushed.';
-  if (message === 'linked') return 'Repository set. Choose Sync to send your files to it.';
-  if (message === 'local-only') return 'This folder is a repository now. Make one on GitHub and paste its address.';
-  if (message.startsWith('synced:')) {
-    const parts = message.split(':');
-    const committed = Number(parts[1] || 0);
-    
-    const cameDown = Number(parts[2] || 0);
-    const arrival = cameDown ? `; ${cameDown} came down.` : '.';
-    if (!committed) return `Nothing to send${arrival}`;
-    
-    const remote = state.repo && state.repo.remote;
-    return remote
-      ? `Pushed ${committed} to ${remote}${arrival}`
-      : `Pushed ${committed} changed${arrival}`;
-  }
-  return message;
-}
-
-function refreshVaultGitPanel(id) {
-  if (!crumbMenuVault || crumbMenuVault.id !== id || crumbMenu.hidden) return;
-  
-  const active = document.activeElement;
-  if (active && active.classList.contains('crumb-menu-input') && crumbMenu.contains(active)) return;
-  showCrumbMenu(crumbMenuOwner, editVaultMenuItems(crumbMenuVault));
-}
-
-function refreshSwitcherGlyphs() {
-  if (crumbMenu.hidden || !crumbMenuOwner || !crumbMenuOwner.classList.contains('library-vault-switch') || crumbMenuVault) return;
-  for (const item of crumbMenu.querySelectorAll('.crumb-menu-item[data-vault-id]')) {
-    const id = Number(item.dataset.vaultId);
-    setVaultGlyph(item, vaultGlyph(id === 0 ? !activeVaultId : id === activeVaultId, id));
-  }
-}
-
-const vaultRemoteByVault = new Map();
-window.leafSetVaultRemote = (state) => {
-  if (!state || !state.id) return;
-  vaultRemoteByVault.set(state.id, state);
-  refreshVaultGitPanel(state.id);
-};
-
-function sinceInWords(seconds) {
-  const ago = Math.max(0, Math.floor(Date.now() / 1000) - Number(seconds || 0));
-  if (ago < 90) return 'just now';
-  const minutes = Math.round(ago / 60);
-  if (minutes < 60) return `${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? 'yesterday' : `${days} days ago`;
 }
 
 function vaultRemoteItems(vault) {
@@ -9720,6 +9460,317 @@ window.leafSetVaults = (payload) => {
     }
   }
 };
+
+function pushChangeRepoPanel(items, vault, repo) {
+  const current = repo.remoteUrl || repo.remote || '';
+  items.push({ note: `Now pointing at: ${current}` });
+  items.push({ note: 'Paste a new address and press Save. This only changes where it points — your files are sent when you Sync, not now.' });
+  const closePanel = () => {
+    changeRepoRevealed = false;
+    showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+  };
+  const saveRepo = () => {
+    const field = crumbMenu.querySelector('.repo-url-field');
+    const url = field ? field.value.trim() : '';
+    if (url && url !== current) {
+      if (current) previousRemoteByVault.set(vault.id, current);
+      send({ command: 'linkVaultRemote', id: vault.id, url });
+    }
+    closePanel();
+  };
+  items.push({
+    input: '',
+    form: true,
+    fieldClass: 'repo-url-field',
+    commitOnBlur: false,
+    onEnter: saveRepo,
+    onEscape: closePanel,
+    placeholder: 'Paste the repository address',
+  });
+  items.push({
+    buttons: [
+      {
+        label: 'Cancel',
+        keepOpen: true,
+        run: closePanel,
+      },
+      {
+        label: 'Save',
+        icon: MENU_CHECK_SVG,
+        primary: true,
+        keepOpen: true,
+        run: saveRepo,
+      },
+    ],
+  });
+  
+  const previous = previousRemoteByVault.get(vault.id);
+  if (previous && previous !== current) {
+    items.push({
+      label: `Put back ${previous}`,
+      keepOpen: true,
+      run: () => {
+        const field = crumbMenu.querySelector('.repo-url-field');
+        if (field) {
+          field.value = previous;
+          field.focus();
+        }
+      },
+    });
+  }
+}
+
+function vaultGitItems(vault) {
+  const items = ['separator', { heading: 'GitHub' }];
+  const state = vaultGitByVault.get(vault.id);
+  if (!state) {
+    items.push({ note: 'Checking this folder…' });
+    return items;
+  }
+  if (!state.tooling.git) {
+    
+    items.push({ note: 'Syncing needs git, which is not installed.' });
+    items.push({
+      label: 'Install git ↗',
+      run: () => send({ command: 'openExternal', url: 'https://git-scm.com/downloads' }),
+    });
+    return items;
+  }
+  const repo = state.repo;
+  const busy = Boolean(state.busy);
+  if (repo.atRoot) {
+    items.push({ note: repoSummary(repo) });
+    if (repo.nested && repo.nested.length) {
+      
+      items.push({ note: `Repositories inside this vault: ${repo.nested.join(', ')}` });
+      pushIgnoreOffer(items, vault, repo, busy);
+    }
+    if (repo.remote) {
+      items.push({
+        label: busy ? SYNC_WORKING : 'Sync',
+        icon: SYNC_ICON_SVG,
+        disabled: busy,
+        keepOpen: true,
+        run: () => startVaultSync(vault.id),
+      });
+      items.push({
+        label: 'Sync automatically',
+        switch: true,
+        checked: Boolean(vault.gitAutoSync),
+        disabled: busy,
+        keepOpen: true,
+        run: () => send({ command: 'setVaultGitAutoSync', id: vault.id, enabled: !vault.gitAutoSync }),
+      });
+      
+      if (!changeRepoRevealed) {
+        items.push({
+          label: 'Change repo…',
+          keepOpen: true,
+          run: () => {
+            changeRepoRevealed = true;
+            showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+            const field = crumbMenu.querySelector('.repo-url-field');
+            if (field) field.focus();
+          },
+        });
+      } else {
+        pushChangeRepoPanel(items, vault, repo);
+      }
+    } else {
+      
+      pushCreateRoutes(items, vault, state, busy);
+    }
+  } else {
+    if (repo.outer) {
+      items.push({ note: `This folder sits inside ${repo.outer}. A repository here is separate from it.` });
+    }
+    if (repo.nested && repo.nested.length) {
+      items.push({
+        note: `Already repositories, and left alone: ${repo.nested.join(', ')}`,
+      });
+    }
+    pushCreateRoutes(items, vault, state, busy);
+  }
+  
+  if (!state.tooling.identity) {
+    items.push({ note: 'git does not know who you are yet. Put your name and email here and it will — git keeps them for this machine.', danger: true });
+    pushIdentityFields(items, vault, busy);
+  }
+  if (!state.tooling.credentialHelper) {
+    
+    items.push({ note: 'git has no way to sign in to GitHub. Install GitHub CLI and run gh auth login, or a credential manager.', danger: true });
+  }
+  
+  if (!state.tooling.credentialHelper || state.message === 'failed:signin') {
+    items.push({
+      label: 'How to sign in ↗',
+      title: 'Opens GitHub’s own page on letting git remember your sign-in.',
+      run: () => send({
+        command: 'openExternal',
+        url: 'https://docs.github.com/get-started/git-basics/caching-your-github-credentials-in-git',
+      }),
+    });
+  }
+  const outcome = syncOutcomeText(state);
+  if (outcome) items.push({ note: outcome, danger: Boolean(state.error) });
+  if (vault.gitAutoSync && state.error && !busy) {
+    items.push({ note: 'Automatic sync stopped. Press Sync to start it again.' });
+  }
+  return items;
+}
+
+function pushIgnoreOffer(items, vault, repo, busy) {
+  const loose = repo.unhandled || [];
+  if (!loose.length) return;
+  items.push({
+    note: `Syncing would swallow ${loose.join(', ')} as a pointer nobody else can resolve. Ignoring them keeps their own history theirs.`,
+    danger: true,
+  });
+  items.push({
+    label: busy ? SYNC_WORKING : 'Ignore them',
+    title: 'Writes them into this vault’s .gitignore, with the reason beside them.',
+    disabled: busy,
+    keepOpen: true,
+    run: () => send({ command: 'ignoreVaultRepos', id: vault.id, paths: loose }),
+  });
+}
+
+function pushIdentityFields(items, vault, busy) {
+  const setIdentity = () => {
+    const name = crumbMenu.querySelector('.git-name-field');
+    const email = crumbMenu.querySelector('.git-email-field');
+    send({
+      command: 'setGitIdentity',
+      id: vault.id,
+      name: name ? name.value.trim() : '',
+      email: email ? email.value.trim() : '',
+    });
+    
+    showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
+  };
+  items.push({
+    input: '',
+    fieldClass: 'git-name-field',
+    onEnter: setIdentity,
+    placeholder: 'Your name',
+  });
+  items.push({
+    input: '',
+    fieldClass: 'git-email-field',
+    onEnter: setIdentity,
+    placeholder: 'you@example.com',
+  });
+  items.push({
+    label: busy ? SYNC_WORKING : 'Set who I am',
+    disabled: busy,
+    keepOpen: true,
+    run: setIdentity,
+  });
+}
+
+function pushCreateRoutes(items, vault, state, busy) {
+  if (state.tooling.gh) {
+    items.push({
+      label: busy ? SYNC_WORKING : 'Create a private repo',
+      icon: SYNC_ICON_SVG,
+      disabled: busy,
+      keepOpen: true,
+      run: () => send({ command: 'createVaultRepo', id: vault.id }),
+    });
+  }
+  items.push({
+    label: 'Create it on GitHub ↗',
+    title: 'Opens GitHub with the name filled in. Copy the address it gives you and paste it below.',
+    
+    keepOpen: true,
+    run: () => send({
+      command: 'openExternal',
+      url: `https://github.com/new?name=${encodeURIComponent(state.suggested)}&visibility=private`,
+    }),
+  });
+  items.push({
+    input: '',
+    placeholder: 'Paste the repository address',
+    commit: (url) => {
+      if (url) send({ command: 'linkVaultRemote', id: vault.id, url });
+    },
+  });
+}
+
+function repoSummary(repo) {
+  const parts = [repo.remote || 'A repository here, with nowhere to push'];
+  if (repo.branch) parts.push(repo.branch);
+  const waiting = [];
+  if (repo.changed) waiting.push(`${repo.changed} changed`);
+  if (repo.ahead) waiting.push(`${repo.ahead} to push`);
+  if (repo.behind) waiting.push(`${repo.behind} to pull`);
+  if (!waiting.length && repo.remote) waiting.push('up to date');
+  return parts.join(' · ') + (waiting.length ? ' — ' + waiting.join(', ') : '');
+}
+
+function syncOutcomeText(state) {
+  const message = state.message;
+  if (!message) return '';
+  
+  if (state.error) {
+    if (message === 'failed:signin') return 'GitHub refused the push because nothing is signed in. Sign in above, then Sync again.';
+    if (message === 'failed:identity') return 'git had nothing to commit as, because it does not know who you are. Fill in your name and email above, press Set, then Sync again.';
+    return message;
+  }
+  if (message === 'identity-set') return 'git knows who you are now.';
+  if (message === 'ignored') return 'Written into this vault’s .gitignore, with the reason beside them.';
+  if (message === 'created') return 'Created on GitHub and pushed.';
+  if (message === 'linked') return 'Repository set. Choose Sync to send your files to it.';
+  if (message === 'local-only') return 'This folder is a repository now. Make one on GitHub and paste its address.';
+  if (message.startsWith('synced:')) {
+    const parts = message.split(':');
+    const committed = Number(parts[1] || 0);
+    
+    const cameDown = Number(parts[2] || 0);
+    const arrival = cameDown ? `; ${cameDown} came down.` : '.';
+    if (!committed) return `Nothing to send${arrival}`;
+    
+    const remote = state.repo && state.repo.remote;
+    return remote
+      ? `Pushed ${committed} to ${remote}${arrival}`
+      : `Pushed ${committed} changed${arrival}`;
+  }
+  return message;
+}
+
+function refreshVaultGitPanel(id) {
+  if (!crumbMenuVault || crumbMenuVault.id !== id || crumbMenu.hidden) return;
+  
+  const active = document.activeElement;
+  if (active && active.classList.contains('crumb-menu-input') && crumbMenu.contains(active)) return;
+  showCrumbMenu(crumbMenuOwner, editVaultMenuItems(crumbMenuVault));
+}
+
+function refreshSwitcherGlyphs() {
+  if (crumbMenu.hidden || !crumbMenuOwner || !crumbMenuOwner.classList.contains('library-vault-switch') || crumbMenuVault) return;
+  for (const item of crumbMenu.querySelectorAll('.crumb-menu-item[data-vault-id]')) {
+    const id = Number(item.dataset.vaultId);
+    setVaultGlyph(item, vaultGlyph(id === 0 ? !activeVaultId : id === activeVaultId, id));
+  }
+}
+
+const vaultRemoteByVault = new Map();
+window.leafSetVaultRemote = (state) => {
+  if (!state || !state.id) return;
+  vaultRemoteByVault.set(state.id, state);
+  refreshVaultGitPanel(state.id);
+};
+
+function sinceInWords(seconds) {
+  const ago = Math.max(0, Math.floor(Date.now() / 1000) - Number(seconds || 0));
+  if (ago < 90) return 'just now';
+  const minutes = Math.round(ago / 60);
+  if (minutes < 60) return `${minutes} minutes ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
+  const days = Math.round(hours / 24);
+  return days === 1 ? 'yesterday' : `${days} days ago`;
+}
 
 const SERVICE_VAULT_ROWS = [
   ['Dropbox', 'Copy one Dropbox folder through its API', () => showDropboxVaultForm()],
@@ -14261,19 +14312,19 @@ function recordParagraphSwap(doc, swap, end) {
 }
 
 function moveKeptDocument(doc, at, delta) {
-  if (delta) {
-    const move = (value) => (value >= at ? value + delta : value);
-    for (const block of Array.isArray(doc.blocks) ? doc.blocks : []) {
-      block.start = move(block.start);
-      block.end = move(block.end);
-    }
-    for (const task of Array.isArray(doc.tasks) ? doc.tasks : []) {
-      if (task && task.due_range) task.due_range = { start: move(task.due_range.start), end: move(task.due_range.end) };
-    }
-    for (const held of Array.isArray(doc.swaps) ? doc.swaps : []) {
-      held.start = move(held.start);
-      held.end = move(held.end);
-    }
+  moveKeptDocumentBy(doc, (value) => (value >= at ? value + delta : value));
+}
+function moveKeptDocumentBy(doc, move) {
+  for (const block of Array.isArray(doc.blocks) ? doc.blocks : []) {
+    block.start = move(block.start);
+    block.end = move(block.end);
+  }
+  for (const task of Array.isArray(doc.tasks) ? doc.tasks : []) {
+    if (task && task.due_range) task.due_range = { start: move(task.due_range.start), end: move(task.due_range.end) };
+  }
+  for (const held of Array.isArray(doc.swaps) ? doc.swaps : []) {
+    held.start = move(held.start);
+    held.end = move(held.end);
   }
   doc.source = documentSourceBytes();
 }
@@ -16698,6 +16749,26 @@ function spliceDocumentSource(start, end, text) {
   if (heldSourceStamp) heldSourceStamp.splices += 1;
 }
 
+function spliceDocumentSourceRanges(writes) {
+  const bytes = documentSourceBytes();
+  const parts = writes.map((write) => sourceByteEncoder.encode(write.text));
+  const length = writes.reduce((size, write, index) => size + parts[index].length - (write.end - write.start), bytes.length);
+  const next = new Uint8Array(length);
+  let read = 0;
+  let writeAt = 0;
+  writes.forEach((write, index) => {
+    next.set(bytes.subarray(read, write.start), writeAt);
+    writeAt += write.start - read;
+    next.set(parts[index], writeAt);
+    writeAt += parts[index].length;
+    read = write.end;
+  });
+  next.set(bytes.subarray(read), writeAt);
+  heldSourceBytes = next;
+  heldSourceText = null;
+  if (heldSourceStamp) heldSourceStamp.splices += writes.length;
+}
+
 function takeHeldSource(held) {
   if (!held || !heldSourceStamp || held.serial !== heldSourceStamp.serial || held.splices !== heldSourceStamp.splices) return false;
   const bytes = documentSourceBytes();
@@ -16831,6 +16902,10 @@ function adoptDrawnRanges(body) {
 
 function moveDrawnRangesAfter(at, delta, alsoMove) {
   const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
+  moveDrawnRangesBy(move, alsoMove);
+}
+
+function moveDrawnRangesBy(move, alsoMove) {
   drawnRanges.forEach((held, el) => {
     for (const kind of Object.keys(held)) {
       held[kind].start = move(held[kind].start);
@@ -18216,6 +18291,7 @@ function releaseEditCommand(message, after) {
   }
   const el = after ? after.el : null;
   const measured = commitMovesMap(el, outgoing);
+  if (outgoing !== message || !measured) delete outgoing.standing;
   if (after && after.hold && !measured && outgoing.seq != null) {
     outgoing.held = true;
     
@@ -18240,6 +18316,9 @@ function dropKeptWrites() {
 
 function moveKeptWrites(at, delta) {
   const move = (value) => (Number.isFinite(value) && value >= at ? value + delta : value);
+  moveKeptWritesBy(move);
+}
+function moveKeptWritesBy(move) {
   for (const { message } of keptCommits) {
     if (!message) continue;
     if (message.command === 'editBlock') {
@@ -18309,7 +18388,7 @@ window.leafEditWritten = (answer) => {
   const writes = (Array.isArray(answer.writes) ? answer.writes : []).filter(
     (write) => write && Number.isFinite(write.start) && Number.isFinite(write.end) && write.end >= write.start && typeof write.text === 'string',
   );
-  for (const { start, end, text } of writes.sort((a, b) => b.start - a.start)) advanceLiveRanges(null, { start, end, text, inner: false });
+  advanceRangesForWrites(writes);
   if (pendingCaret && pendingCaret.packedSplit) {
     for (const write of writes) {
       const breakAt = write.text.lastIndexOf('\r\n\r\n');
@@ -18373,8 +18452,58 @@ function advanceRangesForCommit(el, sent, inner) {
     return;
   }
   if (sent.command !== 'editBlocks' || !Array.isArray(sent.blocks)) return;
-  
-  for (const write of sent.blocks.slice().sort((a, b) => b.start - a.start)) advanceLiveRanges(null, { start: write.start, end: write.end, text: write.text, inner: false });
+  advanceRangesForWrites(sent.blocks);
+}
+
+function advanceRangesForWrites(writes) {
+  if (!writes.length) return;
+  const sorted = writes.slice().sort((a, b) => a.start - b.start);
+  let previousEnd = 0;
+  const length = documentSourceLength();
+  if (sorted.some((write) => {
+    const invalid = !Number.isSafeInteger(write.start) || !Number.isSafeInteger(write.end) || write.start < previousEnd || write.end < write.start || write.end > length;
+    previousEnd = write.end;
+    return invalid;
+  })) {
+    for (const write of sorted.reverse()) advanceLiveRanges(null, { ...write, inner: false });
+    return;
+  }
+  const ends = [];
+  const shifts = [];
+  let shift = 0;
+  let moved = false;
+  for (const write of sorted) {
+    const delta = utf8ByteLength(write.text) - (write.end - write.start);
+    shift += delta;
+    moved ||= delta !== 0;
+    ends.push(write.end);
+    shifts.push(shift);
+  }
+  const move = (value) => {
+    if (!Number.isFinite(value)) return value;
+    let low = 0;
+    let high = ends.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (ends[mid] <= value) low = mid + 1;
+      else high = mid;
+    }
+    return value + (low ? shifts[low - 1] : 0);
+  };
+  spliceDocumentSourceRanges(sorted);
+  if (moved) {
+    const body = app.querySelector('.document-body');
+    if (body) {
+      adoptDrawnRanges(body);
+      moveDrawnRangesBy(move, (node) => {
+        if (node.__innerSpan) node.__innerSpan = { start: move(node.__innerSpan.start), end: move(node.__innerSpan.end) };
+      });
+    }
+    if (pendingCaret && Number.isFinite(pendingCaret.srcStart)) pendingCaret.srcStart = move(pendingCaret.srcStart);
+    moveKeptWritesBy(move);
+  }
+  const kept = currentState && currentState.document;
+  if (kept) moveKeptDocumentBy(kept, move);
 }
 
 function visibleTextLength(el) {
@@ -26506,6 +26635,7 @@ let readingCursorWatch = null;
 let readingCursorDrawQueued = 0;
 
 let readingCursorsWrote = false;
+let readingCursorsUndrawn = false;
 
 function readingCursorsLive() {
   return readingCursorSet.length > 0;
@@ -26559,8 +26689,10 @@ function setReadingCursors(places) {
 }
 
 
-function dropReadingCursors() {
+function dropReadingCursors(refresh = true) {
   if (!readingCursorsLive() && !readingCursorLayer) return;
+  if (refresh && readingCursorsUndrawn && readingCursorPath === activeDocumentPath()) send({ command: 'refreshDocument', keepPlace: true });
+  readingCursorsUndrawn = false;
   readingCursorSet = [];
   readingCursorPath = null;
   unwatchReadingCursorRender();
@@ -26659,7 +26791,7 @@ function readingCursorsKeptCaret() {
 function relocateReadingCursors({ settled = false } = {}) {
   if (!readingCursorsLive()) return;
   if (readingCursorPath !== activeDocumentPath() || codeViewActive) {
-    dropReadingCursors();
+    dropReadingCursors(false);
     return;
   }
   const body = app.querySelector('.document-body');
@@ -26681,6 +26813,7 @@ function relocateReadingCursors({ settled = false } = {}) {
 
 function readingCursorsRedrawn() {
   if (!readingCursorsLive()) return;
+  readingCursorsUndrawn = false;
   relocateReadingCursors({ settled: true });
   drawReadingCursors();
 }
@@ -26864,7 +26997,8 @@ function writeAtReadingCursors(action) {
   }
   sent.sort((one, other) => one.start - other.start);
   raiseTypingChrome();
-  sendEditCommand({ command: 'editBlocks', blocks: sent, continuing: readingCursorsWrote }, { el: writes[0].el, hold: true });
+  const outgoing = sendEditCommand({ command: 'editBlocks', blocks: sent, continuing: readingCursorsWrote, standing: true }, { el: writes[0].el, hold: true });
+  if (outgoing && outgoing.standing) readingCursorsUndrawn = true;
   readingCursorsWrote = true;
   
   next.forEach((place) => {
@@ -26878,6 +27012,11 @@ function writeAtReadingCursors(action) {
 
 function collapseReadingCursors() {
   const last = readingCursorSet[readingCursorSet.length - 1];
+  if (readingCursorsUndrawn) {
+    if (last) setPendingCaret({ srcStart: last.blockStart, textOffset: last.end });
+    dropReadingCursors();
+    return;
+  }
   dropReadingCursors();
   if (!last || !last.el.isConnected) return;
   if (readingUnlocked && last.el.classList.contains('leaf-editable-in-place')) {
@@ -26920,7 +27059,7 @@ window.addEventListener(
     const command = event.ctrlKey || event.metaKey;
     
     if (command && !event.altKey && ['z', 'y'].includes((event.key || '').toLowerCase())) {
-      dropReadingCursors();
+      dropReadingCursors(false);
       return;
     }
     
@@ -26999,7 +27138,7 @@ for (const type of ['mousedown', 'pointerup', 'mouseup', 'click']) {
 
 
 for (const button of [undoButton, redoButton]) {
-  if (button) button.addEventListener('click', () => dropReadingCursors(), true);
+  if (button) button.addEventListener('click', () => dropReadingCursors(false), true);
 }
 
 
@@ -27499,6 +27638,8 @@ function groveLevelForRank(node, rank) {
 function groveNodeState(node) {
   const owned = groveRanks(node.id);
   if (owned >= node.limit) return { state: 'owned', owned };
+  
+  if (node.kind === 'later') return { state: 'later', owned };
   const level = Number(leafProfile && leafProfile.grove) || 0;
   const wanted = groveLevelForRank(node, owned + 1);
   const missing = owned > 0 ? [] : (node.requires || []).map(groveRequirement).filter((need) => groveRanks(need.id) < need.rank);
@@ -27512,7 +27653,6 @@ function groveNodeState(node) {
     if (level < wanted) names.unshift(`Grove ${formatCount(wanted)}`);
     return { state: 'locked', owned, needs: `Needs ${groveJoinNames(names)}` };
   }
-  if (node.kind === 'later') return { state: 'later', owned };
   const held = Number(leafProfile && leafProfile.seeds) || 0;
   if (held < node.price) return { state: 'short', owned, short: node.price - held };
   return { state: 'available', owned };
@@ -37895,6 +38035,7 @@ function updateContainedPageMinimapPreview(track, content, minimap) {
 
 
 function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
+  bookMinimapHeldTablesRelease();
   const minimap = currentMinimap();
   const track = minimap ? minimap.querySelector('.document-minimap-track') : null;
   const content = track ? track.querySelector('.document-minimap-content') : null;
@@ -37928,6 +38069,11 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     return;
   }
   if (reflowMinimapClone(content, source, metrics, previewWidth, previewScale, frameWidth, slack)) return;
+  
+  if (finishTableRelease()) {
+    updateDocumentMinimapPreview(slack);
+    return;
+  }
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
   const windowsIt = source.children.length > 0 && metrics.scaledDocumentHeight > metrics.trackHeight;
   const appTop = windowsIt ? app.getBoundingClientRect().top : 0;
@@ -38073,21 +38219,7 @@ function reflowMinimapClone(content, source, metrics, previewWidth, previewScale
     const at = metrics.sourceTop * previewScale;
     frame.style.transform = `translateY(${at}px) scale(${previewScale})`;
   } else {
-    
-    const firstTop = minimapBlockEdges(range.lead, app.getBoundingClientRect().top, metrics.scrollTop).top;
-    const wanted = firstTop * previewScale;
-    frame.style.transform = `translateY(${wanted}px) scale(${previewScale})`;
-    const contentTop = content.getBoundingClientRect().top;
-    const landedAt = range.node.getBoundingClientRect().top - contentTop;
-    const footAt = preview.getBoundingClientRect().bottom - contentTop;
-    const delta = wanted - landedAt;
-    if (Math.abs(delta) > 0.5) frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
-    minimapBuiltRange = {
-      ...range,
-      top: range.atHead ? 0 : firstTop,
-      bottom: range.atFoot ? metrics.scrollHeight : firstTop + Math.max(0, footAt - landedAt) / previewScale,
-      placedAt: metrics.scrollHeight,
-    };
+    placeMinimapClone(content, preview, metrics, previewScale);
   }
   content.style.height = `${metrics.scaledDocumentHeight}px`;
   minimapBuiltSourceWidth = metrics.sourceWidth;
@@ -38096,6 +38228,30 @@ function reflowMinimapClone(content, source, metrics, previewWidth, previewScale
   
   updateMinimapViewport();
   return true;
+}
+
+function placeMinimapClone(content, preview, metrics, previewScale) {
+  const frame = preview.parentElement;
+  const range = minimapBuiltRange;
+  const kept = minimapHeldBlock;
+  const byBlock = minimapHeldBays.length > 0 && kept && kept.copy.isConnected !== false && preview.contains(kept.copy) && minimapSourceElement()?.contains(kept.source);
+  const appTop = app.getBoundingClientRect().top;
+  const anchorTop = minimapBlockEdges(byBlock ? kept.source : range.lead, appTop, metrics.scrollTop).top;
+  const wanted = anchorTop * previewScale;
+  frame.style.transform = `translateY(${wanted}px) scale(${previewScale})`;
+  const contentTop = content.getBoundingClientRect().top;
+  const landedAt = (byBlock ? kept.copy : range.node).getBoundingClientRect().top - contentTop;
+  const headAt = byBlock ? range.node.getBoundingClientRect().top - contentTop : landedAt;
+  const footAt = preview.getBoundingClientRect().bottom - contentTop;
+  const delta = wanted - landedAt;
+  if (Math.abs(delta) > 0.5) frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
+  const firstTop = anchorTop - Math.max(0, landedAt - headAt) / previewScale;
+  minimapBuiltRange = {
+    ...range,
+    top: range.atHead ? 0 : firstTop,
+    bottom: range.atFoot ? metrics.scrollHeight : anchorTop + Math.max(0, footAt - landedAt) / previewScale,
+    placedAt: metrics.scrollHeight,
+  };
 }
 function scheduleMinimapViewportUpdate() {
   if (minimapViewportFrame) {
@@ -38449,16 +38605,22 @@ var minimapCloneMap;
 var minimapCloneHeight;
 var minimapChangedCells;
 
+var minimapHeldBays = [];
+var minimapHeldBlock = null;
+var minimapHeldReleaseFrame = 0;
+
 function resetMinimapClonePatches() {
   minimapCloneMap = new WeakMap();
   minimapCloneHeight = -1;
   minimapChangedCells = new Set();
+  dropMinimapHeldTables();
 }
 
 function beginMinimapClone(height) {
   minimapCloneMap = new WeakMap();
   minimapCloneHeight = height;
   minimapChangedCells.clear();
+  dropMinimapHeldTables();
 }
 
 function recordMinimapClone(source, clone, whole) {
@@ -38538,6 +38700,109 @@ function patchMinimapPreview(metrics) {
   return true;
 }
 
+
+function holdMinimapFarTables() {
+  if (readingIsContainedPage()) return;
+  const minimap = currentMinimap();
+  const track = minimap && minimap.querySelector('.document-minimap-track');
+  const content = track && track.querySelector('.document-minimap-content');
+  const preview = content && content.querySelector('.document-minimap-preview');
+  const body = minimapSourceElement();
+  if (!preview || !body || !minimapBuiltRange || !(minimapBuiltSourceWidth > 0)) return;
+  
+  const blocks = documentBlocks(body);
+  const readingLine = app.getBoundingClientRect().top + READER_CONTENT_TOP_GAP;
+  let lo = 0;
+  let hi = blocks.length - 1;
+  let at = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (blocks[mid].getBoundingClientRect().bottom > readingLine) {
+      at = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  const copy = at < 0 ? null : minimapWholeCopyOf(blocks[at]);
+  if (!copy || !preview.contains(copy)) return;
+  const scale = minimapBuiltPreviewWidth / minimapBuiltSourceWidth;
+  const trackRect = track.getBoundingClientRect();
+  const reach = trackRect.height * MINIMAP_GESTURE_SLACK;
+  
+  const bays = [...preview.querySelectorAll('.table-bay')].filter((bay) => !minimapHeldBays.includes(bay));
+  const rects = bays.map((bay) => bay.getBoundingClientRect());
+  const held = [];
+  bays.forEach((bay, index) => {
+    const rect = rects[index];
+    const away = rect.bottom < trackRect.top - reach ? trackRect.top - rect.bottom : rect.top > trackRect.bottom + reach ? rect.top - trackRect.bottom : -1;
+    if (away < 0) return;
+    bay.style.containIntrinsicSize = `${rect.width / scale}px ${rect.height / scale}px`;
+    bay.style.contentVisibility = 'hidden';
+    held.push({ bay, away });
+  });
+  if (!held.length && !minimapHeldBays.length) return;
+  minimapHeldBlock = { source: blocks[at], copy };
+  const kept = minimapHeldBays.map((bay) => ({ bay, away: 0 }));
+  minimapHeldBays = [...kept, ...held.sort((a, b) => a.away - b.away)].map((one) => one.bay);
+}
+
+function minimapWholeCopyOf(node) {
+  const path = [];
+  let source = node;
+  while (source && !minimapCloneMap.has(source)) {
+    path.unshift(source);
+    source = source.parentNode;
+  }
+  const entry = source && minimapCloneMap.get(source);
+  if (!entry || !entry.whole) return null;
+  let copy = entry.clone;
+  for (const step of path) {
+    const siblings = [...source.children].filter((child) => !child.matches(MINIMAP_CLONE_DROPS));
+    copy = copy && copy.children[siblings.indexOf(step)];
+    if (!copy || copy.tagName !== step.tagName) return null;
+    source = step;
+  }
+  return copy;
+}
+function letMinimapBayGo(bay) {
+  bay.style.contentVisibility = '';
+  bay.style.containIntrinsicSize = '';
+}
+
+function dropMinimapHeldTables() {
+  if (minimapHeldReleaseFrame) window.cancelAnimationFrame(minimapHeldReleaseFrame);
+  minimapHeldReleaseFrame = 0;
+  minimapHeldBays = [];
+  minimapHeldBlock = null;
+}
+
+function bookMinimapHeldTablesRelease() {
+  if (!minimapHeldBays.length || minimapHeldReleaseFrame) return;
+  minimapHeldReleaseFrame = columnFrame(releaseMinimapFarTables);
+}
+
+function releaseMinimapFarTables() {
+  minimapHeldReleaseFrame = 0;
+  
+  if (!minimapHeldBays.length || libraryPaneIsMoving()) return;
+  const preview = currentMinimap()?.querySelector('.document-minimap-preview');
+  let bay = minimapHeldBays.shift();
+  while (bay && !(preview && preview.contains(bay))) bay = minimapHeldBays.shift();
+  if (bay) letMinimapBayGo(bay);
+  if (!minimapHeldBays.length) minimapHeldBlock = null;
+  placeKeptMinimapClone();
+  bookMinimapHeldTablesRelease();
+}
+function placeKeptMinimapClone() {
+  const minimap = currentMinimap();
+  const track = minimap && minimap.querySelector('.document-minimap-track');
+  const content = track && track.querySelector('.document-minimap-content');
+  const preview = content && content.querySelector('.document-minimap-preview');
+  if (!preview || !minimapBuiltRange || !(minimapBuiltSourceWidth > 0)) return;
+  placeMinimapClone(content, preview, measureDocumentMinimap(track), minimapBuiltPreviewWidth / minimapBuiltSourceWidth);
+  updateMinimapViewport();
+}
 function stripMinimapCloneContent(node) {
   node.querySelectorAll(MINIMAP_CLONE_DROPS).forEach((child) => child.remove());
   node.querySelectorAll('[id]').forEach((child) => {
