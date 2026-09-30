@@ -5727,6 +5727,14 @@ window.leafShowShortcutRefusal = (sentence, label, address) => {
   });
 };
 
+
+window.leafOfferOtherApp = (scheme, address) => {
+  leafToast(`This page wants to open the ${scheme} app.`, 'info', {
+    label: 'Open',
+    run: () => send({ command: 'openExternal', url: address }),
+  });
+};
+
 function drawToast(message, tone, action, link) {
   if (toastElement) coverWebSurface(false, toastElement);
   if (toastElement) {
@@ -8196,6 +8204,7 @@ function releaseTableWidths() {
 }
 function letNextTableBayGo() {
   tableReleaseFrame = 0;
+  if (readerScrolling || minimapDragging) return;
   let bay = tableReleaseQueue.shift();
   
   while (bay && !bay.isConnected) {
@@ -8205,6 +8214,20 @@ function letNextTableBayGo() {
   if (!bay) return;
   skippedTableBays.delete(bay);
   letTableBayGo(bay);
+  if (tableReleaseQueue.length) tableReleaseFrame = window.requestAnimationFrame(letNextTableBayGo);
+}
+function resumeTableRelease() {
+  if (!tableReleaseQueue.length || tableReleaseFrame || libraryPaneIsMoving() || readerScrolling || minimapDragging) return;
+  const waiting = [];
+  for (const bay of tableReleaseQueue) {
+    if (!bay.isConnected) {
+      skippedTableBays.delete(bay);
+      continue;
+    }
+    const rect = bay.getBoundingClientRect();
+    waiting.push({ bay, distance: rect.bottom < 0 ? -rect.bottom : Math.max(0, rect.top - window.innerHeight) });
+  }
+  tableReleaseQueue = waiting.sort((a, b) => a.distance - b.distance).map(({ bay }) => bay);
   if (tableReleaseQueue.length) tableReleaseFrame = window.requestAnimationFrame(letNextTableBayGo);
 }
 
@@ -18814,12 +18837,17 @@ function setEditBaseline(el) {
 
 
 function blockDomToSource(el) {
-  if (currentDocumentFormat === 'eml') return emailBlockIsNote(el) ? emailNoteBlockToSource(el) : emailBlockDomToText(el);
+  if (currentDocumentFormat === 'eml') {
+    if (emailBlockIsHtmlLine(el)) return emailHtmlLineMarkup(el, { loose: true });
+    return emailBlockIsNote(el) ? emailNoteBlockToSource(el) : emailBlockDomToText(el);
+  }
   if (currentDocumentFormat === 'xml' || currentDocumentFormat === 'epub') {
     return blockHoldsCommentWords(el) ? el.textContent : escapeTreeText(el.textContent);
   }
   
   if (OFFICE_FORMATS.includes(currentDocumentFormat)) return escapeTreeText(el.textContent);
+  
+  if (currentDocumentFormat === 'csv') return el.textContent;
   return blockDomToMarkdown(el);
 }
 
@@ -18832,6 +18860,13 @@ function officeCellTypeableInPlace(el) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
   const src = sliceSourceBytes(start, end);
   if (!src.startsWith('<c') || !(src.endsWith('</c>') || src.endsWith('/>'))) return null;
+  return { start, end };
+}
+
+
+function csvCellTypeableInPlace(el) {
+  const { start, end } = rangeOf(el, 'cell');
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start || end > documentSourceLength()) return null;
   return { start, end };
 }
 
@@ -18884,7 +18919,55 @@ function emailBlockDomToText(el, ending) {
 }
 
 
-const EMAIL_OWN_KINDS = ['email_header', 'email_body', 'email_paragraph'];
+const EMAIL_OWN_KINDS = ['email_header', 'email_body', 'email_paragraph', 'email_html'];
+
+
+function emailBlockIsHtmlLine(el) {
+  return currentDocumentFormat === 'eml' && !!el && !!el.dataset && el.dataset.blockKind === 'email_html';
+}
+
+
+const EMAIL_HTML_INLINE_TAGS = ['b', 'strong', 'i', 'em', 'u', 's', 'del', 'code', 'br', 'a'];
+
+
+function escapeEmailHtml(text, inAttribute) {
+  const out = String(text).replace(/&/g, '&amp;').replace(/\u00a0/g, '&nbsp;');
+  if (inAttribute) return out.replace(/"/g, '&quot;');
+  return out.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+
+function emailHtmlLineMarkup(el, { loose = false } = {}) {
+  let out = '';
+  for (const node of el.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      out += escapeEmailHtml(node.nodeValue, false);
+      continue;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      if (loose) continue;
+      return null;
+    }
+    const tag = node.tagName.toLowerCase();
+    const names = node.getAttributeNames();
+    const known = EMAIL_HTML_INLINE_TAGS.includes(tag)
+      && names.every((name) => tag === 'a' && (name === 'href' || name === 'rel'));
+    if (!known) {
+      if (!loose) return null;
+      out += emailHtmlLineMarkup(node, { loose });
+      continue;
+    }
+    if (tag === 'br') {
+      out += `<${tag}>`;
+      continue;
+    }
+    const inner = emailHtmlLineMarkup(node, { loose });
+    if (inner == null) return null;
+    const href = tag === 'a' && node.hasAttribute('href') ? ` href="${escapeEmailHtml(node.getAttribute('href'), true)}"` : '';
+    out += `<${tag}${href}>${inner}</${tag}>`;
+  }
+  return out;
+}
 
 
 function emailBlockIsNote(el) {
@@ -18923,6 +19006,7 @@ function blockSeparator() {
 
 
 function typedBlockText(block) {
+  if (emailBlockIsHtmlLine(block)) return emailHtmlLineMarkup(block, { loose: true }).trim();
   
   if (currentDocumentFormat === 'eml') {
     return emailNoteText(inlineDomToMarkdown(block), documentLineEnding()).trim();
@@ -18937,6 +19021,7 @@ function emailBlockTypeableInPlace(el) {
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   const src = sliceSourceBytes(start, end);
   if (el.dataset.packed === 'true') return /^[\x00-\x7f]*$/.test(src);
+  if (emailBlockIsHtmlLine(el)) return emailHtmlLineMarkup(el) === src;
   
   if (emailBlockIsNote(el)) {
     const kind = el.dataset.blockKind;
@@ -19644,7 +19729,7 @@ function bindEditableBlocks(format, elements = null) {
       if (innerSpan) el.__innerSpan = innerSpan;
       if (runSpan) el.__epubRuns = true;
       wysiwygBlocks.push(el);
-    } else if (format === 'xml' && kind === 'table') {
+    } else if ((format === 'xml' || format === 'csv') && kind === 'table') {
       
     } else if (Number.isFinite(blockRange.start) && Number.isFinite(blockRange.end)) {
       
@@ -19652,9 +19737,9 @@ function bindEditableBlocks(format, elements = null) {
     }
   });
   
-  if (currentDocumentFormat === 'xlsx') {
+  if (currentDocumentFormat === 'xlsx' || currentDocumentFormat === 'csv') {
     selected('table [data-cell-start]').forEach((el) => {
-      const cellSpan = officeCellTypeableInPlace(el);
+      const cellSpan = currentDocumentFormat === 'csv' ? csvCellTypeableInPlace(el) : officeCellTypeableInPlace(el);
       if (!cellSpan) return;
       el.__innerSpan = cellSpan;
       el.__officeCell = true;
@@ -19761,7 +19846,12 @@ function wireEmailClosedParts(body) {
     if (!target || !target.closest) return;
     
     if (target.closest('[data-src-start]')) return;
-    if (target.closest('.email-body')) {
+    const section = target.closest('.email-body');
+    if (!section) return;
+    
+    if (section.querySelector('[data-block-kind="email_html"]')) {
+      leafToast('This part of the message is drawn from markup the page cannot write back. Edit it in the source view.');
+    } else {
       leafToast('These words are packed into the message. Edit them in the source view.');
     }
   });
@@ -20297,6 +20387,11 @@ function handleWysiwygKeydown(el, event) {
   if (currentDocumentFormat === 'eml' && !emailBlockIsNote(el)) {
     if (event.key !== 'Enter') return;
     event.preventDefault();
+    
+    if (emailBlockIsHtmlLine(el)) {
+      document.execCommand('insertLineBreak');
+      return;
+    }
     
     if (el.dataset.blockKind !== 'email_paragraph') return;
     
@@ -23327,6 +23422,7 @@ function tableAimingSafe(table) {
 
 
 function tableTakesControls(table, aiming = false) {
+  if (currentDocumentFormat === 'csv') return false;
   if (!aiming) return !!table && table.dataset.blockKind === 'table' && readerEditingAllowed() && tableWysiwygSafe(table);
   if (!table || table.dataset.blockKind !== 'table' || !readerEditingAllowed()) {
     clearTableAimingProof();
@@ -24736,7 +24832,8 @@ function bindTableLens(path) {
     heldTableLenses = new Map();
     heldCellCardGrids = new Map();
   }
-  if (!app || currentDocumentFormat !== 'markdown') return;
+  
+  if (!app || (currentDocumentFormat !== 'markdown' && currentDocumentFormat !== 'csv')) return;
   bindTableLensPickers();
   const answered = hostAnswersTableModel();
   app.querySelectorAll('.table-lane > table[data-block-kind="table"]').forEach((table) => {
@@ -24911,7 +25008,7 @@ function selectionEditableBlock(node) {
   if (!block || block.dataset.editingSource === 'true') return null;
   if (!app.contains(block)) return null;
   
-  if (currentDocumentFormat === 'eml' && !emailBlockIsNote(block)) return null;
+  if (currentDocumentFormat === 'eml' && !emailBlockIsNote(block) && !emailBlockIsHtmlLine(block)) return null;
   return block;
 }
 
@@ -25077,7 +25174,9 @@ function normalizeInlineFormatting(block) {
     while (el.firstChild) replacement.appendChild(el.firstChild);
     el.replaceWith(replacement);
   };
-  block.querySelectorAll('strike, s, u, font').forEach((el) => {
+  
+  const markup = emailBlockIsHtmlLine(block);
+  block.querySelectorAll(markup ? 'strike, font' : 'strike, s, u, font').forEach((el) => {
     const tag = el.tagName.toLowerCase();
     
     if (tag === 'u' || tag === 'font') {
@@ -25615,8 +25714,8 @@ function selectionToolbarButton(format, onPress) {
 }
 
 
-function messageBodyHoldsNoteBlocks() {
-  return Array.from(app.querySelectorAll('.email-body [data-block-kind]')).some(emailBlockIsNote);
+function messageBodyHoldsTypedBlocks() {
+  return Array.from(app.querySelectorAll('.email-body [data-block-kind]')).some((el) => emailBlockIsNote(el) || emailBlockIsHtmlLine(el));
 }
 
 
@@ -25634,7 +25733,7 @@ function bindSelectionToolbar() {
   if (!layout) return;
   
   const onMessage = currentDocumentFormat === 'eml';
-  if (currentDocumentFormat !== 'markdown' && !(onMessage && messageBodyHoldsNoteBlocks())) return;
+  if (currentDocumentFormat !== 'markdown' && !(onMessage && messageBodyHoldsTypedBlocks())) return;
 
   selectionToolbar = document.createElement('div');
   selectionToolbar.className = 'selection-toolbar';
@@ -35929,7 +36028,7 @@ function openTableSheet(table, opener) {
 }
 
 function bindTableSheet() {
-  if (!app || currentDocumentFormat !== 'markdown') return;
+  if (!app || (currentDocumentFormat !== 'markdown' && currentDocumentFormat !== 'csv')) return;
   app.querySelectorAll('.table-lane > table[data-block-kind="table"]').forEach((table) => {
     if (!tableWysiwygSafe(table)) return;
     
@@ -37121,6 +37220,7 @@ function bindDocumentMinimap() {
       recordReaderScrollPosition();
       
       updateMinimapViewport();
+      resumeTableRelease();
     }
   });
   track.addEventListener('pointerup', endDrag);
@@ -38348,6 +38448,7 @@ function settleReaderScroll() {
   updateMinimapViewport();
   
   readerScrollSettled();
+  resumeTableRelease();
 }
 
 function cancelReaderScrollSettle() {
@@ -38356,6 +38457,7 @@ function cancelReaderScrollSettle() {
     readerScrollSettleTimer = 0;
   }
   readerScrolling = false;
+  resumeTableRelease();
 }
 
 

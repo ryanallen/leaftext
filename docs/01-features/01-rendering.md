@@ -2,7 +2,7 @@
 
 > Read without the noise. Leaftext renders your Markdown the way GitHub does — code, diagrams, math, callouts, footnotes, emoji, your own images — and opens your structured files too: TEI documents through a reader that knows the format, any other XML through a generic one, JSON or YAML as readable pages, plain text exactly as you typed it, config files as a page of sections, and saved emails as the message they carry.
 
-Leaftext picks a pipeline from the file extension, and from the file's own first words where its name carries no extension at all — `.gitignore`, `LICENSE`, `Procfile` and the rest. A nameless file that opens with a doctype or an `<html>` root is drawn as a page, one that opens with an XML declaration through the XML reader, one that opens with a brace or a bracket and parses as JSON through the data reader, and everything else as Markdown, which is what a `.gitignore` gets today. A file whose extension already names its format is never asked what it holds, and a file you are typing in keeps the format it opened with. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` and `.odp` reach the app as bytes rather than as text, because each is a zip rather than something somebody typed: the archive is opened, the member holding the words is unpacked, and that member goes to [its own reader](#office-and-opendocument-files). `.epub` arrives as bytes through the same door and goes to [the book reader](#epub-books), which follows the book's own package rather than one named part. A Google Drive app shortcut — `.gsheet`, `.gdoc`, `.gslides` — holds no document at all, so Leaftext fetches the document it names from Google and draws it as [a Google Doc, Sheet or Slide deck](03-library.md#google-docs-sheets-and-slides). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, email and Office sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
+Leaftext picks a pipeline from the file extension, and from the file's own first words where its name carries no extension at all — `.gitignore`, `LICENSE`, `Procfile` and the rest. A nameless file that opens with a doctype or an `<html>` root is drawn as a page, one that opens with an XML declaration through the XML reader, one that opens with a brace or a bracket and parses as JSON through the data reader, and everything else as Markdown, which is what a `.gitignore` gets today. A file whose extension already names its format is never asked what it holds, and a file you are typing in keeps the format it opened with. Markdown (`.md`, `.markdown`, `.mdown`, `.mdc`) is parsed in Rust with `pulldown-cmark`, run through a GitHub-like rendering pipeline, sanitized, and handed to the WebView. `.xml` takes a parallel path — parsed with `roxmltree`, then routed by what the file contains: a TEI document goes to the [TEI renderer](#tei-xml), anything else to the [generic XML renderer](#any-xml). `.json`, `.yaml`, and `.yml` go to the [data renderer](#data-files-json-and-yaml), which reads the same shapes the generic XML renderer does, and `.ini` goes to [its own reader](#ini-files) and then through that same renderer. `.csv` and `.tsv` go to [a reader of their own](#csv-files) and are drawn as the table a note's table is. `.txt` is [kept exactly as typed](#plain-text-files) and needs no parser at all. `.eml`, `.mht`, and `.mhtml` go to the [email renderer](#email-eml), and a [source file](#source-files) is drawn as one highlighted block under its own name. `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` and `.odp` reach the app as bytes rather than as text, because each is a zip rather than something somebody typed: the archive is opened, the member holding the words is unpacked, and that member goes to [its own reader](#office-and-opendocument-files). `.epub` arrives as bytes through the same door and goes to [the book reader](#epub-books), which follows the book's own package rather than one named part. A Google Drive app shortcut — `.gsheet`, `.gdoc`, `.gslides` — holds no document at all, so Leaftext fetches the document it names from Google and draws it as [a Google Doc, Sheet or Slide deck](03-library.md#google-docs-sheets-and-slides). All of them produce the same HTML shell. Every Markdown feature below is shown with a live example, rendered by the same engine that draws your documents; the XML, data, email and Office sections are described rather than demonstrated, since a Markdown page cannot embed a live document of another format.
 
 ## Summary
 
@@ -24,6 +24,7 @@ Leaftext picks a pipeline from the file extension, and from the file's own first
 | [EPUB books](#epub-books) | Any `.epub` file, read as one document in the order the book's own package says to read it |
 | [Plain text](#plain-text-files) | Any `.txt` file, kept exactly as typed |
 | [INI](#ini-files) | Any `.ini` file: sections, keys and values, each key drawn as it was written |
+| [CSV](#csv-files) | Any `.csv` or `.tsv` file, as a table with a row per record |
 | [Source files](#source-files) | TypeScript, JavaScript, JSONC, CSS, shell, TOML, Rust, Python, SQL, diff, dotenv, GraphQL, and Dockerfile files as highlighted source |
 | [Encodings](#file-encodings) | UTF-8, UTF-16 and UTF-32 by their byte order mark; saved back as they were read |
 
@@ -60,6 +61,8 @@ flowchart LR
 ```
 
 ## EPUB books
+
+**[Read *Le Morte d'Arthur* here, with its glossary →](../08-examples/le-morte-darthur/le-morte-darthur.epub)** Sir Thomas Malory's book in the [Standard Ebooks](https://standardebooks.org/ebooks/thomas-malory/le-morte-darthur) edition, which is free to read and share in every country, with a [glossary](../08-examples/le-morte-darthur/GLOSSARY.md) beside it that underlines the old words, the names and the places.
 
 Leaftext opens an `.epub` as **one document**, in the order the book's own package says to read it. An EPUB is a zip of chapters with a package document naming their order, so what you get is the whole book on one scrolling page: the cover where the book puts it — or, where the book names its cover only in its package document and gives it no page of its own, drawn under the author's name in front of everything else — the book's own contents page with every entry landing on the chapter it names, and then the chapters themselves. The minimap, find, the heading outline in the pane and Previous/Next all work on it the way they work on a note, because it is one document rather than a shelf of them.
 
@@ -127,6 +130,28 @@ There is no INI standard — dialects disagree about nearly everything — so Le
 **Every value, key name and section heading can be typed into where you read it.** The reader holds the exact bytes between the `=` and the end of the line, the key's own bytes without the spacing around them, and the section's name inside its brackets — each the smallest useful thing to edit — and the save writes the file back in the spelling it was read in. See [Editing data files](07-editing.md#editing-data-files).
 
 Installing Leaftext offers it under **Open with** for `.ini` without taking the extension from whatever opens it today.
+
+## CSV files
+
+Leaftext opens a `.csv` or `.tsv` file as a table: the file name as the page heading, the first record as the table's header, and a row under it for every record after. It is the same table a note's table is, so a wide one gets its own sideways lane and turns into a card per record when the window is narrow.
+
+| The rule | What it means |
+|---|---|
+| A `.tsv` splits on tabs | A comma inside a cell is just a comma |
+| A `.csv` splits on commas or semicolons | Whichever of the two the first record uses more, outside quotes, and commas on a tie — so a spreadsheet saved in a country that writes decimal commas opens as its columns rather than as one |
+| A field in double quotes may hold the separator and line breaks | Two quotes in a row inside it are one quote, as every spreadsheet writes them |
+| A line holding nothing is skipped | It is no record |
+| A record longer than the header widens the table | The extra columns get blank headings rather than losing the words |
+| A record shorter than the header is padded | Its missing cells are drawn empty |
+| A byte order mark is not part of the first heading | Excel writes one at the start of every UTF-8 file it saves |
+
+The bar over the table sorts and filters it and lays it out as a table, cards, a board or a list, and the corner button opens it across the whole window — none of which changes the file. Describe, which writes a note about the table into a Markdown file, is not offered, because a CSV file has nowhere to keep one.
+
+**A cell can be typed into where you read it** once the page is unlocked. What is saved is that one field and nothing else: a field that was in quotes stays in quotes, and a bare one gains them only when what you typed needs them — a comma, a semicolon, a quote or a line break, or a tab in a `.tsv` — with any quote inside doubled.
+
+A file past 16,384 fields in a record, 1,048,576 records, 32,767 characters in one field — a spreadsheet's own limits — or 200,000 cells in all, or one with a quote that never closes, opens as a sentence saying which, rather than as part of a table.
+
+Installing Leaftext offers it under **Open with** for `.csv` and `.tsv` without taking either from the spreadsheet that opens them today.
 
 ## Source files
 
@@ -1042,7 +1067,7 @@ The headers that say how the rest of the file is read (`MIME-Version` and every 
 
 **Every part of a message names the charset its words are written in, and each is decoded from the file's own bytes.** So a message written straight in Shift_JIS, GBK, KOI8-R or any other legacy charset draws its words, whether its body arrived base64-coded, quoted-printable, or as eight-bit bytes the way a mail client on an 8BITMIME path writes it. It is the one format that does not need the Windows-1252 guess [below](#file-encodings): the file says what it is, so the reader believes the file.
 
-A message is also [edited where you read it](07-editing.md#editing-an-email), wherever the file says the same words the page draws.
+A message is also [edited where you read it](07-editing.md#editing-an-email), wherever the file says the same words the page draws — in an HTML body written as it is, that is each line whose markup the page draws exactly as the file spells it, and the bar over selected text writes plain tags there.
 
 > [!NOTE]
 > Installing Leaftext [registers it for](../02-installation.md#file-associations) `.eml`, `.mht`, and `.mhtml`, though a mail app that already owns `.eml` keeps it.

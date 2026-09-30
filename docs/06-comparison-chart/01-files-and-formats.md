@@ -13,6 +13,7 @@
 | JSON files | [✅][l-data] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | YAML files | [✅][l-data] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | INI config files | [✅][l-ini] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
+| CSV and TSV tables | [✅][l-csv] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | Plain text files | [✅][l-plain] | [❌][o-formats] | [✅][t-files] | [❌][c-faq] |
 | Saved email | [✅][l-eml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | Web archives | [✅][l-eml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
@@ -306,6 +307,7 @@
 [l-tei]: ../01-features/01-rendering.md#tei-xml
 [l-data]: ../01-features/01-rendering.md#data-files-json-and-yaml
 [l-ini]: ../01-features/01-rendering.md#ini-files
+[l-csv]: ../01-features/01-rendering.md#csv-files
 [l-plain]: ../01-features/01-rendering.md#plain-text-files
 [l-eml]: ../01-features/01-rendering.md#email-eml
 [l-office]: ../01-features/01-rendering.md#office-and-opendocument-files

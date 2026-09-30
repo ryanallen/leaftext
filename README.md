@@ -48,6 +48,8 @@ Free, on macOS and Windows.
 
 Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each open as a page you want to read.
 
+**[Read *Le Morte d'Arthur* here, with its glossary →](docs/08-examples/le-morte-darthur/le-morte-darthur.epub)**
+
 ### Markdown, rendered the way GitHub renders it
 
 ![Leaftext reading view rendering a Markdown document](imgs/rendering-2x.png)
@@ -98,7 +100,7 @@ A `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp`
 
 ### An EPUB book reads as one document
 
-An `.epub` is a zip of chapters, and Leaftext draws the whole of it as one page in the order the book's own package says to read it: the cover where the book puts it, the book's own contents page with every link landing on the chapter it names, and the pictures out of the book itself. Nothing is fetched from the network, so opening a book somebody sent you makes no request at all. A book is read-only — nothing writes back into one. **[EPUB books →](docs/01-features/01-rendering.md#epub-books)**
+An `.epub` is a zip of chapters, and Leaftext draws the whole of it as one page in the order the book's own package says to read it: the cover where the book puts it, the book's own contents page with every link landing on the chapter it names, and the pictures out of the book itself. Nothing is fetched from the network, so opening a book somebody sent you makes no request at all. With the padlock open, a paragraph or heading is [typed into a chapter at a time](docs/01-features/07-editing.md#formats), and Save writes back only the chapters you typed in. **[EPUB books →](docs/01-features/01-rendering.md#epub-books)**
 
 ### Read faster when you need to
 
@@ -154,7 +156,7 @@ A canvas beside the Mermaid text, each following the other. Double-click to add 
 
 ![A Markdown file as raw source in the code view, line numbers down the left and the editor’s minimap rail at the right](imgs/code-view.png)
 
-Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of a Word or OpenDocument file; for a deck or workbook, choose the slide or sheet above the editor. A book is the one thing with no single source to show, and says so. The editor has line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
+Drop into [code view](docs/01-features/07-editing.md#code-view) for the file's actual source — Markdown, HTML, XML, JSON, YAML, a raw email, or the XML of a Word or OpenDocument file; for a deck or workbook, choose the slide or sheet above the editor. A book opens the chapter you are reading. The editor has line numbers, a minimap, and the headings you're under [pinned to the top edge](docs/01-features/07-editing.md#pinned-headings). Markdown, HTML, XML, YAML, JSON and the XML inside an Office file come colored in your theme's own syntax colors; email is plain text. A color written in the source carries a small square of itself in the line beside it. **[Code view →](docs/01-features/07-editing.md#code-view)**
 
 ### Typing help drawn from your own notes
 
@@ -327,7 +329,7 @@ Your app data lives alongside it:
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.csv`, `.tsv`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini`, `.csv`, `.tsv` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

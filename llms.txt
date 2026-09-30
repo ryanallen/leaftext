@@ -31,5 +31,6 @@
 - [Export and the published site](https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md)
 - [Coming](https://leaftext.com/docs/06-comparison-chart/10-coming.md)
 - [Privacy](https://leaftext.com/docs/07-privacy.md)
+- [Glossary for Le Morte d'Arthur](https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md)
 - [Glossary](https://leaftext.com/docs/GLOSSARY.md)
 - [Leaftext documentation](https://leaftext.com/docs/README.md)

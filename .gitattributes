@@ -9,6 +9,7 @@
 *.ico binary
 *.icns binary
 *.zip binary
+*.epub binary
 *.gz binary
 *.dmg binary
 *.msi binary

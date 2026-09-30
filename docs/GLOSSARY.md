@@ -74,6 +74,10 @@ The Markdown standard Leaftext parses. [GFM](GLOSSARY.md#gfm) is what it adds on
 
 The one question the app asks before it does something: a box over the dimmed page, naming what is about to happen. Only [Delete](GLOSSARY.md#file-actions) asks. Escape or a click on the dim cancels, Enter goes ahead, and the safe answer is where the pointer already is. Cut, copy, paste and rename do not ask, because each is reversible by hand and asking about all of them is how asking stops being read.
 
+## CSV file
+
+A `.csv` or `.tsv` file. Leaftext reads it as one table, the first record as its headings and one row per record under them, split on a tab for `.tsv` and on a comma or a semicolon for `.csv`; every cell can be typed into and is written back quoted only where it has to be. See [Rendering](01-features/01-rendering.md#csv-files).
+
 ## Data file
 
 A `.json`, `.yaml` or `.yml` file. Leaftext reads it as a page — headed sections, aligned fields, and record tables — by the same shape rules the generic [XML reader](GLOSSARY.md#xml-reader) uses. See [Rendering](01-features/01-rendering.md#data-files-json-and-yaml).
