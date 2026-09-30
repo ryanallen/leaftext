@@ -31,7 +31,6 @@
 | Edit whole emails | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Threaded comments | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rendered multiple cursors | [❌][l-roadmap] | [✅][o-cursors] | [❌][t-seen] | [❌][c-seen] |
-| Slide editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Presentation builds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drop pictures in | [❌][l-roadmap] | [✅][o-attach] | [✅][t-images] | [❌][c-seen] |

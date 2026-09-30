@@ -231,6 +231,7 @@
 | Accent bar marks typing | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Type in Word paragraphs | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Type in spreadsheet cells | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Edit slides where drawn | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Part XML in source | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Choose source slide/sheet | [✅][l-office-editing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No sign-in needed | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

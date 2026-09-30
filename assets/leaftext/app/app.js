@@ -246,6 +246,8 @@ let pendingReadingSrcOffset = null;
 
 let pendingReadingChapter = null;
 
+let pendingChapterPress = null;
+
 let pendingViewAtTop = false;
 
 let pendingViewLandingPath = null;
@@ -687,9 +689,7 @@ const COLUMN_STATE_NAMES = [
   
   'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'drawnRanges', 'chapterMembers', 'heldChapterMember',
   
-  'pendingChapterPress',
-  
-  'pendingReadingChapter',
+  'pendingChapterPress', 'pendingReadingChapter',
   
   'documentLinksBound',
   
@@ -719,7 +719,7 @@ const COLUMN_STATE_NAMES = [
   'minimapSpacerFrame', 'minimapSpacerTarget', 'readerLayoutFrame', 'readerScrollSettleTimer',
   'readerReflowObserver', 'readerAnchorBlocksCount', 'readerAnchorBlocksSource', 'resetReaderScrollFrame',
   'readerSectionSaid', 'readerLayoutHoldsAnchor', 'minimapPreviewHolds',
-  'minimapCloneMap', 'minimapCloneHeight', 'minimapChangedCells',
+  'minimapCloneMap', 'minimapCloneHeight', 'minimapChangedCells', 'minimapCloneWholes',
   'minimapHeldBays', 'minimapHeldBlock', 'minimapHeldReleaseFrame',
 ];
 
@@ -805,6 +805,7 @@ function saveColumnState(column) {
   held.minimapCloneMap = minimapCloneMap;
   held.minimapCloneHeight = minimapCloneHeight;
   held.minimapChangedCells = minimapChangedCells;
+  held.minimapCloneWholes = minimapCloneWholes;
   held.minimapHeldBays = minimapHeldBays;
   held.minimapHeldBlock = minimapHeldBlock;
   held.minimapHeldReleaseFrame = minimapHeldReleaseFrame;
@@ -926,6 +927,7 @@ function loadColumnState(column) {
   minimapCloneMap = held.minimapCloneMap;
   minimapCloneHeight = held.minimapCloneHeight;
   minimapChangedCells = held.minimapChangedCells;
+  minimapCloneWholes = held.minimapCloneWholes;
   minimapHeldBays = held.minimapHeldBays;
   minimapHeldBlock = held.minimapHeldBlock;
   minimapHeldReleaseFrame = held.minimapHeldReleaseFrame;
@@ -13851,7 +13853,28 @@ function sendWindowChrome(color, theme) {
   });
 }
 
+function loadReadingFaces() {
+  const fonts = document.fonts;
+  if (!fonts || typeof fonts.load !== 'function') return;
+  const family = String(getComputedStyle(document.documentElement).getPropertyValue('--reading-font') || '')
+    .split(',')[0]
+    .trim();
+  if (!family) return;
+  const ask = () => {
+    for (const face of ['400', 'italic 400', '700']) {
+      try {
+        Promise.resolve(fonts.load(`${face} 1em ${family}`)).catch(() => {});
+      } catch (_) {}
+    }
+  };
+  
+  const link = document.getElementById('leafThemeFont');
+  if (link && !link.sheet) link.addEventListener('load', ask, { once: true });
+  else ask();
+}
+
 function applyThemeToPage(theme, color) {
+  loadReadingFaces();
   updateThemeSelection();
   sendWindowChrome(color, theme);
   refreshGraphColors();
@@ -14020,6 +14043,7 @@ function runViewRender(payload, render) {
 }
 function deliverWorkspacePayload(state, action, detail) {
   if (action === 'reload') window.leafReloadDocument(state);
+  else if (action === 'chapter') window.leafSwapChapter(state);
   else if (action === 'switch') window.leafSwitchTab(state, detail);
   else if (action === 'cachedSwitch') window.leafSwitchTabCached(state, detail && detail.anchor, detail && detail.key);
   else if (action === 'cachedCodeReturn') window.leafCodeReturnCached(state, detail && detail.key);
@@ -14217,6 +14241,84 @@ window.leafSwapParagraph = (swap) => {
   const active = document.activeElement;
   if (active && active !== document.body && active.isConnected && body.contains(active)) setPendingCaret(null);
   else placePendingCaret(body);
+};
+
+const CHAPTER_RANGE_ATTRIBUTES = ['data-src-start', 'data-src-end', 'data-block-id', 'data-block-kind'];
+
+function chapterRangePairs(item, drawn) {
+  const old = Array.from(item.querySelectorAll(CHAPTER_BLOCKS));
+  const fresh = Array.from(drawn.querySelectorAll(CHAPTER_BLOCKS));
+  if (old.length !== fresh.length) return null;
+  if (old.some((block, index) => block.tagName !== fresh[index].tagName || block.textContent !== fresh[index].textContent)) return null;
+  return old.map((block, index) => [block, fresh[index]]);
+}
+
+function patchChapterRanges(pairs) {
+  for (const [block, fresh] of pairs) {
+    forgetDrawnRanges(block);
+    for (const name of CHAPTER_RANGE_ATTRIBUTES) {
+      const value = fresh.getAttribute(name);
+      if (value === null) block.removeAttribute(name);
+      else block.setAttribute(name, value);
+    }
+    if (!fresh.hasAttribute('data-src-start')) {
+      block.classList.remove('leaf-editable', 'leaf-editable-in-place', 'leaf-editable-here');
+      block.removeAttribute('contenteditable');
+      block.removeAttribute('spellcheck');
+    }
+  }
+}
+
+function chapterHeadingsChanged(item, drawn) {
+  const headings = (root) => Array.from(root.querySelectorAll('h1, h2, h3, h4, h5, h6'),
+    (heading) => [heading.tagName, heading.id, heading.textContent]);
+  return JSON.stringify(headings(item)) !== JSON.stringify(headings(drawn));
+}
+
+window.leafSwapChapter = (swap) => {
+  const doc = currentState && currentState.document;
+  const body = app.querySelector('.document-body');
+  if (!swap || !doc || doc.path !== swap.path || codeViewActive || !body) return;
+  const items = Array.isArray(swap.items) ? swap.items : [];
+  const placed = items.map((fresh) => {
+    const item = Array.from(body.querySelectorAll('[data-src-member]'))
+      .find((candidate) => memberOf(candidate) === fresh.member);
+    const holder = document.createElement('div');
+    holder.innerHTML = fresh.html;
+    const drawn = holder.firstElementChild;
+    return item && drawn && drawn.classList.contains('book-item') ? { item, drawn, fresh } : null;
+  });
+  if (!items.length || placed.some((item) => !item)) {
+    send({ command: 'refreshDocument' });
+    return;
+  }
+  const rangePairs = swap.rangeOnly ? placed.map(({ item, drawn }) => chapterRangePairs(item, drawn)) : [];
+  const onlyRanges = !!swap.rangeOnly && rangePairs.every((pairs) => pairs !== null);
+  let headingsChanged = false;
+  for (const [index, { item, drawn }] of placed.entries()) {
+    if (onlyRanges) patchChapterRanges(rangePairs[index]);
+    else {
+      headingsChanged = headingsChanged || chapterHeadingsChanged(item, drawn);
+      item.querySelectorAll('[data-src-start]').forEach(forgetDrawnRanges);
+      item.replaceChildren(...Array.from(drawn.childNodes));
+    }
+    adoptDrawnRanges(item);
+    if (readerEditingAllowed()) bindEditableBlocks('epub', [item]);
+  }
+  setDocumentSource(swap.source);
+  holdChapterMember(swap.heldMember);
+  doc.source = documentSourceBytes();
+  doc.source_member = swap.heldMember;
+  doc.chapterSwaps = (Array.isArray(doc.chapterSwaps) ? doc.chapterSwaps : [])
+    .filter((held) => !items.some((item) => item.member === held.member))
+    .concat(items.map((item) => ({ member: item.member, html: item.html })));
+  doc.words = swap.words;
+  currentState.renderKey = swap.hash;
+  if (headingsChanged) publishDocumentOutline();
+  window.leafDocumentWords(swap.path, swap.words);
+  readerAnchorBlocks = null;
+  pendingEditAnchor = null;
+  openPendingChapterPress(body);
 };
 
 
@@ -16819,6 +16921,8 @@ const RANGE_NAMES = [
   { kind: 'cell', found: 'data-cell-start', start: 'cellStart', end: 'cellEnd' },
   { kind: 'value', found: 'data-value-start', start: 'valueStart', end: 'valueEnd' },
   { kind: 'date', found: 'data-date-start', start: 'dateStart', end: 'dateEnd' },
+  
+  { kind: 'frame', found: 'data-frame-start', start: 'frameStart', end: 'frameEnd' },
 ];
 
 const rangeNamesOf = (kind) => RANGE_NAMES.find((pair) => pair.kind === kind) || null;
@@ -16898,6 +17002,10 @@ function memberOf(el) {
 
 function heldMember() {
   return heldChapterMember;
+}
+
+function holdChapterMember(member) {
+  heldChapterMember = typeof member === 'string' && member ? member : null;
 }
 
 
@@ -18113,6 +18221,8 @@ function xmlCommentTypeableInPlace(el, words) {
 
 
 function epubTextRuns(el, span) {
+  
+  if (currentDocumentFormat === 'pptx') return deckTextRuns(el, span);
   const source = sliceSourceBytes(span.start, span.end);
   const pieces = source.match(/<[^>]*>|[^<]+/g) || [];
   if (pieces.join('') !== source) return null;
@@ -19445,7 +19555,7 @@ function closeWysiwygBlock(el) {
 
 
 function openEditableOnRelease(el, target, event) {
-  if (blockIsEditingHost(el)) return;
+  if (blockIsEditingHost(el) || (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block'))) return;
   if (target && target.closest && (target.closest('input[type="checkbox"]') || pressFollowsLink(el, target.closest('a'), event))) return;
   
   if (target && target.closest && target.closest('a')) placeCaretAtPress(el, event);
@@ -19603,7 +19713,7 @@ function wireSourceEditable(el) {
   };
   
   el.__startSourceEdit = () => {
-    if (el.dataset.editingSource === 'true') return;
+    if (el.dataset.editingSource === 'true' || (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block'))) return;
     readRange();
     
     const aboveAnchor = anchorAboveElement(el);
@@ -19636,7 +19746,7 @@ function wireSourceEditable(el) {
     scheduleLiveBlockEdit(el);
   });
   el.addEventListener('pointerdown', (event) => {
-    if (el.dataset.editingSource === 'true') return;
+    if (el.dataset.editingSource === 'true' || (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block'))) return;
     
     if (event.button !== 0) return;
     
@@ -19711,13 +19821,15 @@ function bindEditableBlocks(format, elements = null) {
     }
     
     const bookBlock = format === 'epub' && (kind === 'paragraph' || kind === 'heading');
+    
+    const slideBlock = format === 'pptx' && (kind === 'paragraph' || kind === 'heading' || kind === 'list');
     const plainSpan = format === 'xml' || bookBlock ? xmlBlockTypeableInPlace(el) : null;
-    const runSpan = bookBlock && !plainSpan ? epubRunTypeableInPlace(el) : null;
+    const runSpan = (bookBlock && !plainSpan) || slideBlock ? epubRunTypeableInPlace(el) : null;
     const innerSpan = plainSpan || runSpan;
     const wysiwyg =
       format === 'eml'
         ? emailBlockTypeableInPlace(el)
-        : format === 'xml' || bookBlock
+        : format === 'xml' || bookBlock || slideBlock
           ? !!innerSpan
           : format === 'markdown' &&
             (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
@@ -19780,10 +19892,14 @@ function bindEditableBlocks(format, elements = null) {
   wysiwygBlocks.forEach((el) => markEditable(el, true));
   sourceBlocks.forEach((el) => markEditable(el, false));
   wysiwygBlocks.forEach((el) => {
-    wireMarkdownEditable(el);
-    if (format === 'epub') el.__startInPlaceEdit = () => openWysiwygBlock(el);
+    if (format !== 'epub' || !el.__chapterWired) wireMarkdownEditable(el);
+    if (format === 'epub' || format === 'pptx') el.__startInPlaceEdit = () => openWysiwygBlock(el);
+    if (format === 'epub') el.__chapterWired = true;
   });
-  sourceBlocks.forEach(wireSourceEditable);
+  sourceBlocks.forEach((el) => {
+    if (format !== 'epub' || !el.__chapterWired) wireSourceEditable(el);
+    if (format === 'epub') el.__chapterWired = true;
+  });
 }
 
 
@@ -19810,7 +19926,6 @@ function bindSwappedParagraph(el, kept = false) {
 
 
 const CHAPTER_BLOCKS = 'p, h1, h2, h3, h4, h5, h6';
-let pendingChapterPress = null;
 
 
 function wireChapterPresses(body) {
@@ -20015,6 +20130,10 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (readerEditingAllowed()) {
     bindEditableBlocks(currentDocumentFormat);
     if (currentDocumentFormat === 'epub') wireChapterPresses(body);
+    if (currentDocumentFormat === 'pptx') {
+      wireSlidePresses(body);
+      wireSlideBoxes(body);
+    }
     if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
     if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
 
@@ -21815,8 +21934,14 @@ function blockGutterFormatAllowed() {
   return (
     currentDocumentFormat === 'markdown' ||
     currentDocumentFormat === 'xml' ||
-    currentDocumentFormat === 'eml'
+    currentDocumentFormat === 'eml' ||
+    currentDocumentFormat === 'pptx'
   );
+}
+
+
+function deckGutterStage(el) {
+  return el && el.closest ? el.closest('.slide-stage') : null;
 }
 
 
@@ -21834,6 +21959,7 @@ function blockIsEmpty(el) {
 
 
 function blockAcceptsInsert(el) {
+  if (currentDocumentFormat === 'pptx') return false;
   return el.dataset.holdsFootnote !== 'true' && blockIsEmpty(el);
 }
 
@@ -22015,6 +22141,7 @@ function collapseBlockInsertRow() {
 
 function aimBlockGutter(el, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
+  if (currentDocumentFormat === 'pptx') el = deckGutterStage(el);
   
   if (!fromMargin && el && el === blockCaretBlock && !blockIsEmpty(el)) {
     aimBlockGutterBelow(el);
@@ -22098,6 +22225,16 @@ function nearestSourceBlock(occupants, index, step) {
 
 function aimBlockGutterAtGap(clientY, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
+  if (currentDocumentFormat === 'pptx') {
+    const body = app.querySelector('.document-body');
+    const level = body ? Array.from(body.querySelectorAll('.slide-stage')).find((stage) => {
+      const rect = stage.getBoundingClientRect();
+      return clientY >= rect.top && clientY <= rect.bottom;
+    }) : null;
+    if (level) aimBlockGutter(level, fromMargin);
+    else hideBlockGutter();
+    return;
+  }
   const occupants = blockGutterOccupants();
   let aboveIndex = -1;
   for (let i = 0; i < occupants.length; i += 1) {
@@ -22758,6 +22895,12 @@ function runBlockInsert(target, option) {
 function blockSiblingRun(target) {
   if (!blockGutterFormatAllowed() || !blockGutterTargetAllowed(target)) return null;
   
+  if (currentDocumentFormat === 'pptx') {
+    const body = app.querySelector('.document-body');
+    const stages = body ? Array.from(body.querySelectorAll('.slide-stage')) : [];
+    return stages.length >= 2 && stages.includes(target) ? { elements: stages, ranges: [] } : null;
+  }
+  
   let parent = target.parentElement;
   while (parent && parent.classList && (parent.classList.contains('table-lane') || parent.classList.contains('table-bay') || isDocumentRun(parent))) {
     parent = parent.parentElement;
@@ -22869,6 +23012,10 @@ function commitBeforeBlockMove() {
   if (!active || !active.__editingActive || !active.dataset) return;
   const { start, end } = rangeOf(active, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  if (currentDocumentFormat === 'pptx') {
+    commitBlockEdit(active, blockDomToSource(active));
+    return;
+  }
   const text = currentDocumentFormat === 'eml' ? blockDomToSource(active) : blockDomToMarkdown(active);
   active.__editingActive = false;
   if (!blockTextNeedsWriting(active, text)) return;
@@ -22884,12 +23031,24 @@ function endBlockDrag(commit) {
   drag.target.classList.remove('is-block-dragging');
   document.body.classList.remove('is-block-dragging');
   if (blockGutter) blockGutter.classList.remove('is-dragging');
+  
+  if (currentDocumentFormat === 'pptx' && !drag.moved && commit) {
+    const grip = blockGutterGrip ? blockGutterGrip.getBoundingClientRect() : null;
+    hideBlockGutter();
+    if (grip) window.setTimeout(() => openSlideMenu(drag.target, grip.right, grip.top), 0);
+    return;
+  }
   if (!drag.moved || !commit || drag.to === drag.from) {
     hideBlockGutter();
     return;
   }
   
   commitBeforeBlockMove();
+  if (currentDocumentFormat === 'pptx') {
+    sendEditCommand({ command: 'moveBlock', ranges: [], from: drag.from, to: drag.to });
+    hideBlockGutter();
+    return;
+  }
   const ranges = blockRunRanges(drag.elements);
   if (!ranges) {
     hideBlockGutter();
@@ -22957,7 +23116,7 @@ function bindBlockControls() {
   body.addEventListener('pointermove', (event) => {
     if (blockDrag || event.buttons & 1) return;
     if (blockGutter.contains(event.target)) return;
-    const el = event.target.closest ? event.target.closest('[data-src-start]') : null;
+    const el = event.target.closest ? event.target.closest(currentDocumentFormat === 'pptx' ? '.slide-stage' : '[data-src-start]') : null;
     if (el) aimBlockGutter(el);
     else aimBlockGutterAtGap(event.clientY);
   });
@@ -23034,6 +23193,267 @@ window.addEventListener('resize', () => {
 
 
 bindPicturePaste();
+
+
+
+const DECK_BLOCKS = 'p, h2, li';
+
+
+function deckTextRuns(el, span) {
+  const source = sliceSourceBytes(span.start, span.end);
+  const tokens = [];
+  const kept = { name: 'markup', start: -1, end: -1 };
+  const run = /<([A-Za-z_][\w.-]*:)?t(?:\s[^<>]*)?>([^<]*)<\/\1?t\s*>/g;
+  let words = '';
+  let cursor = 0;
+  let byteCursor = 0;
+  const keep = (raw) => {
+    if (!raw) return;
+    tokens.push({ raw, tag: kept });
+    byteCursor += utf8ByteLength(raw);
+  };
+  for (let found = run.exec(source); found; found = run.exec(source)) {
+    const text = found[2];
+    const opening = found[0].slice(0, found[0].indexOf('>') + 1);
+    keep(source.slice(cursor, found.index) + opening);
+    const decoder = document.createElement('span');
+    decoder.innerHTML = text;
+    const value = decoder.textContent;
+    tokens.push({ raw: text, value, start: words.length, end: words.length + value.length, byteStart: byteCursor });
+    words += value;
+    byteCursor += utf8ByteLength(text);
+    cursor = found.index + opening.length + text.length;
+  }
+  keep(source.slice(cursor));
+  if (!tokens.some((token) => token.value !== undefined)) return null;
+  if (el && words !== el.textContent) return null;
+  return { tokens, tags: [], words };
+}
+
+
+function wireSlidePresses(body) {
+  openPendingSlidePress(body);
+  body.addEventListener('pointerdown', (event) => {
+    if (!readerEditingAllowed() || event.button !== 0) return;
+    const block = event.target && event.target.closest ? event.target.closest(DECK_BLOCKS) : null;
+    const member = block ? memberOf(block) : null;
+    if (!member || member === heldMember() || hasRangeOf(block, 'block')) return;
+    const stage = block.closest('[data-src-member]');
+    pendingChapterPress = { member, index: Array.from(stage.querySelectorAll(DECK_BLOCKS)).indexOf(block) };
+    send({ command: 'openMember', member });
+  });
+}
+
+
+function openPendingSlidePress(body) {
+  const pressed = pendingChapterPress;
+  if (!pressed || pressed.member !== heldMember()) return;
+  pendingChapterPress = null;
+  const stage = Array.from(body.querySelectorAll('[data-src-member]')).find((el) => memberOf(el) === pressed.member);
+  const block = stage ? stage.querySelectorAll(DECK_BLOCKS)[pressed.index] : null;
+  if (block && hasRangeOf(block, 'block')) {
+    if (typeof block.__startInPlaceEdit === 'function') block.__startInPlaceEdit();
+    else if (typeof block.__startSourceEdit === 'function') block.__startSourceEdit();
+  }
+}
+
+
+
+
+
+function slideStageSize(stage) {
+  const [width, height] = String((stage && stage.getAttribute('data-slide-stage')) || '').trim().split(/\s+/).map(Number);
+  return width > 0 && height > 0 ? { width, height } : null;
+}
+
+
+function slideTagNumber(tag, name) {
+  const found = new RegExp('\\s' + name + '="(-?\\d+)"').exec(tag);
+  return found ? Number(found[1]) : null;
+}
+
+const SLIDE_OFFSET_TAG = /<([\w.-]+:)?off\b[^>]*>/;
+const SLIDE_EXTENT_TAG = /<([\w.-]+:)?ext\b[^>]*>/;
+
+
+function slideTransformFrame(slice) {
+  const off = SLIDE_OFFSET_TAG.exec(slice);
+  const ext = SLIDE_EXTENT_TAG.exec(slice);
+  if (!off || !ext) return null;
+  const frame = { x: slideTagNumber(off[0], 'x'), y: slideTagNumber(off[0], 'y'), width: slideTagNumber(ext[0], 'cx'), height: slideTagNumber(ext[0], 'cy') };
+  return Object.values(frame).every(Number.isFinite) ? frame : null;
+}
+
+
+function clampSlideFrame(frame, stage) {
+  const width = Math.round(Math.min(Math.max(frame.width, stage.width / 100), stage.width));
+  const height = Math.round(Math.min(Math.max(frame.height, stage.height / 100), stage.height));
+  return {
+    x: Math.round(Math.min(Math.max(frame.x, 0), stage.width - width)),
+    y: Math.round(Math.min(Math.max(frame.y, 0), stage.height - height)),
+    width,
+    height,
+  };
+}
+
+
+function slideTransformSaying(slice, frame) {
+  const say = (tag, name, value) => tag.replace(new RegExp('(\\s' + name + '=")-?\\d+(")'), '$1' + value + '$2');
+  return slice
+    .replace(SLIDE_OFFSET_TAG, (tag) => say(say(tag, 'x', frame.x), 'y', frame.y))
+    .replace(SLIDE_EXTENT_TAG, (tag) => say(say(tag, 'cx', frame.width), 'cy', frame.height));
+}
+
+
+function slideFrameDragged(frame, stage, canvas, corner, dx, dy) {
+  const x = (dx / canvas.width) * stage.width;
+  const y = (dy / canvas.height) * stage.height;
+  if (!corner) return clampSlideFrame({ ...frame, x: frame.x + x, y: frame.y + y }, stage);
+  const west = corner.includes('w');
+  const north = corner.includes('n');
+  const right = frame.x + frame.width;
+  const bottom = frame.y + frame.height;
+  const left = west ? Math.min(Math.max(frame.x + x, 0), right - stage.width / 100) : frame.x;
+  const top = north ? Math.min(Math.max(frame.y + y, 0), bottom - stage.height / 100) : frame.y;
+  const next = {
+    x: left,
+    y: top,
+    width: west ? right - left : Math.min(frame.width + x, stage.width - frame.x),
+    height: north ? bottom - top : Math.min(frame.height + y, stage.height - frame.y),
+  };
+  return clampSlideFrame(next, stage);
+}
+
+const SLIDE_CORNERS = ['nw', 'ne', 'sw', 'se'];
+let slideBoxDrag = null;
+
+
+function selectSlideShape(box) {
+  const body = box.closest('.document-body');
+  if (body) {
+    body.querySelectorAll('.slide-shape-selected').forEach((other) => {
+      if (other !== box) other.classList.remove('slide-shape-selected');
+    });
+  }
+  box.classList.add('slide-shape-selected');
+  if (box.querySelector('.slide-shape-corner')) return;
+  for (const corner of SLIDE_CORNERS) {
+    const handle = document.createElement('span');
+    handle.className = 'slide-shape-corner';
+    handle.dataset.corner = corner;
+    handle.setAttribute('aria-hidden', 'true');
+    box.appendChild(handle);
+  }
+}
+
+
+function wireSlideBoxes(body) {
+  body.querySelectorAll('.slide-shape').forEach((box) => {
+    if (!hasRangeOf(box, 'frame')) return;
+    box.addEventListener('pointerdown', (event) => beginSlideBoxDrag(box, event));
+  });
+}
+
+function beginSlideBoxDrag(box, event) {
+  if (!readerEditingAllowed() || event.button !== 0) return;
+  selectSlideShape(box);
+  const corner = event.target && event.target.dataset ? event.target.dataset.corner || null : null;
+  
+  if (!corner && event.target !== box) return;
+  const stage = slideStageSize(box.closest('.slide-stage'));
+  const canvas = box.closest('.slide-canvas');
+  const { start, end } = rangeOf(box, 'frame');
+  const frame = stage && Number.isFinite(start) && Number.isFinite(end) ? slideTransformFrame(sliceSourceBytes(start, end)) : null;
+  if (!stage || !canvas || !frame) return;
+  const rect = canvas.getBoundingClientRect();
+  slideBoxDrag = { box, corner, stage, frame, canvas: { width: rect.width, height: rect.height }, x: event.clientX, y: event.clientY, pointerId: event.pointerId, moved: false, next: null };
+  event.preventDefault();
+  leafHoldPointer(box, event.pointerId);
+}
+
+function moveSlideBoxDrag(event) {
+  const drag = slideBoxDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  const dx = event.clientX - drag.x;
+  const dy = event.clientY - drag.y;
+  if (!drag.moved && Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+  drag.moved = true;
+  
+  document.body.classList.add('is-block-dragging');
+  const next = slideFrameDragged(drag.frame, drag.stage, drag.canvas, drag.corner, dx, dy);
+  drag.box.style.setProperty('--shape-x', String(next.x / drag.stage.width));
+  drag.box.style.setProperty('--shape-y', String(next.y / drag.stage.height));
+  drag.box.style.setProperty('--shape-w', String(next.width / drag.stage.width));
+  drag.box.style.setProperty('--shape-h', String(next.height / drag.stage.height));
+  drag.next = next;
+}
+
+
+function endSlideBoxDrag(commit) {
+  const drag = slideBoxDrag;
+  slideBoxDrag = null;
+  if (!drag) return;
+  document.body.classList.remove('is-block-dragging');
+  if (!commit || !drag.moved || !drag.next) return;
+  const { start, end } = rangeOf(drag.box, 'frame');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+  const slice = sliceSourceBytes(start, end);
+  const text = slideTransformSaying(slice, drag.next);
+  if (text === slice) return;
+  sendEditCommand({ command: 'editBlock', start, end, text });
+}
+
+document.addEventListener('pointermove', moveSlideBoxDrag);
+document.addEventListener('pointerup', () => endSlideBoxDrag(true));
+document.addEventListener('pointercancel', () => endSlideBoxDrag(false));
+
+
+
+const SLIDE_MENU_ITEMS = [
+  { action: 'duplicate', label: 'Duplicate slide' },
+  { action: 'delete', label: 'Delete slide', danger: true },
+];
+const slideMenu = document.createElement('div');
+slideMenu.className = 'context-menu';
+slideMenu.hidden = true;
+slideMenu.setAttribute('role', 'menu');
+appSurface.appendChild(slideMenu);
+
+function hideSlideMenu() {
+  if (slideMenu.hidden) return;
+  slideMenu.hidden = true;
+  coverWebSurface(false, slideMenu);
+}
+
+
+function openSlideMenu(stage, x, y) {
+  const body = stage && stage.closest ? stage.closest('.document-body') : null;
+  const slide = body ? Array.from(body.querySelectorAll('.slide-stage')).indexOf(stage) : -1;
+  if (slide < 0) return;
+  slideMenu.textContent = '';
+  for (const entry of SLIDE_MENU_ITEMS) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '');
+    item.setAttribute('role', 'menuitem');
+    item.textContent = entry.label;
+    item.addEventListener('click', (event) => {
+      event.stopPropagation();
+      hideSlideMenu();
+      sendEditCommand({ command: 'changeSlide', action: entry.action, slide });
+    });
+    slideMenu.appendChild(item);
+  }
+  leafPlaceFloating(slideMenu, x, y);
+  leafFocusForKeyboard(slideMenu.querySelector('.context-menu-item'));
+}
+
+window.addEventListener('click', hideSlideMenu);
+window.addEventListener('blur', hideSlideMenu);
+window.addEventListener('resize', hideSlideMenu);
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') hideSlideMenu();
+});
 
 
 
@@ -30765,6 +31185,8 @@ function pendingReadingLandingTarget(path, anchor) {
 }
 
 const READING_FILL_ELEMENTS = 4096;
+
+const READING_FILL_CHARACTERS = 131072;
 let readingFillFrame = 0;
 let exactReadingRestore = null;
 function cancelExactReadingRestore() {
@@ -30802,10 +31224,12 @@ function fillHeldBlocks() {
   let block = nextHeldReadingBlock();
   let last = null;
   let elements = 0;
-  while (block && elements < READING_FILL_ELEMENTS) {
+  let characters = 0;
+  while (block && elements < READING_FILL_ELEMENTS && characters < READING_FILL_CHARACTERS) {
     if (block.classList.contains('is-held-below')) {
       block.classList.remove('is-held-below');
       elements += 1 + block.querySelectorAll('*').length;
+      characters += block.textContent.length;
       last = block;
     }
     block = nextDocumentBlock(block);
@@ -31192,6 +31616,22 @@ function replayParagraphSwaps(doc, body) {
   }
   if (headingsChanged) publishDocumentOutline();
 }
+function replayChapterSwaps(doc, body) {
+  if (!doc || !Array.isArray(doc.chapterSwaps) || !body) return;
+  for (const swap of doc.chapterSwaps) {
+    const item = Array.from(body.querySelectorAll('[data-src-member]'))
+      .find((candidate) => memberOf(candidate) === swap.member);
+    if (!item) continue;
+    const holder = document.createElement('div');
+    holder.innerHTML = swap.html;
+    const fresh = holder.firstElementChild;
+    if (!fresh || !fresh.classList.contains('book-item')) continue;
+    item.querySelectorAll('[data-src-start]').forEach(forgetDrawnRanges);
+    item.replaceChildren(...Array.from(fresh.childNodes));
+    adoptDrawnRanges(item);
+    if (readerEditingAllowed()) bindEditableBlocks('epub', [item]);
+  }
+}
 
 function proveSiteBlocks(doc) {
   const blocks = Array.isArray(doc.blocks) ? doc.blocks : [];
@@ -31287,6 +31727,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     applySpeedReaderToDocument();
     
     bindReadingEditor(state.document, { deferCaret: true });
+    replayChapterSwaps(state.document, app.querySelector('.document-body'));
     replayParagraphSwaps(state.document, app.querySelector('.document-body'));
     
     repinSizedTables(renderedPath);
@@ -37604,6 +38045,15 @@ function anchorAboveElement(el) {
   if (!currentState?.document || !source || !el) {
     return null;
   }
+  if (currentDocumentFormat === 'epub') {
+    let above = el.previousElementSibling;
+    if (!above) {
+      const item = el.closest('.book-item');
+      above = item?.previousElementSibling?.lastElementChild || null;
+    }
+    if (!above) return null;
+    return { element: above, offsetY: app.getBoundingClientRect().top - above.getBoundingClientRect().top };
+  }
   const blocks = readerAnchorBlockList(source);
   if (!blocks.length) {
     return null;
@@ -37651,7 +38101,7 @@ function resolveReaderAnchorElement(anchor) {
   return blocks[Math.min(start + block, blocks.length - 1)] || blocks[blocks.length - 1];
 }
 function restoreReaderScrollAnchor(anchor) {
-  const element = resolveReaderAnchorElement(anchor);
+  const element = anchor?.element || resolveReaderAnchorElement(anchor);
   if (!element || !element.isConnected) {
     clampReaderScrollPosition();
     return;
@@ -37884,7 +38334,8 @@ function minimapWindowCoversView(metrics, scrollTop) {
     return true;
   }
   const view = minimapVisibleDocumentRange(metrics, scrollTop);
-  return view.top >= minimapBuiltRange.top && view.bottom <= minimapBuiltRange.bottom;
+  const reach = minimapHeldReach(minimapBuiltRange.top, minimapBuiltRange.bottom);
+  return view.top >= reach.top && view.bottom <= reach.bottom;
 }
 
 function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, first, last, rowPath = '', slack = MINIMAP_WINDOW_SLACK) {
@@ -37896,6 +38347,7 @@ function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, fir
     && minimapBuiltLastRow === last
     && minimapBuiltRowPath === rowPath
     && !minimapBuiltSliced
+    && !minimapHeldTableMeetsView(metrics)
     && minimapBuiltSlack >= slack;
 }
 
@@ -38268,11 +38720,17 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     minimapBuiltSliced = built.slicedTop || built.slicedBottom || empty;
     minimapBuiltSlack = slack;
   }
+  
+  const holding = !!minimapBuiltRange && !!firstNode && preview.contains(firstNode) && holdFreshMinimapFarTables(preview, view, appTop, scrollTop);
   frame.appendChild(preview);
   content.replaceChildren(frame);
   content.style.height = `${metrics.scaledDocumentHeight}px`;
+  if (holding) {
+    placeMinimapClone(content, preview, metrics, previewScale, true);
+    bookMinimapHeldTablesRelease();
+  }
   
-  if (minimapBuiltRange) {
+  if (minimapBuiltRange && !holding) {
     
     const clonedFirst = firstNode && firstNode.isConnected !== false ? firstNode : null;
     if (clonedFirst) {
@@ -38330,7 +38788,7 @@ function reflowMinimapClone(content, source, metrics, previewWidth, previewScale
   return true;
 }
 
-function placeMinimapClone(content, preview, metrics, previewScale) {
+function placeMinimapClone(content, preview, metrics, previewScale, keepReach = false) {
   const frame = preview.parentElement;
   const range = minimapBuiltRange;
   const kept = minimapHeldBlock;
@@ -38345,6 +38803,7 @@ function placeMinimapClone(content, preview, metrics, previewScale) {
   const footAt = preview.getBoundingClientRect().bottom - contentTop;
   const delta = wanted - landedAt;
   if (Math.abs(delta) > 0.5) frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
+  if (keepReach) return;
   const firstTop = anchorTop - Math.max(0, landedAt - headAt) / previewScale;
   minimapBuiltRange = {
     ...range,
@@ -38707,6 +39166,8 @@ var minimapCloneMap;
 var minimapCloneHeight;
 var minimapChangedCells;
 
+var minimapCloneWholes = [];
+
 var minimapHeldBays = [];
 var minimapHeldBlock = null;
 var minimapHeldReleaseFrame = 0;
@@ -38715,6 +39176,7 @@ function resetMinimapClonePatches() {
   minimapCloneMap = new WeakMap();
   minimapCloneHeight = -1;
   minimapChangedCells = new Set();
+  minimapCloneWholes = [];
   dropMinimapHeldTables();
 }
 
@@ -38722,11 +39184,13 @@ function beginMinimapClone(height) {
   minimapCloneMap = new WeakMap();
   minimapCloneHeight = height;
   minimapChangedCells.clear();
+  minimapCloneWholes = [];
   dropMinimapHeldTables();
 }
 
 function recordMinimapClone(source, clone, whole) {
   minimapCloneMap.set(source, { clone, whole });
+  if (whole) minimapCloneWholes.push([source, clone]);
 }
 
 
@@ -38812,21 +39276,8 @@ function holdMinimapFarTables() {
   const body = minimapSourceElement();
   if (!preview || !body || !minimapBuiltRange || !(minimapBuiltSourceWidth > 0)) return;
   
-  const blocks = documentBlocks(body);
-  const readingLine = app.getBoundingClientRect().top + READER_CONTENT_TOP_GAP;
-  let lo = 0;
-  let hi = blocks.length - 1;
-  let at = -1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (blocks[mid].getBoundingClientRect().bottom > readingLine) {
-      at = mid;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-  const copy = at < 0 ? null : minimapWholeCopyOf(blocks[at]);
+  const block = minimapReadingBlock(body);
+  const copy = block && minimapWholeCopyOf(block);
   if (!copy || !preview.contains(copy)) return;
   const scale = minimapBuiltPreviewWidth / minimapBuiltSourceWidth;
   const trackRect = track.getBoundingClientRect();
@@ -38844,9 +39295,85 @@ function holdMinimapFarTables() {
     held.push({ bay, away });
   });
   if (!held.length && !minimapHeldBays.length) return;
-  minimapHeldBlock = { source: blocks[at], copy };
+  
+  minimapHeldBlock = { source: block, copy, edges: null };
   const kept = minimapHeldBays.map((bay) => ({ bay, away: 0 }));
   minimapHeldBays = [...kept, ...held.sort((a, b) => a.away - b.away)].map((one) => one.bay);
+}
+
+function holdFreshMinimapFarTables(preview, view, appTop, scrollTop) {
+  const body = minimapSourceElement();
+  const block = body && minimapReadingBlock(body);
+  const copy = block && minimapWholeCopyOf(block);
+  if (!copy || !preview.contains(copy)) return false;
+  const reach = view.height * MINIMAP_GESTURE_SLACK;
+  const held = [];
+  const edges = new Map();
+  for (const [source, clone] of minimapCloneWholes) {
+    const sources = source.matches('.table-bay') ? [source] : [...source.querySelectorAll('.table-bay')];
+    if (!sources.length) continue;
+    const copies = source === sources[0] ? [clone] : [...clone.querySelectorAll('.table-bay')];
+    
+    if (copies.length !== sources.length) continue;
+    sources.forEach((bay, index) => {
+      const into = copies[index];
+      if (into === copy || into.contains(copy)) return;
+      const rect = bay.getBoundingClientRect();
+      const top = rect.top - appTop + scrollTop;
+      const bottom = rect.bottom - appTop + scrollTop;
+      const away = bottom < view.top - reach ? view.top - bottom : top > view.bottom + reach ? top - view.bottom : -1;
+      if (away < 0) return;
+      into.style.containIntrinsicSize = `${rect.width}px ${rect.height}px`;
+      into.style.contentVisibility = 'hidden';
+      edges.set(into, { top, bottom, above: bottom < view.top });
+      held.push({ bay: into, away });
+    });
+  }
+  if (!held.length) return false;
+  minimapHeldBays = held.sort((a, b) => a.away - b.away).map((one) => one.bay);
+  minimapHeldBlock = { source: block, copy, edges };
+  return true;
+}
+
+function minimapHeldReach(top, bottom) {
+  const edges = minimapHeldBlock && minimapHeldBlock.edges;
+  if (edges) {
+    for (const bay of minimapHeldBays) {
+      const held = edges.get(bay);
+      if (!held) continue;
+      if (held.above) top = Math.max(top, held.bottom);
+      else bottom = Math.min(bottom, held.top);
+    }
+  }
+  return { top, bottom };
+}
+
+function minimapHeldTableMeetsView(metrics) {
+  const edges = minimapHeldBlock && minimapHeldBlock.edges;
+  if (!edges) return false;
+  const view = minimapVisibleDocumentRange(metrics, metrics.scrollTop);
+  return minimapHeldBays.some((bay) => {
+    const held = edges.get(bay);
+    return !!held && held.bottom > view.top && held.top < view.bottom;
+  });
+}
+
+function minimapReadingBlock(body) {
+  const blocks = documentBlocks(body);
+  const readingLine = app.getBoundingClientRect().top + READER_CONTENT_TOP_GAP;
+  let lo = 0;
+  let hi = blocks.length - 1;
+  let at = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (blocks[mid].getBoundingClientRect().bottom > readingLine) {
+      at = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return at < 0 ? null : blocks[at];
 }
 
 function minimapWholeCopyOf(node) {
@@ -38892,17 +39419,18 @@ function releaseMinimapFarTables() {
   let bay = minimapHeldBays.shift();
   while (bay && !(preview && preview.contains(bay))) bay = minimapHeldBays.shift();
   if (bay) letMinimapBayGo(bay);
+  const fresh = !!(minimapHeldBlock && minimapHeldBlock.edges);
   if (!minimapHeldBays.length) minimapHeldBlock = null;
-  placeKeptMinimapClone();
+  placeKeptMinimapClone(fresh);
   bookMinimapHeldTablesRelease();
 }
-function placeKeptMinimapClone() {
+function placeKeptMinimapClone(keepReach) {
   const minimap = currentMinimap();
   const track = minimap && minimap.querySelector('.document-minimap-track');
   const content = track && track.querySelector('.document-minimap-content');
   const preview = content && content.querySelector('.document-minimap-preview');
   if (!preview || !minimapBuiltRange || !(minimapBuiltSourceWidth > 0)) return;
-  placeMinimapClone(content, preview, measureDocumentMinimap(track), minimapBuiltPreviewWidth / minimapBuiltSourceWidth);
+  placeMinimapClone(content, preview, measureDocumentMinimap(track), minimapBuiltPreviewWidth / minimapBuiltSourceWidth, keepReach);
   updateMinimapViewport();
 }
 function stripMinimapCloneContent(node) {
