@@ -31,7 +31,7 @@ One hue, blue: every surface, border, heading and accent is a shade of it, and d
 | surface-sunken                          | `#edf0f5`                  |
 | border                                  | `#dbe0eb`                  |
 | border-strong                           | `#b1bed3`                  |
-| shadow-ink                              | `#cccccc`                  |
+| shadow-ink                              | `#00000033`                |
 | muted-foreground                        | `#445879`                  |
 | primary                                 | `#2068e3`                  |
 | primary-foreground                      | `#ffffff`                  |

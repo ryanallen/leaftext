@@ -27,7 +27,7 @@
 | surface-sunken                          | `#ececef`                         |
 | border                                  | `#d8d8dd`                         |
 | border-strong                           | `#c0c0c6`                         |
-| shadow-ink                              | `#cccccc`                         |
+| shadow-ink                              | `#00000033`                       |
 | muted-foreground                        | `#6e6e73`                         |
 | primary                                 | `#0a6fe0`                         |
 | primary-foreground                      | `#ffffff`                         |

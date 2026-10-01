@@ -31,7 +31,7 @@ One hue, violet: every surface, border, heading and accent is a shade of it, and
 | surface-sunken                          | `#f2eff6`                  |
 | border                                  | `#e4ddec`                  |
 | border-strong                           | `#c6b7d7`                  |
-| shadow-ink                              | `#cccccc`                  |
+| shadow-ink                              | `#00000033`                |
 | muted-foreground                        | `#664b85`                  |
 | primary                                 | `#9043e8`                  |
 | primary-foreground                      | `#ffffff`                  |

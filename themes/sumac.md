@@ -31,7 +31,7 @@ One hue, red: every surface, border, heading and accent is a shade of it, and da
 | surface-sunken                          | `#f5efee`                 |
 | border                                  | `#ebdddb`                 |
 | border-strong                           | `#d4b7b2`                 |
-| shadow-ink                              | `#cccccc`                 |
+| shadow-ink                              | `#00000033`               |
 | muted-foreground                        | `#794b44`                 |
 | primary                                 | `#cf321a`                 |
 | primary-foreground                      | `#ffffff`                 |

@@ -31,7 +31,7 @@ One hue, green: every surface, border, heading and accent is a shade of it, and 
 | surface-sunken                          | `#e9f3ec`                 |
 | border                                  | `#d1e5d7`                 |
 | border-strong                           | `#9cc7a9`                 |
-| shadow-ink                              | `#cccccc`                 |
+| shadow-ink                              | `#00000033`               |
 | muted-foreground                        | `#366043`                 |
 | primary                                 | `#108031`                 |
 | primary-foreground                      | `#ffffff`                 |

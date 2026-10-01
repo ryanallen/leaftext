@@ -443,21 +443,27 @@ function scheduleWebSurfaceBounds() {
     const ratio = window.devicePixelRatio || 1;
     let top = Math.max(cell.top + parseFloat(cardStyle.borderTopWidth || 0), bar.bottom);
     const addressBar = webAddressState.bar;
+    let lowered = false;
     if (addressBar && tab) {
       const surface = appSurface.getBoundingClientRect();
       addressBar.style.left = (cell.left - surface.left) + 'px';
       addressBar.style.top = (top - surface.top) + 'px';
       addressBar.style.width = cell.width + 'px';
-      top = Math.max(top, addressBar.getBoundingClientRect().bottom);
+      const address = addressBar.getBoundingClientRect();
+      lowered = address.height > 0;
+      top = Math.max(top, address.bottom);
     }
     const rail = readerMinimap && !readerMinimap.hidden ? readerMinimap.getBoundingClientRect() : null;
     const right = rail && rail.width > 0 ? Math.min(cardRight, rail.left) : cardRight;
     const radius = Math.max(0, parseFloat(cardStyle.borderBottomLeftRadius || 0));
+    
+    const topRadius = lowered ? 0 : Math.max(0, parseFloat(cardStyle.getPropertyValue('--lt-radius-md')) || 0);
     const bounds = {
       command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
       y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round(right * ratio) - Math.round(left * ratio)),
       height: Math.max(0, Math.round(bottom * ratio) - Math.round(top * ratio)),
       radius: Math.max(0, Math.round(radius * ratio)),
+      topRadius: Math.round(topRadius * ratio),
       visible: !!tab && !webSurfaceCovered({ left, top, right, bottom }),
     };
     const spelling = JSON.stringify(bounds);
@@ -4415,6 +4421,7 @@ function openFlowMenuWith(x, y, items, host) {
   const top = Math.min(y - sheet.top, sheet.height - size.height - 8);
   menu.style.left = Math.max(8, left) + 'px';
   menu.style.top = Math.max(8, top) + 'px';
+  markShadowCrossing(menu);
   flowMenu = menu;
   document.addEventListener('pointerdown', onFlowMenuOutside, true);
 }
@@ -6061,7 +6068,18 @@ window.leafSetWindowActive = (active) => {
   document.body.classList.toggle('is-window-inactive', !active);
   themeWindowActivityChanged(active);
   updaterWindowActivityChanged(active);
-  if (leafWindowFocusIsNative()) send({ command: 'windowActive', active });
+  if (leafWindowFocusIsNative()) send({ command: 'windowActive', active, ...leafStepBackNumbers() });
+};
+
+const leafStepBackNumbers = () => {
+  const root = getComputedStyle(document.documentElement);
+  const seconds = parseFloat(getComputedStyle(appSurface).transitionDuration);
+  const number = (value) => (Number.isFinite(value) ? value : null);
+  return {
+    saturation: number(parseFloat(root.getPropertyValue('--lt-inactive-saturation'))),
+    contrast: number(parseFloat(root.getPropertyValue('--lt-inactive-contrast'))),
+    fade: number(seconds * 1000),
+  };
 };
 
 const leafWindowFocusIsNative = () => typeof window.__leafHostAnswers !== 'function';
@@ -6080,7 +6098,106 @@ function leafPlaceFloating(el, x, y) {
   const at = leafClampToApp(x, y, el.offsetWidth, el.offsetHeight, LEAF_FLOAT_MARGIN);
   el.style.left = at.left + 'px';
   el.style.top = at.top + 'px';
+  markShadowCrossing(el);
 }
+
+const SHADOW_CROSSING_LEFT_OUT = /ghost|docs-pager|table-lens-menu/;
+let shadowCrossingHosts = '';
+let shadowCrossingObserver = null;
+const shadowCrossingObserved = new WeakSet();
+function shadowCrossingHostSelector() {
+  if (shadowCrossingHosts) return shadowCrossingHosts;
+  const hosts = [];
+  for (const sheet of document.styleSheets || []) {
+    let rules;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;
+    }
+    for (const rule of rules || []) {
+      if (!rule.selectorText || !rule.cssText.includes('--lt-shadow-under-x')) continue;
+      
+      for (const part of rule.selectorText.split(',')) {
+        const band = part.trim();
+        if (!band.endsWith('::before')) continue;
+        const host = band.slice(0, -'::before'.length);
+        if (!SHADOW_CROSSING_LEFT_OUT.test(host)) hosts.push(host);
+      }
+    }
+  }
+  
+  shadowCrossingHosts = hosts.join(', ');
+  return shadowCrossingHosts;
+}
+function observeShadowHost(host) {
+  if (shadowCrossingObserved.has(host) || typeof ResizeObserver !== 'function') return;
+  if (!shadowCrossingObserver) shadowCrossingObserver = new ResizeObserver((entries) => entries.forEach((entry) => markShadowCrossing(entry.target)));
+  shadowCrossingObserved.add(host);
+  shadowCrossingObserver.observe(host);
+}
+
+function shownShadowBand(host, spread) {
+  if (host.hidden) return null;
+  if (typeof host.checkVisibility === 'function' && !host.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return null;
+  const box = host.getBoundingClientRect();
+  if (!box.width || !box.height) return null;
+  const edge = host.clientLeft || 0;
+  const top = host.clientTop || 0;
+  return { left: box.left + edge - spread, top: box.top + top - spread, right: box.right - edge + spread, bottom: box.bottom - top + spread };
+}
+
+function writeShadowCrossing(host, x, y, w, h) {
+  const key = x + ',' + y + ',' + w + ',' + h;
+  if (host.__shadowCrossing === key) return;
+  host.__shadowCrossing = key;
+  host.style.setProperty('--lt-shadow-under-x', x + 'px');
+  host.style.setProperty('--lt-shadow-under-y', y + 'px');
+  host.style.setProperty('--lt-shadow-under-w', w + 'px');
+  host.style.setProperty('--lt-shadow-under-h', h + 'px');
+}
+function markShadowCrossing(host) {
+  if (!host || !host.style) return;
+  const selector = shadowCrossingHostSelector();
+  if (!selector || !host.matches(selector)) return;
+  observeShadowHost(host);
+  const spread = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lt-shadow-spread')) || 0;
+  const mine = shownShadowBand(host, spread);
+  let under = null;
+  let most = 0;
+  if (mine) {
+    for (const other of document.querySelectorAll(selector + ', .leaf-sheet.open')) {
+      
+      if (other === host || host.contains(other)) continue;
+      const theirs = shownShadowBand(other, spread);
+      if (!theirs) continue;
+      const across = Math.min(mine.right, theirs.right) - Math.max(mine.left, theirs.left);
+      const down = Math.min(mine.bottom, theirs.bottom) - Math.max(mine.top, theirs.top);
+      if (across > 0 && down > 0 && across * down > most) {
+        most = across * down;
+        under = { other, theirs };
+      }
+    }
+  }
+  if (!under) {
+    host.__shadowUnder = null;
+    writeShadowCrossing(host, 0, 0, 0, 0);
+    return;
+  }
+  
+  if (under.other.__shadowUnder === host) {
+    under.other.__shadowUnder = null;
+    writeShadowCrossing(under.other, 0, 0, 0, 0);
+  }
+  host.__shadowUnder = under.other;
+  const { theirs } = under;
+  writeShadowCrossing(host, Math.round(theirs.left - mine.left), Math.round(theirs.top - mine.top), Math.round(theirs.right - theirs.left), Math.round(theirs.bottom - theirs.top));
+}
+
+requestAnimationFrame(() => {
+  const selector = shadowCrossingHostSelector();
+  if (selector) document.querySelectorAll(selector).forEach(observeShadowHost);
+});
 
 function durationTokenMilliseconds(token) {
   const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
@@ -6404,6 +6521,7 @@ function drawHintBubble(hint, target) {
   bubble.classList.add('is-' + placement.side);
   bubble.style.left = placement.left + 'px';
   bubble.style.top = placement.top + 'px';
+  markShadowCrossing(bubble);
   bubble.style.setProperty('--hint-tail', placement.tail + 'px');
   hintBubble = bubble;
   hintShowing = hint.name;
@@ -7507,6 +7625,7 @@ function placeNameBox(anchored) {
   const at = leafClampToApp(left, top, 240, 40, 8);
   renameBox.style.left = at.left + 'px';
   renameBox.style.top = at.top + 'px';
+  markShadowCrossing(renameBox);
 }
  
 function libraryRowFor(path) {
@@ -11746,6 +11865,7 @@ function anchorToolTray(current) {
     if (part !== readerToolbar) return;
   }
   readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);
+  markShadowCrossing(readerToolTray);
   
   if (readerViewTools) {
     readerToolbar.style.setProperty('--reader-tray-height', `${Math.round(readerViewTools.offsetHeight)}px`);
@@ -13106,6 +13226,7 @@ function renderFilterMenu() {
   const origin = pane.getBoundingClientRect();
   filterMenu.style.left = `${box.left - origin.left}px`;
   filterMenu.style.top = `${box.bottom - origin.top}px`;
+  markShadowCrossing(filterMenu);
   filterMenu.style.minWidth = `${box.width}px`;
   filterMenu.hidden = false;
   filterMenu.querySelectorAll('[data-filter-pick]').forEach((button) => {
@@ -14870,7 +14991,8 @@ function renderTabs(state) {
     if (tab.redoable) redoableByPath.set(tab.path, true);
   });
   const markup = tabs.map((tab, index) => {
-    if (tab.kind === 'web') {
+    
+    if (tab.kind === 'web' && !tab.site) {
       return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""${webTabPaletteStyle(tab, index === active)}><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${tabCloseMarkup(index)}</span>`;
     }
     const favorite = isFavoritePath(tab.path);
@@ -14878,7 +15000,7 @@ function renderTabs(state) {
     const name = documentFileName(tab.path || tab.title || '');
     
     const front = index === active || index === besideTabIndex();
-    return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
+    return `<span class="tab${front ? ' tab-active' : ''}${index === besideTabIndex() ? ' tab-beside' : ''}${isDocumentDirty(tab.path) ? ' tab-modified' : ''}" data-tab-pos="${index}" data-tab-path="${escapeAttr(tab.path || '')}"${tab.kind === 'web' ? webTabPaletteStyle(tab, index === active) : ''}><button type="button" class="tab-favorite${favorite ? ' is-on' : ''}" data-tab-favorite="${index}" aria-pressed="${favorite}" aria-label="${mark}" title="${mark}"><span class="lt-icon lt-icon-favorite-${favorite ? 'on' : 'off'}"></span></button><button type="button" class="tab-label" data-tab-index="${index}" data-reveal-path="${escapeAttr(tab.path)}" title="${escapeAttr(tab.path)}">${escapeText(name)}</button><span class="tab-dirty-dot" aria-hidden="true"></span>${tabCloseMarkup(index)}</span>`;
   }).join('');
   
   if (markup === lastTabsMarkup) return;
@@ -21597,16 +21719,20 @@ function frontmatterAddRow(block, onEmpty) {
   row.className = 'frontmatter-add';
   const cell = document.createElement('td');
   cell.colSpan = 3;
+  
+  const line = document.createElement('div');
+  line.className = 'frontmatter-add-line';
+  cell.appendChild(line);
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'frontmatter-add-button';
   button.innerHTML = '<span class="lt-icon lt-icon-new"></span><span>Add a field</span>';
   const rest = () => {
-    cell.textContent = '';
-    cell.appendChild(button);
+    line.textContent = '';
+    line.appendChild(button);
   };
   button.addEventListener('click', () => {
-    cell.textContent = '';
+    line.textContent = '';
     
     const name = frontmatterBox('Name', true);
     const value = frontmatterBox('Value');
@@ -21639,11 +21765,11 @@ function frontmatterAddRow(block, onEmpty) {
           settle(false);
         }
       });
-      cell.appendChild(box);
+      line.appendChild(box);
     }
     name.focus();
   });
-  cell.appendChild(button);
+  line.appendChild(button);
   row.appendChild(cell);
   const body = block.querySelector('tbody');
   if (body) body.appendChild(row);
@@ -23461,11 +23587,16 @@ function moveSlideBoxDrag(event) {
   
   document.body.classList.add('is-block-dragging');
   const next = slideFrameDragged(drag.frame, drag.stage, drag.canvas, drag.corner, dx, dy);
-  drag.box.style.setProperty('--shape-x', String(next.x / drag.stage.width));
-  drag.box.style.setProperty('--shape-y', String(next.y / drag.stage.height));
-  drag.box.style.setProperty('--shape-w', String(next.width / drag.stage.width));
-  drag.box.style.setProperty('--shape-h', String(next.height / drag.stage.height));
+  drawSlideBoxFrame(drag.box, next, drag.stage);
   drag.next = next;
+}
+
+
+function drawSlideBoxFrame(box, frame, stage) {
+  box.style.setProperty('--shape-x', String(frame.x / stage.width));
+  box.style.setProperty('--shape-y', String(frame.y / stage.height));
+  box.style.setProperty('--shape-w', String(frame.width / stage.width));
+  box.style.setProperty('--shape-h', String(frame.height / stage.height));
 }
 
 
@@ -23474,13 +23605,23 @@ function endSlideBoxDrag(commit) {
   slideBoxDrag = null;
   if (!drag) return;
   document.body.classList.remove('is-block-dragging');
-  if (!commit || !drag.moved || !drag.next) return;
+  if (!drag.moved || !drag.next) return;
+  
+  if (!commit) {
+    drawSlideBoxFrame(drag.box, drag.frame, drag.stage);
+    return;
+  }
   const { start, end } = rangeOf(drag.box, 'frame');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
   const slice = sliceSourceBytes(start, end);
   const text = slideTransformSaying(slice, drag.next);
   if (text === slice) return;
-  sendEditCommand({ command: 'editBlock', start, end, text });
+  
+  const token = leafWaitForEdit((held, why) => {
+    if (!held && drag.box.isConnected) drawSlideBoxFrame(drag.box, drag.frame, drag.stage);
+    if (why) leafToast(why, 'error');
+  });
+  sendEditCommand({ command: 'editBlock', start, end, text, token });
 }
 
 document.addEventListener('pointermove', moveSlideBoxDrag);
@@ -25645,6 +25786,7 @@ function positionSelectionToolbar(range) {
   selectionToolbar.style.top = (below ? rect.bottom + SELECTION_TOOLBAR_LIFT : rect.top - SELECTION_TOOLBAR_LIFT) - layoutRect.top + 'px';
   
   selectionToolbar.style.setProperty('--selection-arrow', Math.round(wanted - left + half) + 'px');
+  markShadowCrossing(selectionToolbar);
 }
 
 
@@ -33030,6 +33172,7 @@ function positionLinkHoverTip(event) {
   }
   linkHoverTip.style.left = (left - app.left) + 'px';
   linkHoverTip.style.top = (top - app.top) + 'px';
+  markShadowCrossing(linkHoverTip);
 }
 
 function hoverDetail(rawHref) {

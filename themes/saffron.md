@@ -31,7 +31,7 @@ One hue, amber: every surface, border, heading and accent is a shade of it, and 
 | surface-sunken                          | `#f3f0ea`                 |
 | border                                  | `#e7dfd4`                 |
 | border-strong                           | `#cbbba3`                 |
-| shadow-ink                              | `#cccccc`                 |
+| shadow-ink                              | `#00000033`               |
 | muted-foreground                        | `#66543a`                 |
 | primary                                 | `#986313`                 |
 | primary-foreground                      | `#ffffff`                 |
