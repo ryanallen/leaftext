@@ -439,6 +439,11 @@ function webSurfaceHoles(page, ratio) {
   }
   return holes;
 }
+
+function followWebSurfaceMotion() {
+  webAddressState.motionUntil = Math.max(webAddressState.motionUntil, performance.now() + durationTokenMilliseconds('--lt-duration-200') + 64);
+  scheduleWebSurfaceBounds();
+}
 function scheduleWebSurfaceBounds() {
   if (!activeWebTab() && !webAddressState.lastBounds) return;
   if (webAddressState.frame || !webAddressState.booted) return;
@@ -11644,6 +11649,7 @@ function renderReaderToolbar(viewsStand) {
     readerToolbar.classList.remove('has-open-tray');
     readerToolTrayTouchOpen = '';
     syncReaderToolDividerState();
+    coverLivePageWithReaderToolbar();
     return;
   }
   const rendered = graphViewOpen ? 'graph' : codeViewActive ? 'code' : 'reading';
@@ -11666,6 +11672,13 @@ function renderReaderToolbar(viewsStand) {
   renderViewTools(current);
   syncReaderToolTrayState();
   syncReaderToolDividerState();
+  coverLivePageWithReaderToolbar();
+}
+
+function coverLivePageWithReaderToolbar() {
+  const overLivePage = Boolean(readerToolbar && !readerToolbar.hidden && activeWebTab());
+  coverWebSurface(overLivePage, readerToolbar);
+  coverWebSurface(overLivePage && Boolean(readerToolTray) && !readerToolTray.hidden, readerToolTray);
 }
 function clearPendingReaderView() {
   if (!pendingReaderView) return;
@@ -11735,7 +11748,9 @@ document.addEventListener('pointerdown', (event) => {
 function syncReaderToolTrayState() {
   if (!readerToolbar) return;
   const activeButtonHovered = hoveredReaderTool && hoveredReaderTool.classList.contains('is-active');
-  readerToolbar.classList.toggle('has-open-tray', Boolean(activeButtonHovered || readerToolTrayHovered || readerToolTrayKeyboardFocus || readerToolTrayTouchOpen));
+  const open = Boolean(activeButtonHovered || readerToolTrayHovered || readerToolTrayKeyboardFocus || readerToolTrayTouchOpen);
+  if (open !== readerToolbar.classList.contains('has-open-tray') && activeWebTab()) followWebSurfaceMotion();
+  readerToolbar.classList.toggle('has-open-tray', open);
 }
 function syncReaderToolDividerState() {
   if (!readerToolbar) return;
@@ -11765,6 +11780,7 @@ if (readerToolTray) {
       
       trayStage = 'bounce';
       readerToolTray.classList.add(TRAY_BOUNCING);
+      if (activeWebTab()) followWebSurfaceMotion();
       trayStageTimer = window.setTimeout(endReaderToolTrayMotion, TRAY_MOTION_FALLBACK_MS);
       return;
     }
@@ -11772,6 +11788,7 @@ if (readerToolTray) {
       trayStage = 'seat';
       readerToolTray.classList.remove(TRAY_BOUNCING);
       readerToolTray.classList.add(TRAY_SEATING);
+      if (activeWebTab()) followWebSurfaceMotion();
       return;
     }
     endReaderToolTrayMotion();
