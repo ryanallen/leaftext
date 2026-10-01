@@ -415,15 +415,29 @@ function coverWebSurface(covered, owner) {
   scheduleWebSurfaceBounds();
 }
 
-function webSurfaceCovered(page) {
+const WEB_SURFACE_HOLES = 12;
+function webSurfaceHoles(page, ratio) {
   webAddressState.coverStanding = false;
+  const holes = [];
+  const originX = Math.round(page.left * ratio);
+  const originY = Math.round(page.top * ratio);
+  const width = Math.round(page.right * ratio) - originX;
+  const height = Math.round(page.bottom * ratio) - originY;
   for (const owner of webAddressState.covers) {
-    if (!owner || typeof owner !== 'object' || typeof owner.getBoundingClientRect !== 'function') return true;
+    if (!owner || typeof owner !== 'object' || typeof owner.getBoundingClientRect !== 'function') return null;
     webAddressState.coverStanding = true;
     const rect = owner.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0 && rect.left < page.right && rect.right > page.left && rect.top < page.bottom && rect.bottom > page.top) return true;
+    if (!(rect.width > 0 && rect.height > 0 && rect.left < page.right && rect.right > page.left && rect.top < page.bottom && rect.bottom > page.top)) continue;
+    const left = Math.max(0, Math.round(Math.max(rect.left, page.left) * ratio) - originX);
+    const top = Math.max(0, Math.round(Math.max(rect.top, page.top) * ratio) - originY);
+    const right = Math.min(width, Math.round(Math.min(rect.right, page.right) * ratio) - originX);
+    const bottom = Math.min(height, Math.round(Math.min(rect.bottom, page.bottom) * ratio) - originY);
+    if (right <= left || bottom <= top) continue;
+    if (left === 0 && top === 0 && right === width && bottom === height) return null;
+    if (holes.length === WEB_SURFACE_HOLES) return null;
+    holes.push([left, top, right - left, bottom - top]);
   }
-  return false;
+  return holes;
 }
 function scheduleWebSurfaceBounds() {
   if (!activeWebTab() && !webAddressState.lastBounds) return;
@@ -458,13 +472,15 @@ function scheduleWebSurfaceBounds() {
     const radius = Math.max(0, parseFloat(cardStyle.borderBottomLeftRadius || 0));
     
     const topRadius = lowered ? 0 : Math.max(0, parseFloat(cardStyle.getPropertyValue('--lt-radius-md')) || 0);
+    const holes = tab ? webSurfaceHoles({ left, top, right, bottom }, ratio) : null;
     const bounds = {
       command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
       y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round(right * ratio) - Math.round(left * ratio)),
       height: Math.max(0, Math.round(bottom * ratio) - Math.round(top * ratio)),
       radius: Math.max(0, Math.round(radius * ratio)),
       topRadius: Math.round(topRadius * ratio),
-      visible: !!tab && !webSurfaceCovered({ left, top, right, bottom }),
+      visible: !!holes,
+      holes: holes || [],
     };
     const spelling = JSON.stringify(bounds);
     if (spelling === webAddressState.lastBounds) {
