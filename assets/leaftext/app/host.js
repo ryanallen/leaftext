@@ -166,6 +166,7 @@ export const COMMANDS = {
   openWebAddress: [REFUSED, 'this page is already in a browser; its address bar opens the live web'],
   webSurfaceBounds: [REFUSED, 'this page is already in a browser and has no native child surface'],
   webScroll: [REFUSED, 'this page is already in a browser and has no native child surface'],
+  webHeading: [REFUSED, 'this page is already in a browser and has no native child surface'],
   open: [REFUSED, 'a file dialog needs a disk to pick from'],
   openRecent: [ANSWERED],
   newDocument: [REFUSED, 'a new document would have nowhere to be saved'],

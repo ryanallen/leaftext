@@ -12254,6 +12254,7 @@ body.table-resizing.is-row button {
 .slide-canvas {
   position: relative;
   aspect-ratio: var(--stage-ratio);
+  content-visibility: auto;
   container-type: inline-size;
   overflow: hidden;
   border-radius: var(--lt-radius-md);
@@ -12263,12 +12264,18 @@ body.table-resizing.is-row button {
 
 .slide-shape {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: var(--shape-anchor, start);
+  box-sizing: border-box;
   left: calc(var(--shape-x) * 100%);
   top: calc(var(--shape-y) * 100%);
   width: calc(var(--shape-w) * 100%);
   height: calc(var(--shape-h) * 100%);
+  padding: calc(var(--shape-inset-top) * 100cqi) calc(var(--shape-inset-right) * 100cqi) calc(var(--shape-inset-bottom) * 100cqi) calc(var(--shape-inset-left) * 100cqi);
+  font-family: var(--shape-face, var(--reading-font)), var(--reading-font);
   font-size: calc(var(--shape-type) * 100cqi);
-  line-height: var(--lt-leading-1-2);
+  line-height: calc(var(--lt-leading-1-2) * var(--shape-leading, 1));
   overflow-wrap: anywhere;
 }
 
@@ -12278,6 +12285,7 @@ body.table-resizing.is-row button {
 .document-body .slide-shape ol,
 .document-body .slide-shape li {
   font-size: inherit;
+  font-family: inherit;
   line-height: inherit;
   margin-block: 0;
   padding-block: 0;
@@ -12800,6 +12808,10 @@ body.mac-frame .document-minimap-frame {
 
 .document-minimap-preview pre.mermaid {
   content-visibility: visible !important;
+}
+
+.document-minimap-preview .slide-canvas {
+  content-visibility: visible;
 }
 
 .document-minimap-viewport {
@@ -17121,6 +17133,10 @@ body.leaf-paper :is(.docs-pager,
 
 body.leaf-paper .document-body pre.mermaid {
   content-visibility: visible !important;
+}
+
+body.leaf-paper .document-body .slide-canvas {
+  content-visibility: visible;
 }
 
 body.leaf-paper .document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {

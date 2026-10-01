@@ -332,7 +332,7 @@ let changeRepoRevealed = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
   bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
-  metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map() };
+  metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map(), liveScroll: 0 };
 function pruneWebTabPalettes(state) {
   const ids = new Set((state.tabs || []).filter(tab => tab.kind === 'web').map(tab => tab.webId));
   for (const id of webAddressState.palettes.keys()) if (!ids.has(id)) webAddressState.palettes.delete(id);
@@ -480,6 +480,10 @@ function renderWebSurface(state) {
   webAddressState.metrics = null;
   webAddressState.image = '';
   webAddressState.railTab = tab;
+  webAddressState.liveScroll = 0;
+  
+  setDocumentOutlineRows([]);
+  scheduleLibraryOutline();
   if (graphViewOpen) graphSetActive(webGraphAddress(), true, false);
   
   updateEditingChrome();
@@ -661,9 +665,26 @@ function updateWebMinimap() {
   placeMinimapViewport(rail, {scaledDocumentHeight:metrics.height*scale, scrollTop:metrics.scroll,
     scrollable:Math.max(0, metrics.height-metrics.viewport), viewportHeight:metrics.viewport, previewScale:scale, trackHeight:height}, null);
 }
+
+window.leafSetLiveOutline = payload => {
+  const tab = activeWebTab();
+  if (!tab || !payload || payload.id !== tab.webId || !Array.isArray(payload.rows)) return;
+  setDocumentOutlineRows(payload.rows.map((row, index) => ({ level: row.level, text: row.text, id: 'live-' + index, top: row.top, live: index })));
+  scheduleLibraryOutline();
+};
+
+window.leafLiveOutlineScroll = scroll => {
+  if (!activeWebTab() || !Number.isFinite(scroll)) return;
+  webAddressState.liveScroll = scroll;
+  lightLibraryOutlineSection(outlineSectionBeingRead());
+};
 window.leafWebMinimap = payload => {
   if (!activeWebTab() || codeViewActive || !payload || !payload.metrics) return;
   webAddressState.metrics = payload.metrics;
+  if (Number.isFinite(payload.metrics.scroll)) {
+    webAddressState.liveScroll = payload.metrics.scroll;
+    lightLibraryOutlineSection(outlineSectionBeingRead());
+  }
   if (typeof payload.image === 'string' && payload.image !== webAddressState.image) {
     webAddressState.image = payload.image;
     const picture = readerMinimap && readerMinimap.querySelector('.web-address-minimap');
@@ -10405,14 +10426,14 @@ function drawLibraryOutlineWindow(rows, force) {
   const neededStart = outlineIndexAtOffset(Math.max(0, visibleTop - paneHeight));
   const neededEnd = Math.min(rows.length, outlineIndexAtOffset(visibleTop + paneHeight * 2) + 1);
   if (!force && neededStart >= libraryOutlineWindowStart && neededEnd <= libraryOutlineWindowEnd) {
-    lightLibraryOutlineSection(readerSectionAtReadingLine());
+    lightLibraryOutlineSection(outlineSectionBeingRead());
     return;
   }
   const start = outlineIndexAtOffset(Math.max(0, visibleTop - paneHeight * 2));
   const end = Math.min(rows.length, outlineIndexAtOffset(visibleTop + paneHeight * 3) + 1);
   libraryOutlineWindowStart = start;
   libraryOutlineWindowEnd = end;
-  const current = readerSectionAtReadingLine();
+  const current = outlineSectionBeingRead();
   windowBox.innerHTML = rows.slice(start, end).map((row, at) => outlineRowHtml(row, libraryOutlineShallowest, row.id === current).replace(' data-outline-section=', ` data-outline-index="${start + at}" data-outline-section=`)).join('');
   windowBox.style.setProperty('padding-top', `${libraryOutlineOffsets[start]}px`);
   windowBox.style.setProperty('padding-bottom', `${libraryOutlineOffsets[rows.length] - libraryOutlineOffsets[end]}px`);
@@ -10445,7 +10466,9 @@ function bindLibraryOutlineRows(bindBack) {
   for (const button of libraryOutline.querySelectorAll('[data-outline-section]')) {
     
     bindLibraryRowPress(button, () => {
-      send({ command: 'openLink', href: '#' + encodeURIComponent(button.dataset.outlineSection), scroll_anchor: currentScrollAnchor() });
+      const row = readDocumentOutlineRows()[Number(button.dataset.outlineIndex)];
+      if (row && Number.isInteger(row.live)) send({ command: 'webHeading', index: row.live });
+      else send({ command: 'openLink', href: '#' + encodeURIComponent(button.dataset.outlineSection), scroll_anchor: currentScrollAnchor() });
     });
     button.addEventListener('keydown', (event) => {
       const index = Number(button.dataset.outlineIndex);
@@ -10477,6 +10500,18 @@ function refreshLibraryOutlineBackRow() {
   back.setAttribute('aria-label', `Back to ${name}`);
   const label = back.querySelector('.library-file-label');
   if (label) label.textContent = name;
+}
+
+function outlineSectionBeingRead() {
+  const rows = readDocumentOutlineRows();
+  if (!rows.length || !Number.isInteger(rows[0].live)) return readerSectionAtReadingLine();
+  const scroll = webAddressState.liveScroll;
+  let section = null;
+  for (const row of rows) {
+    if (row.top > scroll + 1) break;
+    section = row.id;
+  }
+  return section;
 }
 
 function lightLibraryOutlineSection(section) {
@@ -13856,20 +13891,34 @@ function sendWindowChrome(color, theme) {
 function loadReadingFaces() {
   const fonts = document.fonts;
   if (!fonts || typeof fonts.load !== 'function') return;
-  const family = String(getComputedStyle(document.documentElement).getPropertyValue('--reading-font') || '')
-    .split(',')[0]
-    .trim();
-  if (!family) return;
+  const style = getComputedStyle(document.documentElement);
+  const firstFamily = (name) =>
+    String(style.getPropertyValue(name) || '')
+      .split(',')[0]
+      .trim();
+  const asks = [];
+  const reading = firstFamily('--reading-font');
+  if (reading) for (const face of ['400', 'italic 400', '700']) asks.push(`${face} 1em ${reading}`);
+  const heading = firstFamily('--heading-font');
+  if (heading) {
+    
+    for (const token of ['--type-display-weight', '--type-h1-weight', '--type-h2-weight', '--type-h3-weight', '--type-h4-weight', '--type-h5-weight', '--type-h6-weight']) {
+      const weight = String(style.getPropertyValue(token) || '').trim();
+      if (weight) asks.push(`${weight} 1em ${heading}`);
+    }
+  }
+  const faces = [...new Set(asks)];
+  if (!faces.length) return;
   const ask = () => {
-    for (const face of ['400', 'italic 400', '700']) {
+    for (const face of faces) {
       try {
-        Promise.resolve(fonts.load(`${face} 1em ${family}`)).catch(() => {});
+        Promise.resolve(fonts.load(face)).catch(() => {});
       } catch (_) {}
     }
   };
   
   const link = document.getElementById('leafThemeFont');
-  if (link && !link.sheet) link.addEventListener('load', ask, { once: true });
+  if (link && (!link.sheet || (link.sheet.href && link.href && link.sheet.href !== link.href))) link.addEventListener('load', ask, { once: true });
   else ask();
 }
 
@@ -19006,7 +19055,7 @@ function valueQuoteRefused(el, text) {
 
 
 function treeTextRefused(el, text) {
-  return commentTextRefused(el, text) || valueQuoteRefused(el, text);
+  return commentTextRefused(el, text) || valueQuoteRefused(el, text) || deckLineRefused(el);
 }
 
 
@@ -23204,6 +23253,9 @@ function deckTextRuns(el, span) {
   const tokens = [];
   const kept = { name: 'markup', start: -1, end: -1 };
   const run = /<([A-Za-z_][\w.-]*:)?t(?:\s[^<>]*)?>([^<]*)<\/\1?t\s*>/g;
+  const paragraphOpening = /<(?:[A-Za-z_][\w.-]*:)?p(?=[\s/>])/g;
+  let paragraph = 0;
+  let wordsParagraph = -1;
   let words = '';
   let cursor = 0;
   let byteCursor = 0;
@@ -23219,6 +23271,12 @@ function deckTextRuns(el, span) {
     const decoder = document.createElement('span');
     decoder.innerHTML = text;
     const value = decoder.textContent;
+    paragraph += (source.slice(cursor, found.index).match(paragraphOpening) || []).length;
+    if (value && words && paragraph !== wordsParagraph) {
+      tokens.push({ raw: '', tag: kept, line: ' ', start: words.length, end: words.length + 1 });
+      words += ' ';
+    }
+    if (value) wordsParagraph = paragraph;
     tokens.push({ raw: text, value, start: words.length, end: words.length + value.length, byteStart: byteCursor });
     words += value;
     byteCursor += utf8ByteLength(text);
@@ -23228,6 +23286,28 @@ function deckTextRuns(el, span) {
   if (!tokens.some((token) => token.value !== undefined)) return null;
   if (el && words !== el.textContent) return null;
   return { tokens, tags: [], words };
+}
+
+
+function deckLineCrossed(el) {
+  const map = currentDocumentFormat === 'pptx' && el && el.__epubRuns ? el.__epubRunMap : null;
+  if (!map || !map.tokens.some((token) => token.line)) return false;
+  const before = map.words;
+  const words = el.textContent;
+  let from = 0;
+  while (from < before.length && from < words.length && before[from] === words[from]) from += 1;
+  let oldEnd = before.length;
+  let newEnd = words.length;
+  while (oldEnd > from && newEnd > from && before[oldEnd - 1] === words[newEnd - 1]) { oldEnd -= 1; newEnd -= 1; }
+  return oldEnd > from && map.tokens.some((token) => token.line && from < token.end && oldEnd > token.start);
+}
+
+
+function deckLineRefused(el) {
+  if (!deckLineCrossed(el)) return false;
+  leafToast('The two lines of this title are two paragraphs in the file, so the break between them was not written.');
+  el.textContent = el.__epubRunMap.words;
+  return true;
 }
 
 
@@ -31184,9 +31264,8 @@ function pendingReadingLandingTarget(path, anchor) {
   return 0;
 }
 
-const READING_FILL_ELEMENTS = 4096;
-
-const READING_FILL_CHARACTERS = 131072;
+const READING_FILL_BUDGET = 131072;
+const READING_FILL_ELEMENT_COST = 64;
 let readingFillFrame = 0;
 let exactReadingRestore = null;
 function cancelExactReadingRestore() {
@@ -31223,13 +31302,11 @@ function fillHeldBlocks() {
   readingFillFrame = 0;
   let block = nextHeldReadingBlock();
   let last = null;
-  let elements = 0;
-  let characters = 0;
-  while (block && elements < READING_FILL_ELEMENTS && characters < READING_FILL_CHARACTERS) {
+  let cost = 0;
+  while (block && cost < READING_FILL_BUDGET) {
     if (block.classList.contains('is-held-below')) {
       block.classList.remove('is-held-below');
-      elements += 1 + block.querySelectorAll('*').length;
-      characters += block.textContent.length;
+      cost += (1 + block.querySelectorAll('*').length) * READING_FILL_ELEMENT_COST + block.textContent.length;
       last = block;
     }
     block = nextDocumentBlock(block);

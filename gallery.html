@@ -12299,10 +12299,11 @@ body.table-resizing.is-row button {
   margin-inline: calc((100% - max(100%, 100cqi - 2 * var(--reader-lane-inset))) / 2);
   margin-block: var(--type-spacing);
 }
-/* The slide itself, at the deck's own shape. It is the container a box's type is sized against, so words keep their place on the slide at any width. */
+/* The slide itself, at the deck's own shape. It is the container a box's type is sized against, so words keep their place on the slide at any width. A slide nobody can see is not laid out: a 92-slide deck's first frame went from 90 ms to 45 and a width change from 85 to 7. The aspect ratio is what keeps a skipped slide its drawn height, so the page, the scroll range and the rail's travel do not move. */
 .slide-canvas {
   position: relative;
   aspect-ratio: var(--stage-ratio);
+  content-visibility: auto;
   container-type: inline-size;
   overflow: hidden;
   border-radius: var(--lt-radius-md);
@@ -12312,12 +12313,18 @@ body.table-resizing.is-row button {
 /* One shape, where the file puts it. The type is the share of the slide's width its size is, so a 44-point title on a 720-point slide is the same share of the stage at any width. */
 .slide-shape {
   position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: var(--shape-anchor, start);
+  box-sizing: border-box;
   left: calc(var(--shape-x) * 100%);
   top: calc(var(--shape-y) * 100%);
   width: calc(var(--shape-w) * 100%);
   height: calc(var(--shape-h) * 100%);
+  padding: calc(var(--shape-inset-top) * 100cqi) calc(var(--shape-inset-right) * 100cqi) calc(var(--shape-inset-bottom) * 100cqi) calc(var(--shape-inset-left) * 100cqi);
+  font-family: var(--shape-face, var(--reading-font)), var(--reading-font);
   font-size: calc(var(--shape-type) * 100cqi);
-  line-height: var(--lt-leading-1-2);
+  line-height: calc(var(--lt-leading-1-2) * var(--shape-leading, 1));
   overflow-wrap: anywhere;
 }
 /* What a shape holds is set at the shape's size and sits flush in it, the way the slide draws it, rather than at the document's own heading and paragraph sizes. */
@@ -12327,6 +12334,7 @@ body.table-resizing.is-row button {
 .document-body .slide-shape ol,
 .document-body .slide-shape li {
   font-size: inherit;
+  font-family: inherit;
   line-height: inherit;
   margin-block: 0;
   padding-block: 0;
@@ -12853,6 +12861,10 @@ body.mac-frame .document-minimap-frame {
 /* A drawn diagram lets the browser skip its own paint while it is off screen, and the clone is cloned with that on it — but the whole rail is one shrunken slice, so every cloned block is a few pixels tall and every drawing in the thumbnail went blank. Measured: 54 of them. Important, because the skip is written on the block itself. */
 .document-minimap-preview pre.mermaid {
   content-visibility: visible !important;
+}
+/* A slide skips its layout off screen the same way, and every slide in the shrunken clone would draw as an empty frame. The skip is written at the class, so this needs no importance. */
+.document-minimap-preview .slide-canvas {
+  content-visibility: visible;
 }
 /* Place and size are written onto this element by JS: the place as a transform, so `top: 0%` here is the origin that transform is measured from, and `height` is the frame before the first write. A transform, not `top`: the box moves every frame with a new number, and as a layout property `top` makes the browser lay the rail's own subtree out again to draw it — 12.0 to 21.0µs a frame against 3.5 to 4.0. Not a custom property on the rail above, which inherits into the clone and costs 78ms a write to re-resolve. */
 .document-minimap-viewport {
@@ -17196,6 +17208,10 @@ body.leaf-paper :is(.docs-pager,
 /* A drawn diagram lets the browser skip its own paint while it is off screen, and a picture export is a screenshot of the page beyond the window — so every drawing below the window came out an empty block. The rail met the same skip and answers it the same way. Important, because the skip is written on the block itself. */
 body.leaf-paper .document-body pre.mermaid {
   content-visibility: visible !important;
+}
+/* A slide skips its layout off screen the same way, and every slide below the window came out an empty frame with its edge and no words. The skip is written at the class, so this needs no importance. */
+body.leaf-paper .document-body .slide-canvas {
+  content-visibility: visible;
 }
 /* The waiting ring is a control as much as the toolbar is: a box still waiting when the sheet is rendered prints its stalled spinner. The three conditions are the spinner rule's own, and the paper class on the body is what outweighs it, whatever order the stylesheet's parts are joined in. */
 body.leaf-paper .document-body pre.mermaid:not([data-processed="true"]):not([data-mermaid-render="failed"]):not([data-diagram-wait="far"])::after {
