@@ -437,6 +437,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // Keep the drawn bytes for the source view and return without another fetch.
   let held = null;
   let buffer = 0;
+  let codeViewUp = false;
   let cardPath = '';
   let cardAnswer = null;
 
@@ -782,7 +783,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (state) delivery(() => {
       if (state.refused) run(state.refused);
       if (state.written) run(state.written);
-      if (state.swap) run(state.swap);
+      if (state.swap && codeViewUp && state.swap.startsWith('window.leafSwapChapter(')) redrawBuffer();
+      else if (state.swap) run(state.swap);
       else if (state.changed && state.resync) run(state.resync);
       else if (state.changed || (edit.edit === 'block' && !edit.live && !state.written)) redrawBuffer();
     });
@@ -913,11 +915,10 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     // A press into a book's other chapter: the buffer holds that chapter and the book is drawn again from it, which hands the page the chapter to type in. A quiet hold is the source view's, which opens next and draws nothing here.
     openMember: (command) => {
       if (!openBuffer()) return;
-      const state = core.bufferEdit(buffer, { edit: 'hold', member: String(command.member || '') });
-      if (state) delivery(() => {
-        if (state.refused) run(state.refused);
-        else if (state.changed && !command.quiet) redrawBuffer();
-      });
+      const edit = { edit: 'hold', member: String(command.member || ''), quiet: !!command.quiet };
+      if (!command.quiet) return applyEdit(edit);
+      const state = core.bufferEdit(buffer, edit);
+      if (state?.refused) delivery(() => run(state.refused));
     },
     toggleTask: (command) => answerEdit(command.token, !!applyEdit({ edit: 'task', index: command.index })?.changed),
     tableModel: (command) => answerTableModel(command),
@@ -1035,7 +1036,10 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       openBuffer();
       const state = buffer ? core.bufferCodeView(buffer) : null;
       if (state && state.refusedScript) run(state.refusedScript);
-      else if (state) run(`window.leafShowCodeView(${JSON.stringify(state)});`);
+      else if (state) {
+        codeViewUp = true;
+        run(`window.leafShowCodeView(${JSON.stringify(state)});`);
+      }
       else {
         // Return to the page when the buffer cannot open.
         console.warn('the module could not open', held.path, 'as a source');
@@ -1046,6 +1050,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     // The source is read-only, so the page still standing beneath it can return.
     exitCodeView: ({ renderKey }) => {
       if (!held || held.path !== open) return;
+      codeViewUp = false;
       const script = typeof renderKey === 'string' ? core.codeReturnScript(held.path, renderKey, buffer) : null;
       if (script) {
         run(script);

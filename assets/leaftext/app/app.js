@@ -451,7 +451,7 @@ function scheduleWebSurfaceBounds() {
       addressBar.style.width = cell.width + 'px';
       const address = addressBar.getBoundingClientRect();
       lowered = address.height > 0;
-      top = Math.max(top, address.bottom);
+      if (lowered) top = Math.max(top, address.bottom);
     }
     const rail = readerMinimap && !readerMinimap.hidden ? readerMinimap.getBoundingClientRect() : null;
     const right = rail && rail.width > 0 ? Math.min(cardRight, rail.left) : cardRight;
@@ -20280,6 +20280,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   
   currentDocumentBindsAnything =
     currentDocumentFormat === 'markdown' || (Array.isArray(doc.blocks) && doc.blocks.length > 0)
+    || (currentDocumentFormat === 'epub' && !!body.querySelector('.book-item'))
     || (currentDocumentFormat === 'eml' && !!frontmatterBlock());
   currentDocumentHasUnreachableWords = doc.words_outside_the_anchor === true;
   

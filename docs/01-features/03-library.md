@@ -338,8 +338,8 @@ Search covers the active vault, and it is one of the two things the [find bar](0
 | Rows per file | Up to three, one per place the word is |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 | Folders left out | Named in the same line, with how many — "12 results · 1 folder of generated files not read". Rest on the line to see which. See [Skipped folders](#skipped-folders) |
-| Text left out | A vault too big to read whole reads its notes first — Markdown, text, web pages, mail, Word, PowerPoint, OpenDocument and books — and its data files after, and says so on the same line — "12 results · part of the vault's text not read". See **Documents read** under [Facts](#facts) |
-| A file too far down to read | Still found by its name, when every word you typed starts a word in it — or all but one, in a search of three words or more, so `the once and future king` finds `white-once-and-future-king`. Its row has the name and nothing under it, because its text was never read |
+| Text left out | A vault too big to read whole reads its notes first — Markdown, text, web pages, mail, Word, PowerPoint, OpenDocument and books — and its data files after, and searches the text past what it holds after the rest, straight off the disk, so those rows arrive under the first ones. The same line says "12 results · part of the vault's text not read" until every file has been searched, then goes. See **Documents read** under [Facts](#facts) |
+| A file too far down to read | Found by the words inside it, read off the disk after the rest of the vault has answered, and by its name, when every word you typed starts a word in it — or all but one, in a search of three words or more, so `the once and future king` finds `white-once-and-future-king`. A file kept only online is found by its name alone, because reading it would download it |
 | While the vault is still being read | Rows arrive in batches, a turning ring sits in the count line, and the count says what it has so far. Before the first row arrives, three result-shaped rows stand in their place — a name with the two lines of matched words under it — and they go the moment one real row exists, whether it is this query's first batch or the query before it |
 
 Opening a result lands on the line the match is on. Documents whose source Leaftext cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
@@ -652,7 +652,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | --- | --- |
 | Vault registry | `manifest.db` — the vaults you have named, and which one is active |
 | Vault text | Held in memory for the active vault only; dropped when the folder you are in changes, and on quit |
-| Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, notes before data files and smallest first within each. A file past either is still [found by its name](#search), up to 100,000 files listed |
+| Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, notes before data files and smallest first within each. A file past either is still [found by its name and its words](#search), up to 100,000 files listed |
 | Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
 | Repositories inside a vault | Found up to three folders deep, stopping at the first one on each branch. See [Repositories inside repositories](#repositories-inside-repositories) |
 | Scheduled tasks | The active vault's open dated checkboxes, nearest due first. See [Scheduled tasks](#scheduled-tasks) |
