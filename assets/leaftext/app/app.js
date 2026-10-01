@@ -7194,6 +7194,8 @@ const PAGE_MENU_ITEMS = [
   { action: 'copySelection', label: 'Copy', selectionOnly: true },
   'separator',
   { action: 'favorite', label: 'Favorite' },
+  
+  { action: 'removeBookmark', label: 'Remove bookmark', ribbonKept: true },
   'separator',
   
   { action: 'openPageInBrowser', label: 'Open in browser', savedPageOpen: true },
@@ -7285,6 +7287,7 @@ function runContextAction(action, path, link, selected, picture, tableCell) {
     case 'copy': cutLibraryFiles(libraryPathsFor(path), false); break;
     case 'paste': pasteLibraryFiles(path); break;
     case 'favorite': toggleFavorite(path, contextMenuTargetKind === 'folder' ? 'folder' : 'document'); break;
+    case 'removeBookmark': forgetReadingRibbon(); break;
     case 'copyPath': send({ command: 'copyPath', path }); break;
     case 'reveal': send({ command: 'revealFile', path }); break;
     case 'properties': send({ command: 'showProperties', path }); break;
@@ -7362,6 +7365,7 @@ function contextMenuEntries() {
     const canTotal = tableCellCanTotal(contextMenuTableCell);
     return tidySeparators(TABLE_MENU_ITEMS.filter((entry) => entry === 'separator' || !entry.canTotal || canTotal));
   }
+  if (contextMenuTargetKind === 'ribbon') return [{ action: 'removeBookmark', label: 'Remove bookmark' }];
   if (contextMenuTargetKind === 'picture') {
     return tidySeparators(
       PICTURE_MENU_ITEMS.filter((entry) => {
@@ -7385,6 +7389,7 @@ function contextMenuEntries() {
         if (entry.action === 'paste') return libraryHoldsTransfer();
         if (entry.paneRow) return libraryRowMenuShows(contextMenuPath, entry.paneRow, contextMenuTargetKind);
         if (entry.selectionOnly) return !!contextMenuSelectionText;
+        if (entry.ribbonKept) return readingRibbonKept();
         if (entry.savedPageOpen) return currentDocumentFormat === 'html' && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('openPageInBrowser'));
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         
@@ -7532,6 +7537,12 @@ document.addEventListener('contextmenu', (event) => {
   if (tableCell && cellTable && tableTakesControls(cellTable)) {
     event.preventDefault();
     showContextMenu(event.clientX, event.clientY, activeDocumentPath(), 'table', null, null, tableCell);
+    return;
+  }
+  
+  if (event.target.closest && event.target.closest('.document-minimap-ribbon')) {
+    event.preventDefault();
+    showContextMenu(event.clientX, event.clientY, activeDocumentPath(), 'ribbon');
     return;
   }
   const editable = event.target.closest('input, textarea, [contenteditable="true"]');
@@ -14009,6 +14020,55 @@ function sendWindowChrome(color, theme) {
   });
 }
 
+const DOCUMENT_LETTERS_KEPT = 1024;
+function documentLettersBeyondLatin(bytes) {
+  const letters = new Set();
+  for (let at = 0; at < bytes.length && letters.size < DOCUMENT_LETTERS_KEPT; at += 1) {
+    const lead = bytes[at];
+    
+    if (lead < 0xc4) continue;
+    let letter;
+    if (lead < 0xe0) letter = ((lead & 0x1f) << 6) | (bytes[at + 1] & 0x3f);
+    else if (lead < 0xf0) letter = ((lead & 0x0f) << 12) | ((bytes[at + 1] & 0x3f) << 6) | (bytes[at + 2] & 0x3f);
+    else letter = ((lead & 0x07) << 18) | ((bytes[at + 1] & 0x3f) << 12) | ((bytes[at + 2] & 0x3f) << 6) | (bytes[at + 3] & 0x3f);
+    letters.add(letter);
+  }
+  return [...letters];
+}
+
+function faceLetterRanges(range) {
+  const ranges = [];
+  for (const part of String(range || '').split(',')) {
+    const found = /^\s*U\+([0-9A-F?]{1,6})(?:-([0-9A-F]{1,6}))?\s*$/i.exec(part);
+    if (!found) continue;
+    if (found[2]) {
+      if (found[1].includes('?')) continue;
+      ranges.push([parseInt(found[1], 16), parseInt(found[2], 16)]);
+    } else ranges.push([parseInt(found[1].replace(/\?/g, '0'), 16), parseInt(found[1].replace(/\?/g, 'F'), 16)]);
+  }
+  return ranges;
+}
+function askDocumentLetters() {
+  const fonts = document.fonts;
+  if (!fonts || typeof fonts.forEach !== 'function') return;
+  const style = getComputedStyle(document.documentElement);
+  const families = new Set(['--reading-font', '--heading-font'].map((name) => firstFontName(String(style.getPropertyValue(name) || '')).toLowerCase()).filter(Boolean));
+  if (!families.size) return;
+  const letters = documentLettersBeyondLatin(documentSourceBytes());
+  if (!letters.length) return;
+  const wanted = [];
+  fonts.forEach((face) => {
+    if (face.status !== 'unloaded' || !families.has(firstFontName(String(face.family || '')).toLowerCase())) return;
+    const ranges = faceLetterRanges(face.unicodeRange);
+    if (letters.some((letter) => ranges.some(([low, high]) => letter >= low && letter <= high))) wanted.push(face);
+  });
+  for (const face of wanted) {
+    try {
+      Promise.resolve(face.load()).catch(() => {});
+    } catch (_) {}
+  }
+}
+
 function loadReadingFaces() {
   const fonts = document.fonts;
   if (!fonts || typeof fonts.load !== 'function') return;
@@ -14028,6 +14088,9 @@ function loadReadingFaces() {
       if (weight) asks.push(`${weight} 1em ${heading}`);
     }
   }
+  
+  const interfaceFamily = firstFamily('--app-font');
+  if (interfaceFamily) for (const weight of ['400', '500', '600']) asks.push(`${weight} 1em ${interfaceFamily}`);
   const faces = [...new Set(asks)];
   if (!faces.length) return;
   const ask = () => {
@@ -29383,7 +29446,7 @@ function drawReadingRibbon() {
   const path = readingWatch ? readingWatch.path : null;
   const depth = path ? readingDeepest.get(path) || 0 : 0;
   let ribbon = track.querySelector('.document-minimap-ribbon');
-  if (!unlocksShowing().has('ribbon-bookmark') || depth <= 0) {
+  if (depth <= 0) {
     if (ribbon) ribbon.remove();
     return;
   }
@@ -29391,8 +29454,10 @@ function drawReadingRibbon() {
     ribbon = document.createElement('div');
     ribbon.className = 'document-minimap-ribbon';
     ribbon.setAttribute('aria-hidden', 'true');
+    ribbon.title = 'Bookmark — how far you have read';
     track.appendChild(ribbon);
   }
+  ribbon.classList.toggle('is-colored', unlocksShowing().has('ribbon-bookmark'));
   ribbon.style.setProperty('--ribbon-at', String(depth));
 }
 
@@ -29819,7 +29884,31 @@ function noteReadingDepth(path, share) {
   if (share <= (readingDeepest.get(path) || 0)) return;
   readingDeepest.set(path, share);
   drawReadingRibbon();
+  if (hostKeepsRibbons()) send({ command: 'keepRibbon', path, at: share });
 }
+
+function hostKeepsRibbons() {
+  return typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('keepRibbon');
+}
+
+function readingRibbonKept() {
+  return !!(readingWatch && (readingDeepest.get(readingWatch.path) || 0) > 0);
+}
+
+function forgetReadingRibbon() {
+  const path = readingWatch ? readingWatch.path : null;
+  if (!path) return;
+  readingDeepest.delete(path);
+  drawReadingRibbon();
+  if (hostKeepsRibbons()) send({ command: 'forgetRibbon', path });
+}
+
+window.leafRibbonPlace = function (path, at) {
+  const share = Math.min(1, Number(at) || 0);
+  if (!path || !(share > (readingDeepest.get(path) || 0))) return;
+  readingDeepest.set(path, share);
+  drawReadingRibbon();
+};
 function armReadingDwell(watch, el) {
   if (watch.timers.has(el)) return;
   watch.timers.set(el, columnTimer(() => readingDwellEnded(watch, el), READING_DWELL_MS));
@@ -29937,7 +30026,9 @@ function watchReadingDocument(path, words) {
   
   if (arriving) flushReading();
   applyPageOrnaments();
-  if (!leafProfile || !leafProfile.enabled || !path) return;
+  
+  if (!path) return;
+  if (arriving && hostKeepsRibbons()) send({ command: 'readRibbon', path });
   const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), blockWords: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
   readingWatch = watch;
   const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
@@ -31988,6 +32079,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     watchReadingDocument(renderedPath, state.document.words);
     
     refreshPaneFoot();
+    if (readingHasHeldBlocks()) askDocumentLetters();
     startReadingFill();
     sayStartupDrawn(true);
     return;

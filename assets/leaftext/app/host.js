@@ -177,6 +177,9 @@ export const COMMANDS = {
   dragFilesOut: [REFUSED, 'a served document is no file on this machine, so there is nothing to carry into another program'],
   openPaths: [REFUSED, 'a published page is not a window anything can be dropped on from the desktop'],
   toggleFavorite: [ANSWERED],
+  readRibbon: [ANSWERED],
+  keepRibbon: [ANSWERED],
+  forgetRibbon: [ANSWERED],
   checkFavorites: [ANSWERED],
   repointFavorite: [REFUSED, 'it reopens the file picker, which a static site has not got'],
   moveFavorite: [ANSWERED],
@@ -504,6 +507,31 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   function keepFavorites() {
     // Missing on a browser that refuses storage, which leaves the marks holding for this reading and no longer.
     if (typeof window.__leafSaveSettings === 'function') window.__leafSaveSettings({ favorites });
+  }
+
+  // How far each document has been read, for the ribbon bookmark, under a key of its own so a long reading history does not ride every settings save. Read afresh on each touch and every touch wrapped, so a browser that refuses storage shows no ribbon after a reload and nothing else changes.
+  const RIBBONS = 'leaftext.ribbons';
+  const RIBBONS_KEPT = 1000;
+  function keptRibbons() {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(RIBBONS) || 'null');
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (error) {
+      return {};
+    }
+  }
+  function keepRibbons(places) {
+    const paths = Object.keys(places);
+    // The least recently read go first, the same cap the desktop keeps.
+    if (paths.length > RIBBONS_KEPT) {
+      paths.sort((a, b) => (Number(places[a].read) || 0) - (Number(places[b].read) || 0));
+      for (const path of paths.slice(0, paths.length - RIBBONS_KEPT)) delete places[path];
+    }
+    try {
+      window.localStorage.setItem(RIBBONS, JSON.stringify(places));
+    } catch (error) {
+      // The place still stands for this reading; it just will not survive the reload.
+    }
   }
 
   // The reading order the Previous/Next strip walks: the listing as served, shallowest first.
@@ -1004,6 +1032,29 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       if (at === -1) favorites.push({ vaultId: null, path, kind: command.kind || 'document' });
       else favorites.splice(at, 1);
       keepFavorites();
+    },
+    // Where this document was left, out of the browser's own store.
+    readRibbon: (command) => {
+      const path = String(command.path || '');
+      const place = keptRibbons()[path];
+      const at = place ? Number(place.at) : 0;
+      if (path && at > 0) run(`window.leafRibbonPlace && window.leafRibbonPlace(${JSON.stringify(path)}, ${Math.min(1, at)});`);
+    },
+    keepRibbon: (command) => {
+      const path = String(command.path || '');
+      const at = Math.min(1, Number(command.at) || 0);
+      if (!path || !(at > 0)) return;
+      const places = keptRibbons();
+      if (places[path] && Number(places[path].at) >= at) return;
+      places[path] = { at, read: Date.now() };
+      keepRibbons(places);
+    },
+    forgetRibbon: (command) => {
+      const path = String(command.path || '');
+      const places = keptRibbons();
+      if (!path || !places[path]) return;
+      delete places[path];
+      keepRibbons(places);
     },
     // Paths rather than places, because the list the reader dragged is grouped by vault and can still be drawing a row that has left the store. No `before` means last.
     moveFavorite: (command) => {

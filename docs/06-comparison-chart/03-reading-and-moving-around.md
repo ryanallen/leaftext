@@ -406,7 +406,7 @@
 | Rail per column | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Hidden on home, graph | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Always on, no switch | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Ribbon at deepest point | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ribbon at deepest point | [✅][l-ribbon] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Speed
 
@@ -457,6 +457,7 @@
 [l-reload]: ../01-features/02-navigation.md#reload
 [l-chrome]: ../01-features/02-navigation.md#the-chrome
 [l-minimap]: ../01-features/04-minimap.md
+[l-ribbon]: ../01-features/04-minimap.md#the-ribbon-bookmark
 [l-epub]: ../01-features/01-rendering.md#epub-books
 [l-office]: ../01-features/01-rendering.md#office-and-opendocument-files
 [l-mermaid]: ../01-features/01-rendering.md#mermaid-diagrams

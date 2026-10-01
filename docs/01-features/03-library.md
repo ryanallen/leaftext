@@ -335,7 +335,7 @@ Search covers the active vault, and it is one of the two things the [find bar](0
 | A match in a heading | Outranks the same word in a paragraph |
 | Multiple terms | Every term must appear, in a name, the folder or the body |
 | More than words | The box takes a [filter](#filtering) — `#work status:open due:<friday -draft` |
-| Rows per file | Up to three, one per place the word is |
+| Rows per file | Up to three, one per line the words are on — a word found twice on one line is one row with both places marked |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 | Folders left out | Named in the same line, with how many — "12 results · 1 folder of generated files not read". Rest on the line to see which. See [Skipped folders](#skipped-folders) |
 | Text left out | A vault too big to read whole reads its notes first — Markdown, text, web pages, mail, Word, PowerPoint, OpenDocument and books — and its data files after, and searches the text past what it holds after the rest, straight off the disk, so those rows arrive under the first ones. The same line says "12 results · part of the vault's text not read" until every file has been searched, then goes. See **Documents read** under [Facts](#facts) |
@@ -344,7 +344,7 @@ Search covers the active vault, and it is one of the two things the [find bar](0
 
 Opening a result lands on the line the match is on. Documents whose source Leaftext cannot place a line in — anything but Markdown — fall back to the nearest heading above the match.
 
-Asking the same thing twice costs nothing: the last answer is kept and handed straight back while the query and the vault's text are both unchanged, which is what happens when you walk the folder tree with a search still in the box. Typing one more letter costs almost nothing either — only the files that matched the shorter word can match the longer one, so those are the only ones read again. Anything else, including a letter deleted or a file saved while you type, reads the vault afresh.
+Asking the same thing twice costs nothing: the last answer is kept and handed straight back while the query and the vault's text are both unchanged, which is what happens when you walk the folder tree with a search still in the box. Typing one more letter costs almost nothing either — only the files that matched the shorter word can match the longer one, so those are the only ones read again, and the same holds for the names a file is found by. A box that held no word yet — a lone quote mark, say — narrows nothing, so the first word typed after it reads every file. Anything else, including a letter deleted or a file saved while you type, reads the vault afresh.
 
 To search **inside** the document you are reading rather than across the vault, switch the same bar to **This file** — see [Find in this document](02-navigation.md#find-in-this-document).
 

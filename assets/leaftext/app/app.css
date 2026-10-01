@@ -12910,10 +12910,14 @@ body.mac-frame .document-minimap-frame {
   width: 8px;
   height: 14px;
   transform: translateY(-100%);
-  color: var(--lt-primary-ink);
+  color: var(--lt-foreground);
   background-color: currentColor;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
-  pointer-events: none;
+  
+  pointer-events: auto;
+}
+.document-minimap-ribbon.is-colored {
+  color: var(--lt-primary-ink);
 }
 .empty-state {
   width: min(720px, calc(100% - 40px));

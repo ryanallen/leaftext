@@ -63,6 +63,12 @@ Nothing new is a control and nothing else moves. The number is drawn only where 
 
 Both deck formats are divided this way, and every other document is untouched: the divisions are read off a mark the deck reader puts on the block each slide begins at, so a document that carries none gets none. A deck [exported as a web page](02-navigation.md#export-the-page) carries the marks with it, so its rail is divided too.
 
+## The ribbon bookmark
+
+A small ribbon on the rail marks the deepest point you have read in a document. A block counts as read once it has been on screen for two seconds, the same measure [your Grove](09-progress.md) counts reading by, so a fling to the bottom does not mark the whole document read; the ribbon only moves down, never back up when you scroll back to reread. It is there for everybody, whether or not the reading record is on, and it is drawn in the page's own text color — near-black on a light theme and near-white on a dark one — so it stands out from the rail's gray lines on every theme. With **Ribbon bookmark** bought and switched on in [the Grove](09-progress.md#grow-with-seeds), it takes the theme's accent instead.
+
+Each document keeps its place after you quit and open it again: the app writes it to [`reading-places.json`](05-settings.md#files) beside your settings, and a published site keeps it in your browser's own storage, never in a cookie, and never sends it anywhere. A file you rename or cut and paste in Leaftext takes its place with it. Pointing at the ribbon names it; right-click it and press **Remove bookmark** to clear that document's place, or pick the same entry from the page's own menu, which is how the keyboard reaches it. Reading on afterwards starts a new ribbon from there. A document shown inside somebody else's product keeps no place.
+
 ## Whether the rail appears
 
 The Rust side sends the page one flag, `has_visible_content`: an empty document says no and the rail is skipped entirely. Nothing else about the document is sent, because the thumbnail comes from the clone. [XML](01-rendering.md#xml) and [JSON/YAML](01-rendering.md#data-files-json-and-yaml) documents are asked the same question of their rendered block HTML (they have no Markdown source to look at), so an opened `.xml`, `.json`, or `.yaml` file gets the same real-text rail as a Markdown file — the thumbnail itself is always the live clone, whatever the source format.

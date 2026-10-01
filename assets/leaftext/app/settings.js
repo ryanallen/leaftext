@@ -1,6 +1,6 @@
 // What a reader chose, kept in the browser's own storage.
 //
-// The desktop keeps its settings in a file its host owns and injects them before any page script runs — the app shell is served on an opaque origin, where `localStorage` throws, which is why it has to. A published site has a real origin and can read its own store, so this is the browser's half of the same job: merge what was kept over the defaults the page was handed, before the theme resolves. The two stores never meet — a browser cannot see the file, and the desktop's page cannot read storage at all — so this cannot move into `src/assets/shell/`, where it would run on both.
+// The desktop keeps its records in files its host owns, under the config folder where a reader can find, back up and delete them, and injects its settings before any page script runs. A published site has no such host, so this is the browser's half of the same job: merge what was kept over the defaults the page was handed, before the theme resolves. The two stores never meet — a browser cannot see the files, and the desktop never reads the web view's own storage — so this cannot move into `src/assets/shell/`, where it would run on both.
 //
 // A classic script, not a module: it has to block and run before the page's own theme bootstrap paints. Every touch of storage is wrapped, so a browser with it refused leaves the site on defaults rather than failing to boot.
 
