@@ -8671,7 +8671,7 @@ function followFileInLibrary(path, focus, forceRefresh) {
   if (path && path !== librarySelectedPath) clearLibraryPicks();
   librarySelectedPath = path || null;
   
-  libraryOutlineOpen = !!path;
+  libraryOutlineOpen = !!path || !!activeWebTab();
   libraryRevealPending = !!path;
   
   if (libraryRevealPending) revealSelectedInLibrary();
