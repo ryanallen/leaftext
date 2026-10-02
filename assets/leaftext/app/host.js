@@ -1038,15 +1038,22 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       const path = String(command.path || '');
       const place = keptRibbons()[path];
       const at = place ? Number(place.at) : 0;
-      if (path && at > 0) run(`window.leafRibbonPlace && window.leafRibbonPlace(${JSON.stringify(path)}, ${Math.min(1, at)});`);
+      const from = Number.isSafeInteger(place?.from) && place.from >= 0 ? place.from : null;
+      const into = Number.isFinite(place?.into) && place.into >= 0 && place.into <= 1 ? place.into : null;
+      if (path && at > 0) run(`window.leafRibbonPlace && window.leafRibbonPlace(${JSON.stringify(path)}, ${Math.min(1, at)}, ${JSON.stringify(from)}, ${JSON.stringify(into)});`);
     },
     keepRibbon: (command) => {
       const path = String(command.path || '');
       const at = Math.min(1, Number(command.at) || 0);
       if (!path || !(at > 0)) return;
+      const from = Number.isSafeInteger(command.from) && command.from >= 0 ? command.from : null;
+      const into = Number.isFinite(command.into) && command.into >= 0 && command.into <= 1 ? command.into : null;
       const places = keptRibbons();
-      if (places[path] && Number(places[path].at) >= at) return;
-      places[path] = { at, read: Date.now() };
+      const held = places[path];
+      if (held && (from !== null && into !== null && Number.isSafeInteger(held.from) && Number.isFinite(held.into)
+        ? from < held.from || (from === held.from && into <= held.into)
+        : at <= Number(held.at))) return;
+      places[path] = { at, from: into !== null ? from : null, into: from !== null ? into : null, read: Date.now() };
       keepRibbons(places);
     },
     forgetRibbon: (command) => {

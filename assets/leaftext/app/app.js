@@ -5939,18 +5939,25 @@ window.leafEditAnswered = (token, held, why) => {
 
 let windowDragPressedAtX = null;
 let windowDragPressedAtY = null;
+let windowDragPressedAtTime = null;
+
+const WINDOW_DOUBLE_PRESS_MS = 300;
 function dragWindowFrom(bar) {
   if (!bar) return;
   bar.addEventListener('mousedown', (event) => {
     const wasX = windowDragPressedAtX;
     const wasY = windowDragPressedAtY;
+    const wasTime = windowDragPressedAtTime;
     windowDragPressedAtX = null;
     windowDragPressedAtY = null;
+    windowDragPressedAtTime = null;
     if (event.button !== 0 || !event.target || event.target.closest('button, a, input, select, textarea, [role="tab"], .tab, .window-controls, .update-menu')) return;
     windowDragPressedAtX = window.screenX;
     windowDragPressedAtY = window.screenY;
+    windowDragPressedAtTime = event.timeStamp;
     const windowStayedPut = window.screenX === wasX && window.screenY === wasY;
-    send({ command: event.detail === 2 && windowStayedPut ? 'windowToggleMaximize' : 'windowDrag' });
+    const pressedQuickly = wasTime !== null && event.timeStamp - wasTime <= WINDOW_DOUBLE_PRESS_MS;
+    send({ command: event.detail === 2 && windowStayedPut && pressedQuickly ? 'windowToggleMaximize' : 'windowDrag' });
   });
 }
 
@@ -11601,7 +11608,11 @@ function applyGraphView() {
   if (app) {
     app.classList.toggle('is-under-map', graphViewOpen);
     
-    if (!graphViewOpen) app.hidden = false;
+    if (!graphViewOpen && app.hidden) {
+      app.hidden = false;
+      
+      scheduleMermaidWarmPass();
+    }
   }
   if (readerMinimap) readerMinimap.classList.toggle('is-under-map', graphViewOpen);
   coverWebSurface(graphViewOpen, readerGraph);
@@ -29475,7 +29486,8 @@ function drawReadingRibbon() {
   const track = readerMinimap ? readerMinimap.querySelector('.document-minimap-track') : null;
   if (!track) return;
   const path = readingWatch ? readingWatch.path : null;
-  const depth = path ? readingDeepest.get(path) || 0 : 0;
+  const place = path ? readingDeepest.get(path) : null;
+  const depth = place ? readingPlaceDepth(place) : 0;
   let ribbon = track.querySelector('.document-minimap-ribbon');
   if (depth <= 0) {
     if (ribbon) ribbon.remove();
@@ -29490,6 +29502,7 @@ function drawReadingRibbon() {
   }
   ribbon.classList.toggle('is-colored', unlocksShowing().has('ribbon-bookmark'));
   ribbon.style.setProperty('--ribbon-at', String(depth));
+  ribbon.dataset.pageHeight = String(app.scrollHeight);
 }
 
 function earnedLeafLore(all) {
@@ -29849,6 +29862,23 @@ function readingDwellEnded(watch, el) {
 
 var readingBlockShare = new Map();
 
+function readingPlaceDepth(place) {
+  if (place.from === null || place.from >= documentSourceLength()) return place.at;
+  let el = place.element;
+  if (!el || !el.isConnected) {
+    el = (readingWatch.blocks || []).find((block) => {
+      const range = rangeOf(block, 'block');
+      return range && range.start <= place.from && place.from < range.end;
+    });
+    place.element = el || null;
+  }
+  if (!el) return place.at;
+  const range = rangeOf(el, 'block');
+  if (range) place.from = range.start;
+  const box = readingBlockBox(el.getBoundingClientRect(), app.getBoundingClientRect().top, readingScroll());
+  return box ? Math.min(1, Math.max(0, (box.top + place.into * box.height) / box.page)) : place.at;
+}
+
 function readingBlockBox(rect, rootTop, scroll) {
   const height = rect.bottom - rect.top;
   if (!scroll.page || !scroll.view || !(height > 0)) return null;
@@ -29878,14 +29908,14 @@ function creditReadingShare(watch, el, box, scrollTop) {
         creditPicturePages(picturesReached(pictures, reached) - picturesReached(pictures, paid));
         if (picturesReached(pictures, reached) === pictures) seen.add(id);
       }
-      noteReadingDepth(watch.path, Math.min(1, (box.top + reached * box.height) / box.page));
+      noteReadingDepth(watch.path, Math.min(1, (box.top + reached * box.height) / box.page), el, reached);
       return;
     }
     const words = readingBlockWords(watch, el);
     const owed = Math.floor(reached * words) - Math.floor(paid * words);
     if (owed > 0) creditReading(watch.path, owed, watch.words);
   }
-  noteReadingDepth(watch.path, Math.min(1, (box.top + Math.max(reached, paid) * box.height) / box.page));
+  noteReadingDepth(watch.path, Math.min(1, (box.top + Math.max(reached, paid) * box.height) / box.page), el, Math.max(reached, paid));
 }
 
 function readingBlockCheck(watch) {
@@ -29908,14 +29938,26 @@ function isReadingHeading(el) {
 }
 function markReadingPassed(watch, el) {
   if (isReadingHeading(el)) el.classList.add('is-passed');
-  const box = watch.boxes.get(el);
-  if (box) noteReadingDepth(watch.path, Math.min(1, Math.max(0, (box.top + box.height) / box.page)));
+  const scroll = readingScroll();
+  const box = readingBlockBox(el.getBoundingClientRect(), app.getBoundingClientRect().top, scroll);
+  if (box) {
+    const into = Math.min(1, Math.max(0, (scroll.top + scroll.view - box.top) / box.height));
+    noteReadingDepth(watch.path, Math.min(1, Math.max(0, (box.top + into * box.height) / box.page)), el, into);
+  }
 }
-function noteReadingDepth(path, share) {
-  if (share <= (readingDeepest.get(path) || 0)) return;
-  readingDeepest.set(path, share);
+function readingPlaceAfter(next, held) {
+  if (!held) return true;
+  if (next.from !== null && held.from !== null) return next.from > held.from || (next.from === held.from && next.into > held.into);
+  return next.at > held.at;
+}
+function noteReadingDepth(path, share, el = null, into = null) {
+  const range = el && rangeOf(el, 'block');
+  const from = range && Number.isSafeInteger(range.start) && range.start < documentSourceLength() ? range.start : null;
+  const place = { at: share, from, into: from !== null ? into : null, element: from !== null ? el : null };
+  if (!readingPlaceAfter(place, readingDeepest.get(path))) return;
+  readingDeepest.set(path, place);
   drawReadingRibbon();
-  if (hostKeepsRibbons()) send({ command: 'keepRibbon', path, at: share });
+  if (hostKeepsRibbons()) send({ command: 'keepRibbon', path, at: share, from, into: place.into });
 }
 
 function hostKeepsRibbons() {
@@ -29923,7 +29965,7 @@ function hostKeepsRibbons() {
 }
 
 function readingRibbonKept() {
-  return !!(readingWatch && (readingDeepest.get(readingWatch.path) || 0) > 0);
+  return !!(readingWatch && readingDeepest.has(readingWatch.path));
 }
 
 function forgetReadingRibbon() {
@@ -29934,10 +29976,13 @@ function forgetReadingRibbon() {
   if (hostKeepsRibbons()) send({ command: 'forgetRibbon', path });
 }
 
-window.leafRibbonPlace = function (path, at) {
+window.leafRibbonPlace = function (path, at, from = null, into = null) {
   const share = Math.min(1, Number(at) || 0);
-  if (!path || !(share > (readingDeepest.get(path) || 0))) return;
-  readingDeepest.set(path, share);
+  if (!path || !(share > 0)) return;
+  const valid = Number.isSafeInteger(from) && from >= 0 && Number.isFinite(into) && into >= 0 && into <= 1 && from < documentSourceLength();
+  const place = { at: share, from: valid ? from : null, into: valid ? into : null, element: null };
+  if (!readingPlaceAfter(place, readingDeepest.get(path))) return;
+  readingDeepest.set(path, place);
   drawReadingRibbon();
 };
 function armReadingDwell(watch, el) {
@@ -29974,6 +30019,8 @@ window.leafDocumentWords = function (path, words) {
 function rewatchReadingBlock(old, fresh) {
   const watch = readingWatch;
   if (!watch || !watch.observer) return;
+  const blockAt = watch.blocks.indexOf(old);
+  if (blockAt >= 0) watch.blocks[blockAt] = fresh;
   forgetReadingBlock(watch, old);
   watch.tall.delete(old);
   watch.pictures.delete(old);
@@ -29994,6 +30041,10 @@ function rewatchReadingBlock(old, fresh) {
 function rewatchReadingRun(old, fresh) {
   const watch = readingWatch;
   if (!watch || !watch.observer) return;
+  if (old.length) {
+    const blockAt = watch.blocks.indexOf(old[0]);
+    if (blockAt >= 0) watch.blocks.splice(blockAt, old.length, ...fresh);
+  }
   const run = old.length ? watch.runOf.get(old[0]) : fresh[0] && fresh[0].closest('.document-run');
   const list = run && watch.runBlocks.get(run);
   const at = list && old.length ? list.indexOf(old[0]) : -1;
@@ -30060,9 +30111,10 @@ function watchReadingDocument(path, words) {
   
   if (!path) return;
   if (arriving && hostKeepsRibbons()) send({ command: 'readRibbon', path });
-  const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), blockWords: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null };
+  const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), blockWords: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null, blocks: [] };
   readingWatch = watch;
   const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
+  watch.blocks = blocks;
   
   const seen = readingSeenBlocks.get(path);
   if (seen) for (const el of blocks) if (isReadingHeading(el) && seen.has(readingBlockId(el))) el.classList.add('is-passed');
@@ -32015,6 +32067,16 @@ function siteLaidOutState(state) {
   if (typeof laid !== 'string' || !laid) return state;
   return { ...state, document: { ...doc, html: laid, blocks: [], tasks: [], computed: [], siteProofs: proved ? proved.proofs : new Map() } };
 }
+
+function keepMinimapForRedraw() {
+  const minimap = currentMinimap();
+  if (!minimap) return;
+  minimap.classList.add('is-kept');
+  minimap.classList.remove('is-loading');
+  markKeptMinimapStale();
+  scheduleMinimapSpacerResize();
+  bindDocumentMinimapPreview(minimap.querySelector('.document-minimap-track'));
+}
 function renderState(keepDetachedRender = false, landingAnchor = null) {
   
   if (currentState && currentState.document && (currentState.document.partialDrawn || currentState.document.laidOutSwapped || currentState.document.cellSwapped)) {
@@ -32023,7 +32085,11 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   }
   const state = siteLaidOutState(currentState || { recent: [], favorites: [], tabs: [], active: null, document: null });
   prepareStateRender(state, keepDetachedRender);
-  if (renderWebSurface(state)) return;
+  
+  if (renderWebSurface(state)) {
+    sayStartupDrawn(true);
+    return;
+  }
   if (state.document) {
     document.title = `${state.document.title} - Leaftext`;
     const renderedPath = state.document.path || activeDocumentPath();
@@ -32031,6 +32097,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     lastRenderedDocumentPath = renderedPath;
     writeReaderClasses(['has-document']);
     const minimapHtml = renderDocumentMinimap(state.document.has_visible_content);
+    const keepMinimap = !arriving && !!minimapHtml && !!currentMinimap();
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
     
     const previousBody = app.querySelector('.document-body');
@@ -32080,7 +32147,9 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
       
       measureWideTables();
       revealReadingPast(pendingReadingLandingTarget(renderedPath, landingAnchor));
-      setMinimapMarkup(minimapHtml);
+      
+      if (keepMinimap) keepMinimapForRedraw();
+      else setMinimapMarkup(minimapHtml);
     }
     
     drawCodeFencesNearReader();
@@ -32093,7 +32162,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     bindDocumentSiteFrame(renderedPath);
     bindDocumentLinks();
     requestDocumentPager(state.document.path || activeDocumentPath());
-    bindDocumentMinimap();
+    if (!keepMinimap) bindDocumentMinimap();
     renderMermaidDiagrams();
     renderMathElements();
     observeReaderReflow();
@@ -34559,7 +34628,7 @@ function mermaidViewHeight() {
 }
 
 function mermaidIsHeld(diagram) {
-  return !!diagram.closest('.is-held-below');
+  return !!diagram.closest('.is-held-below') || Boolean(app && app.hidden);
 }
 
 function mermaidIsNearReader(diagram) {
@@ -34649,7 +34718,9 @@ function markMinimapWarming() {
   
   const minimap = currentMinimap();
   if (!minimap) return;
-  if (readingHasHeldBlocks() || mermaidWarmCandidates().length) minimap.classList.add('is-loading');
+  
+  if (minimap.classList.contains('is-kept')) minimap.classList.remove('is-loading');
+  else if (readingHasHeldBlocks() || mermaidWarmCandidates().length) minimap.classList.add('is-loading');
   else minimap.classList.remove('is-loading');
 }
 
@@ -37806,6 +37877,7 @@ function setMinimapMarkup(html) {
   if (hadMinimap !== Boolean(html)) scheduleMinimapWidthSync(); 
   if (readerMinimap) {
     minimapSpacerTarget = null;
+    currentMinimap()?.classList.remove('is-kept');
     readerMinimap.innerHTML = html || '';
     const minimap = currentMinimap();
     const width = monacoMinimapWidth();
@@ -37821,6 +37893,8 @@ function setMinimapMarkup(html) {
     }
   }
 }
+
+function markKeptMinimapStale() { minimapSpacerTarget = null; minimapContentVersion++; }
 
 function clearMinimapMarkupForCodeView() {
   if (readerMinimap) {
@@ -38588,6 +38662,9 @@ function measureDocumentMinimap(track) {
   const contentWidth = content ? Math.max(1, Math.ceil(content.getBoundingClientRect().width)) : sourceWidth;
   const trackRect = track.getBoundingClientRect();
   const scrollHeight = Math.max(1, Math.ceil(reader.scrollHeight));
+  const ribbon = track.querySelector('.document-minimap-ribbon');
+  const place = readingWatch && readingDeepest.get(readingWatch.path);
+  if (place && place.from !== null && ribbon && Number(ribbon.dataset.pageHeight) !== reader.scrollHeight) drawReadingRibbon();
   const viewportHeight = Math.max(1, Math.ceil(reader.clientHeight));
   const scrollable = Math.max(0, scrollHeight - viewportHeight);
   const scrollTop = Math.min(scrollable, Math.max(0, reader.scrollTop));
@@ -38944,6 +39021,7 @@ function updateContainedPageMinimapPreview(track, content, minimap) {
   preview.setAttribute('srcdoc', reading.getAttribute('srcdoc') || '');
   frame.appendChild(preview);
   content.replaceChildren(frame);
+  minimap.classList.remove('is-kept');
   minimapBuiltVersion = minimapContentVersion;
   minimapBuiltSourceWidth = metrics.sourceWidth;
   minimapBuiltPreviewWidth = Math.max(1, Math.ceil(content.getBoundingClientRect().width));
@@ -38969,6 +39047,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   if (!track || !content || !source) {
     return;
   }
+  if (minimap.classList.contains('is-kept') && (readingHasHeldBlocks() || mermaidWarmCandidates().length)) return;
   
   if (readingIsContainedPage()) {
     updateContainedPageMinimapPreview(track, content, minimap);
@@ -39098,6 +39177,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   const holding = !!minimapBuiltRange && !!firstNode && preview.contains(firstNode) && holdFreshMinimapFarTables(preview, view, appTop, scrollTop);
   frame.appendChild(preview);
   content.replaceChildren(frame);
+  minimap.classList.remove('is-kept');
   content.style.height = `${metrics.scaledDocumentHeight}px`;
   if (holding) {
     placeMinimapClone(content, preview, metrics, previewScale, true);
