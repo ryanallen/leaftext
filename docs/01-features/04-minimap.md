@@ -2,7 +2,7 @@
 
 ## Web pages
 
-A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scrolling without taking another picture. Click the rail to jump, drag the box to move through the page, or scroll over the rail. At a window width of 720 pixels or less, the live page uses its own scrollbar.
+A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scrolling without taking another picture. A page too long to draw at its own width is drawn smaller, so its text shows as bands that still mark where its sections start and end, and the box follows it all the way down. Click the rail to jump, drag the box to move through the page, or scroll over the rail. At a window width of 720 pixels or less, the live page uses its own scrollbar.
 
 > Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll; turn the wheel over the rail and the page scrolls just as it does under the pointer.
 

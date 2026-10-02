@@ -331,7 +331,7 @@ let libraryOutlineOpen = false;
 let changeRepoRevealed = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
-  bar: null, openTimer: 0, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
+  bar: null, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
   metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map(), liveScroll: 0 };
 function pruneWebTabPalettes(state) {
   const ids = new Set((state.tabs || []).filter(tab => tab.kind === 'web').map(tab => tab.webId));
@@ -532,8 +532,6 @@ function bootWebAddress() {
   });
   appBar.addEventListener('pointerleave', () => {
     webAddressState.overApp = false;
-    window.clearTimeout(webAddressState.openTimer);
-    webAddressState.openTimer = 0;
     armWebAddressClose();
   });
   document.addEventListener('keydown', event => {
@@ -545,12 +543,7 @@ function bootWebAddress() {
 }
 function armWebAddressOpen() {
   window.clearTimeout(webAddressState.closeTimer);
-  window.clearTimeout(webAddressState.openTimer);
-  if (!activeWebTab()) return;
-  webAddressState.openTimer = window.setTimeout(() => {
-    webAddressState.openTimer = 0;
-    if (webAddressState.overApp && activeWebTab()) openWebAddressBar(false);
-  }, 250);
+  if (activeWebTab()) openWebAddressBar(false);
 }
 function armWebAddressClose() {
   window.clearTimeout(webAddressState.closeTimer);
@@ -601,9 +594,7 @@ function openWebAddressBar(select) {
   if (select) { input.focus({preventScroll:true}); input.select(); }
 }
 function closeWebAddressBar(leaving) {
-  window.clearTimeout(webAddressState.openTimer);
   window.clearTimeout(webAddressState.closeTimer);
-  webAddressState.openTimer = 0;
   webAddressState.closeTimer = 0;
   const bar = webAddressState.bar;
   if (!bar) return;
@@ -5245,7 +5236,7 @@ async function postDiagramExport(kind, type, path, body, width, height) {
   
   if (!window.__leafDiagramExportEndpoint) throw new Error('That diagram could not be exported.');
   let query = 'format=' + encodeURIComponent(kind) + '&target=' + encodeURIComponent(path);
-  if (kind === 'png') query += '&width=' + width + '&height=' + height;
+  if (width) query += '&width=' + width + '&height=' + height;
   const response = await postPictureBody(window.__leafDiagramExportEndpoint + '?' + query, type, body);
   if (!response.ok) throw new Error('That diagram could not be exported.');
 }
@@ -5264,6 +5255,16 @@ async function exportDiagramAs(kind, source, path) {
     if (!drawing) return;
     if (kind === 'pdf') {
       printDiagramAsPdf(drawing, path);
+      return;
+    }
+    if (kind === 'webp' && window.__leafHostEncodesWebp) {
+      
+      const canvas = await diagramCanvas(drawing);
+      if (canvas.width > DIAGRAM_WEBP_LIMIT || canvas.height > DIAGRAM_WEBP_LIMIT) {
+        throw new Error('This diagram is too big for WebP to hold. Export it as PNG instead.');
+      }
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+      await postDiagramExport(kind, 'application/octet-stream', path, pixels, canvas.width, canvas.height);
       return;
     }
     if (kind === 'webp') {
@@ -14358,7 +14359,7 @@ window.leafSetState = (state, heading) => {
   }
   if (!currentState.document) {
     
-    closeGraphView();
+    if (!activeWebTab()) closeGraphView();
     homeMessage = pickHomeMessage();
   }
   
@@ -37124,13 +37125,13 @@ function pictureTypeRefused(type) {
 }
 
 
-async function pictureFile(picture, type) {
+async function pictureFile(picture, type, written = type) {
   const canvas = await pictureExportCanvas(picture, type);
   const file = await new Promise((resolve) =>
-    type === 'image/jpeg' ? canvas.toBlob(resolve, type, PICTURE_JPEG_QUALITY) : canvas.toBlob(resolve, type)
+    written === 'image/jpeg' ? canvas.toBlob(resolve, written, PICTURE_JPEG_QUALITY) : canvas.toBlob(resolve, written)
   );
   
-  if (!file || file.type !== type) throw pictureTypeRefused(type);
+  if (!file || file.type !== written) throw pictureTypeRefused(type);
   return file;
 }
 
@@ -37146,13 +37147,15 @@ async function pictureFileBase64(picture, type) {
 
 
 async function postPictureExport(picture, kind, type, path, source) {
-  const file = await pictureFile(picture, type);
+  
+  const written = type === 'image/webp' && window.__leafHostEncodesWebp ? 'image/png' : type;
+  const file = await pictureFile(picture, type, written);
   if (file.size > MAX_CLIPBOARD_PNG_BYTES) throw new Error('That picture is too big to export.');
   
   if (!window.__leafPictureExportEndpoint) throw new Error('That picture could not be exported.');
   const query =
     'format=' + encodeURIComponent(kind) + '&source=' + encodeURIComponent(source) + '&target=' + encodeURIComponent(path);
-  const response = await postPictureBody(window.__leafPictureExportEndpoint + '?' + query, type, file);
+  const response = await postPictureBody(window.__leafPictureExportEndpoint + '?' + query, written, file);
   if (!response.ok) throw new Error('That picture could not be exported.');
 }
 
