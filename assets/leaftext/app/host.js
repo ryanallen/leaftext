@@ -6,6 +6,7 @@
 
 // Beside the rest of the front end, which is beside the page for a folder export and another site's address for a site that carries none of its own. Read off the page rather than off this file's own address, because the check boots this file as a plain script, where a module's address has no spelling.
 const MODULE = 'leaftext.wasm';
+const COLORS_MODULE = 'leaftext-colors.wasm';
 
 /** Where the front end is served from, as the page was written to say. */
 export function assetBase() {
@@ -42,6 +43,15 @@ async function load(url, fetchWith = fetch) {
   };
 
   return {
+    colorable: (language) => {
+      if (typeof api.leaf_fence_colorable !== 'function') return false;
+      const written = write(language);
+      const answer = Boolean(api.leaf_fence_colorable(...written));
+      api.leaf_free(...written);
+      return answer;
+    },
+    fenceColors: (language, code) => typeof api.leaf_fence_colors === 'function'
+      ? JSON.parse(withStrings((...args) => api.leaf_fence_colors(...args), language, code) || 'null') : null,
     page: () => read(api.leaf_page()),
     script: () => read(api.leaf_script()),
     boot: () => read(api.leaf_boot_script()),
@@ -432,6 +442,36 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     window.leafSiteLayout.paragraphPlace = (path, classes, html) => (path === frontPage.path && typeof frontPage.paragraphPlace === 'function' ? frontPage.paragraphPlace(classes, html) : null);
   }
   const core = await load(assetBase() + MODULE, fetchWith);
+  const askedFences = new WeakSet();
+  let colors = null;
+  let colorsLoading = null;
+  window.__leafColorFences = () => {
+    const body = document.querySelector('.document-body');
+    if (!body) return;
+    const fences = Array.from(body.querySelectorAll('pre.highlight:not([data-runs])')).filter((pre) => {
+      if (askedFences.has(pre) || !core.colorable(pre.getAttribute('data-language') || '')) return false;
+      askedFences.add(pre);
+      return true;
+    });
+    if (!fences.length) return;
+    const paint = (module_) => {
+      for (const pre of fences) {
+        if (!pre.isConnected) continue;
+        const code = pre.querySelector('code');
+        const answer = code && module_.fenceColors(pre.getAttribute('data-language') || '', code.textContent);
+        if (!answer || !answer.runs) continue;
+        pre.setAttribute('data-syn', answer.syn);
+        pre.setAttribute('data-runs', answer.runs);
+      }
+      if (typeof window.leafWatchCodeFences === 'function') window.leafWatchCodeFences();
+    };
+    if (colors) {
+      paint(colors);
+      return;
+    }
+    if (!colorsLoading) colorsLoading = load(assetBase() + COLORS_MODULE, fetchWith).then((module_) => { colors = module_; return module_; });
+    colorsLoading.then(paint).catch((error) => console.warn(`Code fences remain plain: ${error.message}`));
+  };
   core.setImageSizes(imageSizes);
   core.setMintsPictures(true);
   // Every picture address this page made out of the open book, let go together when another document opens: revoking one as it scrolls away would leave nothing to decode it from when the reader scrolls back.

@@ -34908,6 +34908,212 @@ function labelBarSeriesFromOwnData(root, plots) {
     });
   }
 }
+
+
+const CODE_FENCE_RUNS = /^\d+,\d+(;\d+,\d+)*$/;
+const CODE_FENCE_CLASS_LIST = /^syn-[a-z]+( syn-[a-z]+)*$/;
+
+const codeFenceTables = new WeakMap();
+
+function codeFenceTable(pre, code) {
+  if (codeFenceTables.has(pre)) return codeFenceTables.get(pre);
+  const runs = pre.getAttribute('data-runs') || '';
+  const lists = (pre.getAttribute('data-syn') || '').split('|');
+  let table = null;
+  const whole = code.childNodes.length === 1 && code.firstChild.nodeType === 3;
+  if (whole && CODE_FENCE_RUNS.test(runs) && lists.every((list) => CODE_FENCE_CLASS_LIST.test(list))) {
+    const text = code.firstChild.nodeValue;
+    const pieces = [];
+    let at = 0;
+    let fits = true;
+    for (const pair of runs.split(';')) {
+      const comma = pair.indexOf(',');
+      const index = Number(pair.slice(0, comma));
+      const length = Number(pair.slice(comma + 1));
+      if (index > lists.length || length === 0 || at + length > text.length) {
+        fits = false;
+        break;
+      }
+      pieces.push(index, at, length);
+      at += length;
+    }
+    
+    if (fits && at === text.length) {
+      let left = 0;
+      for (let i = 0; i < pieces.length; i += 3) if (pieces[i]) left += 1;
+      table = { lists, pieces, left, lineStarts: null };
+    }
+  }
+  codeFenceTables.set(pre, table);
+  return table;
+}
+
+function codeFenceLineStarts(table, text) {
+  if (table.lineStarts) return table.lineStarts;
+  const starts = [0];
+  for (let i = 0; i < text.length; i += 1) if (text.charCodeAt(i) === 10) starts.push(i + 1);
+  table.lineStarts = starts;
+  return starts;
+}
+
+function spliceCodeFenceRuns(node, base, table, from, to) {
+  const { lists, pieces } = table;
+  const text = node.nodeValue;
+  const out = document.createDocumentFragment();
+  let cursor = 0;
+  let drew = 0;
+  for (let i = 0; i < pieces.length; i += 3) {
+    const index = pieces[i];
+    const at = pieces[i + 1];
+    const length = pieces[i + 2];
+    if (!index) continue;
+    const end = at + length;
+    if (end <= from || at >= to) continue;
+    
+    if (at < base || end > base + text.length) continue;
+    if (at - base > cursor) out.appendChild(document.createTextNode(text.slice(cursor, at - base)));
+    const span = document.createElement('span');
+    span.className = lists[index - 1];
+    span.textContent = text.substr(at - base, length);
+    out.appendChild(span);
+    cursor = end - base;
+    drew += 1;
+  }
+  if (!drew) return 0;
+  if (cursor < text.length) out.appendChild(document.createTextNode(text.slice(cursor)));
+  node.replaceWith(out);
+  return drew;
+}
+
+function drawCodeFence(pre, stretch) {
+  if (!pre || !pre.hasAttribute('data-runs')) return false;
+  
+  if (pre.dataset.editingSource === 'true') return false;
+  const code = pre.firstElementChild;
+  if (!code || code.tagName !== 'CODE') return false;
+  const table = codeFenceTable(pre, code);
+  if (!table) {
+    pre.removeAttribute('data-runs');
+    pre.removeAttribute('data-syn');
+    return false;
+  }
+  const from = stretch ? stretch.from : 0;
+  const to = stretch ? stretch.to : code.textContent.length;
+  let drew = 0;
+  let base = 0;
+  
+  for (const node of Array.from(code.childNodes)) {
+    const length = node.textContent.length;
+    
+    if (node.nodeType === 3 && base < to && base + length > from) {
+      drew += spliceCodeFenceRuns(node, base, table, Math.max(from, base), Math.min(to, base + length));
+    }
+    base += length;
+  }
+  table.left -= drew;
+  if (table.left <= 0) {
+    pre.removeAttribute('data-runs');
+    pre.removeAttribute('data-syn');
+  }
+  return drew > 0;
+}
+
+function drawCodeFencesIn(root) {
+  if (!root || !root.querySelectorAll) return 0;
+  let drew = 0;
+  for (const pre of root.querySelectorAll('pre[data-runs]')) {
+    const code = pre.firstElementChild;
+    
+    if (code && code.tagName === 'CODE' && (code.childNodes.length !== 1 || code.firstChild.nodeType !== 3)) {
+      code.textContent = code.textContent;
+      codeFenceTables.delete(pre);
+    }
+    if (drawCodeFence(pre)) drew += 1;
+  }
+  return drew;
+}
+
+function codeFencePageTextChanged() {
+  forgetRenderedText();
+  refreshFind({ keepCurrent: true });
+}
+function drawEveryCodeFence() {
+  if (drawCodeFencesIn(app.querySelector('.document-body'))) codeFencePageTextChanged();
+}
+
+function codeFenceStretchNear(pre, code, codeBox, top, bottom) {
+  if (codeBox.top >= top && codeBox.bottom <= bottom) return null;
+  const table = codeFenceTable(pre, code);
+  if (!table) return null;
+  const text = code.textContent;
+  const starts = codeFenceLineStarts(table, text);
+  const height = codeBox.height / starts.length;
+  if (!(height > 0)) return null;
+  const first = Math.max(0, Math.floor((top - codeBox.top) / height));
+  const last = Math.min(starts.length - 1, Math.ceil((bottom - codeBox.top) / height));
+  if (first > last) return { from: 0, to: 0 };
+  return { from: starts[first], to: last + 1 < starts.length ? starts[last + 1] : text.length };
+}
+
+function drawCodeFencesNearReader() {
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  const fences = body.querySelectorAll('pre[data-runs]');
+  if (!fences.length) return;
+  const view = app.getBoundingClientRect();
+  
+  if (!view.height) return;
+  const near = [];
+  for (const pre of fences) {
+    const box = pre.getBoundingClientRect();
+    
+    if (!box.height) continue;
+    if (box.top > view.bottom + view.height) break;
+    if (box.bottom >= view.top - view.height) {
+      const code = pre.firstElementChild;
+      near.push([pre, code, code && code.getBoundingClientRect ? code.getBoundingClientRect() : box]);
+    }
+  }
+  const top = view.top - view.height;
+  const bottom = view.bottom + view.height;
+  let drew = 0;
+  for (const [pre, code, codeBox] of near) {
+    if (drawCodeFence(pre, code ? codeFenceStretchNear(pre, code, codeBox, top, bottom) : null)) drew += 1;
+  }
+  if (drew) codeFencePageTextChanged();
+}
+
+let codeFenceScrollFrame = 0;
+function scheduleCodeFencePass() {
+  if (codeFenceScrollFrame) return;
+  codeFenceScrollFrame = columnFrame(() => {
+    codeFenceScrollFrame = 0;
+    drawCodeFencesNearReader();
+  });
+}
+
+let codeFenceObserver = null;
+function watchCodeFences() {
+  if (typeof window.__leafColorFences === 'function') window.__leafColorFences();
+  if (codeFenceObserver) codeFenceObserver.disconnect();
+  const body = app.querySelector('.document-body');
+  if (!body) return;
+  const fences = body.querySelectorAll('pre[data-runs]');
+  if (!fences.length) return;
+  if (typeof IntersectionObserver === 'undefined') {
+    drawEveryCodeFence();
+    return;
+  }
+  if (!codeFenceObserver) {
+    codeFenceObserver = new IntersectionObserver(inThisColumn((entries) => {
+      
+      if (entries.some((entry) => entry.isIntersecting)) drawCodeFencesNearReader();
+      for (const entry of entries) if (!entry.target.hasAttribute('data-runs')) codeFenceObserver.unobserve(entry.target);
+    }), { root: app, rootMargin: '100% 0px' });
+  }
+  for (const pre of fences) codeFenceObserver.observe(pre);
+}
+window.leafWatchCodeFences = watchCodeFences;
 let mermaidLoadPromise = null;
 let katexLoadPromise = null;
 
@@ -36284,210 +36490,6 @@ function decorateCodeBlocks() {
     setCodeCopyLabel(button, 'Copy code');
     pre.appendChild(button);
   });
-}
-
-
-const CODE_FENCE_RUNS = /^\d+,\d+(;\d+,\d+)*$/;
-const CODE_FENCE_CLASS_LIST = /^syn-[a-z]+( syn-[a-z]+)*$/;
-
-const codeFenceTables = new WeakMap();
-
-function codeFenceTable(pre, code) {
-  if (codeFenceTables.has(pre)) return codeFenceTables.get(pre);
-  const runs = pre.getAttribute('data-runs') || '';
-  const lists = (pre.getAttribute('data-syn') || '').split('|');
-  let table = null;
-  const whole = code.childNodes.length === 1 && code.firstChild.nodeType === 3;
-  if (whole && CODE_FENCE_RUNS.test(runs) && lists.every((list) => CODE_FENCE_CLASS_LIST.test(list))) {
-    const text = code.firstChild.nodeValue;
-    const pieces = [];
-    let at = 0;
-    let fits = true;
-    for (const pair of runs.split(';')) {
-      const comma = pair.indexOf(',');
-      const index = Number(pair.slice(0, comma));
-      const length = Number(pair.slice(comma + 1));
-      if (index > lists.length || length === 0 || at + length > text.length) {
-        fits = false;
-        break;
-      }
-      pieces.push(index, at, length);
-      at += length;
-    }
-    
-    if (fits && at === text.length) {
-      let left = 0;
-      for (let i = 0; i < pieces.length; i += 3) if (pieces[i]) left += 1;
-      table = { lists, pieces, left, lineStarts: null };
-    }
-  }
-  codeFenceTables.set(pre, table);
-  return table;
-}
-
-function codeFenceLineStarts(table, text) {
-  if (table.lineStarts) return table.lineStarts;
-  const starts = [0];
-  for (let i = 0; i < text.length; i += 1) if (text.charCodeAt(i) === 10) starts.push(i + 1);
-  table.lineStarts = starts;
-  return starts;
-}
-
-function spliceCodeFenceRuns(node, base, table, from, to) {
-  const { lists, pieces } = table;
-  const text = node.nodeValue;
-  const out = document.createDocumentFragment();
-  let cursor = 0;
-  let drew = 0;
-  for (let i = 0; i < pieces.length; i += 3) {
-    const index = pieces[i];
-    const at = pieces[i + 1];
-    const length = pieces[i + 2];
-    if (!index) continue;
-    const end = at + length;
-    if (end <= from || at >= to) continue;
-    
-    if (at < base || end > base + text.length) continue;
-    if (at - base > cursor) out.appendChild(document.createTextNode(text.slice(cursor, at - base)));
-    const span = document.createElement('span');
-    span.className = lists[index - 1];
-    span.textContent = text.substr(at - base, length);
-    out.appendChild(span);
-    cursor = end - base;
-    drew += 1;
-  }
-  if (!drew) return 0;
-  if (cursor < text.length) out.appendChild(document.createTextNode(text.slice(cursor)));
-  node.replaceWith(out);
-  return drew;
-}
-
-function drawCodeFence(pre, stretch) {
-  if (!pre || !pre.hasAttribute('data-runs')) return false;
-  
-  if (pre.dataset.editingSource === 'true') return false;
-  const code = pre.firstElementChild;
-  if (!code || code.tagName !== 'CODE') return false;
-  const table = codeFenceTable(pre, code);
-  if (!table) {
-    pre.removeAttribute('data-runs');
-    pre.removeAttribute('data-syn');
-    return false;
-  }
-  const from = stretch ? stretch.from : 0;
-  const to = stretch ? stretch.to : code.textContent.length;
-  let drew = 0;
-  let base = 0;
-  
-  for (const node of Array.from(code.childNodes)) {
-    const length = node.textContent.length;
-    
-    if (node.nodeType === 3 && base < to && base + length > from) {
-      drew += spliceCodeFenceRuns(node, base, table, Math.max(from, base), Math.min(to, base + length));
-    }
-    base += length;
-  }
-  table.left -= drew;
-  if (table.left <= 0) {
-    pre.removeAttribute('data-runs');
-    pre.removeAttribute('data-syn');
-  }
-  return drew > 0;
-}
-
-function drawCodeFencesIn(root) {
-  if (!root || !root.querySelectorAll) return 0;
-  let drew = 0;
-  for (const pre of root.querySelectorAll('pre[data-runs]')) {
-    const code = pre.firstElementChild;
-    
-    if (code && code.tagName === 'CODE' && (code.childNodes.length !== 1 || code.firstChild.nodeType !== 3)) {
-      code.textContent = code.textContent;
-      codeFenceTables.delete(pre);
-    }
-    if (drawCodeFence(pre)) drew += 1;
-  }
-  return drew;
-}
-
-function codeFencePageTextChanged() {
-  forgetRenderedText();
-  refreshFind({ keepCurrent: true });
-}
-function drawEveryCodeFence() {
-  if (drawCodeFencesIn(app.querySelector('.document-body'))) codeFencePageTextChanged();
-}
-
-function codeFenceStretchNear(pre, code, codeBox, top, bottom) {
-  if (codeBox.top >= top && codeBox.bottom <= bottom) return null;
-  const table = codeFenceTable(pre, code);
-  if (!table) return null;
-  const text = code.textContent;
-  const starts = codeFenceLineStarts(table, text);
-  const height = codeBox.height / starts.length;
-  if (!(height > 0)) return null;
-  const first = Math.max(0, Math.floor((top - codeBox.top) / height));
-  const last = Math.min(starts.length - 1, Math.ceil((bottom - codeBox.top) / height));
-  if (first > last) return { from: 0, to: 0 };
-  return { from: starts[first], to: last + 1 < starts.length ? starts[last + 1] : text.length };
-}
-
-function drawCodeFencesNearReader() {
-  const body = app.querySelector('.document-body');
-  if (!body) return;
-  const fences = body.querySelectorAll('pre[data-runs]');
-  if (!fences.length) return;
-  const view = app.getBoundingClientRect();
-  
-  if (!view.height) return;
-  const near = [];
-  for (const pre of fences) {
-    const box = pre.getBoundingClientRect();
-    
-    if (!box.height) continue;
-    if (box.top > view.bottom + view.height) break;
-    if (box.bottom >= view.top - view.height) {
-      const code = pre.firstElementChild;
-      near.push([pre, code, code && code.getBoundingClientRect ? code.getBoundingClientRect() : box]);
-    }
-  }
-  const top = view.top - view.height;
-  const bottom = view.bottom + view.height;
-  let drew = 0;
-  for (const [pre, code, codeBox] of near) {
-    if (drawCodeFence(pre, code ? codeFenceStretchNear(pre, code, codeBox, top, bottom) : null)) drew += 1;
-  }
-  if (drew) codeFencePageTextChanged();
-}
-
-let codeFenceScrollFrame = 0;
-function scheduleCodeFencePass() {
-  if (codeFenceScrollFrame) return;
-  codeFenceScrollFrame = columnFrame(() => {
-    codeFenceScrollFrame = 0;
-    drawCodeFencesNearReader();
-  });
-}
-
-let codeFenceObserver = null;
-function watchCodeFences() {
-  if (codeFenceObserver) codeFenceObserver.disconnect();
-  const body = app.querySelector('.document-body');
-  if (!body) return;
-  const fences = body.querySelectorAll('pre[data-runs]');
-  if (!fences.length) return;
-  if (typeof IntersectionObserver === 'undefined') {
-    drawEveryCodeFence();
-    return;
-  }
-  if (!codeFenceObserver) {
-    codeFenceObserver = new IntersectionObserver(inThisColumn((entries) => {
-      
-      if (entries.some((entry) => entry.isIntersecting)) drawCodeFencesNearReader();
-      for (const entry of entries) if (!entry.target.hasAttribute('data-runs')) codeFenceObserver.unobserve(entry.target);
-    }), { root: app, rootMargin: '100% 0px' });
-  }
-  for (const pre of fences) codeFenceObserver.observe(pre);
 }
 
 function documentOutlineHeadings(body) {
