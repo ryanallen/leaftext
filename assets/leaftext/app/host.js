@@ -1043,7 +1043,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       const at = place ? Number(place.at) : 0;
       const from = Number.isSafeInteger(place?.from) && place.from >= 0 ? place.from : null;
       const into = Number.isFinite(place?.into) && place.into >= 0 && place.into <= 1 ? place.into : null;
-      if (path && at > 0) run(`window.leafRibbonPlace && window.leafRibbonPlace(${JSON.stringify(path)}, ${Math.min(1, at)}, ${JSON.stringify(from)}, ${JSON.stringify(into)});`);
+      const item = Number.isSafeInteger(place?.item) && place.item >= 0 ? place.item : null;
+      if (path && at > 0) run(`window.leafRibbonPlace && window.leafRibbonPlace(${JSON.stringify(path)}, ${Math.min(1, at)}, ${JSON.stringify(from)}, ${JSON.stringify(into)}, ${JSON.stringify(item)});`);
     },
     keepRibbon: (command) => {
       const path = String(command.path || '');
@@ -1051,12 +1052,21 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       if (!path || !(at > 0)) return;
       const from = Number.isSafeInteger(command.from) && command.from >= 0 ? command.from : null;
       const into = Number.isFinite(command.into) && command.into >= 0 && command.into <= 1 ? command.into : null;
+      // A book's chapter, where the chapter carries no source range.
+      const item = from === null && into !== null && Number.isSafeInteger(command.item) && command.item >= 0 ? command.item : null;
       const places = keptRibbons();
       const held = places[path];
-      if (held && (from !== null && into !== null && Number.isSafeInteger(held.from) && Number.isFinite(held.into)
+      const heldItem = Number.isSafeInteger(held?.item) ? held.item : null;
+      // A keyed place replaces a bare share, which may have been kept against a page of another height, and a bare share never displaces one.
+      const heldKeyed = !!held && Number.isFinite(held.into) && (Number.isSafeInteger(held.from) || heldItem !== null);
+      const keyed = (from !== null || item !== null) && into !== null;
+      if (held && heldKeyed && !keyed) return;
+      if (held && (!keyed || heldKeyed) && (from !== null && into !== null && Number.isSafeInteger(held.from) && Number.isFinite(held.into)
         ? from < held.from || (from === held.from && into <= held.into)
-        : at <= Number(held.at))) return;
-      places[path] = { at, from: into !== null ? from : null, into: from !== null ? into : null, read: Date.now() };
+        : item !== null && heldItem !== null && !Number.isSafeInteger(held.from) && Number.isFinite(held.into)
+          ? item < heldItem || (item === heldItem && into <= held.into)
+          : at <= Number(held.at))) return;
+      places[path] = { at, from: keyed ? from : null, into: keyed ? into : null, item: keyed ? item : null, read: Date.now() };
       keepRibbons(places);
     },
     forgetRibbon: (command) => {

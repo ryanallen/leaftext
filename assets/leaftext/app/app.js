@@ -763,7 +763,7 @@ const COLUMN_STATE_NAMES = [
   
   'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor', 'exactReadingRestore',
   
-  'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingDeepest',
+  'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingDeepest', 'readingHeldPlaces',
   
   'minimapViewportFrame', 'minimapPreviewFrame', 'minimapContentVersion', 'minimapBuiltVersion',
   'minimapBuiltSourceWidth', 'minimapBuiltPreviewWidth', 'minimapBuiltFrameWidth', 'minimapResizeObserver', 'minimapLayoutObserver',
@@ -855,6 +855,7 @@ function saveColumnState(column) {
   held.readingWatch = readingWatch;
   held.readingBlockShare = readingBlockShare;
   held.readingDeepest = readingDeepest;
+  held.readingHeldPlaces = readingHeldPlaces;
   
   held.minimapViewportFrame = minimapViewportFrame;
   held.minimapPreviewFrame = minimapPreviewFrame;
@@ -979,6 +980,7 @@ function loadColumnState(column) {
   readingWatch = held.readingWatch;
   readingBlockShare = held.readingBlockShare;
   readingDeepest = held.readingDeepest;
+  readingHeldPlaces = held.readingHeldPlaces;
   
   minimapViewportFrame = held.minimapViewportFrame;
   minimapPreviewFrame = held.minimapPreviewFrame;
@@ -30231,7 +30233,7 @@ function readingDwellEnded(watch, el) {
     watch.waiting.add(el);
     return;
   }
-  const box = watch.boxes.get(el);
+  const box = readingFreshBox(watch, el);
   if (box && box.height > box.view) {
     creditReadingShare(watch, el, box, app.scrollTop);
     return;
@@ -30239,7 +30241,11 @@ function readingDwellEnded(watch, el) {
   const id = readingBlockId(el);
   const seen = readingSeenBlocks.get(watch.path) || new Set();
   readingSeenBlocks.set(watch.path, seen);
-  if (seen.has(id)) return;
+  if (seen.has(id)) {
+    
+    if (!readingDeepest.has(watch.path)) markReadingPassed(watch, el);
+    return;
+  }
   seen.add(id);
   const pictures = readingPictureCount(watch, el);
   
@@ -30249,20 +30255,30 @@ function readingDwellEnded(watch, el) {
   markReadingPassed(watch, el);
 }
 
+function readingFreshBox(watch, el) {
+  const box = readingBlockBox(el.getBoundingClientRect(), app.getBoundingClientRect().top, readingScroll());
+  if (box) watch.boxes.set(el, box);
+  return box || watch.boxes.get(el);
+}
+
 var readingBlockShare = new Map();
 
 function readingPlaceDepth(place) {
-  if (place.from === null || place.from >= documentSourceLength()) return place.at;
+  const byBlock = place.from !== null && place.from < documentSourceLength();
+  const byChapter = !byBlock && place.item != null && place.into !== null;
+  if (!byBlock && !byChapter) return place.at;
   let el = place.element;
   if (!el || !el.isConnected) {
+    const id = byChapter ? `leaf-book-item-${place.item}` : null;
     el = (readingWatch.blocks || []).find((block) => {
+      if (byChapter) return block.id === id;
       const range = rangeOf(block, 'block');
       return range && range.start <= place.from && place.from < range.end;
     });
     place.element = el || null;
   }
   if (!el) return place.at;
-  const range = rangeOf(el, 'block');
+  const range = byBlock && rangeOf(el, 'block');
   if (range) place.from = range.start;
   const box = readingBlockBox(el.getBoundingClientRect(), app.getBoundingClientRect().top, readingScroll());
   return box ? Math.min(1, Math.max(0, (box.top + place.into * box.height) / box.page)) : place.at;
@@ -30336,17 +30352,53 @@ function markReadingPassed(watch, el) {
 }
 function readingPlaceAfter(next, held) {
   if (!held) return true;
+  
+  if (readingPlaceKeyed(next) !== readingPlaceKeyed(held)) return readingPlaceKeyed(next);
   if (next.from !== null && held.from !== null) return next.from > held.from || (next.from === held.from && next.into > held.into);
+  if (next.from === null && held.from === null && next.item != null && held.item != null) return next.item > held.item || (next.item === held.item && next.into > held.into);
   return next.at > held.at;
 }
+function readingPlaceKeyed(place) {
+  return place.into != null && (place.from !== null || place.item != null);
+}
+
+function readingChapterNumber(el) {
+  const match = el && el.classList && el.classList.contains('book-item') && /^leaf-book-item-(\d+)$/.exec(el.id || '');
+  return match ? Number(match[1]) : null;
+}
+
+var readingHeldPlaces = [];
+function readingPageFilling() {
+  return typeof readingHasHeldBlocks === 'function' && readingHasHeldBlocks();
+}
+function settleHeldReadingPlaces() {
+  const held = readingHeldPlaces;
+  readingHeldPlaces = [];
+  for (const one of held) {
+    if (!readingWatch || readingWatch.path !== one.path) continue;
+    let share = one.share;
+    if (one.el && one.el.isConnected && one.into !== null) {
+      const box = readingBlockBox(one.el.getBoundingClientRect(), app.getBoundingClientRect().top, readingScroll());
+      if (box) share = Math.min(1, Math.max(0, (box.top + one.into * box.height) / box.page));
+    }
+    noteReadingDepth(one.path, share, one.el, one.into);
+  }
+}
 function noteReadingDepth(path, share, el = null, into = null) {
+  if (readingPageFilling()) {
+    
+    readingHeldPlaces = readingHeldPlaces.concat([{ path, share, el, into }]);
+    return;
+  }
   const range = el && rangeOf(el, 'block');
   const from = range && Number.isSafeInteger(range.start) && range.start < documentSourceLength() ? range.start : null;
-  const place = { at: share, from, into: from !== null ? into : null, element: from !== null ? el : null };
+  const item = from === null && Number.isFinite(into) ? readingChapterNumber(el) : null;
+  const keyed = from !== null || item !== null;
+  const place = { at: share, from, into: keyed ? into : null, item, element: keyed ? el : null };
   if (!readingPlaceAfter(place, readingDeepest.get(path))) return;
   readingDeepest.set(path, place);
   drawReadingRibbon();
-  if (hostKeepsRibbons()) send({ command: 'keepRibbon', path, at: share, from, into: place.into });
+  if (hostKeepsRibbons()) send({ command: 'keepRibbon', path, at: share, from, into: place.into, item });
 }
 
 function hostKeepsRibbons() {
@@ -30363,13 +30415,23 @@ function forgetReadingRibbon() {
   readingDeepest.delete(path);
   drawReadingRibbon();
   if (hostKeepsRibbons()) send({ command: 'forgetRibbon', path });
+  
+  const watch = readingWatch;
+  for (const el of watch.visible) {
+    const timer = watch.timers.get(el);
+    if (timer) clearTimeout(timer);
+    watch.timers.delete(el);
+    armReadingDwell(watch, el);
+  }
 }
 
-window.leafRibbonPlace = function (path, at, from = null, into = null) {
+window.leafRibbonPlace = function (path, at, from = null, into = null, item = null) {
   const share = Math.min(1, Number(at) || 0);
   if (!path || !(share > 0)) return;
-  const valid = Number.isSafeInteger(from) && from >= 0 && Number.isFinite(into) && into >= 0 && into <= 1 && from < documentSourceLength();
-  const place = { at: share, from: valid ? from : null, into: valid ? into : null, element: null };
+  const deep = Number.isFinite(into) && into >= 0 && into <= 1;
+  const valid = deep && Number.isSafeInteger(from) && from >= 0 && from < documentSourceLength();
+  const chapter = !valid && deep && Number.isSafeInteger(item) && item >= 0;
+  const place = { at: share, from: valid ? from : null, into: valid || chapter ? into : null, item: chapter ? item : null, element: null };
   if (!readingPlaceAfter(place, readingDeepest.get(path))) return;
   readingDeepest.set(path, place);
   drawReadingRibbon();
@@ -30390,6 +30452,7 @@ function readingFallbackCheck(watch) {
 function stopWatchingReading() {
   const watch = readingWatch;
   readingWatch = null;
+  readingHeldPlaces = [];
   if (!watch) return;
   if (watch.observer) watch.observer.disconnect();
   if (watch.runObserver) watch.runObserver.disconnect();
@@ -31997,6 +32060,8 @@ function cancelReadingFill() {
 }
 function finishReadingFill() {
   cancelReadingFill();
+  
+  settleHeldReadingPlaces();
   invalidateMinimapPreview();
   scheduleMinimapSpacerResize();
   scheduleReaderLayoutUpdate(true);
@@ -39324,7 +39389,7 @@ function measureDocumentMinimap(track) {
   const scrollHeight = Math.max(1, Math.ceil(reader.scrollHeight));
   const ribbon = track.querySelector('.document-minimap-ribbon');
   const place = readingWatch && readingDeepest.get(readingWatch.path);
-  if (place && place.from !== null && ribbon && Number(ribbon.dataset.pageHeight) !== reader.scrollHeight) drawReadingRibbon();
+  if (place && ribbon && Number(ribbon.dataset.pageHeight) !== reader.scrollHeight) drawReadingRibbon();
   const viewportHeight = Math.max(1, Math.ceil(reader.clientHeight));
   const scrollable = Math.max(0, scrollHeight - viewportHeight);
   const scrollTop = Math.min(scrollable, Math.max(0, reader.scrollTop));
@@ -39454,8 +39519,8 @@ function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, fir
     && minimapBuiltSourceWidth === metrics.sourceWidth
     && minimapBuiltPreviewWidth === previewWidth
     && minimapBuiltFrameWidth === frameWidth
-    && minimapBuiltFirstRow === first
-    && minimapBuiltLastRow === last
+    && minimapBuiltFirstRow <= first
+    && minimapBuiltLastRow >= last
     && minimapBuiltRowPath === rowPath
     && !minimapBuiltSliced
     && !minimapHeldTableMeetsView(metrics)

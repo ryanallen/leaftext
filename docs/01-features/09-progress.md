@@ -23,7 +23,7 @@ Each area grows from one kind of thing you already do, whether you do it by hand
 | Marking | Highlighting passages and hanging notes off them |
 | Charting | Drawing flowcharts, including diagrams an agent writes into a note through Leaftext |
 | Tabling | Filling in tables |
-| Furnishing | Ticking checkboxes, writing fields and placing pictures |
+| Furnishing | Ticking checkboxes, writing fields, placing pictures, and giving a slide its build, once for each slide each time the app is opened |
 | Wayfinding | Making links from one note to another, following links, and opening the map and the glossary |
 | Seeking | Every search that finds something, and opening what a vault search found |
 | Tending | Making and deleting files and folders, renaming and moving files, and setting favorites |
