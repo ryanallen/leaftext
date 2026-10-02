@@ -8,146 +8,146 @@
 - Summary: Read, understand and edit the files other readers leave closed.
 
 ## Rendering
-- Page: https://leaftext.com/docs/01-features/01-rendering.md
+- Page: https://leaftext.com/docs/01-features/01-rendering.html
 - Markdown: https://leaftext.com/docs/01-features/01-rendering.md
 - Summary: Leaftext picks a pipeline from the file extension, and from the file's own first words where its name carries no extension at all — .gitignore, LICENSE, Procfile and the rest. A nameless file that ...
 
 ## Navigation
-- Page: https://leaftext.com/docs/01-features/02-navigation.md
+- Page: https://leaftext.com/docs/01-features/02-navigation.html
 - Markdown: https://leaftext.com/docs/01-features/02-navigation.md
 - Summary: The navigation model is simple from the outside and fairly careful under the hood. Each tab keeps its own file history and its own in-document scroll history.
 
 ## Library
-- Page: https://leaftext.com/docs/01-features/03-library.md
+- Page: https://leaftext.com/docs/01-features/03-library.html
 - Markdown: https://leaftext.com/docs/01-features/03-library.md
 - Summary: The library is the part of Leaftext that helps you find documents, not just read the one you already opened. It lives in a left-side pane, and everything it shows is read from disk when you ask for...
 
 ## Minimap
-- Page: https://leaftext.com/docs/01-features/04-minimap.md
+- Page: https://leaftext.com/docs/01-features/04-minimap.html
 - Markdown: https://leaftext.com/docs/01-features/04-minimap.md
 - Summary: A web tab keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scroll...
 
 ## Settings
-- Page: https://leaftext.com/docs/01-features/05-settings.md
+- Page: https://leaftext.com/docs/01-features/05-settings.html
 - Markdown: https://leaftext.com/docs/01-features/05-settings.md
 - Summary: Settings are owned by the Rust app rather than browser storage, which keeps them durable across restarts and consistent across the embedded WebView.
 
 ## Themes
-- Page: https://leaftext.com/docs/01-features/06-themes.md
+- Page: https://leaftext.com/docs/01-features/06-themes.html
 - Markdown: https://leaftext.com/docs/01-features/06-themes.md
 - Summary: From the user side, themes are simple: open the theme picker, tap a family, pick an appearance, and the app updates immediately. Under the hood every family covers the full --lt- token set, names t...
 
 ## Editing
-- Page: https://leaftext.com/docs/01-features/07-editing.md
+- Page: https://leaftext.com/docs/01-features/07-editing.html
 - Markdown: https://leaftext.com/docs/01-features/07-editing.md
 - Summary: Leaftext is reading-first, but it is also editable. You can edit in the reading view itself — click into a sentence and type, toggle a checkbox — and the change is written back into the source at e...
 
 ## Relational tables
-- Page: https://leaftext.com/docs/01-features/08-relational-tables.md
+- Page: https://leaftext.com/docs/01-features/08-relational-tables.html
 - Markdown: https://leaftext.com/docs/01-features/08-relational-tables.md
 - Summary: Put each row's key in the first column and write a relation as a link to the row with that key in another note, and Leaftext reads the table as linked records.
 
 ## Your Grove
-- Page: https://leaftext.com/docs/01-features/09-progress.md
+- Page: https://leaftext.com/docs/01-features/09-progress.html
 - Markdown: https://leaftext.com/docs/01-features/09-progress.md
 - Summary: Leaftext keeps a quiet record of what you do in it and shows it as your Grove: thirteen Growth areas, each leveled by its own kind of use, and one Grove level that everything you do fills. XP is ea...
 
 ## Your own AI agent in Leaftext
-- Page: https://leaftext.com/docs/01-features/10-agents.md
+- Page: https://leaftext.com/docs/01-features/10-agents.html
 - Markdown: https://leaftext.com/docs/01-features/10-agents.md
 - Summary: Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, add the app as a tool server in your agent's settings, and the agent can read the document, edit and save it, tick task...
 
 ## Meet Leaftext
-- Page: https://leaftext.com/docs/01-introduction.md
+- Page: https://leaftext.com/docs/01-introduction.html
 - Markdown: https://leaftext.com/docs/01-introduction.md
 - Summary: Leaftext turns the files you already have into pages you actually want to read. Open a Markdown, HTML, XML, JSON, or YAML document — a plain text or config file, a CSV table, a source file, or a sa...
 
 ## Installation
-- Page: https://leaftext.com/docs/02-installation.md
+- Page: https://leaftext.com/docs/02-installation.html
 - Markdown: https://leaftext.com/docs/02-installation.md
 - Summary: Leaftext is free, and it ships ready to run on macOS and Windows. There's no account to create, no plugins to pick, and no runtime to install first — download it, open it, and it works.
 
 ## Quickstart
-- Page: https://leaftext.com/docs/03-quickstart.md
+- Page: https://leaftext.com/docs/03-quickstart.html
 - Markdown: https://leaftext.com/docs/03-quickstart.md
 - Summary: There's nothing to set up. No account, no folder to designate, no plugins to choose. Point Leaftext at a file you already have and start reading. This page walks the shortest useful path: open a fi...
 
 ## Get help
-- Page: https://leaftext.com/docs/04-help.md
+- Page: https://leaftext.com/docs/04-help.html
 - Markdown: https://leaftext.com/docs/04-help.md
 - Summary: Leaftext is one app made by one person, and there is no support desk behind it. What there is instead is a public page where questions are asked and answered where everybody can read them, so the a...
 
 ## How it compares
-- Page: https://leaftext.com/docs/05-compare.md
+- Page: https://leaftext.com/docs/05-compare.html
 - Markdown: https://leaftext.com/docs/05-compare.md
 - Summary: Each of these apps is good at something. Obsidian is a notebook of linked Markdown notes with a large plugin library; Typora writes Markdown in the finished page; Calibre manages and reads a whole ...
 
 ## Files and formats
-- Page: https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md
+- Page: https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.md
-- Summary: [l-rendering]: ../01-features/01-rendering.md [l-summary]: ../01-features/01-rendering.md#summary [l-md]: ../01-features/01-rendering.md#markdown [l-html]: ../01-features/01-rendering.md#html-files...
+- Summary: [l-rendering]: ../01-features/01-rendering.md [l-summary]: ../01-features/01-rendering.mdsummary [l-md]: ../01-features/01-rendering.mdmarkdown [l-html]: ../01-features/01-rendering.mdhtml-files [l...
 
 ## Markdown and diagrams
-- Page: https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md
+- Page: https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.md
-- Summary: [l-md]: ../01-features/01-rendering.md#markdown [l-headings]: ../01-features/01-rendering.md#headings [l-text]: ../01-features/01-rendering.md#text-formatting [l-lists]: ../01-features/01-rendering...
+- Summary: [l-md]: ../01-features/01-rendering.mdmarkdown [l-headings]: ../01-features/01-rendering.mdheadings [l-text]: ../01-features/01-rendering.mdtext-formatting [l-lists]: ../01-features/01-rendering.md...
 
 ## Reading and moving around
-- Page: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
+- Page: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
-- Summary: [l-shortcuts]: ../01-features/02-navigation.md#shortcuts [l-appbar]: ../01-features/02-navigation.md#the-app-bar [l-toolbar]: ../01-features/02-navigation.md#the-floating-toolbar [l-tabs]: ../01-fe...
+- Summary: [l-shortcuts]: ../01-features/02-navigation.mdshortcuts [l-appbar]: ../01-features/02-navigation.mdthe-app-bar [l-toolbar]: ../01-features/02-navigation.mdthe-floating-toolbar [l-tabs]: ../01-featu...
 
 ## Writing and editing
-- Page: https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md
+- Page: https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.md
-- Summary: [l-new]: ../01-features/07-editing.md#new-document [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view [l-rename]: ../01-features/07-editing.md#renaming-from-the-heading [l-ema...
+- Summary: [l-new]: ../01-features/07-editing.mdnew-document [l-inline]: ../01-features/07-editing.mdinline-editing-the-reading-view [l-rename]: ../01-features/07-editing.mdrenaming-from-the-heading [l-email]...
 
 ## Library, search and sync
-- Page: https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md
+- Page: https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.md
-- Summary: [l-vaults]: ../01-features/03-library.md#vaults [l-first-bubble]: ../01-features/03-library.md#the-bubble-on-your-first-launch [l-first-vault]: ../01-features/03-library.md#your-first-vault [l-clou...
+- Summary: [l-vaults]: ../01-features/03-library.mdvaults [l-first-bubble]: ../01-features/03-library.mdthe-bubble-on-your-first-launch [l-first-vault]: ../01-features/03-library.mdyour-first-vault [l-cloud]:...
 
 ## Look and feel
-- Page: https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
+- Page: https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.md
-- Summary: [l-families]: ../01-features/06-themes.md#families [l-earned]: ../01-features/06-themes.md#earned-families [l-previews]: ../01-features/06-themes.md#previews [l-see-all]: ../01-features/06-themes.m...
+- Summary: [l-families]: ../01-features/06-themes.mdfamilies [l-earned]: ../01-features/06-themes.mdearned-families [l-previews]: ../01-features/06-themes.mdpreviews [l-see-all]: ../01-features/06-themes.mdse...
 
 ## Progress
-- Page: https://leaftext.com/docs/06-comparison-chart/07-progress.md
+- Page: https://leaftext.com/docs/06-comparison-chart/07-progress.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/07-progress.md
-- Summary: [l-open]: ../01-features/09-progress.md#open-your-grove [l-counts]: ../01-features/09-progress.md#what-it-counts [l-xp]: ../01-features/09-progress.md#see-xp-as-it-lands [l-grow]: ../01-features/09...
+- Summary: [l-open]: ../01-features/09-progress.mdopen-your-grove [l-counts]: ../01-features/09-progress.mdwhat-it-counts [l-xp]: ../01-features/09-progress.mdsee-xp-as-it-lands [l-grow]: ../01-features/09-pr...
 
 ## Install, updates and privacy
-- Page: https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
+- Page: https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.md
-- Summary: [l-install]: ../02-installation.md#install [l-admin]: ../02-installation.md#does-it-need-administrator-rights [l-where]: ../02-installation.md#where-it-goes [l-uninstall]: ../02-installation.md#uni...
+- Summary: [l-install]: ../02-installation.mdinstall [l-admin]: ../02-installation.mddoes-it-need-administrator-rights [l-where]: ../02-installation.mdwhere-it-goes [l-uninstall]: ../02-installation.mduninsta...
 
 ## Export and the published site
-- Page: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
+- Page: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
-- Summary: [l-export]: ../01-features/02-navigation.md#export-the-page [l-launch]: ../02-installation.md#launch [l-images]: ../01-features/01-rendering.md#images [l-html]: ../01-features/01-rendering.md#html-...
+- Summary: [l-export]: ../01-features/02-navigation.mdexport-the-page [l-launch]: ../02-installation.mdlaunch [l-images]: ../01-features/01-rendering.mdimages [l-html]: ../01-features/01-rendering.mdhtml-file...
 
 ## Coming
-- Page: https://leaftext.com/docs/06-comparison-chart/10-coming.md
+- Page: https://leaftext.com/docs/06-comparison-chart/10-coming.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/10-coming.md
-- Summary: [l-roadmap]: ../05-compare.md#on-our-roadmap [l-mcp]: ../05-compare.md#outside-tools-through-mcp [l-agent]: ../05-compare.md#your-own-ai-agent-in-the-open-document [l-define]: ../05-compare.md#defi...
+- Summary: [l-roadmap]: ../05-compare.mdon-our-roadmap [l-mcp]: ../05-compare.mdoutside-tools-through-mcp [l-agent]: ../05-compare.mdyour-own-ai-agent-in-the-open-document [l-define]: ../05-compare.mddefine-a...
 
 ## Privacy
-- Page: https://leaftext.com/docs/07-privacy.md
+- Page: https://leaftext.com/docs/07-privacy.html
 - Markdown: https://leaftext.com/docs/07-privacy.md
 - Summary: Leaftext is a desktop app for reading and writing your own documents, made by one person. There is no Leaftext account and no Leaftext server: nothing you open, write or connect is sent to the make...
 
 ## Glossary for Le Morte d'Arthur
-- Page: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md
+- Page: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md
 - Summary: The terms below occur in the Standard Ebooks edition of Sir Thomas Malory's Le Morte d'Arthur beside this page. They explain the old words, the names and the places that can stop a first-time reade...
 
 ## Glossary
-- Page: https://leaftext.com/docs/GLOSSARY.md
+- Page: https://leaftext.com/docs/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/GLOSSARY.md
 - Summary: Every word Leaftext uses for a part of itself, in one file, alphabetically. Wherever one of these terms appears in a page, Leaftext links it for you; clicking the link opens that entry in a bottom ...
 
 ## Leaftext documentation
-- Page: https://leaftext.com/docs/
+- Page: https://leaftext.com/docs/README.html
 - Markdown: https://leaftext.com/docs/README.md
 - Summary: Leaftext is a free desktop app for reading and writing your own documents. Open a local Markdown, HTML, XML, JSON, YAML, plain text (.txt), config (.ini), spreadsheet table (.csv, .tsv), source, em...

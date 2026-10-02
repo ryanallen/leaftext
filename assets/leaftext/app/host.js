@@ -387,14 +387,14 @@ export function sayMissing(file, reason) {
 }
 
 /** Point the page's canonical address and its Markdown alternate at the document on screen, so a crawler or a reader copying the address from the head is handed the page they are on rather than the one they arrived at. Only the two lines a page already carries are moved; a page without them gains none. */
-export function repointHead(path, anchor = '') {
+export function repointHead(path, anchor = '', page = '') {
   if (typeof document === 'undefined' || !path) return;
   const head = document.head;
   if (!head) return;
   const canonical = head.querySelector('link[rel="canonical"]');
-  if (canonical) canonical.setAttribute('href', new URL(`#${path}${anchor ? `#${anchor}` : ''}`, location.href).href);
+  if (canonical) canonical.setAttribute('href', page ? new URL(page, location.origin).href : new URL(`#${path}${anchor ? `#${anchor}` : ''}`, location.href).href);
   const markdown = head.querySelector('link[rel="alternate"][type="text/markdown"]');
-  if (markdown) markdown.setAttribute('href', path);
+  if (markdown) markdown.setAttribute('href', page ? new URL(path, location.origin + '/').href : path);
 }
 
 export async function startLeaftext({ documents, name = '', read, imageSizes = {}, frontPage = null, fetch: fetchWith = fetch }) {
@@ -477,6 +477,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // Every picture address this page made out of the open book, let go together when another document opens: revoking one as it scrolls away would leave nothing to decode it from when the reader scrolls back.
   const minted = [];
   const known = new Set(documents.map((entry) => entry.path));
+  const pageByPath = new Map(documents.filter((entry) => entry.page).map((entry) => [entry.path, entry.page]));
+  const pathByPage = new Map(documents.filter((entry) => entry.page).map((entry) => [entry.page, entry.path]));
   let open = null;
   // Keep the drawn bytes for the source view and return without another fetch.
   let held = null;
@@ -713,7 +715,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
 
   /** The address a document, and a heading inside it, is read at. */
   function addressFor(path, anchor) {
-    return `#${path}${anchor ? `#${anchor}` : ''}`;
+    const page = pageByPath.get(path);
+    return page ? `${page}${anchor ? `#${encodeURIComponent(anchor)}` : ''}` : `${window.__leafSiteRoot || '/'}#${path}${anchor ? `#${anchor}` : ''}`;
   }
 
   function decodeAddressPart(text) {
@@ -740,9 +743,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   function writeAddress(path, anchor) {
     const url = addressFor(path, anchor);
     const entry = { path, anchor: anchor || '', place: null };
-    atAddress = url;
+    atAddress = new URL(url, location.origin).pathname + new URL(url, location.origin).hash;
     // The same address twice is an entry the browser's own Back looks dead on.
-    if (!landed || location.hash === url) {
+    if (!landed || location.pathname + location.hash === atAddress) {
       landed = true;
       history.replaceState(entry, '', url);
       return;
@@ -916,29 +919,30 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       core.setGlossary(words || '');
       glossary = words == null ? null : chosen;
     }
+    if (address) writeAddress(path, anchor);
     drawDocument(path, source);
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
-    if (address) writeAddress(path, anchor);
-    repointHead(path, anchor);
+    repointHead(path, anchor, pageByPath.get(path));
     restorePlace(anchor, place);
   }
 
   /** The document the reader arrived on: whatever the address names, or the fallback. Its entry is replaced rather than added to. */
   async function openAddress(fallback) {
     const asked = addressParts(location.hash);
-    const wanted = known.has(asked.path) ? asked : { path: fallback, anchor: '' };
+    const onPage = pathByPage.get(location.pathname);
+    const wanted = known.has(asked.path) ? asked : onPage ? { path: onPage, anchor: decodeAddressPart(location.hash.slice(1)) } : { path: fallback, anchor: '' };
     if (wanted.path) await openDocument(wanted.path, { anchor: wanted.anchor });
   }
 
   /** The address changed under the page — the browser's own Back or Forward, or one typed into the bar. The entry says which document, where in it, and where the reader was when they left it. */
   async function goToAddress() {
-    if (location.hash === atAddress) return;
-    atAddress = location.hash;
+    if (location.pathname + location.hash === atAddress) return;
+    atAddress = location.pathname + location.hash;
     const entry = history.state && typeof history.state === 'object' ? history.state : null;
     const asked = addressParts(location.hash);
-    const path = (entry && entry.path) || asked.path;
-    const anchor = (entry && entry.anchor) || asked.anchor;
+    const path = (entry && entry.path) || (known.has(asked.path) ? asked.path : pathByPage.get(location.pathname));
+    const anchor = (entry && entry.anchor) || (known.has(asked.path) ? asked.anchor : decodeAddressPart(location.hash.slice(1)));
     const place = entry && entry.place;
     if (!known.has(path)) return;
     if (path !== open) {

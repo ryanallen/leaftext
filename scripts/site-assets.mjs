@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
-import { SITE_FRAGMENT, inPlaceSite, writeDocsList } from './site-page.mjs';
+import { SITE_FRAGMENT, inPlaceSite, pageOf, writeDocsList } from './site-page.mjs';
 import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
 import { FRONT_LAYOUT_CLASS, layoutFrontPage } from '../site/front-page-layout.js';
 
@@ -136,12 +136,14 @@ export function frontLayout(leaf, from = root) {
 export async function bakeSite(leaf, project, from = root, { layout = frontLayout(leaf, from) } = {}) {
   const fragmentFile = join(from, SITE_FRAGMENT);
   if (!existsSync(fragmentFile)) throw new Error(`${SITE_FRAGMENT} is not here, so the page would carry none of leaftext.com's own lines`);
-  const { page, listing } = await inPlaceSite(leaf, from, SITE_PATHS, {
+  const { page, listing, pages } = await inPlaceSite(leaf, from, SITE_PATHS, {
     name: SITE_NAME,
-    assets: APP_BASE,
+    assets: `/${APP_BASE}`,
+    siteRoot: '/',
     fragment: readFileSync(fragmentFile, 'utf8'),
     imageSizes: IMAGE_SIZES_PATH,
     layout,
+    pages: true,
   });
   // The host lays out only the document the listing names, so a site with no landing layout — Emptyguru — draws every page as the app does.
   listing.frontPage = FRONT_DOCUMENT;
@@ -152,6 +154,7 @@ export async function bakeSite(leaf, project, from = root, { layout = frontLayou
   return new Map([
     [FRONT_PAGE, fillMarks(page, project)],
     [LISTING, `${JSON.stringify(listing, null, 2)}\n`],
+    ...[...pages].map(([path, html]) => [path, fillMarks(html, project)]),
   ]);
 }
 
@@ -247,7 +250,7 @@ export async function previewAnswers(app, plainBytes, colorsBytes, { baked = tru
  * `--write` writes the built files and leaves the pages alone. It still bakes them, as its check that the module can draw the README before a byte crosses; nothing reads the result. Only `--bake` writes them, into the workspace the deploy uploads.
  */
 export function writtenPaths({ bakeOnly = false } = {}) {
-  return bakeOnly ? [FRONT_PAGE, LISTING, DOCS_PAGE] : [...PUBLISHED];
+  return bakeOnly ? [FRONT_PAGE, LISTING, ...docsPaths().filter((path) => pageOf(path)).map((path) => `docs/${pageOf(path)}`), DOCS_PAGE] : [...PUBLISHED];
 }
 
 /** The token the licenses document carries where the running version goes; the desktop fills it when it opens the document. */

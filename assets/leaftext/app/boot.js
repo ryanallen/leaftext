@@ -12,7 +12,7 @@ import { fetchWatched } from './fetches.js';
 async function fetched(path) {
   let response;
   try {
-    response = await fetchWatched(path);
+    response = await fetchWatched(window.__leafSiteRoot ? new URL(path, new URL(window.__leafSiteRoot, location.origin)).href : path);
   } catch (error) {
     throw Object.assign(new Error(String((error && error.message) || error)), { file: path });
   }

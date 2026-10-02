@@ -7,6 +7,8 @@
 # The page every address on the site serves and the listing it reads, written by the site's own deploy beside the documents. Never committed: a page written here would be whatever the README said the day somebody wrote it.
 /index.html
 /documents.json
+/docs/**/*.html
+!/docs/index.html
 .release-tag
 /.tmp
 .agents/settings.local.json

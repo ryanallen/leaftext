@@ -33,7 +33,7 @@ export function policyFor(assets) {
  *
  * `assets` is where the front end is served from: beside the page for a folder export, or another site's address for a site that carries none of its own. `head` is the site's own lines — its description, its cards, its alternates — `foot` is its `noscript` block, and `words` is the landing document already drawn, so the first response carries it.
  */
-export function sitePage(page, bootScript, { assets = ASSETS, head = '', foot = '', words = '' } = {}) {
+export function sitePage(page, bootScript, { assets = ASSETS, head = '', foot = '', words = '', siteRoot = '' } = {}) {
   // Every name the page gives a file of its own is `assets/…` in quotes, so one rewrite moves them all. Made on the app's page alone, before anything is written into it, so a line the site or a document brings is never rewritten.
   const own = assets === ASSETS ? page : page.replace(/(["'])assets\//g, `$1${assets}`);
   const withPolicy = own.replace(/content="default-src[^"]*"/, `content="${policyFor(assets)}"`);
@@ -43,7 +43,7 @@ export function sitePage(page, bootScript, { assets = ASSETS, head = '', foot = 
     throw new Error("the app's page no longer leads with its own theme bootstrap, so there is nothing to inject above it");
   }
   // One boolean saying this is a published site rather than a window, read by the front end before it draws — the same pattern as the frameless-window flag, and for the same reason — and where its files are, which the loader and the host read.
-  const flag = `<script>window.__leafSite=true;window.__leafAssetBase=${JSON.stringify(assets)};</script>`;
+  const flag = `<script>window.__leafSite=true;window.__leafAssetBase=${JSON.stringify(assets)};${siteRoot ? `window.__leafSiteRoot=${JSON.stringify(siteRoot)};` : ''}</script>`;
   // What the reader kept, merged over those defaults. A classic script, so it blocks and runs before the bootstrap paints.
   const kept = `<script src="${assets}settings.js"></script>`;
   const injected = `${IPC_QUEUE}<script>${bootScript}</script>${flag}${kept}`;

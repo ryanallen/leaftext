@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-doc-pages>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Leaftext — Documentation</title>
     <meta name="description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
-    <link rel="canonical" href="https://leaftext.com/docs/" />
+    <link rel="canonical" href="https://leaftext.com/docs/README.html" />
     <!-- The documentation's own front page, as Markdown. -->
     <link rel="alternate" type="text/markdown" href="README.md" />
     <!-- The two AI indexes, plus the full list of Markdown addresses — a fetcher
@@ -20,7 +20,7 @@
     <meta property="og:site_name" content="Leaftext" />
     <meta property="og:title" content="Leaftext — Documentation" />
     <meta property="og:description" content="Documentation for Leaftext — a free desktop app for reading and writing your own documents on Mac and Windows. Refine your mind. Your thoughts, secure and free." />
-    <meta property="og:url" content="https://leaftext.com/docs/" />
+    <meta property="og:url" content="https://leaftext.com/docs/README.html" />
     <meta property="og:image" content="https://leaftext.com/imgs/leaftext.png" />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -62,7 +62,7 @@
             }
           }
         }
-        location.replace('../#docs/' + file + (anchor ? '#' + anchor : ''));
+        location.replace((document.documentElement.hasAttribute('data-doc-pages') ? file.replace(/\.md$/i, '.html') : '../#docs/' + file) + (anchor ? '#' + anchor : ''));
       })();
     </script>
   </head>

@@ -17186,6 +17186,16 @@ function documentSourceLength() {
 }
 
 
+function documentSourceHolds(offset) {
+  if (!Number.isSafeInteger(offset) || offset < 0) return false;
+  if (heldSourceBytes !== null) return offset < heldSourceBytes.length;
+  const units = (heldSourceText || '').length;
+  if (offset < units) return true;
+  if (offset >= 3 * units) return false;
+  return offset < documentSourceLength();
+}
+
+
 function documentSourceLetters(low, kept) {
   const letters = new Set();
   if (heldSourceBytes === null) {
@@ -30264,7 +30274,7 @@ function readingFreshBox(watch, el) {
 var readingBlockShare = new Map();
 
 function readingPlaceDepth(place) {
-  const byBlock = place.from !== null && place.from < documentSourceLength();
+  const byBlock = documentSourceHolds(place.from);
   const byChapter = !byBlock && place.item != null && place.into !== null;
   if (!byBlock && !byChapter) return place.at;
   let el = place.element;
@@ -30391,7 +30401,7 @@ function noteReadingDepth(path, share, el = null, into = null) {
     return;
   }
   const range = el && rangeOf(el, 'block');
-  const from = range && Number.isSafeInteger(range.start) && range.start < documentSourceLength() ? range.start : null;
+  const from = range && documentSourceHolds(range.start) ? range.start : null;
   const item = from === null && Number.isFinite(into) ? readingChapterNumber(el) : null;
   const keyed = from !== null || item !== null;
   const place = { at: share, from, into: keyed ? into : null, item, element: keyed ? el : null };
@@ -30429,7 +30439,7 @@ window.leafRibbonPlace = function (path, at, from = null, into = null, item = nu
   const share = Math.min(1, Number(at) || 0);
   if (!path || !(share > 0)) return;
   const deep = Number.isFinite(into) && into >= 0 && into <= 1;
-  const valid = deep && Number.isSafeInteger(from) && from >= 0 && from < documentSourceLength();
+  const valid = deep && documentSourceHolds(from);
   const chapter = !valid && deep && Number.isSafeInteger(item) && item >= 0;
   const place = { at: share, from: valid ? from : null, into: valid || chapter ? into : null, item: chapter ? item : null, element: null };
   if (!readingPlaceAfter(place, readingDeepest.get(path))) return;
