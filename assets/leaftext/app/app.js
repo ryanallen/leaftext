@@ -435,7 +435,12 @@ function webSurfaceHoles(page, ratio) {
     if (right <= left || bottom <= top) continue;
     if (left === 0 && top === 0 && right === width && bottom === height) return null;
     if (holes.length === WEB_SURFACE_HOLES) return null;
-    holes.push([left, top, right - left, bottom - top]);
+    
+    const style = getComputedStyle(owner);
+    const half = Math.floor(Math.min(right - left, bottom - top) / 2);
+    const corner = (value, clipped) => clipped ? 0 : Math.min(half, Math.max(0, Math.round((parseFloat(value) || 0) * ratio)));
+    const sides = Math.round(rect.left * ratio) < originX || Math.round(rect.right * ratio) - originX > width;
+    holes.push([left, top, right - left, bottom - top, corner(style.borderTopLeftRadius, sides || Math.round(rect.top * ratio) < originY), corner(style.borderBottomLeftRadius, sides || Math.round(rect.bottom * ratio) - originY > height)]);
   }
   return holes;
 }
@@ -5244,11 +5249,7 @@ async function postDiagramExport(kind, type, path, body, width, height) {
   if (!window.__leafDiagramExportEndpoint) throw new Error('That diagram could not be exported.');
   let query = 'format=' + encodeURIComponent(kind) + '&target=' + encodeURIComponent(path);
   if (kind === 'png') query += '&width=' + width + '&height=' + height;
-  const response = await fetch(window.__leafDiagramExportEndpoint + '?' + query, {
-    method: 'POST',
-    headers: { 'Content-Type': type },
-    body,
-  });
+  const response = await postPictureBody(window.__leafDiagramExportEndpoint + '?' + query, type, body);
   if (!response.ok) throw new Error('That diagram could not be exported.');
 }
 
@@ -22925,10 +22926,7 @@ async function pastePicture(file, write, place) {
   const token = blockImageToken;
   try {
     if (file.size > MAX_CLIPBOARD_PNG_BYTES) throw new Error(PASTED_PICTURE_TOO_BIG);
-    const response = await fetch(window.__leafPicturePasteEndpoint + '?token=' + token, {
-      method: 'POST',
-      body: file,
-    });
+    const response = await postPictureBody(window.__leafPicturePasteEndpoint + '?token=' + token, null, file);
     if (!response.ok) throw new Error(PASTED_PICTURE_NOT_PLACED);
   } catch (error) {
     if (blockImageToken === token) blockImageWrite = null;
@@ -37098,6 +37096,14 @@ const PICTURE_JPEG_QUALITY = 0.92;
 const MAX_CLIPBOARD_PNG_BYTES = 128 * 1024 * 1024;
 
 
+async function postPictureBody(url, type, body) {
+  const bytes = body && typeof body.arrayBuffer === 'function' ? await body.arrayBuffer() : body;
+  const init = { method: 'POST', body: bytes };
+  if (type) init.headers = { 'Content-Type': type };
+  return fetch(url, init);
+}
+
+
 async function pictureExportCanvas(picture, type) {
   
   const canvas = await pictureCanvas(picture, type === 'image/jpeg' ? leafExportBackground() : null);
@@ -37141,11 +37147,7 @@ async function postPictureExport(picture, kind, type, path, source) {
   if (!window.__leafPictureExportEndpoint) throw new Error('That picture could not be exported.');
   const query =
     'format=' + encodeURIComponent(kind) + '&source=' + encodeURIComponent(source) + '&target=' + encodeURIComponent(path);
-  const response = await fetch(window.__leafPictureExportEndpoint + '?' + query, {
-    method: 'POST',
-    headers: { 'Content-Type': type },
-    body: file,
-  });
+  const response = await postPictureBody(window.__leafPictureExportEndpoint + '?' + query, type, file);
   if (!response.ok) throw new Error('That picture could not be exported.');
 }
 
@@ -37157,11 +37159,7 @@ async function copyPicture(picture) {
       const png = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       if (!png) throw new Error('That picture could not be copied.');
       if (png.size > MAX_CLIPBOARD_PNG_BYTES) throw new Error('That picture is too big to copy.');
-      const response = await fetch(window.__leafPictureClipboardEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'image/png' },
-        body: png,
-      });
+      const response = await postPictureBody(window.__leafPictureClipboardEndpoint, 'image/png', png);
       if (!response.ok) throw new Error('That picture could not be copied.');
       return;
     }
@@ -37894,6 +37892,20 @@ function bindDocumentMinimap() {
     return event.clientY - viewportRect.top;
   };
   
+  const writeMinimapPressScrollTop = (scrollTop) => {
+    const reader = readerScrollElement();
+    if (!readerScrolling || reader !== app) {
+      reader.scrollTop = scrollTop;
+      return;
+    }
+    app.classList.add('is-glide-held');
+    try {
+      reader.scrollTop = scrollTop;
+      void app.offsetHeight;
+    } finally {
+      app.classList.remove('is-glide-held');
+    }
+  };
   const dragMinimapViewportToPointer = (event, pointerOffsetY) => {
     
     const metrics = minimapDragMetrics || measureDocumentMinimap(track);
@@ -37918,8 +37930,10 @@ function bindDocumentMinimap() {
     if (minimapDragScrollTop !== null && boundedScrollTop !== minimapDragScrollTop) {
       minimapDragDirection = boundedScrollTop > minimapDragScrollTop ? 1 : -1;
     }
+    const firstMove = minimapDragScrollTop === null;
     minimapDragScrollTop = boundedScrollTop;
-    readerScrollElement().scrollTop = boundedScrollTop;
+    if (firstMove) writeMinimapPressScrollTop(boundedScrollTop);
+    else readerScrollElement().scrollTop = boundedScrollTop;
     const minimap = track.closest('.document-minimap');
     if (minimap) {
       placeMinimapViewport(minimap, metrics, boundedScrollTop);
@@ -37941,7 +37955,7 @@ function bindDocumentMinimap() {
       const trackRect = waitingTrackRect || metrics.trackRect || track.getBoundingClientRect();
       const trackHeight = waitingTrackRect && waitingTrackRect.height > 0 ? waitingTrackRect.height : metrics.trackHeight;
       const ratio = Math.min(1, Math.max(0, (event.clientY - trackRect.top) / trackHeight));
-      readerScrollElement().scrollTop = Math.min(metrics.scrollable, Math.max(0, ratio * metrics.scrollHeight - metrics.viewportHeight / 2));
+      writeMinimapPressScrollTop(Math.min(metrics.scrollable, Math.max(0, ratio * metrics.scrollHeight - metrics.viewportHeight / 2)));
       recordReaderScrollPosition();
       updateMinimapViewport();
       return;
@@ -37951,7 +37965,7 @@ function bindDocumentMinimap() {
       return;
     }
     const clickedDocumentY = (event.clientY - contentRect.top) / metrics.previewScale;
-    readerScrollElement().scrollTop = Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2));
+    writeMinimapPressScrollTop(Math.min(metrics.scrollable, Math.max(0, clickedDocumentY - metrics.viewportHeight / 2)));
     recordReaderScrollPosition();
     updateMinimapViewport();
   };

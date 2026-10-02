@@ -6694,6 +6694,10 @@ body.is-library-settling .app-bar::after {
 .reader-minimap.is-scroll-held {
   overflow-y: hidden;
 }
+/* A rail press stops the reader's glide before placing the page on its target. */
+.reader-shell.is-glide-held {
+  overflow-y: hidden;
+}
 .library-pane {
   container: library-pane / inline-size;
   /* Positioning context for the overlays it stacks (.library-scroll, .library-crumbs). The pane itself doesn't scroll or clip; the inner .library-scroll owns the scroll. */

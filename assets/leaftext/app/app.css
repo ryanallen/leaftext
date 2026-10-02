@@ -6684,6 +6684,10 @@ body.is-library-settling .app-bar::after {
 .reader-minimap.is-scroll-held {
   overflow-y: hidden;
 }
+
+.reader-shell.is-glide-held {
+  overflow-y: hidden;
+}
 .library-pane {
   container: library-pane / inline-size;
   
