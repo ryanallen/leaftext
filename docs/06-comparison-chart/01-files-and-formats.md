@@ -62,6 +62,14 @@
 | Picture-heavy books drawn | [✅][l-epub] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
 | Outline, minimap, find, pager | [✅][l-epub] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
+## Kindle books
+
+| Feature | Leaftext | Obsidian | Typora | Calibre |
+| --- | --- | --- | --- | --- |
+| Kindle book as page | [✅][l-kindle] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
+| Locked book says why | [✅][l-kindle] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
+| Kindle library titles | [✅][l-kindle] | [❌][o-seen] | [❌][t-seen] | ? |
+
 ## Book details
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
@@ -223,6 +231,7 @@
 | Every slide drawn | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Master slide bullets | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Untitled slides titled | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Presentation builds | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Macros never run | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Oversized parts refused | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Only words written back | [✅][l-office] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -314,6 +323,7 @@
 [l-office]: ../01-features/01-rendering.md#office-and-opendocument-files
 [l-office-editing]: ../01-features/07-editing.md#code-view
 [l-epub]: ../01-features/01-rendering.md#epub-books
+[l-kindle]: ../01-features/01-rendering.md#kindle-books
 [l-source]: ../01-features/01-rendering.md#source-files
 [l-enc]: ../01-features/01-rendering.md#file-encodings
 [l-tables]: ../01-features/01-rendering.md#tables

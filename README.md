@@ -329,7 +329,7 @@ Your app data lives alongside it:
 
 ### Opening files with it
 
-Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.csv`, `.tsv`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini`, `.csv`, `.tsv` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
+Installing registers Leaftext for every extension it reads, including `.txt`, `.ini`, `.csv`, `.tsv`, `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`, `.epub`, `.azw`, `.mobi`, `.azw3`, and source-file extensions such as `.rs`, `.py`, `.toml`, `.jsonc`, and `.gql`, so Leaftext is available from Open with. Source files, HTML, plain text, `.ini`, `.csv`, `.tsv` and Word, Excel, PowerPoint and OpenDocument files stay with their current app unless you choose Leaftext. **[File associations →](docs/02-installation.md#file-associations)**
 
 ## Learn it
 

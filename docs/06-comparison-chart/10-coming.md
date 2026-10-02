@@ -8,7 +8,6 @@
 | --- | --- | --- | --- | --- |
 | Declared book covers | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-gui] |
 | Every picture-book picture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
-| Kindle library titles | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | ? |
 | Stylesheets as pages | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Deck speaker notes | [❌][l-roadmap] | ? | [❌][t-seen] | [❌][c-seen] |
 | Slide pictures and charts | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -31,7 +30,6 @@
 | Edit whole emails | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Threaded comments | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rendered multiple cursors | [❌][l-roadmap] | [✅][o-cursors] | [❌][t-seen] | [❌][c-seen] |
-| Presentation builds | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drop pictures in | [❌][l-roadmap] | [✅][o-attach] | [✅][t-images] | [❌][c-seen] |
 | Suggested field values | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |

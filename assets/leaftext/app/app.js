@@ -332,7 +332,7 @@ let changeRepoRevealed = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
   bar: null, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
-  metrics: null, image: '', railTab: null, palettes: new Map(), paletteGenerations: new Map(), liveScroll: 0 };
+  metrics: null, image: '', held: null, railTab: null, palettes: new Map(), paletteGenerations: new Map(), liveScroll: 0 };
 function pruneWebTabPalettes(state) {
   const ids = new Set((state.tabs || []).filter(tab => tab.kind === 'web').map(tab => tab.webId));
   for (const id of webAddressState.palettes.keys()) if (!ids.has(id)) webAddressState.palettes.delete(id);
@@ -699,16 +699,28 @@ window.leafLiveOutlineScroll = scroll => {
   lightLibraryOutlineSection(outlineSectionBeingRead());
 };
 window.leafWebMinimap = payload => {
-  if (!activeWebTab() || codeViewActive || !payload || !payload.metrics) return;
+  if (!payload || !payload.metrics) return;
+  const stamped = Number.isSafeInteger(payload.id) && Number.isSafeInteger(payload.generation);
+  if (stamped && typeof payload.image === 'string') {
+    webAddressState.held = {id: payload.id, generation: payload.generation, image: payload.image};
+  }
+  const tab = activeWebTab();
+  if (!tab || codeViewActive || (stamped && tab.webId !== payload.id)) return;
   webAddressState.metrics = payload.metrics;
   if (Number.isFinite(payload.metrics.scroll)) {
     webAddressState.liveScroll = payload.metrics.scroll;
     lightLibraryOutlineSection(outlineSectionBeingRead());
   }
-  if (typeof payload.image === 'string' && payload.image !== webAddressState.image) {
-    webAddressState.image = payload.image;
+  const image = stamped
+    ? (webAddressState.held?.id === payload.id && webAddressState.held.generation === payload.generation ? webAddressState.held.image : '')
+    : payload.image;
+  if (typeof image === 'string' && image !== webAddressState.image) {
+    webAddressState.image = image;
     const picture = readerMinimap && readerMinimap.querySelector('.web-address-minimap');
-    if (picture && payload.image) picture.src = payload.image;
+    if (picture) {
+      if (image) picture.src = image;
+      else picture.removeAttribute('src');
+    }
   }
   updateWebMinimap();
 };
@@ -729,6 +741,8 @@ const COLUMN_STATE_NAMES = [
   'readerLoadingSafety', 'readerLoadingOwner',
   
   'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'drawnRanges', 'chapterMembers', 'heldChapterMember',
+  
+  'unlockedLayer', 'readingHasContainerBlankLines',
   
   'pendingChapterPress', 'pendingReadingChapter',
   
@@ -795,6 +809,8 @@ function saveColumnState(column) {
   held.chapterMembers = chapterMembers;
   held.heldChapterMember = heldChapterMember;
   
+  held.unlockedLayer = currentUnlockedLayer();
+  held.readingHasContainerBlankLines = readingPageHasContainerBlankLines();
   held.pendingChapterPress = pendingChapterPress;
   held.pendingReadingChapter = pendingReadingChapter;
   
@@ -917,6 +933,8 @@ function loadColumnState(column) {
   chapterMembers = held.chapterMembers;
   heldChapterMember = held.heldChapterMember;
   
+  restoreUnlockedLayer(held.unlockedLayer);
+  setReadingPageHasContainerBlankLines(held.readingHasContainerBlankLines);
   pendingChapterPress = held.pendingChapterPress;
   pendingReadingChapter = held.pendingReadingChapter;
   
@@ -8721,6 +8739,7 @@ function renderProject(entries) {
   const rows = [];
   const parent = libraryParentCrumb();
   if (parent) rows.push(upRowHtml(parent));
+  rows.push(libraryBooksHeadHtml());
   return `<div class="library-project">${rows.join('')}${libraryRowsHtml(entries)}</div>`;
 }
 
@@ -9528,6 +9547,16 @@ function setLibraryTreeHtml(html) {
 let librarySkippedFiles = 0;
 let librarySkippedCodeFiles = 0;
 
+let libraryBooks = null;
+
+function libraryBooksHeadHtml() {
+  const counts = libraryBooks;
+  if (!counts || !(counts.books > 0)) return '';
+  const books = `${formatCount(counts.books)} ${counts.books === 1 ? 'book' : 'books'}`;
+  const parts = [books, `${formatCount(counts.readable)} open here`, `${formatCount(counts.shut)} shut`];
+  return libraryHeadingHtml(parts.join(' · '));
+}
+
 function libraryEmptyText() {
   const hidden = libraryHiddenEmptyText();
   if (hidden) return hidden;
@@ -9611,6 +9640,7 @@ window.leafSetLibraryFolder = (payload) => {
   
   librarySkippedFiles = Number.isFinite(next.skippedFiles) ? next.skippedFiles : 0;
   librarySkippedCodeFiles = Number.isFinite(next.skippedCodeFiles) ? next.skippedCodeFiles : 0;
+  libraryBooks = next.books && Number.isFinite(next.books.books) ? next.books : null;
   
   if (paneSentSomewhere) {
     paneSentSomewhere = false;
@@ -11050,6 +11080,7 @@ function fileRowHtml(node, between) {
   const isSelected = librarySelectedPath && node.path === librarySelectedPath;
   const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '');
   const current = isSelected ? ' aria-current="true"' : '';
+  if (node.book) return bookRowHtml(node, selected, current);
   const open = `data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}"`;
   const full = typeof node.preview === 'string';
   const { stem, badge, plainStem } = libraryRowLabel(node, full);
@@ -11063,6 +11094,15 @@ function fileRowHtml(node, between) {
   const title = libraryTitleSaysMore(node.title, plainStem) ? `<span class="library-file-title">${escapeText(node.title)}</span>` : '';
   const preview = node.preview ? `<span class="library-file-preview">${escapeText(node.preview)}</span>` : '';
   return `<button type="button" class="library-file library-file-full${selected}"${current} ${open}>${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head">${label}${timeHtml}${badge}</span>${title}${preview}</span></button>`;
+}
+
+function bookRowHtml(node, selected, current) {
+  const book = node.book;
+  const name = node.title || documentNameParts(node.name || '').stem;
+  const tip = book.shut || node.path;
+  const badge = book.badge ? `<span class="file-type-badge">${escapeText(book.badge)}</span>` : '';
+  const author = book.author ? `<span class="library-file-author">${escapeText(book.author)}</span>` : '';
+  return `<button type="button" class="library-file library-file-full${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(tip)}">${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">${escapeText(name)}</span></span>${badge}</span>${author}</span></button>`;
 }
 
 function folderRowHtml(node) {
@@ -11936,9 +11976,21 @@ function setReadingUnlocked(unlocked) {
   const next = Boolean(unlocked);
   if (next === readingUnlocked) return;
   commitActiveEditingBlock();
+  if (!next && document.activeElement && document.activeElement.__headingName) document.activeElement.blur();
+  const inPlace = readingPageCanFlipInPlace();
+  const anchor = inPlace && app.querySelector('.frontmatter') ? captureReaderScrollAnchor() : null;
   readingUnlocked = next;
   send({ command: 'setReadingUnlocked', enabled: readingUnlocked });
-  renderStateKeepingPlace();
+  if (inPlace) {
+    const body = app.querySelector('.document-body');
+    if (next) {
+      bindUnlockedLayer(currentState.document, body);
+      placePendingCaret(body);
+    } else dropUnlockedLayer({ undo: true });
+    setSubtoolState(readerLockButton, readingUnlocked, viewLockTooltip(false));
+    scheduleMinimapPreviewUpdate();
+    if (anchor) restoreReaderScrollAnchor(anchor);
+  } else renderStateKeepingPlace();
   if (readingUnlocked && currentDocumentHasUnreachableWords) leafToast(unreachableWordsSentence());
 }
 
@@ -14064,20 +14116,6 @@ function sendWindowChrome(color, theme) {
 }
 
 const DOCUMENT_LETTERS_KEPT = 1024;
-function documentLettersBeyondLatin(bytes) {
-  const letters = new Set();
-  for (let at = 0; at < bytes.length && letters.size < DOCUMENT_LETTERS_KEPT; at += 1) {
-    const lead = bytes[at];
-    
-    if (lead < 0xc4) continue;
-    let letter;
-    if (lead < 0xe0) letter = ((lead & 0x1f) << 6) | (bytes[at + 1] & 0x3f);
-    else if (lead < 0xf0) letter = ((lead & 0x0f) << 12) | ((bytes[at + 1] & 0x3f) << 6) | (bytes[at + 2] & 0x3f);
-    else letter = ((lead & 0x07) << 18) | ((bytes[at + 1] & 0x3f) << 12) | ((bytes[at + 2] & 0x3f) << 6) | (bytes[at + 3] & 0x3f);
-    letters.add(letter);
-  }
-  return [...letters];
-}
 
 function faceLetterRanges(range) {
   const ranges = [];
@@ -14097,7 +14135,7 @@ function askDocumentLetters() {
   const style = getComputedStyle(document.documentElement);
   const families = new Set(['--reading-font', '--heading-font'].map((name) => firstFontName(String(style.getPropertyValue(name) || '')).toLowerCase()).filter(Boolean));
   if (!families.size) return;
-  const letters = documentLettersBeyondLatin(documentSourceBytes());
+  const letters = documentSourceLetters(0x100, DOCUMENT_LETTERS_KEPT);
   if (!letters.length) return;
   const wanted = [];
   fonts.forEach((face) => {
@@ -17105,6 +17143,8 @@ function captureReadingDocumentState() {
     dialect: currentDocumentDialect,
     bindsAnything: currentDocumentBindsAnything,
     hasUnreachableWords: currentDocumentHasUnreachableWords,
+    hasContainerBlankLines: readingPageHasContainerBlankLines(),
+    unlockedLayer: takeUnlockedLayer(),
     outlineRows: documentOutlineRows,
     chapterMembers,
     heldChapterMember,
@@ -17120,6 +17160,8 @@ function restoreReadingDocumentState(state) {
   currentDocumentDialect = state.dialect;
   currentDocumentBindsAnything = state.bindsAnything;
   currentDocumentHasUnreachableWords = state.hasUnreachableWords;
+  setReadingPageHasContainerBlankLines(state.hasContainerBlankLines);
+  restoreUnlockedLayer(state.unlockedLayer);
   setDocumentOutlineRows(state.outlineRows);
   chapterMembers = state.chapterMembers || new Map();
   heldChapterMember = state.heldChapterMember || null;
@@ -17127,13 +17169,56 @@ function restoreReadingDocumentState(state) {
 
 
 function documentSourceBytes() {
-  if (heldSourceBytes === null) heldSourceBytes = sourceByteEncoder.encode(heldSourceText || '');
+  if (heldSourceBytes === null) {
+    const text = heldSourceText;
+    heldSourceBytes = sourceByteEncoder.encode(text || '');
+    heldSourceText = null;
+    if (currentState.document && currentState.document.source === text) currentState.document.source = heldSourceBytes;
+  }
   return heldSourceBytes;
 }
 
 
 function documentSourceLength() {
   return documentSourceBytes().length;
+}
+
+
+function documentSourceLetters(low, kept) {
+  const letters = new Set();
+  if (heldSourceBytes === null) {
+    const text = heldSourceText || '';
+    const skipBelow = Math.min(low, 0xd800);
+    for (let at = 0; at < text.length && letters.size < kept; at += 1) {
+      const unit = text.charCodeAt(at);
+      if (unit < skipBelow) continue;
+      let letter = unit;
+      if (unit >= 0xd800 && unit <= 0xdfff) {
+        const next = unit <= 0xdbff ? text.charCodeAt(at + 1) : NaN;
+        if (next >= 0xdc00 && next <= 0xdfff) {
+          letter = text.codePointAt(at);
+          at += 1;
+        } else letter = 0xfffd; 
+      }
+      if (letter >= low) letters.add(letter);
+    }
+    return [...letters];
+  }
+  const bytes = heldSourceBytes;
+  
+  const skipBelow = low >= 0x100 ? 0xc4 : low >= 0x80 ? 0xc2 : 0;
+  for (let at = 0; at < bytes.length && letters.size < kept; at += 1) {
+    const lead = bytes[at];
+    if (lead < skipBelow) continue;
+    let letter;
+    if (lead < 0x80) letter = lead;
+    else if (lead < 0xc0) continue;
+    else if (lead < 0xe0) letter = ((lead & 0x1f) << 6) | (bytes[at + 1] & 0x3f);
+    else if (lead < 0xf0) letter = ((lead & 0x0f) << 12) | ((bytes[at + 1] & 0x3f) << 6) | (bytes[at + 2] & 0x3f);
+    else letter = ((lead & 0x07) << 18) | ((bytes[at + 1] & 0x3f) << 12) | ((bytes[at + 2] & 0x3f) << 6) | (bytes[at + 3] & 0x3f);
+    if (letter >= low) letters.add(letter);
+  }
+  return [...letters];
 }
 
 
@@ -19890,6 +19975,7 @@ function pressFollowsLink(el, link, event) {
 
 
 function wireMarkdownEditable(el) {
+  const signal = unlockedLayerSignal();
   
   el.addEventListener('mousedown', (event) => {
     const target = event.target;
@@ -19901,24 +19987,24 @@ function wireMarkdownEditable(el) {
       
       event.preventDefault();
     }
-  });
+  }, { signal });
   
   el.__opensOnRelease = true;
   el.addEventListener('pointerup', (event) => {
     if (event.button !== 0) return;
     openEditableOnRelease(el, event.target, event);
-  });
+  }, { signal });
   
   el.addEventListener('click', (event) => {
     const link = event.button === 0 && event.target && event.target.closest ? event.target.closest('a') : null;
     if (link && !pressFollowsLink(el, link, event)) event.preventDefault();
-  });
+  }, { signal });
   el.addEventListener('focusin', () => {
     if (!el.__editingActive) {
       el.__editingActive = true;
       setEditBaseline(el);
     }
-  });
+  }, { signal });
   el.addEventListener('focusout', (event) => {
     if (event.relatedTarget && el.contains(event.relatedTarget)) return;
     
@@ -19929,7 +20015,7 @@ function wireMarkdownEditable(el) {
     if (!structuralCarryHolds(el)) commitBlockEdit(el, blockDomToSource(el));
     
     closeWysiwygBlock(el);
-  });
+  }, { signal });
   
   el.addEventListener('input', (event) => {
     if (structuralCarryHolds(el)) {
@@ -19939,8 +20025,8 @@ function wireMarkdownEditable(el) {
     raiseTypingChrome();
     recordTypingStep(el, typedCharOf(event));
     scheduleLiveBlockEdit(el);
-  });
-  el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event));
+  }, { signal });
+  el.addEventListener('keydown', (event) => handleWysiwygKeydown(el, event), { signal });
   wireTypingStepBreaks(el);
 }
 
@@ -19948,10 +20034,10 @@ function wireMarkdownEditable(el) {
 function wireTypingStepBreaks(el) {
   el.addEventListener('keydown', (event) => {
     if (TYPING_STEP_MOVE_KEYS.has(event.key)) el.__typingBreak = true;
-  });
+  }, { signal: unlockedLayerSignal() });
   el.addEventListener('pointerdown', () => {
     el.__typingBreak = true;
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -20021,7 +20107,7 @@ function wireSourceEditable(el) {
     raiseTypingChrome();
     recordTypingStep(el, typedCharOf(event));
     scheduleLiveBlockEdit(el);
-  });
+  }, { signal: unlockedLayerSignal() });
   el.addEventListener('pointerdown', (event) => {
     if (el.dataset.editingSource === 'true' || (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block'))) return;
     
@@ -20040,7 +20126,7 @@ function wireSourceEditable(el) {
       leafToast('This one carries markup, so the file’s own text opens instead.');
     }
     el.__startSourceEdit();
-  });
+  }, { signal: unlockedLayerSignal() });
   el.addEventListener('blur', () => {
     if (el.dataset.editingSource !== 'true') return;
     const text = el.innerText;
@@ -20063,7 +20149,7 @@ function wireSourceEditable(el) {
     pendingEditAnchor = aboveAnchor;
     commitBlockEdit(el, text, { start, end });
     
-  });
+  }, { signal: unlockedLayerSignal() });
   wireTypingStepBreaks(el);
 }
 
@@ -20168,6 +20254,8 @@ function bindEditableBlocks(format, elements = null) {
   };
   wysiwygBlocks.forEach((el) => markEditable(el, true));
   sourceBlocks.forEach((el) => markEditable(el, false));
+  wysiwygBlocks.forEach(joinUnlockedLayer);
+  sourceBlocks.forEach(joinUnlockedLayer);
   wysiwygBlocks.forEach((el) => {
     if (format !== 'epub' || !el.__chapterWired) wireMarkdownEditable(el);
     if (format === 'epub' || format === 'pptx') el.__startInPlaceEdit = () => openWysiwygBlock(el);
@@ -20192,6 +20280,7 @@ function bindSwappedParagraph(el, kept = false) {
   el.classList.add('leaf-editable');
   el.classList.toggle('leaf-editable-in-place', wysiwyg);
   if (currentDocumentHasUnreachableWords) el.classList.add('leaf-editable-here');
+  joinUnlockedLayer(el);
   if (!kept) {
     if (wysiwyg) {
       wireMarkdownEditable(el);
@@ -20215,7 +20304,7 @@ function wireChapterPresses(body) {
     const item = block.closest('[data-src-member]');
     pendingChapterPress = { member, index: Array.from(item.querySelectorAll(CHAPTER_BLOCKS)).indexOf(block) };
     send({ command: 'openMember', member });
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -20246,7 +20335,7 @@ function wireEmailClosedParts(body) {
     } else {
       leafToast('These words are packed into the message. Edit them in the source view.');
     }
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -20302,7 +20391,7 @@ function wireDataClosedParts(body) {
       return;
     }
     leafToast('This value is written a way the page cannot place in the file. Edit it in the source view.');
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -20367,8 +20456,13 @@ function placeDeferredReadingCaret() {
   if (body) placePendingCaret(body);
 }
 
+function readingPageCanFlipInPlace() {
+  const doc = currentState && currentState.document;
+  return !!doc && !!app.querySelector('.document-body') && !readerOffScreen() && !doc.laidOutSwapped && !doc.cellSwapped && !readingHasContainerBlankLines && !isSiteProofTable(doc.siteProofs);
+}
 
 function bindReadingEditor(doc, { deferCaret = false } = {}) {
+  dropUnlockedLayer();
   if (!doc) return;
   const body = app.querySelector('.document-body');
   if (!body) return;
@@ -20401,39 +20495,26 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     drawTaskDates(doc.tasks || []);
     markComputedTableCells(body, doc.computed || []);
   }
+  setReadingPageHasContainerBlankLines(blankLinesInContainers.length > 0);
   
   adoptDrawnRanges(body);
   resetChapterMembers(doc.source_member);
   adoptChapterMembers(body);
   if (readerEditingAllowed()) {
-    bindEditableBlocks(currentDocumentFormat);
-    if (currentDocumentFormat === 'epub') wireChapterPresses(body);
-    if (currentDocumentFormat === 'pptx') {
-      wireSlidePresses(body);
-      wireSlideBoxes(body);
-    }
-    if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
-    if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
-
-    
-    if (currentDocumentFormat === 'markdown' && !pendingCaret && !isSiteProofTable(doc.siteProofs) && Array.isArray(doc.blocks) && doc.blocks.length === 0) {
-      setPendingCaret({ emptyDocument: true });
-    }
+    bindUnlockedLayer(doc, body);
     
     drawBlankLinesInContainers(blankLinesInContainers);
+  } else {
+    bindBlockControls();
+    bindTableControls();
   }
   
-  if (currentDocumentFormat === 'eml') bindFrontmatterFields(body);
   if (currentDocumentFormat === 'markdown') {
     bindTableCheckboxes();
-    bindFrontmatterFields(body);
     
     bindFrontmatterSheet(body, doc.path);
   }
   
-  bindBlockControls();
-  
-  bindTableControls();
   bindTableSheet();
   
   bindTableLens(doc.path || activeDocumentPath());
@@ -20462,6 +20543,71 @@ window.leafBlocksResynced = (state) => {
     }
   }
 };
+
+let unlockedLayer = null;
+
+function currentUnlockedLayer() {
+  return unlockedLayer;
+}
+
+function takeUnlockedLayer() {
+  const layer = unlockedLayer;
+  unlockedLayer = null;
+  return layer;
+}
+
+function restoreUnlockedLayer(layer) {
+  unlockedLayer = layer || null;
+}
+
+function startUnlockedLayer() {
+  dropUnlockedLayer();
+  unlockedLayer = { controller: new AbortController(), undo: [], elements: new Set() };
+}
+
+function unlockedLayerSignal() {
+  return unlockedLayer ? unlockedLayer.controller.signal : undefined;
+}
+
+function onUnlockedLayerDropped(fn) {
+  if (unlockedLayer) unlockedLayer.undo.push(fn);
+}
+
+function joinUnlockedLayer(el) {
+  if (unlockedLayer && el) unlockedLayer.elements.add(el);
+}
+
+function dropUnlockedLayer({ undo = false } = {}) {
+  const layer = unlockedLayer;
+  unlockedLayer = null;
+  if (!layer) return;
+  layer.controller.abort();
+  if (!undo) return;
+  for (const el of layer.elements) {
+    el.classList.remove('leaf-editable', 'leaf-editable-in-place', 'leaf-editable-here');
+    for (const name of ['__innerSpan', '__epubRuns', '__officeCell', '__valueQuote', '__opensOnRelease', '__startInPlaceEdit', '__startSourceEdit', '__chapterWired', '__liveSourceEdit', '__liveSourceMoved', '__editingActive']) delete el[name];
+  }
+  for (const fn of layer.undo.reverse()) fn();
+}
+
+function bindUnlockedLayer(doc, body) {
+  startUnlockedLayer();
+  onUnlockedLayerDropped(() => body.querySelectorAll('.leaf-insert-block').forEach((block) => (block.__blankHost || block).remove()));
+  bindEditableBlocks(currentDocumentFormat);
+  if (currentDocumentFormat === 'epub') wireChapterPresses(body);
+  if (currentDocumentFormat === 'pptx') {
+    wireSlidePresses(body);
+    wireSlideBoxes(body);
+  }
+  if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
+  if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
+  if (currentDocumentFormat === 'markdown' && !pendingCaret && !isSiteProofTable(doc.siteProofs) && Array.isArray(doc.blocks) && doc.blocks.length === 0) setPendingCaret({ emptyDocument: true });
+  if (currentDocumentFormat === 'eml' || currentDocumentFormat === 'markdown') bindFrontmatterFields(body);
+  bindBlockControls();
+  bindTableControls();
+  body.querySelectorAll('pre.mermaid[data-processed="true"]').forEach(addMermaidEditButtons);
+  onUnlockedLayerDropped(() => body.querySelectorAll('.mermaid-tools').forEach((tools) => tools.remove()));
+}
 
 
 let structuralCarry = null;
@@ -20961,6 +21107,7 @@ function makeBlankHost(spec, insertAt) {
   if (!spec.wrap) return { host: block, block };
   const host = document.createElement(spec.wrap);
   host.appendChild(block);
+  block.__blankHost = host;
   return { host, block };
 }
 
@@ -21245,6 +21392,17 @@ function openMediumStart(body) {
 }
 
 
+let readingHasContainerBlankLines = false;
+
+function readingPageHasContainerBlankLines() {
+  return readingHasContainerBlankLines;
+}
+
+function setReadingPageHasContainerBlankLines(value) {
+  readingHasContainerBlankLines = Boolean(value);
+}
+
+
 
 
 
@@ -21463,8 +21621,8 @@ function wireXmlTableHeading(th) {
   th.addEventListener('pointerup', (event) => {
     if (event.button !== 0) return;
     openXmlTableHeading(th);
-  });
-  th.addEventListener('input', () => raiseTypingChrome());
+  }, { signal: unlockedLayerSignal() });
+  th.addEventListener('input', () => raiseTypingChrome(), { signal: unlockedLayerSignal() });
   th.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -21475,7 +21633,7 @@ function wireXmlTableHeading(th) {
       th.__headingName = null;
       th.blur();
     }
-  });
+  }, { signal: unlockedLayerSignal() });
   th.addEventListener('focusout', () => {
     const was = th.__headingName;
     const typed = th.textContent.trim();
@@ -21490,7 +21648,7 @@ function wireXmlTableHeading(th) {
     const edit = table ? xmlColumnRenameEdit(table, ranges, typed) : null;
     if (!edit) return;
     sendEditCommand({ command: 'editBlock', start: edit.start, end: edit.end, text: edit.text });
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -21498,6 +21656,7 @@ function wireXmlTableHeadings(body) {
   body.querySelectorAll('table th').forEach((th) => {
     if (!xmlHeadingColumnRanges(th).length) return;
     th.classList.add('leaf-editable');
+    joinUnlockedLayer(th);
     wireXmlTableHeading(th);
   });
 }
@@ -21908,6 +22067,13 @@ function startFrontmatterAtTop() {
 function bindFrontmatterFields(root) {
   const block = frontmatterBlock(root);
   if (!block || !readerEditingAllowed()) return;
+  const before = block.cloneNode(true);
+  const range = rangeOf(block, 'block');
+  onUnlockedLayerDropped(() => {
+    if (Number.isFinite(range.start) && Number.isFinite(range.end)) setRangeOf(before, 'block', range.start, range.end);
+    block.replaceWith(before);
+    bindFrontmatterSheet(root, currentState && currentState.document ? currentState.document.path : activeDocumentPath());
+  });
   block.classList.add('is-editable');
   for (const cell of block.querySelectorAll('td[data-leaf-field]')) {
     const key = cell.dataset.leafField;
@@ -23368,13 +23534,27 @@ function bindBlockControls() {
   blockGutterAdd = blockGutter.querySelector('.block-add');
   blockGutterRow = blockGutter.querySelector('.block-insert-row');
   layout.appendChild(blockGutter);
+  onUnlockedLayerDropped(() => {
+    endBlockDrag(false);
+    if (blockGutter) blockGutter.remove();
+    blockGutter = null;
+    blockGutterGrip = null;
+    blockGutterAdd = null;
+    blockGutterRow = null;
+    blockGutterTarget = null;
+    blockGutterGap = null;
+    blockGapLine = null;
+    blockCaretBlock = null;
+    blockGutterExpanded = false;
+    blockDrag = null;
+  });
 
   blockGutterGrip.addEventListener('pointerdown', (event) => {
     if (event.button === 0) beginBlockDrag(event);
-  });
-  blockGutterGrip.addEventListener('pointermove', moveBlockDrag);
-  blockGutterGrip.addEventListener('pointerup', () => endBlockDrag(true));
-  blockGutterGrip.addEventListener('pointercancel', () => endBlockDrag(false));
+  }, { signal: unlockedLayerSignal() });
+  blockGutterGrip.addEventListener('pointermove', moveBlockDrag, { signal: unlockedLayerSignal() });
+  blockGutterGrip.addEventListener('pointerup', () => endBlockDrag(true), { signal: unlockedLayerSignal() });
+  blockGutterGrip.addEventListener('pointercancel', () => endBlockDrag(false), { signal: unlockedLayerSignal() });
   blockGutterAdd.addEventListener('click', () => {
     
     if (frontmatterCanStart(blockGutterGap)) {
@@ -23384,12 +23564,12 @@ function bindBlockControls() {
     }
     if (blockGutterExpanded) collapseBlockInsertRow();
     else expandBlockInsertRow();
-  });
+  }, { signal: unlockedLayerSignal() });
   
   blockGutter.addEventListener('mousedown', (event) => {
     if (event.target.closest && event.target.closest('input')) return;
     event.preventDefault();
-  });
+  }, { signal: unlockedLayerSignal() });
 
   
   body.addEventListener('pointermove', (event) => {
@@ -23398,7 +23578,7 @@ function bindBlockControls() {
     const el = event.target.closest ? event.target.closest(currentDocumentFormat === 'pptx' ? '.slide-stage' : '[data-src-start]') : null;
     if (el) aimBlockGutter(el);
     else aimBlockGutterAtGap(event.clientY);
-  });
+  }, { signal: unlockedLayerSignal() });
   
   layout.addEventListener('pointermove', (event) => {
     if (blockDrag || event.buttons & 1) return;
@@ -23412,37 +23592,37 @@ function bindBlockControls() {
       event.clientY > bodyRect.bottom && event.clientX >= bodyRect.left && event.clientX <= bodyRect.right;
     if (!inMargin && !underPage) return;
     aimBlockGutterAtGap(event.clientY, inMargin);
-  });
+  }, { signal: unlockedLayerSignal() });
   layout.addEventListener('pointerleave', () => {
     if (blockGutterExpanded || blockGutterFollowsCaret()) return;
     hideBlockGutter();
-  });
+  }, { signal: unlockedLayerSignal() });
   
   layout.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || blockDrag) return;
     if (event.target !== layout && !body.contains(event.target)) return;
     hideBlockGutter();
-  });
+  }, { signal: unlockedLayerSignal() });
   
   layout.addEventListener('pointerup', () => {
     if (blockCaretBlock && !blockDrag) aimBlockGutter(blockCaretBlock);
-  });
+  }, { signal: unlockedLayerSignal() });
   
   body.addEventListener('focusin', (event) => {
     if (!event.target.closest) return;
     blockCaretBlock = event.target.closest('[data-src-start][contenteditable="true"]');
     aimBlockGutter(event.target.closest('[data-src-start]'));
-  });
+  }, { signal: unlockedLayerSignal() });
   body.addEventListener('focusout', (event) => {
     if (blockGutterHoldsFocus(event.relatedTarget)) return;
     if (!blockCaretBlock || blockCaretBlock.contains(event.relatedTarget)) return;
     blockCaretBlock = null;
     if (!blockGutterExpanded) hideBlockGutter();
-  });
+  }, { signal: unlockedLayerSignal() });
   
   body.addEventListener('input', () => {
     if (blockCaretBlock && blockGutterTarget === blockCaretBlock) aimBlockGutter(blockCaretBlock);
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -23551,7 +23731,7 @@ function wireSlidePresses(body) {
     const stage = block.closest('[data-src-member]');
     pendingChapterPress = { member, index: Array.from(stage.querySelectorAll(DECK_BLOCKS)).indexOf(block) };
     send({ command: 'openMember', member });
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -23658,10 +23838,12 @@ function selectSlideShape(box) {
 
 
 function wireSlideBoxes(body) {
+  onUnlockedLayerDropped(() => endSlideBoxDrag(false));
   body.querySelectorAll('.slide-shape').forEach((box) => {
     if (!hasRangeOf(box, 'frame')) return;
-    box.addEventListener('pointerdown', (event) => beginSlideBoxDrag(box, event));
+    box.addEventListener('pointerdown', (event) => beginSlideBoxDrag(box, event), { signal: unlockedLayerSignal() });
   });
+  wireSlideBuild(body);
 }
 
 function beginSlideBoxDrag(box, event) {
@@ -23779,6 +23961,205 @@ window.addEventListener('resize', hideSlideMenu);
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') hideSlideMenu();
 });
+
+
+const SLIDE_BUILD_EFFECTS = [
+  { value: 'type', label: 'Type', duration: 500 },
+  { value: 'rise', label: 'Rise', duration: 1000 },
+];
+const SLIDE_BUILD_TRIGGERS = [
+  { value: 'click', label: 'On click' },
+  { value: 'own', label: 'On its own' },
+];
+const SLIDE_BUILD_GOOGLE_LINE = 'Google Slides plays this as one fade, not letter by letter.';
+
+const SLIDE_BUILD_STAGGER_MS = 250;
+const SLIDE_BUILD_MAX_DELAY_MS = 60000;
+
+
+function slideBuildOf(list) {
+  const carried = list && list.dataset ? list.dataset.slideBuild : null;
+  if (!carried) return null;
+  try {
+    const build = JSON.parse(carried);
+    return build && Array.isArray(build.rows) ? build : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+
+function sendSlideBuild(build) {
+  const rows = build.rows.map(({ shape, effect, delay, duration }) => ({ shape, effect, delay, duration }));
+  const member = heldMember();
+  sendEditCommand(member ? { command: 'setSlideBuild', trigger: build.trigger, rows, member } : { command: 'setSlideBuild', trigger: build.trigger, rows });
+}
+
+
+function slideBuildSelect(label, choices, chosen, pick) {
+  const wrap = document.createElement('label');
+  wrap.className = 'leaf-select';
+  const select = document.createElement('select');
+  select.setAttribute('aria-label', label);
+  for (const choice of choices) {
+    const option = document.createElement('option');
+    option.value = choice.value;
+    option.textContent = choice.label;
+    option.selected = choice.value === chosen;
+    select.appendChild(option);
+  }
+  select.addEventListener('change', () => pick(select.value));
+  const chevron = document.createElement('span');
+  chevron.className = 'lt-icon lt-icon-chevron-down';
+  chevron.setAttribute('aria-hidden', 'true');
+  wrap.append(select, chevron);
+  return wrap;
+}
+
+
+function selectedSlideShapeId(body) {
+  const box = body.querySelector('.slide-shape-selected[data-shape]');
+  const id = box ? Number(box.dataset.shape) : NaN;
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+
+function slideShapeWords(body, id) {
+  const box = body.querySelector(`.slide-shape[data-shape="${id}"]`);
+  return box ? box.textContent.trim().replace(/\s+/g, ' ') : '';
+}
+
+
+function wireSlideBuild(body) {
+  const list = body.querySelector('aside.slide-build[data-slide-build]');
+  const build = slideBuildOf(list);
+  if (!list || !build) return;
+  const drawn = list.innerHTML;
+  const wasHidden = list.hidden;
+  const numbers = [];
+  onUnlockedLayerDropped(() => {
+    list.innerHTML = drawn;
+    list.hidden = wasHidden;
+    numbers.forEach((number) => number.remove());
+  });
+  const change = (next) => sendSlideBuild({ trigger: build.trigger, rows: build.rows, ...next });
+  list.hidden = false;
+  list.textContent = '';
+
+  const head = document.createElement('p');
+  head.className = 'slide-build-head';
+  head.append('Build ', slideBuildSelect('When the build starts', SLIDE_BUILD_TRIGGERS, build.trigger, (trigger) => change({ trigger })));
+  list.appendChild(head);
+
+  build.rows.forEach((row, index) => {
+    const line = document.createElement('div');
+    line.className = 'slide-build-row';
+    line.dataset.buildRow = String(index);
+    const place = document.createElement('span');
+    place.textContent = `${index + 1}`;
+    const words = document.createElement('span');
+    words.textContent = row.words;
+    const effect = slideBuildSelect('Effect', SLIDE_BUILD_EFFECTS, row.effect, (value) => {
+      const picked = SLIDE_BUILD_EFFECTS.find((entry) => entry.value === value);
+      change({ rows: build.rows.map((other, at) => (at === index ? { ...other, effect: value, duration: picked.duration } : other)) });
+    });
+    const delay = document.createElement('input');
+    delay.type = 'number';
+    delay.min = '0';
+    delay.step = '50';
+    delay.className = 'slide-build-delay';
+    delay.value = String(row.delay);
+    delay.setAttribute('aria-label', 'Delay in milliseconds');
+    delay.addEventListener('change', () => {
+      const ms = Math.round(Number(delay.value));
+      if (!Number.isFinite(ms) || ms < 0 || ms > SLIDE_BUILD_MAX_DELAY_MS) {
+        delay.value = String(row.delay);
+        return;
+      }
+      if (ms !== row.delay) change({ rows: build.rows.map((other, at) => (at === index ? { ...other, delay: ms } : other)) });
+    });
+    const unit = document.createElement('span');
+    unit.textContent = 'ms';
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'icon-button slide-build-remove';
+    remove.setAttribute('aria-label', 'Take this box out of the build');
+    remove.innerHTML = '<span class="lt-icon lt-icon-close" aria-hidden="true"></span>';
+    remove.addEventListener('click', () => change({ rows: build.rows.filter((_, at) => at !== index) }));
+    line.append(place, words, effect, delay, unit, remove);
+    line.addEventListener('pointerdown', (event) => beginSlideBuildDrag(list, build, index, event, change));
+    list.appendChild(line);
+    if (row.effect === 'type') {
+      const note = document.createElement('p');
+      note.className = 'slide-build-note';
+      note.textContent = SLIDE_BUILD_GOOGLE_LINE;
+      list.appendChild(note);
+    }
+    const box = body.querySelector(`.slide-shape[data-shape="${row.shape}"]`);
+    if (box && !box.querySelector('.slide-build-number')) {
+      const number = document.createElement('span');
+      number.className = 'slide-build-number';
+      number.setAttribute('aria-hidden', 'true');
+      number.textContent = `${index + 1}`;
+      box.appendChild(number);
+      numbers.push(number);
+    }
+  });
+
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'theme-mode-btn';
+  add.textContent = 'Add the selected box';
+  add.addEventListener('click', () => {
+    const shape = selectedSlideShapeId(body);
+    if (shape == null) return;
+    const last = build.rows[build.rows.length - 1];
+    const delay = last ? Math.min(last.delay + SLIDE_BUILD_STAGGER_MS, SLIDE_BUILD_MAX_DELAY_MS) : 0;
+    change({ rows: [...build.rows, { shape, words: slideShapeWords(body, shape), effect: 'rise', delay, duration: 1000 }] });
+  });
+  list.appendChild(add);
+  
+  body.querySelectorAll('.slide-shape[data-shape]').forEach((box) => {
+    if (hasRangeOf(box, 'frame')) return;
+    box.addEventListener('pointerdown', (event) => {
+      if (!readerEditingAllowed() || event.button !== 0) return;
+      body.querySelectorAll('.slide-shape-selected').forEach((other) => other.classList.remove('slide-shape-selected'));
+      box.classList.add('slide-shape-selected');
+    }, { signal: unlockedLayerSignal() });
+  });
+  onUnlockedLayerDropped(() => body.querySelectorAll('.slide-shape-selected').forEach((box) => box.classList.remove('slide-shape-selected')));
+  const showAdd = () => {
+    add.hidden = selectedSlideShapeId(body) == null;
+  };
+  showAdd();
+  document.addEventListener('pointerup', showAdd, { signal: unlockedLayerSignal() });
+}
+
+
+function beginSlideBuildDrag(list, build, from, event, change) {
+  if (event.button !== 0 || event.target.closest('select, input, button')) return;
+  const line = event.currentTarget;
+  event.preventDefault();
+  leafHoldPointer(line, event.pointerId);
+  const signal = unlockedLayerSignal();
+  const end = (up) => {
+    document.removeEventListener('pointerup', end);
+    document.removeEventListener('pointercancel', end);
+    if (up.type !== 'pointerup') return;
+    const rows = Array.from(list.querySelectorAll('.slide-build-row'));
+    const target = rows.findIndex((other) => {
+      const rect = other.getBoundingClientRect();
+      return up.clientY >= rect.top && up.clientY < rect.bottom;
+    });
+    if (target < 0 || target === from) return;
+    const moved = build.rows.slice();
+    const [row] = moved.splice(from, 1);
+    moved.splice(target, 0, row);
+    change({ rows: moved });
+  };
+  document.addEventListener('pointerup', end, { signal });
+  document.addEventListener('pointercancel', end, { signal });
+}
 
 
 
@@ -24292,6 +24673,13 @@ function bindTableControls() {
   hideTableColumnHandle();
   tableRowHandle = null;
   tableColumnHandle = null;
+  onUnlockedLayerDropped(() => {
+    dropCarriedTableLine();
+    hideTableRowHandle();
+    hideTableColumnHandle();
+    tableRowHandle = null;
+    tableColumnHandle = null;
+  });
   if (!body || currentDocumentFormat !== 'markdown' || !readerEditingAllowed()) return;
   
   if (!body.querySelectorAll('table').length) return;
@@ -24308,7 +24696,7 @@ function bindTableControls() {
       return;
     }
     if (row !== tableRowHandleRow) aimTableRowHandle(row, true);
-  });
+  }, { signal: unlockedLayerSignal() });
 
   
 
@@ -24327,7 +24715,7 @@ function bindTableControls() {
         !tableRowHandle || !tableRowHandle.contains(event.target)) return hideTableRowHandle();
     event.preventDefault();
     tableRowDragging = { row: tableRowHandleRow, table: tableRowHandleRow.closest('table'), x: event.clientX, y: event.clientY, lift: null };
-  });
+  }, { signal: unlockedLayerSignal() });
 
   body.addEventListener('pointerup', (event) => {
     const column = tableColumnDragging;
@@ -24361,7 +24749,7 @@ function bindTableControls() {
     
     if (!over || over.closest('table') !== carrying.table || over === carrying.row) return;
     moveTableRow(carrying.table, carrying.row, rows.indexOf(over) - from);
-  });
+  }, { signal: unlockedLayerSignal() });
 }
 
 
@@ -26965,6 +27353,7 @@ function revealRenderedMatch() {
   cancelExactReadingRestore();
   const matchNode = range.commonAncestorContainer;
   const matchElement = matchNode?.nodeType === Node.ELEMENT_NODE ? matchNode : matchNode?.parentElement;
+  revealDocumentTabOf(matchElement);
   revealReadingPast(matchElement?.closest('[data-src-start]') || matchElement);
   const rect = range.getBoundingClientRect();
   const view = app.getBoundingClientRect();
@@ -31911,6 +32300,7 @@ function finishRestoredReaderRender(state, kept, landingAnchor) {
   
   if (kept.layout.parentElement !== app) app.appendChild(kept.layout);
   restoreReadingDocumentState(kept.documentState);
+  restoreDocumentTabs(kept.layout.querySelector('.document-body'));
   revealReadingPast(pendingReadingLandingTarget(renderedPath, landingAnchor));
   
   watchCodeFences();
@@ -32040,7 +32430,7 @@ function proveSiteBlocks(doc) {
   let bytes = null;
   const slice = (start, end) => {
     if (doc.source_held) return sliceSourceBytes(start, end);
-    if (bytes === null) bytes = sourceByteEncoder.encode(typeof doc.source === 'string' ? doc.source : '');
+    if (bytes === null) bytes = ArrayBuffer.isView(doc.source) && doc.source.BYTES_PER_ELEMENT === 1 ? doc.source : sourceByteEncoder.encode(typeof doc.source === 'string' ? doc.source : '');
     return sourceByteDecoder.decode(bytes.subarray(start, end));
   };
   const found = collectMarkdownBlockPairs(body, blocks, slice);
@@ -32140,6 +32530,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     replayParagraphSwaps(state.document, app.querySelector('.document-body'));
     
     repinSizedTables(renderedPath);
+    renderDocumentTabs(readerLayout?.querySelector('.document-body'), renderedPath);
     holdReadingBlocks(readerLayout);
     
     if (readerLayout) {
@@ -36232,6 +36623,233 @@ function applyFrontmatterAsks(root) {
   if (unread && window.leafShowNotice) window.leafShowNotice(`Some of this note's fields were not read: ${unread}`);
 }
 
+window.documentTabPlaces ||= new Map();
+window.documentTabLayouts ||= new WeakMap();
+window.pendingDocumentTabRename ||= new Map();
+window.drawnDocumentTabs = null;
+
+function restoreDocumentTabs(body) {
+  window.drawnDocumentTabs = body ? window.documentTabLayouts.get(body) || null : null;
+}
+
+function openDocumentTabFor(tabs, index) {
+  if (!tabs || index < 0 || index >= tabs.parts.length || tabs.open === index) return;
+  for (const block of tabs.parts[tabs.open]) block.hidden = true;
+  for (const block of tabs.parts[index]) if (!tabs.dividers.includes(block)) block.hidden = false;
+  tabs.buttons[tabs.open].classList.remove('is-open');
+  tabs.buttons[tabs.open].setAttribute('aria-selected', 'false');
+  tabs.buttons[index].classList.add('is-open');
+  tabs.buttons[index].setAttribute('aria-selected', 'true');
+  tabs.open = index;
+  window.documentTabPlaces.set(tabs.path, index);
+  invalidateMinimapPreview();
+}
+
+function revealDocumentTabOf(element) {
+  if (!element) return;
+  const body = element.closest('.document-body');
+  const tabs = body ? window.documentTabLayouts.get(body) : null;
+  if (!tabs) return;
+  const block = element.closest('.document-run > *, .document-body > *');
+  const index = block ? tabs.owner.get(block) : null;
+  if (index != null) openDocumentTabFor(tabs, index);
+}
+
+function documentTabRanges(tabs, forMove = false) {
+  const starts = tabs.dividers.map((divider) => rangeOf(divider, 'block').start);
+  if (!starts.every(Number.isFinite)) return null;
+  return starts.map((start, at) => {
+    let end = starts[at + 1] ?? documentSourceLength();
+    if (forMove) end -= (/[ \t\r\n]*$/.exec(sliceSourceBytes(start, end)) || [''])[0].length;
+    return [start, end];
+  });
+}
+
+function renameDocumentTab(at, tabs = window.drawnDocumentTabs) {
+  if (!tabs || !tabs.editable) return;
+  const button = tabs.buttons[at];
+  const input = document.createElement('input');
+  input.className = 'doc-tab-input';
+  input.value = button.textContent;
+  button.replaceWith(input);
+  let finished = false;
+  const finish = (save) => {
+    if (finished) return;
+    finished = true;
+    input.replaceWith(button);
+    const name = input.value.trim();
+    if (!save || !name || name === button.textContent) return;
+    if (name.includes('--') || name.includes('\n') || name.includes('\r')) {
+      leafToast('A tab name must stay on one line and cannot contain two dashes.');
+      return;
+    }
+    const { start, end } = rangeOf(tabs.dividers[at], 'block');
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return;
+    const before = sliceSourceBytes(start, end);
+    const after = before.replace(/<!--\s*tab:[^\r\n]*-->/, `<!-- tab: ${name} -->`);
+    if (after !== before) sendEditCommand({ command: 'editBlock', start, end, text: after });
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') { event.preventDefault(); finish(true); }
+    else if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.focus();
+  input.select();
+}
+
+function addDocumentTab(tabs = window.drawnDocumentTabs) {
+  if (!tabs || !tabs.editable || tabs.parts.length >= 100) return;
+  window.documentTabPlaces.set(tabs.path, tabs.parts.length);
+  window.pendingDocumentTabRename.set(tabs.path, tabs.parts.length);
+  const at = documentSourceLength();
+  sendEditCommand({ command: 'editBlock', start: at, end: at, text: '\n\n<!-- tab: New tab -->\n' });
+}
+
+function moveDocumentTab(from, to, tabs = window.drawnDocumentTabs) {
+  if (!tabs || !tabs.editable || from === to) return;
+  const ranges = documentTabRanges(tabs, true);
+  if (!ranges) return;
+  window.documentTabPlaces.set(tabs.path, to);
+  sendEditCommand({ command: 'moveBlock', ranges, from, to });
+}
+
+function removeDocumentTab(at, tabs = window.drawnDocumentTabs) {
+  if (!tabs || !tabs.editable) return;
+  const ranges = documentTabRanges(tabs);
+  if (!ranges) return;
+  const [start, end] = ranges[at];
+  const markerEnd = rangeOf(tabs.dividers[at], 'block').end;
+  const commit = () => {
+    window.documentTabPlaces.set(tabs.path, Math.max(0, Math.min(at, tabs.parts.length - 2)));
+    sendEditCommand({ command: 'editBlock', start, end, text: '' });
+  };
+  if (sliceSourceBytes(markerEnd, end).trim()) openConfirm('Remove this tab?', 'Its contents will be removed with it.', 'Remove tab', commit);
+  else commit();
+}
+
+function showDocumentTabMenu(at, x, y, tabs = window.drawnDocumentTabs) {
+  if (!tabs || !tabs.editable) return;
+  let menu = window.documentTabMenu;
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.setAttribute('role', 'menu');
+    appSurface.appendChild(menu);
+    window.documentTabMenu = menu;
+  }
+  menu.replaceChildren();
+  for (const [label, action] of [['Rename tab', () => renameDocumentTab(at, tabs)], ['Remove tab', () => removeDocumentTab(at, tabs)]]) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'context-menu-item';
+    item.setAttribute('role', 'menuitem');
+    item.textContent = label;
+    item.addEventListener('click', () => { menu.hidden = true; action(); });
+    menu.appendChild(item);
+  }
+  menu.hidden = false;
+  leafPlaceFloating(menu, x, y);
+}
+
+window.addEventListener('pointermove', (event) => {
+  const drag = window.documentTabPointerDrag;
+  if (drag && Math.abs(event.clientX - drag.x) + Math.abs(event.clientY - drag.y) > 5) drag.moved = true;
+});
+window.addEventListener('pointerup', (event) => {
+  const drag = window.documentTabPointerDrag;
+  window.documentTabPointerDrag = null;
+  if (!drag || !drag.moved) return;
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.doc-tab');
+  const to = drag.tabs.buttons.indexOf(target);
+  if (to >= 0) moveDocumentTab(drag.from, to, drag.tabs);
+  window.documentTabSkipClick = drag.tabs;
+  window.setTimeout(() => { if (window.documentTabSkipClick === drag.tabs) window.documentTabSkipClick = null; }, 0);
+  event.preventDefault();
+});
+window.addEventListener('pointercancel', () => { window.documentTabPointerDrag = null; });
+
+function renderDocumentTabs(body, path, format = currentDocumentFormat) {
+  window.drawnDocumentTabs = null;
+  if (!body || !body.querySelector('[data-tab]')) return;
+  const dividers = [...body.querySelectorAll('[data-tab]')].filter(isDocumentBlock);
+  if (dividers.length < 2 || dividers.length > 100) return;
+  const blocks = documentBlocks(body);
+  const parts = dividers.map(() => []);
+  const owner = new WeakMap();
+  let index = -1;
+  for (const block of blocks) {
+    if (index + 1 < dividers.length && block === dividers[index + 1]) index += 1;
+    if (index >= 0) {
+      parts[index].push(block);
+      owner.set(block, index);
+    }
+  }
+  const open = Math.min(Math.max(0, window.documentTabPlaces.get(path) || 0), parts.length - 1);
+  const strip = document.createElement('div');
+  strip.className = 'doc-tabs';
+  strip.setAttribute('role', 'tablist');
+  const editable = format === 'markdown';
+  if (editable) strip.classList.add('is-editable');
+  const tabs = { path, parts, owner, buttons: [], open, dividers, strip, editable };
+  const buttons = dividers.map((divider, at) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = at === open ? 'doc-tab is-open' : 'doc-tab';
+    button.textContent = divider.textContent.trim();
+    button.setAttribute('role', 'tab');
+    button.setAttribute('aria-selected', String(at === open));
+    button.addEventListener('click', () => {
+      if (window.documentTabSkipClick === tabs) { window.documentTabSkipClick = null; return; }
+      openDocumentTabFor(tabs, at);
+    });
+    if (editable) {
+      button.addEventListener('dblclick', () => renameDocumentTab(at, tabs));
+      button.addEventListener('contextmenu', (event) => { event.preventDefault(); showDocumentTabMenu(at, event.clientX, event.clientY, tabs); });
+      button.addEventListener('pointerdown', (event) => {
+        if (event.button === 0) window.documentTabPointerDrag = { tabs, from: at, x: event.clientX, y: event.clientY, moved: false };
+      });
+    }
+    strip.appendChild(button);
+    divider.hidden = true;
+    return button;
+  });
+  tabs.buttons = buttons;
+  if (editable && dividers.length < 100) {
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'doc-tab-add';
+    add.textContent = '+';
+    add.setAttribute('aria-label', 'Add tab');
+    add.addEventListener('click', () => addDocumentTab(tabs));
+    strip.appendChild(add);
+  }
+  dividers[0].parentElement.insertBefore(strip, dividers[0]);
+  const dividerSet = new Set(dividers);
+  for (let at = 0; at < parts.length; at += 1) {
+    for (const block of parts[at]) block.hidden = at !== open || dividerSet.has(block);
+  }
+  window.drawnDocumentTabs = tabs;
+  window.documentTabLayouts.set(body, tabs);
+  window.documentTabPlaces.set(path, open);
+  if (window.pendingDocumentTabRename.get(path) === open) {
+    window.pendingDocumentTabRename.delete(path);
+    window.requestAnimationFrame(() => { if (window.documentTabLayouts.get(body) === tabs) renameDocumentTab(open, tabs); });
+  }
+}
+
+
+function visibleReaderAnchorBlockList(source) {
+  const all = readerAnchorBlockList(source);
+  const tabs = window.documentTabLayouts?.get(source);
+  if (!tabs) return all;
+  const cached = window.readerTabAnchorCache;
+  if (cached?.source === source && cached.all === all && cached.open === tabs.open) return cached.blocks;
+  const blocks = all.filter((block) => !block.closest('[hidden]'));
+  window.readerTabAnchorCache = { source, all, open: tabs.open, blocks };
+  return blocks;
+}
+
 
 
 
@@ -36782,6 +37400,25 @@ document.addEventListener('dblclick', (event) => {
   });
 });
 
+
+function tableRowAtReadingLine(table, readingLine) {
+  const rows = table.rows;
+  if (!rows || !rows.length) return null;
+  let lo = 0;
+  let hi = rows.length - 1;
+  let found = rows.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (rows[mid].getBoundingClientRect().bottom > readingLine) {
+      found = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+  return { index: found, top: rows[found].getBoundingClientRect().top };
+}
+
 function tableSheetOverlayElement() {
   return app ? app.querySelector('.table-sheet-overlay') : null;
 }
@@ -37196,13 +37833,13 @@ function pictureTypeRefused(type) {
 }
 
 
-async function pictureFile(picture, type, written = type) {
+async function pictureFile(picture, type) {
   const canvas = await pictureExportCanvas(picture, type);
   const file = await new Promise((resolve) =>
-    written === 'image/jpeg' ? canvas.toBlob(resolve, written, PICTURE_JPEG_QUALITY) : canvas.toBlob(resolve, written)
+    type === 'image/jpeg' ? canvas.toBlob(resolve, type, PICTURE_JPEG_QUALITY) : canvas.toBlob(resolve, type)
   );
   
-  if (!file || file.type !== written) throw pictureTypeRefused(type);
+  if (!file || file.type !== type) throw pictureTypeRefused(type);
   return file;
 }
 
@@ -37217,16 +37854,50 @@ async function pictureFileBase64(picture, type) {
 }
 
 
+const PICTURE_BAND_BYTES = 8 * 1024 * 1024;
+
+let pictureBandToken = Math.floor(Math.random() * 0x7fffffff);
+
+
+async function postPictureBands(picture, kind, path, source) {
+  const canvas = await pictureExportCanvas(picture, 'image/webp');
+  const ink = canvas.getContext('2d');
+  if (!ink) throw new Error('This window cannot make a picture.');
+  const { width, height } = canvas;
+  const rowsPerBand = Math.max(1, Math.floor(Math.min(PICTURE_BAND_BYTES, MAX_CLIPBOARD_PNG_BYTES) / (width * 4)));
+  const token = ++pictureBandToken;
+  const endpoint = window.__leafPictureExportEndpoint;
+  const fixed =
+    'format=' + encodeURIComponent(kind) + '&token=' + token + '&width=' + width + '&height=' + height;
+  try {
+    for (let row = 0; row < height; row += rowsPerBand) {
+      const rows = Math.min(rowsPerBand, height - row);
+      const pixels = ink.getImageData(0, row, width, rows).data;
+      
+      const named = row === 0 ? '&source=' + encodeURIComponent(source) + '&target=' + encodeURIComponent(path) : '';
+      const query = fixed + '&row=' + row + '&rows=' + rows + named;
+      const response = await postPictureBody(endpoint + '/band?' + query, 'application/octet-stream', pixels.buffer);
+      if (!response.ok) throw new Error('That picture could not be exported.');
+    }
+  } catch (error) {
+    fetch(endpoint + '/cancel?token=' + token, { method: 'POST' }).catch(() => {});
+    throw error;
+  }
+}
+
+
 async function postPictureExport(picture, kind, type, path, source) {
   
-  const written = type === 'image/webp' && window.__leafHostEncodesWebp ? 'image/png' : type;
-  const file = await pictureFile(picture, type, written);
+  if (type === 'image/webp' && window.__leafHostEncodesWebp && window.__leafPictureExportEndpoint) {
+    await postPictureBands(picture, kind, path, source);
+    return;
+  }
+  const file = await pictureFile(picture, type);
   if (file.size > MAX_CLIPBOARD_PNG_BYTES) throw new Error('That picture is too big to export.');
-  
   if (!window.__leafPictureExportEndpoint) throw new Error('That picture could not be exported.');
   const query =
     'format=' + encodeURIComponent(kind) + '&source=' + encodeURIComponent(source) + '&target=' + encodeURIComponent(path);
-  const response = await postPictureBody(window.__leafPictureExportEndpoint + '?' + query, written, file);
+  const response = await postPictureBody(window.__leafPictureExportEndpoint + '?' + query, type, file);
   if (!response.ok) throw new Error('That picture could not be exported.');
 }
 
@@ -37705,6 +38376,10 @@ function drawWindowWidths() {
   
   refitAppBar();
 }
+
+function railWidthIsMoving() {
+  return !!windowWidthDrawing || !!windowWidthFrame || document.body.classList.contains('library-resizing');
+}
 function settleWindowWidths() {
   window.clearTimeout(windowWidthQuietTimer);
   windowWidthQuietTimer = 0;
@@ -38131,12 +38806,14 @@ function bindDocumentMinimapPreview(track) {
   });
   if (window.ResizeObserver) {
     
+    let railSighted = false;
     minimapResizeObserver = new ResizeObserver(inThisColumn(() => {
       minimapSpacerTarget = null;
       invalidateMinimapMetrics();
       scheduleReaderLayoutUpdate();
       
-      scheduleMinimapPreviewUpdate(document.body.classList.contains('library-resizing') ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
+      scheduleMinimapPreviewUpdate(railSighted ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
+      railSighted = true;
     }));
     minimapResizeObserver.observe(track);
     
@@ -38150,7 +38827,7 @@ function bindDocumentMinimapPreview(track) {
         layoutWidth = width;
         if (first) return;
         invalidateMinimapMetrics();
-        scheduleMinimapPreviewUpdate(document.body.classList.contains('library-resizing') ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
+        scheduleMinimapPreviewUpdate(MINIMAP_GESTURE_SLACK);
       }));
       minimapLayoutObserver.observe(layout);
     }
@@ -38391,24 +39068,6 @@ function anchorForBlockIndex(blocks, targetIndex, shellRect) {
   return anchor;
 }
 
-function tableRowAtReadingLine(table, readingLine) {
-  const rows = table.rows;
-  if (!rows || !rows.length) return null;
-  let lo = 0;
-  let hi = rows.length - 1;
-  let found = rows.length - 1;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    if (rows[mid].getBoundingClientRect().bottom > readingLine) {
-      found = mid;
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-  return { index: found, top: rows[found].getBoundingClientRect().top };
-}
-
 function anchorReaderOn(target) {
   const body = app.querySelector('.document-body');
   const blocks = body ? readerAnchorBlockList(body) : [];
@@ -38461,7 +39120,7 @@ function captureReaderScrollAnchor() {
   if (readerOffScreen() || !currentState?.document || !source || readingHasHeldBlocks()) {
     return null;
   }
-  const blocks = readerAnchorBlockList(source);
+  const blocks = visibleReaderAnchorBlockList(source);
   if (!blocks.length) {
     return null;
   }
@@ -38502,7 +39161,7 @@ function anchorAboveElement(el) {
     if (!above) return null;
     return { element: above, offsetY: app.getBoundingClientRect().top - above.getBoundingClientRect().top };
   }
-  const blocks = readerAnchorBlockList(source);
+  const blocks = visibleReaderAnchorBlockList(source);
   if (!blocks.length) {
     return null;
   }
@@ -38554,6 +39213,7 @@ function restoreReaderScrollAnchor(anchor) {
     clampReaderScrollPosition();
     return;
   }
+  revealDocumentTabOf(element);
   revealReadingPast(element);
   
   correctReaderScrollOrigin();
@@ -39291,7 +39951,7 @@ function updateMinimapViewport() {
   
   
   if (!minimapWindowCoversView(metrics, metrics.scrollTop)) {
-    scheduleMinimapPreviewUpdate(readerScrolling || minimapDragging ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
+    scheduleMinimapPreviewUpdate(readerScrolling || minimapDragging || railWidthIsMoving() ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
   }
 }
 
@@ -39310,7 +39970,7 @@ function updateMinimapViewportFromScroll() {
   placeMinimapViewport(minimap, metrics, scrollTop);
   if (!minimapWindowCoversView(metrics, scrollTop)) {
     
-    scheduleMinimapPreviewUpdate(readerScrolling ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
+    scheduleMinimapPreviewUpdate(readerScrolling || railWidthIsMoving() ? MINIMAP_GESTURE_SLACK : MINIMAP_WINDOW_SLACK);
   }
 }
 
@@ -39441,7 +40101,7 @@ window.addEventListener('resize', () => {
   invalidateMinimapMetrics();
   scheduleReaderLayoutUpdate();
   scheduleMinimapViewportUpdate();
-  scheduleMinimapPreviewUpdate();
+  scheduleMinimapPreviewUpdate(MINIMAP_GESTURE_SLACK);
 });
 
 const releaseReaderPlaceHeldForResize = () => {

@@ -7744,7 +7744,8 @@ body.library-resizing button {
 .library-file-full .file-name-stem {
   font-weight: var(--lt-weight-600);
 }
-.library-file-title {
+.library-file-title,
+.library-file-author {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -8981,6 +8982,65 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-run {
   position: relative;
 }
+.document-body .document-run > [hidden] {
+  display: none !important;
+}
+.doc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-4);
+  margin: var(--type-spacing) 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+}
+.doc-tab {
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: 0;
+  border-bottom: var(--lt-stroke-2) solid transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.doc-tab.is-open {
+  color: var(--lt-markdown-foreground);
+  border-bottom-color: var(--lt-primary);
+}
+.doc-tabs.is-editable .doc-tab {
+  cursor: grab;
+}
+.doc-tab:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-primary);
+}
+.doc-tab-add {
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: 0;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .doc-tab:hover,
+  .doc-tab-add:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-markdown-foreground);
+  }
+}
+.doc-tab-input {
+  min-width: 0;
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-primary);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-background);
+  color: var(--lt-markdown-foreground);
+  font: inherit;
+}
+.doc-tab-name {
+  margin: var(--type-spacing) 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  font-weight: var(--lt-weight-600);
+}
 
 .is-held-below {
   display: none !important;
@@ -9594,6 +9654,41 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 .document-body .slide-notes-label {
   font-weight: var(--lt-weight-600);
+}
+
+.document-body .slide-build {
+  border-left: 0.25em solid var(--lt-markdown-blockquote-border);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  margin: var(--type-spacing) 0;
+  padding: 0 1em;
+}
+.document-body .slide-build-head {
+  font-weight: var(--lt-weight-600);
+}
+.document-body .slide-build-note {
+  font-size: 0.9em;
+  font-style: italic;
+}
+.document-body .slide-build-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+}
+.document-body .slide-build-remove {
+  border: 0;
+  background: none;
+  color: var(--lt-muted-foreground);
+}
+.document-body .slide-build-delay {
+  width: 5em;
+  padding: 0 var(--lt-space-4);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: inherit;
+  font: inherit;
 }
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
@@ -12367,6 +12462,22 @@ body.table-resizing.is-row button {
   position: absolute;
   inset: -6px;
   z-index: -1;
+}
+
+.slide-build-number {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-600);
+  line-height: 18px;
+  text-align: center;
 }
 .slide-shape-corner {
   position: absolute;

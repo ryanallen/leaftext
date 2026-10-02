@@ -7760,7 +7760,8 @@ body.library-resizing button {
 .library-file-full .file-name-stem {
   font-weight: var(--lt-weight-600);
 }
-.library-file-title {
+.library-file-title,
+.library-file-author {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -9015,6 +9016,65 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-run {
   position: relative;
 }
+.document-body .document-run > [hidden] {
+  display: none !important;
+}
+.doc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-4);
+  margin: var(--type-spacing) 0;
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+}
+.doc-tab {
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: 0;
+  border-bottom: var(--lt-stroke-2) solid transparent;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+.doc-tab.is-open {
+  color: var(--lt-markdown-foreground);
+  border-bottom-color: var(--lt-primary);
+}
+.doc-tabs.is-editable .doc-tab {
+  cursor: grab;
+}
+.doc-tab:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-primary);
+}
+.doc-tab-add {
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: 0;
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .doc-tab:hover,
+  .doc-tab-add:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-markdown-foreground);
+  }
+}
+.doc-tab-input {
+  min-width: 0;
+  padding: var(--lt-space-8) var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-primary);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-background);
+  color: var(--lt-markdown-foreground);
+  font: inherit;
+}
+.doc-tab-name {
+  margin: var(--type-spacing) 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  font-weight: var(--lt-weight-600);
+}
 /* Blocks below the landing leave the page entirely; skipped layout keeps guessed heights in it, so the scroll range and minimap lie until those guesses settle. */
 .is-held-below {
   display: none !important;
@@ -9628,6 +9688,41 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 .document-body .slide-notes-label {
   font-weight: var(--lt-weight-600);
+}
+/* A slide's build reads like its notes: apart from the slide, in the app's own face. */
+.document-body .slide-build {
+  border-left: 0.25em solid var(--lt-markdown-blockquote-border);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: 0.9em;
+  margin: var(--type-spacing) 0;
+  padding: 0 1em;
+}
+.document-body .slide-build-head {
+  font-weight: var(--lt-weight-600);
+}
+.document-body .slide-build-note {
+  font-size: 0.9em;
+  font-style: italic;
+}
+.document-body .slide-build-row {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+}
+.document-body .slide-build-remove {
+  border: 0;
+  background: none;
+  color: var(--lt-muted-foreground);
+}
+.document-body .slide-build-delay {
+  width: 5em;
+  padding: 0 var(--lt-space-4);
+  border: var(--lt-stroke-1) solid color-mix(in srgb, var(--lt-muted-foreground) 35%, transparent);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: inherit;
+  font: inherit;
 }
 :root[data-speed-reader="true"] .document-body {
   color: color-mix(in srgb, var(--lt-markdown-foreground) 80%, var(--lt-markdown-background));
@@ -12416,6 +12511,22 @@ body.table-resizing.is-row button {
   position: absolute;
   inset: -6px;
   z-index: -1;
+}
+/* Which place a box takes in its slide's build, worn at its corner while the page is unlocked. */
+.slide-build-number {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-11);
+  font-weight: var(--lt-weight-600);
+  line-height: 18px;
+  text-align: center;
 }
 .slide-shape-corner {
   position: absolute;
@@ -17359,7 +17470,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 186 values that do not change with the theme, all 78 icons, and all 137 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 186 values that do not change with the theme, all 78 icons, and all 141 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17391,7 +17502,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>186</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>78</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>137</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>141</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -17808,7 +17919,15 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">137 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">141 parts, each drawn here exactly as the app draws it.</p>
+<section class="part">
+<header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
+<div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Document tab divider</h3><code class="built">.doc-tab-name</code><span class="built">events.rs, from a whole Markdown tab comment</span></header>
+<div class="stage"><div class="document-body"><div class="doc-tab-name" data-tab="1">Overview</div><p>One part of the document.</p></div></div>
+</section>
 <section class="part">
 <header><h3>Web address</h3><code class="built">.web-address</code><span class="built">web-address.js — an empty tab's address or search field, and the live tab's editable address</span></header>
 <div class="stage"><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" placeholder="Search Google or enter an address"></div></div>
@@ -17942,8 +18061,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep)</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:380px"><div class="library-tree"><div class="library-group-heading">Today</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">round-1</span></span><span class="library-file-time">9:14am</span><span class="file-type-badge">MD</span></span><span class="library-file-title">Magic link, round 1: how far one email reaches</span><span class="library-file-preview">One email serves the step after a password and signup, with the password kept.</span></span></button><button type="button" class="library-file is-selected is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-file is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">Picked.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button><button type="button" class="library-nav-folder is-drop-target"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">Where they land</span></button><div class="library-carry-chip" style="position:static;display:inline-block">2 items</div></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
+<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep)</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:380px"><div class="library-tree"><div class="library-group-heading">3 books · 1 open here · 2 shut</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">The Adventures of Sherlock Holmes</span></span><span class="file-type-badge">MOBI 6</span></span><span class="library-file-author">Doyle, Arthur Conan</span></span></button><div class="library-group-heading">Today</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">round-1</span></span><span class="library-file-time">9:14am</span><span class="file-type-badge">MD</span></span><span class="library-file-title">Magic link, round 1: how far one email reaches</span><span class="library-file-preview">One email serves the step after a password and signup, with the password kept.</span></span></button><button type="button" class="library-file is-selected is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-file is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">Picked.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button><button type="button" class="library-nav-folder is-drop-target"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">Where they land</span></button><div class="library-carry-chip" style="position:static;display:inline-block">2 items</div></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js, under the find bar</span></header>
@@ -18176,6 +18295,14 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Slide notes</h3><code class="built">.slide-notes</code><span class="built">office/mod.rs, from a PowerPoint notes page or an OpenDocument presentation:notes, after the slide it belongs to</span></header>
 <div class="stage"><div class="document-body"><aside class="slide-notes"><p class="slide-notes-label">Speaker notes</p><p class="slide-notes-line">Say where the sales figures came from, and do not read the table out loud.</p></aside></div></div>
+</section>
+<section class="part">
+<header><h3>Slide build</h3><code class="built">.slide-build</code><span class="built">office/pptx_timing.rs, from a slide's own p:timing, after the slide it belongs to and above its notes: the start, then one row per box in the order it enters, and a note under a Type row or over a build made in another program</span></header>
+<div class="stage"><div class="document-body"><aside class="slide-build"><p class="slide-build-head">Build · On click</p><p class="slide-build-row">1. Ditch the stack — Type, 0 ms</p><p class="slide-build-note">Google Slides plays this as one fade, not letter by letter.</p><p class="slide-build-row">2. One API key replaces the layer — Rise, 250 ms</p></aside></div></div>
+</section>
+<section class="part">
+<header><h3>Slide build number</h3><code class="built">.slide-build-number</code><span class="built">slide-build.js, on each box of the held slide its build brings in, while the page is unlocked</span></header>
+<div class="stage"><div class="document-body"><div class="document-run"><section class="slide-stage" style="--stage-ratio: 16 / 9"><div class="slide-canvas"><div class="slide-shape" style="--shape-x: 0.1; --shape-y: 0.2; --shape-w: 0.6; --shape-h: 0.3; --shape-type: 0.04"><p>A box that enters first</p><span class="slide-build-number">1</span></div></div></section></div></div></div>
 </section>
 <section class="part">
 <header><h3>Bottom sheet</h3><code class="built">.leaf-sheet</code><span class="built">app-shell.html, driven by flow-canvas.js, theme.js and glossary.js</span></header>

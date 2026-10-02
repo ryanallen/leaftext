@@ -292,6 +292,7 @@ export const COMMANDS = {
   selectSourceMember: [REFUSED, 'this published page cannot change a package member; open the file in the desktop app'],
   openMember: [ANSWERED],
   changeSlide: [ANSWERED],
+  setSlideBuild: [ANSWERED],
   exitCodeView: [ANSWERED],
   spliceSource: [LATER, 'web-app-commands'],
   updateSource: [LATER, 'web-app-commands'],
@@ -956,6 +957,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     moveBlock: (command) => applyEdit({ edit: 'move', ranges: command.ranges || [], from: command.from, to: command.to }),
     // A deck's slide duplicated or deleted from its margin handle's menu, written into the package the module holds.
     changeSlide: (command) => applyEdit({ edit: 'slide', action: String(command.action || ''), slide: command.slide }),
+    // A slide's build written from its list, by the library's own writer in the module.
+    setSlideBuild: (command) => applyEdit({ edit: 'build', trigger: command.trigger, rows: command.rows || [] }),
     undoEdit: () => applyEdit({ edit: 'undo' }),
     redoEdit: () => applyEdit({ edit: 'redo' }),
     getGraph: ({ scope }) => {

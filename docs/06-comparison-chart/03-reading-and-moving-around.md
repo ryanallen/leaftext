@@ -66,6 +66,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Many open documents | [✅][l-tabs] | [✅][o-tabs] | [✅][t-keys] | [❌][c-seen] |
+| Tabs inside one document | [✅][l-doc-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Strip scrolls, never squeezes | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Wheel scrolls tabs | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Active tab in sight | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -440,6 +441,7 @@
 [l-appbar]: ../01-features/02-navigation.md#the-app-bar
 [l-toolbar]: ../01-features/02-navigation.md#the-floating-toolbar
 [l-tabs]: ../01-features/02-navigation.md#tabs
+[l-doc-tabs]: ../01-features/02-navigation.md#tabs-inside-a-document
 [l-web-tabs]: ../01-features/02-navigation.md#web-tabs
 [l-split]: ../01-features/02-navigation.md#two-documents-side-by-side
 [l-history]: ../01-features/02-navigation.md#history

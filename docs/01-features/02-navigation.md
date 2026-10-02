@@ -9,6 +9,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | Feature | What it means |
 | --- | --- |
 | [Tabs](#tabs) | Open multiple documents at once |
+| [Tabs inside a document](#tabs-inside-a-document) | Switch among sheets in a workbook or named parts of a Markdown note |
 | [Web tabs](#web-tabs) | Browse a live web page beside your documents |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
@@ -206,6 +207,12 @@ The menu reads in its own order, not the order things folded into it: Back, Refr
 While the [library sheet](03-library.md#narrow-windows) is up it covers the page, so the tab strip goes with it.
 
 ## Moving between documents
+
+#### Tabs inside a document
+
+A workbook with two or more sheets shows their names in a row inside the page, below its title. Press a name to see that sheet alone. The sheet names come from the workbook and cannot be changed from this row.
+
+A Markdown file with two or more [tab markers](01-rendering.md#tabs-leaf-extension) uses the same row. Press **+** at its end to add a part, then type its name. Double-click a name to rename it, drag it to move its whole part, or right-click it to remove it. Removing a part that holds content asks first. Each change is unsaved until you press **Save**. Find and the outline search the whole document and open the tab that holds the result. The minimap shows the open part.
 
 ### History
 
