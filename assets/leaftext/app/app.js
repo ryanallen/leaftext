@@ -465,23 +465,20 @@ function scheduleWebSurfaceBounds() {
     const cardRight = cell.right - parseFloat(cardStyle.borderRightWidth || 0);
     const bar = appBar.getBoundingClientRect();
     const ratio = window.devicePixelRatio || 1;
-    let top = Math.max(cell.top + parseFloat(cardStyle.borderTopWidth || 0), bar.bottom);
+    const top = Math.max(cell.top + parseFloat(cardStyle.borderTopWidth || 0), bar.bottom);
     const addressBar = webAddressState.bar;
-    let lowered = false;
     if (addressBar && tab) {
       const surface = appSurface.getBoundingClientRect();
       addressBar.style.left = (cell.left - surface.left) + 'px';
       addressBar.style.top = (top - surface.top) + 'px';
       addressBar.style.width = cell.width + 'px';
-      const address = addressBar.getBoundingClientRect();
-      lowered = address.height > 0;
-      if (lowered) top = Math.max(top, address.bottom);
+      if (!addressBar.classList.contains('is-open') && addressBar.getBoundingClientRect().height <= 0) webAddressState.covers.delete(addressBar);
     }
     const rail = readerMinimap && !readerMinimap.hidden ? readerMinimap.getBoundingClientRect() : null;
     const right = rail && rail.width > 0 ? Math.min(cardRight, rail.left) : cardRight;
     const radius = Math.max(0, parseFloat(cardStyle.borderBottomLeftRadius || 0));
     
-    const topRadius = lowered ? 0 : Math.max(0, parseFloat(cardStyle.getPropertyValue('--lt-radius-md')) || 0);
+    const topRadius = Math.max(0, parseFloat(cardStyle.getPropertyValue('--lt-radius-md')) || 0);
     const holes = tab ? webSurfaceHoles({ left, top, right, bottom }, ratio) : null;
     const bounds = {
       command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
@@ -600,7 +597,7 @@ function openWebAddressBar(select) {
   bar.classList.add('is-open');
   bar.inert = false;
   webAddressState.motionUntil = performance.now() + durationTokenMilliseconds('--lt-duration-200') + 64;
-  scheduleWebSurfaceBounds();
+  coverWebSurface(true, bar);
   if (select) { input.focus({preventScroll:true}); input.select(); }
 }
 function closeWebAddressBar(leaving) {
@@ -26964,7 +26961,9 @@ function revealRenderedMatch() {
     Number.parseFloat(getComputedStyle(document.body).getPropertyValue('--app-bar-height')) || 0;
   const top = view.top + barHeight;
   if (rect.top >= top && rect.bottom <= view.bottom) return;
-  app.scrollTop += rect.top - top - (view.height - barHeight) / 3;
+  writeReaderPlaceStoppingGlide(() => {
+    app.scrollTop += rect.top - top - (view.height - barHeight) / 3;
+  });
 }
 
 
@@ -35999,6 +35998,12 @@ function isLocalImageSrc(src) {
   return LOCAL_IMAGE_SRC_PREFIXES.some((prefix) => src.startsWith(prefix));
 }
 
+const RAIL_PICTURE_MARK = 'leaf-rail=1';
+function isRailPictureSrc(src) {
+  const query = src.split('?')[1] || '';
+  return query.split('&').includes(RAIL_PICTURE_MARK);
+}
+
 function stampLocalImages(root = app) {
   if (!root) return;
   root.querySelectorAll('img[src]').forEach((img) => {
@@ -36008,7 +36013,7 @@ function stampLocalImages(root = app) {
     const src = img.getAttribute('src') || '';
     if (!isLocalImageSrc(src)) return;
     const base = src.split('?')[0];
-    const stamped = `${base}?leaf-epoch=${localImageEpoch}`;
+    const stamped = `${base}?leaf-epoch=${localImageEpoch}${isRailPictureSrc(src) ? `&${RAIL_PICTURE_MARK}` : ''}`;
     if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);
   });
 }
@@ -37893,18 +37898,9 @@ function bindDocumentMinimap() {
   };
   
   const writeMinimapPressScrollTop = (scrollTop) => {
-    const reader = readerScrollElement();
-    if (!readerScrolling || reader !== app) {
+    writeReaderPlaceStoppingGlide((reader) => {
       reader.scrollTop = scrollTop;
-      return;
-    }
-    app.classList.add('is-glide-held');
-    try {
-      reader.scrollTop = scrollTop;
-      void app.offsetHeight;
-    } finally {
-      app.classList.remove('is-glide-held');
-    }
+    });
   };
   const dragMinimapViewportToPointer = (event, pointerOffsetY) => {
     
@@ -38209,6 +38205,21 @@ function clampReaderScrollTop(scrollTop) {
   const viewportHeight = Math.max(1, Math.ceil(app.clientHeight));
   const range = measureReaderScrollRange(content, viewportHeight);
   return Math.min(range.maxScrollTop, Math.max(range.minScrollTop, nextScrollTop));
+}
+
+function writeReaderPlaceStoppingGlide(write) {
+  const reader = readerScrollElement();
+  if (!readerScrolling || reader !== app) {
+    write(reader);
+    return;
+  }
+  app.classList.add('is-glide-held');
+  try {
+    write(reader);
+    void app.offsetHeight;
+  } finally {
+    app.classList.remove('is-glide-held');
+  }
 }
 function setReaderScrollTop(scrollTop) {
   const landed = clampReaderScrollTop(scrollTop);
@@ -39793,6 +39804,17 @@ function placeKeptMinimapClone(keepReach) {
   placeMinimapClone(content, preview, measureDocumentMinimap(track), minimapBuiltPreviewWidth / minimapBuiltSourceWidth, keepReach);
   updateMinimapViewport();
 }
+
+function askRailPicture(img) {
+  const src = img.getAttribute('src') || '';
+  const width = Number(img.getAttribute('width'));
+  const height = Number(img.getAttribute('height'));
+  if (!isLocalImageSrc(src) || !(width > 0) || !(height > 0) || img.closest('.note-card-media')) return;
+  if (!isRailPictureSrc(src)) img.setAttribute('src', `${src}${src.includes('?') ? '&' : '?'}${RAIL_PICTURE_MARK}`);
+  img.removeAttribute('srcset');
+  img.style.width = `${width}px`;
+  img.style.aspectRatio = `${width} / ${height}`;
+}
 function stripMinimapCloneContent(node) {
   node.querySelectorAll(MINIMAP_CLONE_DROPS).forEach((child) => child.remove());
   node.querySelectorAll('[id]').forEach((child) => {
@@ -39810,6 +39832,7 @@ function stripMinimapCloneContent(node) {
     still.alt = '';
     clip.replaceWith(still);
   });
+  node.querySelectorAll('img[src]').forEach(askRailPicture);
   fillMermaidClone(node);
   drawCodeFencesIn(node);
 }
