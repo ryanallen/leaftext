@@ -5635,6 +5635,57 @@ function runSheetMotion(sheet, className, done, prepare) {
   timer = setTimeout(() => finish(null), duration + SHEET_LEG_SLACK_MS);
 }
 
+const LANDING_FALLBACK_MS = 600;
+const landingRun = new WeakMap();
+function transitionMs(value) {
+  const text = String(value || '').trim();
+  return parseFloat(text) * (text.endsWith('ms') ? 1 : 1000);
+}
+
+function landingMotionOff(element, property) {
+  const style = getComputedStyle(element);
+  const durations = String(style.getPropertyValue('transition-duration') || '').split(',');
+  if (!durations[0].trim()) return false;
+  const delays = String(style.getPropertyValue('transition-delay') || '0s').split(',');
+  const names = String(style.getPropertyValue('transition-property') || 'all').split(',').map((name) => name.trim());
+  const index = names.findIndex((name) => name === property || name === 'all');
+  if (index < 0) return true;
+  return Math.max(0, transitionMs(durations[index % durations.length])) + transitionMs(delays[index % delays.length]) <= 0;
+}
+function landingChainRunning(element) {
+  return landingRun.has(element);
+}
+
+function finishLandingChain(element, ...args) {
+  const run = landingRun.get(element);
+  if (!run) return false;
+  landingRun.delete(element);
+  element.removeEventListener('transitionend', run.landed);
+  window.clearTimeout(run.timer);
+  run.done(...args);
+  return true;
+}
+
+function runLandingChain(element, property, legs, done) {
+  const off = landingMotionOff(element, property);
+  const run = { done, next: 1, timer: 0, landed: null };
+  if (off) {
+    legs.forEach((leg) => leg());
+    done();
+    return;
+  }
+  
+  run.landed = (event) => {
+    if (landingRun.get(element) !== run || event.target !== element || event.propertyName !== property) return;
+    if (run.next < legs.length) legs[run.next++]();
+    else finishLandingChain(element);
+  };
+  landingRun.set(element, run);
+  element.addEventListener('transitionend', run.landed);
+  run.timer = window.setTimeout(() => finishLandingChain(element), LANDING_FALLBACK_MS);
+  if (legs.length) legs[0]();
+}
+
 function openSheet(sheet, backdrop, options) {
   if (!sheet) return;
   
@@ -8355,14 +8406,10 @@ function applyPaneLayout(holdRail, holdRefit) {
   scheduleCrumbFit();
 }
 
-const LIBRARY_MOTION_FALLBACK_MS = 600;
 const LIBRARY_BOUNCE_PX = 16;
 function readerGutterPx() {
   return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--reader-gutter')) || 0;
 }
-let libraryMotionTimer = 0;
-let libraryMotionDone = null;
-let libraryMotionStage = '';
 
 let skippedTableBays = new Map();
 let tableReleaseQueue = [];
@@ -8443,13 +8490,9 @@ function finishTableRelease() {
   tableReleaseQueue = [];
   return true;
 }
-function endLibraryMotion(restarting) {
-  window.clearTimeout(libraryMotionTimer);
-  libraryMotionTimer = 0;
-  libraryMotionStage = '';
+
+function settleLibraryMotion(restarting, done) {
   document.body.classList.remove(...LIBRARY_MOTION_CLASSES);
-  const done = libraryMotionDone;
-  libraryMotionDone = null;
   
   scheduleMinimapWidthSync();
   
@@ -8462,33 +8505,26 @@ function endLibraryMotion(restarting) {
   
   if (!restarting) columnFrame(() => scheduleMinimapPreviewUpdate());
 }
-function startLibraryMotion(direction, done) {
+function endLibraryMotion(restarting) {
+  if (!finishLandingChain(libraryShell, restarting)) settleLibraryMotion(restarting, null);
+}
+
+function startLibraryMotion(direction, done, legs) {
   
   endLibraryMotion(true);
   document.body.classList.add(direction);
-  libraryMotionStage = direction === 'is-library-closing' ? 'slam' : '';
-  libraryMotionDone = done || null;
-  libraryMotionTimer = window.setTimeout(endLibraryMotion, LIBRARY_MOTION_FALLBACK_MS);
+  runLandingChain(libraryShell, 'grid-template-columns', legs || [], (restarting) => settleLibraryMotion(restarting, done));
 }
-libraryShell.addEventListener('transitionend', (event) => {
-  
-  if (event.target !== libraryShell || event.propertyName !== 'grid-template-columns') return;
-  if (libraryMotionStage === 'slam') {
-    
-    libraryMotionStage = 'bounce';
+
+const LIBRARY_CLOSE_LEGS = [
+  () => writePaneWidth(readerGutterPx()),
+  () => {
     document.body.classList.remove('is-library-closing');
     document.body.classList.add('is-library-settling');
     writePaneWidth(readerGutterPx() + LIBRARY_BOUNCE_PX);
-    return;
-  }
-  if (libraryMotionStage === 'bounce') {
-    
-    libraryMotionStage = 'settle';
-    writePaneWidth(readerGutterPx());
-    return;
-  }
-  endLibraryMotion();
-});
+  },
+  () => writePaneWidth(readerGutterPx()),
+];
 
 function toggleLibrary() {
   
@@ -8508,13 +8544,11 @@ function toggleLibrary() {
     writePaneWidth(readerGutterPx());
     applyPaneLayout(true);
     void libraryShell.offsetWidth;
-    startLibraryMotion('is-library-opening', null);
-    applyPaneLayout();
+    startLibraryMotion('is-library-opening', null, [applyPaneLayout]);
   } else {
     libraryUserClosed = true;
     
-    startLibraryMotion('is-library-closing', applyPaneLayout);
-    writePaneWidth(readerGutterPx());
+    startLibraryMotion('is-library-closing', applyPaneLayout, LIBRARY_CLOSE_LEGS);
   }
   persistLibraryLayout();
 }
@@ -11480,7 +11514,11 @@ function outsideDropPlaceAt(x, y) {
   if (!hit || !hit.closest) return { kind: 'elsewhere' };
   if (codeViewActive && monacoEditor && monacoEditor.getDomNode && monacoEditor.getDomNode().contains(hit)) return { kind: 'code' };
   const body = hit.closest('.document-body');
-  if (body) return { kind: 'document', body, element: hit.closest('[data-src-start]') };
+  if (body && app.contains(body)) return { kind: 'document', body, element: hit.closest('[data-src-start]'), y };
+  if (!codeViewActive && app.contains(hit)) {
+    const readingBody = app.querySelector('.document-body');
+    if (readingBody) return { kind: 'document', body: readingBody, element: null, y };
+  }
   return { kind: 'elsewhere' };
 }
 
@@ -11500,8 +11538,20 @@ function outsideDropRoute(place, files, drop, format) {
   const paths = files.map((file) => file.path);
   if (!files.length) return { action: 'nothing' };
   if (place.kind === 'folder') return { action: 'paste', paths, intoFolder: place.folder, cut: !!drop.shift };
+  const pictures = files.filter((file) => file.picture);
+  const documents = files.filter((file) => file.readable);
+  if (pictures.length && documents.length) return {
+    action: 'open', paths: documents.map((file) => file.path),
+    words: 'The pictures were not placed. Drop them on their own to put them in the note.'
+  };
+  if (pictures.length) {
+    if (place.kind !== 'document') return { action: 'refuse', words: 'Drop the picture onto the page of the note to place it.' };
+    if (format !== 'markdown') return { action: 'refuse', words: 'A picture can only be dropped into a Markdown note.' };
+    if (pictures.some((file) => typeof file.reference !== 'string')) return { action: 'refuse', words: 'Save this note first, then drop the picture onto it.' };
+  }
   if (place.kind === 'document' || place.kind === 'code') {
-    const references = files.map((file) => file.reference);
+    const placedFiles = pictures.length ? pictures : files;
+    const references = placedFiles.map((file) => file.reference);
     if (references.some((reference) => typeof reference !== 'string')) return { action: 'refuse', words: outsideDropRefusal(format) };
     if (place.kind === 'code') return { action: 'code', text: references.join('\n') };
     if (format === 'json' || format === 'yaml') {
@@ -11509,7 +11559,7 @@ function outsideDropRoute(place, files, drop, format) {
       if (!place.element || !place.element.matches || !place.element.matches('dd')) return { action: 'refuse', words: 'Drop the file on a value to put it there — there is nowhere between two values for it to go.' };
       return { action: 'value', element: place.element, text: references[0] };
     }
-    return { action: 'insert', element: place.element, text: references.join(blockSeparator()), picture: files.every((file) => file.picture) };
+    return { action: 'insert', element: place.element, y: place.y, text: references.join(blockSeparator()), picture: pictures.length > 0 };
   }
   const readable = files.filter((file) => file.readable);
   const unread = files.filter((file) => !file.readable);
@@ -11517,6 +11567,18 @@ function outsideDropRoute(place, files, drop, format) {
     ? `Leaftext can’t open ${unread[0].name || 'that file'}, so it was not opened.`
     : unread.length ? `Leaftext can’t open ${unread.length} of those files, so they were not opened.` : '';
   return { action: 'open', paths: readable.map((file) => file.path), words };
+}
+function outsideDropBlockAt(y) {
+  const blocks = blockGutterOccupants().filter((block) => hasRangeOf(block, 'block'));
+  if (!blocks.length) return null;
+  let above = blocks[0];
+  for (const block of blocks) {
+    const rect = block.getBoundingClientRect();
+    if (y < rect.top) break;
+    above = block;
+    if (y <= rect.bottom) break;
+  }
+  return above;
 }
 function lightOutsideDrop(place) {
   const next = place && place.kind === 'folder' && libraryFolderTakes(place.folder, outsideDropFiles.map((file) => file.path)) ? place.element : null;
@@ -11539,7 +11601,7 @@ function landOutsideDrop(route) {
     case 'value':
     case 'insert': {
       if (!readerEditingAllowed()) {
-        leafToast('The page is locked. Click the padlock in the toolbar to edit it.');
+        leafToast(route.picture ? 'Unlock this note to drop a picture into it.' : 'The page is locked. Click the padlock in the toolbar to edit it.');
         break;
       }
       if (route.action === 'value') {
@@ -11552,10 +11614,16 @@ function landOutsideDrop(route) {
         break;
       }
       
-      const blocks = documentBlocks(app.querySelector('.document-body'));
-      const block = (route.element && blocks.find((one) => one === route.element || one.contains(route.element))) || blocks[blocks.length - 1];
-      if (!block) break;
-      runGapInsert(pastePictureGap(block), { id: 'drop', text: route.text, kind: route.picture ? 'image' : undefined });
+      const block = outsideDropBlockAt(route.y);
+      if (!block) {
+        const token = nextEditToken();
+        sendEditCommand({ command: 'editBlock', start: 0, end: 0, text: route.text, token, kind: route.picture ? 'image' : undefined });
+        leafHoldEdit(token, (held, why) => { if (!held) leafToast(why || 'The picture was not placed.', 'error'); });
+        break;
+      }
+      const landed = runGapInsert(pastePictureGap(block), { id: 'drop', text: route.text, kind: route.picture ? 'image' : undefined, answered: true });
+      if (landed === false) leafToast('The picture was not placed.', 'error');
+      else if (typeof landed === 'number') leafHoldEdit(landed, (held, why) => { if (!held) leafToast(why || 'The picture was not placed.', 'error'); });
       break;
     }
     case 'open':
@@ -11751,11 +11819,8 @@ graphScopeControl.addEventListener('change', () => {
   refreshGraphForScope();
 });
 
-const TRAY_MOTION_FALLBACK_MS = 600;
 const TRAY_BOUNCING = 'is-reader-tray-bouncing';
 const TRAY_SEATING = 'is-reader-tray-seating';
-let trayStage = '';
-let trayStageTimer = 0;
 let hoveredReaderTool = null;
 let readerToolTrayHovered = false;
 let readerToolTrayKeyboardFocus = false;
@@ -11816,37 +11881,36 @@ function syncReaderToolDividerState() {
   }
   readerToolbar.classList.toggle('no-trailing-tools', !hasTrailingTool);
 }
-function endReaderToolTrayMotion() {
-  window.clearTimeout(trayStageTimer);
-  trayStageTimer = 0;
-  trayStage = '';
-  if (readerToolTray) readerToolTray.classList.remove(TRAY_BOUNCING, TRAY_SEATING);
+function settleReaderToolTray() {
+  readerToolTray.classList.remove(TRAY_BOUNCING, TRAY_SEATING);
 }
+function endReaderToolTrayMotion() {
+  if (readerToolTray && !finishLandingChain(readerToolTray)) settleReaderToolTray();
+}
+
+const TRAY_CLOSE_LEGS = [
+  () => {
+    readerToolTray.classList.add(TRAY_BOUNCING);
+    if (activeWebTab()) followWebSurfaceMotion();
+  },
+  () => {
+    readerToolTray.classList.remove(TRAY_BOUNCING);
+    readerToolTray.classList.add(TRAY_SEATING);
+    if (activeWebTab()) followWebSurfaceMotion();
+  },
+];
 if (readerToolTray) {
   readerToolTray.addEventListener('transitionend', (event) => {
     
     if (event.target !== readerToolTray || event.propertyName !== 'height') return;
     
     if (!readerViewTools || readerToolTray.offsetHeight >= readerViewTools.offsetHeight) {
-      if (trayStage) endReaderToolTrayMotion();
+      if (landingChainRunning(readerToolTray)) endReaderToolTrayMotion();
       return;
     }
-    if (!trayStage) {
-      
-      trayStage = 'bounce';
-      readerToolTray.classList.add(TRAY_BOUNCING);
-      if (activeWebTab()) followWebSurfaceMotion();
-      trayStageTimer = window.setTimeout(endReaderToolTrayMotion, TRAY_MOTION_FALLBACK_MS);
-      return;
-    }
-    if (trayStage === 'bounce') {
-      trayStage = 'seat';
-      readerToolTray.classList.remove(TRAY_BOUNCING);
-      readerToolTray.classList.add(TRAY_SEATING);
-      if (activeWebTab()) followWebSurfaceMotion();
-      return;
-    }
-    endReaderToolTrayMotion();
+    
+    if (landingChainRunning(readerToolTray)) return;
+    runLandingChain(readerToolTray, 'height', TRAY_CLOSE_LEGS, settleReaderToolTray);
   });
   
   readerToolTray.addEventListener('pointerenter', (event) => {
