@@ -424,7 +424,7 @@ Name and content search across the active [vault](GLOSSARY.md#vault). Name match
 
 ## Vault switcher
 
-The button at the left of the [breadcrumb](GLOSSARY.md#breadcrumb) — a box, or a cloud once the [vault](GLOSSARY.md#vault) syncs. A mouse arriving on it opens the list and a press holds it open; touch and pen open it on the press. It lists your vaults, offers **New vault…**, and opens each one's settings for renaming, repointing, removing, or connecting it to [GitHub](GLOSSARY.md#github-sync).
+The button at the left of the [breadcrumb](GLOSSARY.md#breadcrumb) — a box, or a cloud once the [vault](GLOSSARY.md#vault) syncs. A mouse arriving on it opens the list and a press holds it open; touch and pen open it on the press. It lists your vaults, offers **New vault…** — a page of the kinds of vault: a folder, a cloned repository or a storage service — and opens each one's settings for renaming, repointing, removing, or connecting it to [GitHub](GLOSSARY.md#github-sync).
 
 ## Viewport indicator
 

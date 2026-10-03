@@ -35,7 +35,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 
 ## Vaults
 
-![The vault switcher open, lit as one shape with the vault's name beside it: the Library entry at the top for the no-vault state, then each vault with a settings button when its row is reached and a cloud on the ones a sync client keeps, then New vault and Clone a repository at the foot](../../imgs/vault-switcher.png)
+![The vault switcher open, with Library and vaults above one New vault row](../../imgs/vault-switcher-v3.png)
 
 A **vault** is a folder you have told Leaftext to treat as a library root. It is the unit that search and syncing work over, and it is what makes the [graph](#graph) bigger — but not what makes the graph possible.
 
@@ -45,9 +45,10 @@ While the list is open, the button and the vault's name beside it light as one s
 
 - **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
-- **New vault…** opens a folder picker; the folder's name becomes the vault's name.
-- **Clone a repository…** takes a git address and makes the clone a vault. See [below](#clone-a-repository).
+- **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or a [storage service](#storage-services). Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
 - The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
+
+![The New vault page inside the switcher, with a folder, Clone a repository, seven storage services and Back](../../imgs/vault-switcher-v2.png)
 
 > [!NOTE]
 > **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
@@ -64,7 +65,7 @@ Anything that stands over the whole window takes it down while it is up. The glo
 
 ### Your first vault
 
-Until there is a vault, the start screen carries a third button beside Choose file and New document: **Add your notes folder**, with one line under the row saying what a folder buys — search across all of it, a map of how the notes link, and the folder in the pane. It opens the same folder picker **New vault…** does. Once a vault exists the button goes, because from then on the name over the headline is the [switcher](#vaults) and **New vault…** is one press inside it.
+Until there is a vault, the start screen carries a third button beside Choose file and New document: **Add your notes folder**, with one line under the row saying what a folder buys — search across all of it, a map of how the notes link, and the folder in the pane. It opens the folder picker directly. Once a vault exists the button goes, because from then on the name over the headline is the [switcher](#vaults) and **New vault…** opens its kinds there.
 
 The pane says it once too. A reader who has met the [bubble](#the-bubble-on-your-first-launch) and still has no vault of their own finds a short box at the top of the file list: what a vault is, what it buys, and the same button. It sits inside the list, so nothing above it moves. Picking a folder retires it, and so does opening the vault list — either way it never comes back.
 
@@ -167,7 +168,7 @@ A folder a tool filled without saying so — a cache of thousands of tiny data f
 
 ## Storage services
 
-The vault switcher offers **Dropbox…**, **Google Drive…**, **OneDrive…**, **SharePoint…**, **Box…**, **WebDAV…** and **S3…**. The first five connect through your own app registration and open sign-in in your browser, so your password stays in the browser. Google's sign-in opens instead in a tab beside the one you were reading, drawn by Google in a web profile of its own, and the tab closes by itself when Google answers; where Google refuses to draw in that tab, the same sign-in opens in your browser and Leaftext comes back to the front when Google answers. A WebDAV server or an S3 bucket has no browser sign-in, so its form takes your own user name and password, or your own key pair, and Leaftext tries them against the server before it keeps them. Every credential goes in your operating system's credential store and never in a file Leaftext writes. Each one is kept under a name made from the profile folder, the vault and the account it is for, so a second copy of Leaftext running under its own profile signs in without replacing the first copy's sign-in. A sign-in kept by an older version under the vault alone is carried across the first time it is needed, once it is shown to be that vault's own — the same account and the same app, or the server taking the password — and a waiting Box client secret is not carried, so a Box sign-in that never finished starts again from its form.
+The **New vault…** page offers **Dropbox…**, **Google Drive…**, **OneDrive…**, **SharePoint…**, **Box…**, **WebDAV…** and **S3…**. The first five connect through your own app registration and open sign-in in your browser, so your password stays in the browser. Google's sign-in opens instead in a tab beside the one you were reading, drawn by Google in a web profile of its own, and the tab closes by itself when Google answers; where Google refuses to draw in that tab, the same sign-in opens in your browser and Leaftext comes back to the front when Google answers. A WebDAV server or an S3 bucket has no browser sign-in, so its form takes your own user name and password, or your own key pair, and Leaftext tries them against the server before it keeps them. Every credential goes in your operating system's credential store and never in a file Leaftext writes. Each one is kept under a name made from the profile folder, the vault and the account it is for, so a second copy of Leaftext running under its own profile signs in without replacing the first copy's sign-in. A sign-in kept by an older version under the vault alone is carried across the first time it is needed, once it is shown to be that vault's own — the same account and the same app, or the server taking the password — and a waiting Box client secret is not carried, so a Box sign-in that never finished starts again from its form.
 
 | Service | What the connection asks for |
 | --- | --- |
@@ -542,7 +543,7 @@ The panel also warns before the fact about the two things git needs and often la
 
 ### Clone a repository
 
-**Clone a repository…** in the vault switcher takes a git address, asks where it should go, and makes the clone a vault. Paste `https://github.com/owner/repo.git` or the `git@` form; the folder you pick is the *parent*, and the repository gets its own folder inside it named after itself.
+**Clone a repository…** under **New vault…** in the switcher takes a git address, asks where it should go, and makes the clone a vault. Paste `https://github.com/owner/repo.git` or the `git@` form; the folder you pick is the *parent*, and the repository gets its own folder inside it named after itself.
 
 Nothing of yours is at risk if it goes wrong: git makes that folder and removes it again if the clone fails, so a broken clone leaves nothing behind and no vault is registered. A name already taken in the folder you picked is refused rather than cloned into.
 

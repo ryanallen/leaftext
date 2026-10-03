@@ -73,6 +73,9 @@ async function load(url, fetchWith = fetch) {
       api.leaf_free(...name);
       return answer ? JSON.parse(answer) : null;
     },
+    // One glossary entry drawn alone. A module older than the page has no such export and answers undefined, so the card takes the ordinary route.
+    glossaryEntryPreview: (text, path, slug) => typeof api.leaf_glossary_entry_preview === 'function'
+      ? JSON.parse(withStrings((...args) => api.leaf_glossary_entry_preview(...args), text, path, slug) || 'null') : undefined,
     graph: (documents, seed, scope) => JSON.parse(withStrings(api.leaf_graph, JSON.stringify(documents), seed, scope) || 'null'),
     // Whether this page mints a book's pictures itself. A module older than the page has no such export, and its books keep their data addresses.
     setMintsPictures: (mints) => {
@@ -530,6 +533,28 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   function cardTarget(href) {
     if (/^glossary:/i.test(String(href || ''))) return glossary && known.has(glossary) ? glossary : '';
     return resolveFrom(open || '', href)?.path || '';
+  }
+
+  // The term a card names inside a glossary: a `glossary:` slug, or the fragment of a link to a file named GLOSSARY.md.
+  function cardSlug(href, path) {
+    const text = String(href || '');
+    let slug = /^glossary:/i.test(text) ? text.slice(9).replace(/^#+/, '') : '';
+    if (!slug && /(^|\/)glossary\.md$/i.test(path) && text.includes('#')) slug = text.slice(text.indexOf('#') + 1).split('?')[0];
+    try { slug = decodeURIComponent(slug); } catch (error) {}
+    return slug;
+  }
+
+  // The last entry drawn, keyed by glossary and term together, so two terms of one glossary never share an answer.
+  let entryKey = '';
+  let entryAnswer = null;
+  async function entryCardFor(path, slug) {
+    const key = `${path}#${slug}`;
+    if (key !== entryKey || !entryAnswer) {
+      entryKey = key;
+      entryAnswer = glossaryText(path).then((text) => (text ? core.glossaryEntryPreview(text, path, slug) : null));
+    }
+    // A term the glossary holds as no entry, or a module with no such export, draws what any other link to the file draws.
+    return (await entryAnswer) || cardFor(path);
   }
 
   function cardFor(path) {
@@ -1139,7 +1164,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     },
     openGlossary: ({ href }) => run(core.glossaryScript(href)),
     previewLink: async ({ href, token }) => {
-      const answer = await cardFor(cardTarget(href));
+      const path = cardTarget(href);
+      const slug = path ? cardSlug(href, path) : '';
+      const answer = await (slug ? entryCardFor(path, slug) : cardFor(path));
       run(`window.leafLinkPreview(${JSON.stringify(token)}, ${JSON.stringify(answer?.html || '')});`);
     },
     documentLength: async ({ href, token }) => {

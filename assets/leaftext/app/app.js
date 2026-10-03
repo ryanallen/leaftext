@@ -9179,12 +9179,27 @@ function vaultMenuItems() {
   items.push('separator');
   items.push({
     label: 'New vault…',
-    title: 'Choose a folder to use as a library root',
+    title: 'Choose how to make a vault',
     icon: MENU_PLUS_SVG,
-    run: () => send({ command: 'createVault' }),
+    keepOpen: true,
+    run: () => showCrumbMenu(crumbMenuOwner, newVaultMenuItems(), 'Folder on this computer…'),
   });
-  pushServiceVaultRows(items);
+  return items;
+}
+function newVaultMenuItems() {
+  const items = [
+    { heading: 'New vault' },
+    { label: 'Folder on this computer…', icon: FOLDER_ICON_SVG, run: () => send({ command: 'createVault' }) },
+  ];
   pushCloneRow(items);
+  items.push('separator');
+  pushServiceVaultRows(items);
+  items.push('separator', {
+    label: 'Back',
+    icon: BACK_ARROW_SVG,
+    keepOpen: true,
+    run: () => showCrumbMenu(crumbMenuOwner, vaultMenuItems(), 'New vault…'),
+  });
   return items;
 }
 
@@ -9312,7 +9327,7 @@ function pushCloneRow(items) {
       keepOpen: true,
       run: () => {
         cloneRevealed = true;
-        showCrumbMenu(crumbMenuOwner, vaultMenuItems());
+        showCrumbMenu(crumbMenuOwner, newVaultMenuItems(), 'https://github.com/owner/repo.git');
       },
     });
     return;
@@ -9326,7 +9341,7 @@ function pushCloneRow(items) {
   };
   const closePanel = () => {
     cloneRevealed = false;
-    showCrumbMenu(crumbMenuOwner, vaultMenuItems());
+    showCrumbMenu(crumbMenuOwner, newVaultMenuItems(), 'Clone a repository…');
   };
   items.push({ note: 'Paste the address, then choose the folder to clone into. Leaftext holds no sign-in of its own — your git already knows how to reach a private repository.' });
   items.push({
@@ -9377,7 +9392,7 @@ function openCrumbList(button, items) {
   crumbMenuVault = null;
   toggleCrumbMenu(button, items);
 }
-function showCrumbMenu(button, items) {
+function showCrumbMenu(button, items, focusLabel) {
   
   const reopening = crumbMenuOwner === button && !crumbMenu.hidden;
   if (!reopening) hideCrumbMenu();
@@ -9386,6 +9401,7 @@ function showCrumbMenu(button, items) {
   crumbMenuHoldsForm = items.some((entry) => entry && entry.form === true);
   crumbMenu.textContent = '';
   let firstFocusable = null;
+  let requestedFocus = null;
   for (const entry of items) {
     if (entry === 'separator') {
       const separator = document.createElement('div');
@@ -9447,6 +9463,7 @@ function showCrumbMenu(button, items) {
       if (entry.commit && entry.commitOnBlur !== false) field.addEventListener('blur', commit);
       crumbMenu.appendChild(field);
       firstFocusable = firstFocusable || field;
+      if (entry.placeholder === focusLabel) requestedFocus = field;
       continue;
     }
     
@@ -9463,6 +9480,13 @@ function showCrumbMenu(button, items) {
         action.querySelector('.crumb-menu-label').textContent = button.label;
         action.addEventListener('pointerdown', (event) => {
           if (event.button !== 0) return;
+          event.stopPropagation();
+          event.preventDefault();
+          if (!button.keepOpen) hideCrumbMenu();
+          button.run();
+        });
+        action.addEventListener('keydown', (event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
           event.stopPropagation();
           event.preventDefault();
           if (!button.keepOpen) hideCrumbMenu();
@@ -9490,13 +9514,22 @@ function showCrumbMenu(button, items) {
     if (entry.vaultId !== undefined) item.dataset.vaultId = String(entry.vaultId);
     if (entry.disabled) item.disabled = true;
     
+    const runEntry = () => {
+      
+      if (!entry.keepOpen) hideCrumbMenu();
+      entry.run();
+    };
     item.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
       event.stopPropagation();
       event.preventDefault();
-      
-      if (!entry.keepOpen) hideCrumbMenu();
-      entry.run();
+      runEntry();
+    });
+    item.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.stopPropagation();
+      event.preventDefault();
+      runEntry();
     });
     row.appendChild(item);
     if (entry.edit) {
@@ -9518,6 +9551,7 @@ function showCrumbMenu(button, items) {
     }
     crumbMenu.appendChild(row);
     firstFocusable = firstFocusable || item;
+    if (entry.label === focusLabel) requestedFocus = item;
   }
   button.setAttribute('aria-expanded', 'true');
   
@@ -9526,7 +9560,7 @@ function showCrumbMenu(button, items) {
   const anchor = button.getBoundingClientRect();
   leafPlaceFloating(crumbMenu, anchor.left, anchor.bottom + CRUMB_MENU_DROP);
   
-  if (firstFocusable && !reopening) leafFocusForKeyboard(firstFocusable);
+  if (requestedFocus || (firstFocusable && !reopening)) leafFocusForKeyboard(requestedFocus || firstFocusable);
 }
 
 window.addEventListener('pointerdown', (event) => {
@@ -10055,7 +10089,7 @@ const SERVICE_VAULT_ROWS = [
 ];
 function pushServiceVaultRows(items) {
   for (const [label, title, run] of SERVICE_VAULT_ROWS) {
-    items.push({ label: `New ${label} vault…`, title, icon: MENU_PLUS_SVG, keepOpen: true, run });
+    items.push({ label: `${label}…`, title, icon: CLOUD_ICON_SVG, keepOpen: true, run });
   }
 }
 
