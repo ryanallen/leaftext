@@ -13104,8 +13104,9 @@ body.mac-frame .document-minimap-frame {
   color: var(--lt-foreground);
   background-color: currentColor;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
-  /* It takes the pointer for its title and its right-click; a left press still bubbles to the rail's own handler on the track. */
+  /* It takes the pointer for its title, its right-click and a left press of its own, which goes to the place it marks rather than to the rail beneath it. */
   pointer-events: auto;
+  cursor: pointer;
 }
 .document-minimap-ribbon.is-colored {
   color: var(--lt-primary-ink);

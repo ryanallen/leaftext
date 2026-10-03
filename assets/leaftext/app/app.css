@@ -13053,6 +13053,7 @@ body.mac-frame .document-minimap-frame {
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
   
   pointer-events: auto;
+  cursor: pointer;
 }
 .document-minimap-ribbon.is-colored {
   color: var(--lt-primary-ink);

@@ -30705,7 +30705,14 @@ function drawReadingRibbon() {
     ribbon = document.createElement('div');
     ribbon.className = 'document-minimap-ribbon';
     ribbon.setAttribute('aria-hidden', 'true');
-    ribbon.title = 'Bookmark — how far you have read';
+    ribbon.title = 'Bookmark — click to go back to how far you have read';
+    
+    ribbon.addEventListener('pointerdown', inThisColumn((event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      jumpToReadingRibbon();
+    }));
     track.appendChild(ribbon);
   }
   ribbon.classList.toggle('is-colored', unlocksShowing().has('ribbon-bookmark'));
@@ -35068,26 +35075,19 @@ if (canHoverLinks) {
   onColumn('scroll', hideLinkHoverTip, true);
 }
 
-let glossaryParsedHtml = null;
-let glossaryParsedRoot = null;
-
 window.leafShowGlossary = (html, anchor) => {
   if (!glossaryWaiting) return; 
   endGlossaryWait();
-  if (html !== glossaryParsedHtml) {
-    glossaryParsedRoot = document.createElement('div');
-    glossaryParsedRoot.innerHTML = html;
-    glossaryParsedHtml = html;
-  }
-  const entry = documentSectionBlocks(glossaryParsedRoot, anchor);
+  const answer = document.createElement('div');
+  answer.innerHTML = html;
+  const entry = documentSectionBlocks(answer, anchor);
   if (!entry) {
     glossarySheetMessage(`No glossary entry for “${anchor}”.`);
     showGlossary();
     return;
   }
   glossarySheetBody.innerHTML = '';
-  
-  for (const block of entry) glossarySheetBody.appendChild(block.cloneNode(true));
+  for (const block of entry) glossarySheetBody.appendChild(block);
   drawCodeFencesIn(glossarySheetBody);
   glossarySheetBody.scrollTop = 0;
   showGlossary();
@@ -39946,6 +39946,21 @@ function writeReaderPlaceStoppingGlide(write) {
   } finally {
     app.classList.remove('is-glide-held');
   }
+}
+
+function jumpToReadingRibbon() {
+  const place = readingWatch ? readingDeepest.get(readingWatch.path) : null;
+  if (!place) return;
+  revealReadingPast(null);
+  const depth = readingPlaceDepth(place);
+  if (!(depth > 0)) return;
+  const reader = readerScrollElement();
+  const scrollTop = clampReaderScrollTop(depth * reader.scrollHeight - reader.clientHeight / 4);
+  writeReaderPlaceStoppingGlide((scroller) => {
+    scroller.scrollTop = scrollTop;
+  });
+  recordReaderScrollPosition();
+  updateMinimapViewport();
 }
 function setReaderScrollTop(scrollTop) {
   const landed = clampReaderScrollTop(scrollTop);
