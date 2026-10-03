@@ -368,6 +368,11 @@ function activeWebTab() {
   const tab = currentState && currentState.tabs && currentState.tabs[currentState.active];
   return tab && tab.kind === 'web' ? tab : null;
 }
+
+function activeLocalSiteTab() {
+  const tab = activeWebTab();
+  return tab && tab.site === true ? tab : null;
+}
 function resolvedWebAddress(line) {
   const typed = String(line || '').trim();
   if (!typed) return null;
@@ -12746,14 +12751,16 @@ function renderViewTools(current) {
   endReaderToolTrayMotion();
   
   const onWebTab = Boolean(activeWebTab());
-  const editable = !onWebTab && (current === 'reading' || current === 'code');
+  
+  const onLocalSite = Boolean(activeLocalSiteTab());
+  const editable = (!onWebTab || onLocalSite) && (current === 'reading' || current === 'code');
   const onGraph = current === 'graph';
   if (graphScopeTool) graphScopeTool.hidden = !onGraph || onWebTab;
   if (readerLockButton) {
     
     const onCodeView = current === 'code';
     readerLockButton.hidden =
-      !editable || (current === 'reading' && !currentDocumentBindsAnything) || (onCodeView && hostRefusesCodeUnlock());
+      !editable || (current === 'reading' && !onLocalSite && !currentDocumentBindsAnything) || (onCodeView && hostRefusesCodeUnlock());
     setSubtoolState(
       readerLockButton,
       onCodeView ? codeUnlocked : readingUnlocked,
@@ -12835,13 +12842,16 @@ function setSubtoolState(button, on, label) {
 function setReadingUnlocked(unlocked) {
   const next = Boolean(unlocked);
   if (next === readingUnlocked) return;
-  commitActiveEditingBlock();
+  
+  const runningPage = Boolean(activeLocalSiteTab());
+  if (!runningPage) commitActiveEditingBlock();
   if (!next && document.activeElement && document.activeElement.__headingName) document.activeElement.blur();
-  const inPlace = readingPageCanFlipInPlace();
+  const inPlace = !runningPage && readingPageCanFlipInPlace();
   const anchor = inPlace && app.querySelector('.frontmatter') ? captureReaderScrollAnchor() : null;
   readingUnlocked = next;
   send({ command: 'setReadingUnlocked', enabled: readingUnlocked });
-  if (inPlace) {
+  if (runningPage) setSubtoolState(readerLockButton, readingUnlocked, viewLockTooltip(false));
+  else if (inPlace) {
     const body = app.querySelector('.document-body');
     if (next) {
       bindUnlockedLayer(currentState.document, body);
@@ -18160,6 +18170,10 @@ const RANGE_NAMES = [
 const rangeNamesOf = (kind) => RANGE_NAMES.find((pair) => pair.kind === kind) || null;
 
 
+const LEAF_RANGE = 'leaf';
+const leafPairOf = (node) => (node && drawnRanges.has(node) ? drawnRanges.get(node)[LEAF_RANGE] || null : null);
+
+
 
 
 let drawnRanges = new Map();
@@ -18174,6 +18188,10 @@ function resetDrawnRanges() {
 
 
 function rangeOf(el, kind) {
+  if (kind === LEAF_RANGE) {
+    const pair = leafPairOf(el);
+    return pair ? { start: pair.start, end: pair.end } : { start: NaN, end: NaN };
+  }
   const names = el && el.dataset ? rangeNamesOf(kind) : null;
   if (!names) return { start: NaN, end: NaN };
   const held = drawnRanges.get(el);
@@ -18184,6 +18202,7 @@ function rangeOf(el, kind) {
 
 
 function hasRangeOf(el, kind) {
+  if (kind === LEAF_RANGE) return !!leafPairOf(el);
   const names = el && el.dataset ? rangeNamesOf(kind) : null;
   if (!names) return false;
   const held = drawnRanges.get(el);
@@ -18193,6 +18212,13 @@ function hasRangeOf(el, kind) {
 
 
 function setRangeOf(el, kind, start, end) {
+  if (kind === LEAF_RANGE) {
+    if (!el || el.nodeType !== 3) return;
+    const held = drawnRanges.get(el) || {};
+    held[kind] = { start: Number(start), end: Number(end) };
+    drawnRanges.set(el, held);
+    return;
+  }
   const names = el && el.dataset ? rangeNamesOf(kind) : null;
   if (!names) return;
   const held = drawnRanges.get(el) || {};
@@ -21474,6 +21500,7 @@ function bindUnlockedLayer(doc, body) {
   if (doc.drawn_as_slides && currentDocumentFormat === 'markdown') wireSlideBoxes(body);
   if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
   if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
+  if (currentDocumentFormat === 'html') wireContainedPageTyping();
   if (currentDocumentFormat === 'markdown' && !pendingCaret && !isSiteProofTable(doc.siteProofs) && Array.isArray(doc.blocks) && doc.blocks.length === 0) setPendingCaret({ emptyDocument: true });
   if (currentDocumentFormat === 'eml' || currentDocumentFormat === 'markdown') bindFrontmatterFields(body);
   bindBlockControls();
@@ -26908,6 +26935,9 @@ const INLINE_FORMATS = [
   { id: 'strike', label: 'Strikethrough', icon: `<span class="lt-icon lt-icon-strikethrough"></span>`, command: 'strikeThrough', tag: 'del' },
   { id: 'code', label: 'Code', icon: `<span class="lt-icon lt-icon-code-view"></span>`, tag: 'code' },
   { id: 'link', label: 'Link', icon: `<span class="lt-icon lt-icon-link"></span>`, tag: 'a' },
+  { id: 'button-filled', label: 'Filled button', icon: `<span class="lt-icon lt-icon-button-filled"></span>`, tag: 'a', buttonClass: 'leaf-md-button' },
+  { id: 'button-outline', label: 'Outline button', icon: `<span class="lt-icon lt-icon-button-outline"></span>`, tag: 'a', buttonClass: 'leaf-md-button--secondary' },
+  { id: 'button-flat', label: 'Flat button', icon: `<span class="lt-icon lt-icon-button-flat"></span>`, tag: 'a', buttonClass: 'leaf-md-button--ghost' },
 ];
 
 
@@ -26952,6 +26982,8 @@ const BLOCK_FORMAT_KINDS = new Set(['paragraph', 'heading', 'blockquote']);
 let selectionToolbar = null;
 let selectionToolbarRow = null;
 let selectionToolbarLinkInput = null;
+let selectionToolbarLinkStyle = null;
+let selectionToolbarLinkFormat = null;
 let selectionToolbarButtons = new Map();
 let selectionToolbarToneRow = null;
 
@@ -27004,6 +27036,7 @@ function disarmSelectionInputOutsidePress() {
 
 function closeSelectionInputBox() {
   disarmSelectionInputOutsidePress();
+  selectionToolbarLinkFormat = null;
   if (!selectionToolbar) return;
   selectionToolbar.classList.remove('is-linking');
   selectionToolbar.classList.remove('is-noting');
@@ -27135,7 +27168,11 @@ function selectionFormatActive(format) {
       if (document.queryCommandState(format.command)) return true;
     } catch (_) {}
   }
-  return !!selectionAncestor(format.tag);
+  const ancestor = selectionAncestor(format.tag);
+  if (!format.buttonClass) return !!ancestor;
+  if (!ancestor || !ancestor.classList.contains('leaf-md-button')) return false;
+  if (format.buttonClass === 'leaf-md-button') return !ancestor.classList.contains('leaf-md-button--secondary') && !ancestor.classList.contains('leaf-md-button--ghost');
+  return ancestor.classList.contains(format.buttonClass);
 }
 
 
@@ -27629,9 +27666,12 @@ function foldTouchingBlocks(blocks) {
 }
 
 
-function openSelectionLinkBox() {
+function openSelectionLinkBox(format = null) {
   if (!selectionToolbar || !selectionToolbarLinkInput) return;
   const existing = selectionAncestor('a');
+  selectionToolbarLinkFormat = format;
+  selectionToolbarLinkStyle.textContent = format ? format.label : '';
+  selectionToolbarLinkStyle.hidden = !format;
   selectionToolbarLinkInput.value = existing ? existing.getAttribute('href') || '' : '';
   selectionToolbar.classList.add('is-linking');
   selectionToolbarLinkInput.focus();
@@ -27641,6 +27681,7 @@ function openSelectionLinkBox() {
 
 function commitSelectionLink() {
   const url = selectionToolbarLinkInput.value.trim();
+  const format = selectionToolbarLinkFormat;
   
   closeSelectionInputBox();
   if (!restoreSelectionForEdit()) {
@@ -27652,8 +27693,21 @@ function commitSelectionLink() {
   if (url) {
     const anchor = document.createElement('a');
     anchor.setAttribute('href', url);
+    if (format) anchor.className = 'leaf-md-button' + (format.buttonClass === 'leaf-md-button' ? '' : ' ' + format.buttonClass);
     surroundSelection(anchor, false);
   }
+  syncSelectionToolbarSoon();
+}
+
+function applyButtonFormat(format) {
+  if (!selectionFormatActive(format)) {
+    openSelectionLinkBox(format);
+    return;
+  }
+  if (!restoreSelectionForEdit()) return;
+  const anchor = selectionAncestor('a');
+  if (!anchor) return;
+  anchor.classList.remove('leaf-md-button', 'leaf-md-button--secondary', 'leaf-md-button--ghost');
   syncSelectionToolbarSoon();
 }
 
@@ -27744,6 +27798,8 @@ function bindSelectionToolbar() {
   selectionToolbar = null;
   selectionToolbarRow = null;
   selectionToolbarLinkInput = null;
+  selectionToolbarLinkStyle = null;
+  selectionToolbarLinkFormat = null;
   selectionToolbarButtons = new Map();
   selectionToolbarToneRow = null;
   selectionToolbarBlock = null;
@@ -27760,14 +27816,15 @@ function bindSelectionToolbar() {
   
   selectionToolbar.innerHTML =
     '<div class="selection-format-row"></div>' +
-    '<div class="selection-link-row"><input type="text" class="selection-link-input" spellcheck="false" placeholder="Paste or type a link"></div>' +
+    '<div class="selection-link-row"><span class="selection-link-style" hidden></span><input type="text" class="selection-link-input" spellcheck="false" placeholder="Paste or type a link"></div>' +
     '<span class="selection-toolbar-point" aria-hidden="true"></span>';
   selectionToolbarRow = selectionToolbar.querySelector('.selection-format-row');
   selectionToolbarLinkInput = selectionToolbar.querySelector('.selection-link-input');
+  selectionToolbarLinkStyle = selectionToolbar.querySelector('.selection-link-style');
 
-  for (const format of INLINE_FORMATS) {
+  for (const format of INLINE_FORMATS.filter((item) => !onMessage || !item.buttonClass)) {
     const button = selectionToolbarButton(format, () =>
-      format.id === 'link' ? openSelectionLinkBox() : applyInlineFormat(format),
+      format.id === 'link' ? openSelectionLinkBox() : format.buttonClass ? applyButtonFormat(format) : applyInlineFormat(format),
     );
     selectionToolbarButtons.set(format.id, button);
     selectionToolbarRow.appendChild(button);
@@ -31993,6 +32050,8 @@ function bindContainedPageLinks(page) {
     const link = containedPageLinkFor(event.target);
     if (!link || event.defaultPrevented || event.button !== 0) return;
     event.preventDefault();
+    
+    if (containedTyping && containedTyping.page === page && !newPageModifierHeld(event)) return;
     if (followContainedPageFragment(page, link.getAttribute('href') || '')) return;
     sendDocumentLink(link, newPageModifierHeld(event));
   });
@@ -32060,6 +32119,7 @@ function siteFrameReady() {
     page.addEventListener('scroll', rememberSiteFrameScroll, { passive: true });
   }
   restoreSiteFrameScroll();
+  startContainedPageTyping();
   scheduleContainedPageMermaid(page);
   
   if (page.body.focus) {
@@ -32104,6 +32164,252 @@ function bindDocumentSiteFrame(path) {
   
   const page = siteFrameDocument();
   if (page && page.readyState === 'complete') siteFrameReady();
+}
+
+
+
+
+
+
+const CONTAINED_RAW_TEXT = new Set(['script', 'style', 'title', 'textarea']);
+
+const containedBlank = (text) => !/[^ \t\n\f\r]/.test(text);
+
+const CONTAINED_SOURCE_PIECE = /&(?:#[0-9]+;?|#[xX][0-9a-fA-F]+;?|[A-Za-z][A-Za-z0-9]*;?)|\r\n|\r|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\s\S]/g;
+const containedDecoder = document.createElement('textarea');
+
+
+let containedTypingWanted = false;
+let containedTyping = null;
+let containedRefusedAt = 0;
+
+
+function containedPageRuns(page) {
+  const runs = [];
+  const walker = page.createTreeWalker(page.body, 4);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentNode;
+    if (parent && parent.localName && CONTAINED_RAW_TEXT.has(parent.localName)) continue;
+    if (!containedBlank(node.data)) runs.push(node);
+  }
+  return runs;
+}
+
+
+function containedLeafPieces(start, end) {
+  const pieces = [];
+  for (const match of sliceSourceBytes(start, end).matchAll(CONTAINED_SOURCE_PIECE)) {
+    const written = match[0];
+    let reads = written;
+    if (written === '\r\n' || written === '\r') reads = '\n';
+    else if (written.length > 1 && written[0] === '&') {
+      containedDecoder.innerHTML = written;
+      reads = containedDecoder.value;
+    }
+    pieces.push({ reads, bytes: containedPieceBytes(written) });
+  }
+  return pieces;
+}
+
+
+function containedPieceBytes(written) {
+  if (written.length > 1) return written.length === 2 && written.charCodeAt(0) >= 0xd800 ? 4 : written.length;
+  const code = written.charCodeAt(0);
+  return code < 0x80 ? 1 : code < 0x800 ? 2 : 3;
+}
+
+const containedLeafWords = (pieces) => pieces.map((piece) => piece.reads).join('');
+
+
+function containedLeafReads(start, end) {
+  const written = sliceSourceBytes(start, end);
+  return /[&\r]/.test(written) ? containedLeafWords(containedLeafPieces(start, end)) : written;
+}
+
+
+function bindContainedPageLeaves(page) {
+  const doc = currentState && currentState.document;
+  const blocks = doc && Array.isArray(doc.blocks) ? doc.blocks : [];
+  const runs = containedPageRuns(page);
+  let held = 0;
+  for (const block of blocks) {
+    if (block.kind !== 'html_leaf') continue;
+    const node = runs[block.id];
+    if (!node) continue;
+    if (hasRangeOf(node, LEAF_RANGE)) {
+      held += 1;
+      continue;
+    }
+    if (containedLeafReads(block.start, block.end) !== node.data) continue;
+    setRangeOf(node, LEAF_RANGE, block.start, block.end);
+    held += 1;
+  }
+  return held;
+}
+
+
+function refuseContainedTyping() {
+  const now = Date.now();
+  if (now - containedRefusedAt < 4000) return;
+  containedRefusedAt = now;
+  leafToast('This part of the page cannot be typed on here. Change it in the source view.');
+}
+
+
+function containedLeafWrite(node, from, to, text) {
+  const { start, end } = rangeOf(node, LEAF_RANGE);
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  let at = 0;
+  let byte = start;
+  let cutStart = end;
+  let cutEnd = start;
+  let before = '';
+  let after = '';
+  let startFound = false;
+  for (const piece of containedLeafPieces(start, end)) {
+    const next = at + piece.reads.length;
+    if (!startFound && from < next) {
+      startFound = true;
+      cutStart = byte;
+      before = piece.reads.slice(0, from - at);
+    }
+    if (to > at && to <= next) {
+      cutEnd = byte + piece.bytes;
+      after = piece.reads.slice(to - at);
+    }
+    at = next;
+    byte += piece.bytes;
+  }
+  if (!startFound) cutStart = end;
+  if (to === 0 || cutEnd < cutStart) cutEnd = cutStart;
+  const written = (before + text + after).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\u00a0/g, '&nbsp;');
+  return { start: cutStart, end: cutEnd, text: written, leafStart: start, leafEnd: end };
+}
+
+
+function sendContainedLeafWrite(node, write) {
+  const typing = containedTyping;
+  if (!typing || !write) return;
+  const continuing = !!typing.last && typing.last.node === node && typing.last.at === write.start;
+  const sent = sendEditCommand(
+    { command: 'editBlocks', blocks: [{ start: write.start, end: write.end, text: write.text }], continuing, standing: true },
+    { el: typing.page.body }
+  );
+  const grown = utf8ByteLength(write.text) - (write.end - write.start);
+  if (sent) setRangeOf(node, LEAF_RANGE, write.leafStart, write.leafEnd + grown);
+  typing.last = { node, at: write.start + utf8ByteLength(write.text) };
+}
+
+
+function containedPageBeforeInput(event) {
+  const typing = containedTyping;
+  if (!typing || event.isComposing || event.inputType === 'insertCompositionText') return;
+  event.preventDefault();
+  const type = event.inputType || '';
+  let text;
+  if (type === 'insertText' || type === 'insertReplacementText' || type === 'insertFromPaste' || type === 'insertFromDrop') {
+    text = event.data != null ? event.data : event.dataTransfer ? event.dataTransfer.getData('text/plain') : '';
+  } else if (type.startsWith('delete')) text = '';
+  else {
+    refuseContainedTyping();
+    return;
+  }
+  
+  text = String(text || '').replace(/\r\n|\r|\n/g, ' ');
+  const targets = event.getTargetRanges ? event.getTargetRanges() : [];
+  const selection = typing.page.getSelection();
+  const range = targets[0] || (selection && selection.rangeCount ? selection.getRangeAt(0) : null);
+  if (!range) return;
+  const node = range.startContainer;
+  if (node !== range.endContainer || !hasRangeOf(node, LEAF_RANGE)) {
+    refuseContainedTyping();
+    return;
+  }
+  let from = range.startOffset;
+  let to = range.endOffset;
+  
+  if (!targets.length && from === to && !text) {
+    if (type.includes('Backward')) from = Math.max(0, from - 1);
+    else to = Math.min(node.data.length, to + 1);
+  }
+  if (from === to && !text) return;
+  const write = containedLeafWrite(node, from, to, text);
+  if (!write) return;
+  node.replaceData(from, to - from, text);
+  if (selection) selection.collapse(node, from + text.length);
+  sendContainedLeafWrite(node, write);
+}
+
+
+function containedPageInput() {
+  const typing = containedTyping;
+  const selection = typing && typing.page.getSelection();
+  const node = selection && selection.anchorNode;
+  if (!node || !hasRangeOf(node, LEAF_RANGE)) return;
+  const { start, end } = rangeOf(node, LEAF_RANGE);
+  const was = containedLeafReads(start, end);
+  const now = node.data;
+  if (was === now) return;
+  let head = 0;
+  while (head < was.length && head < now.length && was[head] === now[head]) head += 1;
+  let tail = 0;
+  while (tail < was.length - head && tail < now.length - head && was[was.length - 1 - tail] === now[now.length - 1 - tail]) tail += 1;
+  sendContainedLeafWrite(node, containedLeafWrite(node, head, was.length - tail, now.slice(head, now.length - tail)));
+}
+
+
+function containedPageKeys(event) {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey || !/^[sSzZyYfF]$/.test(event.key)) return;
+  const forwarded = new KeyboardEvent('keydown', {
+    key: event.key,
+    code: event.code,
+    ctrlKey: event.ctrlKey,
+    metaKey: event.metaKey,
+    shiftKey: event.shiftKey,
+    bubbles: true,
+    cancelable: true,
+  });
+  document.dispatchEvent(forwarded);
+  if (forwarded.defaultPrevented) event.preventDefault();
+}
+
+
+function startContainedPageTyping() {
+  const page = siteFrameDocument();
+  if (!containedTypingWanted || !readingUnlocked || !page || !page.body) return;
+  if (containedTyping && containedTyping.page === page) return;
+  endContainedPageTyping();
+  if (!bindContainedPageLeaves(page)) return;
+  const controller = new AbortController();
+  containedTyping = { page, controller, last: null };
+  page.body.contentEditable = 'true';
+  page.body.spellcheck = false;
+  const signal = controller.signal;
+  page.addEventListener('beforeinput', containedPageBeforeInput, { signal });
+  page.addEventListener('input', containedPageInput, { signal });
+  page.addEventListener('keydown', containedPageKeys, { signal });
+}
+
+function endContainedPageTyping() {
+  const typing = containedTyping;
+  containedTyping = null;
+  if (!typing) return;
+  typing.controller.abort();
+  if (typing.page.body) typing.page.body.removeAttribute('contenteditable');
+}
+
+
+function wireContainedPageTyping() {
+  containedTypingWanted = true;
+  
+  const signal = unlockedLayerSignal();
+  if (signal) {
+    signal.addEventListener('abort', () => {
+      containedTypingWanted = false;
+      endContainedPageTyping();
+    }, { once: true });
+  }
+  startContainedPageTyping();
 }
 
 
@@ -35257,6 +35563,9 @@ const LEAF_MERMAID_ICONS = {
     'italic': { body: "<path d=\"M19 4h-9M14 20H5M15 4L9 20\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'strikethrough': { body: "<path d=\"M16 5H10a3 3 0 0 0-2.4 4.8M13.5 12A3.5 3.5 0 0 1 14 19H7M4 12h16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'link': { body: "<path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
+    'button-filled': { body: "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\" fill=\"currentColor\"/>", width: 24, height: 24 },
+    'button-outline': { body: "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
+    'button-flat': { body: "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-dasharray=\"2 2\"/>", width: 24, height: 24 },
     'undo': { body: "<path d=\"M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'missing-image': { body: "<path d=\"M6.3,22.1c-1.1,0-2-.9-2-2V4.1c0-1.1.9-2,2-2h8c.6,0,1.3.3,1.7.7l3.6,3.6c.5.5.7,1.1.7,1.7v12c0,1.1-.9,2-2,2H6.3Z\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M14.3,2.1v5c0,.6.4,1,1,1h5\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M16.3,16.1s-1.5-2-4-2-4,2-4,2\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><line x1=\"9.3\" y1=\"9.1\" x2=\"9.3\" y2=\"9.1\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'chevron-down': { body: "<path d=\"m19.5 8.25-7.5 7.5-7.5-7.5\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },

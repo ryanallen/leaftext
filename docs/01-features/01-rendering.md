@@ -584,7 +584,7 @@ Four parts, and each is optional but the frame: `note-frame` on the box, `note-f
 
 **`note-` is the only class a document may name**, and it is what keeps this safe: every other class is stripped, so a note can draw a box of its own without being able to wear any part of the app's interface. A class that leaves the namespace takes the whole attribute with it rather than half-drawing something. There is no `style` on any tag, ever.
 
-**When to write the whole file as HTML instead.** A page with its own typography, grid and palette is better off as an `.html` file — Leaftext draws it exactly as its own stylesheet makes it, in a frame of its own ([HTML files](#html-files)). What that costs is everything that makes a note a note: nothing in it is editable in place, its links do not follow into your vault, and no script runs in it, so its diagrams do not draw. A framed figure is the answer when you want the box *and* the note.
+**When to write the whole file as HTML instead.** A page with its own typography, grid and palette is better off as an `.html` file — Leaftext draws it exactly as its own stylesheet makes it, in a frame of its own ([HTML files](#html-files)). What that costs is everything that makes a note a note: only its words can be [typed on in place](07-editing.md#editing-an-html-file), its links do not follow into your vault, and no script runs in it, so its diagrams do not draw. A framed figure is the answer when you want the box *and* the note.
 
 ### Cards across the page (Leaf extension)
 
@@ -1054,7 +1054,7 @@ Because nothing in the frame runs, a page's interactive parts do not open: a men
 
 The reader's own tools still work on it. [Find](02-navigation.md#find-in-this-document), the [outline](02-navigation.md#outline), the [minimap](04-minimap.md), the right-click menu, text selection and link following all reach into the page, and exporting it writes the whole page rather than one screen. Marked Mermaid blocks draw as diagrams under Leaftext's bundled strict renderer, without allowing the page to run a script: the page paints first, the diagrams you can see are drawn next and the rest warm behind them, and each drawing keeps the page's own place and size rather than gaining the [corner buttons](#mermaid-diagrams) a diagram in a note carries. The [Speed Reader](05-settings.md#speed-reader) is the one that does not: it would split the page's own words apart, so it leaves the document alone and its switch is not offered here, the way the padlock is not. The frame scrolls itself, so where you were is remembered across a tab switch.
 
-The original source stays intact in the [code view](07-editing.md#code-view), which is the editing surface because a page drawn this way proves no byte ranges for click-to-edit blocks. A change there redraws the page without saving.
+The original source stays intact in the [code view](07-editing.md#code-view), where every byte of it can be changed; a change there redraws the page without saving. With the reading padlock open, the page's words are typed on where they are drawn as well — see [Editing an HTML file](07-editing.md#editing-an-html-file).
 
 Installing Leaftext offers it under **Open with** for HTML without replacing the browser as the default. See [File associations](../02-installation.md#file-associations).
 

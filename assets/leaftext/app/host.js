@@ -83,6 +83,9 @@ async function load(url, fetchWith = fetch) {
     // One glossary entry drawn alone. A module older than the page has no such export and answers undefined, so the card takes the ordinary route.
     glossaryEntryPreview: (text, path, slug) => typeof api.leaf_glossary_entry_preview === 'function'
       ? JSON.parse(withStrings((...args) => api.leaf_glossary_entry_preview(...args), text, path, slug) || 'null') : undefined,
+    // The same, for a term of the glossary `setGlossary` already handed over, answered out of the module's own copy so the text never crosses again.
+    heldGlossaryEntryPreview: (path, slug) => typeof api.leaf_held_glossary_entry_preview === 'function'
+      ? JSON.parse(withStrings((...args) => api.leaf_held_glossary_entry_preview(...args), path, slug) || 'null') : undefined,
     graph: (documents, seed, scope) => JSON.parse(withStrings(api.leaf_graph, JSON.stringify(documents), seed, scope) || 'null'),
     // Whether this page mints a book's pictures itself. A module older than the page has no such export, and its books keep their data addresses.
     setMintsPictures: (mints) => {
@@ -560,7 +563,12 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     const key = `${path}#${slug}`;
     if (key !== entryKey || !entryAnswer) {
       entryKey = key;
-      entryAnswer = glossaryText(path).then((text) => (text ? core.glossaryEntryPreview(text, path, slug) : null));
+      entryAnswer = (async () => {
+        const held = path && path === glossary ? core.heldGlossaryEntryPreview(path, slug) : undefined;
+        if (held !== undefined) return held;
+        const text = await glossaryText(path);
+        return text ? core.glossaryEntryPreview(text, path, slug) : null;
+      })();
     }
     // A term the glossary holds as no entry, or a module with no such export, draws what any other link to the file draws.
     return (await entryAnswer) || cardFor(path);

@@ -4096,6 +4096,9 @@
   --lt-icon-italic: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 4h-9M14 20H5M15 4L9 20' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-strikethrough: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16 5H10a3 3 0 0 0-2.4 4.8M13.5 12A3.5 3.5 0 0 1 14 19H7M4 12h16' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-link: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-button-filled: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' fill='%23000'/%3E%3C/svg%3E");
+  --lt-icon-button-outline: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-button-flat: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3' y='5' width='18' height='14' rx='2' fill='none' stroke='%23000' stroke-width='1.5' stroke-dasharray='2 2'/%3E%3C/svg%3E");
   --lt-icon-undo: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-missing-image: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6.3,22.1c-1.1,0-2-.9-2-2V4.1c0-1.1.9-2,2-2h8c.6,0,1.3.3,1.7.7l3.6,3.6c.5.5.7,1.1.7,1.7v12c0,1.1-.9,2-2,2H6.3Z' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M14.3,2.1v5c0,.6.4,1,1,1h5' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M16.3,16.1s-1.5-2-4-2-4,2-4,2' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cline x1='9.3' y1='9.1' x2='9.3' y2='9.1' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-chevron-down: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m19.5 8.25-7.5 7.5-7.5-7.5' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
@@ -4780,6 +4783,18 @@
 .lt-icon-link {
   -webkit-mask-image: var(--lt-icon-link);
   mask-image: var(--lt-icon-link);
+}
+.lt-icon-button-filled {
+  -webkit-mask-image: var(--lt-icon-button-filled);
+  mask-image: var(--lt-icon-button-filled);
+}
+.lt-icon-button-outline {
+  -webkit-mask-image: var(--lt-icon-button-outline);
+  mask-image: var(--lt-icon-button-outline);
+}
+.lt-icon-button-flat {
+  -webkit-mask-image: var(--lt-icon-button-flat);
+  mask-image: var(--lt-icon-button-flat);
 }
 .lt-icon-undo {
   -webkit-mask-image: var(--lt-icon-undo);
@@ -10571,6 +10586,12 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-toolbar.is-linking .selection-link-row,
 .selection-toolbar.is-noting .selection-link-row {
   display: block;
+}
+.selection-link-style:not([hidden]) {
+  display: inline-block;
+  margin-right: var(--lt-space-4);
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
 }
 .selection-link-input {
   width: 240px;

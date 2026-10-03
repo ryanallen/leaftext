@@ -551,7 +551,7 @@
 | Tables fully editable | [✅][l-formats] | [✅][o-seen] | [✅][t-tables] | [❌][c-seen] |
 | Hidden HTML editable | [✅][l-formats] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Raw HTML read-only | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| HTML pages read-only | [✅][l-formats] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| HTML pages typed on | [✅][l-html-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | JSON values editable | [✅][l-data-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | YAML values editable | [✅][l-data-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Read-only YAML explained | [✅][l-data-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -663,6 +663,7 @@
 [l-write-fail]: ../01-features/07-editing.md#when-the-app-cannot-write-it
 [l-external]: ../01-features/07-editing.md#external-changes
 [l-formats]: ../01-features/07-editing.md#formats
+[l-html-edit]: ../01-features/07-editing.md#editing-an-html-file
 [l-data-edit]: ../01-features/07-editing.md#editing-data-files
 [l-rdb-open]: ../01-features/08-relational-tables.md#open-a-relational-table
 [l-rdb-views]: ../01-features/08-relational-tables.md#views-sort-and-filter
