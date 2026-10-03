@@ -260,6 +260,7 @@ let viewHandoff = null;
 
 
 let currentDocumentFormat = 'markdown';
+let currentDocumentDrawnAsSlides = false;
 
 let currentDocumentDialect = null;
 
@@ -735,7 +736,7 @@ const COLUMN_STATE_NAMES = [
   
   'currentState', 'readerScrollAnchor', 'readerScrolling', 'resetReaderScrollOnNextRender', 'readerAnchorBlocks',
   'keptReaderRender', 'readerHeldUnderEditor', 'readerRenderToken', 'pendingReaderView', 'currentDocumentFormat',
-  'currentDocumentDialect', 'currentDocumentBindsAnything', 'currentDocumentHasUnreachableWords', 'pendingCaret',
+  'currentDocumentDialect', 'currentDocumentDrawnAsSlides', 'currentDocumentBindsAnything', 'currentDocumentHasUnreachableWords', 'pendingCaret',
   'pendingEditAnchor', 'documentOutlineRows',
   
   'readerLoadingSafety', 'readerLoadingOwner',
@@ -792,6 +793,7 @@ function saveColumnState(column) {
   held.readerRenderToken = readerRenderToken;
   held.pendingReaderView = pendingReaderView;
   held.currentDocumentFormat = currentDocumentFormat;
+  held.currentDocumentDrawnAsSlides = currentDocumentDrawnAsSlides;
   held.currentDocumentDialect = currentDocumentDialect;
   held.currentDocumentBindsAnything = currentDocumentBindsAnything;
   held.currentDocumentHasUnreachableWords = currentDocumentHasUnreachableWords;
@@ -917,6 +919,7 @@ function loadColumnState(column) {
   readerRenderToken = held.readerRenderToken;
   pendingReaderView = held.pendingReaderView;
   currentDocumentFormat = held.currentDocumentFormat;
+  currentDocumentDrawnAsSlides = held.currentDocumentDrawnAsSlides;
   currentDocumentDialect = held.currentDocumentDialect;
   currentDocumentBindsAnything = held.currentDocumentBindsAnything;
   currentDocumentHasUnreachableWords = held.currentDocumentHasUnreachableWords;
@@ -20487,6 +20490,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   editHoldAwaitsResync = false;
   releaseRailAfterEdit();
   currentDocumentFormat = doc.format || 'markdown';
+  currentDocumentDrawnAsSlides = doc.drawn_as_slides === true;
   if (!doc.source_held) setDocumentSource(doc.source, doc.source_stamp);
   currentDocumentDialect = typeof doc.dialect === 'string' ? doc.dialect : null;
   
@@ -20502,7 +20506,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   if (currentDocumentFormat === 'markdown') {
     
     if (isSiteProofTable(doc.siteProofs)) bindSiteProofs(body, doc.siteProofs);
-    else blankLinesInContainers = attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []) || [];
+    else if (!doc.drawn_as_slides) blankLinesInContainers = attachMarkdownBlockRanges(body, Array.isArray(doc.blocks) ? doc.blocks : []) || [];
     bindTaskCheckboxes(doc.tasks || []);
     drawTaskDates(doc.tasks || []);
     markComputedTableCells(body, doc.computed || []);
@@ -20611,6 +20615,7 @@ function bindUnlockedLayer(doc, body) {
     wireSlidePresses(body);
     wireSlideBoxes(body);
   }
+  if (doc.drawn_as_slides && currentDocumentFormat === 'markdown') wireSlideBoxes(body);
   if (currentDocumentFormat === 'eml') wireEmailClosedParts(body);
   if (DATA_SHAPE_FORMATS.includes(currentDocumentFormat)) wireDataClosedParts(body);
   if (currentDocumentFormat === 'markdown' && !pendingCaret && !isSiteProofTable(doc.siteProofs) && Array.isArray(doc.blocks) && doc.blocks.length === 0) setPendingCaret({ emptyDocument: true });
@@ -22399,6 +22404,10 @@ function blockGutterFormatAllowed() {
   );
 }
 
+function pageDrawnAsSlides() {
+  return currentDocumentFormat === 'pptx' || currentDocumentDrawnAsSlides;
+}
+
 
 function deckGutterStage(el) {
   return el && el.closest ? el.closest('.slide-stage') : null;
@@ -22419,7 +22428,7 @@ function blockIsEmpty(el) {
 
 
 function blockAcceptsInsert(el) {
-  if (currentDocumentFormat === 'pptx') return false;
+  if (pageDrawnAsSlides()) return false;
   return el.dataset.holdsFootnote !== 'true' && blockIsEmpty(el);
 }
 
@@ -22601,7 +22610,7 @@ function collapseBlockInsertRow() {
 
 function aimBlockGutter(el, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
-  if (currentDocumentFormat === 'pptx') el = deckGutterStage(el);
+  if (pageDrawnAsSlides()) el = deckGutterStage(el);
   
   if (!fromMargin && el && el === blockCaretBlock && !blockIsEmpty(el)) {
     aimBlockGutterBelow(el);
@@ -22685,7 +22694,7 @@ function nearestSourceBlock(occupants, index, step) {
 
 function aimBlockGutterAtGap(clientY, fromMargin) {
   if (blockDrag || blockGutterExpanded) return;
-  if (currentDocumentFormat === 'pptx') {
+  if (pageDrawnAsSlides()) {
     const body = app.querySelector('.document-body');
     const level = body ? Array.from(body.querySelectorAll('.slide-stage')).find((stage) => {
       const rect = stage.getBoundingClientRect();
@@ -23352,7 +23361,7 @@ function runBlockInsert(target, option) {
 function blockSiblingRun(target) {
   if (!blockGutterFormatAllowed() || !blockGutterTargetAllowed(target)) return null;
   
-  if (currentDocumentFormat === 'pptx') {
+  if (pageDrawnAsSlides()) {
     const body = app.querySelector('.document-body');
     const stages = body ? Array.from(body.querySelectorAll('.slide-stage')) : [];
     return stages.length >= 2 && stages.includes(target) ? { elements: stages, ranges: [] } : null;
@@ -23489,7 +23498,7 @@ function endBlockDrag(commit) {
   document.body.classList.remove('is-block-dragging');
   if (blockGutter) blockGutter.classList.remove('is-dragging');
   
-  if (currentDocumentFormat === 'pptx' && !drag.moved && commit) {
+  if (pageDrawnAsSlides() && !drag.moved && commit) {
     const grip = blockGutterGrip ? blockGutterGrip.getBoundingClientRect() : null;
     hideBlockGutter();
     if (grip) window.setTimeout(() => openSlideMenu(drag.target, grip.right, grip.top), 0);
@@ -23501,7 +23510,7 @@ function endBlockDrag(commit) {
   }
   
   commitBeforeBlockMove();
-  if (currentDocumentFormat === 'pptx') {
+  if (pageDrawnAsSlides()) {
     sendEditCommand({ command: 'moveBlock', ranges: [], from: drag.from, to: drag.to });
     hideBlockGutter();
     return;
@@ -23587,7 +23596,7 @@ function bindBlockControls() {
   body.addEventListener('pointermove', (event) => {
     if (blockDrag || event.buttons & 1) return;
     if (blockGutter.contains(event.target)) return;
-    const el = event.target.closest ? event.target.closest(currentDocumentFormat === 'pptx' ? '.slide-stage' : '[data-src-start]') : null;
+    const el = event.target.closest ? event.target.closest(pageDrawnAsSlides() ? '.slide-stage' : '[data-src-start]') : null;
     if (el) aimBlockGutter(el);
     else aimBlockGutterAtGap(event.clientY);
   }, { signal: unlockedLayerSignal() });
@@ -23852,7 +23861,7 @@ function selectSlideShape(box) {
 function wireSlideBoxes(body) {
   onUnlockedLayerDropped(() => endSlideBoxDrag(false));
   body.querySelectorAll('.slide-shape').forEach((box) => {
-    if (!hasRangeOf(box, 'frame')) return;
+    if (!hasRangeOf(box, 'frame') && !box.hasAttribute('data-slide-frame')) return;
     box.addEventListener('pointerdown', (event) => beginSlideBoxDrag(box, event), { signal: unlockedLayerSignal() });
   });
   wireSlideBuild(body);
@@ -23867,7 +23876,10 @@ function beginSlideBoxDrag(box, event) {
   const stage = slideStageSize(box.closest('.slide-stage'));
   const canvas = box.closest('.slide-canvas');
   const { start, end } = rangeOf(box, 'frame');
-  const frame = stage && Number.isFinite(start) && Number.isFinite(end) ? slideTransformFrame(sliceSourceBytes(start, end)) : null;
+  const serviceFrame = (box.getAttribute('data-slide-frame') || '').split(/\s+/).map(Number);
+  const frame = serviceFrame.length === 4 && serviceFrame.every(Number.isFinite)
+    ? { x: serviceFrame[0], y: serviceFrame[1], width: serviceFrame[2], height: serviceFrame[3] }
+    : stage && Number.isFinite(start) && Number.isFinite(end) ? slideTransformFrame(sliceSourceBytes(start, end)) : null;
   if (!stage || !canvas || !frame) return;
   const rect = canvas.getBoundingClientRect();
   slideBoxDrag = { box, corner, stage, frame, canvas: { width: rect.width, height: rect.height }, x: event.clientX, y: event.clientY, pointerId: event.pointerId, moved: false, next: null };
@@ -23907,6 +23919,11 @@ function endSlideBoxDrag(commit) {
   
   if (!commit) {
     drawSlideBoxFrame(drag.box, drag.frame, drag.stage);
+    return;
+  }
+  const id = drag.box.getAttribute('data-shape');
+  if (drag.box.hasAttribute('data-slide-frame') && id) {
+    sendEditCommand({ command: 'moveSlideShape', id, frame: drag.next });
     return;
   }
   const { start, end } = rangeOf(drag.box, 'frame');

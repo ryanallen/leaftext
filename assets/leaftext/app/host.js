@@ -322,6 +322,7 @@ export const COMMANDS = {
   prepareTagRename: [REFUSED, 'a published site cannot rewrite files in a vault'],
   renameTag: [REFUSED, 'a published site cannot rewrite files in a vault'],
   moveBlock: [ANSWERED],
+  moveSlideShape: [REFUSED, 'this site opens no Google Slides deck to move a shape in'],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
   pickDiagramPath: [LATER, 'web-export'],
   exportDiagram: [LATER, 'web-export'],
