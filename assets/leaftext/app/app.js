@@ -6968,6 +6968,7 @@ const SHADOW_CROSSING_LEFT_OUT = /ghost|docs-pager|table-lens-menu/;
 let shadowCrossingHosts = '';
 let shadowCrossingObserver = null;
 const shadowCrossingObserved = new WeakSet();
+const shadowCrossingSurfaces = new Set();
 function shadowCrossingHostSelector() {
   if (shadowCrossingHosts) return shadowCrossingHosts;
   const hosts = [];
@@ -6999,12 +7000,16 @@ function observeShadowHost(host) {
   shadowCrossingObserved.add(host);
   shadowCrossingObserver.observe(host);
 }
+function keepShadowSurface(host) {
+  const selector = shadowCrossingHostSelector();
+  if (host.matches && (host.matches('.leaf-sheet') || (selector && host.matches(selector)))) shadowCrossingSurfaces.add(host);
+}
 
 function shownShadowBand(host, spread) {
   if (host.hidden) return null;
-  if (typeof host.checkVisibility === 'function' && !host.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return null;
   const box = host.getBoundingClientRect();
   if (!box.width || !box.height) return null;
+  if (typeof host.checkVisibility === 'function' && !host.checkVisibility({ opacityProperty: true, visibilityProperty: true })) return null;
   const edge = host.clientLeft || 0;
   const top = host.clientTop || 0;
   return { left: box.left + edge - spread, top: box.top + top - spread, right: box.right - edge + spread, bottom: box.bottom - top + spread };
@@ -7023,13 +7028,19 @@ function markShadowCrossing(host) {
   if (!host || !host.style) return;
   const selector = shadowCrossingHostSelector();
   if (!selector || !host.matches(selector)) return;
+  keepShadowSurface(host);
   observeShadowHost(host);
   const spread = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--lt-shadow-spread')) || 0;
   const mine = shownShadowBand(host, spread);
   let under = null;
   let most = 0;
   if (mine) {
-    for (const other of document.querySelectorAll(selector + ', .leaf-sheet.open')) {
+    for (const other of shadowCrossingSurfaces) {
+      if (!other.isConnected) {
+        shadowCrossingSurfaces.delete(other);
+        continue;
+      }
+      if (other.matches('.leaf-sheet') && !other.matches('.open')) continue;
       
       if (other === host || host.contains(other)) continue;
       const theirs = shownShadowBand(other, spread);
@@ -7059,7 +7070,11 @@ function markShadowCrossing(host) {
 
 requestAnimationFrame(() => {
   const selector = shadowCrossingHostSelector();
-  if (selector) document.querySelectorAll(selector).forEach(observeShadowHost);
+  if (selector) document.querySelectorAll(selector + ', .leaf-sheet').forEach((host) => {
+    keepShadowSurface(host);
+    if (!host.matches('.leaf-sheet')) observeShadowHost(host);
+  });
+  new MutationObserver((entries) => entries.forEach((entry) => entry.addedNodes.forEach(keepShadowSurface))).observe(appSurface, { childList: true });
 });
 
 function durationTokenMilliseconds(token) {

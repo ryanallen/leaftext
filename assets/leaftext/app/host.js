@@ -110,8 +110,8 @@ async function load(url, fetchWith = fetch) {
     indexGlossary: () => {
       if (typeof api.leaf_index_glossary === 'function') api.leaf_index_glossary();
     },
-    setGlossary: (text) => {
-      const [at, length] = write(text || '');
+    setGlossary: (source) => {
+      const [at, length] = ArrayBuffer.isView(source) && source.BYTES_PER_ELEMENT === 1 ? put(source) : write(source || '');
       api.leaf_set_glossary(at, length);
       api.leaf_free(at, length);
     },
@@ -517,6 +517,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (!firstGlossary) firstGlossary = entry.path;
   }
   // Reopening a project's glossary needs no second fetch.
+  const glossaryBytes = new Map();
   const glossaryWords = new Map();
   // A failed read stays retryable on the next open.
   let glossary = '';
@@ -534,13 +535,27 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     }
   }
 
+  function glossarySource(path) {
+    if (!path) return Promise.resolve(null);
+    if (!glossaryBytes.has(path)) {
+      glossaryBytes.set(path, read(path).catch((error) => {
+        glossaryBytes.delete(path);
+        console.warn('the glossary could not be read', path, error);
+        return null;
+      }));
+    }
+    return glossaryBytes.get(path);
+  }
+
   function glossaryText(path) {
     if (!path) return Promise.resolve('');
     if (!glossaryWords.has(path)) {
-      glossaryWords.set(path, read(path).then((bytes) => new TextDecoder().decode(bytes)).catch((error) => {
-        glossaryWords.delete(path);
-        console.warn('the glossary could not be read', path, error);
-        return null;
+      glossaryWords.set(path, glossarySource(path).then((bytes) => {
+        if (bytes == null) {
+          glossaryWords.delete(path);
+          return null;
+        }
+        return new TextDecoder().decode(bytes);
       }));
     }
     return glossaryWords.get(path);
@@ -964,7 +979,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     open = path;
     closeBuffer();
     const chosen = glossaryFor(path);
-    const [source, words] = await Promise.all([read(path), glossaryText(chosen)]);
+    const [source, words] = await Promise.all([read(path), glossarySource(chosen)]);
     held = { path, bytes: source };
     // Laid over the published bytes rather than opened as them, so the buffer is dirty and Save lights, as the desktop's own restore does.
     const typed = keptWords(path, source);
