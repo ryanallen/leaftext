@@ -71,6 +71,7 @@ Leaftext opens an `.epub` as **one document**, in the order the book's own packa
 |---|---|
 | The package spine | The order the page runs in, first entry to last |
 | A chapter | Its own section of the page, with an anchor a link to it lands on |
+| A chapter the package calls plain HTML, the way every book the Internet Archive makes labels its pages | The same chapter, drawn, counted and searched like any other |
 | The book's own contents page | A contents page, with every link jumping inside the document |
 | What the book's contents call each chapter | That chapter's heading, at the level the contents nest it at, where the chapter draws none of its own |
 | The title and author in the package metadata | The page heading, and the author's name under it as a quiet byline |
