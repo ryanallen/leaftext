@@ -427,6 +427,18 @@
 | Take out of group | [✅][l-flow-draw] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rename a group | [✅][l-flow-draw] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ungroup, keep boxes | [✅][l-flow-draw] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Color boxes and groups | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Color and weight lines | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Longer lines | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Moving lines | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Change a box id | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Select a group | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Choose several at once | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Group chosen boxes | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Two lines, one pair | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Two-line line labels | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagram title and curve | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Hand-drawn look | [✅][l-flow-drawing] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Top-down layout | [✅][l-flow-direction] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bottom-up layout | [✅][l-flow-direction] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Left-to-right layout | [✅][l-flow-direction] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -640,6 +652,7 @@
 [l-undo]: ../01-features/07-editing.md#undo
 [l-flow]: ../01-features/07-editing.md#the-flowchart-editor
 [l-flow-draw]: ../01-features/07-editing.md#what-it-can-draw
+[l-flow-drawing]: ../01-features/07-editing.md#drawing
 [l-flow-direction]: ../01-features/07-editing.md#which-way-it-runs
 [l-flow-export]: ../01-features/07-editing.md#export
 [l-code-view]: ../01-features/07-editing.md#code-view

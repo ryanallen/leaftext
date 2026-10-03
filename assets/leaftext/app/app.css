@@ -16394,6 +16394,11 @@ p.front-more {
   stroke-dasharray: 6 4 !important;
 }
 
+.flow-stage g.cluster.is-selected rect {
+  stroke: var(--lt-link) !important;
+  stroke-width: var(--lt-stroke-3) !important;
+}
+
 .flow-menu {
   position: absolute;
   z-index: 4;
@@ -16457,6 +16462,7 @@ p.front-more {
 
 .flow-label-box {
   position: absolute;
+  resize: none;
   z-index: 5;
   padding: 0 var(--lt-space-6);
   border: var(--lt-stroke-2) solid var(--lt-link);
@@ -16569,6 +16575,70 @@ p.front-more {
 
 .flow-menu-item.is-current {
   box-shadow: var(--lt-shadow-edge-link);
+}
+
+.flow-swatches {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-6);
+  padding: 0 var(--lt-space-10) var(--lt-space-4);
+}
+.flow-swatch,
+.flow-swatch-new {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+}
+.flow-swatch.is-none {
+  border-style: dashed;
+}
+.flow-swatch.is-current {
+  box-shadow: var(--lt-shadow-edge-link);
+}
+
+@media (hover: hover) {
+  .flow-swatch:hover,
+  .flow-swatch-new:hover {
+    background: transparent;
+    border-color: var(--lt-muted-foreground);
+  }
+}
+.flow-swatch:focus-visible,
+.flow-swatch-new:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-shadow-focus);
+}
+
+.flow-action {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: var(--lt-space-8);
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-12);
+}
+
+.flow-chosen-count {
+  padding: var(--lt-space-6) 0;
+  color: var(--lt-foreground);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+}
+
+.flow-marquee {
+  position: absolute;
+  border: var(--lt-stroke-1) dashed var(--lt-link);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-wash-hover);
+  pointer-events: none;
 }
 .flow-delete {
   padding: var(--lt-space-6) var(--lt-space-10);

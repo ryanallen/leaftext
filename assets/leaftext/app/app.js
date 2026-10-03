@@ -63,6 +63,8 @@ let flowPickerAdd = null;
 let flowPickerName = '';
 
 let flowSelection = null;
+
+let flowChosen = [];
 let flowDrag = null;
 
 
@@ -2501,12 +2503,7 @@ function flowFindGroup(graph, id) {
 
 
 function flowNextGroupId(graph) {
-  const taken = new Set(
-    graph.nodes
-      .map((node) => node.id)
-      .concat((graph.groups || []).map((group) => group.id))
-      .concat(graph.edges.map((edge) => edge.name).filter(Boolean)),
-  );
+  const taken = flowTakenNames(graph);
   let n = 1;
   while (taken.has('g' + n)) n += 1;
   return 'g' + n;
@@ -2573,6 +2570,38 @@ function flowConnect(graph, from, to) {
 }
 
 
+function flowAddParallelEdge(graph, id) {
+  const edge = flowFindEdge(graph, id);
+  if (!edge) return null;
+  const twin = {
+    id: flowNextId(graph, 'e'),
+    from: edge.from,
+    to: edge.to,
+    label: null,
+    line: edge.line,
+    ends: edge.ends,
+    stretch: edge.stretch,
+    name: null,
+    animate: null,
+    style: null,
+  };
+  graph.edges.splice(graph.edges.indexOf(edge) + 1, 0, twin);
+  return twin;
+}
+
+
+function flowLabelLines(label) {
+  return String(label || '').replace(/<br[ \t]*\/?>/gi, '\n');
+}
+
+function flowLabelFromLines(text) {
+  const lines = String(text || '').split('\n').map((line) => line.trim());
+  while (lines.length && !lines[lines.length - 1]) lines.pop();
+  while (lines.length && !lines[0]) lines.shift();
+  return lines.length ? lines.join('<br>') : null;
+}
+
+
 function flowSpliceIntoEdge(graph, id, edgeId) {
   const edge = flowFindEdge(graph, edgeId);
   if (!edge || !flowFindNode(graph, id)) return null;
@@ -2625,6 +2654,372 @@ function flowDuplicateNode(graph, id) {
   };
   graph.nodes.splice(graph.nodes.indexOf(node) + 1, 0, copy);
   return copy;
+}
+
+
+function flowTakenNames(graph) {
+  return new Set(
+    graph.nodes
+      .map((node) => node.id)
+      .concat((graph.groups || []).map((group) => group.id))
+      .concat(graph.edges.map((edge) => edge.name).filter(Boolean)),
+  );
+}
+
+
+
+
+const FLOW_EDGE_STRETCHES = [
+  { id: 0, label: 'Short' },
+  { id: 1, label: 'Long' },
+  { id: 2, label: 'Longer' },
+  { id: 3, label: 'Longest' },
+];
+
+
+const FLOW_EDGE_MOTIONS = [
+  { id: 'off', label: 'Still' },
+  { id: 'slow', label: 'Slow' },
+  { id: 'fast', label: 'Fast' },
+];
+
+function flowEdgeMotion(edge) {
+  if (!edge || !edge.animate) return 'off';
+  return /\banimation[ \t]*:[ \t]*"?fast\b/.test(edge.animate) ? 'fast' : 'slow';
+}
+
+
+function flowSetEdgeMotion(graph, edge, motion) {
+  if (motion !== 'slow' && motion !== 'fast') {
+    edge.animate = null;
+    return;
+  }
+  if (!edge.name) {
+    const taken = flowTakenNames(graph);
+    let n = 1;
+    while (taken.has('e' + n)) n += 1;
+    edge.name = 'e' + n;
+  }
+  edge.animate = 'animation: ' + motion;
+}
+
+
+function flowRenameNodeId(graph, from, to) {
+  const node = flowFindNode(graph, from);
+  if (!node) return 'That box is no longer in the diagram.';
+  const id = String(to == null ? '' : to).trim();
+  if (id === from) return '';
+  const spelled = FLOW_ID_RE.exec(id);
+  if (!spelled || spelled[0] !== id) return '“' + id + '” can’t be an id: use letters, digits, underscores, dots and hyphens.';
+  
+  if (/^end$/i.test(id)) return '“' + id + '” closes a group in Mermaid, so it can’t name a box.';
+  if (flowTakenNames(graph).has(id)) return '“' + id + '” already names a box, a group or a line.';
+  node.id = id;
+  for (const edge of graph.edges) {
+    if (edge.from === from) edge.from = id;
+    if (edge.to === from) edge.to = id;
+  }
+  return '';
+}
+
+
+
+
+
+
+function flowStyleDeclarations(rule) {
+  const out = [];
+  let depth = 0;
+  let at = 0;
+  const text = String(rule || '');
+  const take = (part) => {
+    const colon = part.indexOf(':');
+    if (colon > 0) out.push([part.slice(0, colon).trim(), part.slice(colon + 1).trim()]);
+  };
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === '(') depth += 1;
+    else if (text[i] === ')') depth = Math.max(0, depth - 1);
+    else if (text[i] === ',' && !depth) {
+      take(text.slice(at, i));
+      at = i + 1;
+    }
+  }
+  take(text.slice(at));
+  return out;
+}
+
+function flowStyleValue(rule, key) {
+  const found = flowStyleDeclarations(rule).find(([name]) => name === key);
+  return found ? found[1] : null;
+}
+
+
+function flowStyleWith(rule, changes) {
+  const declarations = flowStyleDeclarations(rule);
+  const left = { ...changes };
+  const out = [];
+  for (const [key, value] of declarations) {
+    if (!Object.hasOwn(left, key)) out.push([key, value]);
+    else {
+      if (left[key] != null) out.push([key, left[key]]);
+      delete left[key];
+    }
+  }
+  for (const [key, value] of Object.entries(left)) if (value != null) out.push([key, value]);
+  return out.length ? out.map(([key, value]) => key + ':' + value).join(',') : null;
+}
+
+
+const FLOW_CLASSDEF_PARTS_RE = /^[ \t]*classDef[ \t]+([A-Za-z0-9_,-]+)[ \t]+(.*?)[ \t]*;?[ \t]*$/;
+function flowClassDefs(graph) {
+  const defs = [];
+  for (const raw of graph.classDefs || []) {
+    const parts = FLOW_CLASSDEF_PARTS_RE.exec(raw);
+    if (!parts) continue;
+    for (const name of parts[1].split(',')) if (name) defs.push({ name, rule: parts[2] });
+  }
+  return defs;
+}
+
+
+function flowChartColors(graph, key) {
+  const seen = new Map();
+  const add = (value, className) => {
+    if (!value) return;
+    const color = value.toLowerCase();
+    if (!seen.has(color)) seen.set(color, { color: value, className: className || null });
+    else if (className && !seen.get(color).className) seen.get(color).className = className;
+  };
+  for (const def of flowClassDefs(graph)) add(flowStyleValue(def.rule, key), key === 'fill' ? def.name : null);
+  for (const thing of graph.nodes.concat(graph.groups || [], graph.edges)) add(flowStyleValue(thing.style, key));
+  return [...seen.values()];
+}
+
+
+function flowInkOn(fill) {
+  const onBlack = colorContrast(fill, '#000000');
+  const onWhite = colorContrast(fill, '#ffffff');
+  if (onBlack == null || onWhite == null) return null;
+  return onBlack >= onWhite ? '#000000' : '#ffffff';
+}
+
+
+function flowFillClass(graph, fill) {
+  const ink = flowInkOn(fill);
+  const wanted = flowStyleWith(null, { fill, color: ink });
+  const same = (rule) => {
+    const a = flowStyleDeclarations(rule).map(([key, value]) => key + ':' + value.toLowerCase()).sort().join();
+    const b = flowStyleDeclarations(wanted).map(([key, value]) => key + ':' + value.toLowerCase()).sort().join();
+    return a === b;
+  };
+  const defs = flowClassDefs(graph);
+  const found = defs.find((def) => same(def.rule));
+  if (found) return found.name;
+  const taken = new Set(defs.map((def) => def.name));
+  const base = 'fill' + String(fill).replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+  let name = base;
+  for (let n = 2; taken.has(name); n += 1) name = base + '-' + n;
+  if (!graph.classDefs) graph.classDefs = [];
+  graph.classDefs.push('classDef ' + name + ' ' + wanted);
+  return name;
+}
+
+
+function flowFillsWith(graph, name) {
+  return flowClassDefs(graph).some((def) => def.name === name && flowStyleValue(def.rule, 'fill'));
+}
+
+
+function flowPaintFill(graph, thing, fill, className) {
+  const kept = (thing.classes || []).filter((name) => !flowFillsWith(graph, name));
+  thing.classes = kept;
+  thing.style = flowStyleWith(thing.style, { fill: null, color: null });
+  if (className) thing.classes.push(className);
+  else if (fill) thing.classes.push(flowFillClass(graph, fill));
+}
+
+
+function flowFillOf(graph, thing) {
+  const own = flowStyleValue(thing.style, 'fill');
+  if (own) return { color: own, className: null };
+  const defs = flowClassDefs(graph);
+  for (const name of (thing.classes || []).slice().reverse()) {
+    const def = defs.find((one) => one.name === name);
+    const fill = def && flowStyleValue(def.rule, 'fill');
+    if (fill) return { color: fill, className: name };
+  }
+  return null;
+}
+
+
+function flowPaintStroke(thing, color) {
+  thing.style = flowStyleWith(thing.style, { stroke: color || null });
+}
+
+const FLOW_EDGE_WEIGHTS = [
+  { id: '', label: 'Usual' },
+  { id: '1px', label: 'Thin' },
+  { id: '2px', label: 'Medium' },
+  { id: '3px', label: 'Heavy' },
+  { id: '5px', label: 'Heaviest' },
+];
+
+function flowPaintWeight(edge, weight) {
+  edge.style = flowStyleWith(edge.style, { 'stroke-width': weight || null });
+}
+
+
+
+
+
+const FLOW_CURVES = [
+  { id: '', label: 'As Mermaid draws it' },
+  { id: 'basis', label: 'Rounded' },
+  { id: 'linear', label: 'Straight' },
+  { id: 'step', label: 'Stepped' },
+];
+
+const FLOW_LOOKS = [
+  { id: '', label: 'Clean' },
+  { id: 'handDrawn', label: 'Hand-drawn' },
+];
+
+
+const FLOW_FRONT_SETTINGS = {
+  title: ['title'],
+  look: ['config', 'look'],
+  curve: ['config', 'flowchart', 'curve'],
+};
+
+function flowFrontMatter(graph) {
+  const lines = graph.prelude;
+  if (!lines.length || lines[0].trim() !== '---') return null;
+  for (let at = 1; at < lines.length; at += 1) if (lines[at].trim() === '---') return { open: 0, close: at };
+  return null;
+}
+
+const flowIndentOf = (line) => line.length - line.trimStart().length;
+
+
+function flowYamlFind(lines, from, to, indent, key) {
+  for (let at = from; at < to; at += 1) {
+    const line = lines[at];
+    if (!line.trim() || line.trim().startsWith('#') || flowIndentOf(line) !== indent) continue;
+    const trimmed = line.trim();
+    if (trimmed.startsWith(key) && /^[ \t]*:/.test(trimmed.slice(key.length))) return at;
+  }
+  return -1;
+}
+
+
+function flowYamlBlockEnd(lines, at, to) {
+  const base = flowIndentOf(lines[at]);
+  let end = at + 1;
+  while (end < to && !(lines[end].trim() && flowIndentOf(lines[end]) <= base)) end += 1;
+  return end;
+}
+
+
+function flowYamlChildIndent(lines, at, end) {
+  for (let line = at + 1; line < end; line += 1) if (lines[line].trim()) return flowIndentOf(lines[line]);
+  return flowIndentOf(lines[at]) + 2;
+}
+
+function flowYamlScalar(line) {
+  const value = line.slice(line.indexOf(':') + 1).trim();
+  if (/^".*"$/.test(value)) return value.slice(1, -1).replace(/\\(["\\])/g, '$1');
+  if (/^'.*'$/.test(value)) return value.slice(1, -1).replace(/''/g, "'");
+  return value.replace(/[ \t]+#.*$/, '');
+}
+
+function flowYamlQuote(value) {
+  if (!/[:#"'[\]{}&*!|>%@`,]/.test(value) && value === value.trim()) return value;
+  return '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+
+
+function flowFrontSetting(graph, name) {
+  const lines = graph.prelude;
+  const front = flowFrontMatter(graph);
+  if (!front) return '';
+  let from = front.open + 1;
+  let to = front.close;
+  let indent = 0;
+  const path = FLOW_FRONT_SETTINGS[name];
+  for (let depth = 0; depth < path.length; depth += 1) {
+    const at = flowYamlFind(lines, from, to, indent, path[depth]);
+    if (at < 0) return '';
+    if (depth === path.length - 1) return flowYamlScalar(lines[at]);
+    to = flowYamlBlockEnd(lines, at, to);
+    indent = flowYamlChildIndent(lines, at, to);
+    from = at + 1;
+  }
+  return '';
+}
+
+
+function flowSetFrontSetting(graph, name, value) {
+  const wanted = String(value == null ? '' : value).replace(/\s*\n\s*/g, ' ').trim();
+  const lines = graph.prelude;
+  let front = flowFrontMatter(graph);
+  if (!front) {
+    if (!wanted) return;
+    lines.unshift('---', '---');
+    front = { open: 0, close: 1 };
+  }
+  let from = front.open + 1;
+  let to = front.close;
+  let indent = 0;
+  const parents = [];
+  const path = FLOW_FRONT_SETTINGS[name];
+  for (let depth = 0; depth < path.length; depth += 1) {
+    const key = path[depth];
+    let at = flowYamlFind(lines, from, to, indent, key);
+    if (depth === path.length - 1) {
+      const line = ' '.repeat(indent) + key + ': ' + flowYamlQuote(wanted);
+      if (at >= 0 && wanted) lines[at] = line;
+      else if (at >= 0) lines.splice(at, 1);
+      else if (wanted) lines.splice(from, 0, line);
+      break;
+    }
+    if (at < 0) {
+      if (!wanted) return;
+      lines.splice(from, 0, ' '.repeat(indent) + key + ':');
+      at = from;
+      to += 1;
+    }
+    parents.push(at);
+    to = flowYamlBlockEnd(lines, at, to);
+    indent = flowYamlChildIndent(lines, at, to);
+    from = at + 1;
+  }
+  for (const at of parents.reverse()) {
+    const close = flowFrontMatter(graph).close;
+    if (flowYamlBlockEnd(lines, at, close) === at + 1) lines.splice(at, 1);
+  }
+  front = flowFrontMatter(graph);
+  if (front && front.close === front.open + 1) lines.splice(front.open, 2);
+}
+
+
+function flowAccessibility(graph, key) {
+  const note = graph.notes.find((line) => line.startsWith(key) && /^[ \t]*:/.test(line.slice(key.length)));
+  return note ? note.slice(note.indexOf(':') + 1).trim() : '';
+}
+
+
+function flowSetAccessibility(graph, key, value) {
+  const wanted = String(value == null ? '' : value).replace(/\s*\n\s*/g, ' ').trim();
+  const at = graph.notes.findIndex((line) => line.startsWith(key) && /^[ \t]*:/.test(line.slice(key.length)));
+  if (!wanted) {
+    if (at >= 0) graph.notes.splice(at, 1);
+    return;
+  }
+  const line = key + ': ' + wanted;
+  if (at >= 0) graph.notes[at] = line;
+  else if (key === 'accDescr' && flowAccessibility(graph, 'accTitle')) {
+    graph.notes.splice(graph.notes.findIndex((one) => one.startsWith('accTitle')) + 1, 0, line);
+  } else graph.notes.unshift(line);
 }
 
 
@@ -2714,12 +3109,15 @@ const FLOW_LOST_BOXES = 'Drawn, but the canvas can’t find its boxes to put han
 const FLOW_NOTHING_YET = 'Nothing here yet. Double-click anywhere to add the first box.';
 
 const FLOW_TIP_IDLE =
-  'Double-click empty space to add a box · point at a box for the + handles that add the next one · double-click a box to rename it · right-click anything for more.';
+  'Double-click empty space to add a box · point at a box for the + handles that add the next one · double-click a box to rename it · Shift-click or Shift-drag to choose several · right-click anything for more.';
+const FLOW_TIP_MANY = 'Shift-click adds or takes one away · Delete removes them all · the sheet below colors or groups them.';
 
 const FLOW_TIP_NODE =
   'Its + handles add the step before or after it · drag it onto a line to put it in that line · right-click to put it in a group · Delete removes it.';
 
 const FLOW_TIP_FIRST = 'Its four + handles start the chart running that way. After that, Flow up top turns it.';
+const FLOW_TIP_GROUP = 'Its title or border selects it · right-click to rename it or add a box in it · Delete removes the group and keeps its boxes.';
+const FLOW_TIP_CHART = 'The whole diagram: its title, how its lines curve, its look and what a screen reader says. Press empty space to put it away.';
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
 
 const FLOW_SAVE_REWRITES = 'Save rewrites the whole block: one box to a line, every label quoted.';
@@ -2896,7 +3294,7 @@ function onFlowSheetKey(event) {
     return;
   }
   
-  if (event.key === 'Enter') {
+  if (event.key === 'Enter' && flowSelection.kind !== 'chart') {
     event.preventDefault();
     openFlowLabelBox(flowSelection.kind, flowSelection.id);
   }
@@ -2923,6 +3321,7 @@ function flowGraphChanged() {
   flowSession.text = renderFlow(flowSession.graph);
   if (flowCode) flowCode.value = flowSession.text;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
+  flowChosen = flowChosen.filter((item) => flowThingThere(item));
   redrawFlowSheet();
   flowBefore = flowSnapshot();
 }
@@ -2937,6 +3336,7 @@ function flowSnapshot() {
     text: flowSession.text,
     graph: flowSession.graph ? JSON.parse(JSON.stringify(flowSession.graph)) : null,
     selection: flowSelection ? { kind: flowSelection.kind, id: flowSelection.id } : null,
+    chosen: flowChosen.map((item) => ({ kind: item.kind, id: item.id })),
   };
 }
 
@@ -2953,6 +3353,7 @@ function applyFlowState(state) {
   flowSession.text = state.text;
   flowSession.graph = state.graph ? JSON.parse(JSON.stringify(state.graph)) : null;
   flowSelection = state.selection ? { kind: state.selection.kind, id: state.selection.id } : null;
+  flowChosen = (state.chosen || []).map((item) => ({ kind: item.kind, id: item.id }));
   if (flowCode) flowCode.value = state.text;
   redrawFlowSheet();
   flowBefore = flowSnapshot();
@@ -3000,11 +3401,16 @@ function updateFlowSaveState() {
 }
 
 function flowSelectionStillThere() {
+  return flowThingThere(flowSelection);
+}
+
+function flowThingThere(item) {
   const graph = flowSession && flowSession.graph;
-  if (!graph || !flowSelection) return false;
-  if (flowSelection.kind === 'node') return !!flowFindNode(graph, flowSelection.id);
-  if (flowSelection.kind === 'group') return !!flowFindGroup(graph, flowSelection.id);
-  return !!flowFindEdge(graph, flowSelection.id);
+  if (!graph || !item) return false;
+  if (item.kind === 'chart') return true;
+  if (item.kind === 'node') return !!flowFindNode(graph, item.id);
+  if (item.kind === 'group') return !!flowFindGroup(graph, item.id);
+  return !!flowFindEdge(graph, item.id);
 }
 
 
@@ -3044,8 +3450,20 @@ function restoreFlowHint() {
     setFlowHint(FLOW_TIP_IDLE);
     return;
   }
+  if (flowChosenList().length > 1) {
+    setFlowHint(FLOW_TIP_MANY);
+    return;
+  }
   if (flowSelection.kind === 'edge') {
     setFlowHint(FLOW_TIP_EDGE);
+    return;
+  }
+  if (flowSelection.kind === 'group') {
+    setFlowHint(FLOW_TIP_GROUP);
+    return;
+  }
+  if (flowSelection.kind === 'chart') {
+    setFlowHint(FLOW_TIP_CHART);
     return;
   }
   setFlowHint(flowNodeTip(graph, flowSelection.id) || FLOW_TIP_IDLE);
@@ -3114,12 +3532,13 @@ function buildFlowControls() {
 function addFlowNode(shapeId, options) {
   const graph = flowSession && flowSession.graph;
   if (!graph) return null;
-  const { before, connectFrom, connectTo, turn, intoEdge, text } = options || {};
+  const { before, connectFrom, connectTo, turn, intoEdge, text, group } = options || {};
   
   if (turn) graph.direction = turn;
   
   const named = (text || '').trim();
   const node = flowAddNode(graph, shapeId, named || flowShape(shapeId).label);
+  if (group && flowFindGroup(graph, group)) node.group = group;
   if (before !== undefined) flowMoveNode(graph, node.id, before);
   if (connectFrom) flowConnect(graph, connectFrom, node.id);
   if (connectTo) flowConnect(graph, node.id, connectTo);
@@ -3536,7 +3955,7 @@ function measureFlowDiagram() {
   const known = new Set(graph.nodes.map((node) => node.id));
   const nodes = [];
   
-  svg.querySelectorAll('g.node, g[data-id]').forEach((group) => {
+  svg.querySelectorAll('g.node, g.rough-node, g[data-id]').forEach((group) => {
     const id = flowNodeIdFromDom(group.id, known) || flowNodeIdFromDom(group.dataset.id, known);
     if (!id) return;
     const rect = group.getBoundingClientRect();
@@ -3705,11 +4124,14 @@ function placeFlowOverlay() {
   if (!graph || !flowPlaced) return;
   
   for (const placed of flowPlaced.edges) {
-    placed.path.classList.toggle('is-selected', !!flowSelection && flowSelection.id === placed.id);
+    placed.path.classList.toggle('is-selected', flowIsChosen('edge', placed.id));
   }
-  const sides = flowBudSidesFor(graph);
+  for (const placed of flowPlaced.groups) {
+    const drawn = flowClusterFor(placed.id);
+    if (drawn) drawn.classList.toggle('is-selected', flowIsChosen('group', placed.id));
+  }
   for (const box of flowPlaced.nodes) {
-    const chosen = flowSelection && flowSelection.kind === 'node' && flowSelection.id === box.id;
+    const chosen = flowIsChosen('node', box.id);
     const tools = Array.from(layer.children).find((child) => child.dataset.node === box.id);
     if (!tools) continue;
     tools.classList.toggle('is-selected', !!chosen);
@@ -3723,7 +4145,7 @@ function placeFlowOverlay() {
     ring.style.borderRadius = Math.round(box.radius + FLOW_RING_GAP) + 'px';
   }
   
-  const chosenEdge = flowSelection && flowSelection.kind === 'edge' ? flowSelection.id : null;
+  const chosenEdge = flowChosenList().length === 1 && flowSelection.kind === 'edge' ? flowSelection.id : null;
   for (const placed of flowPlaced.edges) {
     if (placed.id !== chosenEdge) continue;
     for (const which of ['from', 'to']) {
@@ -3768,7 +4190,7 @@ function drawFlowOverlay() {
     }
     layer.appendChild(tools);
   }
-  const chosenEdge = flowSelection && flowSelection.kind === 'edge' ? flowSelection.id : null;
+  const chosenEdge = flowChosenList().length === 1 && flowSelection.kind === 'edge' ? flowSelection.id : null;
   for (const placed of flowPlaced.edges) {
     if (placed.id !== chosenEdge) continue;
     for (const which of ['from', 'to']) {
@@ -3948,6 +4370,35 @@ function flowGroupAt(x, y) {
 }
 
 
+const FLOW_GROUP_TITLE = 26;
+const FLOW_GROUP_BORDER = 6;
+
+
+function flowGroupGripAt(x, y) {
+  const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
+  if (!stage || !flowPlaced || !flowPlaced.groups) return null;
+  const origin = stage.getBoundingClientRect();
+  const at = { x: x - origin.left, y: y - origin.top };
+  const title = FLOW_GROUP_TITLE * flowZoom;
+  let best = null;
+  let smallest = Infinity;
+  for (const box of flowPlaced.groups) {
+    const left = at.x - box.x;
+    const top = at.y - box.y;
+    const right = box.x + box.width - at.x;
+    const bottom = box.y + box.height - at.y;
+    if (left < 0 || top < 0 || right < 0 || bottom < 0) continue;
+    if (top > title && Math.min(left, right, bottom) > FLOW_GROUP_BORDER) continue;
+    const area = box.width * box.height;
+    if (area < smallest) {
+      smallest = area;
+      best = box.id;
+    }
+  }
+  return best;
+}
+
+
 function flowPointIsBare(target) {
   if (!target || !target.closest) return false;
   if (target === flowCanvas) return true;
@@ -4043,6 +4494,42 @@ function drawFlowRubber(from, to) {
   line.setAttribute('y2', to.y);
 }
 
+
+function drawFlowMarquee(from, to) {
+  const layer = flowCanvas && flowCanvas.querySelector('.flow-overlay');
+  if (!layer) return;
+  let band = layer.querySelector('.flow-marquee');
+  if (!band) {
+    band = document.createElement('div');
+    band.className = 'flow-marquee';
+    layer.appendChild(band);
+  }
+  band.style.left = Math.min(from.x, to.x) + 'px';
+  band.style.top = Math.min(from.y, to.y) + 'px';
+  band.style.width = Math.abs(to.x - from.x) + 'px';
+  band.style.height = Math.abs(to.y - from.y) + 'px';
+}
+
+function clearFlowMarquee() {
+  const band = flowCanvas && flowCanvas.querySelector('.flow-marquee');
+  if (band) band.remove();
+}
+
+
+function chooseFlowWithin(from, to) {
+  if (!flowPlaced) return;
+  const left = Math.min(from.x, to.x);
+  const right = Math.max(from.x, to.x);
+  const top = Math.min(from.y, to.y);
+  const bottom = Math.max(from.y, to.y);
+  const list = flowChosenList().slice();
+  for (const box of flowPlaced.nodes) {
+    if (box.x > right || box.x + box.width < left || box.y > bottom || box.y + box.height < top) continue;
+    if (!list.some((item) => item.kind === 'node' && item.id === box.id)) list.push({ kind: 'node', id: box.id });
+  }
+  chooseFlow(list);
+}
+
 function clearFlowRubber() {
   const band = flowCanvas && flowCanvas.querySelector('.flow-rubber-band');
   if (band) band.remove();
@@ -4106,6 +4593,18 @@ if (flowCanvas) {
     
     const grab = () => leafHoldPointer(flowCanvas, event.pointerId);
     closeFlowLabelBox(true);
+    
+    if (event.shiftKey && !endpoint && !bud) {
+      const titled = !node && !edge ? flowGroupGripAt(event.clientX, event.clientY) : null;
+      if (node) toggleFlowChoice('node', node.dataset.node);
+      else if (edge) toggleFlowChoice('edge', edge);
+      else if (titled) toggleFlowChoice('group', titled);
+      else {
+        flowDrag = { kind: 'marquee', start: flowPointIn(event), moved: false };
+        grab();
+      }
+      return;
+    }
     if (endpoint) {
       flowDrag = { kind: 'retarget', edge: endpoint.dataset.edge, end: endpoint.dataset.endpoint, moved: false };
       grab();
@@ -4133,6 +4632,11 @@ if (flowCanvas) {
       selectFlow('edge', edge);
       return;
     }
+    const titled = flowGroupGripAt(event.clientX, event.clientY);
+    if (titled) {
+      selectFlow('group', titled);
+      return;
+    }
     
     dismissFlowPicker();
     beginFlowPan(event);
@@ -4141,6 +4645,11 @@ if (flowCanvas) {
   flowCanvas.addEventListener('pointermove', (event) => {
     if (!flowDrag) {
       markFlowHover(flowTargetAt(event.clientX, event.clientY));
+      return;
+    }
+    if (flowDrag.kind === 'marquee') {
+      flowDrag.moved = true;
+      drawFlowMarquee(flowDrag.start, flowPointIn(event));
       return;
     }
     if (flowDrag.kind === 'pan') {
@@ -4193,6 +4702,11 @@ if (flowCanvas) {
     markFlowDropTarget(null);
     const graph = flowSession && flowSession.graph;
     restoreFlowHint();
+    if (drag && drag.kind === 'marquee') {
+      clearFlowMarquee();
+      if (drag.moved && graph) chooseFlowWithin(drag.start, flowPointIn(event));
+      return;
+    }
     if (!drag || !graph || drag.kind === 'pan') return;
     const spot = flowTargetAt(event.clientX, event.clientY);
     const over = spot && spot.kind === 'node' ? spot.id : null;
@@ -4303,9 +4817,12 @@ if (flowCanvas) {
     event.preventDefault();
     const spot = flowTargetAt(event.clientX, event.clientY) || { kind: 'canvas', id: null };
     
-    if (spot.kind === 'canvas' || spot.kind === 'group') {
+    if (spot.kind === 'canvas') {
       const where = flowSlotAt(flowPointIn(event));
-      openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named }));
+      openFlowMenuWith(event.clientX, event.clientY, [
+        { label: 'Add a box here', run: () => openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named })) },
+        { label: 'Diagram settings', hint: 'Its title, curve, look and what a screen reader says', run: () => selectFlow('chart', null) },
+      ]);
       return;
     }
     selectFlow(spot.kind, spot.id);
@@ -4324,6 +4841,7 @@ function flowMenuItems(spot) {
   if (spot.kind === 'node') {
     return [
       { label: 'Rename', run: () => openFlowLabelBox('node', spot.id) },
+      { label: 'Change its id', hint: 'The name every arrow in the text uses for it', run: () => openFlowLabelBox('id', spot.id) },
       {
         label: 'Add box after this',
         run: () => addFlowNode(flowNewNodeShape(graph, spot.id), { connectFrom: spot.id }),
@@ -4351,9 +4869,28 @@ function flowMenuItems(spot) {
       { label: 'Delete box', run: deleteFlowSelection },
     ];
   }
+  if (spot.kind === 'group') {
+    return [
+      { label: 'Rename the group', run: () => openFlowLabelBox('group', spot.id) },
+      {
+        label: 'Add a box in it',
+        run: () => openFlowAddPicker((shape, named) => addFlowNode(shape, { group: spot.id, text: named })),
+      },
+      { label: 'Remove the group, keep the boxes', run: deleteFlowSelection },
+    ];
+  }
   if (spot.kind === 'edge') {
     return [
       { label: 'Label this line', run: () => openFlowLabelBox('edge', spot.id) },
+      {
+        label: 'Add another line',
+        hint: 'A second line between the same two boxes',
+        run: () => {
+          const twin = flowAddParallelEdge(graph, spot.id);
+          if (twin) flowSelection = { kind: 'edge', id: twin.id };
+          flowGraphChanged();
+        },
+      },
       {
         label: 'Point it the other way',
         run: () => {
@@ -4498,18 +5035,49 @@ function flowNewNodeShape(graph, fromId) {
 
 function selectFlow(kind, id) {
   flowSelection = kind ? { kind, id } : null;
+  flowChosen = [];
   drawFlowOverlay();
   drawFlowPicker();
 }
 
+
+function flowChosenList() {
+  const last = flowChosen[flowChosen.length - 1];
+  if (flowChosen.length > 1 && flowSelection && last.kind === flowSelection.kind && last.id === flowSelection.id) return flowChosen;
+  return flowSelection ? [flowSelection] : [];
+}
+
+function flowIsChosen(kind, id) {
+  return flowChosenList().some((item) => item.kind === kind && item.id === id);
+}
+
+
+function chooseFlow(list) {
+  flowChosen = list.length > 1 ? list.map((item) => ({ kind: item.kind, id: item.id })) : [];
+  flowSelection = list.length ? { kind: list[list.length - 1].kind, id: list[list.length - 1].id } : null;
+  drawFlowOverlay();
+  drawFlowPicker();
+}
+
+
+function toggleFlowChoice(kind, id) {
+  const list = flowChosenList().filter((item) => !(item.kind === kind && item.id === id));
+  if (list.length === flowChosenList().length) list.push({ kind, id });
+  chooseFlow(list);
+}
+
 function deleteFlowSelection() {
   const graph = flowSession && flowSession.graph;
-  if (!graph || !flowSelection) return;
-  if (flowSelection.kind === 'node') flowDeleteNode(graph, flowSelection.id);
+  if (!graph || !flowSelection || flowSelection.kind === 'chart') return;
   
-  else if (flowSelection.kind === 'group') flowUngroup(graph, flowSelection.id);
-  else flowDeleteEdge(graph, flowSelection.id);
+  for (const item of flowChosenList()) {
+    if (item.kind === 'node') flowDeleteNode(graph, item.id);
+    
+    else if (item.kind === 'group') flowUngroup(graph, item.id);
+    else flowDeleteEdge(graph, item.id);
+  }
   flowSelection = null;
+  flowChosen = [];
   flowGraphChanged();
 }
 
@@ -4518,6 +5086,13 @@ function deleteFlowSelection() {
 
 
 let flowLabelBox = null;
+
+const FLOW_LABEL_BOX_ASKS = {
+  node: 'Name this box',
+  id: 'The id arrows use for this box',
+  group: 'Name this group',
+  edge: 'Label this line',
+};
 
 
 function openFlowLabelBox(kind, id) {
@@ -4528,24 +5103,26 @@ function openFlowLabelBox(kind, id) {
   if (!stage) return;
   const find = {
     node: () => flowFindNode(graph, id),
+    id: () => flowFindNode(graph, id),
     edge: () => flowFindEdge(graph, id),
     group: () => flowFindGroup(graph, id),
   };
   const where = {
     node: () => flowPlaced.nodes.find((entry) => entry.id === id),
+    id: () => flowPlaced.nodes.find((entry) => entry.id === id),
     edge: () => flowPlaced.edges.find((entry) => entry.id === id),
     group: () => (flowPlaced.groups || []).find((entry) => entry.id === id),
   };
   const subject = find[kind] && find[kind]();
   const placed = where[kind] && where[kind]();
   if (!subject || !placed) return;
-  const field = document.createElement('input');
-  field.type = 'text';
+  
+  const field = document.createElement(kind === 'edge' ? 'textarea' : 'input');
+  if (kind !== 'edge') field.type = 'text';
   field.className = 'flow-label-box';
   field.spellcheck = false;
-  field.value = (kind === 'edge' ? subject.label : subject.text) || '';
-  field.placeholder =
-    kind === 'node' ? 'Name this box' : kind === 'group' ? 'Name this group' : 'Label this line';
+  field.value = kind === 'edge' ? flowLabelLines(subject.label) : (kind === 'id' ? subject.id : subject.text) || '';
+  field.placeholder = FLOW_LABEL_BOX_ASKS[kind];
   field.setAttribute('aria-label', field.placeholder);
   const tall = Math.max(20, Math.round(26 * flowZoom));
   const width =
@@ -4554,11 +5131,12 @@ function openFlowLabelBox(kind, id) {
   
   const middle =
     kind === 'edge' ? placed.at.y : kind === 'group' ? placed.y + tall / 2 + 2 : placed.y + placed.height / 2;
-  const top = middle - tall / 2;
+  const rows = kind === 'edge' ? 2 : 1;
+  const top = middle - (tall * rows) / 2;
   field.style.left = Math.round(left) + 'px';
   field.style.top = Math.round(top) + 'px';
   field.style.width = Math.round(width) + 'px';
-  field.style.height = tall + 'px';
+  field.style.height = tall * rows + 'px';
   field.style.fontSize = Math.max(9, Math.round(13 * flowZoom)) + 'px';
   
   field.addEventListener('pointerdown', (event) => event.stopPropagation());
@@ -4571,7 +5149,7 @@ function openFlowLabelBox(kind, id) {
       closeFlowLabelBox(false);
       return;
     }
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !(kind === 'edge' && event.shiftKey)) {
       event.preventDefault();
       event.stopPropagation();
       closeFlowLabelBox(true);
@@ -4580,7 +5158,7 @@ function openFlowLabelBox(kind, id) {
   field.addEventListener('blur', () => closeFlowLabelBox(true));
   stage.appendChild(field);
   flowLabelBox = { kind, id, field, was: field.value };
-  flowSelection = { kind, id };
+  flowSelection = { kind: kind === 'id' ? 'node' : kind, id };
   field.focus();
   field.select();
 }
@@ -4595,7 +5173,14 @@ function closeFlowLabelBox(keep) {
   if (!keep || value === box.was) return;
   const graph = flowSession && flowSession.graph;
   if (!graph) return;
-  if (box.kind === 'node') {
+  if (box.kind === 'id') {
+    const refused = flowRenameNodeId(graph, box.id, value);
+    if (refused) {
+      leafToast(refused, 'error');
+      return;
+    }
+    flowSelection = { kind: 'node', id: value.trim() };
+  } else if (box.kind === 'node') {
     const node = flowFindNode(graph, box.id);
     if (!node) return;
     node.text = value.trim() || node.id;
@@ -4606,7 +5191,7 @@ function closeFlowLabelBox(keep) {
   } else {
     const edge = flowFindEdge(graph, box.id);
     if (!edge) return;
-    edge.label = value.trim() || null;
+    edge.label = flowLabelFromLines(value);
   }
   flowGraphChanged();
 }
@@ -4681,22 +5266,33 @@ function drawFlowPicker(options) {
   }
   const node = graph && selection && selection.kind === 'node' ? flowFindNode(graph, selection.id) : null;
   const edge = graph && selection && selection.kind === 'edge' ? flowFindEdge(graph, selection.id) : null;
+  const group = graph && selection && selection.kind === 'group' ? flowFindGroup(graph, selection.id) : null;
   const adding = !!flowPickerAdd && !!graph;
-  if (!node && !edge && !adding) {
+  const many = graph && !adding && flowChosenList().length > 1 ? flowChosenList() : null;
+  const chart = !!graph && !adding && !!selection && selection.kind === 'chart';
+  if (!node && !edge && !group && !adding && !many && !chart) {
     
     closeSheet(flowPicker, flowPickerBackdrop, options);
     return;
   }
   
   openSheet(flowPicker, flowPickerBackdrop, { keepParked: true });
+  if (many) {
+    drawFlowPickerMany(graph, many);
+    return;
+  }
+  if (chart) {
+    drawFlowPickerChart(graph);
+    return;
+  }
 
   
   const form = document.createElement('div');
   form.className = 'flow-form';
   form.appendChild(
     flowPickerRow(
-      adding || node ? 'Name' : 'Label',
-      adding ? flowPickerNameField() : flowPickerField(graph, node, edge)
+      adding || node || group ? 'Name' : 'Label',
+      adding ? flowPickerNameField() : flowPickerField(graph, node || group, edge)
     )
   );
   if (node) for (const extra of FLOW_NODE_EXTRAS) form.appendChild(flowPickerRow(extra.label, flowPickerExtraField(graph, node, extra)));
@@ -4719,6 +5315,15 @@ function drawFlowPicker(options) {
         };
     flowShapeGridStands();
     markFlowShape(node ? node.shape : null);
+    if (node) flowPickerPaint(graph, node);
+  } else if (group) {
+    flowShapePress = null;
+    flowShapeGridStandsDown();
+    flowPickerChoices('Direction', FLOW_GROUP_DIRECTIONS, group.direction || '', () => '', (id) => {
+      group.direction = id || null;
+      flowGraphChanged();
+    });
+    flowPickerPaint(graph, group);
   } else {
     
     flowShapePress = null;
@@ -4735,13 +5340,29 @@ function drawFlowPicker(options) {
       if (line.only && line.only !== id) edge.line = FLOW_EDGE_LINES[0].id;
       flowGraphChanged();
     });
+    flowPickerChoices('Length', FLOW_EDGE_STRETCHES, Math.min(edge.stretch || 0, 3), () => '', (id) => {
+      edge.stretch = id;
+      flowGraphChanged();
+    });
+    flowPickerChoices('Motion', FLOW_EDGE_MOTIONS, flowEdgeMotion(edge), () => '', (id) => {
+      flowSetEdgeMotion(graph, edge, id);
+      flowGraphChanged();
+    });
+    flowPickerSwatches('Color', flowChartColors(graph, 'stroke'), flowStyleValue(edge.style, 'stroke'), (pick) => {
+      flowPaintStroke(edge, pick && pick.color);
+      flowGraphChanged();
+    });
+    flowPickerChoices('Weight', FLOW_EDGE_WEIGHTS, flowStyleValue(edge.style, 'stroke-width') || '', () => '', (id) => {
+      flowPaintWeight(edge, id);
+      flowGraphChanged();
+    });
   }
 
-  if (!node && !edge) return;
+  if (!node && !edge && !group) return;
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'flow-delete';
-  remove.textContent = node ? 'Delete box' : 'Delete line';
+  remove.textContent = node ? 'Delete box' : group ? 'Remove group, keep boxes' : 'Delete line';
   remove.title = 'Or press Delete';
   remove.addEventListener('click', deleteFlowSelection);
   flowPickerBody.appendChild(remove);
@@ -4763,17 +5384,24 @@ function flowPickerNameField() {
 }
 
 
+const FLOW_GROUP_DIRECTIONS = [{ id: '', label: 'As the chart' }].concat(FLOW_DIRECTIONS);
+
+
 function flowPickerField(graph, node, edge) {
-  const field = document.createElement('input');
-  field.type = 'text';
+  
+  const field = document.createElement(node ? 'input' : 'textarea');
+  if (node) field.type = 'text';
+  else field.rows = 2;
   field.className = 'flow-field';
   field.spellcheck = false;
-  field.placeholder = node ? 'Name this box' : 'Label this line';
-  field.value = (node ? node.text : edge.label) || '';
-  field.setAttribute('aria-label', node ? 'Box name' : 'Line label');
+  
+  const grouping = !!node && Object.hasOwn(node, 'parent');
+  field.placeholder = grouping ? 'Name this group' : node ? 'Name this box' : 'Label this line';
+  field.value = node ? node.text || '' : flowLabelLines(edge.label);
+  field.setAttribute('aria-label', grouping ? 'Group name' : node ? 'Box name' : 'Line label');
   field.addEventListener('input', () => {
     if (node) node.text = field.value;
-    else edge.label = field.value.trim() || null;
+    else edge.label = flowLabelFromLines(field.value);
     
     flowSession.text = renderFlow(graph);
     if (flowCode) flowCode.value = flowSession.text;
@@ -4857,6 +5485,135 @@ function flowPickerChoice(caption, option, chip, apply) {
     button.addEventListener('pointerleave', restoreFlowHint);
   }
   return button;
+}
+
+
+function drawFlowPickerChart(graph) {
+  const form = document.createElement('div');
+  form.className = 'flow-form';
+  const typed = (label, placeholder, read, write) => {
+    const field = document.createElement('input');
+    field.type = 'text';
+    field.className = 'flow-field';
+    field.spellcheck = false;
+    field.placeholder = placeholder;
+    field.value = read();
+    field.setAttribute('aria-label', label);
+    field.addEventListener('input', () => {
+      write(field.value);
+      flowSession.text = renderFlow(graph);
+      if (flowCode) flowCode.value = flowSession.text;
+    });
+    field.addEventListener('change', () => flowGraphChanged());
+    form.appendChild(flowPickerRow(label, field));
+  };
+  typed('Title', 'Drawn over the diagram', () => flowFrontSetting(graph, 'title'), (value) => flowSetFrontSetting(graph, 'title', value));
+  typed('Screen-reader title', 'What a screen reader calls it', () => flowAccessibility(graph, 'accTitle'), (value) => flowSetAccessibility(graph, 'accTitle', value));
+  typed('Description', 'What a screen reader says it shows', () => flowAccessibility(graph, 'accDescr'), (value) => flowSetAccessibility(graph, 'accDescr', value));
+  flowPickerHead.appendChild(form);
+  flowShapePress = null;
+  flowShapeGridStandsDown();
+  flowPickerChoices('Curve', FLOW_CURVES, flowFrontSetting(graph, 'curve'), () => '', (id) => {
+    flowSetFrontSetting(graph, 'curve', id);
+    flowGraphChanged();
+  });
+  flowPickerChoices('Look', FLOW_LOOKS, flowFrontSetting(graph, 'look'), () => '', (id) => {
+    flowSetFrontSetting(graph, 'look', id);
+    flowGraphChanged();
+  });
+}
+
+
+function drawFlowPickerMany(graph, many) {
+  const count = document.createElement('div');
+  count.className = 'flow-chosen-count';
+  count.textContent = many.length + ' chosen';
+  flowPickerHead.appendChild(count);
+  flowShapePress = null;
+  flowShapeGridStandsDown();
+  const things = many.map((item) => (item.kind === 'node' ? flowFindNode(graph, item.id) : item.kind === 'group' ? flowFindGroup(graph, item.id) : flowFindEdge(graph, item.id)));
+  const filled = things.filter((thing, at) => thing && many[at].kind !== 'edge');
+  if (filled.length) {
+    flowPickerSwatches('Fill', flowChartColors(graph, 'fill'), null, (pick) => {
+      for (const thing of filled) flowPaintFill(graph, thing, pick && pick.color, pick && pick.className);
+      flowGraphChanged();
+    });
+  }
+  flowPickerSwatches(filled.length ? 'Edge' : 'Color', flowChartColors(graph, 'stroke'), null, (pick) => {
+    for (const thing of things) if (thing) flowPaintStroke(thing, pick && pick.color);
+    flowGraphChanged();
+  });
+  if (many.every((item) => item.kind === 'node')) {
+    const gather = document.createElement('button');
+    gather.type = 'button';
+    gather.className = 'flow-action';
+    gather.textContent = 'Group them';
+    gather.addEventListener('click', () => groupFlowChosen(graph, many));
+    flowPickerPlace(gather);
+  }
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'flow-delete';
+  remove.textContent = 'Delete ' + many.length;
+  remove.title = 'Or press Delete';
+  remove.addEventListener('click', deleteFlowSelection);
+  flowPickerBody.appendChild(remove);
+}
+
+
+function groupFlowChosen(graph, many) {
+  const group = flowGroupNodes(graph, many.map((item) => item.id), 'Group');
+  if (!group) {
+    leafToast('These boxes sit in different groups, so there is no one place for a new group. Choose boxes from one group.', 'error');
+    return;
+  }
+  flowSelection = { kind: 'group', id: group.id };
+  flowChosen = [];
+  flowGraphChanged();
+  window.setTimeout(() => openFlowLabelBox('group', group.id), 160);
+}
+
+
+function flowPickerPaint(graph, thing) {
+  const fill = flowFillOf(graph, thing);
+  flowPickerSwatches('Fill', flowChartColors(graph, 'fill'), fill && fill.color, (pick) => {
+    flowPaintFill(graph, thing, pick && pick.color, pick && pick.className);
+    flowGraphChanged();
+  });
+  flowPickerSwatches('Edge', flowChartColors(graph, 'stroke'), flowStyleValue(thing.style, 'stroke'), (pick) => {
+    flowPaintStroke(thing, pick && pick.color);
+    flowGraphChanged();
+  });
+}
+
+
+function flowPickerSwatches(caption, colors, current, apply) {
+  flowPickerPlace(flowPickerHeading(caption));
+  const row = document.createElement('div');
+  row.className = 'flow-swatches';
+  const now = current ? current.toLowerCase() : null;
+  const swatch = (label, pick) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'flow-swatch' + (pick ? '' : ' is-none');
+    if (pick) button.style.background = pick.color;
+    button.title = label;
+    button.setAttribute('aria-label', caption + ': ' + label);
+    if ((pick ? pick.color.toLowerCase() : null) === now) button.classList.add('is-current');
+    button.addEventListener('click', () => apply(pick));
+    row.appendChild(button);
+  };
+  swatch('None', null);
+  for (const one of colors) swatch(one.color, one);
+  const fresh = document.createElement('input');
+  fresh.type = 'color';
+  fresh.className = 'flow-swatch-new';
+  fresh.title = 'A new color';
+  fresh.setAttribute('aria-label', caption + ': a new color');
+  if (current && /^#[0-9a-f]{6}$/i.test(current)) fresh.value = current;
+  fresh.addEventListener('change', () => apply({ color: fresh.value, className: null }));
+  row.appendChild(fresh);
+  flowPickerPlace(row);
 }
 
 
@@ -19605,7 +20362,8 @@ function emailBlockTypeableInPlace(el) {
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   const src = sliceSourceBytes(start, end);
-  if (el.dataset.packed === 'true') return /^[\x00-\x7f]*$/.test(src);
+  
+  if (el.dataset.packed === 'true') return emailBlockIsHtmlLine(el) ? emailHtmlLineMarkup(el) !== null : /^[\x00-\x7f]*$/.test(src);
   if (emailBlockIsHtmlLine(el)) return emailHtmlLineMarkup(el) === src;
   
   if (emailBlockIsNote(el)) {

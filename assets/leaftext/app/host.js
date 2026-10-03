@@ -73,6 +73,13 @@ async function load(url, fetchWith = fetch) {
       api.leaf_free(...name);
       return answer ? JSON.parse(answer) : null;
     },
+    linkPreviewSection: (body, path, fragment) => {
+      if (typeof api.leaf_link_preview_section !== 'function') return null;
+      const [bytes, name, heading] = [put(body), write(path), write(fragment)];
+      const answer = read(api.leaf_link_preview_section(...bytes, ...name, ...heading));
+      for (const [at, length] of [bytes, name, heading]) api.leaf_free(at, length);
+      return answer ? JSON.parse(answer) : null;
+    },
     // One glossary entry drawn alone. A module older than the page has no such export and answers undefined, so the card takes the ordinary route.
     glossaryEntryPreview: (text, path, slug) => typeof api.leaf_glossary_entry_preview === 'function'
       ? JSON.parse(withStrings((...args) => api.leaf_glossary_entry_preview(...args), text, path, slug) || 'null') : undefined,
@@ -490,6 +497,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   let codeViewUp = false;
   let cardPath = '';
   let cardAnswer = null;
+  let cardBytes = null;
+  let sectionAnswers = new Map();
 
   // Match the desktop's folder walk over the site's listing.
   const glossaryIn = new Map();
@@ -557,16 +566,24 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     return (await entryAnswer) || cardFor(path);
   }
 
-  function cardFor(path) {
+  function cardFor(path, fragment = '') {
     if (!path) return Promise.resolve(null);
     if (path !== cardPath || !cardAnswer) {
       cardPath = path;
-      cardAnswer = read(path).then((bytes) => core.linkPreview(bytes, path)).catch((error) => {
+      sectionAnswers = new Map();
+      cardBytes = read(path);
+      cardAnswer = cardBytes.then((bytes) => core.linkPreview(bytes, path)).catch((error) => {
         console.warn('the card could not read', path, error);
         return null;
       });
     }
-    return cardAnswer;
+    if (!fragment) return cardAnswer;
+    const key = `${path}#${fragment}`;
+    if (!sectionAnswers.has(key)) {
+      sectionAnswers.set(key, cardBytes.then((bytes) => core.linkPreviewSection(bytes, path, fragment))
+        .catch(() => null));
+    }
+    return sectionAnswers.get(key).then((section) => section || cardAnswer);
   }
 
   // The marks the reader made, out of the store their theme and their pane width come out of. Held here as well as written, because a toggle and a reorder each read the list before writing it — which is why three commands share one key where every other kept choice owns its own.
@@ -1166,7 +1183,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     previewLink: async ({ href, token }) => {
       const path = cardTarget(href);
       const slug = path ? cardSlug(href, path) : '';
-      const answer = await (slug ? entryCardFor(path, slug) : cardFor(path));
+      let fragment = String(href || '').split('#')[1] || '';
+      try { fragment = decodeURIComponent(fragment); } catch (error) {}
+      const answer = await (slug ? entryCardFor(path, slug) : cardFor(path, fragment));
       run(`window.leafLinkPreview(${JSON.stringify(token)}, ${JSON.stringify(answer?.html || '')});`);
     },
     documentLength: async ({ href, token }) => {
