@@ -8042,15 +8042,28 @@ const TABLE_MENU_ITEMS = [
   { action: 'tableSortAscending', label: 'Sort A to Z (writes the file)' },
   { action: 'tableSortDescending', label: 'Sort Z to A (writes the file)' },
   'separator',
-  
-  { action: 'tableTotalSum', label: 'Sum of the rows above', canTotal: true },
-  { action: 'tableTotalAverage', label: 'Average of the rows above', canTotal: true },
-  { action: 'tableTotalCount', label: 'Count of the rows above', canTotal: true },
-  { action: 'tableTotalMin', label: 'Smallest of the rows above', canTotal: true },
-  { action: 'tableTotalMax', label: 'Largest of the rows above', canTotal: true },
+  { label: 'Math', children: [
+    { label: 'Rows above', children: [
+      { action: 'tableTotalSum', label: 'Sum', canTotal: true },
+      { action: 'tableTotalAverage', label: 'Average', canTotal: true },
+      { action: 'tableTotalCount', label: 'Count', canTotal: true },
+      { action: 'tableTotalMin', label: 'Smallest', canTotal: true },
+      { action: 'tableTotalMax', label: 'Largest', canTotal: true },
+    ] },
+    { label: 'Cells to the left', children: [
+      { action: 'tableLeftSum', label: 'Sum', canLeft: true },
+      { action: 'tableLeftAverage', label: 'Average', canLeft: true },
+      { action: 'tableLeftCount', label: 'Count', canLeft: true },
+      { action: 'tableLeftMin', label: 'Smallest', canLeft: true },
+      { action: 'tableLeftMax', label: 'Largest', canLeft: true },
+    ] },
+    { action: 'tableCalculateCells', label: 'Calculate with cells…', bodyCell: true },
+    { action: 'tableChooseRange', label: 'Choose a range…', bodyCell: true },
+  ] },
 ];
 
 let contextMenuTableCell = null;
+const contextMenuChildren = [];
 
 const PAGE_MENU_ITEMS = [
   
@@ -8069,6 +8082,7 @@ const PAGE_MENU_ITEMS = [
   { action: 'delete', label: 'Delete', danger: true },
 ];
 function hideContextMenu() {
+  for (const child of contextMenuChildren.splice(0)) child.menu.remove();
   if (contextMenu.hidden) {
     return;
   }
@@ -8105,6 +8119,13 @@ function runTableContextAction(action, cell) {
     case 'tableTotalCount': writeTableTotal(cell, 'count'); break;
     case 'tableTotalMin': writeTableTotal(cell, 'min'); break;
     case 'tableTotalMax': writeTableTotal(cell, 'max'); break;
+    case 'tableLeftSum': writeTableTotal(cell, 'sum', 'left'); break;
+    case 'tableLeftAverage': writeTableTotal(cell, 'average', 'left'); break;
+    case 'tableLeftCount': writeTableTotal(cell, 'count', 'left'); break;
+    case 'tableLeftMin': writeTableTotal(cell, 'min', 'left'); break;
+    case 'tableLeftMax': writeTableTotal(cell, 'max', 'left'); break;
+    case 'tableCalculateCells': openTableFormulaPicker(cell, 'arithmetic'); break;
+    case 'tableChooseRange': openTableFormulaPicker(cell, 'range'); break;
     default: break;
   }
 }
@@ -8226,7 +8247,18 @@ function contextMenuEntries() {
   }
   if (contextMenuTargetKind === 'table') {
     const canTotal = tableCellCanTotal(contextMenuTableCell);
-    return tidySeparators(TABLE_MENU_ITEMS.filter((entry) => entry === 'separator' || !entry.canTotal || canTotal));
+    const canLeft = tableCellCanTotal(contextMenuTableCell, 'left');
+    const bodyCell = contextMenuTableCell && contextMenuTableCell.tagName === 'TD';
+    const filter = (entries) => tidySeparators(entries.map((entry) => {
+      if (entry === 'separator') return entry;
+      if (entry.canTotal && !canTotal) return null;
+      if (entry.canLeft && !canLeft) return null;
+      if (entry.bodyCell && !bodyCell) return null;
+      if (!entry.children) return entry;
+      const children = filter(entry.children);
+      return children.length ? { ...entry, children } : null;
+    }).filter(Boolean));
+    return filter(TABLE_MENU_ITEMS);
   }
   if (contextMenuTargetKind === 'ribbon') return [{ action: 'removeBookmark', label: 'Remove bookmark' }];
   if (contextMenuTargetKind === 'picture') {
@@ -8299,22 +8331,71 @@ function tidySeparators(entries) {
 }
 
 function buildContextMenu(given) {
+  closeContextMenuChildren(0);
   contextMenu.textContent = '';
   const entries = given || contextMenuEntries();
+  fillContextMenu(contextMenu, entries, 0);
+}
+function closeContextMenuChildren(level) {
+  while (contextMenuChildren.length > level) {
+    const child = contextMenuChildren.pop();
+    child.button.setAttribute('aria-expanded', 'false');
+    child.menu.remove();
+  }
+}
+function openContextMenuChild(button, entries, level, focusFirst = false) {
+  closeContextMenuChildren(level);
+  const menu = document.createElement('div');
+  menu.className = 'context-menu context-menu-submenu';
+  menu.setAttribute('role', 'menu');
+  appSurface.appendChild(menu);
+  fillContextMenu(menu, entries, level + 1);
+  const origin = button.getBoundingClientRect();
+  const surface = appSurface.getBoundingClientRect();
+  if (menu.getBoundingClientRect().height > surface.height - 16) {
+    menu.style.maxHeight = `${Math.max(0, surface.height - 16)}px`;
+    menu.style.overflowY = 'auto';
+    menu.style.overflowX = 'hidden';
+  }
+  const width = menu.getBoundingClientRect().width;
+  const height = menu.getBoundingClientRect().height;
+  const left = origin.right + width <= surface.right - 8 ? origin.right : origin.left - width;
+  const at = leafClampToApp(left, origin.top, width, height, 8);
+  menu.style.left = `${at.left}px`;
+  menu.style.top = `${at.top}px`;
+  button.setAttribute('aria-expanded', 'true');
+  contextMenuChildren.push({ menu, button });
+  if (focusFirst) leafFocusForKeyboard(menu.querySelector('.context-menu-item'));
+}
+function fillContextMenu(menu, entries, level) {
   for (const entry of entries) {
     if (entry === 'separator') {
       const sep = document.createElement('div');
       sep.className = 'context-menu-separator';
       sep.setAttribute('role', 'separator');
-      contextMenu.appendChild(sep);
+      menu.appendChild(sep);
       continue;
     }
     const item = document.createElement('button');
     item.type = 'button';
-    item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '');
+    item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '') + (entry.children ? ' context-menu-parent' : '');
     item.setAttribute('role', 'menuitem');
     item.textContent = entry.label;
-    item.addEventListener('click', () => {
+    if (entry.children) {
+      const arrow = document.createElement('span');
+      arrow.className = 'lt-icon lt-icon-chevron-down context-menu-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+      item.appendChild(arrow);
+      item.setAttribute('aria-haspopup', 'menu');
+      item.setAttribute('aria-expanded', 'false');
+      item.addEventListener('pointerenter', () => openContextMenuChild(item, entry.children, level));
+    }
+    item.addEventListener('click', (event) => {
+      if (entry.children) {
+        event.stopPropagation?.();
+        openContextMenuChild(item, entry.children, level, true);
+        return;
+      }
       
       const path = contextMenuPath;
       const link = contextMenuLink;
@@ -8324,9 +8405,44 @@ function buildContextMenu(given) {
       hideContextMenu();
       if (path) runContextAction(entry.action, path, link, selected, picture, tableCell);
     });
-    contextMenu.appendChild(item);
+    menu.appendChild(item);
   }
 }
+
+function contextMenuKeydown(event) {
+  const menu = event.target.closest('.context-menu');
+  if (!menu || (menu !== contextMenu && !contextMenuChildren.some((child) => child.menu === menu))) return;
+  const level = menu === contextMenu ? 0 : contextMenuChildren.findIndex((child) => child.menu === menu) + 1;
+  const items = Array.from(menu.querySelectorAll('.context-menu-item'));
+  const index = items.indexOf(event.target);
+  if (event.key === 'Tab') { hideContextMenu(); return; }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    if (level) {
+      const parent = contextMenuChildren[level - 1].button;
+      closeContextMenuChildren(level - 1);
+      parent.focus();
+    } else hideContextMenu();
+    return;
+  }
+  if (event.key === 'ArrowLeft' && level) {
+    event.preventDefault();
+    const parent = contextMenuChildren[level - 1].button;
+    closeContextMenuChildren(level - 1);
+    parent.focus();
+    return;
+  }
+  if (event.key === 'ArrowRight' && event.target.classList.contains('context-menu-parent')) {
+    event.preventDefault();
+    event.target.click();
+    return;
+  }
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    items[(index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+  }
+}
+appSurface.addEventListener('keydown', contextMenuKeydown);
 
 function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
@@ -12842,6 +12958,7 @@ function setSubtoolState(button, on, label) {
 function setReadingUnlocked(unlocked) {
   const next = Boolean(unlocked);
   if (next === readingUnlocked) return;
+  closeTableFormulaPicker();
   
   const runningPage = Boolean(activeLocalSiteTab());
   if (!runningPage) commitActiveEditingBlock();
@@ -25214,6 +25331,7 @@ function moveTableRow(table, row, step) {
 
 
 function writeTableBack(table) {
+  closeTableFormulaPicker();
   
   table.__editCells = null;
   commitBlockEdit(table, tableDomToMarkdown(table));
@@ -25367,16 +25485,19 @@ function markComputedTableCells(body, computed) {
 const TABLE_TOTAL_CALLS = { sum: 'sum', average: 'average', count: 'count', min: 'min', max: 'max' };
 
 
-function tableTotalAssignment(row, column, which) {
+function tableTotalAssignment(row, column, which, direction = 'above') {
   const call = TABLE_TOTAL_CALLS[which];
-  return call ? `@${row + 1}$${column + 1}=${call}(@2..@${row})` : '';
+  if (!call) return '';
+  const source = direction === 'left' ? `$1..$${column}` : `@2..@${row}`;
+  return `@${row + 1}$${column + 1}=${call}(${source})`;
 }
 
 
-function tableCellCanTotal(cell) {
+function tableCellCanTotal(cell, direction = 'above') {
   const table = cell && cell.closest ? cell.closest('table') : null;
   if (!table) return false;
-  return tableAllRows(table).indexOf(cell.closest('tr')) >= 2;
+  const row = tableAllRows(table).indexOf(cell.closest('tr'));
+  return row >= 1 && (direction === 'left' ? tableColumnOf(cell) >= 1 : row >= 2);
 }
 
 
@@ -25389,18 +25510,26 @@ function tableFormulaLineAfter(end) {
 }
 
 
-function writeTableTotal(cell, which) {
-  if (!tableCellCanTotal(cell)) return false;
+function writeTableTotal(cell, which, direction = 'above') {
+  if (!tableCellCanTotal(cell, direction)) return false;
   const table = cell.closest('table');
   const row = tableAllRows(table).indexOf(cell.closest('tr'));
   const column = tableColumnOf(cell);
-  const assignment = tableTotalAssignment(row, column, which);
-  if (!assignment || column < 0 || column >= tableColumnCount(table)) return false;
+  const assignment = tableTotalAssignment(row, column, which, direction);
+  return writeTableFormula(cell, assignment);
+}
+function writeTableFormula(cell, assignment) {
+  const table = cell && cell.closest ? cell.closest('table') : null;
+  if (!table || !tableTakesControls(table)) return false;
+  const row = tableAllRows(table).indexOf(cell.closest('tr'));
+  const column = tableColumnOf(cell);
+  if (row < 1 || column < 0 || column >= tableColumnCount(table)) return false;
+  const target = `@${row + 1}$${column + 1}=`;
+  if (!assignment || !assignment.startsWith(target) || assignment.length <= target.length) return false;
   const range = rangeOf(table, 'block');
   if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) return false;
   const held = tableFormulaLineAfter(range.end);
   
-  const target = assignment.slice(0, assignment.indexOf('=') + 1);
   const said = (held ? held.said : []).filter((one) => !one.startsWith(target)).concat(assignment);
   table.__editCells = null;
   sendEditCommand({
@@ -25745,6 +25874,273 @@ document.addEventListener('pointermove', (event) => {
 });
 document.addEventListener('pointerup', dropCarriedTableLine);
 document.addEventListener('pointercancel', dropCarriedTableLine);
+let formulaPicker = null;
+let formulaPanel = null;
+
+function formulaCellRef(cell) {
+  const table = cell.closest('table');
+  const row = tableAllRows(table).indexOf(cell.closest('tr'));
+  const column = tableColumnOf(cell);
+  return row >= 1 && column >= 0 ? `@${row + 1}$${column + 1}` : '';
+}
+
+function formulaCellName(cell) {
+  if (!cell) return 'Choose a cell';
+  const table = cell.closest('table');
+  const row = tableAllRows(table).indexOf(cell.closest('tr'));
+  const column = tableColumnOf(cell);
+  const heading = tableAllRows(table)[0]?.children[column]?.textContent.trim();
+  const rowName = tableAllRows(table)[row]?.children[0]?.textContent.trim();
+  const place = `row ${row + 1}, column ${column + 1}`;
+  return `${heading || `Column ${column + 1}`}, ${rowName || 'row'} (${place}): ${cell.textContent.trim() || 'empty'}`;
+}
+
+function clearTableFormulaCursor() {
+  const state = formulaPicker;
+  if (!state || !state.cursor) return;
+  const cell = state.cursor;
+  cell.classList.remove('table-formula-cursor');
+  if (state.oldTabindex === null) cell.removeAttribute('tabindex');
+  else cell.setAttribute('tabindex', state.oldTabindex);
+  state.cursor = null;
+  state.oldTabindex = null;
+}
+
+function closeTableFormulaPicker() {
+  const state = formulaPicker;
+  if (!state) return;
+  document.removeEventListener('keydown', onFormulaPickerKeydown, true);
+  clearTableFormulaCursor();
+  state.destination.classList.remove('table-formula-target');
+  for (const cell of state.inputs) cell?.classList.remove('table-formula-input');
+  formulaPanel?.remove();
+  formulaPanel = null;
+  formulaPicker = null;
+}
+
+function tableFormulaPickerPosition() {
+  const state = formulaPicker;
+  if (!state || !formulaPanel) return;
+  const rect = state.destination.getBoundingClientRect();
+  if (rect.bottom < 0 || rect.top > window.innerHeight || rect.right < 0 || rect.left > window.innerWidth) {
+    closeTableFormulaPicker();
+    return;
+  }
+  const panel = formulaPanel;
+  const width = panel.getBoundingClientRect().width;
+  const height = panel.getBoundingClientRect().height;
+  const at = leafClampToApp(rect.left, rect.bottom, width, height, 8);
+  panel.style.left = `${at.left}px`;
+  panel.style.top = `${at.top}px`;
+}
+
+function tableFormulaPickerError(words) {
+  const state = formulaPicker;
+  if (state) state.error.textContent = words;
+}
+
+function formulaPickerExpression() {
+  const state = formulaPicker;
+  if (!state || !state.inputs[0] || !state.inputs[1]) return '';
+  const first = formulaCellRef(state.inputs[0]);
+  const second = formulaCellRef(state.inputs[1]);
+  if (!first || !second) return '';
+  if (state.mode === 'arithmetic') return `${first}${state.choice.value}${second}`;
+  const a = state.inputs[0];
+  const b = state.inputs[1];
+  const rows = tableAllRows(state.table);
+  const ar = rows.indexOf(a.closest('tr'));
+  const br = rows.indexOf(b.closest('tr'));
+  const ac = tableColumnOf(a);
+  const bc = tableColumnOf(b);
+  if (ar !== br && ac !== bc) return '';
+  const low = rows[Math.min(ar, br)]?.children[Math.min(ac, bc)];
+  const high = rows[Math.max(ar, br)]?.children[Math.max(ac, bc)];
+  if (!low || !high) return '';
+  const dr = rows.indexOf(state.destination.closest('tr'));
+  const dc = tableColumnOf(state.destination);
+  if (dr >= Math.min(ar, br) && dr <= Math.max(ar, br) && dc >= Math.min(ac, bc) && dc <= Math.max(ac, bc)) return '';
+  return `${state.choice.value}(${formulaCellRef(low)}..${formulaCellRef(high)})`;
+}
+
+function refreshTableFormulaPicker() {
+  const state = formulaPicker;
+  if (!state) return;
+  for (let index = 0; index < 2; index += 1) state.buttons[index].textContent = `${index === 0 ? 'First cell' : state.mode === 'range' ? 'Last cell' : 'Second cell'}: ${formulaCellName(state.inputs[index])}`;
+  const expression = formulaPickerExpression();
+  const join = state.mode === 'range' ? 'through' : { '*': '×', '+': '+', '-': '−', '/': '÷' }[state.choice.value];
+  state.summary.textContent = expression ? `${state.mode === 'range' ? `${state.choice.value} from ` : ''}${state.inputs[0].textContent.trim()} ${join} ${state.inputs[1].textContent.trim()} → this cell` : 'Pick two body cells in this table.';
+  state.apply.disabled = !expression;
+}
+
+function chooseTableFormulaCell(cell) {
+  const state = formulaPicker;
+  if (!state) return false;
+  if (cell.tagName !== 'TD' || cell.closest('table') !== state.table || cell === state.destination) {
+    tableFormulaPickerError('Choose another body cell in this table.');
+    return false;
+  }
+  clearTableFormulaCursor();
+  state.inputs[state.slot]?.classList.remove('table-formula-input');
+  state.inputs[state.slot] = cell;
+  cell.classList.add('table-formula-input');
+  tableFormulaPickerError('');
+  refreshTableFormulaPicker();
+  if (state.slot === 0 && !state.inputs[1]) state.slot = 1;
+  state.buttons[state.slot].focus();
+  return true;
+}
+
+function startTableFormulaCursor(slot) {
+  const state = formulaPicker;
+  if (!state) return;
+  clearTableFormulaCursor();
+  state.slot = slot;
+  const cell = state.inputs[slot] || state.destination;
+  state.cursor = cell;
+  state.oldTabindex = cell.getAttribute('tabindex');
+  cell.setAttribute('tabindex', '0');
+  cell.classList.add('table-formula-cursor');
+  cell.focus();
+}
+
+function moveTableFormulaCursor(key) {
+  const state = formulaPicker;
+  if (!state?.cursor) return;
+  const old = state.cursor;
+  const rows = tableAllRows(state.table);
+  const row = rows.indexOf(old.closest('tr'));
+  const column = tableColumnOf(old);
+  const nextRow = row + (key === 'ArrowDown' ? 1 : key === 'ArrowUp' ? -1 : 0);
+  const nextColumn = column + (key === 'ArrowRight' ? 1 : key === 'ArrowLeft' ? -1 : 0);
+  const next = rows[nextRow]?.children[nextColumn];
+  if (!next || next.tagName !== 'TD') return;
+  clearTableFormulaCursor();
+  state.cursor = next;
+  state.oldTabindex = next.getAttribute('tabindex');
+  next.setAttribute('tabindex', '0');
+  next.classList.add('table-formula-cursor');
+  next.focus();
+}
+
+function openTableFormulaPicker(cell, mode) {
+  closeTableFormulaPicker();
+  const table = cell?.closest('table');
+  if (cell?.tagName !== 'TD' || !tableTakesControls(table)) return false;
+  hideContextMenu();
+  const panel = document.createElement('div');
+  panel.className = 'table-formula-picker';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', mode === 'range' ? 'Choose a range' : 'Calculate with cells');
+  const title = document.createElement('strong');
+  title.textContent = `Formula for ${formulaCellName(cell)}`;
+  panel.appendChild(title);
+  const field = document.createElement('label');
+  field.className = 'table-formula-picker-field';
+  field.textContent = mode === 'range' ? 'Function' : 'Operation';
+  const choice = document.createElement('select');
+  const choices = mode === 'range'
+    ? [['sum', 'Sum'], ['average', 'Average'], ['count', 'Count'], ['min', 'Smallest'], ['max', 'Largest']]
+    : [['*', 'Multiply'], ['+', 'Add'], ['-', 'Subtract'], ['/', 'Divide']];
+  for (const [value, label] of choices) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    choice.appendChild(option);
+  }
+  choice.value = choices[0][0];
+  field.appendChild(choice);
+  panel.appendChild(field);
+  const buttons = [0, 1].map((index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'table-formula-picker-field';
+    button.setAttribute('aria-label', index === 0 ? 'First cell' : mode === 'range' ? 'Last cell' : 'Second cell');
+    button.addEventListener('click', () => startTableFormulaCursor(index));
+    panel.appendChild(button);
+    return button;
+  });
+  const summary = document.createElement('div');
+  summary.className = 'table-formula-picker-summary';
+  panel.appendChild(summary);
+  const note = document.createElement('p');
+  note.textContent = cell.classList.contains('table-cell-computed')
+    ? 'This cell already has a formula. Use formula replaces its rule. Inputs must be numbers; only this cell changes.'
+    : 'Inputs must be numbers. Only this cell changes.';
+  panel.appendChild(note);
+  const error = document.createElement('p');
+  error.className = 'table-formula-picker-error';
+  error.setAttribute('role', 'status');
+  panel.appendChild(error);
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', closeTableFormulaPicker);
+  panel.appendChild(cancel);
+  const apply = document.createElement('button');
+  apply.type = 'button';
+  apply.textContent = 'Use formula';
+  apply.addEventListener('click', () => {
+    const state = formulaPicker;
+    if (!state) return;
+    const expression = formulaPickerExpression();
+    if (!expression || !tableTakesControls(state.table)) {
+      tableFormulaPickerError('This table can no longer be changed.');
+      return;
+    }
+    const assignment = `${formulaCellRef(state.destination)}=${expression}`;
+    if (writeTableFormula(state.destination, assignment)) closeTableFormulaPicker();
+  });
+  panel.appendChild(apply);
+  appSurface.appendChild(panel);
+  formulaPanel = panel;
+  formulaPicker = { table, destination: cell, mode, inputs: [null, null], slot: 0, choice, buttons, summary, error, apply, cursor: null, oldTabindex: null };
+  document.addEventListener('keydown', onFormulaPickerKeydown, true);
+  cell.classList.add('table-formula-target');
+  choice.addEventListener('change', refreshTableFormulaPicker);
+  refreshTableFormulaPicker();
+  tableFormulaPickerPosition();
+  buttons[0].focus();
+  return true;
+}
+
+document.addEventListener('click', (event) => {
+  const state = formulaPicker;
+  if (!state || formulaPanel.contains(event.target)) return;
+  const cell = event.target.closest?.('th, td');
+  if (cell && cell.closest('table') === state.table) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    chooseTableFormulaCell(cell);
+  } else if (cell) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    tableFormulaPickerError('Choose a cell in this table.');
+  } else closeTableFormulaPicker();
+}, true);
+function onFormulaPickerKeydown(event) {
+  const state = formulaPicker;
+  if (!state) return;
+  if (state.cursor) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      clearTableFormulaCursor();
+      state.buttons[state.slot].focus();
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      chooseTableFormulaCell(state.cursor);
+    } else if (event.key.startsWith('Arrow')) {
+      event.preventDefault();
+      moveTableFormulaCursor(event.key);
+    }
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    closeTableFormulaPicker();
+  }
+}
+window.addEventListener('blur', closeTableFormulaPicker);
+window.addEventListener('resize', closeTableFormulaPicker);
+onColumn('scroll', tableFormulaPickerPosition, true);
 
 
 
@@ -33750,6 +34146,7 @@ function keepMinimapForRedraw() {
   bindDocumentMinimapPreview(minimap.querySelector('.document-minimap-track'));
 }
 function renderState(keepDetachedRender = false, landingAnchor = null) {
+  closeTableFormulaPicker();
   
   if (currentState && currentState.document && (currentState.document.partialDrawn || currentState.document.laidOutSwapped || currentState.document.cellSwapped)) {
     send({ command: 'refreshDocument', keepPlace: true });

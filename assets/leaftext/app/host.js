@@ -106,6 +106,10 @@ async function load(url, fetchWith = fetch) {
       return picture;
     },
     glossaryScript: (href) => withStrings(api.leaf_glossary_script, href || ''),
+    // Index the held glossary's entries ahead of the first card. A module older than the page has no such export, and its first card builds the index as it always did.
+    indexGlossary: () => {
+      if (typeof api.leaf_index_glossary === 'function') api.leaf_index_glossary();
+    },
     setGlossary: (text) => {
       const [at, length] = write(text || '');
       api.leaf_set_glossary(at, length);
@@ -966,12 +970,15 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     const typed = keptWords(path, source);
     if (typed != null && openBuffer()) core.bufferEdit(buffer, { edit: 'text', text: typed });
     // Set the glossary beside the render so the last page drawn holds its own terms.
+    const handed = chosen !== glossary && !!words;
     if (chosen !== glossary) {
       core.setGlossary(words || '');
       glossary = words == null ? null : chosen;
     }
     if (address) writeAddress(path, anchor);
     drawDocument(path, source);
+    // The index is built once the page is idle, since no card asks inside the 300 ms rest it waits for. Safari ships no idle callback.
+    if (handed) (typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout)(() => core.indexGlossary());
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
     repointHead(path, anchor, pageByPath.get(path));

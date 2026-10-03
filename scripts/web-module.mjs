@@ -78,6 +78,9 @@ export async function instantiateCore(file) {
       api.leaf_set_glossary(at, length);
       api.leaf_free(at, length);
     },
+    // The held glossary's index built ahead of a card, and one of its terms drawn alone, the way the site page asks for both.
+    indexGlossary: () => api.leaf_index_glossary(),
+    heldGlossaryEntryPreview: (path, slug) => JSON.parse(withStrings(api.leaf_held_glossary_entry_preview, path, slug) || 'null'),
     setImageBase: (base) => {
       const [at, length] = write(base || '');
       api.leaf_set_image_base(at, length);

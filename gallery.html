@@ -6115,6 +6115,18 @@ body.is-maximized #winMaximize .wc-restore {
 .context-menu[hidden] {
   display: none;
 }
+.context-menu-submenu {
+  max-width: 100vw;
+}
+.context-menu-parent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-12);
+}
+.context-menu-arrow {
+  transform: rotate(-90deg);
+}
 .context-menu-item {
   /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
   cursor: default;
@@ -6171,6 +6183,45 @@ body.is-maximized #winMaximize .wc-restore {
   height: 1px;
   margin: var(--lt-space-4) var(--lt-space-6);
   background: var(--lt-border);
+}
+.table-formula-picker {
+  position: fixed;
+  z-index: var(--lt-z-51);
+  box-sizing: border-box;
+  width: min(320px, 100vw);
+  padding: var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+.table-formula-picker-field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-block: var(--lt-space-8);
+  padding: var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-sm);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font: inherit;
+  text-align: left;
+}
+.table-formula-picker-field select {
+  display: block;
+  width: 100%;
+  font: inherit;
+}
+.table-formula-picker-summary {
+  padding-block: var(--lt-space-8);
+  font-weight: var(--lt-weight-600);
+}
+.table-formula-picker-error {
+  color: var(--lt-danger);
 }
 .rename-box {
   position: fixed;
@@ -6319,6 +6370,7 @@ body.is-maximized #winMaximize .wc-restore {
 /* Every floating surface shares one halftone: four edge ramps screen coverage off a tiled blob before the curve paints what survives in the theme's one shadow ink, and a five-layer mask fades the band to nothing at its rim and punches the host's own face out. */
 .app-overflow-panel::before,
 .context-menu::before,
+.table-formula-picker::before,
 .rename-box::before,
 .update-panel::before,
 .app-toast::before,
@@ -12424,6 +12476,15 @@ th.image-cell {
 .document-body .table-cell-computed {
   position: relative;
 }
+.document-body .table-formula-target {
+  outline: var(--lt-stroke-2) solid var(--lt-accent);
+}
+.document-body .table-formula-input {
+  background: var(--lt-wash-hover);
+}
+.document-body .table-formula-cursor {
+  outline: var(--lt-stroke-2) solid var(--lt-foreground);
+}
 .document-body .table-cell-computed::before {
   content: '';
   position: absolute;
@@ -17462,6 +17523,7 @@ body.leaf-paper :is(.docs-pager,
 .flow-sheet,
 .confirm-dialog,
 .context-menu,
+.table-formula-picker,
 .crumb-menu,
 .rename-box,
 .link-hover-tip,
@@ -17585,7 +17647,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 186 values that do not change with the theme, all 82 icons, and all 143 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 186 values that do not change with the theme, all 82 icons, and all 145 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17617,7 +17679,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>186</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>82</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>143</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>145</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18038,7 +18100,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">143 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">145 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -18170,6 +18232,14 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Context menu</h3><code class="built">.context-menu</code><span class="built">context-menu.js</span></header>
 <div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item">Open</button><button type="button" class="context-menu-item is-danger">Delete</button></div></div>
+</section>
+<section class="part">
+<header><h3>Context submenu</h3><code class="built">.context-menu-submenu</code><span class="built">context-menu.js</span></header>
+<div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item context-menu-parent" aria-haspopup="menu" aria-expanded="true">Math<span class="lt-icon lt-icon-chevron-down context-menu-arrow" aria-hidden="true"></span></button></div><div class="context-menu context-menu-submenu" style="position:static"><button type="button" class="context-menu-item">Sum</button></div></div>
+</section>
+<section class="part">
+<header><h3>Table formula picker</h3><code class="built">.table-formula-picker</code><span class="built">table-formula-picker.js</span></header>
+<div class="stage"><div class="table-formula-picker" style="position:static"><strong>Formula for total, mug: empty</strong><label class="table-formula-picker-field">Operation<select><option>Multiply</option></select></label><button type="button" class="table-formula-picker-field">First cell</button><button type="button" class="table-formula-picker-field">Second cell</button><div class="table-formula-picker-summary">Pick two body cells in this table.</div><p class="table-formula-picker-error"></p><button type="button">Cancel</button><button type="button">Use formula</button></div></div>
 </section>
 <section class="part">
 <header><h3>Task date</h3><code class="built">.task-date</code><span class="built">task-dates.js</span></header>

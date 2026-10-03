@@ -48,7 +48,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Dragging a card between a board's columns](08-relational-tables.md#editing-a-relational-table) | With editing on, moving a card from one board column to another writes that row's own cell — one change, one press of undo |
 | [Sorting and filtering what is drawn](08-relational-tables.md#views-sort-and-filter) | Point at a table and its own bar offers a sort and a filter that change what you are looking at and never the file; the sort on the cell's right-click menu above is the one that writes |
 | [The table's right-click menu](#editing-a-table) | Right-click a cell to add, delete, align or sort a row or column, and to say how that cell gets its value |
-| [A table that adds itself up](#a-table-that-adds-itself-up) | Right-click a cell and ask for the sum, average, count, smallest or largest of the rows above it; the number is written into the file and stays right as the rows under it change |
+| [A table that adds itself up](#a-table-that-adds-itself-up) | Right-click a cell and open Math for the sum, average, count, smallest or largest of the rows above it or the cells to its left, arithmetic on two cells you press, or a range you pick; the number is written into the file and stays right as the rows under it change |
 | [Copy as CSV](#editing-a-table) | The copy button in the row above a table copies it as a spreadsheet reads it, on a locked page as readily as an unlocked one |
 | [Full-window tables](#inline-editing-the-reading-view) | Open a safe Markdown table on the whole window; it keeps the same look, takes the room the window has, folds long cells rather than running off the right edge, never squeezes a short column until its words break in half, and follows its own links the way the page does |
 | [Undo](#undo) | An Undo button (and `Ctrl+Z` / `Cmd+Z`) steps back through reading-view edits, a word at a time while you are typing; a Redo button beside it (and `Ctrl+Y` or `Ctrl+Shift+Z`) brings back what you took back |
@@ -262,7 +262,7 @@ The bars button asks the same way. Press it and the row swaps for the same tones
 
 ### Editing a table
 
-![A reading list table in the page, with a grip standing above the Author column and another beside the Arctic Dreams row, and the right-click menu open over a cell offering Add row above, Add row below, Delete row, the three column actions, the three alignments, both sorts and the five totals](../../imgs/table-controls.png)
+![A table in the page with its right-click menu open over the mug total; Math opens a submenu for row and column totals, calculations with cells, and picked ranges](../../imgs/table-formula-menu-built-v5.png)
 
 A safe Markdown table — one the app can write back out whole — is more than a block you can type in. Point at it and its own controls appear, so a table in a note can be restructured without typing a pipe.
 
@@ -279,7 +279,11 @@ A safe Markdown table — one the app can write back out whole — is more than 
 
 A number in a table that is the sum of the numbers above it stops being true the moment anything under it changes, and the usual answer is to move the table into a spreadsheet. Leaftext keeps it right in the note.
 
-- **Ask for it from the cell.** Right-click the cell the number belongs in and the menu offers **Sum of the rows above**, **Average of the rows above**, **Count of the rows above**, **Smallest of the rows above** and **Largest of the rows above**. The five act on the cell you right-clicked, so a total at the foot of the table and a subtotal partway down are the same press. They are left out where there is nothing above the cell to read — the header row and the first body row.
+- **Ask for it from the cell.** Right-click the cell the number belongs in and open **Math**. **Rows above** and **Cells to the left** each offer Sum, Average, Count, Smallest and Largest. A direction with no cells to read is left out. The header row has no Math menu.
+- **Calculate with cells.** Choose **Math → Calculate with cells**, pick an operation, then press two body cells in the table. The panel names the inputs and shows the rule before **Use formula** writes it to the destination. A first-row total can multiply quantity 2 by price 9.00 to make 18.00 without typing a reference. Arrow keys and Enter can pick a cell from either input button; Escape leaves the selection.
+- **Choose a range.** Choose **Math → Choose a range**, pick one of the five functions and press its first and last cells. The range includes both ends and can run across one row or down one column. It cannot include the destination. This lets a total skip a text label and read only numeric cells.
+
+![The formula panel beside the mug total, with quantity 2 and price 9.00 picked for multiplication and Use formula ready](../../imgs/table-formula-menu-built-v10.png)
 - **The number and the rule are written together.** One press writes the answer into the cell and a [formula line](../GLOSSARY.md#formula-line) under the table saying what that cell is, as a single edit: one press of undo takes both back. The line is an ordinary [HTML comment](01-rendering.md#inline-html), so the file stays a plain Markdown file that any other program can read, and asking the same cell again replaces the rule rather than adding a second one.
 - **It stays right as you edit.** Change a quantity and the totals that read it are rewritten in the same edit, so the table is never half updated and one press of undo takes the change and its totals back together. Only the cells the rule names are written; every other byte of the table, its spacing and its divider row included, is left exactly as you wrote it. Opening a document whose totals are already right writes nothing at all.
 - **A kept number wears a quiet mark.** A cell the app is keeping right carries a thin bar on its leading edge — the edge a right-aligned number never reaches — so it reads as a number the file is answering for rather than one somebody typed.

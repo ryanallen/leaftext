@@ -33,7 +33,6 @@
 | Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drop pictures in | [❌][l-roadmap] | [✅][o-attach] | [✅][t-images] | [❌][c-seen] |
 | Suggested field values | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Row arithmetic formulas | [❌][l-roadmap] | [✅][o-bases-formulas] | [❌][t-seen] | [❌][c-seen] |
 | Point-to-edit diagrams | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Library plans
@@ -191,7 +190,6 @@
 [c-faq]: https://manual.calibre-ebook.com/faq.html
 [c-seen]: ../05-compare.md#calibre
 [c-server]: https://manual.calibre-ebook.com/server.html
-[o-bases-formulas]: https://obsidian.md/help/formulas
 [o-cli]: https://obsidian.md/help/cli
 [o-publish]: https://obsidian.md/help/publish
 [o-seen]: ../05-compare.md#obsidian

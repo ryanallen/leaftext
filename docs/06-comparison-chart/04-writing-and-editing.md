@@ -215,6 +215,9 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Five column totals | [✅][l-formulas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Five row totals | [✅][l-formulas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Row arithmetic formulas | [✅][l-formulas] | [✅][o-bases-formulas] | [❌][t-seen] | [❌][c-seen] |
+| Pick cells to total | [✅][l-formulas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Number and rule together | [✅][l-formulas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Totals kept right | [✅][l-formulas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Quiet total bar | [✅][l-formulas] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -688,6 +691,7 @@
 [o-shortcuts]: https://obsidian.md/help/editing-shortcuts
 [o-tabs]: https://obsidian.md/help/tabs
 [o-bases-views]: https://obsidian.md/help/bases/views
+[o-bases-formulas]: https://obsidian.md/help/formulas
 [t-home]: https://typora.io/
 [t-keys]: https://support.typora.io/Shortcut-Keys/
 [t-md]: https://support.typora.io/Markdown-Reference/
