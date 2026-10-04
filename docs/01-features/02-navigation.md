@@ -16,7 +16,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
 | [Back / Forward](#history) | Move through file history and in-page jumps, landing where you were reading, with the page you arrive at on screen at once |
-| [Refresh](#history) | Draw the open file from disk again, dropping page-only state such as a folded block or dragged table column |
+| [Refresh](#history) | Draw the open file and its current glossary again, dropping page-only state such as a folded block or dragged table column |
 | [Scroll anchors](#restore) | Restore the same reading spot after rerenders, and on every step of a tab's history |
 | [Scrollbars](#scrollbars) | Every bar fades in while its box is being scrolled and out a moment after it stops, and comes back thicker while the pointer rests on it — or stays drawn the whole time, where your machine is set to always show scrollbars |
 | [Live reload](#reload) | Reload a changed file without losing your place |
@@ -442,6 +442,7 @@ A document draws its terms from a shared glossary file. You do not have to link 
 - A link at the foot of the sheet opens the whole glossary as a page.
 - Glossary term links take the surrounding text's color and carry a quiet dotted underline in a dimmed wash of that same color, in every theme and mode — enough to mark an expandable term without pulling the eye away from the prose. Where the prose is already muted, as in a quote, the underline dims further to match.
 - The glossary lives at one file, so the whole document set can share a single set of definitions.
+- Changing that glossary updates its dotted links in pages already open, including a page beside another. Refresh reads the current glossary again while keeping your place when you asked it to; returning to a tab also checks whether its glossary changed.
 
 ### Author a glossary
 

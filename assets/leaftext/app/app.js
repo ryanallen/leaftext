@@ -6755,6 +6755,10 @@ const send = (message) => {
   window.ipc.postMessage(JSON.stringify(message));
 };
 
+function hostAnswers(command) {
+  return typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers(command);
+}
+
 
 function nextEditToken() {
   return ++leafEditToken;
@@ -8034,69 +8038,69 @@ let contextMenuTabIndex = null;
 let contextMenuPicture = null;
 let contextMenuPictureFullWindow = false;
 const CONTEXT_MENU_ITEMS = [
-  { action: 'open', label: 'Open' },
-  { action: 'favorite', label: 'Favorite' },
+  { action: 'open', label: 'Open', command: 'openRecent' },
+  { action: 'favorite', label: 'Favorite', command: 'toggleFavorite' },
   
-  { action: 'openBeside', label: 'Open beside', opensBeside: true },
-  { action: 'closeBeside', label: 'Close beside', tabOnly: true, whileSplit: true },
-  { action: 'openSourceBeside', label: 'Open source beside', tabOnly: true },
+  { action: 'openBeside', label: 'Open beside', command: 'openBeside', opensBeside: true },
+  { action: 'closeBeside', label: 'Close beside', command: 'closeBeside', tabOnly: true, whileSplit: true },
+  { action: 'openSourceBeside', label: 'Open source beside', command: 'openSourceBeside', tabOnly: true },
   'separator',
-  { action: 'cut', label: 'Cut' },
-  { action: 'copy', label: 'Copy' },
-  { action: 'copyPath', label: 'Copy path' },
+  { action: 'cut', label: 'Cut', command: 'copyFile' },
+  { action: 'copy', label: 'Copy', command: 'copyFile' },
+  { action: 'copyPath', label: 'Copy path', command: 'copyPath' },
   'separator',
-  { action: 'rename', label: 'Rename' },
-  { action: 'duplicate', label: 'Duplicate' },
+  { action: 'rename', label: 'Rename', command: 'renameFile' },
+  { action: 'duplicate', label: 'Duplicate', command: 'duplicateFile' },
   
-  { action: 'hideRow', label: 'Hide from the pane', paneRow: 'hide' },
-  { action: 'showRow', label: 'Show in the pane', paneRow: 'show' },
+  { action: 'hideRow', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide' },
+  { action: 'showRow', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show' },
   'separator',
-  { action: 'reveal', label: 'Reveal file' },
-  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+  { action: 'reveal', label: 'Reveal file', command: 'revealFile' },
+  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
   'separator',
-  { action: 'delete', label: 'Delete', danger: true },
+  { action: 'delete', label: 'Delete', command: 'deleteFile', danger: true },
 ];
 
 const FOLDER_MENU_ITEMS = [
   { action: 'openFolder', label: 'Open folder', folderOnly: true },
-  { action: 'favorite', label: 'Favorite', folderOnly: true },
+  { action: 'favorite', label: 'Favorite', command: 'toggleFavorite', folderOnly: true },
   'separator',
   
-  { action: 'newFile', label: 'New file' },
-  { action: 'newFolder', label: 'New folder' },
+  { action: 'newFile', label: 'New file', command: 'newFile' },
+  { action: 'newFolder', label: 'New folder', command: 'newFolder' },
   'separator',
-  { action: 'hideRow', label: 'Hide from the pane', paneRow: 'hide', folderOnly: true },
-  { action: 'showRow', label: 'Show in the pane', paneRow: 'show', folderOnly: true },
-  { action: 'paste', label: 'Paste' },
-  { action: 'exportSite', label: 'Export as site…' },
+  { action: 'hideRow', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide', folderOnly: true },
+  { action: 'showRow', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show', folderOnly: true },
+  { action: 'paste', label: 'Paste', command: 'pasteFile' },
+  { action: 'exportSite', label: 'Export as site…', command: 'exportSite' },
   'separator',
   
-  { action: 'reveal', label: 'Reveal folder' },
-  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+  { action: 'reveal', label: 'Reveal folder', command: 'revealFile' },
+  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
 ];
 
 const LINK_MENU_ITEMS = [
-  { action: 'openLink', label: 'Open' },
-  { action: 'openLinkInNewPage', label: 'Open in new page', pageOnly: true },
+  { action: 'openLink', label: 'Open', command: 'openLink' },
+  { action: 'openLinkInNewPage', label: 'Open in new page', command: 'openLink', pageOnly: true },
   
-  { action: 'openLinkInBrowser', label: 'Open in browser', savedPage: true },
+  { action: 'openLinkInBrowser', label: 'Open in browser', command: 'openLinkInBrowser', savedPage: true },
   'separator',
   { action: 'copyLink', label: 'Copy link' },
   { action: 'copyLinkText', label: 'Copy link text' },
   'separator',
   
-  { action: 'revealLink', label: 'Reveal file', fileBehind: true },
-  { action: 'copyLinkPath', label: 'Copy path', fileBehind: true },
+  { action: 'revealLink', label: 'Reveal file', command: 'revealLink', fileBehind: true },
+  { action: 'copyLinkPath', label: 'Copy path', command: 'copyLinkPath', fileBehind: true },
 ];
 
 const PICTURE_MENU_ITEMS = [
   { action: 'openPicture', label: 'Open picture', inThePage: true },
   'separator',
-  { action: 'copyPicture', label: 'Copy picture' },
-  { action: 'copyImagePath', label: 'Copy path' },
+  { action: 'copyPicture', label: 'Copy picture', command: 'copyImage' },
+  { action: 'copyImagePath', label: 'Copy path', command: 'copyImagePath' },
   'separator',
-  { action: 'revealImage', label: 'Reveal file' },
-  { action: 'showImageProperties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+  { action: 'revealImage', label: 'Reveal file', command: 'revealImage' },
+  { action: 'showImageProperties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showImageProperties' },
   'separator',
   { action: 'deletePicture', label: 'Delete picture', danger: true, unlockedLane: true },
 ];
@@ -8181,17 +8185,17 @@ const PAGE_MENU_ITEMS = [
   
   { action: 'copySelection', label: 'Copy', selectionOnly: true },
   'separator',
-  { action: 'favorite', label: 'Favorite' },
+  { action: 'favorite', label: 'Favorite', command: 'toggleFavorite' },
   
   { action: 'removeBookmark', label: 'Remove bookmark', ribbonKept: true },
   'separator',
   
-  { action: 'openPageInBrowser', label: 'Open in browser', savedPageOpen: true },
-  { action: 'copyPath', label: 'Copy path' },
-  { action: 'reveal', label: 'Reveal file' },
-  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties' },
+  { action: 'openPageInBrowser', label: 'Open in browser', command: 'openPageInBrowser', savedPageOpen: true },
+  { action: 'copyPath', label: 'Copy path', command: 'copyPath' },
+  { action: 'reveal', label: 'Reveal file', command: 'revealFile' },
+  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
   'separator',
-  { action: 'delete', label: 'Delete', danger: true },
+  { action: 'delete', label: 'Delete', command: 'deleteFile', danger: true },
 ];
 function hideContextMenu() {
   for (const child of contextMenuChildren.splice(0)) child.menu.remove();
@@ -8340,7 +8344,7 @@ function contextMenuEntries() {
   if (contextMenuTargetKind === 'tag') {
     if (!vaultSearchAvailable()) return [];
     const entries = [{ action: 'searchTag', label: 'Search for this tag' }];
-    if (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('prepareTagRename')) {
+    if (hostAnswers('prepareTagRename')) {
       entries.push({ action: 'renameTag', label: 'Rename everywhere…' });
     }
     return entries;
@@ -8352,6 +8356,7 @@ function contextMenuEntries() {
     return tidySeparators(
       LINK_MENU_ITEMS.filter((entry) => {
         if (entry === 'separator') return true;
+        if (!contextMenuHostAnswers(entry)) return false;
         if (entry.fileBehind) return fileBehind;
         if (entry.savedPage) return linkIsSavedPage(contextMenuPath, kind);
         return !entry.pageOnly || isAnotherPageHref(contextMenuPath, kind);
@@ -8378,6 +8383,7 @@ function contextMenuEntries() {
     return tidySeparators(
       PICTURE_MENU_ITEMS.filter((entry) => {
         if (entry === 'separator') return true;
+        if (!contextMenuHostAnswers(entry)) return false;
         if (entry.inThePage) return !contextMenuPictureFullWindow;
         if (entry.unlockedLane) return !!contextMenuPictureLane();
         return true;
@@ -8394,11 +8400,12 @@ function contextMenuEntries() {
     entries
       .filter((entry) => {
         if (entry === 'separator') return true;
+        if (!contextMenuHostAnswers(entry)) return false;
         if (entry.action === 'paste') return libraryHoldsTransfer();
         if (entry.paneRow) return libraryRowMenuShows(contextMenuPath, entry.paneRow, contextMenuTargetKind);
         if (entry.selectionOnly) return !!contextMenuSelectionText;
         if (entry.ribbonKept) return readingRibbonKept();
-        if (entry.savedPageOpen) return currentDocumentFormat === 'html' && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('openPageInBrowser'));
+        if (entry.savedPageOpen) return currentDocumentFormat === 'html';
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         
         if (entry.whileSplit) return contextMenuTargetKind === 'tab' && splitOpen();
@@ -8413,6 +8420,11 @@ function contextMenuEntries() {
       })
       .map(labelForFavoriteEntry)
   );
+}
+function contextMenuHostAnswers(entry) {
+  if (!entry.command) return true;
+  if (entry.action === 'openBeside' && contextMenuTargetKind === 'file') return hostAnswers('openBesidePath');
+  return hostAnswers(entry.command);
 }
 
 function labelForFavoriteEntry(entry) {
@@ -8912,7 +8924,7 @@ function refreshSizedDocument(path) {
   if (beside) withColumn(beside, () => {
     if (activeDocumentPath() === path) clearSizedTables();
   });
-  send({ command: 'refreshDocument' });
+  send({ command: 'refreshDocument', keepPlace: true });
 }
 
 if (app) {
@@ -9875,7 +9887,7 @@ function siteCrumbChain() {
   return chain;
 }
 function trailFavoriteHtml() {
-  if (typeof window.__leafHostAnswers !== 'function' || !window.__leafHostAnswers('toggleFavorite')) return '';
+  if (typeof window.__leafHostAnswers !== 'function' || !hostAnswers('toggleFavorite')) return '';
   const path = activeDocumentPath();
   const favorite = isFavoritePath(path);
   const mark = favorite ? 'Unfavorite' : 'Favorite';
@@ -15829,11 +15841,13 @@ window.leafReplaceDrawnBlocks = (change, beside = false) => {
     for (const block of fresh) {
       stampLocalImages(block);
       laneWidePicture(block);
+      markLinkCard(block);
       bindImageSheet(block);
       markLinksThatGoNowhereIn(block);
       applySpeedReaderToDocument(block);
     }
     if (readerEditingAllowed()) bindEditableBlocks(currentDocumentFormat, fresh);
+    countLinkCardRows(body);
     rewatchReadingRun(old, fresh);
     doc.partialDrawn = true;
     doc.words = change.words;
@@ -17380,7 +17394,7 @@ function growlLockedForReading() {
 }
 
 function hostRefusesCodeUnlock() {
-  return typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('setCodeUnlocked');
+  return !hostAnswers('setCodeUnlocked');
 }
 function settleCodeLanding() {
   columnFrame(() => {
@@ -17735,7 +17749,7 @@ let codeLintSerial = 0;
 
 let codeIntelToken = 0;
 const codeIntelPending = new Map();
-const CODE_INTEL_TIMEOUT_MS = 2500;
+const CODE_INTEL_TIMEOUT_MS = window.__leafSite ? 30000 : 2500;
 
 function requestCodeIntel(message) {
   codeIntelToken += 1;
@@ -17769,7 +17783,7 @@ function codeIntelTooltip() {
 
 function renderCodeTools(onCodeView) {
   if (!codeIntelButton) return;
-  codeIntelButton.hidden = !onCodeView;
+  codeIntelButton.hidden = !onCodeView || !['codeCompleteNotes', 'codeCompleteHeadings', 'codeHoverNote', 'codeLint'].some(hostAnswers);
   if (!onCodeView) return;
   setSubtoolState(codeIntelButton, codeIntelEnabled, codeIntelTooltip());
 }
@@ -19610,7 +19624,7 @@ function inlineMarkdownDomWysiwygSafe(el) {
 
 
 function markdownBlockWysiwygSafe(el) {
-  return inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
+  return !el.classList?.contains('link-card') && inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
 }
 
 
@@ -28574,7 +28588,7 @@ function findingAllFiles() {
 }
 
 function vaultSearchAvailable() {
-  return Boolean(activeVaultId);
+  return Boolean(activeVaultId) || (window.__leafSite && hostAnswers('search'));
 }
 
 function updateFindScopeChrome() {
@@ -28639,7 +28653,7 @@ function findScopeMenuItems() {
       run: () => setFindScope('file'),
     });
   }
-  items.push({
+  if (hostAnswers('search')) items.push({
     label: FIND_SCOPE_LABELS.vault,
     selected: findScope === 'vault',
     run: () => setFindScope('vault'),
@@ -32098,12 +32112,15 @@ function watchReadingDocument(path, words) {
   stopWatchingReading();
   
   if (arriving) flushReading();
-  applyPageOrnaments();
   
-  if (!path) return;
-  if (arriving && hostKeepsRibbons()) send({ command: 'readRibbon', path });
+  if (!path) {
+    applyPageOrnaments();
+    return;
+  }
   const watch = { path, words: Number(words) || 0, observer: null, runObserver: null, runBlocks: new Map(), runOf: new Map(), nearRuns: new Set(), visible: new Set(), tall: new Set(), pictures: new Map(), blockWords: new Map(), boxes: new Map(), timers: new Map(), waiting: new Set(), fallbackTimer: 0, onScroll: null, blocks: [] };
   readingWatch = watch;
+  applyPageOrnaments();
+  if (arriving && hostKeepsRibbons()) send({ command: 'readRibbon', path });
   const blocks = typeof IntersectionObserver === 'undefined' ? [] : [...app.querySelectorAll('.document-body [data-block-id], .document-body .book-item')];
   watch.blocks = blocks;
   
@@ -34343,6 +34360,8 @@ function restoreKeptReaderRenderByKey(state, kept, key, landingAnchor) {
 function decorateSwappedParagraph(el, kept = false) {
   stampLocalImages(el);
   laneWidePicture(el);
+  markLinkCard(el);
+  countLinkCardRows(el.closest('.document-body'));
   bindImageSheet(el);
   markLinksThatGoNowhereIn(el);
   applySpeedReaderToDocument(el);
@@ -34518,6 +34537,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     stampLocalImages();
     laneWideTables();
     laneWidePictures();
+    markLinkCards(app.querySelector('.document-body'));
     bindImageSheet();
     decorateBlockquoteLines();
     decorateNoteCards();
@@ -35648,6 +35668,7 @@ window.leafDocumentLength = (token, count, unit) => {
     }
   }
   if (alreadyDrawn) return;
+  if (key !== undefined) linkCardAnswer(key);
   if (token === activeHoverToken && known) {
     setLinkHoverLength(count, unit);
   }
@@ -35955,18 +35976,20 @@ function requestLinkPreview(key, token, { picture = true, length = false } = {})
     if (token !== activeHoverToken || linkHoverTip.hidden) return;
     const aged = staleLinkAnswers.has(key);
     
-    if (length && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('documentLength')) && (!documentLengthCache.has(key) || aged)) {
+    if (length && hostAnswers('documentLength') && (!documentLengthCache.has(key) || aged) && ![...pendingLengthTokens.values()].includes(key)) {
       pendingLengthTokens.set(token, key);
       send({ command: 'documentLength', href: key, token });
     }
-    if (!picture || (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('previewLink'))) return;
+    if (!picture || !hostAnswers('previewLink')) return;
     
     if (linkPreviewCache.has(key) && !aged) {
       applyLinkHoverPreview(linkPreviewCache.get(key));
       return;
     }
-    pendingPreviewTokens.set(token, key);
-    send({ command: 'previewLink', href: key, token });
+    if (![...pendingPreviewTokens.values()].includes(key)) {
+      pendingPreviewTokens.set(token, key);
+      send({ command: 'previewLink', href: key, token });
+    }
   }, durationTokenMilliseconds('--lt-duration-300'));
 }
 
@@ -36168,9 +36191,20 @@ window.leafLinkPreview = (token, html) => {
     }
   }
   if (alreadyDrawn) return;
-  if (token !== activeHoverToken || linkHoverTip.hidden || typeof html !== 'string') return;
+  if (key !== undefined) linkCardAnswer(key);
+  if (typeof html !== 'string') return;
+  if (token !== activeHoverToken && (linkHoverTip.hidden || !activeHoverLink || linkPreviewKey(activeHoverLink) !== key)) return;
   applyLinkHoverPreview(note);
 };
+function linkPreviewKey(link) {
+  const rawHref = link?.getAttribute('href') || '';
+  if (/^glossary:/i.test(rawHref) || wikiSpellingFromHref(rawHref)) return rawHref;
+  let key = (typeof link.href === 'string' && link.href) || rawHref;
+  if (typeof window.__leafHostAnswers === 'function' && !document.querySelector('base[href]')) {
+    try { key = new URL(rawHref, new URL(activeDocumentPath(), location.href)).href; } catch (e) {   }
+  }
+  return key;
+}
 
 function linkHoverInfo(rawHref) {
   const kind = linkKindFromHref(rawHref);
@@ -36324,13 +36358,10 @@ function startLinkHover(event) {
   
   if (entry || info.kind === 'Another page' || info.kind === 'Full glossary') {
     
-    let key = entry || /^glossary:/i.test(rawHref) ? rawHref : (typeof link.href === 'string' && link.href) || rawHref;
-    if (!entry && !/^glossary:/i.test(rawHref) && typeof window.__leafHostAnswers === 'function' && !document.querySelector('base[href]')) {
-      try { key = new URL(rawHref, new URL(activeDocumentPath(), location.href)).href; } catch (e) {   }
-    }
+    const key = entry ? rawHref : linkPreviewKey(link);
     
     const aged = staleLinkAnswers.has(key);
-    let picture = typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('previewLink');
+    let picture = hostAnswers('previewLink');
     if (linkPreviewCache.has(key)) {
       
       applyLinkHoverPreview(linkPreviewCache.get(key));
@@ -36343,7 +36374,7 @@ function startLinkHover(event) {
     if (!entry) {
       const held = documentLengthCache.get(key);
       if (held) setLinkHoverLength(held.count, held.unit);
-      length = (!held || aged) && (typeof window.__leafHostAnswers !== 'function' || window.__leafHostAnswers('documentLength'));
+      length = (!held || aged) && hostAnswers('documentLength');
     }
     if (picture || length) requestLinkPreview(key, token, { picture, length });
   } else {
@@ -36435,7 +36466,7 @@ function linkHasAFileBehindIt(rawHref, kind = linkHoverKind(rawHref)) {
 }
 
 function linkIsSavedPage(rawHref, kind = linkHoverKind(rawHref)) {
-  if (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('openLinkInBrowser')) return false;
+  if (!hostAnswers('openLinkInBrowser')) return false;
   return kind === 'Another page' && HTML_HREF_RE.test(String(rawHref || '').trim());
 }
 
@@ -36530,6 +36561,181 @@ function linkRunsAProgram(rawHref) {
   const dot = name.lastIndexOf('.');
   if (dot === -1) return false;
   return (isMacPlatform ? MAC_RUNS_THESE : WINDOWS_RUNS_THESE).includes(name.slice(dot + 1).toLowerCase());
+}
+
+let nextLinkCardToken = 2 ** 40;
+const linkCardObservers = new WeakMap();
+const waitingLinkCards = new Map();
+const pendingLinkCardPictures = new Set();
+const pendingLinkCardLengths = new Set();
+
+function linkCardLink(block) {
+  if (!block || block.tagName !== 'P' || !isDocumentBlock(block)) return null;
+  const picture = block.querySelector(':scope > .link-card-picture');
+  const first = picture ? picture.nextSibling : block.firstChild;
+  if (!first || first !== block.lastChild || first.nodeType !== 1 || first.tagName !== 'A') return null;
+  if (!first.hasAttribute('href') || first.children.length) return null;
+  const kind = linkKindFromHref(first.getAttribute('href'));
+  return kind && kind !== 'In-page jump' ? { link: first, kind } : null;
+}
+
+function linkCardLength(block, key) {
+  const held = documentLengthCache.get(key);
+  const pair = held && DOCUMENT_LENGTH_UNITS[held.unit];
+  const length = pair ? formatCountLabel(held.count, pair[0], pair[1]) : '';
+  block.dataset.linkCardKind = length ? `${block.__linkCardKind} · ${length}` : block.__linkCardKind;
+}
+
+function markLinkCard(block) {
+  const found = linkCardLink(block);
+  if (!found) {
+    if (block?.classList?.contains('link-card')) {
+      block.__linkCardObserver?.unobserve(block);
+      block.querySelector(':scope > .link-card-picture')?.remove();
+      block.classList.remove('link-card', 'is-page-card', 'is-row-start-3', 'is-row-start-2');
+      delete block.dataset.linkCardKind;
+      delete block.dataset.linkCardAddress;
+    }
+    return;
+  }
+  const key = linkPreviewKey(found.link);
+  block.__linkCardKey = key;
+  block.__linkCardKind = found.kind;
+  block.dataset.linkCardAddress = hoverDetailForKind(found.kind, found.link.getAttribute('href'));
+  linkCardLength(block, key);
+  block.classList.add('link-card');
+  block.classList.toggle('is-page-card', found.kind === 'Another page');
+  if (!block.__linkCardClickBound) {
+    block.addEventListener('click', (event) => {
+      const link = block.querySelector(':scope > a');
+      if (link && event.target !== link && !link.contains(event.target)) link.click();
+    });
+    block.__linkCardClickBound = true;
+  }
+  if (found.kind === 'Another page') {
+    let picture = block.querySelector(':scope > .link-card-picture');
+    if (!picture) {
+      picture = document.createElement('div');
+      picture.className = 'link-card-picture';
+      block.insertBefore(picture, found.link);
+      block.__linkCardRoot = picture.attachShadow({ mode: 'closed' });
+    }
+    block.__linkCardPicture = picture;
+    watchLinkCard(block);
+  } else {
+    block.querySelector(':scope > .link-card-picture')?.remove();
+    block.__linkCardPicture = null;
+  }
+}
+
+function drawLinkCardPicture(block, html) {
+  const picture = block.__linkCardPicture;
+  if (!picture || !picture.isConnected || !block.__linkCardNear || typeof html !== 'string') return;
+  const root = block.__linkCardRoot;
+  if (!root) return;
+  root.replaceChildren();
+  for (const link of document.querySelectorAll('link[rel="stylesheet"]')) root.append(link.cloneNode(true));
+  const page = document.createElement('div');
+  page.className = 'document-body link-hover-tip-preview-document';
+  page.innerHTML = html;
+  for (const diagram of page.querySelectorAll('pre.mermaid')) diagram.dataset.cardDiagram = 'unshown';
+  page.style.width = '300%';
+  page.style.margin = '0';
+  page.style.transform = 'scale(0.333333)';
+  page.style.transformOrigin = 'top left';
+  root.append(page);
+  drawCodeFencesIn(page);
+}
+
+function linkCardAnswer(key) {
+  const waiting = waitingLinkCards.get(key);
+  if (!waiting) return;
+  for (const block of waiting) {
+    if (!block.isConnected || block.__linkCardKey !== key) { waiting.delete(block); continue; }
+    linkCardLength(block, key);
+    if (linkPreviewCache.has(key)) drawLinkCardPicture(block, linkPreviewCache.get(key));
+  }
+  const picturePending = [...pendingPreviewTokens.values()].includes(key);
+  const lengthPending = [...pendingLengthTokens.values()].includes(key);
+  if (!picturePending) pendingLinkCardPictures.delete(key);
+  if (!lengthPending) pendingLinkCardLengths.delete(key);
+  if ((!picturePending && !lengthPending) || !waiting.size) waitingLinkCards.delete(key);
+}
+
+function askLinkCard(block) {
+  const key = block.__linkCardKey;
+  if (!key) return;
+  linkCardLength(block, key);
+  if (linkPreviewCache.has(key) && !staleLinkAnswers.has(key)) drawLinkCardPicture(block, linkPreviewCache.get(key));
+  const wantsPicture = !linkPreviewCache.has(key) || staleLinkAnswers.has(key);
+  const wantsLength = !documentLengthCache.has(key) || staleLinkAnswers.has(key);
+  if (!wantsPicture && !wantsLength) return;
+  let waiting = waitingLinkCards.get(key);
+  if (!waiting) waitingLinkCards.set(key, waiting = new Set());
+  waiting.add(block);
+  if (wantsPicture && hostAnswers('previewLink') && !pendingLinkCardPictures.has(key) && pendingPreviewTokens.get(activeHoverToken) !== key) {
+    const token = nextLinkCardToken++;
+    pendingLinkCardPictures.add(key);
+    pendingPreviewTokens.set(token, key);
+    send({ command: 'previewLink', href: key, token });
+  }
+  if (wantsLength && hostAnswers('documentLength') && !pendingLinkCardLengths.has(key) && pendingLengthTokens.get(activeHoverToken) !== key) {
+    const token = nextLinkCardToken++;
+    pendingLinkCardLengths.add(key);
+    pendingLengthTokens.set(token, key);
+    send({ command: 'documentLength', href: key, token });
+  }
+}
+
+function watchLinkCard(block) {
+  if (typeof IntersectionObserver === 'undefined') { block.__linkCardNear = true; askLinkCard(block); return; }
+  const body = block.closest('.document-body');
+  let observer = linkCardObservers.get(body);
+  if (!observer) {
+    observer = new IntersectionObserver(inThisColumn((entries) => {
+      for (const entry of entries) {
+        entry.target.__linkCardNear = entry.isIntersecting;
+        if (entry.isIntersecting) askLinkCard(entry.target);
+        else {
+          const root = entry.target.__linkCardRoot;
+          if (root) root.replaceChildren();
+        }
+      }
+    }), { rootMargin: '100% 0px' });
+    linkCardObservers.set(body, observer);
+  }
+  block.__linkCardObserver = observer;
+  observer.observe(block);
+}
+
+function markLinkCards(body) {
+  if (!body) return;
+  for (const block of documentBlocks(body)) markLinkCard(block);
+  countLinkCardRows(body);
+}
+
+function countLinkCardRows(body) {
+  if (!body) return;
+  let count = 0;
+  let previous = null;
+  for (const block of documentBlocks(body)) {
+    if (!block.classList.contains('link-card') || block.parentElement !== previous?.parentElement) {
+      count = 0;
+    }
+    if (block.classList.contains('link-card')) {
+      block.classList.toggle('is-row-start-3', count % 3 === 0);
+      block.classList.toggle('is-row-start-2', count % 2 === 0);
+      if (previous && count > 0) {
+        for (let node = previous.nextSibling; node && node !== block; ) {
+          const next = node.nextSibling;
+          if (node.nodeType === 3 && !node.textContent.trim()) node.remove();
+          node = next;
+        }
+      }
+      count++;
+    }
+    previous = block;
+  }
 }
 
 const LEAF_MERMAID_ICON_PREFIX = 'leaf';
@@ -41294,10 +41500,13 @@ function jumpToReadingRibbon() {
   const depth = readingPlaceDepth(place);
   if (!(depth > 0)) return;
   const reader = readerScrollElement();
-  const scrollTop = clampReaderScrollTop(depth * reader.scrollHeight - reader.clientHeight / 4);
-  writeReaderPlaceStoppingGlide((scroller) => {
-    scroller.scrollTop = scrollTop;
-  });
+  const markedTop = depth * reader.scrollHeight;
+  if (markedTop < reader.scrollTop || markedTop > reader.scrollTop + reader.clientHeight) {
+    const scrollTop = clampReaderScrollTop(markedTop - reader.clientHeight);
+    writeReaderPlaceStoppingGlide((scroller) => {
+      scroller.scrollTop = scrollTop;
+    });
+  }
   recordReaderScrollPosition();
   updateMinimapViewport();
 }

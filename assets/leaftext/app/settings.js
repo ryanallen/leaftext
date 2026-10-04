@@ -28,6 +28,7 @@
   try {
     const visit = JSON.parse(window.sessionStorage.getItem('leaftext.visit') || 'null');
     if (visit && visit.readingUnlocked === true) settings.readingUnlocked = true;
+    if (visit && visit.codeUnlocked === true) settings.codeUnlocked = true;
   } catch (error) {
     // Nothing kept in the tab; the padlock stays shut.
   }

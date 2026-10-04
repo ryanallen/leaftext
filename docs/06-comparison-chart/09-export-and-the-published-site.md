@@ -47,6 +47,8 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Sites use app renderer | [✅][l-site] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
+| Search site pages | [✅][l-site] | ? | ? | ? |
+| Edit site source | [✅][l-site] | ? | ? | ? |
 | Published pictures kept | [✅][l-site] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Office links on sites | [✅][l-site] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Mark pages on sites | [✅][l-site] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

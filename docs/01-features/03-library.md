@@ -328,6 +328,8 @@ Copying a whole folder is not supported; a folder can be pasted only as a move (
 
 Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, the field says a notes folder is needed rather than looking like a box that works and does not.
 
+On a published site, **All files** searches every page the site serves. The first search reads the site's pages; later searches reuse them. A page the browser could not read is named with the results. Open a result to go to that page.
+
 `Escape` closes the bar and takes the results with it. Nothing about the pane changes either way — it is not where the answer lands.
 
 | Search type | Behavior |

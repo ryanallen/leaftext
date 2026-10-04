@@ -7306,6 +7306,9 @@ body.library-resizing button {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
+.library-pane.has-foot:not(.has-grove) .library-foot {
+  grid-template-columns: minmax(0, max-content);
+}
 /* The pane's stacking context keeps the card under its controls and over its grain. Both lines of the one column bound it across, so it ends 8px past the row and the band's grain shows beyond; its row stays auto, so top and bottom still sit 8px in from the band. */
 .library-foot::before {
   content: "";
@@ -9128,6 +9131,65 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   line-height: var(--type-body-line);
   word-wrap: break-word;
   word-break: normal;
+}
+.document-body .document-run > .link-card,
+.document-body > .link-card {
+  display: inline-block;
+  box-sizing: border-box;
+  width: calc((100% - 2 * var(--lt-space-16)) / 3);
+  height: 18rem;
+  margin: var(--lt-space-8) 0 var(--lt-space-8) var(--lt-space-16);
+  padding: var(--lt-space-12);
+  vertical-align: top;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface);
+  overflow: hidden;
+}
+.document-body .document-run > .link-card.is-row-start-3,
+.document-body > .link-card.is-row-start-3 { margin-left: 0; }
+.document-body .link-card > a {
+  display: block;
+  font-weight: var(--lt-weight-600);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.document-body .link-card::after {
+  content: attr(data-link-card-kind) "\A" attr(data-link-card-address);
+  display: block;
+  margin-top: var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.document-body .link-card-picture {
+  height: 11rem;
+  margin-bottom: var(--lt-space-12);
+  background: var(--lt-wash-hover);
+  overflow: hidden;
+}
+.document-body .link-card:not(.is-page-card)::before {
+  content: '';
+  display: block;
+  height: 11rem;
+  margin-bottom: var(--lt-space-12);
+  background: var(--lt-wash-hover);
+  mask: var(--lt-icon-link) center / var(--lt-space-24) no-repeat;
+}
+@media screen {
+  @container (max-width: 720px) {
+    .document-body .document-run > .link-card,
+    .document-body > .link-card { width: calc((100% - var(--lt-space-16)) / 2); }
+    .document-body .document-run > .link-card.is-row-start-3,
+    .document-body > .link-card.is-row-start-3 { margin-left: var(--lt-space-16); }
+    .document-body .document-run > .link-card.is-row-start-2,
+    .document-body > .link-card.is-row-start-2 { margin-left: 0; }
+  }
+  @container (max-width: 480px) {
+    .document-body .document-run > .link-card,
+    .document-body > .link-card { width: 100%; margin-left: 0; }
+  }
 }
 /* A stretch of the body's blocks, so a change lays out, paints and hit-tests one run rather than every block. No margin, border or padding, so the margins either side of its edge still collapse into one and the page is as tall as it was. Positioned so it is a paint layer of its own, which is what ends the walk over every block before paint; not `isolation`, which is as fast but makes each run a stacking context, and a menu raised inside a block would then sit under the next run's words. See reading-blocks.js. */
 .document-run {
@@ -17723,7 +17785,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 186 values that do not change with the theme, all 83 icons, and all 150 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 85 colors, the 186 values that do not change with the theme, all 83 icons, and all 152 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17755,7 +17817,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>85</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>186</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>83</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>150</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>152</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18177,7 +18239,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">150 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">152 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -18641,6 +18703,14 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Table lane</h3><code class="built">.table-lane</code><span class="built">decorate.js</span></header>
 <div class="stage"><div class="document-body"><div class="table-bay"><div class="table-lane"><table><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th></tr></thead><tbody><tr><td>North</td><td>Q1</td><td>412000</td></tr><tr><td>South</td><td>Q1</td><td>501000</td></tr><tr><td>East</td><td>Q2</td><td>377000</td></tr><tr><td>West</td><td>Q2</td><td>468000</td></tr></tbody></table></div></div><div class="table-bay table-is-cards"><div class="table-lane table-is-cards"><table class="is-cards"><thead><tr><th>Region</th><th>Quarter</th><th>Pipeline</th><th>Owners</th><th>Note</th></tr></thead><tbody><tr><td data-leaf-col="Region">North</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">412000</td><td data-leaf-col="Owners"><a href="#components">Ada Okonkwo</a>, <a href="#components">Bo Lindqvist</a> (6 in all)</td><td data-leaf-col="Note" data-leaf-long="">Short cells share a line and a sentence takes one of its own, and a path nothing can break — <code>app/src/assets/reading/document-tables.css</code> — breaks inside the card rather than running out of it.</td></tr><tr><td data-leaf-col="Region">South</td><td data-leaf-col="Quarter">Q1</td><td data-leaf-col="Pipeline">501000</td></tr></tbody></table></div></div></div></div>
+</section>
+<section class="part">
+<header><h3>Link card</h3><code class="built">.link-card</code><span class="built">link-cards.js</span></header>
+<div class="stage"><div class="document-body"><div class="document-run"><p class="link-card is-page-card is-row-start-3 is-row-start-2" data-link-card-kind="Another page" data-link-card-address="next.md"><div class="link-card-picture"></div><a href="next.md">Next note</a></p></div></div></div>
+</section>
+<section class="part">
+<header><h3>Link card picture</h3><code class="built">.link-card-picture</code><span class="built">link-cards.js</span></header>
+<div class="stage"><div class="document-body"><div class="document-run"><p class="link-card is-page-card"><div class="link-card-picture"></div><a href="next.md">Next note</a></p></div></div></div>
 </section>
 <section class="part">
 <header><h3>Picture lane</h3><code class="built">.image-lane</code><span class="built">decorate.js</span></header>

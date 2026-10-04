@@ -7290,6 +7290,9 @@ body.library-resizing button {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-attachment: fixed;
 }
+.library-pane.has-foot:not(.has-grove) .library-foot {
+  grid-template-columns: minmax(0, max-content);
+}
 
 .library-foot::before {
   content: "";
@@ -9094,6 +9097,65 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   line-height: var(--type-body-line);
   word-wrap: break-word;
   word-break: normal;
+}
+.document-body .document-run > .link-card,
+.document-body > .link-card {
+  display: inline-block;
+  box-sizing: border-box;
+  width: calc((100% - 2 * var(--lt-space-16)) / 3);
+  height: 18rem;
+  margin: var(--lt-space-8) 0 var(--lt-space-8) var(--lt-space-16);
+  padding: var(--lt-space-12);
+  vertical-align: top;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface);
+  overflow: hidden;
+}
+.document-body .document-run > .link-card.is-row-start-3,
+.document-body > .link-card.is-row-start-3 { margin-left: 0; }
+.document-body .link-card > a {
+  display: block;
+  font-weight: var(--lt-weight-600);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.document-body .link-card::after {
+  content: attr(data-link-card-kind) "\A" attr(data-link-card-address);
+  display: block;
+  margin-top: var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.document-body .link-card-picture {
+  height: 11rem;
+  margin-bottom: var(--lt-space-12);
+  background: var(--lt-wash-hover);
+  overflow: hidden;
+}
+.document-body .link-card:not(.is-page-card)::before {
+  content: '';
+  display: block;
+  height: 11rem;
+  margin-bottom: var(--lt-space-12);
+  background: var(--lt-wash-hover);
+  mask: var(--lt-icon-link) center / var(--lt-space-24) no-repeat;
+}
+@media screen {
+  @container (max-width: 720px) {
+    .document-body .document-run > .link-card,
+    .document-body > .link-card { width: calc((100% - var(--lt-space-16)) / 2); }
+    .document-body .document-run > .link-card.is-row-start-3,
+    .document-body > .link-card.is-row-start-3 { margin-left: var(--lt-space-16); }
+    .document-body .document-run > .link-card.is-row-start-2,
+    .document-body > .link-card.is-row-start-2 { margin-left: 0; }
+  }
+  @container (max-width: 480px) {
+    .document-body .document-run > .link-card,
+    .document-body > .link-card { width: 100%; margin-left: 0; }
+  }
 }
 
 .document-run {

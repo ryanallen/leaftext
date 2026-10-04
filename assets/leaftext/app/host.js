@@ -88,6 +88,21 @@ async function load(url, fetchWith = fetch) {
     heldGlossaryEntryPreview: (path, slug) => typeof api.leaf_held_glossary_entry_preview === 'function'
       ? JSON.parse(withStrings((...args) => api.leaf_held_glossary_entry_preview(...args), path, slug) || 'null') : undefined,
     graph: (documents, seed, scope) => JSON.parse(withStrings(api.leaf_graph, JSON.stringify(documents), seed, scope) || 'null'),
+    corpusAdd: (path, bytes) => {
+      if (typeof api.leaf_corpus_add !== 'function') return false;
+      const name = write(path);
+      const body = put(bytes);
+      const added = api.leaf_corpus_add(...name, ...body);
+      api.leaf_free(...name);
+      api.leaf_free(...body);
+      return Boolean(added);
+    },
+    search: (query, today, skipped, partial) => typeof api.leaf_search === 'function'
+      ? withStrings((...args) => api.leaf_search(...args, partial ? 1 : 0), query, today, JSON.stringify(skipped)) : null,
+    codeCompleteNotes: (token) => read(api.leaf_code_complete_notes(BigInt(token))),
+    codeCompleteHeadings: (token, handle, note) => withStrings((...args) => api.leaf_code_complete_headings(BigInt(token), handle, ...args), note || ''),
+    codeHoverNote: (token, note) => withStrings((...args) => api.leaf_code_hover_note(BigInt(token), ...args), note || ''),
+    codeLint: (token, handle) => read(api.leaf_code_lint(BigInt(token), handle)),
     // Whether this page mints a book's pictures itself. A module older than the page has no such export, and its books keep their data addresses.
     setMintsPictures: (mints) => {
       if (typeof api.leaf_set_mints_pictures === 'function') api.leaf_set_mints_pictures(mints ? 1 : 0);
@@ -225,14 +240,14 @@ export const COMMANDS = {
   copyImagePath: [REFUSED, 'a picture on a served page has no path on this machine'],
   showImageProperties: [REFUSED, 'there is no file on this machine to describe'],
   copyImage: [REFUSED, 'nothing here reaches a clipboard, and a browser page that could would need a gesture the app never sends one through'],
-  closeTab: [LATER, 'web-app-commands'],
-  switchTab: [LATER, 'web-app-commands'],
-  moveTab: [LATER, 'web-app-commands'],
-  openBeside: [LATER, 'web-app-commands'],
-  openBesidePath: [LATER, 'web-app-commands'],
-  closeBeside: [LATER, 'web-app-commands'],
-  openSourceBeside: [LATER, 'web-app-commands'],
-  setSplitLayout: [LATER, 'web-app-commands'],
+  closeTab: [REFUSED, 'the browser owns tabs on a site'],
+  switchTab: [REFUSED, 'the browser owns tabs on a site'],
+  moveTab: [REFUSED, 'the browser owns tabs on a site'],
+  openBeside: [REFUSED, 'the browser owns tabs on a site'],
+  openBesidePath: [REFUSED, 'the browser owns tabs on a site'],
+  closeBeside: [REFUSED, 'the browser owns tabs on a site'],
+  openSourceBeside: [REFUSED, 'the browser owns tabs on a site'],
+  setSplitLayout: [REFUSED, 'the browser owns tabs on a site'],
   goHome: [ANSWERED],
   openLink: [ANSWERED],
   openExternal: [REFUSED, 'the browser follows a link out of the site itself'],
@@ -259,7 +274,7 @@ export const COMMANDS = {
   setUnlock: [REFUSED, 'a site keeps no reading record, so nothing is owned to switch — the Grove never stands and nothing sends this'],
   setProgressEnabled: [REFUSED, 'the reading record is a file on the reader’s own disk, and a site serves documents to strangers with no account — a per-browser record would be a different feature, so the Grove pill never stands and nothing sends this'],
   setReadingUnlocked: [ANSWERED],
-  setCodeUnlocked: [REFUSED, 'nothing a reader types into the source reaches anywhere on a site, so its padlock is not drawn and nothing sends this'],
+  setCodeUnlocked: [ANSWERED],
   setThemeFamily: [ANSWERED],
   setThemeMode: [ANSWERED],
   setThemeRandomBag: [ANSWERED],
@@ -304,18 +319,18 @@ export const COMMANDS = {
   changeVaultFolder: [REFUSED, 'it reopens the folder picker, which a static site has not got'],
   removeVault: [REFUSED, 'a site is one folder, so there is no vault row to forget'],
   getFolder: [ANSWERED],
-  revealInLibrary: [LATER, 'web-app-commands'],
+  revealInLibrary: [ANSWERED],
   getGraph: [ANSWERED],
   setGraphScope: [ANSWERED],
   setCalendarField: [REFUSED, 'a site draws no calendar square'],
-  getTagTree: [LATER, 'web-app-commands'],
+  getTagTree: [REFUSED, 'a site has no vault tag tree to list'],
   setLibraryList: [REFUSED, 'a site’s pane lists its folders, because Tags and Fields are offered only where the vault can be searched'],
   saveArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
   useArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
   renameArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
   deleteArrangement: [REFUSED, 'a site’s pane is drawn the way it was published, and the view button is not drawn on one'],
   setFolderView: [REFUSED, 'a site’s folders are published in the order they were written out, and the view button is not drawn on one'],
-  search: [LATER, 'web-app-commands'],
+  search: [ANSWERED],
   calendarRange: [REFUSED, 'it counts a vault’s documents by the dates their files were written, and a site is published pages with no vault and no file dates behind them — so the calendar square never stands and nothing sends this'],
   loadPager: [ANSWERED],
   packagedPicture: [ANSWERED],
@@ -325,13 +340,13 @@ export const COMMANDS = {
   changeSlide: [ANSWERED],
   setSlideBuild: [ANSWERED],
   exitCodeView: [ANSWERED],
-  spliceSource: [LATER, 'web-app-commands'],
-  updateSource: [LATER, 'web-app-commands'],
+  spliceSource: [ANSWERED],
+  updateSource: [ANSWERED],
   saveDocument: [ANSWERED],
-  codeCompleteNotes: [LATER, 'web-app-commands'],
-  codeCompleteHeadings: [LATER, 'web-app-commands'],
-  codeHoverNote: [LATER, 'web-app-commands'],
-  codeLint: [LATER, 'web-app-commands'],
+  codeCompleteNotes: [ANSWERED],
+  codeCompleteHeadings: [ANSWERED],
+  codeHoverNote: [ANSWERED],
+  codeLint: [ANSWERED],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],
@@ -503,6 +518,30 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // Every picture address this page made out of the open book, let go together when another document opens: revoking one as it scrolls away would leave nothing to decode it from when the reader scrolls back.
   const minted = [];
   const known = new Set(documents.map((entry) => entry.path));
+  let corpusLoading = null;
+  let corpusReady = false;
+  let currentSearch = null;
+  const corpusSkipped = [];
+  function answerSearch(partial) {
+    if (!currentSearch) return;
+    const script = core.search(currentSearch.query, currentSearch.today, corpusSkipped, partial);
+    if (script) run(script);
+  }
+  function loadCorpus() {
+    if (corpusLoading) return corpusLoading;
+    corpusLoading = Promise.all(documents.map(async ({ path }) => {
+      try {
+        if (!core.corpusAdd(path, await read(path))) corpusSkipped.push(path);
+      } catch (_) {
+        corpusSkipped.push(path);
+      }
+      answerSearch(true);
+    })).then(() => {
+      corpusReady = true;
+      answerSearch(false);
+    });
+    return corpusLoading;
+  }
   const pageByPath = new Map(documents.filter((entry) => entry.page).map((entry) => [entry.path, entry.page]));
   const pathByPage = new Map(documents.filter((entry) => entry.page).map((entry) => [entry.page, entry.path]));
   let open = null;
@@ -1119,14 +1158,26 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     document.body.appendChild(link);
     try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(address), 0); }
   };
+  function saveVisitUnlock(name, enabled) {
+    try {
+      const visit = JSON.parse(window.sessionStorage.getItem('leaftext.visit') || '{}') || {};
+      window.sessionStorage.setItem('leaftext.visit', JSON.stringify({ ...visit, [name]: !!enabled }));
+    } catch (_) {}
+  }
   const commands = {
     // Kept in the tab alone, so a refresh keeps the padlock and a new tab starts locked.
-    setReadingUnlocked: (command) => {
-      try {
-        window.sessionStorage.setItem('leaftext.visit', JSON.stringify({ readingUnlocked: !!command.enabled }));
-      } catch (error) {
-        // The padlock still holds for this page.
-      }
+    setReadingUnlocked: (command) => saveVisitUnlock('readingUnlocked', command.enabled),
+    setCodeUnlocked: (command) => saveVisitUnlock('codeUnlocked', command.enabled),
+    spliceSource: (command) => {
+      if (!openBuffer()) return;
+      const state = core.bufferEdit(buffer, { edit: 'splice', start: command.start, removed: command.removed, inserted: command.inserted });
+      if (state?.utf16Len !== command.length) run('window.leafResyncSource();');
+      else if (state) run(`window.leafSourceUpdated(${JSON.stringify(state)});`);
+    },
+    updateSource: (command) => {
+      if (!openBuffer()) return;
+      const state = core.bufferEdit(buffer, { edit: 'text', text: String(command.text || '') });
+      if (state) run(`window.leafSourceUpdated(${JSON.stringify(state)});`);
     },
     // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
     refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
@@ -1184,6 +1235,12 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       return openDocument(command.path);
     },
     getFolder: ({ path }) => showFolder(path || ''),
+    search: ({ query, today }) => {
+      currentSearch = { query: String(query || ''), today: String(today || '') };
+      if (corpusReady) answerSearch(false);
+      else loadCorpus();
+    },
+    revealInLibrary: ({ path }) => showFolder(String(path || open || '').split('/').slice(0, -1).join('/')),
     openLink: (command) => {
       const href = String(command.href || '');
       // A heading inside the document already open is the page's own scroll, not a document to resolve. Put through the resolver it matched nothing and became a console line.
@@ -1206,6 +1263,10 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
           return undefined;
         }
         stampPlace(command);
+        if (command.newPage) {
+          window.open(addressFor(path, wiki.anchor || ''), '_blank', 'noopener');
+          return undefined;
+        }
         return openDocument(path, { anchor: wiki.anchor || '' });
       }
       const target = resolveFrom(open || '', href);
@@ -1222,6 +1283,10 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         return undefined;
       }
       stampPlace(command);
+      if (command.newPage) {
+        window.open(addressFor(target.path, target.anchor), '_blank', 'noopener');
+        return undefined;
+      }
       // The heading rides the open that already takes one, so the address becomes `#<path>#<anchor>` and the browser's own Back walks out of it the way it walks out of a jump inside one document.
       return openDocument(target.path, { anchor: target.anchor });
     },
@@ -1324,8 +1389,12 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         drawDocument(held.path, held.bytes);
       }
     },
+    codeCompleteNotes: async ({ token }) => { await loadCorpus(); run(core.codeCompleteNotes(token)); },
+    codeCompleteHeadings: async ({ token, note }) => { await loadCorpus(); run(core.codeCompleteHeadings(token, buffer, note)); },
+    codeHoverNote: async ({ token, note }) => { await loadCorpus(); run(core.codeHoverNote(token, note)); },
+    codeLint: async ({ token }) => { await loadCorpus(); run(core.codeLint(token, buffer)); },
     selectSourceMember: () => run("window.leafShowError('Open this package in the desktop app to select another source member.');"),
-    // The source is read-only, so the page still standing beneath it can return.
+    // Return to the page over the same buffer the source view edited.
     exitCodeView: ({ renderKey }) => {
       if (!held || held.path !== open) return;
       codeViewUp = false;

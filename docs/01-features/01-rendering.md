@@ -373,6 +373,8 @@ A task can carry a date at the end of its line, written `📅 09/16/2026` — mo
 
 ### Links and autolinks
 
+A link alone on its own line draws as a card with its name, the kind of link and its address. Links to another page show a small picture of that page when the card nears the screen. Cards sit three to a row when the reading column is wide, two on a narrower page and one on a phone. A link inside a sentence stays a link.
+
 - Inline link: [the Leaftext repo](https://github.com/ryanallen/leaftext)
 - Reference link: [CommonMark][cm]
 - Relative link to a sibling page: [Navigation](02-navigation.md)
