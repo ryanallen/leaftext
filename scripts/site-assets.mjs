@@ -302,9 +302,9 @@ async function main() {
   const app = await instantiateCore(appSource);
   const rendered = app.render('# Published\n\nA paragraph.\n', 'check.md');
   if (!rendered?.html.includes('<h1 id="published">')) fail('the built module did not render a document');
-  const styles = app.styles();
-  if (!styles?.includes('data-leaf-theme')) fail("the built module handed over a stylesheet with none of the app's themes in it");
-  if (!styles?.includes('--lt-background')) fail("the built module handed over a stylesheet with none of the app's tokens in it");
+  const styles = bakeOnly ? readFileSync(join(root, APP_STYLES_PATH), 'utf8') : app.styles();
+  if (!styles?.includes('data-leaf-theme')) fail("the published stylesheet carries none of the app's themes");
+  if (!styles?.includes('--lt-background')) fail("the published stylesheet carries none of the app's tokens");
   if (!app.page()?.includes('id="appSurface"')) fail("the built module handed over no page of the app's own");
 
   // The pages, drawn here rather than in the reader's browser. Asked for before anything is written, the same as the module is.

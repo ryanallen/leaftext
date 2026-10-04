@@ -9987,7 +9987,7 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   cursor: default;
 }
 
-.document-body .leaf-editable {
+.document-body .leaf-editable:not(table) {
   cursor: text;
 }
 

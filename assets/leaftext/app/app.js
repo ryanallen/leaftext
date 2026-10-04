@@ -19888,6 +19888,11 @@ function releaseRailAfterEdit() {
   resume();
 }
 
+function markEditHoldResynced() {
+  editHoldAwaitsResync = false;
+  releaseRailAfterEdit();
+}
+
 
 function liftEditHold() {
   editHold = null;
@@ -20868,7 +20873,9 @@ function rebindRestoredCheckboxes(el) {
 
 
 function commitActiveEditingBlock() {
-  const active = document.activeElement;
+  const focused = document.activeElement;
+  const table = focused && focused.closest ? focused.closest('table.leaf-editable') : null;
+  const active = table && table.__editableCell === focused ? table : focused;
   if (!active) return;
   if (active.dataset && active.dataset.editingSource === 'true') {
     active.blur();
@@ -20926,12 +20933,29 @@ function markMarkdownEditable(el) {
 
 
 function blockIsEditingHost(el) {
-  return !!el && !!el.getAttribute && el.getAttribute('contenteditable') === 'true';
+  return !!el && ((el.__editableCell && el.__editableCell.getAttribute('contenteditable') === 'true') || (el.getAttribute && el.getAttribute('contenteditable') === 'true'));
+}
+
+function openEditableTableCell(table, cell, span) {
+  if (!cell) return;
+  if (table.__editableCell && table.__editableCell !== cell) {
+    table.__editableCell.removeAttribute('contenteditable');
+    table.__editableCell.removeAttribute('spellcheck');
+  }
+  table.__editableCell = cell;
+  cell.setAttribute('contenteditable', 'true');
+  cell.setAttribute('spellcheck', 'false');
+  cell.focus({ preventScroll: true });
+  if (span) selectTextSpanInBlock(table, span);
 }
 
 
 function openWysiwygBlock(el, span) {
   if (blockIsEditingHost(el)) return;
+  if (el.tagName === 'TABLE') {
+    openEditableTableCell(el, tableCellAtCaret(el) || el.querySelector('th, td'), span);
+    return;
+  }
   el.setAttribute('contenteditable', 'true');
   el.setAttribute('spellcheck', 'false');
   el.focus({ preventScroll: true });
@@ -20940,13 +20964,26 @@ function openWysiwygBlock(el, span) {
 
 
 function closeWysiwygBlock(el) {
+  if (el.__editableCell) {
+    el.__editableCell.removeAttribute('contenteditable');
+    el.__editableCell.removeAttribute('spellcheck');
+    delete el.__editableCell;
+    return;
+  }
   el.removeAttribute('contenteditable');
   el.removeAttribute('spellcheck');
 }
 
 
 function openEditableOnRelease(el, target, event) {
-  if (blockIsEditingHost(el) || (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block'))) return;
+  if (blockIsEditingHost(el)) {
+    if (el.tagName === 'TABLE') {
+      const cell = target && target.closest ? target.closest('th, td') : null;
+      if (cell && el.contains(cell) && cell !== el.__editableCell) openEditableTableCell(el, cell, selectionTextSpanIn(el));
+    }
+    return;
+  }
+  if (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block')) return;
   if (target && target.closest && (target.closest('input[type="checkbox"]') || pressFollowsLink(el, target.closest('a'), event))) return;
   
   if (target && target.closest && target.closest('a')) placeCaretAtPress(el, event);
@@ -21296,7 +21333,6 @@ function bindEditableBlocks(format, elements = null) {
   });
 }
 
-
 function bindSwappedParagraph(el, kept = false) {
   if (!readerEditingAllowed() || !hasRangeOf(el, 'block')) return;
   const plainSpan = currentDocumentFormat === 'epub' ? xmlBlockTypeableInPlace(el) : null;
@@ -21501,8 +21537,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
   dropKeptWrites();
   if (editHold != null) liftEditHold();
   
-  editHoldAwaitsResync = false;
-  releaseRailAfterEdit();
+  markEditHoldResynced();
   currentDocumentFormat = doc.format || 'markdown';
   currentDocumentDrawnAsSlides = doc.drawn_as_slides === true;
   if (!doc.source_held) setDocumentSource(doc.source, doc.source_stamp);
@@ -21553,12 +21588,9 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
 }
 
 
-
-
 window.leafBlocksResynced = (state) => {
   if (!state) return;
-  editHoldAwaitsResync = false;
-  releaseRailAfterEdit();
+  markEditHoldResynced();
   if (state.splice) spliceDocumentSource(state.splice.start, state.splice.end, state.splice.text);
   const path = activeDocumentPath();
   if (path) {
@@ -21614,7 +21646,12 @@ function dropUnlockedLayer({ undo = false } = {}) {
   layer.controller.abort();
   if (!undo) return;
   for (const el of layer.elements) {
+    if (el.__editableCell) closeWysiwygBlock(el);
     el.classList.remove('leaf-editable', 'leaf-editable-in-place', 'leaf-editable-here');
+    if (el.getAttribute('contenteditable') === 'true') {
+      el.removeAttribute('contenteditable');
+      el.removeAttribute('spellcheck');
+    }
     for (const name of ['__innerSpan', '__epubRuns', '__officeCell', '__valueQuote', '__opensOnRelease', '__startInPlaceEdit', '__startSourceEdit', '__chapterWired', '__liveSourceEdit', '__liveSourceMoved', '__editingActive']) delete el[name];
   }
   for (const fn of layer.undo.reverse()) fn();
@@ -25250,6 +25287,7 @@ function tableCellBelow(table, cell) {
 
 function placeCaretInTableCell(el, cell) {
   if (!cell) return false;
+  if (el.__editableCell) openEditableTableCell(el, cell);
   placeCaretInBlock(cell, visibleTextLength(cell));
   
   el.__typingBreak = true;
@@ -25613,6 +25651,19 @@ function tableTakesControls(table, aiming = false) {
   return tableAimingSafe(table);
 }
 
+function aimTableCellCursor(body, cell) {
+  if (!body) return;
+  const table = cell && cell.closest('table');
+  const next = table && table.classList.contains('leaf-editable') ? cell : null;
+  if (next === body.__tableCursorCell) return;
+  if (body.__tableCursorCell) body.__tableCursorCell.style.cursor = body.__tableCursorBefore;
+  body.__tableCursorCell = next;
+  if (next) {
+    body.__tableCursorBefore = next.style.cursor;
+    next.style.cursor = 'text';
+  }
+}
+
 function buildTableRowHandle() {
   const handle = document.createElement('div');
   handle.className = 'table-row-handle';
@@ -25725,11 +25776,13 @@ function tableRowCrossing(event) {
 function bindTableControls() {
   clearTableAimingProof();
   const body = app.querySelector('.document-body');
+  aimTableCellCursor(body, null);
   hideTableRowHandle();
   hideTableColumnHandle();
   tableRowHandle = null;
   tableColumnHandle = null;
   onUnlockedLayerDropped(() => {
+    aimTableCellCursor(body, null);
     dropCarriedTableLine();
     hideTableRowHandle();
     hideTableColumnHandle();
@@ -25745,6 +25798,7 @@ function bindTableControls() {
     if (tableRowDragging || tableColumnDragging) return;
     
     const cell = event.target && event.target.closest ? event.target.closest('th, td') : null;
+    aimTableCellCursor(body, cell);
     if (cell && (cell.closest('table') !== tableColumnHandleTable || tableColumnOf(cell) !== tableColumnHandleAt)) aimTableColumnHandle(cell, true);
     const row = tableBodyRowAt(event.target, true);
     if (!row) {
@@ -32629,12 +32683,12 @@ function containedPieceBytes(written) {
   return code < 0x80 ? 1 : code < 0x800 ? 2 : 3;
 }
 
-const containedLeafWords = (pieces) => pieces.map((piece) => piece.reads).join('');
-
 
 function containedLeafReads(start, end) {
   const written = sliceSourceBytes(start, end);
-  return /[&\r]/.test(written) ? containedLeafWords(containedLeafPieces(start, end)) : written;
+  if (!/[&\r]/.test(written)) return written;
+  containedDecoder.innerHTML = written;
+  return containedDecoder.value;
 }
 
 
@@ -35513,6 +35567,80 @@ function linkPreviewOpeningHtml(blocks) {
   }
   return taken;
 }
+function localFootnoteTarget(link, rawHref) {
+  if (!rawHref.startsWith('#') || rawHref.length < 2) return null;
+  const body = link.closest('.document-body');
+  if (!body) return null;
+  const markdownReference = link.parentElement?.matches('sup.footnote-reference');
+  const bookReference = link.getAttribute('data-leaf-note-ref') === '1';
+  if (!markdownReference && !bookReference) return null;
+  let id;
+  try { id = decodeURIComponent(rawHref.slice(1)); } catch (e) { return null; }
+  
+  const target = document.getElementById(id);
+  if (!target || target.closest('.document-body') !== body) return null;
+  if (markdownReference && target.classList.contains('footnote-definition')) return target;
+  if (bookReference && target.getAttribute('data-leaf-note-body') === '1') return target;
+  return null;
+}
+function localFootnoteHtml(target) {
+  let remaining = LINK_PREVIEW_OPENING_BYTES;
+  let visited = 0;
+  function copy(node, depth) {
+    if (remaining <= 0 || visited++ >= LINK_PREVIEW_OPENING_BYTES || depth > 64) return '';
+    if (node.nodeType === 3) {
+      const words = String(node.nodeValue || '').slice(0, remaining);
+      const escaped = linkPreviewEscapedWords(words);
+      remaining -= escaped.length;
+      return escaped;
+    }
+    if (node.nodeType !== 1 || node.hidden || node.getAttribute('aria-hidden') === 'true'
+        || node.matches('.footnote-definition-label, .footnote-backref, [data-leaf-note-backlink="1"]')) return '';
+    const style = getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden') return '';
+    if (isLinkPreviewProgramBlock(node)) {
+      let wordsLeft = remaining;
+      let seen = 0;
+      const pending = [node];
+      while (pending.length && wordsLeft >= 0) {
+        if (seen++ >= LINK_PREVIEW_OPENING_BYTES) return '';
+        const part = pending.pop();
+        if (part.nodeType === 3) wordsLeft -= part.nodeValue.length;
+        else if (part.nodeType === 1) {
+          if (part.childNodes.length > LINK_PREVIEW_OPENING_BYTES) return '';
+          for (let i = part.childNodes.length - 1; i >= 0; i--) pending.push(part.childNodes[i]);
+          if (pending.length > LINK_PREVIEW_OPENING_BYTES) return '';
+        }
+      }
+      if (wordsLeft < 0) return '';
+      const whole = node.outerHTML;
+      if (whole.length > remaining) return '';
+      const clean = node.cloneNode(true);
+      clean.removeAttribute('id');
+      for (const child of clean.querySelectorAll('[id]')) child.removeAttribute('id');
+      const html = clean.outerHTML;
+      remaining -= html.length;
+      return html;
+    }
+    const shallow = node.cloneNode(false);
+    shallow.removeAttribute('id');
+    const [open, close] = linkPreviewTagPair(shallow);
+    if (open.length + close.length > remaining) return '';
+    remaining -= open.length + close.length;
+    let children = '';
+    for (const child of node.childNodes) {
+      if (remaining <= 0) break;
+      children += copy(child, depth + 1);
+    }
+    return open + children + close;
+  }
+  let html = '';
+  for (const child of target.childNodes) {
+    if (remaining <= 0) break;
+    html += copy(child, 0);
+  }
+  return html ? '<article>' + html + '</article>' : '';
+}
 
 function isLinkPreviewProgramBlock(node) {
   return !!node && node.nodeType === 1 && node.tagName === 'PRE' && !!node.classList && node.classList.contains('mermaid');
@@ -35717,6 +35845,22 @@ function startLinkHover(event) {
   setLinkHoverLength(null);
   const entry = info.kind === 'Glossary entry';
   linkHoverEntry = entry;
+  hideLinkHoverPreview();
+  if (rawHref.startsWith('#') && (link.parentElement?.matches('sup.footnote-reference') || link.getAttribute('data-leaf-note-ref') === '1')) {
+    linkHoverPreviewTimer = window.setTimeout(() => {
+      linkHoverPreviewTimer = 0;
+      if (token !== activeHoverToken || linkHoverTip.hidden) return;
+      const target = localFootnoteTarget(link, rawHref);
+      if (!target) return;
+      const html = localFootnoteHtml(target);
+      if (!html) return;
+      linkHoverEntry = true;
+      linkHoverTipKind.textContent = 'Footnote';
+      applyLinkHoverPreview(html);
+    }, durationTokenMilliseconds('--lt-duration-300'));
+    showLinkHoverTip(event);
+    return;
+  }
   
   if (entry || info.kind === 'Another page' || info.kind === 'Full glossary') {
     

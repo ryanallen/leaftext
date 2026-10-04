@@ -23,6 +23,7 @@
 | Collapsible sections | [✅][l-collapsible] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Text in any language | [✅][l-language] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Footnotes with back-links | [✅][l-footnotes] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Footnote marker previews | [✅][l-footnotes] | ? | ? | ? |
 | Emoji shortcodes | [✅][l-emoji] | [❌][o-seen] | [✅][t-md] | [❌][c-seen] |
 | Issue and PR links | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cross-repository issue links | [✅][l-github] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
