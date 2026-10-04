@@ -14,3 +14,6 @@
 .agents/settings.local.json
 # The pictures the publish writes beside their PNG masters. Never committed: the repo keeps one format so nothing that takes, joins or checks a picture learns a second.
 /imgs/**/*.webp
+
+# The voice skill, linked in from the writing checkout on this machine
+.agents/skills/ryan/
