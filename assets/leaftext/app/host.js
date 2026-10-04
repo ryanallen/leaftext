@@ -43,6 +43,7 @@ async function load(url, fetchWith = fetch) {
   };
 
   return {
+    pageFile: (request) => withStrings(api.leaf_one_file_page, JSON.stringify(request)),
     colorable: (language) => {
       if (typeof api.leaf_fence_colorable !== 'function') return false;
       const written = write(language);
@@ -341,14 +342,18 @@ export const COMMANDS = {
   moveBlock: [ANSWERED],
   moveSlideShape: [REFUSED, 'this site opens no Google Slides deck to move a shape in'],
   pickImage: [REFUSED, 'picking an image is a file dialog over a disk'],
-  pickDiagramPath: [LATER, 'web-export'],
-  exportDiagram: [LATER, 'web-export'],
-  printDiagramPdf: [LATER, 'web-export'],
-  pickPicturePath: [LATER, 'web-export'],
-  exportPicture: [LATER, 'web-export'],
-  printPicturePdf: [LATER, 'web-export'],
+  pickDiagramPath: [ANSWERED],
+  exportDiagram: [ANSWERED],
+  printDiagramPdf: [ANSWERED],
+  pickPicturePath: [ANSWERED],
+  exportPicture: [ANSWERED],
+  printPicturePdf: [ANSWERED],
   exportPdf: [ANSWERED], // Optional slide page height is applied by the shared paper hold.
-  exportPageHtml: [LATER, 'web-export'],
+  exportPageHtml: [ANSWERED],
+  exportSite: [REFUSED, 'a published site cannot write a folder on disk'],
+  exportSitePage: [REFUSED, 'a published site has no folder export in progress'],
+  cancelExportSite: [REFUSED, 'a published site has no folder export in progress'],
+  exportSiteFailed: [REFUSED, 'a published site has no folder export in progress'],
   undoEdit: [ANSWERED],
   redoEdit: [ANSWERED],
   updateChecked: [REFUSED, 'a published site is already the version it serves'],
@@ -1033,6 +1038,84 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   addEventListener('hashchange', walked);
 
   // What the page sends the host. A command with no arm here is one this host cannot answer; the desktop's own event loop is where they all live.
+  let exportMinimapScript = null;
+  let exportStylesheet = null;
+  let exportMathCss = null;
+  const mathForPage = async () => {
+    if (exportMathCss !== null) return exportMathCss;
+    const response = await fetchWith(assetBase() + 'katex/katex.min.css');
+    if (!response.ok) throw new Error('The math stylesheet could not be loaded.');
+    let css = await response.text();
+    for (const name of new Set([...css.matchAll(/fonts\/(KaTeX_[\w-]+\.woff2)/g)].map((match) => match[1]))) {
+      const font = await fetchWith(assetBase() + 'katex/fonts/' + name);
+      if (!font.ok) throw new Error('A math font could not be loaded.');
+      const bytes = new Uint8Array(await font.arrayBuffer());
+      let binary = '';
+      for (let at = 0; at < bytes.length; at += 8192) binary += String.fromCharCode(...bytes.subarray(at, at + 8192));
+      css = css.replaceAll('fonts/' + name, 'data:font/woff2;base64,' + btoa(binary));
+    }
+    exportMathCss = css.replace(/,url\(fonts\/KaTeX_[^)]*\.(?:woff|ttf)\) format\("[^"]+"\)/g, '');
+    return exportMathCss;
+  };
+  const downloadPageFile = async (command) => {
+    const template = document.createElement('template');
+    template.innerHTML = String(command.markup || '');
+    let total = 0;
+    for (const picture of (template.content || template).querySelectorAll('img[src]')) {
+      const address = picture.getAttribute('src');
+      let url;
+      try { url = new URL(address, document.baseURI); } catch (_) { continue; }
+      if (url.protocol !== 'blob:' && url.origin !== location.origin) continue;
+      const response = await fetchWith(url.href);
+      if (!response.ok) continue;
+      const chunks = [];
+      if (response.body?.getReader) {
+        const reader = response.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          total += value.length;
+          if (total > 64 * 1024 * 1024) { await reader.cancel(); throw new Error('This page has more than 64 MB of pictures.'); }
+          chunks.push(value);
+        }
+      } else {
+        const value = new Uint8Array(await response.arrayBuffer());
+        total += value.length;
+        if (total > 64 * 1024 * 1024) throw new Error('This page has more than 64 MB of pictures.');
+        chunks.push(value);
+      }
+      let binary = '';
+      for (const chunk of chunks) for (let at = 0; at < chunk.length; at += 8192) binary += String.fromCharCode(...chunk.subarray(at, at + 8192));
+      picture.setAttribute('src', `data:${response.headers.get('content-type') || 'application/octet-stream'};base64,${btoa(binary)}`);
+    }
+    if (exportMinimapScript === null) {
+      const response = await fetchWith(assetBase() + 'export-minimap.js');
+      if (!response.ok) throw new Error('The page minimap could not be loaded.');
+      exportMinimapScript = (await response.text()).replace('\nexport function initMinimap', '\nfunction initMinimap') + "\ninitMinimap(document.querySelector('.document-body'));";
+    }
+    if (exportStylesheet === null) {
+      const response = await fetchWith(assetBase() + 'app.css');
+      if (!response.ok) throw new Error('The page stylesheet could not be loaded.');
+      exportStylesheet = await response.text();
+    }
+    const mathCss = template.innerHTML.includes('class="katex') ? await mathForPage() : '';
+    const html = core.pageFile({ ...command, markup: template.innerHTML, stylesheet: exportStylesheet, minimapScript: exportMinimapScript, mathCss });
+    if (!html) throw new Error('That page could not be exported.');
+    const address = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    const link = document.createElement('a');
+    link.href = address;
+    link.download = String(command.path || 'document.html').split(/[\\/]/).pop().replace(/\.[^.]*$/, '') + '.html';
+    document.body.appendChild(link);
+    try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(address), 0); }
+  };
+  window.__leafBrowserDownload = (path, type, body) => {
+    const address = URL.createObjectURL(body instanceof Blob ? body : new Blob([body], { type }));
+    const link = document.createElement('a');
+    link.href = address;
+    link.download = String(path || 'download').split(/[\\/]/).pop();
+    document.body.appendChild(link);
+    try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(address), 0); }
+  };
   const commands = {
     // Kept in the tab alone, so a refresh keeps the padlock and a new tab starts locked.
     setReadingUnlocked: (command) => {
@@ -1250,7 +1333,34 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       } else drawDocument(held.path, held.bytes);
     },
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
-    exportPdf: () => window.print(),
+    exportPdf: (command) => command.format === 'onefile'
+      ? run(`window.leafExportPageHtml(${JSON.stringify((open || 'document').split('/').pop().replace(/\.[^.]*$/, '') + '.html')}, false, null, true);`)
+      : window.print(),
+    exportPageHtml: (command) => downloadPageFile(command).catch((error) => run(`window.leafShowError(${JSON.stringify(String(error && error.message || error))});`)),
+    pickDiagramPath: (command) => {
+      const name = (open || 'diagram').split('/').pop().replace(/\.[^.]*$/, '') + '.' + (command.format || 'png');
+      run(`window.leafDiagramPathPicked(${Number(command.token)}, ${JSON.stringify(name)});`);
+    },
+    exportDiagram: (command) => window.__leafBrowserDownload(command.path, 'text/markdown', String(command.data || '')),
+    printDiagramPdf: () => { try { window.print(); } finally { run('window.leafDiagramPrinted();'); } },
+    pickPicturePath: (command) => {
+      let name = 'picture';
+      try { name = decodeURIComponent(new URL(command.source, document.baseURI).pathname.split('/').pop()).replace(/\.[^.]*$/, '') || name; } catch (_) {}
+      run(`window.leafPicturePathPicked(${Number(command.token)}, ${JSON.stringify(name + '.' + (command.format || 'png'))});`);
+    },
+    exportPicture: (command) => {
+      fetchWith(command.source).then(async (response) => {
+        if (!response.ok) throw new Error('That picture could not be downloaded.');
+        if (command.format === 'md') {
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          let binary = '';
+          for (let at = 0; at < bytes.length; at += 8192) binary += String.fromCharCode(...bytes.subarray(at, at + 8192));
+          const mime = response.headers.get('content-type') || 'application/octet-stream';
+          window.__leafBrowserDownload(command.path, 'text/markdown', `![${String(command.alt || '').replaceAll(']', '\\]')}](data:${mime};base64,${btoa(binary)})\n`);
+        } else window.__leafBrowserDownload(command.path, response.headers.get('content-type') || 'application/octet-stream', await response.blob());
+      }).catch((error) => run(`window.leafShowError(${JSON.stringify(String(error && error.message || error))});`));
+    },
+    printPicturePdf: () => { try { window.print(); } finally { run('window.leafPicturePrinted();'); } },
     // A site has no disk to write to, so Save hands the edited file to the reader as a download under its own name.
     saveDocument: () => {
       if (!open || !openBuffer()) return;
@@ -1346,7 +1456,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   }
 
   // What this host can write the page out as. A browser has no save window and no disk, so its one row is the browser's own print — which is what `exportPdf` reaches here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
-  window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }];
+  window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }, { id: 'onefile', label: 'Web page, one file' }];
+  window.__leafBrowserExportMenu = true;
   // A refresh, a closed tab and a walk off the site all raise it.
   addEventListener('pagehide', keepWords);
   window.ipc = { postMessage: handle };

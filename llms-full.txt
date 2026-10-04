@@ -125,7 +125,7 @@
 ## Export and the published site
 - Page: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.md
-- Summary: [l-export]: ../01-features/02-navigation.mdexport-the-page [l-launch]: ../02-installation.mdlaunch [l-images]: ../01-features/01-rendering.mdimages [l-html]: ../01-features/01-rendering.mdhtml-file...
+- Summary: [l-export]: ../01-features/02-navigation.mdexport-the-page [l-folder]: ../01-features/03-library.mdfolders-and-the-space-around-them [l-launch]: ../02-installation.mdlaunch [l-images]: ../01-featur...
 
 ## Coming
 - Page: https://leaftext.com/docs/06-comparison-chart/10-coming.html

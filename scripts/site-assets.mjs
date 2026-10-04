@@ -51,6 +51,7 @@ export const HOST_FILES = [
   [`${APP_DIR}/boot.js`, 'web/preview/boot.js'],
   [`${APP_DIR}/settings.js`, 'web/preview/settings.js'],
   [`${APP_DIR}/fetches.js`, 'site/fetches.js'],
+  [`${APP_DIR}/export-minimap.js`, 'site/minimap.js'],
   [`${APP_DIR}/front-page-layout.js`, 'site/front-page-layout.js'],
   [`${APP_DIR}/compare-chart.js`, 'site/compare-chart.js'],
   [`${APP_DIR}/front-page.js`, 'site/front-page.js'],

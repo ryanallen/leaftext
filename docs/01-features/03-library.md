@@ -28,7 +28,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
-| [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to make a file or a folder in it, paste, reveal it, or see its properties |
+| [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties |
 | [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and the pane lists it |
 | [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent, Search and Calendar, one press from the bottom of the pane, over the document you are reading |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
@@ -272,8 +272,11 @@ Right-clicking a **folder row** — or the empty space below the rows, which sta
 | New file | Makes an empty file in this folder and opens it. The name comes up as `Untitled.md` with `Untitled` selected, so typing replaces the name and keeps the extension; press Enter to make it, Escape to change your mind. A name with no extension is made as Markdown, and an extension Leaftext cannot read is refused in words rather than made into a file the pane would not list |
 | New folder | Makes a folder in this folder, from the same box, prefilled `New folder`. Nothing opens — the pane shows it where you made it |
 | Paste | Puts what you last cut or copied into this folder. Only shown when there is something to paste |
+| Export as site… | Writes this folder's readable documents as linked web pages in a folder you choose |
 | Reveal folder | Shows the folder in your OS file manager |
 | Properties | Opens the OS folder-properties view |
+
+The site's `index.html` opens directly from your disk and works on a static web host. It keeps links between exported documents, their pictures, diagrams and Previous and Next links, with one shared `assets` folder. A folder with a README uses it as its index; another folder gets a contents page. To put the site in team-docs, copy the exported folder into `public/docs/<slug>/` and point that repository's `staticPath` at its `index.html`.
 
 ### Picking several files
 

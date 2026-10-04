@@ -5986,7 +5986,7 @@ function openSaveFormatMenu(button, pick) {
 
 function beginDiagramExport(source, button, host) {
   if (!source) return;
-  if (!isMacPlatform) {
+  if (!isMacPlatform && !window.__leafBrowserExportMenu) {
     exportDiagram(source);
     return;
   }
@@ -6017,6 +6017,10 @@ async function postDiagramExport(kind, type, path, body, width, height) {
   
   if ((body.size === undefined ? body.length : body.size) > MAX_DIAGRAM_BODY_BYTES) {
     throw new Error('That diagram is too big to export.');
+  }
+  if (window.__leafBrowserDownload) {
+    window.__leafBrowserDownload(path, type, body);
+    return;
   }
   
   if (!window.__leafDiagramExportEndpoint) throw new Error('That diagram could not be exported.');
@@ -6058,6 +6062,13 @@ async function exportDiagramAs(kind, source, path) {
     }
     if (kind === 'jpg') {
       await postDiagramExport(kind, 'image/jpeg', path, await diagramJpegFile(drawing));
+      return;
+    }
+    if (kind === 'png' && window.__leafBrowserDownload) {
+      const canvas = await diagramCanvas(drawing);
+      const file = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (!file) throw new Error('That diagram could not be exported.');
+      window.__leafBrowserDownload(path, 'image/png', file);
       return;
     }
     
@@ -7810,7 +7821,7 @@ function askPageExport(format) {
 if (exportPdfButton) {
   
   exportPdfButton.addEventListener('click', () => {
-    if (!isMacPlatform) {
+    if (!isMacPlatform && !window.__leafBrowserExportMenu) {
       askPageExport();
       return;
     }
@@ -7879,7 +7890,7 @@ function exportedMermaidSheet(markup) {
   return texts.join('') + Array.from(mermaidSheetFrames).join('');
 }
 
-window.leafExportPageHtml = (path, asBook, book) => {
+window.leafExportPageHtml = (path, asBook, book, oneFile) => {
   const markup = pageExportMarkup(asBook === true);
   if (!markup) return;
   const root = document.documentElement;
@@ -7887,6 +7898,7 @@ window.leafExportPageHtml = (path, asBook, book) => {
   const answer = {
     command: 'exportPageHtml',
     path: String(path),
+    oneFile: oneFile === true,
     markup,
     sheet: exportedMermaidSheet(markup),
     theme,
@@ -7895,6 +7907,89 @@ window.leafExportPageHtml = (path, asBook, book) => {
   };
   if (asBook === true) answer.kept = bookSheetVerdict(markup, book, theme);
   send(answer);
+};
+let siteExportActive = false;
+window.addEventListener('keydown', (event) => {
+  if (siteExportActive && event.key === 'Escape') {
+    send({ command: 'cancelExportSite' });
+    siteExportActive = false;
+  }
+});
+window.leafSiteExportFinished = (count, path, stopped) => {
+  siteExportActive = false;
+  clearReaderLoading();
+  leafToast(`${count} pages ${stopped ? 'written before stopping' : 'written'} to `, 'ok', null, {
+    text: path,
+    run: () => send({ command: 'openExternal', url: path }),
+  });
+};
+window.leafExportSitePage = async (html, source, title, links, index, pageCount) => {
+  siteExportActive = true;
+  beginReaderLoading();
+  const frame = document.createElement('div');
+  frame.className = 'app-surface reader-shell has-document';
+  frame.style.position = 'absolute';
+  frame.style.transform = 'translateX(-200vw)';
+  frame.style.width = `${(app.querySelector('.document-body') || app).getBoundingClientRect().width}px`;
+  frame.innerHTML = String(html);
+  app.appendChild(frame);
+  try {
+    const body = frame.querySelector('.document-body');
+    if (!body) throw new Error('That document has no page to export.');
+    drawCodeFencesIn(body);
+    const math = Array.from(body.querySelectorAll('.math:not([data-math-rendered])'));
+    if (math.length) {
+      const katex = await loadKatex();
+      for (const node of math) {
+        katex.render(node.textContent, node, { displayMode: node.classList.contains('math-display'), throwOnError: false });
+        node.dataset.mathRendered = 'true';
+      }
+    }
+    await drawEveryMermaidDiagram(body);
+    const copy = body.cloneNode(true);
+    copy.removeAttribute('style');
+    const controls = PAGE_EXPORT_CONTROLS.split(', ').filter((name) => name !== '.docs-pager').join(', ');
+    copy.querySelectorAll(controls).forEach((control) => control.remove());
+    copy.querySelectorAll('img').forEach(restoreMissingImage);
+    const destinations = new Map(Array.isArray(links) ? links : []);
+    copy.querySelectorAll('a[href]').forEach((link) => {
+      const href = link.getAttribute('href') || '';
+      if (href.startsWith('#') || /^(https?:|mailto:)/i.test(href)) return;
+      try {
+        const resolved = new URL(href, source);
+        const hash = resolved.hash;
+        resolved.hash = '';
+        const local = destinations.get(resolved.href);
+        if (local) link.setAttribute('href', local + hash);
+        else link.removeAttribute('href');
+      } catch (_) { link.removeAttribute('href'); }
+    });
+    copy.querySelectorAll('.docs-pager').forEach((pager) => pager.remove());
+    const pager = document.createElement('nav');
+    pager.className = 'docs-pager';
+    pager.setAttribute('aria-label', 'Document navigation');
+    for (const [at, side, label] of [[index - 1, 'prev', 'Previous'], [index + 1, 'next', 'Next']]) {
+      const entry = at >= 0 && at < pageCount ? links[at] : null;
+      if (!entry) continue;
+      const anchor = document.createElement('a');
+      anchor.className = `docs-pager-${side}`;
+      anchor.href = entry[1];
+      const caption = document.createElement('span');
+      caption.className = 'docs-pager-label';
+      caption.textContent = label;
+      anchor.append(caption, document.createTextNode(entry[1].split('/').pop().replace(/\.html$/, '')));
+      pager.appendChild(anchor);
+    }
+    if (pager.childNodes.length) copy.appendChild(pager);
+    const markup = PAGE_EXPORT_WRAPPER_OPEN + copy.outerHTML + PAGE_EXPORT_WRAPPER_CLOSE;
+    send({ command: 'exportSitePage', markup, title, sheet: exportedMermaidSheet(markup), theme: document.documentElement.dataset.leafTheme || '', appearance: document.documentElement.dataset.leafAppearance || '' });
+  } catch (error) {
+    send({ command: 'exportSiteFailed', message: String(error && error.message || error) });
+    siteExportActive = false;
+    clearReaderLoading();
+  } finally {
+    frame.remove();
+  }
 };
 
 function bookSheetVerdict(markup, book, theme) {
@@ -7972,6 +8067,7 @@ const FOLDER_MENU_ITEMS = [
   { action: 'hideRow', label: 'Hide from the pane', paneRow: 'hide', folderOnly: true },
   { action: 'showRow', label: 'Show in the pane', paneRow: 'show', folderOnly: true },
   { action: 'paste', label: 'Paste' },
+  { action: 'exportSite', label: 'Export as site…' },
   'separator',
   
   { action: 'reveal', label: 'Reveal folder' },
@@ -8185,6 +8281,7 @@ function runContextAction(action, path, link, selected, picture, tableCell) {
     case 'cut': cutLibraryFiles(libraryPathsFor(path), true); break;
     case 'copy': cutLibraryFiles(libraryPathsFor(path), false); break;
     case 'paste': pasteLibraryFiles(path); break;
+    case 'exportSite': send({ command: 'exportSite', folder: path }); break;
     case 'favorite': toggleFavorite(path, contextMenuTargetKind === 'folder' ? 'folder' : 'document'); break;
     case 'removeBookmark': forgetReadingRibbon(); break;
     case 'copyPath': send({ command: 'copyPath', path }); break;
@@ -35583,7 +35680,7 @@ function localFootnoteTarget(link, rawHref) {
   if (bookReference && target.getAttribute('data-leaf-note-body') === '1') return target;
   return null;
 }
-function localFootnoteHtml(target) {
+function localFootnoteHtml(target, section = false) {
   let remaining = LINK_PREVIEW_OPENING_BYTES;
   let visited = 0;
   function copy(node, depth) {
@@ -35597,7 +35694,8 @@ function localFootnoteHtml(target) {
     if (node.nodeType !== 1 || node.hidden || node.getAttribute('aria-hidden') === 'true'
         || node.matches('.footnote-definition-label, .footnote-backref, [data-leaf-note-backlink="1"]')) return '';
     const style = getComputedStyle(node);
-    if (style.display === 'none' || style.visibility === 'hidden') return '';
+    const closedSectionChild = section && node.parentElement === target && !target.open;
+    if ((style.display === 'none' && !(closedSectionChild && node.style.display !== 'none')) || style.visibility === 'hidden') return '';
     if (isLinkPreviewProgramBlock(node)) {
       let wordsLeft = remaining;
       let seen = 0;
@@ -35628,7 +35726,9 @@ function localFootnoteHtml(target) {
     if (open.length + close.length > remaining) return '';
     remaining -= open.length + close.length;
     let children = '';
-    for (const child of node.childNodes) {
+    const parts = section && node.tagName === 'DETAILS' && !node.open ? [node.querySelector('summary')] : node.childNodes;
+    for (const child of parts) {
+      if (!child) continue;
       if (remaining <= 0) break;
       children += copy(child, depth + 1);
     }
@@ -35636,6 +35736,7 @@ function localFootnoteHtml(target) {
   }
   let html = '';
   for (const child of target.childNodes) {
+    if (section && child.nodeType === 1 && child.tagName === 'SUMMARY') continue;
     if (remaining <= 0) break;
     html += copy(child, 0);
   }
@@ -35810,6 +35911,15 @@ function resolvedHoverDetail(rawHref) {
 }
 
 const HOVERABLE_LINK = 'a[href], a.link-goes-nowhere';
+function linkHoverTarget(node) {
+  const link = node?.closest?.(HOVERABLE_LINK);
+  if (link) return link;
+  const summary = node?.closest?.('summary');
+  const section = summary?.parentElement;
+  if (!section || section.tagName !== 'DETAILS' || section.open || summary.hidden
+      || section.matches('.document-outline, .xml-comment') || !section.closest('.document-body')) return null;
+  return summary;
+}
 
 const LINK_GOES_NOWHERE = { kind: 'Goes nowhere', detail: 'Written with an address this app does not follow' };
 function linkGoesNowhere(link) {
@@ -35821,7 +35931,7 @@ function localPathFromFileHref(href) {
   return /^[a-z](?::|%3a)[/\\]/i.test(path) ? path : '/' + path;
 }
 function startLinkHover(event) {
-  const link = event.target.closest(HOVERABLE_LINK);
+  const link = linkHoverTarget(event.target);
   if (!link) return;
   recordLinkHoverPoint(event);
   if (link === activeHoverLink) {
@@ -35829,8 +35939,10 @@ function startLinkHover(event) {
     positionLinkHoverTip(event);
     return;
   }
-  const rawHref = (link.getAttribute('href') || '').trim();
-  const info = linkGoesNowhere(link) ? LINK_GOES_NOWHERE : linkHoverInfo(rawHref);
+  const section = link.tagName === 'SUMMARY';
+  const rawHref = section ? '' : (link.getAttribute('href') || '').trim();
+  const info = section ? { kind: 'Collapsed section', detail: link.textContent.trim() }
+    : linkGoesNowhere(link) ? LINK_GOES_NOWHERE : linkHoverInfo(rawHref);
   if (!info) {
     hideLinkHoverTip();
     return;
@@ -35846,6 +35958,18 @@ function startLinkHover(event) {
   const entry = info.kind === 'Glossary entry';
   linkHoverEntry = entry;
   hideLinkHoverPreview();
+  if (section) {
+    linkHoverPreviewTimer = window.setTimeout(() => {
+      linkHoverPreviewTimer = 0;
+      if (token !== activeHoverToken || linkHoverTip.hidden || link.parentElement.open) return;
+      const html = localFootnoteHtml(link.parentElement, true);
+      if (!html) return;
+      linkHoverEntry = true;
+      applyLinkHoverPreview(html);
+    }, durationTokenMilliseconds('--lt-duration-300'));
+    showLinkHoverTip(event);
+    return;
+  }
   if (rawHref.startsWith('#') && (link.parentElement?.matches('sup.footnote-reference') || link.getAttribute('data-leaf-note-ref') === '1')) {
     linkHoverPreviewTimer = window.setTimeout(() => {
       linkHoverPreviewTimer = 0;
@@ -35900,7 +36024,7 @@ function moveLinkHover(event) {
 }
 function endLinkHover(event) {
   if (!activeHoverLink) return;
-  const leaving = event.target.closest && event.target.closest(HOVERABLE_LINK);
+  const leaving = linkHoverTarget(event.target);
   if (leaving !== activeHoverLink) return;
   recordLinkHoverPoint(event);
   
@@ -35915,7 +36039,7 @@ function endLinkHover(event) {
     
     if (activeHoverLink !== wasActive) return;
     const target = document.elementFromPoint && document.elementFromPoint(linkHoverClientX, linkHoverClientY);
-    const link = target && target.closest && target.closest(HOVERABLE_LINK);
+    const link = linkHoverTarget(target);
     if (link === activeHoverLink) return;
     if (link) {
       
@@ -35930,6 +36054,9 @@ if (canHoverLinks) {
   document.addEventListener('pointerover', startLinkHover);
   document.addEventListener('pointermove', moveLinkHover);
   document.addEventListener('pointerout', endLinkHover);
+  document.addEventListener('toggle', (event) => {
+    if (event.target.open && activeHoverLink?.parentElement === event.target) hideLinkHoverTip();
+  }, true);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) hideLinkHoverTip();
   });
@@ -37161,8 +37288,8 @@ let mermaidExportDrawing = 0;
 
 let mermaidExportHolding = false;
 
-function mermaidWaitingForExport() {
-  const body = app ? app.querySelector('.document-body') : null;
+function mermaidWaitingForExport(root) {
+  const body = root || (app ? app.querySelector('.document-body') : null);
   if (!body) return [];
   const waiting = Array.from(body.querySelectorAll('pre.mermaid')).filter((diagram) => {
     if (diagram.dataset.processed === 'true' || diagram.dataset.mermaidRender === 'failed' || diagram.dataset.diagramStage != null) return false;
@@ -37174,15 +37301,15 @@ function mermaidWaitingForExport() {
 }
 
 const MERMAID_EXPORT_STALLED_ROUNDS = 3;
-async function drawEveryMermaidDiagram() {
+async function drawEveryMermaidDiagram(root) {
   mermaidExportDrawing += 1;
   mermaidExportHolding = true;
   try {
-    let waiting = mermaidWaitingForExport();
+    let waiting = mermaidWaitingForExport(root);
     let stalled = 0;
     while (waiting.length) {
       await drawMermaidDiagrams(waiting);
-      const left = mermaidWaitingForExport();
+      const left = mermaidWaitingForExport(root);
       stalled = left.length >= waiting.length ? stalled + 1 : 0;
       if (stalled >= MERMAID_EXPORT_STALLED_ROUNDS) return;
       waiting = left;
@@ -38295,7 +38422,9 @@ function publishDocumentOutline() {
 const LOCAL_IMAGE_SRC_PREFIXES = ['leaf-image://', 'http://leaf-image.', 'https://leaf-image.'];
 
 function isLocalImageSrc(src) {
-  return LOCAL_IMAGE_SRC_PREFIXES.some((prefix) => src.startsWith(prefix));
+  if (LOCAL_IMAGE_SRC_PREFIXES.some((prefix) => src.startsWith(prefix))) return true;
+  if (!window.__leafBrowserExportMenu) return false;
+  try { return new URL(src, document.baseURI).origin === new URL(document.baseURI).origin; } catch (_) { return false; }
 }
 
 const RAIL_PICTURE_MARK = 'leaf-rail=1';
@@ -39533,7 +39662,7 @@ function openPictureExportMenu(x, y, picture, host) {
 
 function beginPictureExport(picture, button) {
   if (!picture) return;
-  if (!isMacPlatform) {
+  if (!isMacPlatform && !window.__leafBrowserExportMenu) {
     exportPicture(picture);
     return;
   }
@@ -39731,6 +39860,10 @@ async function postPictureExport(picture, kind, type, path, source) {
   }
   const file = await pictureFile(picture, type);
   if (file.size > MAX_CLIPBOARD_PNG_BYTES) throw new Error('That picture is too big to export.');
+  if (window.__leafBrowserDownload) {
+    window.__leafBrowserDownload(path, type, file);
+    return;
+  }
   if (!window.__leafPictureExportEndpoint) throw new Error('That picture could not be exported.');
   const query =
     'format=' + encodeURIComponent(kind) + '&source=' + encodeURIComponent(source) + '&target=' + encodeURIComponent(path);

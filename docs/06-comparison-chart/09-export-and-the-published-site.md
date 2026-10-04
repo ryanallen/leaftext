@@ -12,6 +12,8 @@
 | Whole-page WebP | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Whole-page JPEG | [✅][l-export] | ? | ? | [❌][c-seen] |
 | Web page export | [✅][l-export] | [❌][o-seen] | [✅][t-export] | [✅][c-seen] |
+| One-file web page | [✅][l-export] | ? | ? | ? |
+| Folder to static site | [✅][l-folder] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Shared assets folder | [✅][l-export] | ? | ? | ? |
 | Reused exported copies | [✅][l-export] | ? | ? | ? |
 | Math stylesheet when needed | [✅][l-export] | ? | ? | ? |
@@ -31,7 +33,7 @@
 | Same-format copies exact | [✅][l-export] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Picture names suggested | [✅][l-images] | ? | ? | ? |
 | Format asked first | [✅][l-export] | ? | ? | ? |
-| Typed name decides | [✅][l-export] | ? | ? | ? |
+| Chosen format decides | [✅][l-export] | ? | ? | ? |
 | Mac opens any file | [✅][l-launch] | ? | ? | ? |
 | JFIF pictures read | [✅][l-images] | ? | ? | ? |
 | Pixel copies anywhere | [✅][l-picture-actions] | ? | ? | ? |
@@ -95,6 +97,7 @@
 | No tabs on sites | [✅][l-site] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-export]: ../01-features/02-navigation.md#export-the-page
+[l-folder]: ../01-features/03-library.md#folders-and-the-space-around-them
 [l-launch]: ../02-installation.md#launch
 [l-images]: ../01-features/01-rendering.md#images
 [l-html]: ../01-features/01-rendering.md#html-files

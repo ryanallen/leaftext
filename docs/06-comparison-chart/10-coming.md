@@ -148,7 +148,6 @@
 | Mount in any product | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Host owns saving | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Bytes returned unchanged | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Folder to static site | [❌][l-roadmap] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Embeddable editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Shared buffer and undo | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Opens raw bytes | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
