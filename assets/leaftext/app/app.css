@@ -13143,7 +13143,15 @@ body.mac-frame .document-minimap-frame {
 .empty-state {
   width: min(720px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 14vh 0;
+  padding: 4vh 0;
+}
+.empty-state .dotted-leaf {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto var(--lt-space-20);
+}
+@container home (max-width: 720px) {
+  .empty-state .dotted-leaf { width: 140px; height: 140px; }
 }
 
 .reader-shell.empty {
@@ -13659,6 +13667,29 @@ body.is-home-row-dragging .home-list-scroll li {
   padding: var(--lt-space-48) 0 var(--lt-space-32);
   text-align: center;
 }
+.dotted-leaf {
+  display: block;
+  position: relative;
+  width: 180px;
+  height: 180px;
+  color: var(--lt-primary-ink);
+}
+.front-hero > .dotted-leaf { margin: 0 auto var(--lt-space-24); }
+.dotted-leaf[role="button"] { cursor: pointer; }
+.dotted-leaf[role="button"]:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); }
+.dotted-leaf-still,
+.dotted-leaf-canvas { display: block; width: 100%; height: 100%; }
+.dotted-leaf-still { opacity: var(--lt-opacity-75); }
+.dotted-leaf-canvas { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+@media (max-width: 720px) {
+  .front-hero > .dotted-leaf { width: 160px; height: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dotted-leaf-canvas { display: none; }
+  .dotted-leaf-still { visibility: visible !important; }
+}
+.document-minimap-preview .dotted-leaf-canvas { display: none; }
+.document-minimap-preview .dotted-leaf-still { visibility: visible !important; }
 h1.front-hero-title {
   margin: 0;
   padding: 0;

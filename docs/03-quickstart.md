@@ -27,7 +27,7 @@ flowchart LR
 
 ## 1. Open a file
 
-![The Leaftext home screen with no document open: the Choose file, New document and Add your notes folder buttons with a line under them about what a folder buys, and the recent files list with your favorites beside it beneath that](../imgs/home.png)
+![The Leaftext home screen with a dotted leaf above the heading, the Choose file, New document and Add your notes folder buttons, and an empty recent files area below](../imgs/dotted-leaf-app-round4-rest-v1.png)
 
 | Method | How |
 | --- | --- |

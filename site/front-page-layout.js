@@ -1,5 +1,7 @@
 // front-page-layout.js
 // ---------------------------------------------------------------------------
+
+import { dottedLeafMarkup } from './dotted-leaf.js';
 // The front page's composition. The README stays the one source of words and stays a plain document on GitHub; this lays its drawn HTML out as a marketing page — a hero with the downloads, the comparison chart, one picture of the app, four feature cards, one install line and the links at the foot — and leaves every other section to the documentation, where each one already has a page.
 //
 // Two callers, one layout: `bakeSite` in `scripts/site-assets.mjs` bakes it into the first response, and `web/preview/boot.js` hands it to the host, which lays the landing out when the app's page draws it into the reading column. The bake has no DOM, so everything here works on the renderer's HTML as text, the same way `compare-chart.js` does.
@@ -104,7 +106,7 @@ function heroOf(intro) {
   // The one link beside the buttons is the install guide, which the Mac's first launch needs.
   if (!small.includes(`href="${INSTALL_GUIDE}`)) throw new Error('the small print under the download buttons in the README no longer links the installation guide');
   const heading = title[0].replace(/^<h1\b/, '<h1 class="front-hero-title"');
-  return `<section class="front-hero" id="download">${heading}${classed(line, 'front-hero-line')}${classed(said[downloads], 'front-downloads')}${classed(small, 'front-small')}</section>`;
+  return `<section class="front-hero" id="download">${dottedLeafMarkup('front')}${heading}${classed(line, 'front-hero-line')}${classed(said[downloads], 'front-downloads')}${classed(small, 'front-small')}</section>`;
 }
 
 /** The links at the foot: the paragraph above the first section that points into the documentation. */

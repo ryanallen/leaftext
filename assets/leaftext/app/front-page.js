@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import { DEMO_DIR } from './front-page-layout.js';
+import { startDottedLeaf } from './dotted-leaf.js';
 
 /** How far ahead of the window a clip starts arriving, so it is playing by the time it is seen. */
 const CLIP_AHEAD = '400px 0px';
@@ -61,6 +62,7 @@ function heldOn(cards, boxes) {
  */
 export function installFrontMotion(root, held = null) {
   const cards = [...root.querySelectorAll('.front-card')];
+  const leaf = [...root.querySelectorAll('.dotted-leaf')].find((mark) => !mark.closest('.document-minimap, .document-minimap-preview'));
   // Only the reading column's boxes: the rail's copy of the page keeps its posters, since a clip there would fetch and decode the same file again for a picture too small to watch.
   const boxes = [...root.querySelectorAll('.front-clip[data-clip]')].filter((box) => !box.closest('.document-minimap, .document-minimap-preview'));
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -103,10 +105,25 @@ export function installFrontMotion(root, held = null) {
     { rootMargin: CLIP_AHEAD }
   );
   for (const box of boxes) near.observe(box);
+  let leafRunning = false;
+  let stopLeaf = () => {};
+  const leafInView = leaf && new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting === leafRunning) continue;
+      leafRunning = entry.isIntersecting;
+      leaf.classList.toggle('is-running', leafRunning);
+      if (leafRunning) stopLeaf = startDottedLeaf(leaf);
+      else { stopLeaf(); stopLeaf = () => {}; }
+    }
+  });
+  if (leafInView) leafInView.observe(leaf);
   // A redraw puts a fresh page in, so the page it replaced is let go of rather than watched for ever.
   const stop = () => {
     rising.disconnect();
     near.disconnect();
+    if (leafInView) leafInView.disconnect();
+    stopLeaf();
+    if (leaf) leaf.classList.remove('is-running');
   };
   return { root, cards: cards.length, clips: boxes.length, stop, hold: () => heldOn(cards, boxes) };
 }

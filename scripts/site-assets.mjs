@@ -53,8 +53,10 @@ export const HOST_FILES = [
   [`${APP_DIR}/fetches.js`, 'site/fetches.js'],
   [`${APP_DIR}/export-minimap.js`, 'site/minimap.js'],
   [`${APP_DIR}/front-page-layout.js`, 'site/front-page-layout.js'],
+  [`${APP_DIR}/dotted-leaf.js`, 'site/dotted-leaf.js'],
   [`${APP_DIR}/compare-chart.js`, 'site/compare-chart.js'],
   [`${APP_DIR}/front-page.js`, 'site/front-page.js'],
+  [`${APP_DIR}/leaf.svg`, 'src/assets/leaf.svg'],
 ];
 
 /** The runtimes the page fetches by name when a document needs one — a diagram, some math, the map, the source view — as the app compiles them in. */
