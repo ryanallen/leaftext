@@ -38,6 +38,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 - Open a [Word, Excel, PowerPoint or OpenDocument file](01-features/01-rendering.md#office-and-opendocument-files) (`.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods`, `.odp`) as the document it is — headings, paragraphs, lists and tables, a sheet as a table of records, a deck as its slides with every box where the file puts it and its speaker notes underneath — and type into it in place, with everything Leaftext never read kept byte for byte on save.
 - Open an [EPUB book](01-features/01-rendering.md#epub-books) (`.epub`) as one document in the order its own package says to read it, with its contents page, its links and its pictures all inside the book and nothing fetched from the network. [Type into a chapter](01-features/07-editing.md#formats) and Save writes only the chapters you changed.
 - Open a [Kindle book](01-features/01-rendering.md#kindle-books) (`.azw`, `.mobi`, `.azw3`) that carries no protection as one document, and browse the Kindle app's own folder by title, author and kind of file.
+- Read any file the window opens [right at a terminal prompt](01-features/01-rendering.md#reading-at-a-prompt) with `leaftext --print notes.md`, rendered in the terminal's colors or as plain text when sent to a file.
 - Turn on [Speed Reader](01-features/05-settings.md#speed-reader) to dim the page back and mark each word's start, so your eye follows the reading path down.
 
 ### Move around

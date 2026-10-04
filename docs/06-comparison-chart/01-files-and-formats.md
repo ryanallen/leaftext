@@ -7,6 +7,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | **Markdown files** | [✅][l-md] | [✅][o-formats] | [✅][t-files] | [❌][c-conv] |
+| **Renders in a terminal** | [✅][l-prompt] | [❌][o-cli] | [❌][t-shell] | [❌][c-ebook-convert] |
 | HTML pages | [✅][l-html] | [❌][o-formats] | [❌][t-seen] | [❌][c-faq] |
 | XML files | [✅][l-anyxml] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | TEI editions | [✅][l-tei] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
@@ -338,13 +339,16 @@
 [l-prompt]: ../01-features/01-rendering.md#reading-at-a-prompt
 [l-hints]: ../01-features/02-navigation.md#link-hints
 [o-formats]: https://obsidian.md/help/file-formats
+[o-cli]: https://obsidian.md/help/cli
 [o-ofm]: https://obsidian.md/help/obsidian-flavored-markdown
 [t-files]: https://support.typora.io/File-Management/
+[t-shell]: https://support.typora.io/Use-Typora-From-Shell-or-cmd/
 [t-pandoc]: https://support.typora.io/Install-and-Use-Pandoc/
 [t-md]: https://support.typora.io/Markdown-Reference/
 [c-viewer]: https://manual.calibre-ebook.com/viewer.html
 [c-faq]: https://manual.calibre-ebook.com/faq.html
 [c-conv]: https://manual.calibre-ebook.com/conversion.html
+[c-ebook-convert]: https://manual.calibre-ebook.com/generated/en/ebook-convert.html
 [c-seen]: ../05-compare.md#calibre
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora

@@ -32,6 +32,7 @@ Free, on macOS and Windows.
 | --- | --- |
 | See it beside Obsidian, Typora and Calibre | [How Leaftext compares](#how-leaftext-compares) |
 | See what it looks like | [Read your files](#read-your-files) |
+| Read a file without leaving the terminal | [Read it at your prompt too](#read-it-at-your-prompt-too) |
 | Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
 | Write in the page, not in an editor | [Write where you read](#write-where-you-read) |
 | Search your notes and see how they link | [Keep a library](#keep-a-library) |
@@ -101,6 +102,12 @@ A `.docx`, `.docm`, `.xlsx`, `.xlsm`, `.pptx`, `.pptm`, `.odt`, `.ods` or `.odp`
 ### An EPUB book reads as one document
 
 An `.epub` is a zip of chapters, and Leaftext draws the whole of it as one page in the order the book's own package says to read it: the cover where the book puts it, the book's own contents page with every link landing on the chapter it names, and the pictures out of the book itself. Nothing is fetched from the network, so opening a book somebody sent you makes no request at all. With the padlock open, a paragraph or heading is [typed into a chapter at a time](docs/01-features/07-editing.md#formats), and Save writes back only the chapters you typed in. **[EPUB books →](docs/01-features/01-rendering.md#epub-books)**
+
+### Read it at your prompt too
+
+![PowerShell showing Leaftext printing a field guide with ruled headings, a numbered link, tasks, a table and the link address at the foot](imgs/terminal-print.png)
+
+Type `leaftext --print notes.md` in cmd or PowerShell to read a rendered Markdown file right at your prompt. Every file the window reads can print there too, with the terminal's colors; redirect the output to a file and it becomes plain text. On a Mac, run `/Applications/leaftext.app/Contents/MacOS/leaftext --print notes.md` in Terminal. **[Reading at a prompt →](docs/01-features/01-rendering.md#reading-at-a-prompt)**
 
 ### Read faster when you need to
 
