@@ -4,6 +4,10 @@
 
 A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scrolling without taking another picture. A page too long to draw at its own width is drawn smaller, so its text shows as bands that still mark where its sections start and end, and the box follows it all the way down. Click the rail to jump, drag the box to move through the page, or scroll over the rail. At a window width of 720 pixels or less, the live page uses its own scrollbar.
 
+## Consoles
+
+A [console tab](03-library.md#console) keeps the rail beside its output. The rail shows lines from the console's scrollback, including lines above the visible screen; its position box follows the terminal viewport, and dragging it scrolls through that output. At a window width of 720 pixels or less, the console uses its own scrollbar.
+
 > Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll; turn the wheel over the rail and the page scrolls just as it does under the pointer.
 
 ![The minimap rail down the right edge of the window, showing a scaled clone of the document with recognizable headings, rules and dense paragraphs, and the viewport indicator box marking the part currently on screen](../../imgs/minimap.png)
@@ -18,6 +22,7 @@ A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page.
 | [A deck's slides](#a-decks-slides) | Beside a slide deck the rail is divided one stretch per slide, each numbered, over the same real thumbnail |
 | [Whether it appears](#whether-the-rail-appears) | Skipped entirely for an empty document; shown for every format, including XML, JSON and YAML |
 | [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
+| [Console scrollback](#consoles) | The terminal's earlier output and its current viewport in the same rail |
 | [Responsive widths](#responsive-behavior) | The lane narrows with the window, and gives way to the self-hiding scrollbar at 720 pixels and under |
 | [Always there](#always-there) | The rail is the primary scroll indicator, present for every non-empty document in any window wider than 720 pixels |
 | [On an exported page](#on-an-exported-page) | A page [exported as a web page](02-navigation.md#export-the-page) carries the rail too, so whoever you send it to can see the shape of the whole document |

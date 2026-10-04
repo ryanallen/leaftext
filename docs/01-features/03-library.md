@@ -30,7 +30,8 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
 | [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties |
 | [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and the pane lists it |
-| [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent, Search and Calendar, one press from the bottom of the pane, over the document you are reading |
+| [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent, Search and Calendar, one press from the bottom of the pane |
+| [Console](#console) | A command line for the folder shown in the library, opened beside the New document button above the tabs |
 | [Narrow windows](#narrow-windows) | Too tight for a pane beside the page? The library slides in over it as a full-width sheet |
 
 ## Vaults
@@ -540,7 +541,7 @@ The panel also warns before the fact about the two things git needs and often la
 
 **No identity.** Two fields and a **Set who I am** button under the warning. What you type is written to git's settings for the whole machine — the same place the warning is read from, so a press that works is a press that clears it, and somebody with no identity at all sets it once rather than once per vault. An empty field, or one starting with a dash, is refused before git is run.
 
-**No way to sign in.** A sentence naming what fixes it — install [`gh`](https://cli.github.com) and run `gh auth login`, or a credential manager — and **How to sign in ↗**, which opens GitHub's own page on it. It is a link and never a button: every git Leaftext runs has its prompts shut off and no console to hold a conversation in, so signing in is something you do, never something the app does for you.
+**No way to sign in.** A sentence naming what fixes it — install [`gh`](https://cli.github.com) and run `gh auth login`, or a credential manager — and **How to sign in ↗**, which opens GitHub's own page on it. It is a link and never a button: Leaftext's own git requests have their prompts shut off, so signing in is something you do in a console, never something the app's sync request does for you.
 
 **And a failed sync says which of them to press.** Where git's own words name the cause — nothing signed in, or nobody to commit as — the panel says so and points at the fix above it, instead of handing over git's first printed line untranslated. Where they name neither, git's line stands as it is: a network that is down has no button here, and pointing at one would send you to press the wrong thing. Where git printed nothing at all, the line names the step and how it ended — `git add stopped without saying why (exit 128)` — rather than the step alone.
 
@@ -619,6 +620,10 @@ Drag the pane narrower and the row stays one row: whatever no longer fits folds 
 The row and the pill sit on a small page of their own, which ends just past the last button — or past the pill, where the pill is wider — so on a pane dragged wide the pane's own texture fills the rest of the width. The page grows and shrinks as buttons come and go and as they fold, and on a pane too narrow for even one button it gives way to the buttons alone.
 
 Under the row sits the **Grove** pill, which opens [Your Grove](09-progress.md), the record of how you use Leaftext. It runs the width of that row, and never narrower than four launchers' worth, so it reads whole on a fresh copy with only Themes and Search on the row. Drag the pane narrower than the pill and it narrows too, shortening its words and keeping its leaf, and it goes with the row when the pane shuts.
+
+## Console
+
+The terminal button beside the **New document** plus above the tabs opens a console in the folder shown by the library. Its tooltip names that folder, even when the library pane is closed. Opening an untitled document leaves that folder in place, so the button stays available. The button stands down at the drive list, where no folder has been chosen. Each press opens another console tab. Its [map rail](04-minimap.md) shows the console's scrollback, and closing the tab stops that console. An open console follows the app's light and dark themes without losing its output. Console tabs are not restored when Leaftext opens again.
 
 ## Layout
 

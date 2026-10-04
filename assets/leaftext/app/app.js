@@ -206,6 +206,7 @@ const exportPdfButton = document.getElementById('exportPdfButton');
 
 
 let themeSheetOpen = null;
+let consoleFrontId = null;
 
 
 
@@ -6098,7 +6099,7 @@ if (window.__leafSite) {
     if (button) button.remove();
   }
   
-  for (const id of ['openButton', 'newButton']) {
+  for (const id of ['openButton', 'newButton', 'newConsoleButton']) {
     const button = document.getElementById(id);
     if (button) button.remove();
   }
@@ -9746,7 +9747,7 @@ function followFileInLibrary(path, focus, forceRefresh) {
   librarySelectedPath = path || null;
   
   libraryOutlineOpen = !!path || !!activeWebTab();
-  libraryRevealPending = !!path;
+  libraryRevealPending = !!path && !activeDocumentIsUntitled();
   
   if (libraryRevealPending) revealSelectedInLibrary();
   
@@ -10695,6 +10696,7 @@ window.leafSetLibraryFolder = (payload) => {
   if (folder !== libraryProjectPath) clearLibraryPicks();
   else if (next.partial) keepDrawnRowHeads(next.entries);
   libraryProjectPath = folder;
+  refreshConsoleLauncher();
   
   libraryChain = Array.isArray(next.chain) ? next.chain : [];
   libraryEntries = Array.isArray(next.entries) ? next.entries : [];
@@ -10711,6 +10713,7 @@ window.leafSetLibraryFolder = (payload) => {
   }
   
   if (renderLibrary() && librarySelectedPath) scrollSelectedLibraryRowIntoView();
+  refreshPaneFoot();
   
   if (librarySearchQuery) runLibrarySearch(librarySearchQuery);
 };
@@ -10732,6 +10735,7 @@ window.leafSetVaults = (payload) => {
   if (activeVaultId !== previous) {
     
     libraryProjectPath = '';
+    refreshConsoleLauncher();
     libraryEntries = [];
     libraryChain = [];
     libraryError = null;
@@ -15288,6 +15292,7 @@ function loadReadingFaces() {
 
 function applyThemeToPage(theme, color) {
   loadReadingFaces();
+  refreshConsoleTheme();
   updateThemeSelection();
   sendWindowChrome(color, theme);
   refreshGraphColors();
@@ -16224,6 +16229,7 @@ function renderTabs(state) {
     return;
   }
   const tabs = state.tabs || [];
+  if (window.leafConsolePrune) window.leafConsolePrune(tabs);
   pruneWebTabPalettes(state);
   const active = state.active;
   
@@ -16234,6 +16240,9 @@ function renderTabs(state) {
     if (tab.redoable) redoableByPath.set(tab.path, true);
   });
   const markup = tabs.map((tab, index) => {
+    if (tab.kind === 'console') {
+      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>${escapeText(tab.title)}</button>${tabCloseMarkup(index)}</span>`;
+    }
     
     if (tab.kind === 'web' && !tab.site) {
       return `<span class="tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""${webTabPaletteStyle(tab, index === active)}><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.url || '')}">${escapeText(tab.title || tab.url || '')}</button>${tabCloseMarkup(index)}</span>`;
@@ -32507,6 +32516,8 @@ function siteFrameScroller(root = app) {
 
 
 function readerScrollElement() {
+  const console = frontConsoleEntry();
+  if (console?.terminal) return consoleScrollElement();
   return siteFrameScroller() || app;
 }
 
@@ -35256,6 +35267,181 @@ if (calendarSheet) {
   }
 }
 
+var newConsoleButton = document.getElementById('newConsoleButton');
+function refreshConsoleLauncher() {
+  if (!newConsoleButton) return;
+  const folder = libraryFolderHere();
+  newConsoleButton.hidden = !folder || (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers('newConsole'));
+  const label = folder ? `New console in ${folder}` : 'New console';
+  newConsoleButton.title = label;
+  newConsoleButton.setAttribute('aria-label', label);
+}
+if (newConsoleButton) {
+  newConsoleButton.addEventListener('click', () => {
+    const folder = libraryFolderHere();
+    if (!newConsoleButton.hidden && folder) send({ command: 'newConsole', path: folder });
+  });
+  refreshConsoleLauncher();
+}
+
+const consoleLayers = new Map();
+let consoleRuntime = null;
+var consoleShell = document.getElementById('libraryShell');
+
+function refreshConsoleTheme() {
+  for (const entry of consoleLayers.values()) {
+    if (!entry.terminal) continue;
+    const colors = getComputedStyle(entry.layer);
+    const theme = entry.terminal.options.theme || {};
+    if (theme.background !== colors.backgroundColor || theme.foreground !== colors.color) {
+      entry.terminal.options.theme = { ...theme, background: colors.backgroundColor, foreground: colors.color };
+    }
+  }
+}
+
+function consoleAsset(kind, tag, parent) {
+  return new Promise((resolve, reject) => {
+    const element = document.createElement(tag);
+    if (tag === 'script') element.src = window.__lt.assets[kind];
+    else { element.rel = 'stylesheet'; element.href = window.__lt.assets[kind]; }
+    element.onload = resolve;
+    element.onerror = () => reject(new Error(`The console could not load ${kind}`));
+    parent.appendChild(element);
+  });
+}
+
+function loadConsoleRuntime() {
+  if (!consoleRuntime) {
+    consoleRuntime = consoleAsset('xtermCss', 'link', document.head)
+      .then(() => consoleAsset('xterm', 'script', document.head))
+      .then(() => consoleAsset('xtermFit', 'script', document.head));
+  }
+  return consoleRuntime;
+}
+
+function makeConsoleLayer(id) {
+  const layer = document.createElement('div');
+  layer.className = 'console-layer';
+  layer.hidden = true;
+  const host = document.createElement('div');
+  host.className = 'console-terminal';
+  layer.appendChild(host);
+  consoleShell.appendChild(layer);
+  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputLines: 0, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0 };
+  consoleLayers.set(id, entry);
+  loadConsoleRuntime().then(() => {
+    if (!consoleLayers.has(id)) return;
+    const colors = getComputedStyle(layer);
+    const terminal = new window.Terminal({ scrollback: 1000, convertEol: false, theme: { background: colors.backgroundColor, foreground: colors.color } });
+    const fit = new window.FitAddon.FitAddon();
+    terminal.loadAddon(fit);
+    terminal.open(host);
+    terminal.onData(data => send({ command: 'consoleInput', id, data }));
+    terminal.onScroll(() => {
+      if (consoleFrontId !== id) return;
+      updateMinimapViewport();
+      scheduleMinimapPreviewUpdate();
+    });
+    entry.terminal = terminal;
+    entry.fit = fit;
+    entry.observer = new ResizeObserver(() => {
+      if (consoleFrontId !== id) return;
+      fit.fit();
+      send({ command: 'consoleResize', id, columns: terminal.cols, rows: terminal.rows });
+    });
+    entry.observer.observe(layer);
+    let opening = '';
+    for (const bytes of entry.pending) opening += entry.decoder.decode(new Uint8Array(bytes), { stream: true });
+    entry.pending = [];
+    entry.pendingBytes = 0;
+    terminal.write(opening, () => {
+      entry.map = null;
+      if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+    });
+    if (consoleFrontId === id) {
+      fit.fit();
+      send({ command: 'consoleResize', id, columns: terminal.cols, rows: terminal.rows });
+      terminal.focus();
+      bindDocumentMinimap();
+      scheduleMinimapPreviewUpdate();
+    }
+  }).catch(error => leafToast(error.message));
+  return entry;
+}
+
+function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
+
+function consoleScrollElement() {
+  const entry = frontConsoleEntry();
+  if (!entry?.terminal) return null;
+  if (!entry.scroll) {
+    const terminal = entry.terminal;
+    const lineHeight = () => Math.max(1, terminal.element.querySelector('.xterm-screen')?.clientHeight / terminal.rows || 1);
+    entry.scroll = {
+      get scrollHeight() { return terminal.buffer.active.length * lineHeight(); },
+      get clientHeight() { return terminal.rows * lineHeight(); },
+      get scrollTop() { return terminal.buffer.active.viewportY * lineHeight(); },
+      set scrollTop(value) { terminal.scrollToLine(Math.round(value / lineHeight())); },
+    };
+  }
+  return entry.scroll;
+}
+
+window.leafConsoleFront = id => {
+  const changed = consoleFrontId !== id;
+  consoleFrontId = id;
+  document.body.classList.toggle('console-front', id !== null);
+  for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
+  if (id === null) return;
+  const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  entry.layer.hidden = false;
+  if (changed || !currentMinimap()) {
+    setMinimapMarkup(renderDocumentMinimap(true));
+    const minimap = currentMinimap();
+    if (minimap) minimap.setAttribute('aria-label', 'Console minimap');
+    if (entry.terminal) bindDocumentMinimap();
+  }
+  if (entry.fit) {
+    entry.fit.fit();
+    send({ command: 'consoleResize', id, columns: entry.terminal.cols, rows: entry.terminal.rows });
+    entry.terminal.focus();
+    scheduleMinimapPreviewUpdate();
+  }
+};
+
+window.leafConsoleOutput = (id, bytes) => {
+  const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  if (!entry.terminal) {
+    entry.pending.push(bytes);
+    entry.pendingBytes += bytes.length;
+    while (entry.pendingBytes > 1_048_576 && entry.pending.length > 1) entry.pendingBytes -= entry.pending.shift().length;
+    return;
+  }
+  entry.pending.push(bytes);
+  if (entry.frame) return;
+  entry.frame = requestAnimationFrame(() => {
+    entry.frame = 0;
+    let text = '';
+    for (const chunk of entry.pending) text += entry.decoder.decode(new Uint8Array(chunk), { stream: true });
+    entry.pending = [];
+    entry.terminal.write(text, () => {
+      entry.mapOutputLines += (text.match(/\n/g) || []).length;
+      if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+    });
+  });
+};
+
+window.leafConsolePrune = tabs => {
+  for (const [id, entry] of consoleLayers) {
+    if (tabs.some(tab => tab.kind === 'console' && tab.webId === id)) continue;
+    if (entry.frame) cancelAnimationFrame(entry.frame);
+    if (entry.observer) entry.observer.disconnect();
+    if (entry.terminal) entry.terminal.dispose();
+    entry.layer.remove();
+    consoleLayers.delete(id);
+  }
+};
+
 
 const glossarySheet = document.getElementById('glossarySheet');
 const glossaryBackdrop = document.getElementById('glossaryBackdrop');
@@ -36354,6 +36540,7 @@ const LEAF_MERMAID_ICONS = {
     'forward-long': { body: "<path d=\"M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'settings': { body: "<path d=\"M6 13.5V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m12-3V3.75m0 9.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 3.75V16.5m-6-9V3.75m0 3.75a1.5 1.5 0 0 1 0 3m0-3a1.5 1.5 0 0 0 0 3m0 9.75V10.5\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'update': { body: "<path d=\"M10.268 21a2 2 0 0 0 3.464 0\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
+    'terminal': { body: "<path d=\"m7 11 2-2-2-2\"/><path d=\"M11 13h4\"/><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\" ry=\"2\"/>", width: 24, height: 24 },
     'open-library': { body: "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"4\" ry=\"4\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M8 7v10\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'open': { body: "<path d=\"M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'new': { body: "<path d=\"M12 4.5v15m7.5-7.5h-15\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
@@ -40899,6 +41086,8 @@ function bindDocumentMinimap() {
 }
 
 function minimapSourceElement() {
+  const console = frontConsoleEntry();
+  if (console?.terminal) return console.terminal.element.querySelector('.xterm-screen');
   return readingDocumentRoot();
 }
 
@@ -40918,12 +41107,14 @@ function bindDocumentMinimapPreview(track) {
   if (!source) {
     return;
   }
-  minimapBodyObserver = new MutationObserver(inThisColumn(minimapBodyChanged));
-  minimapBodyObserver.observe(source, {
-    childList: true,
-    characterData: true,
-    subtree: true,
-  });
+  if (consoleFrontId === null) {
+    minimapBodyObserver = new MutationObserver(inThisColumn(minimapBodyChanged));
+    minimapBodyObserver.observe(source, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+  }
   if (window.ResizeObserver) {
     
     let railSighted = false;
@@ -41438,44 +41629,6 @@ function observeReaderReflow() {
     image.addEventListener('error', () => scheduleReaderLayoutUpdate(true), { once: true });
   });
 }
-function minimapAvailableHeight(minimap) {
-  const shellRect = app.getBoundingClientRect();
-  const minimapRect = minimap.getBoundingClientRect();
-  return Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));
-}
-
-function measureDocumentMinimap(track) {
-  const minimap = track.closest('.document-minimap');
-  const source = minimapSourceElement();
-  const appRect = app.getBoundingClientRect();
-  
-  const contained = siteFrameScroller();
-  const reader = contained || app;
-  const sourceRect = source ? source.getBoundingClientRect() : null;
-  const sourceWidth = sourceRect ? Math.max(1, Math.ceil(sourceRect.width)) : 1;
-  const content = minimap ? minimap.querySelector('.document-minimap-content') : null;
-  const contentWidth = content ? Math.max(1, Math.ceil(content.getBoundingClientRect().width)) : sourceWidth;
-  const trackRect = track.getBoundingClientRect();
-  const scrollHeight = Math.max(1, Math.ceil(reader.scrollHeight));
-  const ribbon = track.querySelector('.document-minimap-ribbon');
-  const place = readingWatch && readingDeepest.get(readingWatch.path);
-  if (place && ribbon && Number(ribbon.dataset.pageHeight) !== reader.scrollHeight) drawReadingRibbon();
-  const viewportHeight = Math.max(1, Math.ceil(reader.clientHeight));
-  const scrollable = Math.max(0, scrollHeight - viewportHeight);
-  const scrollTop = Math.min(scrollable, Math.max(0, reader.scrollTop));
-  
-  const sourceTop = contained
-    ? 0
-    : (sourceRect ? Math.max(0, Math.round(sourceRect.top - appRect.top + app.scrollTop)) : 0);
-  const previewScale = contentWidth / sourceWidth;
-  const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);
-  
-  const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;
-  const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));
-  
-  track.style.height = `${trackHeight}px`;
-  return { source, sourceWidth, contentWidth, sourceTop, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, scrollTop, previewScale, scaledDocumentHeight };
-}
 
 let minimapPreviewHolds = 0;
 function pauseMinimapPreview() {
@@ -41840,6 +41993,10 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   const content = track ? track.querySelector('.document-minimap-content') : null;
   const source = minimapSourceElement();
   if (!track || !content || !source) {
+    return;
+  }
+  if (consoleFrontId !== null) {
+    updateConsoleMinimapPreview(track, content, minimap);
     return;
   }
   if (minimap.classList.contains('is-kept') && (readingHasHeldBlocks() || mermaidWarmCandidates().length)) return;
@@ -42277,6 +42434,114 @@ function undoLastDelete() {
   if (!path) return;
   undoableDelete = null;
   send({ command: 'undoDelete', path });
+}
+function minimapAvailableHeight(minimap) {
+  const shellRect = app.getBoundingClientRect();
+  const minimapRect = minimap.getBoundingClientRect();
+  return Math.max(1, Math.floor(shellRect.bottom - minimapRect.top));
+}
+
+function measureDocumentMinimap(track) {
+  const minimap = track.closest('.document-minimap');
+  const source = minimapSourceElement();
+  const appRect = app.getBoundingClientRect();
+  
+  const contained = siteFrameScroller();
+  const console = frontConsoleEntry();
+  const reader = console?.terminal ? readerScrollElement() : contained || app;
+  const sourceRect = source ? source.getBoundingClientRect() : null;
+  const sourceWidth = sourceRect ? Math.max(1, Math.ceil(sourceRect.width)) : 1;
+  const content = minimap ? minimap.querySelector('.document-minimap-content') : null;
+  const contentWidth = content ? Math.max(1, Math.ceil(content.getBoundingClientRect().width)) : sourceWidth;
+  const trackRect = track.getBoundingClientRect();
+  const scrollHeight = Math.max(1, Math.ceil(reader.scrollHeight));
+  const ribbon = track.querySelector('.document-minimap-ribbon');
+  const place = readingWatch && readingDeepest.get(readingWatch.path);
+  if (place && ribbon && Number(ribbon.dataset.pageHeight) !== reader.scrollHeight) drawReadingRibbon();
+  const viewportHeight = Math.max(1, Math.ceil(reader.clientHeight));
+  const scrollable = Math.max(0, scrollHeight - viewportHeight);
+  const scrollTop = Math.min(scrollable, Math.max(0, reader.scrollTop));
+  
+  const sourceTop = console?.terminal ? 0 : contained
+    ? 0
+    : (sourceRect ? Math.max(0, Math.round(sourceRect.top - appRect.top + app.scrollTop)) : 0);
+  const previewScale = contentWidth / sourceWidth;
+  const scaledDocumentHeight = Math.max(1, scrollHeight * previewScale);
+  
+  const availableHeight = minimap ? minimapAvailableHeight(minimap) : viewportHeight;
+  const trackHeight = Math.max(1, Math.min(availableHeight, scaledDocumentHeight));
+  
+  track.style.height = `${trackHeight}px`;
+  return { source, sourceWidth, contentWidth, sourceTop, trackRect, trackHeight, viewportHeight, scrollHeight, scrollable, scrollTop, previewScale, scaledDocumentHeight };
+}
+function updateConsoleMinimapPreview(track, content, minimap) {
+  const entry = frontConsoleEntry();
+  if (!entry?.terminal) return;
+  const buffer = entry.terminal.buffer.active;
+  const metrics = measureDocumentMinimap(track);
+  const length = buffer.length;
+  const lineHeight = metrics.scrollHeight / Math.max(1, length);
+  const visibleLines = Math.min(310, Math.max(1, Math.ceil(metrics.trackHeight / metrics.previewScale / lineHeight)));
+  const viewportLine = buffer.viewportY;
+  const first = Math.max(0, viewportLine - visibleLines);
+  const last = Math.min(length, viewportLine + entry.terminal.rows + visibleLines);
+  const lineNode = index => {
+    const line = document.createElement('div');
+    line.className = 'console-minimap-line';
+    line.style.height = `${lineHeight}px`;
+    line.textContent = buffer.getLine(index)?.translateToString(true) || '';
+    return line;
+  };
+  let held = entry.map;
+  const canKeep = held && held.frame.isConnected && held.first <= viewportLine && held.last >= viewportLine + entry.terminal.rows && held.width === metrics.sourceWidth;
+  if (canKeep) {
+    held.frame.style.height = `${metrics.scrollHeight}px`;
+    const rolled = length === held.length ? Math.min(entry.mapOutputLines, held.last - held.first) : 0;
+    for (let index = 0; index < rolled; index++) held.lines.firstElementChild?.remove();
+    for (let index = held.last - rolled; index < held.last; index++) held.lines.appendChild(lineNode(index));
+    if (length > held.length && held.last === held.length) {
+      for (let index = held.last; index < length; index++) held.lines.appendChild(lineNode(index));
+      held.last = length;
+      while (held.last - held.first > 2 * visibleLines + entry.terminal.rows) {
+        held.lines.firstElementChild?.remove();
+        held.first++;
+      }
+      held.lines.style.top = `${held.first * lineHeight}px`;
+    }
+    if (!rolled && length === held.length && held.lines.lastElementChild) {
+      held.lines.lastElementChild.textContent = buffer.getLine(held.last - 1)?.translateToString(true) || '';
+    }
+    const screenFirst = Math.max(held.first, buffer.baseY);
+    const screenLast = Math.min(held.last, buffer.baseY + entry.terminal.rows);
+    for (let index = screenFirst; index < screenLast; index++) {
+      const line = held.lines.children[index - held.first];
+      if (line) line.textContent = buffer.getLine(index)?.translateToString(true) || '';
+    }
+    held.length = length;
+    entry.mapOutputLines = 0;
+    updateMinimapViewport();
+    return;
+  }
+  const frame = document.createElement('div');
+  frame.className = 'document-minimap-frame';
+  frame.style.width = `${metrics.sourceWidth}px`;
+  frame.style.height = `${metrics.scrollHeight}px`;
+  frame.style.transform = `scale(${metrics.previewScale})`;
+  const preview = document.createElement('div');
+  preview.className = 'document-minimap-preview console-minimap-preview';
+  preview.style.width = `${metrics.sourceWidth}px`;
+  preview.style.height = `${metrics.scrollHeight}px`;
+  const lines = document.createElement('div');
+  lines.className = 'console-minimap-lines';
+  lines.style.top = `${first * lineHeight}px`;
+  for (let index = first; index < last; index++) lines.appendChild(lineNode(index));
+  preview.appendChild(lines);
+  frame.appendChild(preview);
+  content.replaceChildren(frame);
+  entry.map = { frame, lines, first, last, length, width: metrics.sourceWidth };
+  entry.mapOutputLines = 0;
+  minimap.classList.remove('is-loading');
+  placeMinimapViewport(minimap, metrics, null);
 }
 
 

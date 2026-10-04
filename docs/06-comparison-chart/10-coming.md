@@ -62,7 +62,6 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
-| Folder console | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Serve local site | [❌][l-roadmap] | ? | ? | [✅][c-server] |
 | Theme editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Every view in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-server] |

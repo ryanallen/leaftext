@@ -11,6 +11,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Tabs](#tabs) | Open multiple documents at once |
 | [Tabs inside a document](#tabs-inside-a-document) | Switch among sheets in a workbook or named parts of a Markdown note |
 | [Web tabs](#web-tabs) | Browse a live web page beside your documents |
+| [Console tabs](03-library.md#console) | Run a command line in the folder shown by the library |
 | [Two documents side by side](#two-documents-side-by-side) | Stand a second tab beside the one you are reading, each column scrolling on its own with its own rail |
 | [New document](07-editing.md#new-document) | The **+** in the app bar starts a blank page, ready to type |
 | [Outline](#outline) | The open document's headings, listed in the [library pane](03-library.md) with the one you are reading lit, labeled with how many headings it holds |
@@ -99,7 +100,7 @@ Two bars. The one at the top is about the app; the one floating at the foot of t
 
 ![The Leaftext app bar: the leaf mark, then the tab strip with the plus at its end, then Open and Export at the right](../../imgs/navigation.png)
 
-**+** ([new document](07-editing.md#new-document)) stands at the end of the tab strip, where the last tab ends and the next one will begin — so starting a document begins where you are reading rather than across the bar. At the right Open and [Export](#export-a-pdf). The palette that opens the [theme picker](06-themes.md#choose) is not up here: it stands with the other launchers at the foot of the [library pane](03-library.md#browsing), because what it opens is a sheet rather than a file.
+**+** ([new document](07-editing.md#new-document)) and the [console button](03-library.md#console) stand together at the end of the tab strip, where the last tab ends and the next one will begin. At the right Open and [Export](#export-a-pdf). The palette that opens the [theme picker](06-themes.md#choose) stands with the other launchers at the foot of the [library pane](03-library.md#browsing).
 
 The leaf mark at the left is the way home — click it to return to the no-file screen. Beside it sit the library button, Back, Refresh and Forward, then the tab strip. Those are about the app rather than the document, which is why they are up here and not on the floating toolbar.
 
@@ -161,7 +162,7 @@ A small bar floats over the foot of the page, holding the ways of looking at the
 
 ### Tabs
 
-- Opening another file creates another tab, and so does starting a [new document](07-editing.md#new-document).
+- Opening another file creates another tab, and so does starting a [new document](07-editing.md#new-document) or a [console](03-library.md#console).
 - **A full strip scrolls; it never squeezes.** Tabs keep their size however many are open, so once they need more room than the bar's middle has, the strip scrolls under the **+** standing at its end. A full strip rests at its right end, with the newest tabs and the **+** in sight and the oldest dissolving into the row of buttons at the left rather than being cut in half there, and it stays at that end through a launch, a close and a resized window. A wheel over the tabs moves them. The tab you just opened, switched to, or were left on by a close is always in sight — the strip brings it in far enough to show it whole and no further, and leaves a strip you scrolled by hand exactly where you put it, whatever the window does.
 - Reopening Leaftext puts its saved file tabs back in the same order and opens the tab that was in front, at its last reading or source position; the other documents wait to load until you select them. A file that is no longer there does not return unless you had left words unsaved in it, and neither does a [new document](07-editing.md#new-document) nobody typed into. Where that leaves nothing at all to put back — every saved tab a file that has since moved or been deleted — Leaftext opens on the home screen with no tabs.
 - A tab you closed the window on with [unsaved edits](07-editing.md#save) comes back with those edits still in it and its dot lit — the front tab and the ones behind it alike, and a [new document](07-editing.md#new-document) with words in it among them, under the name it was wearing and still asking where it goes on its first save. Where the file itself changed on disk in the meantime, the file wins and the tab opens as the disk has it, since writing your old words over somebody else's edit is the worse of the two. Where it has left the disk altogether — deleted, renamed, or sitting on a drive that is not mounted — the tab comes back as a note with no file, wearing the name it had, so the words are still there and the first save asks where to put them. A tab that had followed a link out of the document it was typed in comes back sitting on that document rather than on the page it walked to, since the words belong there and a reopened tab has no Back to press.

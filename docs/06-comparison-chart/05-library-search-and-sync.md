@@ -374,6 +374,7 @@
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
+| Folder console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
 | Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
@@ -450,6 +451,7 @@
 [l-nested]: ../01-features/03-library.md#repositories-inside-repositories
 [l-live]: ../01-features/03-library.md#live-updates
 [l-launchers]: ../01-features/03-library.md#launchers-at-the-foot
+[l-console]: ../01-features/03-library.md#console
 [l-layout]: ../01-features/03-library.md#layout
 [l-narrow]: ../01-features/03-library.md#narrow-windows
 [l-facts]: ../01-features/03-library.md#facts
