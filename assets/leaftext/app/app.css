@@ -4041,6 +4041,7 @@
   --lt-shadow-hairline-strong: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent);
   --lt-shadow-focus: 0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent);
   --lt-shadow-ring: 0 0 0 2px var(--lt-surface);
+  --lt-shadow-spotlight: 0 0 0 100vmax color-mix(in srgb, var(--lt-markdown-background) 62%, transparent);
   /* Grain */
   --lt-grain-light: rgba(0, 0, 0, 0.1);
   --lt-grain-heavy: rgba(0, 0, 0, 0.3);
@@ -4110,6 +4111,7 @@
   --lt-icon-split: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3'/%3E%3Cpath d='M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3'/%3E%3Cline x1='12' x2='12' y1='4' y2='20'/%3E%3C/svg%3E");
   --lt-icon-speed-reader-on: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 14 4-4'/%3E%3Cpath d='M3.34 19a10 10 0 1 1 17.32 0'/%3E%3C/svg%3E");
   --lt-icon-speed-reader-off: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 14 4-4'/%3E%3Cpath d='M3.34 19a10 10 0 1 1 17.32 0'/%3E%3C/svg%3E");
+  --lt-icon-flash-reader: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7l1-8z'/%3E%3C/svg%3E");
   --lt-icon-wand: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4V2'/%3E%3Cpath d='M15 16v-2'/%3E%3Cpath d='M8 9h2'/%3E%3Cpath d='M20 9h2'/%3E%3Cpath d='M17.8 11.8 19 13'/%3E%3Cpath d='M15 9h.01'/%3E%3Cpath d='M17.8 6.2 19 5'/%3E%3Cpath d='m3 21 9-9'/%3E%3Cpath d='M12.2 6.2 11 5'/%3E%3C/svg%3E");
   --lt-icon-cloud: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
   --lt-icon-export: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8l-4-4'/%3E%3Cpath d='m12 21 4-4'/%3E%3Cpath d='M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284'/%3E%3C/svg%3E");
@@ -4716,6 +4718,10 @@
 .lt-icon-speed-reader-off {
   -webkit-mask-image: var(--lt-icon-speed-reader-off);
   mask-image: var(--lt-icon-speed-reader-off);
+}
+.lt-icon-flash-reader {
+  -webkit-mask-image: var(--lt-icon-flash-reader);
+  mask-image: var(--lt-icon-flash-reader);
 }
 .lt-icon-wand {
   -webkit-mask-image: var(--lt-icon-wand);
@@ -6436,6 +6442,7 @@ body.is-maximized #winMaximize .wc-restore {
 .home-row-ghost::before,
 .tab-drag-ghost::before,
 .find-bar::before,
+.flash-reader::before,
 .confirm-dialog::before,
 .reader-toolbar::before,
 .reader-tool-tray::before,
@@ -8627,6 +8634,114 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 
 .reader-toolbar.is-keyed-right {
   grid-column: 5 / 7;
+}
+
+
+.flash-reader {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  z-index: var(--lt-z-44);
+  position: relative;
+  --lt-shadow-host-radius: var(--lt-radius-2xl);
+  box-sizing: border-box;
+  width: min(780px, calc(100% - var(--lt-space-32)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-16);
+  padding: var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-foreground);
+}
+.flash-reader[hidden] {
+  display: none;
+}
+.flash-reader:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+}
+
+.flash-reader-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-8);
+}
+.flash-reader-guide {
+  width: var(--lt-stroke-2);
+  height: var(--lt-space-20);
+  background: var(--lt-muted-foreground);
+}
+.flash-reader-words {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  width: 100%;
+  font-family: var(--reading-font);
+  font-size: 2.6em;
+  line-height: var(--lt-leading-1-2);
+  white-space: pre;
+}
+.flash-reader-before {
+  overflow: hidden;
+  text-align: end;
+}
+.flash-reader-focus {
+  color: var(--lt-accent-ink);
+  font-weight: var(--lt-weight-700);
+}
+.flash-reader-after {
+  overflow: hidden;
+  text-align: start;
+}
+.flash-reader-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-8);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+.flash-reader-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+}
+.flash-reader-pace {
+  min-width: 140px;
+  text-align: center;
+  color: var(--lt-muted-foreground);
+}
+.flash-reader-progress {
+  flex: 1 1 80px;
+  height: var(--lt-space-4);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border);
+  overflow: hidden;
+}
+.flash-reader-progress-fill {
+  display: block;
+  width: var(--flash-reader-progress, 0%);
+  height: 100%;
+  background: var(--lt-accent);
+}
+
+.flash-reader-active {
+  position: relative;
+  
+  z-index: var(--lt-z-20);
+  border-radius: var(--lt-radius-md);
+  outline: var(--lt-stroke-2) solid var(--lt-accent);
+  outline-offset: var(--lt-space-4);
+  box-shadow: var(--lt-shadow-spotlight);
 }
 .reader-shell {
   background: var(--lt-markdown-background);

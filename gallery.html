@@ -4049,6 +4049,7 @@
   --lt-shadow-hairline-strong: inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent);
   --lt-shadow-focus: 0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent);
   --lt-shadow-ring: 0 0 0 2px var(--lt-surface);
+  --lt-shadow-spotlight: 0 0 0 100vmax color-mix(in srgb, var(--lt-markdown-background) 62%, transparent);
   /* Grain */
   --lt-grain-light: rgba(0, 0, 0, 0.1);
   --lt-grain-heavy: rgba(0, 0, 0, 0.3);
@@ -4118,6 +4119,7 @@
   --lt-icon-split: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3'/%3E%3Cpath d='M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3'/%3E%3Cline x1='12' x2='12' y1='4' y2='20'/%3E%3C/svg%3E");
   --lt-icon-speed-reader-on: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 14 4-4'/%3E%3Cpath d='M3.34 19a10 10 0 1 1 17.32 0'/%3E%3C/svg%3E");
   --lt-icon-speed-reader-off: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 14 4-4'/%3E%3Cpath d='M3.34 19a10 10 0 1 1 17.32 0'/%3E%3C/svg%3E");
+  --lt-icon-flash-reader: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7l1-8z'/%3E%3C/svg%3E");
   --lt-icon-wand: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4V2'/%3E%3Cpath d='M15 16v-2'/%3E%3Cpath d='M8 9h2'/%3E%3Cpath d='M20 9h2'/%3E%3Cpath d='M17.8 11.8 19 13'/%3E%3Cpath d='M15 9h.01'/%3E%3Cpath d='M17.8 6.2 19 5'/%3E%3Cpath d='m3 21 9-9'/%3E%3Cpath d='M12.2 6.2 11 5'/%3E%3C/svg%3E");
   --lt-icon-cloud: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
   --lt-icon-export: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8l-4-4'/%3E%3Cpath d='m12 21 4-4'/%3E%3Cpath d='M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284'/%3E%3C/svg%3E");
@@ -4724,6 +4726,10 @@
 .lt-icon-speed-reader-off {
   -webkit-mask-image: var(--lt-icon-speed-reader-off);
   mask-image: var(--lt-icon-speed-reader-off);
+}
+.lt-icon-flash-reader {
+  -webkit-mask-image: var(--lt-icon-flash-reader);
+  mask-image: var(--lt-icon-flash-reader);
 }
 .lt-icon-wand {
   -webkit-mask-image: var(--lt-icon-wand);
@@ -6444,6 +6450,7 @@ body.is-maximized #winMaximize .wc-restore {
 .home-row-ghost::before,
 .tab-drag-ghost::before,
 .find-bar::before,
+.flash-reader::before,
 .confirm-dialog::before,
 .reader-toolbar::before,
 .reader-tool-tray::before,
@@ -8645,6 +8652,114 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 /* The floating bar sits under the column with the keys, because every button on it acts on that document. Its own class rather than a track written from the front end: the two columns are two fixed tracks, so this is the same rule pointed at the other pair. */
 .reader-toolbar.is-keyed-right {
   grid-column: 5 / 7;
+}
+
+/* Flash words: a box over the middle of the reading column, the same grid cell the find bar takes, so the page scrolls under it while it stays put. */
+.flash-reader {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  z-index: var(--lt-z-44);
+  position: relative;
+  --lt-shadow-host-radius: var(--lt-radius-2xl);
+  box-sizing: border-box;
+  width: min(780px, calc(100% - var(--lt-space-32)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-16);
+  padding: var(--lt-space-24);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-markdown-background);
+  color: var(--lt-markdown-foreground);
+}
+.flash-reader[hidden] {
+  display: none;
+}
+.flash-reader:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+}
+/* Two short marks above and below the one letter the eye rests on, so a word of any length lands its resting letter in the same place. */
+.flash-reader-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lt-space-8);
+}
+.flash-reader-guide {
+  width: var(--lt-stroke-2);
+  height: var(--lt-space-20);
+  background: var(--lt-muted-foreground);
+}
+.flash-reader-words {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  width: 100%;
+  font-family: var(--reading-font);
+  font-size: 2.6em;
+  line-height: var(--lt-leading-1-2);
+  white-space: pre;
+}
+.flash-reader-before {
+  overflow: hidden;
+  text-align: end;
+}
+.flash-reader-focus {
+  color: var(--lt-accent-ink);
+  font-weight: var(--lt-weight-700);
+}
+.flash-reader-after {
+  overflow: hidden;
+  text-align: start;
+}
+.flash-reader-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lt-space-8);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+.flash-reader-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+}
+.flash-reader-pace {
+  min-width: 140px;
+  text-align: center;
+  color: var(--lt-muted-foreground);
+}
+.flash-reader-progress {
+  flex: 1 1 80px;
+  height: var(--lt-space-4);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-border);
+  overflow: hidden;
+}
+.flash-reader-progress-fill {
+  display: block;
+  width: var(--flash-reader-progress, 0%);
+  height: 100%;
+  background: var(--lt-accent);
+}
+/* The block being read: clear of the veil the rest of the page sits under, and outlined so the eye can find its place when the box closes. */
+.flash-reader-active {
+  position: relative;
+  /* Raised over a picture or a sticky header further down, which would otherwise paint over the veil and stand out undimmed. */
+  z-index: var(--lt-z-20);
+  border-radius: var(--lt-radius-md);
+  outline: var(--lt-stroke-2) solid var(--lt-accent);
+  outline-offset: var(--lt-space-4);
+  box-shadow: var(--lt-shadow-spotlight);
 }
 .reader-shell {
   background: var(--lt-markdown-background);
@@ -17847,7 +17962,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 186 values that do not change with the theme, all 84 icons, and all 153 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 85 icons, and all 154 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17877,9 +17992,9 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>186</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>84</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>153</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>85</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>154</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -17984,7 +18099,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">186 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">187 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -18175,6 +18290,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-shadow-hairline-strong</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-hairline-strong)"></i><code>inset 0 0 0 1px color-mix(in srgb, var(--lt-foreground) 26%, transparent)</code></div>
 <div class="value"><code>lt-shadow-focus</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-focus)"></i><code>0 0 0 2px color-mix(in srgb, var(--lt-link) 30%, transparent)</code></div>
 <div class="value"><code>lt-shadow-ring</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-ring)"></i><code>0 0 0 2px var(--lt-surface)</code></div>
+<div class="value"><code>lt-shadow-spotlight</code><i class="demo tile shade" style="box-shadow:var(--lt-shadow-spotlight)"></i><code>0 0 0 100vmax color-mix(in srgb, var(--lt-markdown-background) 62%, transparent)</code></div>
 </div>
 <h3>Grain</h3><div class="wall wide">
 <div class="value"><code>lt-grain-light</code><code>rgba(0, 0, 0, 0.1)</code></div>
@@ -18215,7 +18331,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">84 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
+<p class="lead">85 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
 <div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div><div class="glyph packs-head"><code>leaftext</code></div><div class="glyph packs-head"><code>feather</code></div><div class="glyph packs-head"><code>lucide</code></div><div class="glyph packs-head"><code>tabler</code></div><div class="glyph packs-head"><code>remix</code></div><div class="glyph packs-head"><code>phosphor</code></div><div class="glyph packs-head"><code>heroicons</code></div></div>
 <div class="wall packs"><div class="glyph"><code>back-long</code></div><div class="glyph"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back-long"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>forward-long</code></div><div class="glyph"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-forward-long"></span></div></div>
@@ -18235,6 +18351,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>split</code></div><div class="glyph"><span class="lt-icon lt-icon-split"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-split"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-split"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-split"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-split"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-split"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-split"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>speed-reader-on</code></div><div class="glyph"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-speed-reader-on"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>speed-reader-off</code></div><div class="glyph"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-speed-reader-off"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>flash-reader</code></div><div class="glyph"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-flash-reader"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>wand</code></div><div class="glyph"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-wand"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>cloud</code></div><div class="glyph"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-cloud"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>export</code></div><div class="glyph"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-export"></span></div></div>
@@ -18303,7 +18420,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">153 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">154 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -18745,6 +18862,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="lt-backdrop open" style="position:static;height:48px"></div></div>
 </section>
 <section class="part">
+<header><h3>Flash reader</h3><code class="built">.flash-reader</code><span class="built">app-shell.html, run by flash-reader.js from the Flash words button in the reading view's tray</span></header>
+<div class="stage"><div class="flash-reader" style="position:static;width:560px"><div class="flash-reader-stage"><span class="flash-reader-guide"></span><div class="flash-reader-words"><span class="flash-reader-before">ro</span><span class="flash-reader-focus">o</span><span class="flash-reader-after">m</span></div><span class="flash-reader-guide"></span></div><div class="flash-reader-controls"><button type="button" class="flash-reader-control">Pause</button><button type="button" class="flash-reader-control">−</button><span class="flash-reader-pace">300 words a minute</span><button type="button" class="flash-reader-control">+</button><span class="flash-reader-progress" style="--flash-reader-progress:35%"><span class="flash-reader-progress-fill"></span></span><button type="button" class="flash-reader-control">Close</button></div></div> <p class="flash-reader-active" style="margin:24px">The block being read.</p></div>
+</section>
+<section class="part">
 <header><h3>Confirmation</h3><code class="built">.confirm-dialog</code><span class="built">app-shell.html, asked by context-menu.js</span></header>
 <div class="stage"><div class="confirm-dialog" style="position:static;transform:none;width:340px"><h2 class="confirm-dialog-title">Delete “favorites.md”?</h2><p class="confirm-dialog-detail">It goes to the Recycle Bin, so you can put it back.</p><div class="confirm-dialog-actions"><button type="button" class="confirm-dialog-button">Cancel</button><button type="button" class="confirm-dialog-button is-danger">Delete</button></div></div></div>
 </section>
@@ -18802,7 +18923,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-tool-tray-clip"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-speed-reader-on"></span></button></span></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div></div>
+<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-tool-tray-clip"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-speed-reader-on"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-flash-reader"></span></button></span></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>

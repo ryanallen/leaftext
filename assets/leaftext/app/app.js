@@ -777,7 +777,7 @@ const COLUMN_STATE_NAMES = [
   
   'lastRenderedDocumentPath', 'readingFillFrame', 'readingHeldCursor', 'exactReadingRestore',
   
-  'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingDeepest', 'readingHeldPlaces',
+  'readingPending', 'readingPendingPicturePages', 'readingSeenBlocks', 'readingCredited', 'readingWatch', 'readingBlockShare', 'readingBlockPaid', 'readingFlashPlayed', 'readingDeepest', 'readingHeldPlaces',
   
   'minimapViewportFrame', 'minimapPreviewFrame', 'minimapContentVersion', 'minimapBuiltVersion',
   'minimapBuiltSourceWidth', 'minimapBuiltPreviewWidth', 'minimapBuiltFrameWidth', 'minimapResizeObserver', 'minimapLayoutObserver',
@@ -869,6 +869,8 @@ function saveColumnState(column) {
   held.readingCredited = readingCredited;
   held.readingWatch = readingWatch;
   held.readingBlockShare = readingBlockShare;
+  held.readingBlockPaid = readingBlockPaid;
+  held.readingFlashPlayed = readingFlashPlayed;
   held.readingDeepest = readingDeepest;
   held.readingHeldPlaces = readingHeldPlaces;
   
@@ -995,6 +997,8 @@ function loadColumnState(column) {
   readingCredited = held.readingCredited;
   readingWatch = held.readingWatch;
   readingBlockShare = held.readingBlockShare;
+  readingBlockPaid = held.readingBlockPaid;
+  readingFlashPlayed = held.readingFlashPlayed;
   readingDeepest = held.readingDeepest;
   readingHeldPlaces = held.readingHeldPlaces;
   
@@ -6946,6 +6950,7 @@ const readerToolTray = document.getElementById('readerToolTray');
 const readerLockButton = document.getElementById('readerLockButton');
 const splitViewButton = document.getElementById('splitViewButton');
 const speedReaderButton = document.getElementById('speedReaderButton');
+const flashReaderButton = document.getElementById('flashReaderButton');
 const codeIntelButton = document.getElementById('codeIntelButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
 const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
@@ -10049,6 +10054,330 @@ function readerEditingAllowed() {
   return readingUnlocked;
 }
 
+
+const FLASH_READER_SKIP_SELECTOR = SPEED_READER_SKIP_SELECTOR.split(',').filter((part) => part !== '.speed-reader-anchor').join(',');
+
+const FLASH_READER_LINE_BOXES = 'p,li,dt,dd,td,th,h1,h2,h3,h4,h5,h6,blockquote,figcaption,div,section,article,header,footer,summary,caption';
+const FLASH_READER_SENTENCE_PAUSE_MS = 150;
+const FLASH_READER_BLOCK_PAUSE_MS = 300;
+const FLASH_READER_WPM_RANGE = [100, 1000];
+const FLASH_READER_CHUNK_RANGE = [1, 3];
+function clampFlashReader(value, [low, high], fallback) {
+  const number = Math.round(Number(value));
+  return Number.isFinite(number) ? Math.min(high, Math.max(low, number)) : fallback;
+}
+let flashReaderWpm = clampFlashReader(LEAF_SETTINGS.flashReaderWpm, FLASH_READER_WPM_RANGE, 300);
+let flashReaderChunk = clampFlashReader(LEAF_SETTINGS.flashReaderChunk, FLASH_READER_CHUNK_RANGE, 1);
+
+let flashReader = null;
+
+
+function flashReaderWords(block, mark = null) {
+  const words = [];
+  let startAt = -1;
+  if (!block || (block.matches && block.matches(FLASH_READER_SKIP_SELECTOR))) return { words, startAt };
+  let run = '';
+  let markAt = -1;
+  let lineBox = null;
+  const flush = () => {
+    const pattern = /\S+/g;
+    for (let found = pattern.exec(run); found; found = pattern.exec(run)) {
+      if (markAt >= 0 && startAt < 0 && found.index + found[0].length > markAt) startAt = words.length;
+      words.push(found[0]);
+    }
+    
+    if (markAt >= 0 && startAt < 0) startAt = words.length;
+    run = '';
+    markAt = -1;
+  };
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    const skipped = parent && parent.closest(FLASH_READER_SKIP_SELECTOR);
+    if (skipped && block.contains(skipped)) {
+      flush();
+      if (mark && node === mark.node && startAt < 0) markAt = 0;
+      continue;
+    }
+    const box = parent && parent.closest(FLASH_READER_LINE_BOXES);
+    if (lineBox && box !== lineBox) run += ' ';
+    lineBox = box;
+    if (mark && node === mark.node) markAt = run.length + Math.max(0, mark.offset);
+    run += node.nodeValue || '';
+  }
+  flush();
+  if (mark && !mark.node && startAt < 0) startAt = 0;
+  return { words, startAt: startAt >= 0 && startAt < words.length ? startAt : (mark ? -1 : 0) };
+}
+
+
+function flashReaderEndsSentence(word) {
+  return /[.!?…]["'”’)\]]*$/u.test(word);
+}
+
+
+function flashReaderChunkAt(words, at, size) {
+  let end = at;
+  while (end < words.length && end - at < size) {
+    end += 1;
+    if (flashReaderEndsSentence(words[end - 1])) break;
+  }
+  const blockEnd = end >= words.length;
+  return { start: at, end, words: words.slice(at, end), sentenceEnd: flashReaderEndsSentence(words[end - 1] || ''), blockEnd };
+}
+
+
+function flashReaderDuration(chunk, wpm) {
+  const base = Math.round((60000 * chunk.words.length) / wpm);
+  if (chunk.blockEnd) return base + FLASH_READER_BLOCK_PAUSE_MS;
+  return base + (chunk.sentenceEnd ? FLASH_READER_SENTENCE_PAUSE_MS : 0);
+}
+
+
+function flashReaderFocusAt(word) {
+  const letters = speedReaderGraphemes(word);
+  return { letters, at: Math.max(0, Math.min(letters.length - 1, Math.ceil(letters.length / 3))) };
+}
+
+
+function flashReaderStartPoint(blocks) {
+  const selection = window.getSelection ? window.getSelection() : null;
+  const range = selection && selection.rangeCount && !selection.isCollapsed ? selection.getRangeAt(0) : null;
+  const node = range ? range.startContainer : null;
+  if (node) {
+    const index = blocks.findIndex((block) => block === node || block.contains(node));
+    if (index >= 0) return { index, mark: node.nodeType === 3 ? { node, offset: range.startOffset } : { node: null, offset: 0 } };
+  }
+  const view = app.getBoundingClientRect();
+  for (let index = 0; index < blocks.length; index += 1) {
+    const box = blocks[index].getBoundingClientRect();
+    if (box.bottom > view.top && box.top < view.bottom && box.height > 0) return { index, mark: null };
+  }
+  return { index: 0, mark: null };
+}
+
+
+function flashReaderStream(blocks, start) {
+  const stream = { blocks, index: start.index, words: [], at: 0 };
+  const first = flashReaderWords(blocks[start.index], start.mark);
+  stream.words = first.words;
+  stream.at = first.startAt < 0 ? first.words.length : first.startAt;
+  return stream;
+}
+
+function flashReaderSettle(stream) {
+  while (stream.at >= stream.words.length) {
+    stream.index += 1;
+    if (stream.index >= stream.blocks.length) return false;
+    stream.words = flashReaderWords(stream.blocks[stream.index]).words;
+    stream.at = 0;
+  }
+  return true;
+}
+
+function flashReaderSeek(stream, index, at) {
+  if (index !== stream.index) stream.words = flashReaderWords(stream.blocks[index]).words;
+  stream.index = index;
+  stream.at = at;
+}
+
+const flashReaderBox = document.getElementById('flashReader');
+const flashReaderWordsEl = document.getElementById('flashReaderWords');
+const flashReaderPlayButton = document.getElementById('flashReaderPlay');
+const flashReaderPaceEl = document.getElementById('flashReaderPace');
+const flashReaderProgressEl = document.getElementById('flashReaderProgress');
+const flashReaderSizeChoice = document.getElementById('flashReaderSize');
+
+
+function openFlashReader() {
+  if (flashReader) {
+    if (flashReaderBox) flashReaderBox.focus();
+    return;
+  }
+  if (!flashReaderBox || readingIsContainedPage() || codeViewActive || graphViewOpen || activeWebTab()) return;
+  const blocks = documentBlocks(readingDocumentRoot());
+  if (!blocks.length) return;
+  const stream = flashReaderStream(blocks, flashReaderStartPoint(blocks));
+  
+  if (!flashReaderSettle(stream)) return;
+  flashReader = { stream, history: [], chunk: null, timer: 0, playing: true, path: activeDocumentPath(), active: null, returnFocus: document.activeElement };
+  flashReaderBox.hidden = false;
+  renderFlashReaderControls();
+  showFlashReaderChunk();
+  flashReaderBox.focus();
+}
+
+
+function closeFlashReader() {
+  if (!flashReader) return;
+  const session = flashReader;
+  flashReader = null;
+  clearTimeout(session.timer);
+  if (session.active) session.active.classList.remove('flash-reader-active');
+  if (flashReaderBox) flashReaderBox.hidden = true;
+  const back = session.returnFocus && session.returnFocus.isConnected !== false && !session.returnFocus.hidden ? session.returnFocus : flashReaderButton;
+  if (back && back.focus) back.focus();
+}
+
+
+function showFlashReaderChunk() {
+  const session = flashReader;
+  if (!session) return;
+  const { stream } = session;
+  const block = stream.blocks[stream.index];
+  if (!block || block.isConnected === false) {
+    closeFlashReader();
+    return;
+  }
+  session.chunk = flashReaderChunkAt(stream.words, stream.at, flashReaderChunk);
+  drawFlashReaderWords(session.chunk.words);
+  if (session.active !== block) {
+    if (session.active) session.active.classList.remove('flash-reader-active');
+    block.classList.add('flash-reader-active');
+    session.active = block;
+    followFlashReaderBlock(block);
+  }
+  renderFlashReaderProgress();
+  armFlashReader();
+}
+
+
+function drawFlashReaderWords(words) {
+  if (!flashReaderWordsEl) return;
+  const [before, focus, after] = flashReaderWordsEl.children;
+  const middle = Math.floor((words.length - 1) / 2);
+  const { letters, at } = flashReaderFocusAt(words[middle] || '');
+  const lead = words.slice(0, middle).join(' ');
+  const tail = words.slice(middle + 1).join(' ');
+  before.textContent = (lead ? `${lead} ` : '') + letters.slice(0, at).join('');
+  focus.textContent = letters[at] || '';
+  after.textContent = letters.slice(at + 1).join('') + (tail ? ` ${tail}` : '');
+}
+
+
+function followFlashReaderBlock(block) {
+  const view = app.getBoundingClientRect();
+  const box = block.getBoundingClientRect();
+  if (box.top >= view.top && box.bottom <= view.bottom) return;
+  app.scrollTop += box.top - view.top - Math.max(0, (view.bottom - view.top - box.height) / 3);
+}
+
+
+function renderFlashReaderProgress() {
+  const session = flashReader;
+  if (!session || !flashReaderProgressEl) return;
+  const { stream } = session;
+  const share = stream.words.length ? stream.at / stream.words.length : 0;
+  const percent = Math.round(((stream.index + share) / stream.blocks.length) * 100);
+  flashReaderProgressEl.setAttribute('aria-valuenow', String(percent));
+  flashReaderProgressEl.style.setProperty('--flash-reader-progress', `${percent}%`);
+}
+
+function renderFlashReaderControls() {
+  const playing = Boolean(flashReader && flashReader.playing);
+  if (flashReaderPlayButton) {
+    flashReaderPlayButton.textContent = playing ? 'Pause' : 'Play';
+    flashReaderPlayButton.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    flashReaderPlayButton.title = `${playing ? 'Pause' : 'Play'} (Space)`;
+  }
+  if (flashReaderPaceEl) flashReaderPaceEl.textContent = `${flashReaderWpm} words a minute`;
+  if (flashReaderSizeChoice) flashReaderSizeChoice.value = String(flashReaderChunk);
+}
+
+
+function armFlashReader() {
+  const session = flashReader;
+  if (!session) return;
+  clearTimeout(session.timer);
+  session.timer = 0;
+  if (session.playing) session.timer = setTimeout(() => flashReaderChunkPlayed(session), flashReaderDuration(session.chunk, flashReaderWpm));
+}
+
+
+function flashReaderChunkPlayed(session) {
+  if (flashReader !== session) return;
+  session.timer = 0;
+  const { stream, chunk } = session;
+  const block = stream.blocks[stream.index];
+  if (!block || block.isConnected === false) {
+    closeFlashReader();
+    return;
+  }
+  creditFlashReading(session.path, block, chunk);
+  stepFlashReader(1);
+}
+
+
+function stepFlashReader(direction) {
+  const session = flashReader;
+  if (!session || !session.chunk) return;
+  clearTimeout(session.timer);
+  const { stream } = session;
+  if (direction < 0) {
+    const previous = session.history.pop();
+    if (!previous) {
+      armFlashReader();
+      return;
+    }
+    flashReaderSeek(stream, previous.index, previous.at);
+    showFlashReaderChunk();
+    return;
+  }
+  session.history.push({ index: stream.index, at: stream.at });
+  stream.at = session.chunk.end;
+  if (!flashReaderSettle(stream)) {
+    
+    closeFlashReader();
+    return;
+  }
+  showFlashReaderChunk();
+}
+
+function toggleFlashReaderPlaying() {
+  if (!flashReader) return;
+  flashReader.playing = !flashReader.playing;
+  renderFlashReaderControls();
+  armFlashReader();
+}
+
+
+function setFlashReaderPace(wpm, chunk) {
+  flashReaderWpm = clampFlashReader(wpm, FLASH_READER_WPM_RANGE, flashReaderWpm);
+  flashReaderChunk = clampFlashReader(chunk, FLASH_READER_CHUNK_RANGE, flashReaderChunk);
+  renderFlashReaderControls();
+  send({ command: 'setFlashReader', wpm: flashReaderWpm, chunk: flashReaderChunk });
+}
+
+if (flashReaderBox) {
+  
+  flashReaderBox.addEventListener('keydown', (event) => {
+    if (event.target && event.target.tagName === 'SELECT' && event.key !== 'Escape') return;
+    const actions = {
+      ' ': toggleFlashReaderPlaying,
+      ArrowLeft: () => stepFlashReader(-1),
+      ArrowRight: () => stepFlashReader(1),
+      ArrowUp: () => setFlashReaderPace(flashReaderWpm + 25, flashReaderChunk),
+      ArrowDown: () => setFlashReaderPace(flashReaderWpm - 25, flashReaderChunk),
+      Escape: closeFlashReader,
+    };
+    const action = actions[event.key];
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    action();
+  });
+  for (const [button, action] of [
+    [flashReaderPlayButton, toggleFlashReaderPlaying],
+    [document.getElementById('flashReaderBack'), () => stepFlashReader(-1)],
+    [document.getElementById('flashReaderForward'), () => stepFlashReader(1)],
+    [document.getElementById('flashReaderSlower'), () => setFlashReaderPace(flashReaderWpm - 25, flashReaderChunk)],
+    [document.getElementById('flashReaderFaster'), () => setFlashReaderPace(flashReaderWpm + 25, flashReaderChunk)],
+    [document.getElementById('flashReaderClose'), closeFlashReader],
+  ]) {
+    if (button) button.addEventListener('click', action);
+  }
+  if (flashReaderSizeChoice) flashReaderSizeChoice.addEventListener('change', () => setFlashReaderPace(flashReaderWpm, flashReaderSizeChoice.value));
+}
 
 const LEAF_FILE_ICON = `<span class="lt-icon lt-icon-leaf"></span>`;
 
@@ -13776,6 +14105,8 @@ function renderViewTools(current) {
     speedReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
     setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
   }
+  
+  if (flashReaderButton) flashReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
   renderCodeTools(current === 'code' && !onWebTab);
   showViewToolsIfAny();
   anchorToolTray(current);
@@ -13907,7 +14238,12 @@ if (speedReaderButton) {
   });
 }
 
+if (flashReaderButton) {
+  flashReaderButton.addEventListener('click', () => openFlashReader());
+}
+
 function setReaderView(view) {
+  closeFlashReader();
   pendingReaderView = view;
   renderReaderToolbar(readerViewsStand());
   if (view === 'graph') {
@@ -32574,7 +32910,7 @@ function readingDwellEnded(watch, el) {
   
   const share = (readingBlockShare.get(watch.path) || new Map()).get(id) || 0;
   if (pictures) creditPicturePages(pictures - picturesReached(pictures, share));
-  else creditReading(watch.path, readingBlockWords(watch, el), watch.words);
+  else payBlockWords(watch.path, id, readingBlockWords(watch, el), watch.words);
   markReadingPassed(watch, el);
 }
 
@@ -32585,6 +32921,46 @@ function readingFreshBox(watch, el) {
 }
 
 var readingBlockShare = new Map();
+
+var readingBlockPaid = new Map();
+function payBlockWords(path, key, upto, ceiling) {
+  let ledger = readingBlockPaid.get(path);
+  if (!ledger) {
+    ledger = new Map();
+    readingBlockPaid.set(path, ledger);
+  }
+  const already = ledger.get(key) || 0;
+  if (!(upto > already)) return 0;
+  ledger.set(key, upto);
+  return creditReading(path, upto - already, ceiling);
+}
+
+var readingFlashPlayed = new Map();
+
+function creditFlashReading(path, block, chunk) {
+  const watch = readingWatch;
+  if (!watch || watch.path !== path || !block || !chunk) return 0;
+  const key = readingBlockId(block) || block;
+  let blocks = readingFlashPlayed.get(path);
+  if (!blocks) {
+    blocks = new Map();
+    readingFlashPlayed.set(path, blocks);
+  }
+  let played = blocks.get(key);
+  if (!played) {
+    played = new Set();
+    blocks.set(key, played);
+  }
+  let fresh = 0;
+  for (let at = chunk.start; at < chunk.end; at += 1) {
+    if (played.has(at)) continue;
+    played.add(at);
+    fresh += 1;
+  }
+  if (!fresh) return 0;
+  const already = (readingBlockPaid.get(path) || new Map()).get(key) || 0;
+  return payBlockWords(path, key, Math.min(already + fresh, countWords(block.textContent)), watch.words);
+}
 
 function readingPlaceDepth(place) {
   const byBlock = documentSourceHolds(place.from);
@@ -32640,8 +33016,7 @@ function creditReadingShare(watch, el, box, scrollTop) {
       return;
     }
     const words = readingBlockWords(watch, el);
-    const owed = Math.floor(reached * words) - Math.floor(paid * words);
-    if (owed > 0) creditReading(watch.path, owed, watch.words);
+    payBlockWords(watch.path, id, Math.floor(reached * words), watch.words);
   }
   noteReadingDepth(watch.path, Math.min(1, (box.top + Math.max(reached, paid) * box.height) / box.page), el, Math.max(reached, paid));
 }
@@ -32949,6 +33324,8 @@ function forgetReadingCreditedThisLaunch() {
   readingSeenBlocks.clear();
   readingCredited.clear();
   readingBlockShare.clear();
+  readingBlockPaid.clear();
+  readingFlashPlayed.clear();
   readingFinishedPaths.clear();
   readingPending = 0;
   readingPendingPicturePages = 0;
@@ -33489,6 +33866,7 @@ function siteFrameReady() {
   
   forgetRenderedText();
   publishDocumentOutline();
+  closeFlashReader();
   applySpeedReaderToDocument();
   invalidateMinimapPreview();
   scheduleMinimapPreviewUpdate();
@@ -35314,6 +35692,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     bindBorrowedTitleRename();
     
     if (arriving) applyFrontmatterAsks(readerLayout);
+    
+    closeFlashReader();
     applySpeedReaderToDocument();
     
     bindReadingEditor(state.document, { deferCaret: true });
@@ -37548,6 +37928,7 @@ const LEAF_MERMAID_ICONS = {
     'split': { body: "<path d=\"M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3\"/><path d=\"M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3\"/><line x1=\"12\" x2=\"12\" y1=\"4\" y2=\"20\"/>", width: 24, height: 24 },
     'speed-reader-on': { body: "<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>", width: 24, height: 24 },
     'speed-reader-off': { body: "<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>", width: 24, height: 24 },
+    'flash-reader': { body: "<path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/>", width: 24, height: 24 },
     'wand': { body: "<path d=\"M15 4V2\"/><path d=\"M15 16v-2\"/><path d=\"M8 9h2\"/><path d=\"M20 9h2\"/><path d=\"M17.8 11.8 19 13\"/><path d=\"M15 9h.01\"/><path d=\"M17.8 6.2 19 5\"/><path d=\"m3 21 9-9\"/><path d=\"M12.2 6.2 11 5\"/>", width: 24, height: 24 },
     'cloud': { body: "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"/>", width: 24, height: 24 },
     'export': { body: "<path d=\"M12 13v8l-4-4\"/><path d=\"m12 21 4-4\"/><path d=\"M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284\"/>", width: 24, height: 24 },

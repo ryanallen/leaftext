@@ -15,7 +15,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
-Three more preferences are saved here but toggled elsewhere, where they apply: the [Speed Reader](#speed-reader), [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+Four more preferences are saved here but set elsewhere, where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
@@ -67,6 +67,8 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
     "active": 0
   },
   "speed_reader_enabled": false,
+  "flash_reader_wpm": 300,
+  "flash_reader_chunk": 1,
   "code_intel_enabled": true,
   "reading_unlocked": false,
   "code_unlocked": false,
@@ -155,6 +157,17 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Leaves an [HTML page drawn in its own frame](01-rendering.md#html-files) exactly as its author wrote it, and the choice is not offered on one
 - A way of reading and nothing more: an [edit](07-editing.md) made with it on writes the words your file holds, never the anchors drawn over them
 - Saved as `speed_reader_enabled`
+
+### Flash words
+
+- The lightning button beside the speed reader on the reading view's [toolbar](02-navigation.md#the-floating-toolbar) opens a box over the page that shows the words a word or a few at a time, starting at the word you selected, or else at the first block on screen
+- The letter your eye rests on sits between two short marks, so a word of any length lands in the same place
+- The page dims around the block being read and scrolls to follow it; closing leaves you at that block
+- Space pauses and plays, Left and Right step back and forward, Up and Down change the pace by 25 words a minute, and Escape closes; every key has a button beside it in the box
+- Code, math, diagrams and controls are skipped, and a sentence or a block ends its chunk with a short pause
+- Words count toward the [Grove](09-progress.md) only once each has stood its full time, and never twice with what you read by scrolling
+- Leaves the speed reader as it was, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
+- Saved as `flash_reader_wpm` (100 to 1000, 300 by default) and `flash_reader_chunk` (1 to 3 words, 1 by default)
 
 ### Typing help
 
