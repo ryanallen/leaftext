@@ -9700,7 +9700,12 @@ function activeDocumentIsUntitled() {
 const pagerHtmlByPath = new Map();
 
 function requestDocumentPager(path) {
-  const placeholder = app.querySelector('.document-body .docs-pager-loading');
+  const body = app.querySelector('.document-body');
+  if (activeDocumentIsUntitled()) {
+    body?.querySelector('.docs-pager')?.remove();
+    return;
+  }
+  const placeholder = body?.querySelector('.docs-pager-loading');
   if (!placeholder || !path) return;
   if (pagerHtmlByPath.has(path)) applyDocumentPager(placeholder, pagerHtmlByPath.get(path));
   send({ command: 'loadPager', path });
@@ -9722,7 +9727,7 @@ function applyDocumentPager(current, html) {
 }
 
 window.leafSetPager = (state) => {
-  if (!state || state.path !== activeDocumentPath()) return;
+  if (!state || activeDocumentIsUntitled() || state.path !== activeDocumentPath()) return;
   pagerHtmlByPath.set(state.path, state.html || '');
   const body = app.querySelector('.document-body');
   const current = body ? body.querySelector('.docs-pager') : null;
@@ -35347,7 +35352,7 @@ function makeConsoleLayer(id) {
   host.className = 'console-terminal';
   layer.appendChild(host);
   consoleShell.appendChild(layer);
-  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputLines: 0, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0 };
+  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -35445,7 +35450,7 @@ window.leafConsoleOutput = (id, bytes) => {
     for (const chunk of entry.pending) text += entry.decoder.decode(new Uint8Array(chunk), { stream: true });
     entry.pending = [];
     entry.terminal.write(text, () => {
-      entry.mapOutputLines += (text.match(/\n/g) || []).length;
+      entry.mapOutputPending = true;
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
     });
   });
@@ -35499,9 +35504,11 @@ function documentHeadingLevel(el) {
 function documentSectionBlocks(root, anchor) {
   const start = Array.from(root.querySelectorAll('[id]')).find((el) => el.id === anchor);
   if (!start) return null;
-  const level = documentHeadingLevel(start) || 6;
-  const blocks = [start];
-  let node = start.nextElementSibling;
+  let block = start;
+  while (block.parentElement && block.parentElement !== root) block = block.parentElement;
+  const level = documentHeadingLevel(block) || 6;
+  const blocks = [block];
+  let node = block.nextElementSibling;
   while (node) {
     const lvl = documentHeadingLevel(node);
     if (lvl && lvl <= level) break;
@@ -39492,9 +39499,52 @@ async function mermaidStopMessage(mermaid, source) {
 async function markMermaidFailed(mermaid, diagram) {
   if (mermaidKeptItsDrawing(diagram)) return;
   const source = diagram.__mermaidSource != null ? diagram.__mermaidSource : diagram.textContent;
+  const message = await mermaidStopMessage(mermaid, source);
+  const note = mermaidFailureNote(source, message);
+  diagram.__mermaidFailure = { line: note.at, sentence: mermaidFailureSentence(note), message };
   diagram.dataset.mermaidRender = 'failed';
-  showMermaidFailure(diagram, source, await mermaidStopMessage(mermaid, source));
+  showMermaidFailure(diagram, source, message);
 }
+
+
+window.leafDiagramSyntax = async (source) => {
+  try {
+    const mermaid = await loadMermaid();
+    mermaid.initialize(mermaidRuntimeConfig());
+    await mermaid.parse(source);
+    return { valid: true };
+  } catch (error) {
+    const message = error && error.message || String(error);
+    const note = mermaidFailureNote(source, message);
+    return { valid: false, line: note.at, sentence: mermaidFailureSentence(note), message };
+  }
+};
+
+window.leafDiagramVerdict = async (start) => {
+  const deadline = Date.now() + 4500;
+  while (readerLoading && !readerLoading.hidden && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  const body = app.querySelector('.document-body');
+  const diagram = body && [...body.querySelectorAll('pre.mermaid')]
+    .find((one) => rangeOf(one, 'block').start === start);
+  if (!diagram) return { drawn: false, sentence: 'No diagram stands at that place.' };
+  const hasDrawing = () => diagram.dataset.mermaidRender !== 'failed'
+    && !diagram.dataset.diagramWait
+    && !!diagram.querySelector('svg:not([aria-roledescription="error"])');
+  if (diagram.dataset.mermaidRender !== 'failed' && !hasDrawing() && diagram.dataset.processed !== 'true') {
+    await drawMermaidDiagrams([diagram]);
+  }
+  while (diagram.dataset.mermaidRender !== 'failed' && !hasDrawing() && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  if (diagram.dataset.mermaidRender === 'failed') {
+    return { drawn: false, ...diagram.__mermaidFailure };
+  }
+  return hasDrawing()
+    ? { drawn: true }
+    : { drawn: false, sentence: 'The diagram did not finish drawing.' };
+};
 const TABLE_COLUMN_FLOOR = 32;
 let sizedTableShapes = new Map();
 let sizedTableDocument = null;
@@ -42705,9 +42755,6 @@ function updateConsoleMinimapPreview(track, content, minimap) {
   const canKeep = held && held.frame.isConnected && held.first <= viewportLine && held.last >= viewportLine + entry.terminal.rows && held.width === metrics.sourceWidth;
   if (canKeep) {
     held.frame.style.height = `${metrics.scrollHeight}px`;
-    const rolled = length === held.length ? Math.min(entry.mapOutputLines, held.last - held.first) : 0;
-    for (let index = 0; index < rolled; index++) held.lines.firstElementChild?.remove();
-    for (let index = held.last - rolled; index < held.last; index++) held.lines.appendChild(lineNode(index));
     if (length > held.length && held.last === held.length) {
       for (let index = held.last; index < length; index++) held.lines.appendChild(lineNode(index));
       held.last = length;
@@ -42717,7 +42764,12 @@ function updateConsoleMinimapPreview(track, content, minimap) {
       }
       held.lines.style.top = `${held.first * lineHeight}px`;
     }
-    if (!rolled && length === held.length && held.lines.lastElementChild) {
+    if (entry.mapOutputPending) {
+      for (let index = held.first; index < held.last; index++) {
+        const line = held.lines.children[index - held.first];
+        if (line) line.textContent = buffer.getLine(index)?.translateToString(true) || '';
+      }
+    } else if (length === held.length && held.lines.lastElementChild) {
       held.lines.lastElementChild.textContent = buffer.getLine(held.last - 1)?.translateToString(true) || '';
     }
     const screenFirst = Math.max(held.first, buffer.baseY);
@@ -42727,7 +42779,7 @@ function updateConsoleMinimapPreview(track, content, minimap) {
       if (line) line.textContent = buffer.getLine(index)?.translateToString(true) || '';
     }
     held.length = length;
-    entry.mapOutputLines = 0;
+    entry.mapOutputPending = false;
     updateMinimapViewport();
     return;
   }
@@ -42748,7 +42800,7 @@ function updateConsoleMinimapPreview(track, content, minimap) {
   frame.appendChild(preview);
   content.replaceChildren(frame);
   entry.map = { frame, lines, first, last, length, width: metrics.sourceWidth };
-  entry.mapOutputLines = 0;
+  entry.mapOutputPending = false;
   minimap.classList.remove('is-loading');
   placeMinimapViewport(minimap, metrics, null);
 }
