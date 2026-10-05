@@ -105,6 +105,11 @@ let localImagesNeedRefresh = false;
 
 let readerScrollAnchor = null;
 let readerScrolling = false;
+
+let readerPlacedScrollTop;
+let readerPlaceHeldForResize;
+let minimapSpacerTarget;
+let readerScrollSettleTimer;
 let resetReaderScrollOnNextRender = false;
 let readerAnchorBlocks = null;
 
@@ -10260,6 +10265,13 @@ function editVaultMenuItems(vault) {
       title: vault.rootPath || '',
       icon: FOLDER_ICON_SVG,
       run: () => send({ command: 'changeVaultFolder', id: vault.id }),
+    },
+    {
+      label: 'Open Knowledge Format bundle',
+      switch: true,
+      checked: Boolean(vault.okfBundle),
+      keepOpen: true,
+      run: () => send({ command: 'setVaultOkfBundle', id: vault.id, enabled: !vault.okfBundle }),
     },
     {
       label: 'Remove vault',
@@ -33078,9 +33090,9 @@ window.leafHoldAppearance = (held) => {
   if (held) holdSlideExport(true);
 };
 
-const DOTTED_LEAF_POINTS = [[6.5,9],[6.5,11.5],[9,11.5],[6.5,14],[9,14],[11.5,14],[6.5,16.5],[9,16.5],[11.5,16.5],[14,16.5],[6.5,19],[9,19],[11.5,19],[14,19],[16.5,19],[19,19],[6.5,21.5],[9,21.5],[11.5,21.5],[14,21.5],[16.5,21.5],[19,21.5],[21.5,21.5],[24,21.5],[26.5,21.5],[6.5,24],[9,24],[11.5,24],[14,24],[16.5,24],[19,24],[21.5,24],[24,24],[26.5,24],[29,24],[31.5,24],[34,24],[36.5,24],[39,24],[6.5,26.5],[9,26.5],[11.5,26.5],[16.5,26.5],[19,26.5],[21.5,26.5],[24,26.5],[26.5,26.5],[29,26.5],[31.5,26.5],[34,26.5],[36.5,26.5],[39,26.5],[41.5,26.5],[44,26.5],[9,29],[11.5,29],[14,29],[16.5,29],[19,29],[21.5,29],[24,29],[26.5,29],[29,29],[31.5,29],[34,29],[36.5,29],[39,29],[41.5,29],[44,29],[46.5,29],[9,31.5],[11.5,31.5],[14,31.5],[16.5,31.5],[19,31.5],[24,31.5],[26.5,31.5],[29,31.5],[31.5,31.5],[34,31.5],[36.5,31.5],[39,31.5],[41.5,31.5],[44,31.5],[46.5,31.5],[49,31.5],[9,34],[11.5,34],[14,34],[16.5,34],[19,34],[21.5,34],[24,34],[31.5,34],[34,34],[36.5,34],[39,34],[41.5,34],[44,34],[46.5,34],[49,34],[51.5,34],[11.5,36.5],[14,36.5],[16.5,36.5],[19,36.5],[21.5,36.5],[24,36.5],[26.5,36.5],[29,36.5],[44,36.5],[46.5,36.5],[49,36.5],[51.5,36.5],[11.5,39],[14,39],[16.5,39],[19,39],[21.5,39],[24,39],[26.5,39],[29,39],[31.5,39],[34,39],[36.5,39],[49,39],[51.5,39],[54,39],[14,41.5],[16.5,41.5],[19,41.5],[21.5,41.5],[24,41.5],[26.5,41.5],[29,41.5],[31.5,41.5],[34,41.5],[36.5,41.5],[39,41.5],[41.5,41.5],[44,41.5],[51.5,41.5],[54,41.5],[16.5,44],[19,44],[21.5,44],[24,44],[26.5,44],[29,44],[31.5,44],[34,44],[36.5,44],[39,44],[41.5,44],[44,44],[46.5,44],[54,44],[56.5,44],[19,46.5],[21.5,46.5],[24,46.5],[26.5,46.5],[29,46.5],[31.5,46.5],[34,46.5],[36.5,46.5],[39,46.5],[41.5,46.5],[44,46.5],[46.5,46.5],[49,46.5],[56.5,46.5],[19,49],[21.5,49],[24,49],[26.5,49],[29,49],[31.5,49],[34,49],[36.5,49],[39,49],[41.5,49],[44,49],[46.5,49],[49,49],[51.5,49],[24,51.5],[26.5,51.5],[29,51.5],[31.5,51.5],[34,51.5],[36.5,51.5],[39,51.5],[41.5,51.5],[44,51.5],[46.5,51.5],[49,51.5],[51.5,51.5],[54,51.5],[26.5,54],[29,54],[31.5,54],[34,54],[36.5,54],[39,54],[41.5,54],[44,54],[46.5,54],[49,54],[51.5,54],[54,54],[56.5,54],[34,56.5],[36.5,56.5],[39,56.5],[41.5,56.5],[44,56.5],[46.5,56.5],[49,56.5],[51.5,56.5],[54,56.5],[56.5,56.5],[59,59]];
+const DOTTED_LEAF_POINTS = [[5,6.75],[5,8.5],[6.75,8.5],[5,10.25],[6.75,10.25],[5,12],[6.75,12],[8.5,12],[5,13.75],[6.75,13.75],[8.5,13.75],[10.25,13.75],[5,15.5],[6.75,15.5],[8.5,15.5],[10.25,15.5],[12,15.5],[5,17.25],[6.75,17.25],[8.5,17.25],[10.25,17.25],[12,17.25],[13.75,17.25],[15.5,17.25],[5,19],[6.75,19],[8.5,19],[10.25,19],[12,19],[13.75,19],[15.5,19],[17.25,19],[19,19],[6.75,20.75],[8.5,20.75],[10.25,20.75],[12,20.75],[13.75,20.75],[15.5,20.75],[17.25,20.75],[19,20.75],[20.75,20.75],[22.5,20.75],[24.25,20.75],[6.75,22.5],[8.5,22.5],[10.25,22.5],[12,22.5],[13.75,22.5],[15.5,22.5],[17.25,22.5],[19,22.5],[20.75,22.5],[22.5,22.5],[24.25,22.5],[26,22.5],[27.75,22.5],[29.5,22.5],[31.25,22.5],[33,22.5],[34.75,22.5],[6.75,24.25],[8.5,24.25],[10.25,24.25],[13.75,24.25],[15.5,24.25],[17.25,24.25],[19,24.25],[20.75,24.25],[22.5,24.25],[24.25,24.25],[26,24.25],[27.75,24.25],[29.5,24.25],[31.25,24.25],[33,24.25],[34.75,24.25],[36.5,24.25],[38.25,24.25],[40,24.25],[6.75,26],[8.5,26],[10.25,26],[12,26],[15.5,26],[17.25,26],[19,26],[20.75,26],[22.5,26],[24.25,26],[26,26],[27.75,26],[29.5,26],[31.25,26],[33,26],[34.75,26],[36.5,26],[38.25,26],[40,26],[41.75,26],[43.5,26],[6.75,27.75],[8.5,27.75],[10.25,27.75],[12,27.75],[13.75,27.75],[17.25,27.75],[19,27.75],[20.75,27.75],[22.5,27.75],[24.25,27.75],[26,27.75],[27.75,27.75],[29.5,27.75],[31.25,27.75],[33,27.75],[34.75,27.75],[36.5,27.75],[38.25,27.75],[40,27.75],[41.75,27.75],[43.5,27.75],[45.25,27.75],[47,27.75],[8.5,29.5],[10.25,29.5],[12,29.5],[13.75,29.5],[15.5,29.5],[17.25,29.5],[20.75,29.5],[22.5,29.5],[24.25,29.5],[26,29.5],[27.75,29.5],[29.5,29.5],[31.25,29.5],[33,29.5],[34.75,29.5],[36.5,29.5],[38.25,29.5],[40,29.5],[41.75,29.5],[43.5,29.5],[45.25,29.5],[47,29.5],[48.75,29.5],[8.5,31.25],[10.25,31.25],[12,31.25],[13.75,31.25],[15.5,31.25],[17.25,31.25],[19,31.25],[24.25,31.25],[26,31.25],[27.75,31.25],[29.5,31.25],[31.25,31.25],[33,31.25],[34.75,31.25],[36.5,31.25],[38.25,31.25],[40,31.25],[41.75,31.25],[43.5,31.25],[45.25,31.25],[47,31.25],[48.75,31.25],[8.5,33],[10.25,33],[12,33],[13.75,33],[15.5,33],[17.25,33],[19,33],[20.75,33],[27.75,33],[29.5,33],[31.25,33],[33,33],[34.75,33],[36.5,33],[38.25,33],[40,33],[41.75,33],[43.5,33],[45.25,33],[47,33],[48.75,33],[50.5,33],[10.25,34.75],[12,34.75],[13.75,34.75],[15.5,34.75],[17.25,34.75],[19,34.75],[20.75,34.75],[22.5,34.75],[24.25,34.75],[36.5,34.75],[38.25,34.75],[40,34.75],[41.75,34.75],[43.5,34.75],[45.25,34.75],[47,34.75],[48.75,34.75],[50.5,34.75],[52.25,34.75],[10.25,36.5],[12,36.5],[13.75,36.5],[15.5,36.5],[17.25,36.5],[19,36.5],[20.75,36.5],[22.5,36.5],[24.25,36.5],[26,36.5],[27.75,36.5],[29.5,36.5],[43.5,36.5],[45.25,36.5],[47,36.5],[48.75,36.5],[50.5,36.5],[52.25,36.5],[12,38.25],[13.75,38.25],[15.5,38.25],[17.25,38.25],[19,38.25],[20.75,38.25],[22.5,38.25],[24.25,38.25],[26,38.25],[27.75,38.25],[29.5,38.25],[31.25,38.25],[33,38.25],[34.75,38.25],[47,38.25],[48.75,38.25],[50.5,38.25],[52.25,38.25],[54,38.25],[12,40],[13.75,40],[15.5,40],[17.25,40],[19,40],[20.75,40],[22.5,40],[24.25,40],[26,40],[27.75,40],[29.5,40],[31.25,40],[33,40],[34.75,40],[36.5,40],[38.25,40],[40,40],[50.5,40],[52.25,40],[54,40],[13.75,41.75],[15.5,41.75],[17.25,41.75],[19,41.75],[20.75,41.75],[22.5,41.75],[24.25,41.75],[26,41.75],[27.75,41.75],[29.5,41.75],[31.25,41.75],[33,41.75],[34.75,41.75],[36.5,41.75],[38.25,41.75],[40,41.75],[41.75,41.75],[43.5,41.75],[52.25,41.75],[54,41.75],[55.75,41.75],[15.5,43.5],[17.25,43.5],[19,43.5],[20.75,43.5],[22.5,43.5],[24.25,43.5],[26,43.5],[27.75,43.5],[29.5,43.5],[31.25,43.5],[33,43.5],[34.75,43.5],[36.5,43.5],[38.25,43.5],[40,43.5],[41.75,43.5],[43.5,43.5],[45.25,43.5],[47,43.5],[54,43.5],[55.75,43.5],[17.25,45.25],[19,45.25],[20.75,45.25],[22.5,45.25],[24.25,45.25],[26,45.25],[27.75,45.25],[29.5,45.25],[31.25,45.25],[33,45.25],[34.75,45.25],[36.5,45.25],[38.25,45.25],[40,45.25],[41.75,45.25],[43.5,45.25],[45.25,45.25],[47,45.25],[48.75,45.25],[55.75,45.25],[17.25,47],[19,47],[20.75,47],[22.5,47],[24.25,47],[26,47],[27.75,47],[29.5,47],[31.25,47],[33,47],[34.75,47],[36.5,47],[38.25,47],[40,47],[41.75,47],[43.5,47],[45.25,47],[47,47],[48.75,47],[50.5,47],[19,48.75],[20.75,48.75],[22.5,48.75],[24.25,48.75],[26,48.75],[27.75,48.75],[29.5,48.75],[31.25,48.75],[33,48.75],[34.75,48.75],[36.5,48.75],[38.25,48.75],[40,48.75],[41.75,48.75],[43.5,48.75],[45.25,48.75],[47,48.75],[48.75,48.75],[50.5,48.75],[52.25,48.75],[57.5,48.75],[20.75,50.5],[22.5,50.5],[24.25,50.5],[26,50.5],[27.75,50.5],[29.5,50.5],[31.25,50.5],[33,50.5],[34.75,50.5],[36.5,50.5],[38.25,50.5],[40,50.5],[41.75,50.5],[43.5,50.5],[45.25,50.5],[47,50.5],[48.75,50.5],[50.5,50.5],[52.25,50.5],[54,50.5],[24.25,52.25],[26,52.25],[27.75,52.25],[29.5,52.25],[31.25,52.25],[33,52.25],[34.75,52.25],[36.5,52.25],[38.25,52.25],[40,52.25],[41.75,52.25],[43.5,52.25],[45.25,52.25],[47,52.25],[48.75,52.25],[50.5,52.25],[52.25,52.25],[54,52.25],[55.75,52.25],[26,54],[27.75,54],[29.5,54],[31.25,54],[33,54],[34.75,54],[36.5,54],[38.25,54],[40,54],[41.75,54],[43.5,54],[45.25,54],[47,54],[48.75,54],[50.5,54],[52.25,54],[54,54],[55.75,54],[31.25,55.75],[33,55.75],[34.75,55.75],[36.5,55.75],[38.25,55.75],[40,55.75],[41.75,55.75],[43.5,55.75],[45.25,55.75],[47,55.75],[48.75,55.75],[50.5,55.75],[52.25,55.75],[54,55.75],[55.75,55.75],[57.5,55.75],[38.25,57.5],[40,57.5],[41.75,57.5],[43.5,57.5],[45.25,57.5],[47,57.5],[48.75,57.5],[50.5,57.5],[52.25,57.5],[54,57.5],[55.75,57.5],[57.5,57.5],[59.25,59.25]];
 function dottedLeafMarkup(id) {
-  const circles = DOTTED_LEAF_POINTS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.82"/>`).join('');
+  const circles = DOTTED_LEAF_POINTS.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.5"/>`).join('');
   return `<span class="dotted-leaf" role="img" aria-label="Leaftext leaf" data-dotted-leaf="${String(id).replace(/[^a-z0-9-]/gi, '')}"><svg class="dotted-leaf-still" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor">${circles}</g></svg><canvas class="dotted-leaf-canvas" aria-hidden="true"></canvas></span>`;
 }
 function startDottedLeaf(mark) {
@@ -33157,15 +33169,14 @@ function startDottedLeaf(mark) {
     const cells = new Map();
     const placed = [];
     for (const point of points) {
-      const [x, y, , perspective, pulse] = point;
+      const [x, y] = point;
       const cellX = Math.floor(x / 2);
       const cellY = Math.floor(y / 2);
       let touching = false;
       for (let nearY = cellY - 1; nearY <= cellY + 1 && !touching; nearY += 1) {
         for (let nearX = cellX - 1; nearX <= cellX + 1 && !touching; nearX += 1) {
           for (const earlier of cells.get(`${nearX},${nearY}`) || []) {
-            const distance = 0.94 * (perspective + earlier[3]) + 0.25;
-            if ((x - earlier[0]) ** 2 + (y - earlier[1]) ** 2 < distance ** 2) { touching = true; break; }
+            if ((x - earlier[0]) ** 2 + (y - earlier[1]) ** 2 < 1.4 ** 2) { touching = true; break; }
           }
         }
       }
@@ -33175,10 +33186,10 @@ function startDottedLeaf(mark) {
       if (!cells.has(key)) cells.set(key, []);
       cells.get(key).push(point);
     }
-    for (const [x, y, depth, perspective, pulse] of placed.reverse()) {
+    for (const [x, y, depth, , pulse] of placed.reverse()) {
       context.globalAlpha = Math.min(1, 0.35 + depth * 0.2 + pulse * 0.55);
       context.beginPath();
-      context.arc(x, y, (0.74 + 0.2 * pulse) * perspective, 0, 2 * Math.PI);
+      context.arc(x, y, 0.5, 0, 2 * Math.PI);
       context.fill();
     }
     context.globalAlpha = 1;
@@ -35396,6 +35407,16 @@ function makeConsoleLayer(id) {
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
 
+function consolePasteKey(event) {
+  if (isMacPlatform || event.key.toLowerCase() !== 'v' || !event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+  const entry = frontConsoleEntry();
+  if (!entry?.terminal || entry.layer.hidden || !event.target.classList?.contains('xterm-helper-textarea') || !entry.layer.contains(event.target)) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  send({ command: 'consolePaste', id: consoleFrontId });
+}
+document.addEventListener('keydown', consolePasteKey, true);
+
 function consoleScrollElement() {
   const entry = frontConsoleEntry();
   if (!entry?.terminal) return null;
@@ -35500,12 +35521,21 @@ function documentHeadingLevel(el) {
   const match = /^H([1-6])$/.exec(el.tagName);
   return match ? Number(match[1]) : 0;
 }
+function emptySectionMarkerBlock(block) {
+  const markers = block.tagName === 'A' ? [block] : block.tagName === 'P' ? [...block.children] : [];
+  return markers.length > 0 && !block.textContent.trim() && markers.every((marker) => marker.tagName === 'A' && marker.id && !marker.getAttribute('href'));
+}
 
 function documentSectionBlocks(root, anchor) {
   const start = Array.from(root.querySelectorAll('[id]')).find((el) => el.id === anchor);
   if (!start) return null;
   let block = start;
   while (block.parentElement && block.parentElement !== root) block = block.parentElement;
+  if (emptySectionMarkerBlock(block)) {
+    let next = block.nextElementSibling;
+    while (next && emptySectionMarkerBlock(next)) next = next.nextElementSibling;
+    if (next && documentHeadingLevel(next)) block = next;
+  }
   const level = documentHeadingLevel(block) || 6;
   const blocks = [block];
   let node = block.nextElementSibling;
@@ -41027,15 +41057,9 @@ var minimapScrollMetrics;
 
 var minimapMirroredScrollTop;
 
-var readerPlacedScrollTop;
-
-var readerPlaceHeldForResize;
-
 var minimapMirroredColumnScrollTop;
 var minimapSpacerFrame;
-var minimapSpacerTarget;
 var readerLayoutFrame;
-var readerScrollSettleTimer;
 var readerReflowObserver;
 var readerAnchorBlocksCount;
 
@@ -42008,6 +42032,29 @@ function minimapRebuildWouldChangeNothing(metrics, previewWidth, frameWidth, fir
     && !minimapHeldTableMeetsView(metrics)
     && minimapBuiltSlack >= slack;
 }
+function matchMinimapTableColumns(table, body, copy) {
+  if (!body || table.querySelector('colgroup')) return false;
+  const ordinary = (row) => row && row.children.length > 0 && Array.prototype.every.call(row.children, (cell) =>
+    (cell.tagName === 'TH' || cell.tagName === 'TD') && Number(cell.getAttribute('colspan') || 1) === 1 && Number(cell.getAttribute('rowspan') || 1) === 1);
+  const head = table.querySelector('thead');
+  const header = head && head.children.length === 1 ? head.children[0] : null;
+  const cells = ordinary(header) && ordinary(body.firstElementChild) && header.children.length === body.firstElementChild.children.length
+    ? header.children
+    : Array.prototype.find.call(body.children, ordinary)?.children;
+  if (!cells) return false;
+  const widths = Array.prototype.map.call(cells, (cell) => cell.getBoundingClientRect().width);
+  const bodyWidth = body.getBoundingClientRect().width;
+  if (!widths.every((width) => Number.isFinite(width) && width > 0) || !(bodyWidth > 0)) return false;
+  const columns = document.createElement('colgroup');
+  for (const width of widths) {
+    const column = document.createElement('col');
+    column.style.width = `${width}px`;
+    columns.appendChild(column);
+  }
+  copy.prepend(columns);
+  copy.style.minWidth = `${bodyWidth}px`;
+  return true;
+}
 
 function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'both') {
   
@@ -42034,7 +42081,7 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
   
   const block = window.path === '' ? -1 : Number(window.path.split('/')[0]);
   
-  const built = { preview, firstTop: NaN, firstNode: null, firstSource: null, slicedTop: false, slicedBottom: false };
+  const built = { preview, firstTop: NaN, firstNode: null, firstSource: null, slicedTop: false, slicedBottom: false, tableAnchor: null };
   
   const leads = (node, top, from) => {
     if (built.firstNode) return;
@@ -42094,6 +42141,9 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
     const clone = wrapper.cloneNode(false);
     recordMinimapClone(wrapper, clone, false);
     resetPadding(clone);
+    if (wrapper.tagName === 'TABLE' && window.holder.tagName === 'TBODY' && window.holder.parentElement === wrapper) {
+      built.tableMatched = matchMinimapTableColumns(wrapper, window.holder, clone);
+    }
     
     const level = depth > 0 && window.levels ? window.levels[depth] : null;
     if (level) carrySiblings(holderOf, into, clone, level);
@@ -42102,6 +42152,21 @@ function buildWindowedMinimapClone(source, window, first, last, cut, cutAt = 'bo
     holderOf = wrapper;
   }
   slice(window.holder, into);
+  if (built.tableMatched && cut && first <= last) {
+    let lo = first;
+    let hi = last;
+    let index = first;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (minimapBlockEdges(window.rows[mid], cut.appTop, cut.scrollTop).bottom > cut.scrollTop) {
+        index = mid;
+        hi = mid - 1;
+      } else {
+        lo = mid + 1;
+      }
+    }
+    built.tableAnchor = { source: window.rows[index], node: into.children[index - first] };
+  }
   if (window.afterLast >= 0) carry(block + 1, window.afterLast, 'bottom');
   
   if (!built.firstNode && into.firstElementChild) leads(into.firstElementChild, topOf(window.rows[first]), window.rows[first]);
@@ -42327,6 +42392,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
   
   let firstTop = metrics.sourceTop;
   let firstNode = null;
+  let tableAnchor = null;
   if (!windowsIt) {
     preview = source.cloneNode(true);
     recordMinimapClone(source, preview, true);
@@ -42351,6 +42417,7 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
     
     if (!Number.isNaN(built.firstTop)) firstTop = built.firstTop;
     firstNode = built.firstNode;
+    tableAnchor = built.tableAnchor;
     frame.style.transform = `translateY(${firstTop * previewScale}px) scale(${previewScale})`;
     
     const outerEdges = window.wrappers.length ? minimapBlockEdges(window.wrappers[0], appTop, scrollTop) : null;
@@ -42406,6 +42473,19 @@ function updateDocumentMinimapPreview(slack = MINIMAP_WINDOW_SLACK) {
         frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
       }
     }
+  }
+  if (minimapBuiltRange && tableAnchor && tableAnchor.node && tableAnchor.node.isConnected !== false && tableAnchor.node.getBoundingClientRect().height > 0) {
+    minimapBuiltRange.lead = tableAnchor.source;
+    minimapBuiltRange.node = tableAnchor.node;
+    minimapBuiltRange.tableAnchor = true;
+    placeMinimapClone(content, preview, metrics, previewScale);
+    columnFrame(() => {
+      if (preview.isConnected && minimapBuiltRange?.node === tableAnchor.node) {
+        const current = measureDocumentMinimap(track);
+        placeMinimapClone(content, preview, current, previewWidth / current.sourceWidth);
+        updateMinimapViewport();
+      }
+    });
   }
   
   drawMinimapSlideDivisions(content, source, metrics, previewScale);
@@ -42469,11 +42549,19 @@ function placeMinimapClone(content, preview, metrics, previewScale, keepReach = 
   const delta = wanted - landedAt;
   if (Math.abs(delta) > 0.5) frame.style.transform = `translateY(${wanted + delta}px) scale(${previewScale})`;
   if (keepReach) return;
-  const firstTop = anchorTop - Math.max(0, landedAt - headAt) / previewScale;
+  const firstTop = range.tableAnchor
+    ? anchorTop + (preview.getBoundingClientRect().top - (byBlock ? kept.copy : range.node).getBoundingClientRect().top) / previewScale
+    : anchorTop - Math.max(0, landedAt - headAt) / previewScale;
+  const actualBottom = anchorTop + Math.max(0, footAt - landedAt) / previewScale;
+  const source = range.tableAnchor ? minimapSourceElement() : null;
+  const firstBlock = source?.firstElementChild;
+  const lastBlock = source?.lastElementChild;
+  const firstBlockTop = firstBlock ? minimapBlockEdges(firstBlock, appTop, metrics.scrollTop).top : -Infinity;
+  const lastBlockBottom = lastBlock ? minimapBlockEdges(lastBlock, appTop, metrics.scrollTop).bottom : Infinity;
   minimapBuiltRange = {
     ...range,
-    top: range.atHead ? 0 : firstTop,
-    bottom: range.atFoot ? metrics.scrollHeight : anchorTop + Math.max(0, footAt - landedAt) / previewScale,
+    top: (range.atHead && !range.tableAnchor) || (range.tableAnchor && firstTop <= firstBlockTop + 1) ? 0 : firstTop,
+    bottom: (range.atFoot && !range.tableAnchor) || (range.tableAnchor && actualBottom >= lastBlockBottom - 1) ? metrics.scrollHeight : actualBottom,
     placedAt: metrics.scrollHeight,
   };
 }
@@ -42615,6 +42703,40 @@ if (readerMinimap) {
     app.scrollTop = top;
   }, { passive: true });
 }
+window.leafShowError = (message) => leafToast(message, 'error');
+
+window.leafShowNotice = (message) => leafToast(message, 'ok');
+
+window.leafFileWritten = (path) => {
+  leafToast('Saved ', 'ok', null, {
+    text: path,
+    run: () => send({ command: 'openExternal', url: path }),
+  });
+};
+window.leafShowOpenError = (path, reason) => {
+  window.leafShowError(`Failed to open ${path}: ${reason}`);
+};
+
+window.leafShowSaveError = (path, reason) => {
+  window.leafShowError(`${path} was not saved: ${reason}. Your edits are still here.`);
+};
+
+window.leafFileDeleted = (path, name) => {
+  undoableDelete = path;
+  leafToast(`Deleted ${name}`, 'ok', {
+    label: 'Undo',
+    run: undoLastDelete,
+    gone: () => { undoableDelete = null; },
+  });
+};
+
+function undoLastDelete() {
+  const path = undoableDelete;
+  if (!path) return;
+  undoableDelete = null;
+  send({ command: 'undoDelete', path });
+}
+
 onColumn('scroll', () => {
   revealHeldReadingNearEdge();
   
@@ -42660,39 +42782,6 @@ const releaseReaderPlaceHeldForResize = () => {
 };
 for (const type of ['wheel', 'pointerdown', 'keydown', 'touchstart']) {
   window.addEventListener(type, releaseReaderPlaceHeldForResize, { capture: true, passive: true });
-}
-window.leafShowError = (message) => leafToast(message, 'error');
-
-window.leafShowNotice = (message) => leafToast(message, 'ok');
-
-window.leafFileWritten = (path) => {
-  leafToast('Saved ', 'ok', null, {
-    text: path,
-    run: () => send({ command: 'openExternal', url: path }),
-  });
-};
-window.leafShowOpenError = (path, reason) => {
-  window.leafShowError(`Failed to open ${path}: ${reason}`);
-};
-
-window.leafShowSaveError = (path, reason) => {
-  window.leafShowError(`${path} was not saved: ${reason}. Your edits are still here.`);
-};
-
-window.leafFileDeleted = (path, name) => {
-  undoableDelete = path;
-  leafToast(`Deleted ${name}`, 'ok', {
-    label: 'Undo',
-    run: undoLastDelete,
-    gone: () => { undoableDelete = null; },
-  });
-};
-
-function undoLastDelete() {
-  const path = undoableDelete;
-  if (!path) return;
-  undoableDelete = null;
-  send({ command: 'undoDelete', path });
 }
 function minimapAvailableHeight(minimap) {
   const shellRect = app.getBoundingClientRect();

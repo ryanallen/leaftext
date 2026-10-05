@@ -99,6 +99,23 @@ async function load(url, fetchWith = fetch) {
     },
     search: (query, today, skipped, partial) => typeof api.leaf_search === 'function'
       ? withStrings((...args) => api.leaf_search(...args, partial ? 1 : 0), query, today, JSON.stringify(skipped)) : null,
+    searchBegin: (query, today) => {
+      const words = write(query);
+      const date = write(today);
+      const started = Boolean(api.leaf_search_begin(...words, ...date));
+      api.leaf_free(...words);
+      api.leaf_free(...date);
+      return started;
+    },
+    searchAdd: (path, bytes) => {
+      const name = write(path);
+      const body = put(bytes);
+      const scored = Boolean(api.leaf_search_add(...name, ...body));
+      api.leaf_free(...name);
+      api.leaf_free(...body);
+      return scored;
+    },
+    searchSupplied: (skipped, partial) => withStrings((...args) => api.leaf_search_supplied(...args, partial ? 1 : 0), JSON.stringify(skipped)),
     codeCompleteNotes: (token) => read(api.leaf_code_complete_notes(BigInt(token))),
     codeCompleteHeadings: (token, handle, note) => withStrings((...args) => api.leaf_code_complete_headings(BigInt(token), handle, ...args), note || ''),
     codeHoverNote: (token, note) => withStrings((...args) => api.leaf_code_hover_note(BigInt(token), ...args), note || ''),
@@ -215,6 +232,7 @@ export const COMMANDS = {
   newDocument: [REFUSED, 'a new document would have nowhere to be saved'],
   newConsole: [REFUSED, 'a published page cannot start a local command line'],
   consoleInput: [REFUSED, 'a published page has no console process to receive input'],
+  consolePaste: [REFUSED, 'a published page has no console process to receive pasted text'],
   consoleResize: [REFUSED, 'a published page has no console process to resize'],
   pasteFile: [REFUSED, 'nothing here writes to a disk'],
   revealFile: [REFUSED, 'there is no file manager to show it in'],
@@ -298,6 +316,7 @@ export const COMMANDS = {
   linkVaultRemote: [REFUSED, 'a vault is a folder on a disk, and a site is one folder already'],
   syncVault: [REFUSED, 'pushing a repository needs a disk and a process'],
   setVaultGitAutoSync: [REFUSED, 'a site has no vault registry'],
+  setVaultOkfBundle: [REFUSED, 'a site has no vault registry'],
   ignoreVaultRepos: [REFUSED, 'a site is a folder on somebody else’s host with no disk under it and no git to ignore anything'],
   setGitIdentity: [REFUSED, 'it writes who git commits as into the git settings on a machine, and a site is a folder on somebody else’s host with no machine and no git under it'],
   refreshVault: [REFUSED, 'a site is one folder already published, and nothing here can reach the source it came from'],
@@ -521,24 +540,90 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   let corpusLoading = null;
   let corpusReady = false;
   let currentSearch = null;
-  const corpusSkipped = [];
+  let firstPartialAnswered = false;
+  let partialSearchTimer = null;
+  const corpusRejected = [];
+  const corpusFailed = [];
   function answerSearch(partial) {
     if (!currentSearch) return;
-    const script = core.search(currentSearch.query, currentSearch.today, corpusSkipped, partial);
+    const script = core.search(currentSearch.query, currentSearch.today, [...corpusRejected, ...corpusFailed], partial);
     if (script) run(script);
+  }
+  async function searchRejected(request) {
+    if (!request.query.trim()) {
+      const script = core.search(request.query, request.today, corpusFailed, false);
+      if (script && currentSearch === request) run(script);
+      request.complete = true;
+      return;
+    }
+    if (!core.searchBegin(request.query, request.today)) return;
+    const failed = [...corpusFailed];
+    const paths = corpusRejected.slice();
+    if (!paths.length) {
+      const script = core.searchSupplied(failed, false);
+      if (script && currentSearch === request) run(script);
+      request.failed = failed;
+      request.complete = true;
+      return;
+    }
+    let next = 0;
+    let finished = 0;
+    const answer = (partial) => {
+      if (currentSearch !== request) return;
+      const script = core.searchSupplied(failed, partial);
+      if (script) run(script);
+    };
+    answer(paths.length > 0);
+    const worker = async () => {
+      while (next < paths.length && currentSearch === request) {
+        const path = paths[next++];
+        try {
+          const bytes = await read(path);
+          if (currentSearch !== request) return;
+          if (bytes.length > 32 * 1024 * 1024 || !core.searchAdd(path, bytes)) failed.push(path);
+        } catch (_) {
+          if (currentSearch !== request) return;
+          failed.push(path);
+        }
+        finished++;
+        if (finished % 50 === 0) answer(true);
+        if (finished % 8 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, paths.length) }, worker));
+    answer(false);
+    if (currentSearch === request) {
+      request.failed = failed;
+      request.complete = true;
+    }
+  }
+  function schedulePartialSearch() {
+    if (!currentSearch) return;
+    if (!firstPartialAnswered) {
+      firstPartialAnswered = true;
+      answerSearch(true);
+    } else if (partialSearchTimer === null) {
+      partialSearchTimer = setTimeout(() => {
+        partialSearchTimer = null;
+        answerSearch(true);
+      }, 100);
+    }
   }
   function loadCorpus() {
     if (corpusLoading) return corpusLoading;
     corpusLoading = Promise.all(documents.map(async ({ path }) => {
       try {
-        if (!core.corpusAdd(path, await read(path))) corpusSkipped.push(path);
+        const bytes = await read(path);
+        if (bytes.length > 2 * 1024 * 1024 || !core.corpusAdd(path, bytes)) corpusRejected.push(path);
       } catch (_) {
-        corpusSkipped.push(path);
+        corpusFailed.push(path);
       }
-      answerSearch(true);
+      schedulePartialSearch();
     })).then(() => {
       corpusReady = true;
-      answerSearch(false);
+      if (partialSearchTimer !== null) clearTimeout(partialSearchTimer);
+      partialSearchTimer = null;
+      if (currentSearch) searchRejected(currentSearch);
     });
     return corpusLoading;
   }
@@ -709,7 +794,16 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     const anchor = at === -1 ? '' : written.slice(at + 1).split('?')[0];
     const found = (path) => (path ? { path, anchor } : null);
     let href = (at === -1 ? written : written.slice(0, at)).split('?')[0];
+    if (/%(?:2f|5c)/i.test(href)) return null;
+    let fromRoot = href.startsWith('/');
     if (/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+      const writtenPath = decodeAddressPart(href.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/]*/i, ''));
+      let depth = 0;
+      for (const part of writtenPath.split('/')) {
+        if (part === '..' && !depth) return null;
+        if (part === '..') depth--;
+        else if (part && part !== '.') depth++;
+      }
       let address;
       try {
         address = new URL(href);
@@ -717,17 +811,21 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         return null;
       }
       if (address.origin !== location.origin) return null;
-      href = decodeURIComponent(address.pathname.replace(/^\//, ''));
+      href = decodeAddressPart(address.pathname.replace(/^\//, ''));
       // Already a whole path from the top of the site, so nothing to resolve it against.
       from = '';
+      fromRoot = true;
     } else {
       // The served listing holds names as they are, so a hand-encoded one has to come back to that before it can match.
       href = decodeAddressPart(href);
     }
-    const base = from.split('/').slice(0, -1);
+    const base = fromRoot ? [] : from.split('/').slice(0, -1);
     for (const part of href.split('/')) {
       if (part === '.' || part === '') continue;
-      if (part === '..') base.pop();
+      if (part === '..') {
+        if (!base.length) return null;
+        base.pop();
+      }
       else base.push(part);
     }
     const path = base.join('/');
@@ -1236,9 +1334,24 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     },
     getFolder: ({ path }) => showFolder(path || ''),
     search: ({ query, today }) => {
-      currentSearch = { query: String(query || ''), today: String(today || '') };
-      if (corpusReady) answerSearch(false);
-      else loadCorpus();
+      const next = { query: String(query || ''), today: String(today || '') };
+      const changed = !currentSearch || currentSearch.query !== next.query || currentSearch.today !== next.today;
+      if (!changed) {
+        if (corpusReady && currentSearch.complete) {
+          const script = currentSearch.query.trim() ? core.searchSupplied(currentSearch.failed, false) : core.search(currentSearch.query, currentSearch.today, corpusFailed, false);
+          if (script) run(script);
+        }
+        return;
+      }
+      currentSearch = next;
+      if (corpusReady) searchRejected(currentSearch);
+      else {
+        if (changed && corpusLoading) {
+          firstPartialAnswered = true;
+          answerSearch(true);
+        }
+        loadCorpus();
+      }
     },
     revealInLibrary: ({ path }) => showFolder(String(path || open || '').split('/').slice(0, -1).join('/')),
     openLink: (command) => {

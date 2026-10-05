@@ -49,6 +49,14 @@ While the list is open, the button and the vault's name beside it light as one s
 - **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or a [storage service](#storage-services). Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
 - The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
 
+### Open Knowledge Format bundles
+
+An Open Knowledge Format bundle is a folder of Markdown concepts. Add its folder as a vault, open that vault's settings, and turn on **Open Knowledge Format bundle**. Leaftext reads the concepts, their fields, and optional `index.md` and `log.md` as Markdown. It keeps fields it does not recognize when you edit and save a concept.
+
+Inside a marked bundle, a link beginning `/` starts at the bundle folder. A relative link starts beside the concept containing it. The same links work in the reading view, hover preview, code view, and graph. If marked vaults nest, the innermost marked folder supplies the root, even while another vault is selected. Turning the switch off restores ordinary file links; the switch changes no file in the folder.
+
+A published folder of concepts uses its published listing as the root for links beginning `/`. Links that climb above that root do not open a document.
+
 ![The New vault page inside the switcher, with a folder, Clone a repository, seven storage services and Back](../../imgs/vault-switcher-v2.png)
 
 > [!NOTE]
@@ -328,7 +336,7 @@ Copying a whole folder is not supported; a folder can be pasted only as a move (
 
 Search covers the active vault, and it is one of the two things the [find bar](02-navigation.md#find-in-this-document) searches. Press `Ctrl+F` anywhere and pick **All files** from the menu at the left end of the field; on the start screen, where there is no document, the bar comes up on All files already. The results hang under the bar, so the pane goes on showing your files or your [outline](02-navigation.md#the-documents-outline) while you read them. With no vault, the field says a notes folder is needed rather than looking like a box that works and does not.
 
-On a published site, **All files** searches every page the site serves. The first search reads the site's pages; later searches reuse them. A page the browser could not read is named with the results. Open a result to go to that page.
+On a published site, **All files** searches every page the site serves. The first search holds up to 32 MB of pages; each search reads the remaining pages when it needs them, without keeping their text. A page the browser could not read or search is named with the results. Open a result to go to that page.
 
 `Escape` closes the bar and takes the results with it. Nothing about the pane changes either way — it is not where the answer lands.
 
