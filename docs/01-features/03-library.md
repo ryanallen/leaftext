@@ -24,7 +24,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud, Google Drive and the Kindle app's books become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, manually from its header or automatically once local changes stop when that vault opts in — and a repository can be [cloned](#clone-a-repository) into a new vault |
-| [Storage services](#storage-services) | Connect Dropbox, Google Drive, OneDrive, SharePoint, Box, a WebDAV server or an S3 bucket and keep a local copy for offline reading |
+| [Storage services](#storage-services) | Connect Dropbox, OneDrive, SharePoint, Box, a WebDAV server or an S3 bucket and keep a local copy for offline reading |
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
@@ -57,7 +57,6 @@ Inside a marked bundle, a link beginning `/` starts at the bundle folder. A rela
 
 A published folder of concepts uses its published listing as the root for links beginning `/`. Links that climb above that root do not open a document.
 
-![The New vault page inside the switcher, with a folder, Clone a repository, seven storage services and Back](../../imgs/vault-switcher-v2.png)
 
 > [!NOTE]
 > **Nothing is written into your folder.** A vault is a row in Leaftext's own database, not a marker file. Removing a vault forgets it; the folder and its files are untouched.
@@ -177,19 +176,17 @@ A folder a tool filled without saying so — a cache of thousands of tiny data f
 
 ## Storage services
 
-The **New vault…** page offers **Dropbox…**, **Google Drive…**, **OneDrive…**, **SharePoint…**, **Box…**, **WebDAV…** and **S3…**. The first five connect through your own app registration and open sign-in in your browser, so your password stays in the browser. Google's sign-in opens instead in a tab beside the one you were reading, drawn by Google in a web profile of its own, and the tab closes by itself when Google answers; where Google refuses to draw in that tab, the same sign-in opens in your browser and Leaftext comes back to the front when Google answers. A WebDAV server or an S3 bucket has no browser sign-in, so its form takes your own user name and password, or your own key pair, and Leaftext tries them against the server before it keeps them. Every credential goes in your operating system's credential store and never in a file Leaftext writes. Each one is kept under a name made from the profile folder, the vault and the account it is for, so a second copy of Leaftext running under its own profile signs in without replacing the first copy's sign-in. A sign-in kept by an older version under the vault alone is carried across the first time it is needed, once it is shown to be that vault's own — the same account and the same app, or the server taking the password — and a waiting Box client secret is not carried, so a Box sign-in that never finished starts again from its form.
+The **New vault** page offers Dropbox, OneDrive, SharePoint, Box, WebDAV and S3. Dropbox, OneDrive, SharePoint and Box use your own app registration and open sign-in in your browser. A WebDAV server or S3 bucket takes your user name and password or key pair and checks it with the server. Credentials are kept in the operating system's credential store, under the profile folder, vault and account. An older sign-in is carried over only after Leaftext confirms it belongs to that vault.
 
 | Service | What the connection asks for |
 | --- | --- |
 | Dropbox | Your app key and a folder path such as `/Notes`; register `http://127.0.0.1:37653/` as its redirect address |
-| Google Drive | Nothing, where this copy of Leaftext carries its own Google sign-in: press **Sign in with Google** and your whole Drive becomes a vault. **Use my own client ID…** takes your desktop client ID and a folder ID instead; **Use whole Drive** there chooses the entire drive |
 | OneDrive | Your desktop app client ID, drive ID, and folder ID |
 | SharePoint | Your desktop app client ID, document library drive ID, and folder ID |
 | Box | Your app's client ID and client secret, and a folder ID; register `http://127.0.0.1/` as its redirect address |
 | WebDAV | The folder's `https://` address, such as a Nextcloud folder's WebDAV link, your user name and your password |
 | S3 | The endpoint (blank for Amazon), region, bucket, an optional prefix, and your access key ID and secret access key |
 
-The connection form explains the app registration each service needs. Google registrations must be set to **In production** before connecting.
 
 While a new service vault is waiting for sign-in or a server check, **Cancel** stops that attempt and removes the new vault. The library returns to the vault and folder you were browsing unless you have moved elsewhere. Canceling **Enter password…** on an existing WebDAV or S3 vault keeps that vault and its earlier sign-in. A canceled attempt cannot later add a credential or show a sign-in failure.
 
@@ -197,9 +194,7 @@ Leaftext keeps a local copy of readable files, so opening, searching, and follow
 
 ### Google Docs, Sheets and Slides
 
-A Google Doc, Sheet or Slide deck in a Google Drive vault opens as a page in a tab named after the document, fetched from Google each time you open it. A Slides deck opens as slides with its text boxes where Google placed them. With edit mode on, type in a box, move or size it, carry a slide by its margin handle, or press the handle to duplicate or delete a slide. **Save** sends those changes together to Google. In a Doc or Sheet, type into a paragraph, heading or cell and **Save** sends only what you changed back to Google, to the place it came from. A paragraph holding something Leaftext cannot write back exactly — a color, a font, a picture, a list, a table in a Doc, a formula in a Sheet — is shown and cannot be typed into, so nothing you did not touch is ever rewritten. If somebody changed the document in Google after you opened it, Save sends nothing and your edits stay where they are. Using your own client ID, turn on the Docs, Sheets and Slides APIs in its Google Cloud project; Leaftext says which one is missing.
-
-The Google Drive app puts the same documents on its own drive as shortcuts ending `.gsheet`, `.gdoc` and `.gslides`. Leaftext opens one through your Google Drive vault for that drive's account and reads, edits and saves it exactly as above. With no such vault signed in, it says what the file is and offers **Open in Google Sheets** — or Docs, or Slides — which opens it in your browser.
+The Google Drive app keeps Google Docs, Sheets and Slides in its folder as shortcuts ending `.gdoc`, `.gsheet` and `.gslides`. When you open one, Leaftext says what it is and offers **Open in Google Docs**, **Open in Google Sheets** or **Open in Google Slides**. The press opens that document in your browser. Leaftext does not sign in to Google or fetch the document through Google's API. If the shortcut does not identify a document, the message says so without an open button.
 
 The vault's settings show the account and refresh state, with **Refresh**, **Sign in**, and **Sign out**; a WebDAV or S3 vault shows **Enter password…** in place of **Sign in**. A connected vault refreshes every five minutes. A WebDAV vault asks its server about every folder until the server has shown that it marks a folder changed whenever something inside it changes; from then on it asks only about the folders that changed, and still checks every folder about once an hour. Three consecutive failures pause automatic refresh until you press **Refresh**. Signing out keeps the local files.
 

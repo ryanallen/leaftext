@@ -2,11 +2,11 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://leaftext.com/</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/01-rendering.html</loc>
-    <lastmod>2026-10-04</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/02-navigation.html</loc>
@@ -38,7 +38,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/09-progress.html</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/10-agents.html</loc>
@@ -46,7 +46,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-introduction.html</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-installation.html</loc>
@@ -54,7 +54,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/03-quickstart.html</loc>
-    <lastmod>2026-10-04</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/04-help.html</loc>
@@ -62,7 +62,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/05-compare.html</loc>
-    <lastmod>2026-09-29</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/01-files-and-formats.html</loc>
@@ -70,11 +70,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/02-markdown-and-diagrams.html</loc>
-    <lastmod>2026-10-03</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.html</loc>
-    <lastmod>2026-10-02</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.html</loc>
@@ -94,7 +94,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/08-install-updates-and-privacy.html</loc>
-    <lastmod>2026-09-25</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.html</loc>
@@ -102,11 +102,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/10-coming.html</loc>
-    <lastmod>2026-10-04</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/07-privacy.html</loc>
-    <lastmod>2026-09-29</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.html</loc>
@@ -118,7 +118,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/README.html</loc>
-    <lastmod>2026-09-30</lastmod>
+    <lastmod>2026-10-05</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/gallery.html</loc>

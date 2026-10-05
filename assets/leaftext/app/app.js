@@ -3061,6 +3061,231 @@ function flowMoveNode(graph, id, beforeId) {
   graph.nodes.splice(at < 0 ? graph.nodes.length : at, 0, node);
 }
 
+const STATE_LIMIT = 1_000_000;
+const STATE_LINES_LIMIT = 10_000;
+const STATE_DEPTH_LIMIT = 32;
+const STATE_ID = '[A-Za-z_][\\w-]*';
+const STATE_EDGE_RE = new RegExp('^(' + STATE_ID + '|\\[\\*\\])\\s*-->\\s*(' + STATE_ID + '|\\[\\*\\])(?:\\s*:\\s*(.*))?$');
+const STATE_GROUP_RE = new RegExp('^state\\s+(?:"([^"]+)"\\s+as\\s+)?(' + STATE_ID + ')\\s*\\{$');
+const STATE_ALIAS_RE = new RegExp('^state\\s+"([^"]+)"\\s+as\\s+(' + STATE_ID + ')(?:\\s+<<([^>]+)>>)?$');
+const STATE_DECLARE_RE = new RegExp('^state\\s+(' + STATE_ID + ')(?:\\s+<<([^>]+)>>)?$');
+const STATE_DESCRIPTION_RE = new RegExp('^(' + STATE_ID + ')\\s*:\\s*(.*)$');
+
+function isStateSource(text) {
+  return /(?:^|\n)[ \t]*stateDiagram(?:-v2)?[ \t]*(?:\r?\n|$)/i.test(text);
+}
+
+function stateWalk(text) {
+  if (typeof text !== 'string' || text.length > STATE_LIMIT) return { graph: null, refusal: 'This state diagram is too large for the canvas.' };
+  const rawLines = text.match(/[^\n]*\n|[^\n]+$/g) || [''];
+  if (rawLines.length > STATE_LINES_LIMIT) return { graph: null, refusal: 'This state diagram has too many lines for the canvas.' };
+  const statements = [];
+  const nodes = new Map();
+  const groups = [];
+  const edges = [];
+  const stack = [];
+  let header = false;
+  let number = 0;
+  let direction = 'TD';
+  let note = false;
+  let noteId = null;
+  let refusal = '';
+  const node = (id, group) => {
+    if (id === '[*]') return;
+    if (!nodes.has(id)) nodes.set(id, { id, text: id, shape: 'rect', group, declaration: null });
+    else if (group && !nodes.get(id).group) nodes.get(id).group = group;
+  };
+  for (let index = 0; index < rawLines.length; index += 1) {
+    const raw = rawLines[index];
+    const line = raw.replace(/\r?\n$/, '');
+    const value = line.trim();
+    const statement = { raw, value, index, kind: 'plain', group: stack.length ? stack[stack.length - 1].id : null };
+    statements.push(statement);
+    if (!header) {
+      if (/^stateDiagram(?:-v2)?$/i.test(value)) { header = true; statement.kind = 'header'; }
+      continue;
+    }
+    if (note) {
+      statement.kind = 'note';
+      statement.id = noteId;
+      if (/^end note$/i.test(value)) { note = false; noteId = null; }
+      continue;
+    }
+    const flow = /^direction\s+(LR|RL|TB|BT|TD)$/i.exec(value);
+    if (flow) { direction = flow[1].toUpperCase(); continue; }
+    const wearing = /^class\s+([\w,-]+)\s+\S+/.exec(value);
+    if (wearing) { statement.kind = 'class'; statement.ids = wearing[1].split(','); continue; }
+    const style = /^style\s+([\w-]+)\s+.+/.exec(value);
+    if (style) { statement.kind = 'style'; statement.id = style[1]; continue; }
+    if (!value || /^%%/.test(value) || /^classDef\s+/.test(value) || /^hide empty description$/i.test(value) || value === '--') continue;
+    if (value === '}') {
+      if (!stack.length) refusal = refusal || 'The line “}” has no state to close.';
+      else { const group = stack.pop(); group.close = index; statement.kind = 'close'; statement.group = group.id; }
+      continue;
+    }
+    const group = STATE_GROUP_RE.exec(value);
+    if (group) {
+      const entry = { id: group[2], text: group[1] || group[2], parent: statement.group, open: index, close: null };
+      if (groups.some((existing) => existing.id === entry.id)) refusal = refusal || 'The line “' + value + '” repeats a state.';
+      groups.push(entry);
+      statement.kind = 'group'; statement.id = entry.id;
+      stack.push(entry);
+      if (stack.length > STATE_DEPTH_LIMIT) refusal = refusal || 'This state diagram nests too deeply for the canvas.';
+      continue;
+    }
+    const edge = STATE_EDGE_RE.exec(value);
+    if (edge) {
+      statement.kind = 'edge'; statement.from = edge[1]; statement.to = edge[2]; statement.label = edge[3] || '';
+      statement.drawn = number++;
+      edges.push({ id: 'e' + statement.drawn, from: edge[1], to: edge[2], label: statement.label, drawn: statement.drawn, statement: index, group: statement.group });
+      node(edge[1], statement.group); node(edge[2], statement.group);
+      continue;
+    }
+    const noteLine = /^note\s+(?:left|right)\s+of\s+([\w-]+)(?:\s*:\s*(.*))?$/i.exec(value);
+    if (noteLine) {
+      statement.kind = 'note'; statement.id = noteLine[1]; statement.drawn = number++;
+      if (noteLine[2] === undefined) { note = true; noteId = noteLine[1]; }
+      continue;
+    }
+    const alias = STATE_ALIAS_RE.exec(value);
+    const declaration = STATE_DECLARE_RE.exec(value);
+    const description = STATE_DESCRIPTION_RE.exec(value);
+    if (alias || declaration || description) {
+      statement.kind = alias || declaration ? 'declaration' : 'description';
+      statement.id = alias ? alias[2] : declaration ? declaration[1] : description[1];
+      node(statement.id, statement.group);
+      const current = nodes.get(statement.id);
+      if (alias) current.text = alias[1];
+      if (description) current.text = description[2] || statement.id;
+      if (alias || declaration) current.declaration = index;
+      if (declaration && declaration[2]) current.shape = declaration[2];
+      continue;
+    }
+    refusal = refusal || 'The line “' + value + '” cannot be edited on the canvas.';
+  }
+  if (!header) refusal = refusal || 'This has no state diagram line to start it.';
+  if (stack.length) refusal = refusal || 'A composite state has no closing brace.';
+  if (note) refusal = refusal || 'A note has no end note line.';
+  for (const group of groups) nodes.delete(group.id);
+  if (refusal) return { graph: null, refusal };
+  return { graph: { text, statements, nodes: [...nodes.values()], edges, groups, direction, state: true, newline: text.includes('\r\n') ? '\r\n' : '\n' }, refusal: '' };
+}
+
+function parseState(text) { return stateWalk(text).graph; }
+function stateRefusal(text) { return stateWalk(text).refusal; }
+function renderStateDiagram(graph) {
+  if (!graph) return '';
+  return graph.statements.map((statement) => statement.replacement === undefined ? statement.raw : statement.replacement).join('');
+}
+
+function stateReplace(graph, index, value) {
+  const statement = graph.statements[index];
+  const raw = statement.replacement === undefined ? statement.raw : statement.replacement;
+  const ending = /\r?\n$/.exec(raw);
+  const indent = /^\s*/.exec(raw)[0];
+  statement.replacement = indent + value + (ending ? ending[0] : '');
+}
+
+function stateInsert(graph, index, value) {
+  const anchor = graph.statements[index];
+  const previous = index > 0 ? graph.statements[index - 1] : null;
+  let indent = '    ';
+  if (anchor && anchor.kind === 'close') {
+    const closing = /^\s*/.exec(anchor.raw)[0];
+    const group = graph.groups.find((entry) => entry.id === anchor.group);
+    const child = group && graph.statements.slice(group.open + 1, index).find((entry) => entry.value && /^\s*/.exec(entry.raw)[0].length > closing.length);
+    indent = child ? /^\s*/.exec(child.raw)[0] : closing + '    ';
+  }
+  const before = previous && !/\n$/.test(previous.replacement === undefined ? previous.raw : previous.replacement) ? graph.newline : '';
+  graph.statements.splice(index, 0, { raw: '', replacement: before + indent + value + graph.newline, kind: 'insert', value, group: anchor ? anchor.group : null });
+  for (const edge of graph.edges) if (edge.statement >= index) edge.statement += 1;
+  for (const group of graph.groups) { if (group.open >= index) group.open += 1; if (group.close >= index) group.close += 1; }
+  for (const node of graph.nodes) if (node.declaration >= index) node.declaration += 1;
+}
+
+function stateAddNode(graph, group) {
+  const taken = new Set(graph.nodes.map((node) => node.id).concat(graph.groups.map((entry) => entry.id)));
+  let number = 1;
+  while (taken.has('State' + number)) number += 1;
+  const id = 'State' + number;
+  const parent = graph.groups.find((entry) => entry.id === group);
+  stateInsert(graph, parent ? parent.close : graph.statements.length, 'state ' + id);
+  return id;
+}
+
+function stateConnect(graph, from, to) {
+  const first = graph.nodes.find((node) => node.id === from);
+  const second = graph.nodes.find((node) => node.id === to);
+  if (!first || !second) return null;
+  const parent = first.group && first.group === second.group ? graph.groups.find((entry) => entry.id === first.group) : null;
+  stateInsert(graph, parent ? parent.close : graph.statements.length, from + ' --> ' + to);
+  return true;
+}
+
+function stateRenameNode(graph, id, name) {
+  const node = graph.nodes.find((entry) => entry.id === id);
+  if (!node || !name.trim() || /[\r\n]/.test(name)) return false;
+  const trimmed = name.trim();
+  const description = graph.statements.find((statement) => statement.id === id && (statement.kind === 'description' || /\bas\s+/.test(statement.value)));
+  let nextId = id;
+  if (description) {
+    const stereotype = /\s+<<[^>]+>>$/.exec(description.value);
+    stateReplace(graph, graph.statements.indexOf(description), description.kind === 'description' ? id + ' : ' + trimmed : 'state "' + trimmed.replace(/"/g, '&quot;') + '" as ' + id + (stereotype ? stereotype[0] : ''));
+  } else if (/^[A-Za-z_][\w-]*$/.test(trimmed) && !graph.nodes.some((entry) => entry.id === trimmed) && !graph.groups.some((entry) => entry.id === trimmed)) {
+    const token = new RegExp('(^|[^\\w-])' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^\\w-])', 'g');
+    graph.statements.forEach((statement, index) => { if (['edge', 'declaration', 'description', 'note', 'style', 'class'].includes(statement.kind) && (statement.id === id || statement.from === id || statement.to === id || statement.ids?.includes(id))) stateReplace(graph, index, statement.value.replace(token, '$1' + trimmed)); });
+    nextId = trimmed;
+  } else {
+    stateInsert(graph, graph.statements.length, 'state "' + trimmed.replace(/"/g, '&quot;') + '" as ' + id);
+  }
+  return nextId;
+}
+
+function stateRenameEdge(graph, id, label) {
+  const edge = graph.edges.find((entry) => entry.id === id);
+  if (!edge || /[\r\n]/.test(label)) return false;
+  stateReplace(graph, edge.statement, edge.from + ' --> ' + edge.to + (label.trim() ? ' : ' + label.trim() : ''));
+  return true;
+}
+
+function stateRenameGroup(graph, id, name) {
+  const group = graph.groups.find((entry) => entry.id === id);
+  if (!group || !name.trim() || /[\r\n]/.test(name)) return false;
+  stateReplace(graph, group.open, 'state "' + name.trim().replace(/"/g, '&quot;') + '" as ' + id + ' {');
+  return true;
+}
+
+function stateDeleteEdge(graph, id) {
+  const edge = graph.edges.find((entry) => entry.id === id);
+  if (!edge) return false;
+  graph.statements[edge.statement].replacement = '';
+  return true;
+}
+
+function stateDeleteNode(graph, id) {
+  if (!graph.nodes.some((node) => node.id === id)) return false;
+  graph.statements.forEach((statement) => {
+    if ((statement.id === id && ['declaration', 'description', 'note'].includes(statement.kind)) || (statement.kind === 'edge' && (statement.from === id || statement.to === id))) statement.replacement = '';
+    if (statement.kind === 'style' && statement.id === id) statement.replacement = '';
+    if (statement.kind === 'class' && statement.ids.includes(id)) {
+      const remaining = statement.ids.filter((name) => name !== id);
+      if (!remaining.length) statement.replacement = '';
+      else stateReplace(graph, graph.statements.indexOf(statement), statement.value.replace(/^class\s+[\w,-]+/, 'class ' + remaining.join(',')));
+    }
+  });
+  return true;
+}
+
+function stateNodeIdFromDom(raw, known) {
+  const match = /^state-(.+)-\d+$/.exec(raw || '');
+  return match && known.has(match[1]) ? match[1] : null;
+}
+
+function stateEdgePathIn(svg, edge) {
+  const named = (id) => svg.querySelector('path[id="' + id + '"]') || svg.querySelector('path[data-id="' + id + '"]');
+  return edge.from === edge.to ? named(edge.from + '-cyclic-special-mid') || named(edge.from + '-cyclic-special-1') : named('edge' + edge.drawn);
+}
+
 const SEQUENCE_LIMIT = 1_000_000;
 const SEQUENCE_LINES_LIMIT = 10_000;
 const SEQUENCE_DEPTH_LIMIT = 32;
@@ -3236,6 +3461,8 @@ const FLOW_TIP_CHART = 'The whole diagram: its title, how its lines curve, its l
 const FLOW_TIP_EDGE = 'Drag either end onto another box to reconnect it · Delete removes it.';
 
 const FLOW_SAVE_REWRITES = 'Save rewrites the whole block: one box to a line, every label quoted.';
+const STATE_SAVE_LINES = 'Save changes only the lines you edit here or on the canvas.';
+const STATE_TIP_IDLE = "Double-click empty space to add a state · drag a state's + onto another to connect them · double-click to rename · Delete removes it.";
 
 const FLOW_SAVE_AS_TYPED = 'Save writes the text below as typed.';
 
@@ -3284,7 +3511,7 @@ function openFlowSheet({ title, text, save }) {
   dropFlowSaveWait();
   flowLastFocus = document.activeElement;
   
-  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, sequence: null, sequenceSelection: null, sequenceHits: new WeakMap(), sequenceMapped: [], sequenceMapProblem: '', title: title || '', titledText: null };
+  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, grammar: null, sequence: null, sequenceSelection: null, sequenceHits: new WeakMap(), sequenceMapped: [], sequenceMapProblem: '', title: title || '', titledText: null };
   flowSelection = null;
   flowDrawn = null;
   
@@ -3292,7 +3519,7 @@ function openFlowSheet({ title, text, save }) {
   flowZoom = 1;
   readyFlowPicker();
   buildFlowControls();
-  if (!isSequenceSource(flowSession.text)) loadFlowChips();
+  if (!isSequenceSource(flowSession.text) && !isStateSource(flowSession.text)) loadFlowChips();
   flowHistory.past.length = 0;
   flowHistory.future.length = 0;
   flowBefore = null;
@@ -3428,7 +3655,9 @@ function setFlowText(text, from) {
   if (from === 'code') recordFlowStep();
   flowSession.text = text;
   flowSession.sequence = isSequenceSource(text) ? parseSequence(text) : null;
-  flowSession.graph = flowSession.sequence ? null : parseFlow(text);
+  flowSession.grammar = isStateSource(text) ? 'state' : 'flow';
+  flowSession.graph = flowSession.sequence ? null : flowSession.grammar === 'state' ? parseState(text) : parseFlow(text);
+  if (flowSession.renameWhenPlaced && (!flowSession.graph || !flowFindNode(flowSession.graph, flowSession.renameWhenPlaced))) flowSession.renameWhenPlaced = null;
   if (flowSession.sequence) flowSession.sequenceSelection = null;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   if (from !== 'code' && flowCode) flowCode.value = text;
@@ -3440,7 +3669,8 @@ function setFlowText(text, from) {
 function flowGraphChanged() {
   if (!flowSession || !flowSession.graph) return;
   recordFlowStep();
-  flowSession.text = renderFlow(flowSession.graph);
+  flowSession.text = flowSession.grammar === 'state' ? renderStateDiagram(flowSession.graph) : renderFlow(flowSession.graph);
+  if (flowSession.grammar === 'state') flowSession.graph = parseState(flowSession.text);
   if (flowCode) flowCode.value = flowSession.text;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   flowChosen = flowChosen.filter((item) => flowThingThere(item));
@@ -3517,12 +3747,14 @@ if (flowRedoButton) flowRedoButton.addEventListener('click', redoFlow);
 
 function updateFlowSaveState() {
   const graph = flowSession && flowSession.graph;
-  const empty = !!graph && !graph.nodes.length;
+  const state = !!flowSession && flowSession.grammar === 'state';
+  const empty = !!graph && !graph.nodes.length && !state;
+  const note = state && graph ? STATE_SAVE_LINES : graph ? FLOW_SAVE_REWRITES : FLOW_SAVE_AS_TYPED;
   if (flowSheetSave) {
     flowSheetSave.disabled = empty;
-    flowSheetSave.title = empty ? 'Add a box before saving' : graph ? FLOW_SAVE_REWRITES : FLOW_SAVE_AS_TYPED;
+    flowSheetSave.title = empty ? 'Add a box before saving' : note;
   }
-  if (flowCodeNote) flowCodeNote.textContent = graph ? FLOW_SAVE_REWRITES : FLOW_SAVE_AS_TYPED;
+  if (flowCodeNote) flowCodeNote.textContent = note;
   if (flowSheetExport) {
     flowSheetExport.disabled = empty;
     flowSheetExport.title = empty ? 'Add a box before exporting' : 'Save this diagram as its own file';
@@ -3580,7 +3812,7 @@ function restoreFlowHint() {
     return;
   }
   if (!flowSelection) {
-    setFlowHint(FLOW_TIP_IDLE);
+    setFlowHint(flowSession.grammar === 'state' ? STATE_TIP_IDLE : FLOW_TIP_IDLE);
     return;
   }
   if (flowChosenList().length > 1) {
@@ -3604,6 +3836,7 @@ function restoreFlowHint() {
 
 
 function flowNodeTip(graph, id) {
+  if (graph.state) return 'Double-click to rename this state · drag its + to connect it · Delete removes it.';
   const node = flowFindNode(graph, id);
   const shape = node && flowShape(node.shape);
   if (!shape) return null;
@@ -3666,6 +3899,17 @@ function addFlowNode(shapeId, options) {
   const graph = flowSession && flowSession.graph;
   if (!graph) return null;
   const { before, connectFrom, connectTo, turn, intoEdge, text, group } = options || {};
+  if (flowSession.grammar === 'state') {
+    const id = stateAddNode(graph, group);
+    const added = parseState(renderStateDiagram(graph));
+    if (connectFrom) stateConnect(added, connectFrom, id);
+    if (connectTo) stateConnect(added, id, connectTo);
+    flowSession.graph = added;
+    flowSelection = { kind: 'node', id };
+    if (!text) flowSession.renameWhenPlaced = id;
+    flowGraphChanged();
+    return flowFindNode(flowSession.graph, id);
+  }
   
   if (turn) graph.direction = turn;
   
@@ -3942,6 +4186,11 @@ function paintFlowDrawing(svg, text, themeVersion) {
   sizeFlowStage();
   measureFlowDiagram();
   drawFlowOverlay();
+  if (flowSession && flowSession.grammar === 'state' && flowSession.renameWhenPlaced && flowPlaced && flowPlaced.nodes.some((node) => node.id === flowSession.renameWhenPlaced)) {
+    const id = flowSession.renameWhenPlaced;
+    flowSession.renameWhenPlaced = null;
+    openFlowLabelBox('node', id);
+  }
   if (flowSession && flowSession.sequence) mapSequenceDrawing();
   flowCanvas.scrollLeft = left;
   flowCanvas.scrollTop = top;
@@ -3972,17 +4221,17 @@ function drawFlowNotice() {
   
   const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '') || (sequence && flowSession.sequenceMapProblem) || '';
   const message = sequence ? problem : !graph
-    ? problem || (flowRefusal(flowSession ? flowSession.text : '') || FLOW_UNMODELED) + FLOW_AS_TEXT
-    : !graph.nodes.length
+    ? problem || ((flowSession && flowSession.grammar === 'state' ? stateRefusal(flowSession.text) : flowRefusal(flowSession ? flowSession.text : '')) || FLOW_UNMODELED) + FLOW_AS_TEXT
+    : !graph.nodes.length && !graph.state
       ? FLOW_NOTHING_YET
       : problem;
   flowNotice.hidden = !message;
   flowNotice.textContent = message || '';
   flowNotice.classList.toggle('is-error', !!problem);
   if (flowCanvas) flowCanvas.classList.toggle('is-disabled', !graph && !sequence);
-  if (flowDirectionLabel) flowDirectionLabel.hidden = !graph;
+  if (flowDirectionLabel) flowDirectionLabel.hidden = !graph || flowSession.grammar === 'state';
   if (flowDirectionPicker) {
-    flowDirectionPicker.disabled = !graph;
+    flowDirectionPicker.disabled = !graph || flowSession.grammar === 'state';
     if (graph) flowDirectionPicker.value = graph.direction === 'TB' ? 'TD' : graph.direction;
   }
   restoreFlowHint();
@@ -4003,7 +4252,7 @@ function drawFlowDiagram() {
   const attempt = (flowRenderSeq += 1);
   const themeVersion = flowDiagramThemeVersion;
   
-  if ((graph && !graph.nodes.length) || !text.trim()) {
+  if ((graph && !graph.state && !graph.nodes.length) || !text.trim()) {
     flowCanvas.innerHTML = '';
     flowDrawn = null;
     flowPlaced = null;
@@ -4091,7 +4340,8 @@ function measureFlowDiagram() {
   const nodes = [];
   
   svg.querySelectorAll('g.node, g.rough-node, g[data-id]').forEach((group) => {
-    const id = flowNodeIdFromDom(group.id, known) || flowNodeIdFromDom(group.dataset.id, known);
+    const idFrom = graph.state ? stateNodeIdFromDom : flowNodeIdFromDom;
+    const id = idFrom(group.id, known) || idFrom(group.dataset.id, known);
     if (!id) return;
     const rect = group.getBoundingClientRect();
     if (!rect.width && !rect.height) return;
@@ -4107,8 +4357,8 @@ function measureFlowDiagram() {
   
   const groups = [];
   const knownGroups = new Set((graph.groups || []).map((group) => group.id));
-  svg.querySelectorAll('g.cluster').forEach((drawn) => {
-    const id = flowNodeIdFromDom(drawn.id, knownGroups) || flowNodeIdFromDom(drawn.dataset.id, knownGroups);
+  svg.querySelectorAll(graph.state ? 'g.statediagram-cluster' : 'g.cluster').forEach((drawn) => {
+    const id = graph.state ? (knownGroups.has(drawn.id) ? drawn.id : null) : flowNodeIdFromDom(drawn.id, knownGroups) || flowNodeIdFromDom(drawn.dataset.id, knownGroups);
     if (!id) return;
     const rect = drawn.getBoundingClientRect();
     if (!rect.width && !rect.height) return;
@@ -4129,7 +4379,7 @@ function measureFlowDiagram() {
     const pair = edge.from + '_' + edge.to;
     const nth = seen.get(pair) || 0;
     seen.set(pair, nth + 1);
-    const path = flowEdgePathIn(svg, edge, nth);
+    const path = graph.state ? stateEdgePathIn(svg, edge) : flowEdgePathIn(svg, edge, nth);
     if (!path || typeof path.getTotalLength !== 'function') continue;
     const matrix = path.getScreenCTM();
     const at = (length) => {
@@ -4319,13 +4569,13 @@ function drawFlowOverlay() {
       bud.className = 'flow-bud is-' + side;
       bud.dataset.bud = side;
       bud.dataset.node = box.id;
-      bud.title = flowBudTitle(graph.direction, side);
+      bud.title = graph.state ? 'Drag to another state to connect them, or press to add a state' : flowBudTitle(graph.direction, side);
       bud.textContent = '+';
       tools.appendChild(bud);
     }
     layer.appendChild(tools);
   }
-  const chosenEdge = flowChosenList().length === 1 && flowSelection.kind === 'edge' ? flowSelection.id : null;
+  const chosenEdge = !graph.state && flowChosenList().length === 1 && flowSelection.kind === 'edge' ? flowSelection.id : null;
   for (const placed of flowPlaced.edges) {
     if (placed.id !== chosenEdge) continue;
     for (const which of ['from', 'to']) {
@@ -4602,10 +4852,11 @@ function flowClusterFor(id) {
   const stage = flowCanvas && flowCanvas.querySelector('.flow-stage');
   if (!stage) return null;
   const wanted = new Set([id]);
+  const state = flowSession && flowSession.grammar === 'state';
   let found = null;
-  stage.querySelectorAll('svg g.cluster').forEach((drawn) => {
+  stage.querySelectorAll(state ? 'svg g.statediagram-cluster' : 'svg g.cluster').forEach((drawn) => {
     if (found) return;
-    if (flowNodeIdFromDom(drawn.id, wanted) || flowNodeIdFromDom(drawn.dataset.id, wanted)) found = drawn;
+    if (state ? wanted.has(drawn.id) : flowNodeIdFromDom(drawn.id, wanted) || flowNodeIdFromDom(drawn.dataset.id, wanted)) found = drawn;
   });
   return found;
 }
@@ -4753,6 +5004,7 @@ if (flowCanvas) {
     }
     if (node) {
       selectFlow('node', node.dataset.node);
+      if (flowSession.grammar === 'state') return;
       flowDrag = {
         kind: 'reorder',
         from: node.dataset.node,
@@ -4848,6 +5100,10 @@ if (flowCanvas) {
 
     
     if (drag.kind === 'bud' && !drag.moved) {
+      if (flowSession.grammar === 'state') {
+        addFlowNode('rect', { connectFrom: drag.from });
+        return;
+      }
       openFlowAddPicker((shape, named) =>
         addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), text: named }),
       );
@@ -4868,6 +5124,11 @@ if (flowCanvas) {
     if (drag.kind === 'bud') {
       
       if (over) {
+        if (flowSession.grammar === 'state') {
+          stateConnect(graph, drag.from, over);
+          flowGraphChanged();
+          return;
+        }
         const edge =
           flowBudIntent(graph.direction, drag.side).step === 'previous'
             ? flowConnect(graph, over, drag.from)
@@ -4881,6 +5142,10 @@ if (flowCanvas) {
         return;
       }
       const where = flowSlotAt(flowPointIn(event));
+      if (flowSession.grammar === 'state') {
+        addFlowNode('rect', { connectFrom: drag.from });
+        return;
+      }
       openFlowAddPicker((shape, named) =>
         addFlowNode(shape, { ...flowBudRelation(graph, drag.from, drag.side), before: where, text: named }),
       );
@@ -4944,6 +5209,10 @@ if (flowCanvas) {
     if (!flowPointIsBare(event.target)) return;
     
     const where = flowSlotAt(flowPointIn(event));
+    if (flowSession.grammar === 'state') {
+      addFlowNode('rect', {});
+      return;
+    }
     openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named }));
   });
 
@@ -4953,6 +5222,10 @@ if (flowCanvas) {
     const spot = flowTargetAt(event.clientX, event.clientY) || { kind: 'canvas', id: null };
     
     if (spot.kind === 'canvas') {
+      if (flowSession.grammar === 'state') {
+        openFlowMenuWith(event.clientX, event.clientY, [{ label: 'Add a state here', run: () => addFlowNode('rect', {}) }]);
+        return;
+      }
       const where = flowSlotAt(flowPointIn(event));
       openFlowMenuWith(event.clientX, event.clientY, [
         { label: 'Add a box here', run: () => openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named })) },
@@ -4973,6 +5246,19 @@ let flowMenu = null;
 
 function flowMenuItems(spot) {
   const graph = flowSession.graph;
+  if (flowSession.grammar === 'state') {
+    if (spot.kind === 'node') return [
+      { label: 'Rename state', run: () => openFlowLabelBox('node', spot.id) },
+      { label: 'Add state after this', run: () => addFlowNode('rect', { connectFrom: spot.id }) },
+      { label: 'Delete state', run: deleteFlowSelection },
+    ];
+    if (spot.kind === 'group') return [{ label: 'Rename composite state', run: () => openFlowLabelBox('group', spot.id) }];
+    if (spot.kind === 'edge') return [
+      { label: 'Label transition', run: () => openFlowLabelBox('edge', spot.id) },
+      { label: 'Delete transition', run: deleteFlowSelection },
+    ];
+    return [];
+  }
   if (spot.kind === 'node') {
     return [
       { label: 'Rename', run: () => openFlowLabelBox('node', spot.id) },
@@ -5204,8 +5490,14 @@ function toggleFlowChoice(kind, id) {
 function deleteFlowSelection() {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowSelection || flowSelection.kind === 'chart') return;
+  if (flowSession.grammar === 'state' && flowChosenList().every((item) => item.kind === 'group')) return;
   
   for (const item of flowChosenList()) {
+    if (flowSession.grammar === 'state') {
+      if (item.kind === 'node') stateDeleteNode(graph, item.id);
+      else if (item.kind === 'edge') stateDeleteEdge(graph, item.id);
+      continue;
+    }
     if (item.kind === 'node') flowDeleteNode(graph, item.id);
     
     else if (item.kind === 'group') flowUngroup(graph, item.id);
@@ -5252,11 +5544,12 @@ function openFlowLabelBox(kind, id) {
   const placed = where[kind] && where[kind]();
   if (!subject || !placed) return;
   
-  const field = document.createElement(kind === 'edge' ? 'textarea' : 'input');
-  if (kind !== 'edge') field.type = 'text';
+  const multiline = kind === 'edge' && flowSession.grammar !== 'state';
+  const field = document.createElement(multiline ? 'textarea' : 'input');
+  if (!multiline) field.type = 'text';
   field.className = 'flow-label-box';
   field.spellcheck = false;
-  field.value = kind === 'edge' ? flowLabelLines(subject.label) : (kind === 'id' ? subject.id : subject.text) || '';
+  field.value = kind === 'edge' ? (flowSession.grammar === 'state' ? subject.label : flowLabelLines(subject.label)) : (kind === 'id' ? subject.id : subject.text) || '';
   field.placeholder = FLOW_LABEL_BOX_ASKS[kind];
   field.setAttribute('aria-label', field.placeholder);
   const tall = Math.max(20, Math.round(26 * flowZoom));
@@ -5266,7 +5559,7 @@ function openFlowLabelBox(kind, id) {
   
   const middle =
     kind === 'edge' ? placed.at.y : kind === 'group' ? placed.y + tall / 2 + 2 : placed.y + placed.height / 2;
-  const rows = kind === 'edge' ? 2 : 1;
+  const rows = multiline ? 2 : 1;
   const top = middle - (tall * rows) / 2;
   field.style.left = Math.round(left) + 'px';
   field.style.top = Math.round(top) + 'px';
@@ -5284,7 +5577,7 @@ function openFlowLabelBox(kind, id) {
       closeFlowLabelBox(false);
       return;
     }
-    if (event.key === 'Enter' && !(kind === 'edge' && event.shiftKey)) {
+    if (event.key === 'Enter' && !(multiline && event.shiftKey)) {
       event.preventDefault();
       event.stopPropagation();
       closeFlowLabelBox(true);
@@ -5308,6 +5601,17 @@ function closeFlowLabelBox(keep) {
   if (!keep || value === box.was) return;
   const graph = flowSession && flowSession.graph;
   if (!graph) return;
+  if (flowSession.grammar === 'state') {
+    let changed = false;
+    if (box.kind === 'node') {
+      const nextId = stateRenameNode(graph, box.id, value);
+      changed = !!nextId;
+      if (changed) flowSelection = { kind: 'node', id: nextId };
+    } else if (box.kind === 'group') changed = stateRenameGroup(graph, box.id, value);
+    else if (box.kind === 'edge') changed = stateRenameEdge(graph, box.id, value);
+    if (changed) flowGraphChanged();
+    return;
+  }
   if (box.kind === 'id') {
     const refused = flowRenameNodeId(graph, box.id, value);
     if (refused) {
@@ -5398,6 +5702,10 @@ function dismissFlowPicker(options) {
 
 function drawFlowPicker(options) {
   if (!flowPicker || !flowPickerBody || !flowPickerHead) return;
+  if (flowSession && flowSession.grammar === 'state') {
+    closeSheet(flowPicker, flowPickerBackdrop, options);
+    return;
+  }
   if (flowSession && flowSession.sequence) {
     drawSequencePicker(options);
     return;
@@ -11602,7 +11910,6 @@ function sinceInWords(seconds) {
 
 const SERVICE_VAULT_ROWS = [
   ['Dropbox', 'Copy one Dropbox folder through its API', () => showDropboxVaultForm()],
-  ['Google Drive', 'Copy one Google Drive folder through its API', () => showGoogleDriveVaultForm()],
   ['OneDrive', 'Copy one OneDrive folder through Microsoft Graph', () => showMicrosoftVaultForm('OneDrive', 'onedrive')],
   ['SharePoint', 'Copy one SharePoint folder through Microsoft Graph', () => showMicrosoftVaultForm('SharePoint', 'sharepoint')],
   ['Box', 'Copy one Box folder through its API', () => showBoxVaultForm()],
@@ -11658,7 +11965,7 @@ function startServiceWait(heading, service, command, checksServer = false) {
   const attemptId = `service-${++serviceWaitSequence}`;
   showCrumbMenu(crumbMenuOwner, [
     { heading, form: true },
-    { note: checksServer ? 'Checking these with the server.' : service === 'Google Drive' ? 'Finish signing in to Google in the tab beside this. This closes by itself when Google answers.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
+    { note: checksServer ? 'Checking these with the server.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
     { buttons: [{ label: 'Cancel', keepOpen: true, run: () => {
       send({ command: 'cancelServiceSignIn', attemptId });
       waitingServiceForm = null;
@@ -11673,11 +11980,6 @@ window.leafSignInEnded = (attemptId) => {
   if (!waitingServiceForm || waitingServiceForm.attemptId !== attemptId) return;
   if (!crumbMenu.hidden && crumbMenu.contains(waitingServiceForm.note)) hideCrumbMenu();
   waitingServiceForm = null;
-};
-window.leafSignInBrowserFallback = () => {
-  if (waitingServiceForm && crumbMenu.contains(waitingServiceForm.note)) {
-    waitingServiceForm.note.textContent = 'Finish signing in to Google Drive in your browser. This closes by itself when Google answers.';
-  }
 };
 const OWN_CREDENTIALS_NOTE = "The address, user name and password are your own. Leaftext keeps the password in this computer's credential store, the same place it keeps every vault sign-in.";
 function showBoxVaultForm() {
@@ -11785,48 +12087,6 @@ function showDropboxVaultForm() {
     { buttons: [
       { label: 'Cancel', run: hideCrumbMenu },
       { label: 'Connect', primary: true, run: save, keepOpen: true },
-    ] },
-  ]);
-}
-
-function showGoogleDriveVaultForm() {
-  if (!window.__leafGoogleSignIn) {
-    showOwnGoogleClientForm();
-    return;
-  }
-  const signIn = () => {
-    startServiceWait('New Google Drive vault', 'Google Drive', { command: 'createGoogleDriveVault', clientId: '', folderId: '', wholeDrive: true });
-  };
-  showServiceForm([
-    { heading: 'New Google Drive vault' },
-    { note: 'Sign in with your Google account. Your Docs, Sheets and Slides open here, and nothing needs installing.' },
-    { buttons: [{ label: 'Sign in with Google', primary: true, run: signIn, keepOpen: true }] },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Use my own client ID…', run: showOwnGoogleClientForm, keepOpen: true },
-    ] },
-  ]);
-}
-function showOwnGoogleClientForm() {
-  
-  const save = (wholeDrive) => {
-    const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
-    const clientId = fields[0] && fields[0].value.trim();
-    const folderId = wholeDrive ? '' : fields[1] && fields[1].value.trim();
-    if (!clientId || (!wholeDrive && !folderId)) return;
-    startServiceWait('New Google Drive vault', 'Google Drive', { command: 'createGoogleDriveVault', clientId, folderId, wholeDrive });
-  };
-  const connect = () => save(false);
-  showServiceForm([
-    { heading: 'New Google Drive vault' },
-    { note: 'Use a desktop OAuth client ID from your Google Cloud project. Copy the folder ID from its Drive web address.' },
-    { note: 'Set that OAuth app to In production. Left in Testing, Google ends its sign-in after 7 days.' },
-    { input: '', placeholder: 'Desktop OAuth client ID', commitOnBlur: false, onEnter: connect },
-    { input: '', placeholder: 'Google Drive folder ID', commitOnBlur: false, onEnter: connect },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Use whole Drive', run: () => save(true), keepOpen: true },
-      { label: 'Connect', primary: true, run: connect, keepOpen: true },
     ] },
   ]);
 }
@@ -31655,7 +31915,6 @@ function groveFinds() {
 var GROVE_FIND_TABLES = [
   ['format', 'format-first-read', 'format', 'formats'],
   ['language', 'language-first-read', 'source language', 'source languages'],
-  ['service', 'format-first-read', 'kind of service page', 'kinds of service page'],
   ['family', 'family-first-worn', 'theme family', 'theme families'],
 ];
 function groveForagingWords(area) {
@@ -44169,6 +44428,9 @@ window.__leafBooted = true;
 send({ command: 'frontEndReady', today: groveLocalDay(new Date()) });
 window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
+if (window.__leafRetiredGoogleNotice) {
+  leafQueueToast(window.__leafRetiredGoogleNotice, 'ok');
+}
 
 
 

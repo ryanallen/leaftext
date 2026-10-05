@@ -337,7 +337,6 @@ export const COMMANDS = {
   setLibraryLayout: [ANSWERED],
   createVault: [REFUSED, 'a vault is a folder picked on a disk'],
   createDropboxVault: [REFUSED, 'a published site has no credential store or callback listener for Dropbox'],
-  createGoogleDriveVault: [REFUSED, 'a published site has no credential store or callback listener for Google Drive'],
   createMicrosoftVault: [REFUSED, 'a published site has no credential store or callback listener for Microsoft Graph'],
   createBoxVault: [REFUSED, 'a published site has no credential store or callback listener for Box'],
   createWebDavVault: [REFUSED, 'a published site has no credential store to keep a WebDAV password in'],

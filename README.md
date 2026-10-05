@@ -277,7 +277,7 @@ Three things, and none of them carries a word you wrote:
 - **The update download** — when one does, it fetches that installer.
 - **A theme's font** — from Google Fonts, the first time you pick that theme.
 
-The connections are the ones you set up: [GitHub sync](docs/01-features/03-library.md#github-sync) pushes a vault to your own repository using your installed `git`. [Storage service vaults](docs/01-features/03-library.md#storage-services) connect Dropbox, Google Drive, OneDrive, or SharePoint to a local copy of your files. Their credentials stay in your operating system's credential store.
+The connections are the ones you set up: [GitHub sync](docs/01-features/03-library.md#github-sync) pushes a vault to your own repository using your installed `git`. [Storage service vaults](docs/01-features/03-library.md#storage-services) connect Dropbox, OneDrive, SharePoint or Box to a local copy of your files. Their credentials stay in your operating system's credential store.
 
 ### Your files stay your files
 

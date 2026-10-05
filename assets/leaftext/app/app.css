@@ -8120,7 +8120,7 @@ body.library-resizing button {
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: 0 0 var(--reader-card-radius) var(--reader-card-radius);
   box-sizing: border-box;
-  padding: calc(var(--app-bar-height) + var(--lt-space-8)) var(--lt-space-8) var(--lt-space-8);
+  padding: calc(var(--app-bar-height) + var(--lt-space-12)) var(--lt-space-8) var(--lt-space-8);
 }
 .console-layer[hidden] { display: none; }
 .console-terminal { width: 100%; height: 100%; }
