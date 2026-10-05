@@ -222,6 +222,7 @@
 | Diagram export, five formats | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Swap to Mermaid text | [✅][l-mermaid] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Open in flowchart editor | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Point-to-edit sequence diagrams | [✅][l-sequence-editor] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Boxes as links | [✅][l-mermaid] | [✅][o-adv] | ? | [❌][c-seen] |
 | App icons in boxes | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pictures in boxes | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -272,6 +273,7 @@
 [l-images]: ../01-features/01-rendering.md#images
 [l-math]: ../01-features/01-rendering.md#math
 [l-mermaid]: ../01-features/01-rendering.md#mermaid-diagrams
+[l-sequence-editor]: ../01-features/07-editing.md#the-sequence-diagram-editor
 [o-ofm]: https://obsidian.md/help/obsidian-flavored-markdown
 [o-syntax]: https://obsidian.md/help/syntax
 [o-adv]: https://obsidian.md/help/advanced-syntax

@@ -62,17 +62,14 @@ function startDottedLeaf(mark) {
       const [x, y] = DOTTED_LEAF_POINTS[i];
       const nx = (x - 32) / 32;
       const ny = (y - 32) / 32;
-      const depth = 0.5 * Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      const depth = 0.18 * (1 - nx * nx) * (0.8 + 0.2 * ny);
       const pulse = 0.5 + 0.5 * Math.sin(time * (2 * Math.PI / 2.4) + i * 2.399963229728653);
-      for (const side of [1, -1]) {
-        const turnedX = nx * cosine + side * depth * sine;
-        const yawZ = side * depth * cosine - nx * sine;
-        const turnedY = ny * pitchCosine - yawZ * pitchSine;
-        const turnedZ = ny * pitchSine + yawZ * pitchCosine;
-        if (turnedZ < 0) continue;
-        const perspective = 1 / (1 - turnedZ * 0.32);
-        points.push([32 + turnedX * 32 * perspective, 32 + turnedY * 32 * perspective, turnedZ, perspective, pulse]);
-      }
+      const turnedX = nx * cosine + depth * sine;
+      const yawZ = depth * cosine - nx * sine;
+      const turnedY = ny * pitchCosine - yawZ * pitchSine;
+      const turnedZ = ny * pitchSine + yawZ * pitchCosine;
+      const perspective = 1 / (1 - turnedZ * 0.32);
+      points.push([32 + turnedX * 32 * perspective, 32 + turnedY * 32 * perspective, turnedZ, perspective, pulse]);
     }
     points.sort((a, b) => b[2] - a[2]);
     const cells = new Map();

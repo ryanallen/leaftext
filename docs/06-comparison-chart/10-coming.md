@@ -14,10 +14,8 @@
 | Deck export per slide | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Custom heading anchors | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
 | Glossary word forms | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Link preview cards | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | ElevenLabs read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Live source beside page | [❌][l-roadmap] | [✅][o-edit] | [❌][t-seen] | [❌][c-seen] |
 | Frontmatter top sheet | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | HTML in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | EPUB export | [❌][l-roadmap] | [❌][o-seen] | [✅][t-export] | [✅][c-faq] |
@@ -33,7 +31,6 @@
 | Button editor | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drop pictures in | [❌][l-roadmap] | [✅][o-attach] | [✅][t-images] | [❌][c-seen] |
 | Suggested field values | [❌][l-roadmap] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Point-to-edit diagrams | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Library plans
 

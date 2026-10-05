@@ -117,6 +117,8 @@ Inside another product's frame, the document scrolls within that frame and the m
 
 With [two documents side by side](02-navigation.md#two-documents-side-by-side) there is a rail per column, each drawn from the document beside it and each following that column's own scrolling: the rail is the scroll indicator, so a column without one would scroll with nothing to say where it was.
 
+With [source beside the page](07-editing.md#source-beside-the-page), the rendered page's rail is the one picture for the pair. Dragging it moves both the page and its source; the source editor does not draw a second minimap.
+
 The rail still comes and goes with the document — there is none on the home screen, none while the [graph](03-library.md#graph) is up, and none in a window 720 pixels wide or less. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's own thin [scrollbar](02-navigation.md#scrollbars) comes back — drawn while the page is being scrolled and gone a moment after it stops. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 
 > [!TIP]

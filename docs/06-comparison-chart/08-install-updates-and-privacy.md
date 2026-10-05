@@ -234,7 +234,7 @@
 | Go back | [✅][l-history] | [✅][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Go forward | [✅][l-history] | [✅][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Refresh a document | [✅][l-history] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
-| Speed reader switch | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Speed reader strength choice | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Typing help switch | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Progress record switch | [✅][l-grove-off] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Set the padlocks | [✅][l-padlocks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

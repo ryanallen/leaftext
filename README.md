@@ -113,7 +113,7 @@ Type `leaftext --print notes.md` in cmd or PowerShell to read a rendered Markdow
 
 ![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
 
-Turn on Speed Reader and the page dims back while bold anchors mark the start of each word. Your eye follows the path down instead of hunting for it. **[Speed Reader →](docs/01-features/05-settings.md#speed-reader)**
+Choose Light, Balanced or Strong in Speed Reader and the page dims back while bold anchors mark the start of each word. Your eye follows the path down instead of hunting for it. **[Speed Reader →](docs/01-features/05-settings.md#speed-reader)**
 
 ## Write where you read
 
@@ -157,7 +157,7 @@ Point at a table with a header row and a few body rows and a quiet bar appears a
 
 ![The flowchart editor open as a full-window sheet: a diagram on the canvas at left, and the matching Mermaid text in the pane at right](imgs/flowchart-editor.png)
 
-A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them or back onto the box it came from for a step that loops on itself, and group boxes together. Color a box, a line or a group, Shift-click to change several at once, and set the diagram's title, curve and hand-drawn look from a right-click on the canvas. A box can also carry a link, one of the app's own icons, or a picture. Every other kind of diagram opens the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/01-rendering.md#mermaid-diagrams) any diagram as its own Markdown file, picture or PDF from the button in its corner. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
+A canvas beside the Mermaid text, each following the other. Double-click to add a box and name it, pick from [forty-seven shapes](docs/01-features/07-editing.md#what-it-can-draw) grouped by what they are for, drag a handle onto another box to connect them or back onto the box it came from for a step that loops on itself, and group boxes together. Color a box, a line or a group, Shift-click to change several at once, and set the diagram's title, curve and hand-drawn look from a right-click on the canvas. A box can also carry a link, one of the app's own icons, or a picture. A [sequence diagram](docs/01-features/07-editing.md#the-sequence-diagram-editor) opens a timeline whose participants and messages you can press to edit; other kinds open the same sheet as a live preview. Open it on any diagram already in a page, and [export](docs/01-features/01-rendering.md#mermaid-diagrams) any diagram as its own Markdown file, picture or PDF from the button in its corner. **[The flowchart editor →](docs/01-features/07-editing.md#the-flowchart-editor)**
 
 ### Or work in the raw source
 
@@ -233,7 +233,7 @@ Leaftext does not yet let an AI agent on your machine work in the document you h
 
 ![Tabs and Back/Forward history in the app bar](imgs/navigation.png)
 
-It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs) — including [live web pages](docs/01-features/02-navigation.md#web-tabs), typed into a new tab as an address or a search — Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) of the open document in the pane beside it, and Ctrl-click on a link to [open it behind](docs/01-features/02-navigation.md#opening-a-link-in-a-new-page) the page you are reading. Two of them can stand [side by side](docs/01-features/02-navigation.md#two-documents-side-by-side), each column scrolling on its own with its own rail, and one document can stand beside itself as its source and its page. Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
+It moves like a browser: [tabs](docs/01-features/02-navigation.md#tabs) — including [live web pages](docs/01-features/02-navigation.md#web-tabs), typed into a new tab as an address or a search — Back and Forward through your [history](docs/01-features/02-navigation.md#history), an [outline](docs/01-features/02-navigation.md#outline) of the open document in the pane beside it, and Ctrl-click on a link to [open it behind](docs/01-features/02-navigation.md#opening-a-link-in-a-new-page) the page you are reading. Two of them can stand [side by side](docs/01-features/02-navigation.md#two-documents-side-by-side), each column scrolling on its own with its own rail, and one document can show its [source beside its page](docs/01-features/07-editing.md#source-beside-the-page). Change a file in another app and Leaftext [picks it up](docs/01-features/02-navigation.md#reload) without losing your spot. **[Navigation →](docs/01-features/02-navigation.md)**
 
 ### Take in the whole page at once
 

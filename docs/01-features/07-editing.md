@@ -34,6 +34,7 @@ Leaftext is reading-first, but it is also editable. You can edit **in the readin
 | [Adding a block](#adding-a-block) | The plus opens a row of kinds — text, heading, list, quote, code, table, image, flowchart, divider, framed figure, cards, badge, bars |
 | [Inserting an image](#images) | The image button asks for a file or an address; nothing is copied, and the picture stays where you keep it |
 | [Drawing a flowchart](#the-flowchart-editor) | The flowchart button, and the one in any drawn diagram's corner, open a canvas beside the Mermaid text |
+| [Editing a sequence diagram](#the-sequence-diagram-editor) | Press a participant, message, note or region on its timeline to edit that source statement in the bottom picker |
 | [A box's link, icon or picture](#what-it-can-draw) | A selected box has a field for each: where clicking it goes, one of the app's own drawings by name, and a picture beside the document or at an address |
 | [Exporting a diagram](#export) | The diagram's own corner, and the diagram sheet, write it out as its own file — Markdown, PNG, WebP, PDF or JPEG |
 | [The format bar](#the-format-bar) | Highlight words and a bar appears over them, or under them where there is no room above: copy, highlight and annotate on any page, and on an unlocked one bold, italic, strikethrough, code, link, three button styles and badge as well, then text, bigger/smaller heading and quote for the whole block |
@@ -346,7 +347,7 @@ Reading-view edits are undoable, step by step.
 - Every inline edit — a typed change, a block split or merge — records one undo step, and a run of typing is one step however long you pause in the middle of it. An **Undo** button appears beside Save whenever there is a step to take back, and disappears when there is nothing left to undo. A **Redo** button appears beside it whenever an undo has left an edit to bring back, and goes as soon as there is nothing waiting. (Checkbox toggles are the exception: they auto-save and are not undoable.)
 - Click it, or press `Ctrl+Z` (`Cmd+Z` on macOS), to revert the most recent edit. With the caret in a block you are typing in, the keystroke takes back a word at a time rather than a letter: a group ends at a space or a punctuation mark, when you move the caret somewhere else, and after two seconds of stillness. `Ctrl+Y` or `Ctrl+Shift+Z` (`Cmd+Shift+Z`) walks those groups forward again, up to the newest words you typed; typing something new drops whatever was ahead. Once a block's groups are spent each key means a whole edit: `Ctrl+Z` takes the last one back, including a [delete](#deleting) that removed several blocks, and `Ctrl+Y` or `Ctrl+Shift+Z` brings back the edit an undo took. The **Undo** and **Redo** buttons always mean a whole edit, so Undo pressed mid-sentence takes back the whole run of typing.
 - A successful **Save** makes the current text the new baseline and clears the history in both directions, so Undo only ever steps back through edits made since your last save — it never walks you below saved text — and there is nothing left to redo.
-- [The flowchart editor](#the-flowchart-editor) keeps its own history while it is open, because everything you do in there arrives here as a single edit.
+- [The diagram sheet](#the-flowchart-editor) keeps its own history while it is open, because everything you do in a flowchart or sequence diagram arrives here as a single edit.
 - A file you just deleted from the [library pane](03-library.md#deleting-asks-first-and-can-be-taken-back) takes the key first, while the message offering it back is still on screen. That is a file coming out of the Recycle Bin, not a text edit, and it is the only thing here that does not touch the document you are reading.
 
 ## The flowchart editor
@@ -427,12 +428,26 @@ The canvas fails closed: a diagram it cannot fully model opens with the canvas s
 
 The canvas does not keep a layout, so a save would drop those two silently. `click A call fn()` is the other thing it will not act on: it is read, written back, and does nothing — the page renders diagrams at Mermaid's strict level with no `unsafe-eval`, so a document cannot name a function inside the app and have it run. When the canvas does switch off it names the line that stopped it and what on that line did, rather than leaving you to find it.
 
-**Every other kind of Mermaid diagram** — sequence, class, state, pie, Gantt and the rest — opens the same sheet as a **live preview** beside its text: drawn as you type, pannable and zoomable, but without handles, because the canvas draws flowcharts. The sheet is named for what it holds — **Sankey**, **Pie chart**, **Quadrant chart** and so on, or **Diagram** for a kind it has no name for — and the name follows the text if you retype its first line. The **Flow** picker stands in the bar only while the canvas holds a flowchart it can draw on. Export works on all of them.
+**Other kinds of Mermaid diagram** — class, state, pie, Gantt and the rest — open the same sheet as a **live preview** beside their text: drawn as you type, pannable and zoomable, but without editing handles. [Sequence diagrams](#the-sequence-diagram-editor) also let you edit their timeline there. The sheet is named for what it holds — **Sankey**, **Pie chart**, **Quadrant chart** and so on, or **Diagram** for a kind it has no name for — and the name follows the text if you retype its first line. The **Flow** picker stands in the bar only while the canvas holds a flowchart it can draw on. Export works on all of them.
 
 > [!NOTE]
 > Saving a flowchart the canvas draws rewrites the block in one spelling: always `flowchart` rather than `graph`, every label quoted, every box declared on its own line, and each shape spelled the shorter of its two ways. It is the same diagram and it renders identically anywhere Mermaid runs — but a file you hand-wrote will come back tidied. Every other diagram, and a flowchart the canvas cannot draw, is saved exactly as typed. The sheet says which of the two Save will do, above the text pane and on the Save button.
 
+## The sequence diagram editor
+
+Open a drawn sequence diagram with the button in its corner. The sheet shows Mermaid's timeline beside its source. Press a drawn participant, message, note, loop or alternative label to edit it in the bottom picker. Drag empty canvas to pan and use the zoom buttons or `Ctrl` + scroll to change the view.
+
+- **Participants:** Add a declaration, change its identifier or displayed name, or move it left or right beside another declaration. Changing an identifier updates its messages and notes. A duplicate identifier is refused. If an unsupported source line names that participant, change its identifier in the source pane instead.
+- **Messages:** Add one after the selected message, choose its sender and receiver, change its words, remove it, or move it up or down. A move works only beside another message in the same loop or alternative branch; an unsupported line between them blocks it.
+- **Notes and regions:** Add a note and choose its words, placement and participants. Wrap a selected message in a loop or alternative, change a region's label without changing its contents, and add or remove an alternative branch. Removing a branch keeps its messages. Removing a whole region removes its contents; a region containing an unsupported line cannot be removed from the drawing.
+
+Each committed change is one Undo step inside the sheet. Save writes the changed Mermaid source through the diagram's guarded write; Cancel leaves the document alone. When a drawn part cannot be matched to one source statement, the sheet explains why it is source-only and leaves the Mermaid pane available. Export uses the sheet's current diagram.
+
 ## Working in the source
+
+### Source beside the page
+
+The switch beside the padlock opens the source and its rendered page together. Move the wheel over either side to move both, with each drawn block level with the source line that starts it. Type in the source and the page redraws beside it. Press the switch again to return to one view. The pair keeps one document and one Save button.
 
 ### Code view
 

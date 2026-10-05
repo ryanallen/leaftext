@@ -1310,6 +1310,7 @@ function drawBesideColumn(state, anchor) {
   const laidOutWithRail = drawnBesideMinimapColumn !== '0px';
   besideAwaitingPage = false;
   if (splitColumnsOpen && besideRailColumnOpen() !== laidOutWithRail) writeSplitColumns(true);
+  scheduleSourcePairAlignment(true);
 }
 
 
@@ -3060,6 +3061,109 @@ function flowMoveNode(graph, id, beforeId) {
   graph.nodes.splice(at < 0 ? graph.nodes.length : at, 0, node);
 }
 
+const SEQUENCE_LIMIT = 1_000_000;
+const SEQUENCE_LINES_LIMIT = 10_000;
+const SEQUENCE_DEPTH_LIMIT = 32;
+const SEQUENCE_MESSAGE_RE = /^([A-Za-z_][\w-]*?)\s*(-->>|->>|-->|->|--x|-x|--\)|-\))\s*([A-Za-z_][\w-]*)\s*:\s*(.*)$/;
+const SEQUENCE_PARTICIPANT_RE = /^(participant|actor)\s+([A-Za-z_][\w-]*)(?:\s+as\s+(.+))?$/i;
+const SEQUENCE_NOTE_RE = /^Note\s+(over|left of|right of)\s+([\w,-]+)\s*:\s*(.*)$/i;
+const SEQUENCE_REGION_RE = /^(loop|alt|opt|par|critical|break|rect)\s+(.+)$/i;
+
+function isSequenceSource(text) {
+  return /(?:^|\n)[ \t]*sequenceDiagram[ \t]*(?:\r?\n|$)/i.test(text);
+}
+
+function parseSequence(text) {
+  if (typeof text !== 'string' || text.length > SEQUENCE_LIMIT) return null;
+  const lines = [];
+  const parts = [];
+  const stack = [];
+  let offset = 0;
+  let header = false;
+  let lineCount = 0;
+  while (offset < text.length || (!offset && text === '')) {
+    if (++lineCount > SEQUENCE_LINES_LIMIT) return null;
+    const end = text.indexOf('\n', offset);
+    const stop = end < 0 ? text.length : end;
+    const raw = text.slice(offset, stop);
+    const body = raw.replace(/\r$/, '');
+    const value = body.trim();
+    const start = offset;
+    const fullEnd = end < 0 ? stop : stop + 1;
+    const path = stack.map((entry) => entry.id + ':' + entry.branch);
+    const line = { start, end: stop, fullEnd, raw, value, path, kind: 'unknown' };
+    if (!header && /^sequenceDiagram\s*$/i.test(value)) {
+      line.kind = 'header';
+      header = true;
+    } else if (!header || !value || /^%%/.test(value)) {
+      line.kind = value ? 'unknown' : 'blank';
+    } else if (/^end\s*$/i.test(value) && stack.length) {
+      const region = stack.pop();
+      line.kind = 'end';
+      line.region = region.id;
+      region.closeEnd = fullEnd;
+    } else if (/^else(?:\s+.*)?$/i.test(value) && stack.length && stack[stack.length - 1].regionKind === 'alt') {
+      line.kind = 'branch';
+      line.region = stack[stack.length - 1].id;
+      stack[stack.length - 1].branch += 1;
+      line.path = stack.map((entry) => entry.id + ':' + entry.branch);
+      line.label = value.replace(/^else\s*/i, '');
+      parts.push(line);
+    } else {
+      const participant = SEQUENCE_PARTICIPANT_RE.exec(value);
+      const message = SEQUENCE_MESSAGE_RE.exec(value);
+      const note = SEQUENCE_NOTE_RE.exec(value);
+      const region = SEQUENCE_REGION_RE.exec(value);
+      if (participant) {
+        Object.assign(line, { kind: 'participant', style: participant[1], id: participant[2], label: participant[3] || participant[2] });
+        parts.push(line);
+      } else if (message) {
+        Object.assign(line, { kind: 'message', from: message[1], arrow: message[2], to: message[3], label: message[4] });
+        parts.push(line);
+      } else if (note) {
+        Object.assign(line, { kind: 'note', placement: note[1], actors: note[2].split(','), label: note[3] });
+        parts.push(line);
+      } else if (region) {
+        Object.assign(line, { kind: 'region', regionKind: region[1].toLowerCase(), label: region[2], id: start, branch: 0 });
+        parts.push(line);
+        stack.push(line);
+        if (stack.length > SEQUENCE_DEPTH_LIMIT) return null;
+      }
+    }
+    lines.push(line);
+    if (end < 0) break;
+    offset = fullEnd;
+  }
+  if (!header || stack.length) return null;
+  const participants = parts.filter((part) => part.kind === 'participant');
+  const messages = parts.filter((part) => part.kind === 'message');
+  if (new Set(participants.map((part) => part.id)).size !== participants.length) return null;
+  return { text, lines, parts, participants, messages };
+}
+
+function sequenceSplice(model, part, replacement) {
+  if (!model || !part || !model.lines.includes(part) || /[\r\n]/.test(replacement)) return null;
+  return model.text.slice(0, part.start) + part.raw.replace(part.value, replacement) + model.text.slice(part.end);
+}
+
+function sequenceMove(model, part, direction) {
+  if (!model || !part || !['message', 'participant'].includes(part.kind) || ![-1, 1].includes(direction)) return null;
+  const at = model.lines.indexOf(part);
+  const neighbor = model.lines[at + direction];
+  if (!neighbor || neighbor.kind !== part.kind || neighbor.path.join('/') !== part.path.join('/')) return null;
+  const first = direction < 0 ? neighbor : part;
+  const second = direction < 0 ? part : neighbor;
+  return model.text.slice(0, first.start) + model.text.slice(second.start, second.fullEnd) + model.text.slice(first.start, first.fullEnd) + model.text.slice(second.fullEnd);
+}
+
+function sequenceRemove(model, part) {
+  if (!model || !part || !model.lines.includes(part)) return null;
+  const end = part.kind === 'region' ? part.closeEnd : part.fullEnd;
+  if (!Number.isFinite(end)) return null;
+  if (part.kind === 'region' && model.lines.some((line) => line.start > part.start && line.start < end && line.kind === 'unknown')) return null;
+  return model.text.slice(0, part.start) + model.text.slice(end);
+}
+
 
 
 
@@ -3180,7 +3284,7 @@ function openFlowSheet({ title, text, save }) {
   dropFlowSaveWait();
   flowLastFocus = document.activeElement;
   
-  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, title: title || '', titledText: null };
+  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, sequence: null, sequenceSelection: null, sequenceHits: new WeakMap(), sequenceMapped: [], sequenceMapProblem: '', title: title || '', titledText: null };
   flowSelection = null;
   flowDrawn = null;
   
@@ -3188,7 +3292,7 @@ function openFlowSheet({ title, text, save }) {
   flowZoom = 1;
   readyFlowPicker();
   buildFlowControls();
-  loadFlowChips();
+  if (!isSequenceSource(flowSession.text)) loadFlowChips();
   flowHistory.past.length = 0;
   flowHistory.future.length = 0;
   flowBefore = null;
@@ -3291,6 +3395,11 @@ function onFlowSheetKey(event) {
   
   const inField = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if (inField) return;
+  if (flowSession.sequence && flowSession.sequenceSelection && (event.key === 'Delete' || event.key === 'Backspace')) {
+    event.preventDefault();
+    sequenceDeleteSelected();
+    return;
+  }
   const key = String(event.key).toLowerCase();
   if ((event.ctrlKey || event.metaKey) && (key === 'z' || key === 'y')) {
     event.preventDefault();
@@ -3318,7 +3427,9 @@ function setFlowText(text, from) {
   if (!flowSession) return;
   if (from === 'code') recordFlowStep();
   flowSession.text = text;
-  flowSession.graph = parseFlow(text);
+  flowSession.sequence = isSequenceSource(text) ? parseSequence(text) : null;
+  flowSession.graph = flowSession.sequence ? null : parseFlow(text);
+  if (flowSession.sequence) flowSession.sequenceSelection = null;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   if (from !== 'code' && flowCode) flowCode.value = text;
   redrawFlowSheet();
@@ -3346,6 +3457,7 @@ function flowSnapshot() {
   return {
     text: flowSession.text,
     graph: flowSession.graph ? JSON.parse(JSON.stringify(flowSession.graph)) : null,
+    sequenceAt: flowSession.sequenceSelection ? flowSession.sequenceSelection.start : null,
     selection: flowSelection ? { kind: flowSelection.kind, id: flowSelection.id } : null,
     chosen: flowChosen.map((item) => ({ kind: item.kind, id: item.id })),
   };
@@ -3358,11 +3470,17 @@ function recordFlowStep() {
   flowHistory.future.length = 0;
 }
 
+function sealFlowStep() {
+  flowBefore = flowSnapshot();
+}
+
 function applyFlowState(state) {
   if (!state || !flowSession) return;
   closeFlowLabelBox(false);
   flowSession.text = state.text;
   flowSession.graph = state.graph ? JSON.parse(JSON.stringify(state.graph)) : null;
+  flowSession.sequence = isSequenceSource(state.text) ? parseSequence(state.text) : null;
+  flowSession.sequenceSelection = flowSession.sequence ? flowSession.sequence.parts.find((part) => part.start === state.sequenceAt) || null : null;
   flowSelection = state.selection ? { kind: state.selection.kind, id: state.selection.id } : null;
   flowChosen = (state.chosen || []).map((item) => ({ kind: item.kind, id: item.id }));
   if (flowCode) flowCode.value = state.text;
@@ -3452,6 +3570,10 @@ function setFlowHint(text) {
 
 function restoreFlowHint() {
   const graph = flowSession && flowSession.graph;
+  if (flowSession && flowSession.sequence) {
+    setFlowHint('Press a participant, message, note or region to edit it below · drag empty space to pan · Ctrl-scroll to zoom.');
+    return;
+  }
   
   if (!graph) {
     setFlowHint(FLOW_TIP_PREVIEW);
@@ -3820,6 +3942,7 @@ function paintFlowDrawing(svg, text, themeVersion) {
   sizeFlowStage();
   measureFlowDiagram();
   drawFlowOverlay();
+  if (flowSession && flowSession.sequence) mapSequenceDrawing();
   flowCanvas.scrollLeft = left;
   flowCanvas.scrollTop = top;
   drawFlowNotice();
@@ -3845,9 +3968,10 @@ function drawFlowSheetTitle() {
 function drawFlowNotice() {
   if (!flowNotice) return;
   const graph = flowSession && flowSession.graph;
+  const sequence = flowSession && flowSession.sequence;
   
-  const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '');
-  const message = !graph
+  const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '') || (sequence && flowSession.sequenceMapProblem) || '';
+  const message = sequence ? problem : !graph
     ? problem || (flowRefusal(flowSession ? flowSession.text : '') || FLOW_UNMODELED) + FLOW_AS_TEXT
     : !graph.nodes.length
       ? FLOW_NOTHING_YET
@@ -3855,7 +3979,7 @@ function drawFlowNotice() {
   flowNotice.hidden = !message;
   flowNotice.textContent = message || '';
   flowNotice.classList.toggle('is-error', !!problem);
-  if (flowCanvas) flowCanvas.classList.toggle('is-disabled', !graph);
+  if (flowCanvas) flowCanvas.classList.toggle('is-disabled', !graph && !sequence);
   if (flowDirectionLabel) flowDirectionLabel.hidden = !graph;
   if (flowDirectionPicker) {
     flowDirectionPicker.disabled = !graph;
@@ -4280,7 +4404,7 @@ function refreshFlowChipsForTheme() {
   flowDrawingStoreHeld = 0;
   forgetFlowShapeGrid();
   if (!flowSession) return;
-  loadFlowChips();
+  if (!flowSession.sequence) loadFlowChips();
   drawFlowDiagram();
 }
 
@@ -5260,6 +5384,12 @@ function closeFlowAddPicker() {
 
 
 function dismissFlowPicker(options) {
+  if (flowSession && flowSession.sequence) {
+    flowSession.sequenceSelection = null;
+    markSequenceSelection();
+    closeSheet(flowPicker, flowPickerBackdrop, options);
+    return;
+  }
   flowPickerAdd = null;
   flowPickerName = '';
   selectFlow(null, null);
@@ -5268,6 +5398,10 @@ function dismissFlowPicker(options) {
 
 function drawFlowPicker(options) {
   if (!flowPicker || !flowPickerBody || !flowPickerHead) return;
+  if (flowSession && flowSession.sequence) {
+    drawSequencePicker(options);
+    return;
+  }
   const graph = flowSession && flowSession.graph;
   const selection = flowSelection;
   flowPickerHead.textContent = '';
@@ -5702,6 +5836,346 @@ function forgetFlowShapeGrid() {
   flowShapeGrid = null;
   flowShapeButtons = null;
   flowShapeMarked = null;
+}
+
+
+function sequenceWords(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function sequenceRegionWords(value) {
+  return sequenceWords(value).replace(/^\[|\]$/g, '');
+}
+
+function sequenceHit(element, part) {
+  flowSession.sequenceHits.set(element, part);
+  flowSession.sequenceMapped.push(element);
+  element.classList.add('sequence-hit');
+}
+
+function mapSequenceDrawing() {
+  for (const element of flowSession.sequenceMapped) element.classList.remove('sequence-hit', 'sequence-selected');
+  flowSession.sequenceHits = new WeakMap();
+  flowSession.sequenceMapped = [];
+  flowSession.sequenceMapProblem = '';
+  const model = flowSession && flowSession.sequence;
+  const svg = flowCanvas && flowCanvas.querySelector('.flow-stage svg');
+  if (!model || !svg) return;
+  const labels = (selector) => Array.from(svg.querySelectorAll(selector));
+  const messages = labels('.messageText');
+  const strokes = labels('.messageLine0, .messageLine1');
+  const actors = labels('text.actor, .actor text');
+  const positions = new Map();
+  const participantByLabel = new Map(model.participants.map((part) => [sequenceWords(part.label), part]));
+  for (const actor of actors) {
+    const label = sequenceWords(actor.textContent);
+    const part = participantByLabel.get(label);
+    const id = part ? part.id : label;
+    if (!positions.has(id)) positions.set(id, Number(actor.getAttribute('x')));
+  }
+  if (messages.length !== model.messages.length || strokes.length !== model.messages.length) {
+    flowSession.sequenceMapProblem = 'Some drawn messages could not be matched to source. Edit those lines as text.';
+  } else {
+    model.messages.forEach((part, index) => {
+      const stroke = strokes[index];
+      const from = positions.get(part.from);
+      const to = positions.get(part.to);
+      const sameEnds = Number.isFinite(from) && Number.isFinite(to)
+        && Math.abs(Number(stroke.getAttribute('x1')) - from) <= 16
+        && Math.abs(Number(stroke.getAttribute('x2')) - to) <= 16;
+      if (sequenceWords(messages[index].textContent) !== sequenceWords(part.label) || !sameEnds) {
+        flowSession.sequenceMapProblem = 'Some drawn messages could not be matched to source. Edit those lines as text.';
+        return;
+      }
+      sequenceHit(messages[index], part);
+      sequenceHit(stroke, part);
+    });
+  }
+  const used = new Set();
+  const participantNames = new Map();
+  for (const part of model.participants) participantNames.set(sequenceWords(part.label), (participantNames.get(sequenceWords(part.label)) || 0) + 1);
+  for (const part of model.participants) {
+    if (participantNames.get(sequenceWords(part.label)) !== 1) {
+      flowSession.sequenceMapProblem = 'Participants with the same drawn name can be edited as text.';
+      continue;
+    }
+    const match = actors.find((actor) => !used.has(actor) && sequenceWords(actor.textContent) === sequenceWords(part.label));
+    if (match) {
+      used.add(match);
+      sequenceHit(match, part);
+    }
+  }
+  if (used.size !== model.participants.length) flowSession.sequenceMapProblem = 'Some participants could not be matched to source. Edit those lines as text.';
+  const notes = labels('.noteText');
+  const sourceNotes = model.parts.filter((part) => part.kind === 'note');
+  if (notes.length === sourceNotes.length) notes.forEach((note, index) => {
+    if (sequenceWords(note.textContent) === sequenceWords(sourceNotes[index].label)) sequenceHit(note, sourceNotes[index]);
+  });
+  if (sourceNotes.some((note, index) => !notes[index] || !flowSession.sequenceHits.has(notes[index]))) flowSession.sequenceMapProblem = 'Some drawn notes could not be matched to source. Edit those lines as text.';
+  const regions = labels('.loopText, .labelText');
+  const sourceRegions = model.parts.filter((part) => part.kind === 'region' || part.kind === 'branch');
+  const regionLabels = new Map();
+  const regionSourcesByName = new Map();
+  const regionDrawnByName = new Map();
+  for (const part of sourceRegions) {
+    const name = sequenceRegionWords(part.label);
+    regionSourcesByName.set(name, (regionSourcesByName.get(name) || 0) + 1);
+  }
+  for (const region of regions) {
+    const name = sequenceRegionWords(region.textContent);
+    const matches = regionDrawnByName.get(name) || [];
+    matches.push(region);
+    regionDrawnByName.set(name, matches);
+  }
+  for (const part of sourceRegions) {
+    const name = sequenceRegionWords(part.label);
+    const drawn = regionDrawnByName.get(name) || [];
+    if (drawn.length !== 1 || regionSourcesByName.get(name) !== 1) continue;
+    sequenceHit(drawn[0], part);
+    regionLabels.set(part, drawn[0]);
+  }
+  if (regionLabels.size !== sourceRegions.length) flowSession.sequenceMapProblem = 'Some drawn regions could not be matched to source. Edit those lines as text.';
+  const horizontal = labels('.loopLine').filter((line) => Number(line.getAttribute('y1')) === Number(line.getAttribute('y2')));
+  const regionBounds = new Map();
+  for (const part of sourceRegions.filter((one) => one.kind === 'region')) {
+    const label = regionLabels.get(part);
+    if (!label) continue;
+    const y = Number(label.getAttribute('y'));
+    const topLine = horizontal.filter((line) => Number(line.getAttribute('y1')) < y && y - Number(line.getAttribute('y1')) < 40)
+      .sort((a, b) => Number(b.getAttribute('y1')) - Number(a.getAttribute('y1')))[0];
+    if (!topLine) continue;
+    const top = Number(topLine.getAttribute('y1'));
+    const sameWidth = (line) => line.getAttribute('x1') === topLine.getAttribute('x1') && line.getAttribute('x2') === topLine.getAttribute('x2');
+    const bottomLine = horizontal.filter((line) => sameWidth(line) && Number(line.getAttribute('y1')) > top && !line.getAttribute('style')?.includes('dasharray'))
+      .sort((a, b) => Number(a.getAttribute('y1')) - Number(b.getAttribute('y1')))[0];
+    if (!bottomLine) continue;
+    const bottom = Number(bottomLine.getAttribute('y1'));
+    const separators = horizontal.filter((line) => sameWidth(line) && line.getAttribute('style')?.includes('dasharray') && Number(line.getAttribute('y1')) > top && Number(line.getAttribute('y1')) < bottom)
+      .map((line) => Number(line.getAttribute('y1'))).sort((a, b) => a - b);
+    regionBounds.set(part.id, { top, bottom, separators });
+  }
+  if (regionBounds.size !== sourceRegions.filter((part) => part.kind === 'region').length) flowSession.sequenceMapProblem = 'Some drawn regions have no clear boundary. Edit those lines as text.';
+  const withinRegion = (part, y) => part.path.every((entry) => {
+    const [id, branch] = entry.split(':').map(Number);
+    const bounds = regionBounds.get(id);
+    if (!bounds) return false;
+    const low = branch ? bounds.separators[branch - 1] : bounds.top;
+    const high = bounds.separators[branch] ?? bounds.bottom;
+    return Number.isFinite(low) && y > low && y < high;
+  });
+  model.messages.forEach((part, index) => {
+    const stroke = strokes[index];
+    if (!stroke || !flowSession.sequenceHits.has(stroke) || withinRegion(part, Number(stroke.getAttribute('y1')))) return;
+    flowSession.sequenceHits.delete(stroke);
+    flowSession.sequenceHits.delete(messages[index]);
+    stroke.classList.remove('sequence-hit');
+    messages[index].classList.remove('sequence-hit');
+    flowSession.sequenceMapProblem = 'A drawn message could not be placed in its source region. Edit that line as text.';
+  });
+  sourceNotes.forEach((part, index) => {
+    const note = notes[index];
+    if (!note || !flowSession.sequenceHits.has(note) || withinRegion(part, Number(note.getAttribute('y')))) return;
+    flowSession.sequenceHits.delete(note);
+    note.classList.remove('sequence-hit');
+    flowSession.sequenceMapProblem = 'A drawn note could not be placed in its source region. Edit that line as text.';
+  });
+  markSequenceSelection();
+  drawFlowNotice();
+}
+
+function markSequenceSelection() {
+  for (const element of flowSession.sequenceMapped) {
+    const part = flowSession.sequenceHits.get(element);
+    element.classList.toggle('sequence-selected', !!flowSession.sequenceSelection && part === flowSession.sequenceSelection);
+  }
+}
+
+if (flowCanvas) flowCanvas.addEventListener('pointerdown', (event) => {
+  if (!flowSession || !flowSession.sequence || event.button !== 0) return;
+  let target = event.target;
+  while (target && target !== flowCanvas && !flowSession.sequenceHits.has(target)) target = target.parentElement;
+  if (!target || !flowSession.sequenceHits.has(target)) return;
+  event.stopImmediatePropagation();
+  event.preventDefault();
+  flowSession.sequenceSelection = flowSession.sequenceHits.get(target);
+  markSequenceSelection();
+  drawSequencePicker();
+}, true);
+
+function sequenceCommit(next, selectKind, near) {
+  const model = parseSequence(next);
+  if (!model) {
+    setFlowHint('This edit would leave the sequence diagram incomplete.');
+    return false;
+  }
+  if (next === flowSession.text) return false;
+  recordFlowStep();
+  flowSession.text = next;
+  flowSession.sequence = model;
+  flowSession.sequenceSelection = selectKind ? model.parts.find((part) => part.kind === selectKind && part.start >= (near || 0)) || model.parts.find((part) => part.kind === selectKind) : null;
+  if (flowCode) flowCode.value = next;
+  redrawFlowSheet();
+  sealFlowStep();
+  return true;
+}
+
+function sequenceField(label, value, commit, options) {
+  const field = document.createElement(options ? 'select' : 'input');
+  field.className = 'flow-field';
+  if (options) for (const option of options) {
+    const item = document.createElement('option');
+    item.value = option;
+    item.textContent = option;
+    field.appendChild(item);
+  }
+  field.value = value;
+  field.setAttribute('aria-label', label);
+  field.addEventListener('change', () => {
+    if (!commit(field.value)) field.value = value;
+  });
+  return flowPickerRow(label, field);
+}
+
+function sequenceButton(label, action, disabled, reason) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = label.startsWith('Remove ') ? 'flow-delete' : 'flow-action';
+  button.textContent = label;
+  button.disabled = !!disabled;
+  if (reason) button.title = reason;
+  button.addEventListener('click', action);
+  flowPickerBody.appendChild(button);
+}
+
+function sequenceLine(part, body) {
+  return sequenceSplice(flowSession.sequence, part, body);
+}
+
+function sequenceInsertAfter(model, part, statement) {
+  const prefix = part.fullEnd === part.end ? '\n' : '';
+  return model.text.slice(0, part.fullEnd) + prefix + statement + '\n' + model.text.slice(part.fullEnd);
+}
+
+function sequenceDeleteSelected() {
+  const part = flowSession && flowSession.sequenceSelection;
+  const model = flowSession && flowSession.sequence;
+  if (!part || !model) return;
+  if (part.kind === 'participant' && model.parts.some((one) => one !== part && (one.from === part.id || one.to === part.id || (one.actors && one.actors.includes(part.id))))) {
+    setFlowHint('This participant still has messages or notes.');
+    return;
+  }
+  const next = sequenceRemove(model, part);
+  if (!next) {
+    setFlowHint('An unsupported statement inside this region must stay in source.');
+    return;
+  }
+  sequenceCommit(next, null);
+}
+
+function sequenceRenameParticipant(part, nextId, nextLabel) {
+  const model = flowSession.sequence;
+  if (!/^[A-Za-z_][\w-]*$/.test(nextId) || model.participants.some((one) => one !== part && one.id === nextId)) {
+    setFlowHint('Participant identifiers must be unique names.');
+    return false;
+  }
+  if (!nextLabel || /[\r\n]/.test(nextLabel)) return false;
+  if (nextId !== part.id && model.lines.some((line) => line.kind === 'unknown' && new RegExp('\\b' + part.id + '\\b').test(line.value))) {
+    setFlowHint('An unsupported statement names this participant; edit its source to rename it safely.');
+    return false;
+  }
+  let text = model.text;
+  const edits = [{ line: part, body: part.style + ' ' + nextId + (nextLabel === nextId ? '' : ' as ' + nextLabel) }];
+  if (nextId !== part.id) for (const line of model.parts) {
+    if (line.kind === 'message' && (line.from === part.id || line.to === part.id)) edits.push({ line, body: (line.from === part.id ? nextId : line.from) + line.arrow + (line.to === part.id ? nextId : line.to) + ': ' + line.label });
+    if (line.kind === 'note' && line.actors.includes(part.id)) edits.push({ line, body: 'Note ' + line.placement + ' ' + line.actors.map((id) => id === part.id ? nextId : id).join(',') + ': ' + line.label });
+  }
+  for (const edit of edits.sort((a, b) => b.line.start - a.line.start)) text = text.slice(0, edit.line.start) + edit.line.raw.replace(edit.line.value, edit.body) + text.slice(edit.line.end);
+  return sequenceCommit(text, 'participant', part.start);
+}
+
+function drawSequencePicker(options) {
+  if (!flowPicker || !flowPickerHead || !flowPickerBody || !flowSession || !flowSession.sequence) return;
+  openSheet(flowPicker, flowPickerBackdrop, { keepParked: true, ...options });
+  flowPicker.setAttribute('aria-label', 'Sequence editor');
+  flowPickerHead.textContent = '';
+  flowPickerBody.textContent = '';
+  const model = flowSession.sequence;
+  const part = flowSession.sequenceSelection;
+  const actorIds = [...new Set(model.participants.map((one) => one.id).concat(model.messages.flatMap((one) => [one.from, one.to])))];
+  const form = document.createElement('div');
+  form.className = 'flow-form';
+  if (part) {
+    if (part.kind === 'participant') {
+      form.appendChild(sequenceField('Identifier', part.id, (value) => sequenceRenameParticipant(part, value, part.label)));
+      form.appendChild(sequenceField('Name', part.label, (value) => sequenceRenameParticipant(part, part.id, value)));
+    } else if (part.kind === 'message') {
+      const actors = actorIds;
+      form.appendChild(sequenceField('From', part.from, (value) => sequenceCommit(sequenceLine(part, value + part.arrow + part.to + ': ' + part.label), 'message', part.start), actors));
+      form.appendChild(sequenceField('To', part.to, (value) => sequenceCommit(sequenceLine(part, part.from + part.arrow + value + ': ' + part.label), 'message', part.start), actors));
+      form.appendChild(sequenceField('Message', part.label, (value) => sequenceCommit(sequenceLine(part, part.from + part.arrow + part.to + ': ' + value), 'message', part.start)));
+    } else if (part.kind === 'note') {
+      form.appendChild(sequenceField('Note', part.label, (value) => sequenceCommit(sequenceLine(part, 'Note ' + part.placement + ' ' + part.actors.join(',') + ': ' + value), 'note', part.start)));
+      form.appendChild(sequenceField('Place', part.placement, (value) => sequenceCommit(sequenceLine(part, 'Note ' + value + ' ' + part.actors.join(',') + ': ' + part.label), 'note', part.start), ['over', 'left of', 'right of']));
+      form.appendChild(sequenceField('Participants', part.actors.join(','), (value) => sequenceCommit(sequenceLine(part, 'Note ' + part.placement + ' ' + value + ': ' + part.label), 'note', part.start)));
+    } else if (part.kind === 'region' || part.kind === 'branch') {
+      form.appendChild(sequenceField('Label', part.label, (value) => sequenceCommit(sequenceLine(part, part.kind === 'branch' ? 'else ' + value : part.regionKind + ' ' + value), part.kind, part.start)));
+    }
+  }
+  if (form.children.length) flowPickerHead.appendChild(form);
+  const firstActor = actorIds[0];
+  const secondActor = actorIds[1] || firstActor;
+  sequenceButton('Add participant', () => {
+    let count = 1;
+    while (model.participants.some((one) => one.id === 'Participant' + count)) count += 1;
+    const after = model.participants.at(-1) || model.lines.find((line) => line.kind === 'header');
+    sequenceCommit(sequenceInsertAfter(model, after, 'participant Participant' + count), 'participant', after.fullEnd);
+  });
+  sequenceButton('Add message', () => {
+    if (!firstActor) return;
+    const after = part && ['message', 'region', 'branch', 'note'].includes(part.kind) ? part : model.messages.at(-1) || model.participants.at(-1);
+    sequenceCommit(sequenceInsertAfter(model, after, firstActor + '->>' + secondActor + ': Message'), 'message', after.fullEnd);
+  }, !firstActor, 'Add a participant first');
+  sequenceButton('Add note', () => {
+    if (!firstActor) return;
+    const after = part && ['message', 'region', 'branch', 'note'].includes(part.kind) ? part : model.messages.at(-1) || model.participants.at(-1);
+    sequenceCommit(sequenceInsertAfter(model, after, 'Note over ' + firstActor + ': Note'), 'note', after.fullEnd);
+  }, !firstActor, 'Add a participant first');
+  if (part && part.kind === 'message') {
+    for (const [label, keyword] of [['Add loop', 'loop'], ['Add alternative', 'alt']]) {
+      sequenceButton(label, () => {
+        const indent = part.raw.slice(0, part.raw.indexOf(part.value));
+        const opening = indent + keyword + ' Condition\n';
+        const closing = indent + 'end\n';
+        const statement = model.text.slice(part.start, part.fullEnd);
+        const next = model.text.slice(0, part.start) + opening + statement + (statement.endsWith('\n') ? '' : '\n') + closing + model.text.slice(part.fullEnd);
+        sequenceCommit(next, 'region', part.start);
+      });
+    }
+  }
+  if (!part) return;
+  if (part.kind === 'message') {
+    for (const [label, direction] of [['Move up', -1], ['Move down', 1]]) {
+      const moved = sequenceMove(model, part, direction);
+      sequenceButton(label, () => sequenceCommit(moved, 'message', Math.min(part.start, model.lines[model.lines.indexOf(part) + direction].start)), !moved, 'A region boundary or unsupported line blocks this move');
+    }
+  }
+  if (part.kind === 'participant') {
+    const index = model.lines.indexOf(part);
+    for (const [label, direction] of [['Move left', -1], ['Move right', 1]]) {
+      const neighbor = model.lines[index + direction];
+      const moved = sequenceMove(model, part, direction);
+      sequenceButton(label, () => { if (moved) sequenceCommit(moved, 'participant', Math.min(part.start, neighbor.start)); }, !moved, 'Only neighboring declarations can be reordered');
+    }
+  }
+  if (part.kind === 'region' && part.regionKind === 'alt') {
+    sequenceButton('Add alternative branch', () => {
+      const end = model.lines.find((line) => line.kind === 'end' && line.region === part.id);
+      if (end) sequenceCommit(model.text.slice(0, end.start) + 'else Alternative\n' + model.text.slice(end.start), 'branch', end.start);
+    });
+  }
+  const used = part.kind === 'participant' && model.parts.some((one) => one !== part && (one.from === part.id || one.to === part.id || (one.actors && one.actors.includes(part.id))));
+  const unsupported = part.kind === 'region' && sequenceRemove(model, part) === null;
+  sequenceButton(part.kind === 'region' ? 'Remove region and contents' : 'Remove ' + part.kind, sequenceDeleteSelected, used || unsupported, unsupported ? 'An unsupported statement inside this region must stay in source' : 'This participant still has messages or notes');
 }
 
 
@@ -6162,7 +6636,9 @@ const viewGraphButton = document.getElementById('viewGraphButton');
 const readerViewTools = document.getElementById('readerViewTools');
 const readerToolTray = document.getElementById('readerToolTray');
 const readerLockButton = document.getElementById('readerLockButton');
-const speedReaderButton = document.getElementById('speedReaderButton');
+const splitViewButton = document.getElementById('splitViewButton');
+const speedReaderTool = document.getElementById('speedReaderTool');
+const speedReaderChoice = document.getElementById('speedReaderChoice');
 const codeIntelButton = document.getElementById('codeIntelButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
 const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
@@ -9132,8 +9608,15 @@ function isSpeedReaderAcronym(word) {
 }
 
 const DIRECT_SLICE_SPEED_READER_WORD = /^[A-Za-z]+(?:['\u2019][A-Za-z]+)?$/;
-function leadAnchorPrefixLength(count) {
+function normalizeSpeedReaderStrength(value) {
+  return value === 'light' || value === 'strong' ? value : 'balanced';
+}
+function leadAnchorPrefixLength(count, strength = 'balanced') {
   if (count <= 1) return 0;
+  if (strength === 'light') return count <= 8 ? 1 : 2;
+  if (strength === 'strong') {
+    return Math.min(count - 1, Math.ceil(count / 2), leadAnchorPrefixLength(count, 'balanced') + 1);
+  }
   if (count <= 3) return 1;
   if (count <= 5) return 2;
   if (count <= 8) return 3;
@@ -9143,7 +9626,7 @@ function leadAnchorPrefixLength(count) {
 function appendSpeedReaderWord(fragment, word) {
   const chars = DIRECT_SLICE_SPEED_READER_WORD.test(word) ? null : speedReaderGraphemes(word);
   const count = chars ? chars.length : word.length;
-  const prefixLength = isSpeedReaderAcronym(word) ? count : leadAnchorPrefixLength(count);
+  const prefixLength = isSpeedReaderAcronym(word) ? count : leadAnchorPrefixLength(count, speedReaderStrength);
   if (prefixLength === 0) {
     fragment.append(document.createTextNode(word));
     return;
@@ -9243,6 +9726,7 @@ function applySpeedReaderToDocument(root = readingDocumentRoot()) {
   root.dataset.speedReaderProcessed = 'true';
 }
 let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;
+let speedReaderStrength = normalizeSpeedReaderStrength(LEAF_SETTINGS.speedReaderStrength);
 
 function setSpeedReaderFlag(enabled) {
   speedReaderEnabled = Boolean(enabled);
@@ -9253,6 +9737,21 @@ function setSpeedReaderEnabled(enabled) {
   if (speedReaderEnabled) {
     applySpeedReaderToDocument();
   }
+}
+function setSpeedReaderStrength(strength) {
+  const next = normalizeSpeedReaderStrength(strength);
+  if (next === speedReaderStrength) return;
+  speedReaderStrength = next;
+  const root = readingDocumentRoot();
+  if (!root || root.dataset.speedReaderProcessed !== 'true') return;
+  const parents = new Set();
+  root.querySelectorAll('.speed-reader-anchor').forEach((anchor) => {
+    parents.add(anchor.parentNode);
+    anchor.replaceWith(document.createTextNode(anchor.textContent || ''));
+  });
+  parents.forEach((parent) => parent.normalize());
+  delete root.dataset.speedReaderProcessed;
+  applySpeedReaderToDocument(root);
 }
 
 setSpeedReaderFlag(speedReaderEnabled);
@@ -12853,6 +13352,7 @@ function renderReaderToolbar(viewsStand) {
   syncReaderToolTrayState();
   syncReaderToolDividerState();
   coverLivePageWithReaderToolbar();
+  refreshSourcePairEditor();
 }
 
 function coverLivePageWithReaderToolbar() {
@@ -13016,6 +13516,10 @@ function renderViewTools(current) {
   const onLocalSite = Boolean(activeLocalSiteTab());
   const editable = (!onWebTab || onLocalSite) && (current === 'reading' || current === 'code');
   const onGraph = current === 'graph';
+  if (splitViewButton) {
+    splitViewButton.hidden = !activeDocumentPath() || onWebTab || onGraph || readingIsContainedPage() || (splitOpen() && !besideIsTheSameTab());
+    setSubtoolState(splitViewButton, besideIsTheSameTab(), 'Source beside the page');
+  }
   if (graphScopeTool) graphScopeTool.hidden = !onGraph || onWebTab;
   if (readerLockButton) {
     
@@ -13028,10 +13532,10 @@ function renderViewTools(current) {
       viewLockTooltip(onCodeView)
     );
   }
-  if (speedReaderButton) {
-    
-    speedReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
-    setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
+  if (speedReaderTool) {
+    speedReaderTool.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
+    speedReaderTool.dataset.enabled = String(speedReaderEnabled);
+    speedReaderChoice.value = speedReaderEnabled ? speedReaderStrength : 'off';
   }
   renderCodeTools(current === 'code' && !onWebTab);
   showViewToolsIfAny();
@@ -13146,14 +13650,23 @@ if (readerLockButton) {
     else setReadingUnlocked(!readingUnlocked);
   });
 }
+if (splitViewButton) {
+  splitViewButton.addEventListener('click', () => {
+    send({ command: besideIsTheSameTab() ? 'closeBeside' : 'openSourceBeside' });
+  });
+}
 
 window.leafUnlockReading = () => {
   setReadingUnlocked(true);
 };
-
-if (speedReaderButton) {
-  speedReaderButton.addEventListener('click', () => {
-    setSpeedReaderEnabled(!speedReaderEnabled);
+if (speedReaderChoice) {
+  speedReaderChoice.addEventListener('change', () => {
+    const choice = speedReaderChoice.value;
+    if (choice !== 'off') {
+      setSpeedReaderStrength(choice);
+      send({ command: 'setSpeedReaderStrength', strength: speedReaderStrength });
+    }
+    setSpeedReaderEnabled(choice !== 'off');
     send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
     renderViewTools('reading');
   });
@@ -15605,6 +16118,7 @@ window.leafSetColumn = (state, anchor) => {
     active: next.active == null ? null : next.active,
     beside: next.beside || null,
   });
+  renderReaderToolbar(readerViewsStand());
   renderTabs(currentState);
   scheduleWebSurfaceBounds();
   syncWebAddressBar();
@@ -15992,6 +16506,7 @@ window.leafSetWorkspace = (state) => {
     beside: next.beside || null,
   });
   if (graphViewOpen && activeWebTab() && activeWebTab().webId !== previousWebId) graphSetActive(activeWebTab().url, true, false);
+  renderReaderToolbar(readerViewsStand());
   renderTabs(currentState);
   
   const path = activeDocumentPath();
@@ -17327,7 +17842,7 @@ function applyCodeViewWrapColumn() {
   const charWidth = font && font.typicalHalfwidthCharacterWidth;
   if (!charWidth || !info.viewportColumn) return;
   const gapColumns = Math.ceil(codeViewWrapRightGapPx() / charWidth);
-  const column = Math.max(1, info.viewportColumn - gapColumns);
+  const column = Math.max(1, Math.min(besideIsTheSameTab() ? 75 : Infinity, info.viewportColumn - gapColumns));
   if (column === codeViewWrapColumn) return;
   codeViewWrapColumn = column;
   monacoEditor.updateOptions({ wordWrapColumn: column });
@@ -17466,7 +17981,7 @@ function createMonacoEditor(monaco, container, state, text) {
     
     readOnly: codeViewIsLocked(),
     
-    minimap: { enabled: true, showSlider: 'always' },
+    minimap: { enabled: !besideIsTheSameTab(), showSlider: 'always' },
     automaticLayout: true,
     lineNumbers: 'on',
     scrollBeyondLastLine: false,
@@ -17523,11 +18038,13 @@ function createMonacoEditor(monaco, container, state, text) {
   monacoEditor.onDidScrollChange((event) => {
     if (event.scrollTopChanged && codeScrollIntent) markCodeMoved();
     if (event.scrollHeightChanged) settleCodeLanding();
+    if (event.scrollTopChanged) syncSourcePairFromEditor();
     scheduleSessionPlace();
   });
   
   monacoLayoutSub = monacoEditor.onDidLayoutChange(() => {
     applyCodeViewWrapColumn();
+    scheduleSourcePairAlignment();
     settleCodeLanding();
     
     clampMinimapSliderToRail();
@@ -17537,7 +18054,7 @@ function createMonacoEditor(monaco, container, state, text) {
   watchMinimapSlider();
   
   if (document.fonts && document.fonts.addEventListener) {
-    monacoFontsDoneHandler = () => refitCodeViewToFont();
+    monacoFontsDoneHandler = () => { refitCodeViewToFont(); scheduleSourcePairAlignment(true); };
     document.fonts.addEventListener('loadingdone', monacoFontsDoneHandler);
   }
   landNewCodeEditor(text);
@@ -17557,6 +18074,8 @@ function disposeMonacoEditor() {
     webCodeCover = null;
   }
   if (!monacoEditor) return;
+  clearSourcePairCorrections(true);
+  forgetSourcePairEditor();
   teardownCodeIntel();
   teardownStickyHeadings();
   if (monacoChangeSub) {
@@ -33153,17 +33672,14 @@ function startDottedLeaf(mark) {
       const [x, y] = DOTTED_LEAF_POINTS[i];
       const nx = (x - 32) / 32;
       const ny = (y - 32) / 32;
-      const depth = 0.5 * Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      const depth = 0.18 * (1 - nx * nx) * (0.8 + 0.2 * ny);
       const pulse = 0.5 + 0.5 * Math.sin(time * (2 * Math.PI / 2.4) + i * 2.399963229728653);
-      for (const side of [1, -1]) {
-        const turnedX = nx * cosine + side * depth * sine;
-        const yawZ = side * depth * cosine - nx * sine;
-        const turnedY = ny * pitchCosine - yawZ * pitchSine;
-        const turnedZ = ny * pitchSine + yawZ * pitchCosine;
-        if (turnedZ < 0) continue;
-        const perspective = 1 / (1 - turnedZ * 0.32);
-        points.push([32 + turnedX * 32 * perspective, 32 + turnedY * 32 * perspective, turnedZ, perspective, pulse]);
-      }
+      const turnedX = nx * cosine + depth * sine;
+      const yawZ = depth * cosine - nx * sine;
+      const turnedY = ny * pitchCosine - yawZ * pitchSine;
+      const turnedZ = ny * pitchSine + yawZ * pitchCosine;
+      const perspective = 1 / (1 - turnedZ * 0.32);
+      points.push([32 + turnedX * 32 * perspective, 32 + turnedY * 32 * perspective, turnedZ, perspective, pulse]);
     }
     points.sort((a, b) => b[2] - a[2]);
     const cells = new Map();
@@ -34031,6 +34547,7 @@ function cancelReadingFill() {
 }
 function finishReadingFill() {
   cancelReadingFill();
+  if (besideIsTheSameTab()) scheduleSourcePairAlignment(true);
   
   settleHeldReadingPlaces();
   invalidateMinimapPreview();
@@ -34524,9 +35041,9 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     const renderedPath = state.document.path || activeDocumentPath();
     const arriving = renderedPath !== lastRenderedDocumentPath;
     lastRenderedDocumentPath = renderedPath;
-    writeReaderClasses(['has-document']);
     const minimapHtml = renderDocumentMinimap(state.document.has_visible_content);
     const keepMinimap = !arriving && !!minimapHtml && !!currentMinimap();
+    writeReaderClasses(keepMinimap ? ['has-document', 'has-minimap'] : ['has-document']);
     const layoutClass = minimapHtml ? 'reader-layout' : 'reader-layout reader-layout-no-minimap';
     
     const previousBody = app.querySelector('.document-body');
@@ -36794,6 +37311,7 @@ const LEAF_MERMAID_ICONS = {
     'refresh': { body: "<path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/>", width: 24, height: 24 },
     'lock-closed': { body: "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z\" />", width: 24, height: 24 },
     'lock-open': { body: "<path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M13.5 10.5V6.75a4.5 4.5 0 1 1 9 0v3.75M3.75 21.75h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H3.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z\" />", width: 24, height: 24 },
+    'split': { body: "<path d=\"M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3\"/><path d=\"M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3\"/><line x1=\"12\" x2=\"12\" y1=\"4\" y2=\"20\"/>", width: 24, height: 24 },
     'speed-reader-on': { body: "<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>", width: 24, height: 24 },
     'speed-reader-off': { body: "<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>", width: 24, height: 24 },
     'wand': { body: "<path d=\"M15 4V2\"/><path d=\"M15 16v-2\"/><path d=\"M8 9h2\"/><path d=\"M20 9h2\"/><path d=\"M17.8 11.8 19 13\"/><path d=\"M15 9h.01\"/><path d=\"M17.8 6.2 19 5\"/><path d=\"m3 21 9-9\"/><path d=\"M12.2 6.2 11 5\"/>", width: 24, height: 24 },
@@ -41901,6 +42419,7 @@ function observeReaderReflow() {
     readerReflowObserver = new ResizeObserver(() => {
       
       scheduleReaderLayoutUpdate(true);
+      scheduleSourcePairAlignment();
     });
     readerReflowObserver.observe(source);
   }
@@ -42736,6 +43255,307 @@ function undoLastDelete() {
   undoableDelete = null;
   send({ command: 'undoDelete', path });
 }
+
+let sourcePairIgnoreEditor = false;
+let sourcePairIgnoreReader = false;
+let sourcePairAlignmentFrame = 0;
+let sourcePairZoneIds = [];
+let sourcePairRoomElements = new Set();
+let sourcePairAnchorCache = null;
+let sourcePairStyledEditor = null;
+let sourcePairStyledPaired = false;
+let sourcePairLongBody = null;
+let sourcePairLongNext = null;
+let sourcePairLongBytes = null;
+let sourcePairLongByteIndex = 0;
+let sourcePairLongLine = 1;
+let sourcePairLongPreviousBottom = 0;
+let sourcePairLongNeedsRestart = false;
+let sourcePairRetiredZones = [];
+let sourcePairRetiredZoneIndex = 0;
+let sourcePairRetiredRooms = [];
+let sourcePairRetiredRoomIndex = 0;
+
+function sourcePairPageColumn() {
+  return renderIsForTheCardBeside() ? keyedColumn : besideColumn();
+}
+
+function refreshSourcePairEditor() {
+  if (!monacoEditor || typeof monacoEditor.updateOptions !== 'function') return;
+  const paired = besideIsTheSameTab();
+  if (sourcePairStyledEditor === monacoEditor && sourcePairStyledPaired === paired) return;
+  sourcePairStyledEditor = monacoEditor;
+  sourcePairStyledPaired = paired;
+  monacoEditor.updateOptions({ minimap: { enabled: !paired, showSlider: 'always' } });
+  codeViewWrapColumn = 0;
+  applyCodeViewWrapColumn();
+  scheduleSourcePairAlignment(true);
+}
+
+function forgetSourcePairEditor() {
+  sourcePairStyledEditor = null;
+}
+
+function scheduleSourcePairAlignment(restart = false) {
+  if (codeViewText.length > 1000000 && (sourcePairLongBody || besideIsTheSameTab())) sourcePairLongNeedsRestart ||= restart;
+  else sourcePairAnchorCache = null;
+  if (sourcePairAlignmentFrame) return;
+  sourcePairAlignmentFrame = requestAnimationFrame(() => {
+    sourcePairAlignmentFrame = 0;
+    alignSourcePairBlocks();
+  });
+}
+
+function sourcePairAnchors() {
+  if (sourcePairAnchorCache) return sourcePairAnchorCache;
+  if (codeViewText.length > 1000000 && besideIsTheSameTab()) return [];
+  const column = sourcePairPageColumn();
+  if (!besideIsTheSameTab() || !monacoEditor || !column?.reader) return [];
+  const reader = column.reader;
+  const readerTop = reader.getBoundingClientRect().top;
+  const sourceTop = keyedColumn.reader.getBoundingClientRect().top;
+  const editorInset = monacoEditor.getDomNode().getBoundingClientRect().top - sourceTop;
+  sourcePairAnchorCache = withColumn(column, () => {
+    const body = app.querySelector('.document-body');
+    if (!body) return [];
+    const anchors = [];
+    const bytes = documentSourceBytes();
+    let byteIndex = 0;
+    let line = 1;
+    let previousBottom = body.getBoundingClientRect().top - readerTop + reader.scrollTop;
+    for (let block = documentBlockFrom(body.firstElementChild); block && !block.classList.contains('is-held-below'); block = nextDocumentBlock(block)) {
+      const offset = rangeOf(block, 'block').start;
+      if (!Number.isFinite(offset)) continue;
+      while (byteIndex < offset && byteIndex < bytes.length) {
+        if (bytes[byteIndex] === 10) line += 1;
+        byteIndex += 1;
+      }
+      const rect = block.getBoundingClientRect();
+      const page = rect.top - readerTop + reader.scrollTop;
+      anchors.push({
+        page,
+        source: monacoEditor.getTopForLineNumber(line) + editorInset,
+        line,
+        block,
+        gap: Math.max(0, page - previousBottom),
+      });
+      previousBottom = rect.bottom - readerTop + reader.scrollTop;
+    }
+    return anchors;
+  });
+  return sourcePairAnchorCache;
+}
+
+function pairCorrections(anchors) {
+  let sourceShift = 0;
+  let pageShift = 0;
+  const zones = [];
+  const rooms = [];
+  for (const anchor of anchors) {
+    const difference = anchor.page + pageShift - anchor.source - sourceShift;
+    if (difference > 1) {
+      const height = Math.ceil(difference);
+      zones.push({ line: anchor.line, height });
+      sourceShift += height;
+    } else if (difference < -1) {
+      rooms.push({ block: anchor.block, gap: anchor.gap + -difference });
+      pageShift -= difference;
+    }
+  }
+  return { zones, rooms };
+}
+
+function clearSourcePairCorrections(discardEditor = false) {
+  sourcePairAnchorCache = null;
+  if (!discardEditor && monacoEditor && (sourcePairZoneIds.length || sourcePairRetiredZoneIndex < sourcePairRetiredZones.length)) {
+    monacoEditor.changeViewZones((change) => {
+      for (const id of sourcePairZoneIds) change.removeZone(id);
+      for (let at = sourcePairRetiredZoneIndex; at < sourcePairRetiredZones.length; at += 1) change.removeZone(sourcePairRetiredZones[at]);
+    });
+  }
+  sourcePairZoneIds = [];
+  for (const block of sourcePairRoomElements) {
+    block.classList.remove('source-pair-room');
+    block.style.removeProperty('--source-pair-gap');
+  }
+  sourcePairRoomElements = new Set();
+  for (let at = sourcePairRetiredRoomIndex; at < sourcePairRetiredRooms.length; at += 1) {
+    sourcePairRetiredRooms[at].classList.remove('source-pair-room');
+    sourcePairRetiredRooms[at].style.removeProperty('--source-pair-gap');
+  }
+  sourcePairRetiredZones = [];
+  sourcePairRetiredRooms = [];
+  sourcePairRetiredZoneIndex = 0;
+  sourcePairRetiredRoomIndex = 0;
+}
+
+function applySourcePairCorrections(anchors) {
+  const { zones, rooms } = pairCorrections(anchors);
+  if (zones.length) {
+    monacoEditor.changeViewZones((change) => {
+      for (const zone of zones) sourcePairZoneIds.push(change.addZone({ afterLineNumber: Math.max(0, zone.line - 1), heightInPx: zone.height, domNode: document.createElement('div') }));
+    });
+  }
+  for (const room of rooms) {
+    room.block.style.setProperty('--source-pair-gap', `${room.gap}px`);
+    room.block.classList.add('source-pair-room');
+    sourcePairRoomElements.add(room.block);
+  }
+}
+
+function alignLongSourcePair() {
+  const column = sourcePairPageColumn();
+  if (!column?.reader) return;
+  const body = column.reader.querySelector('.document-body');
+  if (!body) return;
+  if (body !== sourcePairLongBody || sourcePairLongNeedsRestart) {
+    sourcePairRetiredZones = sourcePairZoneIds;
+    sourcePairRetiredZoneIndex = 0;
+    sourcePairZoneIds = [];
+    sourcePairRetiredRooms = [...sourcePairRoomElements];
+    sourcePairRetiredRoomIndex = 0;
+    sourcePairRoomElements = new Set();
+    sourcePairLongBody = body;
+    sourcePairLongNext = documentBlockFrom(body.firstElementChild);
+    sourcePairLongBytes = withColumn(column, () => documentSourceBytes());
+    sourcePairLongByteIndex = 0;
+    sourcePairLongLine = 1;
+    sourcePairLongPreviousBottom = body.getBoundingClientRect().top - column.reader.getBoundingClientRect().top + column.reader.scrollTop;
+    sourcePairAnchorCache = [];
+    sourcePairLongNeedsRestart = false;
+  }
+  if (sourcePairRetiredZoneIndex < sourcePairRetiredZones.length) {
+    const end = Math.min(sourcePairRetiredZoneIndex + 128, sourcePairRetiredZones.length);
+    monacoEditor.changeViewZones((change) => {
+      for (let at = sourcePairRetiredZoneIndex; at < end; at += 1) change.removeZone(sourcePairRetiredZones[at]);
+    });
+    sourcePairRetiredZoneIndex = end;
+    scheduleSourcePairAlignment();
+    return;
+  }
+  if (sourcePairRetiredRoomIndex < sourcePairRetiredRooms.length) {
+    const end = Math.min(sourcePairRetiredRoomIndex + 128, sourcePairRetiredRooms.length);
+    for (let at = sourcePairRetiredRoomIndex; at < end; at += 1) {
+      const block = sourcePairRetiredRooms[at];
+      block.classList.remove('source-pair-room');
+      block.style.removeProperty('--source-pair-gap');
+    }
+    sourcePairRetiredRoomIndex = end;
+    scheduleSourcePairAlignment();
+    return;
+  }
+  sourcePairRetiredZones = [];
+  sourcePairRetiredRooms = [];
+  sourcePairRetiredZoneIndex = 0;
+  sourcePairRetiredRoomIndex = 0;
+  if (!sourcePairLongNext || sourcePairLongNext.classList.contains('is-held-below')) return;
+  const reader = column.reader;
+  const readerTop = reader.getBoundingClientRect().top;
+  const editorInset = monacoEditor.getDomNode().getBoundingClientRect().top - keyedColumn.reader.getBoundingClientRect().top;
+  const batch = [];
+  withColumn(column, () => {
+    for (let count = 0; count < 64 && sourcePairLongNext && !sourcePairLongNext.classList.contains('is-held-below'); count += 1) {
+      const block = sourcePairLongNext;
+      sourcePairLongNext = nextDocumentBlock(block);
+      const offset = rangeOf(block, 'block').start;
+      if (!Number.isFinite(offset)) continue;
+      while (sourcePairLongByteIndex < offset && sourcePairLongByteIndex < sourcePairLongBytes.length) {
+        if (sourcePairLongBytes[sourcePairLongByteIndex] === 10) sourcePairLongLine += 1;
+        sourcePairLongByteIndex += 1;
+      }
+      const rect = block.getBoundingClientRect();
+      const page = rect.top - readerTop + reader.scrollTop;
+      batch.push({ block, line: sourcePairLongLine, page, source: monacoEditor.getTopForLineNumber(sourcePairLongLine) + editorInset, gap: Math.max(0, page - sourcePairLongPreviousBottom) });
+      sourcePairLongPreviousBottom = rect.bottom - readerTop + reader.scrollTop;
+    }
+  });
+  for (let pass = 0; pass < 5 && batch.length; pass += 1) {
+    if (batch.every((anchor) => Math.abs(anchor.page - anchor.source) <= 1)) break;
+    applySourcePairCorrections(batch);
+    withColumn(column, () => {
+      let previousBottom = batch[0].page - batch[0].gap;
+      for (const anchor of batch) {
+        const rect = anchor.block.getBoundingClientRect();
+        anchor.page = rect.top - readerTop + reader.scrollTop;
+        anchor.source = monacoEditor.getTopForLineNumber(anchor.line) + editorInset;
+        anchor.gap = Math.max(0, anchor.page - previousBottom);
+        previousBottom = rect.bottom - readerTop + reader.scrollTop;
+      }
+      sourcePairLongPreviousBottom = previousBottom;
+    });
+  }
+  sourcePairAnchorCache.push(...batch);
+  if (sourcePairLongNext && !sourcePairLongNext.classList.contains('is-held-below')) scheduleSourcePairAlignment();
+}
+
+function alignSourcePairBlocks() {
+  if (!besideIsTheSameTab() || !monacoEditor) {
+    clearSourcePairCorrections();
+    sourcePairLongBody = null;
+    return;
+  }
+  if (codeViewText.length > 1000000) {
+    const started = performance.now();
+    do {
+      alignLongSourcePair();
+    } while (sourcePairRetiredZoneIndex >= sourcePairRetiredZones.length && sourcePairRetiredRoomIndex >= sourcePairRetiredRooms.length && sourcePairLongNext && !sourcePairLongNext.classList.contains('is-held-below') && performance.now() - started < 4.5);
+    return;
+  }
+  let anchors = sourcePairAnchors();
+  if (!anchors.length) { clearSourcePairCorrections(); return; }
+  if (anchors.every((anchor) => Math.abs(anchor.page - anchor.source) <= 1)) return;
+  clearSourcePairCorrections();
+  for (let pass = 0; pass < 4; pass += 1) {
+    anchors = sourcePairAnchors();
+    if (anchors.every((anchor) => Math.abs(anchor.page - anchor.source) <= 1)) break;
+    applySourcePairCorrections(anchors);
+    sourcePairAnchorCache = null;
+  }
+}
+
+function pairScrollTarget(anchors, side, position) {
+  if (!anchors.length) return position;
+  const own = side === 'source' ? 'source' : 'page';
+  const other = side === 'source' ? 'page' : 'source';
+  if (position < anchors[0][own]) return position;
+  let low = 0;
+  let high = anchors.length;
+  while (low + 1 < high) {
+    const middle = (low + high) >>> 1;
+    if (anchors[middle][own] <= position) low = middle;
+    else high = middle;
+  }
+  const anchor = anchors[low];
+  return Math.max(0, anchor[other] + position - anchor[own]);
+}
+
+function syncSourcePairFromEditor() {
+  if (!besideIsTheSameTab() || !monacoEditor) return;
+  if (sourcePairIgnoreEditor) { sourcePairIgnoreEditor = false; return; }
+  const column = sourcePairPageColumn();
+  if (!column?.reader) return;
+  const target = pairScrollTarget(sourcePairAnchors(), 'source', monacoEditor.getScrollTop());
+  if (Math.abs(column.reader.scrollTop - target) < 1) return;
+  sourcePairIgnoreReader = true;
+  withColumn(column, () => setReaderScrollTop(target));
+}
+
+function syncSourcePairFromReader() {
+  if (!besideIsTheSameTab() || !monacoEditor) return;
+  if (sourcePairIgnoreReader) { sourcePairIgnoreReader = false; return; }
+  const column = sourcePairPageColumn();
+  if (!column?.reader) return;
+  const target = pairScrollTarget(sourcePairAnchors(), 'page', column.reader.scrollTop);
+  if (Math.abs(monacoEditor.getScrollTop() - target) < 1) return;
+  sourcePairIgnoreEditor = true;
+  monacoEditor.setScrollTop(target);
+}
+
+onColumn('scroll', () => {
+  if (renderIsForTheCardBeside() && app === sourcePairPageColumn()?.reader) syncSourcePairFromReader();
+}, { passive: true });
+
+window.addEventListener('resize', () => scheduleSourcePairAlignment(true));
 
 onColumn('scroll', () => {
   revealHeldReadingNearEdge();

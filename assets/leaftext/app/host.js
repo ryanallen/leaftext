@@ -116,6 +116,16 @@ async function load(url, fetchWith = fetch) {
       return scored;
     },
     searchSupplied: (skipped, partial) => withStrings((...args) => api.leaf_search_supplied(...args, partial ? 1 : 0), JSON.stringify(skipped)),
+    searchCanNarrow: (previous, next, today) => {
+      const strings = [previous, next, today].map(write);
+      const answer = Boolean(api.leaf_search_can_narrow(...strings.flat()));
+      for (const one of strings) api.leaf_free(...one);
+      return answer;
+    },
+    searchMatched: () => {
+      const paths = read(api.leaf_search_matched());
+      return paths ? JSON.parse(paths) : null;
+    },
     codeCompleteNotes: (token) => read(api.leaf_code_complete_notes(BigInt(token))),
     codeCompleteHeadings: (token, handle, note) => withStrings((...args) => api.leaf_code_complete_headings(BigInt(token), handle, ...args), note || ''),
     codeHoverNote: (token, note) => withStrings((...args) => api.leaf_code_hover_note(BigInt(token), ...args), note || ''),
@@ -281,6 +291,7 @@ export const COMMANDS = {
   goForward: [REFUSED, 'the browser draws its own Forward one row above, so a site draws no pair of its own and never sends this'],
   refreshDocument: [ANSWERED],
   setSpeedReaderEnabled: [ANSWERED],
+  setSpeedReaderStrength: [ANSWERED],
   setCodeIntelEnabled: [ANSWERED],
   reportReading: [REFUSED, 'the reading record is a file on the reader’s own disk, and a site keeps no record — the page reports reading reached only where the host handed it one, so nothing sends this'],
   groveAdmin: [REFUSED, 'a site keeps no reading record, so there is nothing for admin mode to reset or unlock — the Grove never stands and nothing sends this'],
@@ -540,6 +551,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   let corpusLoading = null;
   let corpusReady = false;
   let currentSearch = null;
+  let completeSearch = null;
   let firstPartialAnswered = false;
   let partialSearchTimer = null;
   const corpusRejected = [];
@@ -558,12 +570,19 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     }
     if (!core.searchBegin(request.query, request.today)) return;
     const failed = [...corpusFailed];
-    const paths = corpusRejected.slice();
+    const failedRejected = [];
+    const previous = completeSearch;
+    const narrowed = previous && previous.matched && previous.today === request.today
+      && core.searchCanNarrow(previous.query, request.query, request.today);
+    const paths = narrowed
+      ? [...new Set([...previous.matched, ...previous.failed])]
+      : corpusRejected.slice();
     if (!paths.length) {
       const script = core.searchSupplied(failed, false);
       if (script && currentSearch === request) run(script);
       request.failed = failed;
       request.complete = true;
+      completeSearch = { query: request.query, today: request.today, matched: core.searchMatched(), failed: failedRejected };
       return;
     }
     let next = 0;
@@ -580,10 +599,14 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         try {
           const bytes = await read(path);
           if (currentSearch !== request) return;
-          if (bytes.length > 32 * 1024 * 1024 || !core.searchAdd(path, bytes)) failed.push(path);
+          if (bytes.length > 32 * 1024 * 1024 || !core.searchAdd(path, bytes)) {
+            failed.push(path);
+            failedRejected.push(path);
+          }
         } catch (_) {
           if (currentSearch !== request) return;
           failed.push(path);
+          failedRejected.push(path);
         }
         finished++;
         if (finished % 50 === 0) answer(true);
@@ -595,6 +618,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (currentSearch === request) {
       request.failed = failed;
       request.complete = true;
+      completeSearch = { query: request.query, today: request.today, matched: core.searchMatched(), failed: failedRejected };
     }
   }
   function schedulePartialSearch() {
@@ -1343,6 +1367,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         }
         return;
       }
+      if (currentSearch && !currentSearch.complete) completeSearch = null;
       currentSearch = next;
       if (corpusReady) searchRejected(currentSearch);
       else {
@@ -1584,6 +1609,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   const KEPT = {
     setGraphScope: (command) => ({ graphScope: String(command.scope || 'small') }),
     setSpeedReaderEnabled: (command) => ({ speedReaderEnabled: !!command.enabled }),
+    setSpeedReaderStrength: (command) => ({ speedReaderStrength: ['light', 'balanced', 'strong'].includes(command.strength) ? command.strength : 'balanced' }),
     setCodeIntelEnabled: (command) => ({ codeIntelEnabled: !!command.enabled }),
     setThemeFamily: (command) => ({ themeFamily: String(command.family || '') }),
     setThemeMode: (command) => ({ themeMode: String(command.mode || '') }),

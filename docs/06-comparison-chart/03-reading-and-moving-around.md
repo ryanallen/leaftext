@@ -116,7 +116,7 @@
 | Narrow window folds | [✅][l-split] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Split remembered across launches | [✅][l-split] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
 | Split returns later | [✅][l-split] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Source beside page | [✅][l-split] | [✅][o-edit] | [❌][t-seen] | [❌][c-seen] |
+| Live source beside page | [✅][l-source-pair] | [✅][o-edit] | [❌][t-seen] | [❌][c-seen] |
 | Tabs belong to columns | [✅][l-split] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
 | Pressed strip draws there | [✅][l-split] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drag between strips | [✅][l-split] | [✅][o-tabs] | [❌][t-seen] | [❌][c-seen] |
@@ -444,6 +444,7 @@
 [l-doc-tabs]: ../01-features/02-navigation.md#tabs-inside-a-document
 [l-web-tabs]: ../01-features/02-navigation.md#web-tabs
 [l-split]: ../01-features/02-navigation.md#two-documents-side-by-side
+[l-source-pair]: ../01-features/07-editing.md#source-beside-the-page
 [l-history]: ../01-features/02-navigation.md#history
 [l-recent]: ../01-features/02-navigation.md#recent-files
 [l-loading]: ../01-features/02-navigation.md#loading
