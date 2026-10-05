@@ -291,7 +291,6 @@ export const COMMANDS = {
   goForward: [REFUSED, 'the browser draws its own Forward one row above, so a site draws no pair of its own and never sends this'],
   refreshDocument: [ANSWERED],
   setSpeedReaderEnabled: [ANSWERED],
-  setSpeedReaderStrength: [ANSWERED],
   setCodeIntelEnabled: [ANSWERED],
   reportReading: [REFUSED, 'the reading record is a file on the reader’s own disk, and a site keeps no record — the page reports reading reached only where the host handed it one, so nothing sends this'],
   groveAdmin: [REFUSED, 'a site keeps no reading record, so there is nothing for admin mode to reset or unlock — the Grove never stands and nothing sends this'],
@@ -1608,7 +1607,6 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   const KEPT = {
     setGraphScope: (command) => ({ graphScope: String(command.scope || 'small') }),
     setSpeedReaderEnabled: (command) => ({ speedReaderEnabled: !!command.enabled }),
-    setSpeedReaderStrength: (command) => ({ speedReaderStrength: ['light', 'balanced', 'strong'].includes(command.strength) ? command.strength : 'balanced' }),
     setCodeIntelEnabled: (command) => ({ codeIntelEnabled: !!command.enabled }),
     setThemeFamily: (command) => ({ themeFamily: String(command.family || '') }),
     setThemeMode: (command) => ({ themeMode: String(command.mode || '') }),

@@ -50,6 +50,7 @@
 | editor-code-selection-foreground        | `#0d2a2b`                 |
 | markdown-background                     | `#f3fbfa`                 |
 | markdown-foreground                     | `#173536`                 |
+| speed-reader-anchor                     | `#000000`                 |
 | markdown-heading                        | `#0d2a2b`                 |
 | markdown-heading-2                      | `#0d2a2b`                 |
 | markdown-heading-3                      | `#0d2a2b`                 |
@@ -136,6 +137,7 @@
 | editor-code-selection-foreground        | `#eefaf9`                  |
 | markdown-background                     | `#0e1a1c`                  |
 | markdown-foreground                     | `#d5e7e6`                  |
+| speed-reader-anchor                     | `#ffffff`                  |
 | markdown-heading                        | `#eefaf9`                  |
 | markdown-heading-2                      | `#eefaf9`                  |
 | markdown-heading-3                      | `#eefaf9`                  |

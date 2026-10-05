@@ -148,13 +148,13 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 ![The same paragraph with Speed Reader on: the prose dimmed back and the first few letters of each word set in bold, so a path of anchors runs down the page](../../imgs/speedreader.png)
 
-- Off by default. The reading view's [toolbar](02-navigation.md#the-floating-toolbar) offers Light, Balanced, and Strong; choosing a strength turns it on, and Off keeps the last strength for next time
+- Off by default, turned on and off with one press of its button on the reading view's [toolbar](02-navigation.md#the-floating-toolbar)
 - Dims non-anchor prose text (including headings) so bold lead anchors carry the most contrast against the background
 - Quiets links to the dimmed prose color with a faint underline, until hover or keyboard focus brightens them
 - Regularizes existing bold text and adds bold lead anchors at word starts; all-caps acronyms (HTML, GFM) are bolded whole
 - Leaves an [HTML page drawn in its own frame](01-rendering.md#html-files) exactly as its author wrote it, and the choice is not offered on one
 - A way of reading and nothing more: an [edit](07-editing.md) made with it on writes the words your file holds, never the anchors drawn over them
-- Saved as `speed_reader_enabled` and `speed_reader_strength`; older settings open at Balanced
+- Saved as `speed_reader_enabled`
 
 ### Typing help
 

@@ -54,6 +54,7 @@ One hue, red: every surface, border, heading and accent is a shade of it, and da
 | editor-code-selection-foreground        | `#301e1b`                 |
 | markdown-background                     | `#ffffff`                 |
 | markdown-foreground                     | `#301e1b`                 |
+| speed-reader-anchor                     | `#000000`                 |
 | markdown-heading                        | `#19100e`                 |
 | markdown-heading-2                      | `#19100e`                 |
 | markdown-heading-3                      | `#19100e`                 |
@@ -141,6 +142,7 @@ One hue, red: every surface, border, heading and accent is a shade of it, and da
 | editor-code-selection-foreground        | `#ffffff`                   |
 | markdown-background                     | `#251c1b`                   |
 | markdown-foreground                     | `#e2d8d7`                   |
+| speed-reader-anchor                     | `#ffffff`                   |
 | markdown-heading                        | `#ffffff`                   |
 | markdown-heading-2                      | `#ffffff`                   |
 | markdown-heading-3                      | `#ffffff`                   |

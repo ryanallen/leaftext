@@ -113,7 +113,7 @@ Type `leaftext --print notes.md` in cmd or PowerShell to read a rendered Markdow
 
 ![Speed Reader dimming prose and adding bold lead anchors](imgs/speedreader.png)
 
-Choose Light, Balanced or Strong in Speed Reader and the page dims back while bold anchors mark the start of each word. Your eye follows the path down instead of hunting for it. **[Speed Reader →](docs/01-features/05-settings.md#speed-reader)**
+Turn on Speed Reader and the page dims back while bold anchors mark the start of each word. Your eye follows the path down instead of hunting for it. **[Speed Reader →](docs/01-features/05-settings.md#speed-reader)**
 
 ## Write where you read
 

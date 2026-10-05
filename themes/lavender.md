@@ -54,6 +54,7 @@ One hue, violet: every surface, border, heading and accent is a shade of it, and
 | editor-code-selection-foreground        | `#281d34`                  |
 | markdown-background                     | `#ffffff`                  |
 | markdown-foreground                     | `#281d34`                  |
+| speed-reader-anchor                     | `#000000`                  |
 | markdown-heading                        | `#150f1b`                  |
 | markdown-heading-2                      | `#150f1b`                  |
 | markdown-heading-3                      | `#150f1b`                  |
@@ -141,6 +142,7 @@ One hue, violet: every surface, border, heading and accent is a shade of it, and
 | editor-code-selection-foreground        | `#ffffff`                   |
 | markdown-background                     | `#251734`                   |
 | markdown-foreground                     | `#ddd8e3`                   |
+| speed-reader-anchor                     | `#ffffff`                   |
 | markdown-heading                        | `#ffffff`                   |
 | markdown-heading-2                      | `#ffffff`                   |
 | markdown-heading-3                      | `#ffffff`                   |

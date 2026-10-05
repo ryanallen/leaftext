@@ -6945,8 +6945,7 @@ const readerViewTools = document.getElementById('readerViewTools');
 const readerToolTray = document.getElementById('readerToolTray');
 const readerLockButton = document.getElementById('readerLockButton');
 const splitViewButton = document.getElementById('splitViewButton');
-const speedReaderTool = document.getElementById('speedReaderTool');
-const speedReaderChoice = document.getElementById('speedReaderChoice');
+const speedReaderButton = document.getElementById('speedReaderButton');
 const codeIntelButton = document.getElementById('codeIntelButton');
 const libraryCrumbTrail = document.getElementById('libraryCrumbTrail');
 const libraryVaultSwitch = document.getElementById('libraryVaultSwitch');
@@ -9916,25 +9915,21 @@ function isSpeedReaderAcronym(word) {
 }
 
 const DIRECT_SLICE_SPEED_READER_WORD = /^[A-Za-z]+(?:['\u2019][A-Za-z]+)?$/;
-function normalizeSpeedReaderStrength(value) {
-  return value === 'light' || value === 'strong' ? value : 'balanced';
-}
-function leadAnchorPrefixLength(count, strength = 'balanced') {
+
+function leadAnchorPrefixLength(count) {
   if (count <= 1) return 0;
-  if (strength === 'light') return count <= 8 ? 1 : 2;
-  if (strength === 'strong') {
-    return Math.min(count - 1, Math.ceil(count / 2), leadAnchorPrefixLength(count, 'balanced') + 1);
-  }
-  if (count <= 3) return 1;
-  if (count <= 5) return 2;
-  if (count <= 8) return 3;
-  if (count <= 12) return 4;
-  return Math.min(6, Math.ceil(count * 0.35));
+  let step;
+  if (count <= 3) step = 1;
+  else if (count <= 5) step = 2;
+  else if (count <= 8) step = 3;
+  else if (count <= 12) step = 4;
+  else step = Math.min(6, Math.ceil(count * 0.35));
+  return Math.min(count - 1, Math.ceil(count / 2), step + 1);
 }
 function appendSpeedReaderWord(fragment, word) {
   const chars = DIRECT_SLICE_SPEED_READER_WORD.test(word) ? null : speedReaderGraphemes(word);
   const count = chars ? chars.length : word.length;
-  const prefixLength = isSpeedReaderAcronym(word) ? count : leadAnchorPrefixLength(count, speedReaderStrength);
+  const prefixLength = isSpeedReaderAcronym(word) ? count : leadAnchorPrefixLength(count);
   if (prefixLength === 0) {
     fragment.append(document.createTextNode(word));
     return;
@@ -10034,7 +10029,6 @@ function applySpeedReaderToDocument(root = readingDocumentRoot()) {
   root.dataset.speedReaderProcessed = 'true';
 }
 let speedReaderEnabled = LEAF_SETTINGS.speedReaderEnabled === true;
-let speedReaderStrength = normalizeSpeedReaderStrength(LEAF_SETTINGS.speedReaderStrength);
 
 function setSpeedReaderFlag(enabled) {
   speedReaderEnabled = Boolean(enabled);
@@ -10045,21 +10039,6 @@ function setSpeedReaderEnabled(enabled) {
   if (speedReaderEnabled) {
     applySpeedReaderToDocument();
   }
-}
-function setSpeedReaderStrength(strength) {
-  const next = normalizeSpeedReaderStrength(strength);
-  if (next === speedReaderStrength) return;
-  speedReaderStrength = next;
-  const root = readingDocumentRoot();
-  if (!root || root.dataset.speedReaderProcessed !== 'true') return;
-  const parents = new Set();
-  root.querySelectorAll('.speed-reader-anchor').forEach((anchor) => {
-    parents.add(anchor.parentNode);
-    anchor.replaceWith(document.createTextNode(anchor.textContent || ''));
-  });
-  parents.forEach((parent) => parent.normalize());
-  delete root.dataset.speedReaderProcessed;
-  applySpeedReaderToDocument(root);
 }
 
 setSpeedReaderFlag(speedReaderEnabled);
@@ -13792,10 +13771,10 @@ function renderViewTools(current) {
       viewLockTooltip(onCodeView)
     );
   }
-  if (speedReaderTool) {
-    speedReaderTool.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
-    speedReaderTool.dataset.enabled = String(speedReaderEnabled);
-    speedReaderChoice.value = speedReaderEnabled ? speedReaderStrength : 'off';
+  if (speedReaderButton) {
+    
+    speedReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
+    setSubtoolState(speedReaderButton, speedReaderEnabled, 'Speed reader');
   }
   renderCodeTools(current === 'code' && !onWebTab);
   showViewToolsIfAny();
@@ -13919,14 +13898,10 @@ if (splitViewButton) {
 window.leafUnlockReading = () => {
   setReadingUnlocked(true);
 };
-if (speedReaderChoice) {
-  speedReaderChoice.addEventListener('change', () => {
-    const choice = speedReaderChoice.value;
-    if (choice !== 'off') {
-      setSpeedReaderStrength(choice);
-      send({ command: 'setSpeedReaderStrength', strength: speedReaderStrength });
-    }
-    setSpeedReaderEnabled(choice !== 'off');
+
+if (speedReaderButton) {
+  speedReaderButton.addEventListener('click', () => {
+    setSpeedReaderEnabled(!speedReaderEnabled);
     send({ command: 'setSpeedReaderEnabled', enabled: speedReaderEnabled });
     renderViewTools('reading');
   });

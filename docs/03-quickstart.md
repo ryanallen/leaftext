@@ -70,7 +70,7 @@ flowchart LR
 | --- | --- |
 | Reading / Code / Graph | The three ways of looking at the open document; the one you are in is filled in the accent color |
 | Padlock | Unlocks the view you are in so you can [type into it](01-features/07-editing.md#the-padlock) — the page and the source have one each |
-| Speed reader | Dims the prose and marks each word's start with a Light, Balanced or Strong choice — see [Speed Reader](01-features/05-settings.md#speed-reader) |
+| Speed reader | Dims the prose and marks each word's start — see [Speed Reader](01-features/05-settings.md#speed-reader) |
 | Typing help | The wand beside the code view: suggestions drawn from your own notes — see [Typing help](01-features/07-editing.md#typing-help) |
 | Undo / Save | Appear only when there is something to undo or [save](01-features/07-editing.md#save) |
 

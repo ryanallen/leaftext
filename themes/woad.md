@@ -54,6 +54,7 @@ One hue, blue: every surface, border, heading and accent is a shade of it, and d
 | editor-code-selection-foreground        | `#1b222f`                  |
 | markdown-background                     | `#ffffff`                  |
 | markdown-foreground                     | `#1b222f`                  |
+| speed-reader-anchor                     | `#000000`                  |
 | markdown-heading                        | `#0e1219`                  |
 | markdown-heading-2                      | `#0e1219`                  |
 | markdown-heading-3                      | `#0e1219`                  |
@@ -141,6 +142,7 @@ One hue, blue: every surface, border, heading and accent is a shade of it, and d
 | editor-code-selection-foreground        | `#ffffff`                   |
 | markdown-background                     | `#1b1e25`                   |
 | markdown-foreground                     | `#d6dae1`                   |
+| speed-reader-anchor                     | `#ffffff`                   |
 | markdown-heading                        | `#ffffff`                   |
 | markdown-heading-2                      | `#ffffff`                   |
 | markdown-heading-3                      | `#ffffff`                   |

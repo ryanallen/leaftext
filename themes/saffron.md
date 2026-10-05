@@ -54,6 +54,7 @@ One hue, amber: every surface, border, heading and accent is a shade of it, and 
 | editor-code-selection-foreground        | `#282117`                 |
 | markdown-background                     | `#ffffff`                 |
 | markdown-foreground                     | `#282117`                 |
+| speed-reader-anchor                     | `#000000`                 |
 | markdown-heading                        | `#15110c`                 |
 | markdown-heading-2                      | `#15110c`                 |
 | markdown-heading-3                      | `#15110c`                 |
@@ -141,6 +142,7 @@ One hue, amber: every surface, border, heading and accent is a shade of it, and 
 | editor-code-selection-foreground        | `#ffffff`                  |
 | markdown-background                     | `#211e18`                  |
 | markdown-foreground                     | `#ded9d2`                  |
+| speed-reader-anchor                     | `#ffffff`                  |
 | markdown-heading                        | `#ffffff`                  |
 | markdown-heading-2                      | `#ffffff`                  |
 | markdown-heading-3                      | `#ffffff`                  |

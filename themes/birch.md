@@ -54,6 +54,7 @@ Black, white and gray only: every surface, border, heading and accent is a shade
 | editor-code-selection-foreground        | `#222222`                   |
 | markdown-background                     | `#ffffff`                   |
 | markdown-foreground                     | `#222222`                   |
+| speed-reader-anchor                     | `#000000`                   |
 | markdown-heading                        | `#121212`                   |
 | markdown-heading-2                      | `#121212`                   |
 | markdown-heading-3                      | `#121212`                   |
@@ -141,6 +142,7 @@ Black, white and gray only: every surface, border, heading and accent is a shade
 | editor-code-selection-foreground        | `#ffffff`                   |
 | markdown-background                     | `#1e1e1e`                   |
 | markdown-foreground                     | `#dadada`                   |
+| speed-reader-anchor                     | `#ffffff`                   |
 | markdown-heading                        | `#ffffff`                   |
 | markdown-heading-2                      | `#ffffff`                   |
 | markdown-heading-3                      | `#ffffff`                   |
