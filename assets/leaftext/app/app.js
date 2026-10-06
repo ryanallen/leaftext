@@ -40844,24 +40844,52 @@ function repinSizedTables(path) {
 function addTableSizingGrips(lane) {
   for (const table of Array.from(lane.querySelectorAll('table'))) addTableGrips(table);
 }
-function addTableGrips(table) {
-  const last = tableSizingHeadCells(table).length - 1;
+
+let grippedCells = [];
+function cellSizingGrips(cell) { return Array.from(cell.children).filter((child) => isTableSizingGrip(child) && !child.__tableSizingTable); }
+function giveCellSizingGrips(cell, table) {
+  if (cellSizingGrips(cell).length) return;
   const rows = tableSizingOwnRows(table);
-  rows.forEach((row, index) => {
+  const grip = document.createElement('span');
+  grip.className = 'table-sizer table-sizer-row';
+  if (cell.parentElement === rows[rows.length - 1]) grip.dataset.tableEdge = 'bottom';
+  cell.appendChild(grip);
+  if (tableSizingCellColumn(cell) < tableSizingHeadCells(table).length - 1) {
+    const vertical = document.createElement('span');
+    vertical.className = 'table-sizer table-sizer-column';
+    cell.appendChild(vertical);
+  }
+}
+function takeCellSizingGrips(cell) { cellSizingGrips(cell).forEach((grip) => grip.remove()); }
+
+function tableSizingReachingCells(cell, table) {
+  const reaching = [cell];
+  const row = cell.parentElement;
+  const cells = Array.from(row.querySelectorAll(':scope > td, :scope > th'));
+  const at = cells.indexOf(cell);
+  if (at > 0) reaching.push(cells[at - 1]);
+  const rows = tableSizingOwnRows(table);
+  const above = rows[rows.indexOf(row) - 1];
+  if (above) {
+    const start = tableSizingCellColumn(cell) - cell.colSpan + 1;
     let column = 0;
-    for (const cell of Array.from(row.querySelectorAll(':scope > td, :scope > th'))) {
-      column += cell.colSpan;
-      const grip = document.createElement('span');
-      grip.className = 'table-sizer table-sizer-row';
-      if (index === rows.length - 1) grip.dataset.tableEdge = 'bottom';
-      cell.appendChild(grip);
-      if (column - 1 < last) {
-        const vertical = document.createElement('span');
-        vertical.className = 'table-sizer table-sizer-column';
-        cell.appendChild(vertical);
-      }
+    for (const one of Array.from(above.querySelectorAll(':scope > td, :scope > th'))) {
+      column += one.colSpan;
+      if (column > start) { reaching.push(one); break; }
     }
-  });
+  }
+  return reaching;
+}
+function moveTableSizingGrips(target) {
+  if (tableSizeDrag || (target && target.closest && target.closest('.table-sizer'))) return;
+  const cell = target && target.closest ? target.closest('td, th') : null;
+  const table = cell ? cell.closest('table') : null;
+  const next = table && table.__tableSizingOutlines ? tableSizingReachingCells(cell, table) : [];
+  for (const old of grippedCells) if (!next.includes(old)) takeCellSizingGrips(old);
+  for (const one of next) giveCellSizingGrips(one, table);
+  grippedCells = next;
+}
+function addTableGrips(table) {
   table.__tableSizingOutlines = ['left', 'right', 'top', 'bottom'].map((edge) => {
     
     const grip = document.createElement('span');
@@ -41042,6 +41070,7 @@ function settleTableSizingPosition(drag, remaining) {
   }
   if (remaining > 1) columnFrame(() => settleTableSizingPosition(drag, remaining - 1));
 }
+document.addEventListener('pointerover', (event) => moveTableSizingGrips(event.target));
 document.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
   const aimed = tableSizingGripUnder(event.target);
@@ -42507,7 +42536,7 @@ function minimapSourceElement() {
 function minimapRecordIsTableControlOnly(record) {
   if (record.type !== 'childList') return false;
   const moved = [...record.addedNodes, ...record.removedNodes];
-  return moved.length > 0 && moved.every(isTableControlNode);
+  return moved.length > 0 && moved.every((node) => isTableControlNode(node) || isTableSizingGrip(node));
 }
 
 function minimapBodyChanged(records) {
