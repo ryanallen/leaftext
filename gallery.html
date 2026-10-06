@@ -4120,6 +4120,8 @@
   --lt-icon-speed-reader-on: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 14 4-4'/%3E%3Cpath d='M3.34 19a10 10 0 1 1 17.32 0'/%3E%3C/svg%3E");
   --lt-icon-speed-reader-off: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 14 4-4'/%3E%3Cpath d='M3.34 19a10 10 0 1 1 17.32 0'/%3E%3C/svg%3E");
   --lt-icon-flash-reader: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7l1-8z'/%3E%3C/svg%3E");
+  --lt-icon-read-aloud-on: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z'/%3E%3Cpath d='M16 9a5 5 0 0 1 0 6'/%3E%3Cpath d='M19.364 18.364a9 9 0 0 0 0-12.728'/%3E%3C/svg%3E");
+  --lt-icon-read-aloud-off: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z'/%3E%3C/svg%3E");
   --lt-icon-wand: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4V2'/%3E%3Cpath d='M15 16v-2'/%3E%3Cpath d='M8 9h2'/%3E%3Cpath d='M20 9h2'/%3E%3Cpath d='M17.8 11.8 19 13'/%3E%3Cpath d='M15 9h.01'/%3E%3Cpath d='M17.8 6.2 19 5'/%3E%3Cpath d='m3 21 9-9'/%3E%3Cpath d='M12.2 6.2 11 5'/%3E%3C/svg%3E");
   --lt-icon-cloud: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
   --lt-icon-export: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8l-4-4'/%3E%3Cpath d='m12 21 4-4'/%3E%3Cpath d='M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284'/%3E%3C/svg%3E");
@@ -4730,6 +4732,14 @@
 .lt-icon-flash-reader {
   -webkit-mask-image: var(--lt-icon-flash-reader);
   mask-image: var(--lt-icon-flash-reader);
+}
+.lt-icon-read-aloud-on {
+  -webkit-mask-image: var(--lt-icon-read-aloud-on);
+  mask-image: var(--lt-icon-read-aloud-on);
+}
+.lt-icon-read-aloud-off {
+  -webkit-mask-image: var(--lt-icon-read-aloud-off);
+  mask-image: var(--lt-icon-read-aloud-off);
 }
 .lt-icon-wand {
   -webkit-mask-image: var(--lt-icon-wand);
@@ -10118,6 +10128,13 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 :root[data-speed-reader="true"] .document-body .speed-reader-anchor {
   color: var(--lt-speed-reader-anchor);
   font-weight: var(--lt-weight-700);
+}
+/* Read aloud: the sentence being spoken washed lightly in the accent and its word in the primary, the two colors find's marks already prove on every family. Drawn as highlights, so no word is wrapped in an element the voice would then be reading across. */
+::highlight(leaf-read-aloud-sentence) {
+  background-color: color-mix(in srgb, var(--lt-accent) 20%, transparent);
+}
+::highlight(leaf-read-aloud-word) {
+  background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
 }
 /* Glossary term links: a quiet dotted underline in the surrounding text's color (not the accent), so a term stays discoverable without standing out. Matches both `glossary:slug` and a `…/GLOSSARY.md#slug` link; placed last so it wins ties against the generic link/hover rules above. */
 .document-body a[href^="glossary:" i],
@@ -17270,7 +17287,7 @@ p.front-more {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-11-5);
 }
-/* A pie or xy chart's numbers as rows, between the note and the text: a label, a column per series and the remove button. `--chart-series` is how many series columns the chart has. */
+/* A chart's fields as rows, between the note and the text: a label, a column per value and the remove button. `--chart-series` is how many series columns the chart has. */
 .chart-rows[hidden] {
   display: none;
 }
@@ -17288,6 +17305,37 @@ p.front-more {
   grid-template-columns: minmax(0, 1.4fr) repeat(var(--chart-series, 1), minmax(0, 1fr)) 28px;
   gap: var(--lt-space-6);
   align-items: center;
+}
+/* A packet field shows the bits it covers before its label: worked out from the widths above it, never typed. */
+.chart-row-placed {
+  grid-template-columns: 64px minmax(0, 1.4fr) repeat(var(--chart-series, 1), minmax(0, 1fr)) 28px;
+}
+/* A journey section is a row of its own, its name across the value columns. */
+.chart-row-section {
+  grid-column: 1 / -2;
+  font-weight: var(--lt-weight-600);
+}
+/* A treemap item's name stands in by its level, so the nesting reads the way the source indents it. */
+.chart-row-nested {
+  padding-inline-start: calc(var(--lt-space-10) + (var(--chart-level, 1) - 1) * var(--lt-space-14));
+}
+/* A chart's setting lines — a title, an axis's two ends, a limit — as fields above its rows. */
+.chart-rows-settings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lt-space-6) var(--lt-space-10);
+  padding-bottom: var(--lt-space-6);
+}
+.chart-setting {
+  display: grid;
+  gap: var(--lt-space-2);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+}
+.chart-rows-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--lt-space-6);
 }
 .chart-rows-head {
   color: var(--lt-muted-foreground);
@@ -17314,8 +17362,9 @@ p.front-more {
 .chart-row-remove:disabled {
   opacity: var(--lt-opacity-40);
 }
-.chart-rows-add {
-  justify-self: start;
+.chart-rows-add,
+.chart-rows-add-section,
+.chart-rows-add-axis {
   padding: var(--lt-space-6) var(--lt-space-10);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-md);
@@ -17331,9 +17380,15 @@ p.front-more {
   }
 }
 .chart-row-remove:focus-visible,
-.chart-rows-add:focus-visible {
+.chart-rows-add:focus-visible,
+.chart-rows-add-section:focus-visible,
+.chart-rows-add-axis:focus-visible {
   outline: none;
   box-shadow: var(--lt-shadow-focus);
+}
+/* A treemap section's value: only what it holds can size it. */
+.flow-field:disabled {
+  opacity: var(--lt-opacity-40);
 }
 /* A value the chart cannot take: nothing is written while it stands, and the reason is the field's title. */
 .flow-field.is-invalid {
@@ -17854,6 +17909,11 @@ p.front-more {
     max-width: none;
     margin-left: var(--lt-space-8);
   }
+  /* Read aloud has no field to give the width to, so its three controls stay in the corner. */
+  .read-aloud-bar {
+    justify-self: end;
+    margin-left: 0;
+  }
 }
 /* Every match, washed in the accent — the color a matched search hit already takes in the library pane. The one you are on is the primary, so stepping through is a moving mark rather than a wall of identical washes. Both are drawn with the CSS Custom Highlight API in the reading view (no DOM mutation, no reflow) and as Monaco decorations in the source view, which is why each name appears twice. */
 ::highlight(leaf-find-match),
@@ -18178,7 +18238,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 85 icons, and all 162 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 163 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -18209,8 +18269,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>85</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>162</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>163</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18547,7 +18607,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">85 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
+<p class="lead">87 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
 <div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div><div class="glyph packs-head"><code>leaftext</code></div><div class="glyph packs-head"><code>feather</code></div><div class="glyph packs-head"><code>lucide</code></div><div class="glyph packs-head"><code>tabler</code></div><div class="glyph packs-head"><code>remix</code></div><div class="glyph packs-head"><code>phosphor</code></div><div class="glyph packs-head"><code>heroicons</code></div></div>
 <div class="wall packs"><div class="glyph"><code>back-long</code></div><div class="glyph"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back-long"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>forward-long</code></div><div class="glyph"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-forward-long"></span></div></div>
@@ -18568,6 +18628,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>speed-reader-on</code></div><div class="glyph"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-speed-reader-on"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-speed-reader-on"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>speed-reader-off</code></div><div class="glyph"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-speed-reader-off"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-speed-reader-off"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>flash-reader</code></div><div class="glyph"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-flash-reader"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>read-aloud-on</code></div><div class="glyph"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-read-aloud-on"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>read-aloud-off</code></div><div class="glyph"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-read-aloud-off"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>wand</code></div><div class="glyph"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-wand"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>cloud</code></div><div class="glyph"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-cloud"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>export</code></div><div class="glyph"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-export"></span></div></div>
@@ -18636,7 +18698,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">162 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">163 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -19006,6 +19068,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="find-bar" style="position:static"><div class="find-row"><span class="find-field"><button type="button" class="find-scope"><span class="find-scope-label">This file</span><span class="find-scope-caret" aria-hidden="true">▾</span></button><input class="find-input" type="text" placeholder="Find" value="stage"><span class="find-count">3 of 41</span></span><span class="find-flags"><button type="button" class="find-flag icon-button" aria-pressed="true">Aa</button><button type="button" class="find-flag icon-button">ab&#124;</button><button type="button" class="find-flag icon-button">.*</button><button type="button" class="find-flag icon-button"><span class="lt-icon lt-icon-text"></span></button></span><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-select-all"></span></button><button type="button" class="find-step icon-button" aria-pressed="true"><span class="lt-icon lt-icon-replace"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div><div class="find-row"><span class="find-field"><input class="find-input" type="text" placeholder="Replace with"></span><button type="button" class="find-action icon-button">Replace</button><button type="button" class="find-action icon-button">All</button></div></div></div>
 </section>
 <section class="part">
+<header><h3>Read aloud bar</h3><code class="built">.read-aloud-bar</code><span class="built">app-shell.html, driven by read-aloud.js while the page is read, in the find bar's place and wearing its classes</span></header>
+<div class="stage"><div class="find-bar read-aloud-bar" style="position:static"><div class="find-row"><label class="reader-subselect leaf-select"><select aria-label="Voice"><option>System</option><option selected>David</option><option>Zira</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><label class="reader-subselect leaf-select"><select aria-label="Speed"><option>0.75×</option><option selected>1×</option><option>1.25×</option><option>1.5×</option><option>2×</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div></div></div>
+</section>
+<section class="part">
 <header><h3>Reading cursor</h3><code class="built">.reading-cursor</code><span class="built">reading-cursors.js, one per place in a set of cursors on the page being read — every match taken from the find bar, or a place added with Ctrl or Cmd and a click — in a layer inside the reader that blinks them together and rests while the window is behind another</span></header>
 <div class="stage"><div style="position:relative;height:48px"><p style="margin:0">Rename the <span style="background:color-mix(in srgb, var(--lt-primary) 45%, transparent)">meadow</span><span class="reading-cursor" style="position:relative;display:inline-block;height:1.2em;vertical-align:text-bottom"></span> here and the <span style="background:color-mix(in srgb, var(--lt-primary) 45%, transparent)">meadow</span><span class="reading-cursor" style="position:relative;display:inline-block;height:1.2em;vertical-align:text-bottom"></span> there.</p></div></div>
 </section>
@@ -19042,8 +19108,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="flow-picker-head" style="max-width:520px"><div class="flow-form"><label class="flow-form-row"><span class="flow-form-label">Name</span><input class="flow-field" type="text" value="Read the file"></label><label class="flow-form-row"><span class="flow-form-label">Link</span><input class="flow-field" type="text" placeholder="Where clicking this box goes"></label><label class="flow-form-row"><span class="flow-form-label">Icon</span><input class="flow-field" type="text" placeholder="leaf:back"></label><label class="flow-form-row"><span class="flow-form-label">Picture</span><input class="flow-field" type="text" placeholder="A picture beside this document, or its address"></label></div></div></div>
 </section>
 <section class="part">
-<header><h3>Chart rows</h3><code class="built">.chart</code><span class="built">data-chart-rows.js, in the diagram sheet's text pane while a pie or xy chart reads as rows: a label column, one column per series, a remove button per row and Add row; a numeric axis shows each point's place instead of a label field, and is-invalid marks a field the chart cannot take</span></header>
-<div class="stage"><div class="chart-rows" style="max-width:340px;--chart-series:1"><div class="chart-rows-head"><span>Label</span><span>Value</span></div><div class="chart-row"><input class="flow-field" type="text" value="Apples"><input class="flow-field" type="text" value="42"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row"><input class="flow-field" type="text" value="Pears"><input class="flow-field is-invalid" type="text" value="-3"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><button type="button" class="chart-rows-add">Add row</button></div></div>
+<header><h3>Chart rows</h3><code class="built">.chart</code><span class="built">data-chart-rows.js, in the diagram sheet's text pane while a pie, xy, sankey, journey, quadrant, packet, radar or treemap chart reads as rows: the chart's setting lines as chart-setting fields above, a label column, one column per value, a remove button per row, and Add row with Add section for a journey and Add axis for a radar; a numeric axis shows each point's place instead of a label field, chart-row-placed gives a packet field the range it covers before its label, chart-row-section is a journey section's name across the value columns, chart-row-nested indents a treemap name by its level, a treemap section's value is disabled, and is-invalid marks a field the chart cannot take</span></header>
+<div class="stage"><div class="chart-rows" style="max-width:340px;--chart-series:2"><div class="chart-rows-settings"><label class="chart-setting"><span>Title</span><input class="flow-field" type="text" value="My working day"></label></div><div class="chart-rows-head"><span>Step</span><span>Score</span><span>Who</span></div><div class="chart-row"><input class="flow-field chart-row-section" type="text" value="Go to work"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row"><input class="flow-field chart-row-nested" style="--chart-level:2" type="text" value="Make tea"><input class="flow-field" type="text" value="5"><input class="flow-field" type="text" value="Me"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row"><input class="flow-field" type="text" value="Pears"><input class="flow-field is-invalid" type="text" value="-3"><input class="flow-field" type="text" value="" disabled><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row chart-row-placed" style="--chart-series:1"><span class="chart-row-place">0–15</span><input class="flow-field" type="text" value="Source Port"><input class="flow-field" type="text" value="16"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-rows-actions"><button type="button" class="chart-rows-add">Add row</button><button type="button" class="chart-rows-add-section">Add section</button><button type="button" class="chart-rows-add-axis">Add axis</button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Color swatches</h3><code class="built">.flow-swatch</code><span class="built">flow-picker.js, under a selected box, group or line: none, the chart's own colors, then a new one; is-current marks the one worn and is-none the empty one</span></header>
@@ -19171,7 +19237,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Reader tool bar</h3><code class="built">.reader-tool</code><span class="built">app-shell.html</span></header>
-<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-tool-tray-clip"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-speed-reader-on"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-flash-reader"></span></button></span></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div></div>
+<div class="stage"><div class="reader-tool-tray" style="position:static;max-height:none;transform:none;width:max-content"><span class="reader-tool-tray-clip"><span class="reader-view-tools"><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-lock-closed"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-speed-reader-on"></span></button><button type="button" class="reader-subtool"><span class="lt-icon lt-icon-flash-reader"></span></button><button type="button" class="reader-subtool" aria-pressed="true"><span class="lt-icon lt-icon-read-aloud-on"></span></button></span></span></div> <div class="reader-tool-tray" style="position:static;transform:none;width:34px;margin:8px 0"></div> <div class="reader-toolbar"><div class="reader-tool-group"><span class="reader-tool-chip" aria-hidden="true"></span><button type="button" class="reader-tool is-active"><span class="lt-icon lt-icon-document"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-code-view"></span></button><button type="button" class="reader-tool"><span class="lt-icon lt-icon-graph"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Window controls</h3><code class="built">.window-control</code><span class="built">app-shell.html, one set of markup for both platforms — squares at the bar's right end on Windows, the app's own three dots at its left end on a Mac, where Apple's are turned off</span></header>

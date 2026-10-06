@@ -304,6 +304,7 @@
 | --- | --- | --- | --- | --- |
 | Start from insert row | [✅][l-flow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Open from any diagram | [✅][l-flow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagram rows editor | [✅][l-flow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Canvas beside Mermaid text | [✅][l-flow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Each follows other | [✅][l-flow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Movable divider | [✅][l-flow] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

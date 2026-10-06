@@ -165,6 +165,33 @@ let libraryRootName = '';
 
 
 
+const PROSE_SKIP_SELECTOR = [
+  'code',
+  'pre',
+  'kbd',
+  'samp',
+  'script',
+  'style',
+  'textarea',
+  'input',
+  'select',
+  'button',
+  'svg',
+  'math',
+  '.katex',
+  '.mermaid',
+  '.library-pane',
+  '.tab-bar',
+  '.app-bar',
+  '.document-minimap',
+  '.glossary-sheet',
+  '.docs-pager',
+  '[data-speed-reader-skip]',
+].join(',');
+
+
+
+
 const LIBRARY_MOTION_CLASSES = ['is-library-opening', 'is-library-closing', 'is-library-settling'];
 function libraryPaneIsMoving() {
   return LIBRARY_MOTION_CLASSES.some((name) => document.body.classList.contains(name));
@@ -3143,7 +3170,7 @@ function readChart(text) {
   if (at < 0 || at >= lines.length) return null;
   const header = lines[at].replace(/\r$/, '');
   const kind = CHART_PIE_HEADER_RE.test(header) ? 'pie' : CHART_XY_HEADER_RE.test(header) ? 'xy' : '';
-  if (!kind) return null;
+  if (!kind) return readStructuredChart(lines, at);
   const chart = { kind, refusal: '', header: at, lines, slices: [], series: [], axis: null, rows: [] };
   let inAcc = false;
   for (let i = at + 1; i < lines.length; i += 1) {
@@ -3202,6 +3229,7 @@ function readChart(text) {
 
 function chartColumns(chart) {
   if (!chart) return [];
+  if (isStructuredChart(chart)) return structuredColumns(chart);
   if (chart.kind === 'pie') return ['Label', 'Value'];
   const first = chart.axis && chart.axis.list ? 'Category' : 'Point';
   const counts = { bar: 0, line: 0 };
@@ -3218,6 +3246,7 @@ function chartColumns(chart) {
 
 
 function chartFieldProblem(chart, column, value) {
+  if (isStructuredChart(chart)) return structuredFieldProblem(chart, column, value);
   const typed = String(value);
   if (column === 0) {
     if (!typed.trim()) return 'A label needs at least one character.';
@@ -3250,6 +3279,7 @@ function chartCategoryCore(chart, row) {
 
 
 function writeChart(chart) {
+  if (isStructuredChart(chart)) return writeStructuredChart(chart);
   if (!chart || chart.refusal) return chart ? chart.lines.join('\n') : '';
   const lines = chart.lines.slice();
   if (chart.kind === 'xy') {
@@ -3297,9 +3327,564 @@ function chartLastLine(lines) {
 
 
 function chartNewRow(chart) {
+  if (isStructuredChart(chart)) return structuredNewRow(chart);
   const n = chart.rows.length + 1;
   if (chart.kind === 'pie') return { label: 'Slice ' + n, values: ['0'], from: null };
   return { label: chart.axis && chart.axis.list ? 'Item ' + n : null, values: chart.series.map(() => '0'), from: null };
+}
+
+
+const STRUCTURED_SANKEY_RE = /^[ \t]*sankey(?:-beta)?[ \t]*$/;
+const STRUCTURED_JOURNEY_RE = /^[ \t]*journey[ \t]*$/;
+const STRUCTURED_QUADRANT_RE = /^[ \t]*quadrantChart[ \t]*$/;
+const STRUCTURED_PACKET_RE = /^[ \t]*packet(?:-beta)?[ \t]*$/;
+const STRUCTURED_RADAR_RE = /^[ \t]*radar-beta[ \t]*$/;
+
+const STRUCTURED_RADAR_BARE_RE = /^[ \t]*radar[ \t]*$/;
+const STRUCTURED_TREEMAP_RE = /^[ \t]*treemap(?:-beta)?[ \t]*$/;
+const STRUCTURED_ACC_LINE_RE = /^[ \t]*acc(?:Title|Descr)[ \t]*:/;
+const STRUCTURED_SETTING_RE = /^([ \t]*)(title|x-axis|y-axis|quadrant-[1-4]|max|min)(?:([ \t]+)(.*?))?([ \t]*)$/;
+const STRUCTURED_AXIS_SPLIT_RE = /^(.*?)[ \t]*-->[ \t]*(.*)$/;
+const STRUCTURED_CLASSDEF_RE = /^[ \t]*classDef[ \t]/;
+const STRUCTURED_RADAR_OPTION_RE = /^[ \t]*(?:graticule|ticks|showLegend)\b/;
+const STRUCTURED_TREEMAP_TITLE_RE = /^[ \t]*title\b/;
+const STRUCTURED_SECTION_RE = /^([ \t]*)section([ \t]+)([^:#;]*[^:#;\s])([ \t]*)$/;
+const STRUCTURED_TASK_RE = /^([ \t]*)([^:#;]*[^:#;\s])([ \t]*:[ \t]*)([^:#;\s]+)(?:([ \t]*:[ \t]*)([^:#;]*?))?([ \t]*)$/;
+const STRUCTURED_POINT_RE = /^([ \t]*)([^:[\]]*[^:[\]\s])((?::::[A-Za-z0-9_-]+)?)([ \t]*:[ \t]*\[[ \t]*)([^,\]\s]+)([ \t]*,[ \t]*)([^,\]\s]+)([ \t]*\])(.*)$/;
+const STRUCTURED_FIELD_RE = /^([ \t]*)(?:(\d+)(?:([ \t]*-[ \t]*)(\d+))?|\+(\d+))([ \t]*:[ \t]*)("[^"]*")([ \t]*)$/;
+const STRUCTURED_AXIS_LINE_RE = /^([ \t]*)axis[ \t]+(.*?)[ \t]*$/;
+const STRUCTURED_AXIS_ITEM_RE = /^([A-Za-z_][\w-]*)(?:[ \t]*\[[ \t]*"([^"]*)"[ \t]*\])?$/;
+const STRUCTURED_CURVE_RE = /^([ \t]*curve[ \t]+)([A-Za-z_][\w-]*)(?:([ \t]*\[[ \t]*")([^"]*)("[ \t]*\]))?([ \t]*)(\{[^{}]*\})([ \t]*)$/;
+const STRUCTURED_KEYED_RE = /^([A-Za-z_][\w-]*[ \t]*:[ \t]*)(\S+)$/;
+const STRUCTURED_ITEM_RE = /^([ \t]*)("[^"]*")((?::::[A-Za-z0-9_-]+)?)(?:([ \t]*:[ \t]*)([^\s:]+))?((?::::[A-Za-z0-9_-]+)?)([ \t]*)$/;
+const STRUCTURED_WHOLE_RE = /^\d+$/;
+
+function structuredKind(header) {
+  if (STRUCTURED_SANKEY_RE.test(header)) return 'sankey';
+  if (STRUCTURED_JOURNEY_RE.test(header)) return 'journey';
+  if (STRUCTURED_QUADRANT_RE.test(header)) return 'quadrant';
+  if (STRUCTURED_PACKET_RE.test(header)) return 'packet';
+  if (STRUCTURED_RADAR_RE.test(header)) return 'radar';
+  if (STRUCTURED_TREEMAP_RE.test(header)) return 'treemap';
+  return '';
+}
+
+function isStructuredChart(chart) {
+  return !!chart && ['sankey', 'journey', 'quadrant', 'packet', 'radar', 'treemap'].includes(chart.kind);
+}
+
+
+function structuredSettingNames(kind, keyword) {
+  if (keyword === 'title') return kind === 'treemap' || kind === 'sankey' ? null : ['Title'];
+  if (kind === 'quadrant') {
+    if (keyword === 'x-axis') return ['X low', 'X high'];
+    if (keyword === 'y-axis') return ['Y low', 'Y high'];
+    if (keyword.startsWith('quadrant-')) return ['Quadrant ' + keyword.slice(9)];
+  }
+  if (kind === 'radar' && (keyword === 'max' || keyword === 'min')) return [keyword === 'max' ? 'Max' : 'Min'];
+  return null;
+}
+
+function structuredSettingKeywords(kind) {
+  if (kind === 'quadrant') return ['title', 'x-axis', 'y-axis', 'quadrant-1', 'quadrant-2', 'quadrant-3', 'quadrant-4'];
+  if (kind === 'radar') return ['title', 'max', 'min'];
+  if (kind === 'journey' || kind === 'packet') return ['title'];
+  return [];
+}
+
+function structuredRefused(kind, lines, why) {
+  return Object.assign(chartRefused(kind, why), { lines, slots: [], settings: [], settingLines: [], axes: [] });
+}
+
+function structuredNoun(kind) {
+  return { sankey: 'a connection', journey: 'a step', quadrant: 'a point', packet: 'a field', radar: 'a curve', treemap: 'an item' }[kind];
+}
+
+
+function readStructuredChart(lines, at) {
+  const header = lines[at].replace(/\r$/, '');
+  const kind = structuredKind(header);
+  if (!kind) {
+    return STRUCTURED_RADAR_BARE_RE.test(header) ? structuredRefused('radar', lines, 'A radar chart starts with “radar-beta”; a plain “radar” draws nothing here.') : null;
+  }
+  const chart = { kind, refusal: '', header: at, lines, rows: [], slots: [], settings: [], settingLines: [], axes: [], curves: [], series: [], axis: null, slices: [], unit: '', next: 0 };
+  let inAcc = false;
+  for (let i = at + 1; i < lines.length; i += 1) {
+    const cr = lines[i].endsWith('\r') ? '\r' : '';
+    const body = cr ? lines[i].slice(0, -1) : lines[i];
+    if (inAcc) {
+      if (body.includes('}')) inAcc = false;
+      continue;
+    }
+    if (!body.trim() || FLOW_COMMENT_RE.test(body)) continue;
+    if (CHART_ACC_BLOCK_RE.test(body)) {
+      inAcc = !body.includes('}');
+      continue;
+    }
+    if (STRUCTURED_ACC_LINE_RE.test(body)) continue;
+    const setting = STRUCTURED_SETTING_RE.exec(body);
+    const names = setting && structuredSettingNames(kind, setting[2]);
+    if (names) {
+      if (chart.settingLines.some((one) => one.keyword === setting[2])) return structuredRefused(kind, lines, 'There are two “' + setting[2] + '” lines, so the rows can’t tell which one draws.');
+      const words = setting[4] || '';
+      const split = names.length > 1 ? STRUCTURED_AXIS_SPLIT_RE.exec(words) : null;
+      const read = names.length > 1 ? (split ? [split[1], split[2]] : [words, '']) : [words];
+      chart.settingLines.push({ keyword: setting[2], line: i, cr, indent: setting[1], gap: setting[3] || ' ', trail: setting[5], names });
+      names.forEach((name, n) => chart.settings.push({ name, value: read[n], read: read[n] }));
+      continue;
+    }
+    const why = structuredReadLine(chart, body, i, cr);
+    if (why) return structuredRefused(kind, lines, why);
+  }
+  const why = structuredFinish(chart);
+  if (why) return structuredRefused(kind, lines, why);
+  
+  for (const keyword of structuredSettingKeywords(kind)) {
+    if (chart.settingLines.some((one) => one.keyword === keyword)) continue;
+    const names = structuredSettingNames(kind, keyword);
+    chart.settingLines.push({ keyword, line: -1, cr: chartLineEnd(lines), indent: '', gap: ' ', trail: '', names });
+    for (const name of names) chart.settings.push({ name, value: '', read: '' });
+  }
+  chart.settings.sort((a, b) => structuredSettingOrder(kind, a.name) - structuredSettingOrder(kind, b.name));
+  return chart;
+}
+
+function structuredSettingOrder(kind, name) {
+  const order = structuredSettingKeywords(kind).flatMap((keyword) => structuredSettingNames(kind, keyword));
+  return order.indexOf(name);
+}
+
+function structuredSlot(chart, line, cr, shape, row) {
+  if (!chart.unit && /^[ \t]+/.test(shape.indent || '')) chart.unit = shape.indent;
+  row.from = chart.rows.length;
+  chart.slots.push({ line, cr, shape, read: { label: row.label, values: row.values.slice(), section: !!row.section } });
+  chart.rows.push(row);
+  return '';
+}
+
+
+function structuredReadLine(chart, body, i, cr) {
+  const no = 'Line ' + (i + 1) + ' isn’t ' + structuredNoun(chart.kind) + ' the rows can read.';
+  if (chart.kind === 'sankey') {
+    const pieces = structuredCsvPieces(body);
+    if (!pieces || pieces.length !== 3 || !CHART_PIE_NUMBER_RE.test(pieces[2].value)) return no;
+    return structuredSlot(chart, i, cr, { pieces, indent: '' }, { label: pieces[0].value, values: [pieces[1].value, pieces[2].value] });
+  }
+  if (chart.kind === 'journey') {
+    const section = STRUCTURED_SECTION_RE.exec(body);
+    if (section) return structuredSlot(chart, i, cr, { indent: section[1], gap: section[2], trail: section[4] }, { label: section[3], values: [], section: true });
+    const task = STRUCTURED_TASK_RE.exec(body);
+    if (!task || !CHART_PIE_NUMBER_RE.test(task[4])) return no;
+    const shape = { indent: task[1], colon: task[3], second: task[5] || '', whoRaw: task[6] || '', trail: task[7] };
+    return structuredSlot(chart, i, cr, shape, { label: task[2], values: [task[4], (task[6] || '').trim()] });
+  }
+  if (chart.kind === 'quadrant') {
+    if (STRUCTURED_CLASSDEF_RE.test(body)) return '';
+    const point = STRUCTURED_POINT_RE.exec(body);
+    if (!point || !CHART_XY_NUMBER_RE.test(point[5]) || !CHART_XY_NUMBER_RE.test(point[7])) return no;
+    const shape = { indent: point[1], cls: point[3], open: point[4], comma: point[6], close: point[8], tail: point[9] };
+    return structuredSlot(chart, i, cr, shape, { label: point[2], values: [point[5], point[7]] });
+  }
+  if (chart.kind === 'packet') return structuredReadField(chart, body, i, cr, no);
+  if (chart.kind === 'radar') return structuredReadRadar(chart, body, i, cr, no);
+  if (STRUCTURED_CLASSDEF_RE.test(body) || STRUCTURED_TREEMAP_TITLE_RE.test(body)) return '';
+  const item = STRUCTURED_ITEM_RE.exec(body);
+  if (!item || (item[5] !== undefined && !CHART_PIE_NUMBER_RE.test(item[5]))) return no;
+  const shape = { indent: item[1], nameRaw: item[2], cls: item[3], colon: item[4] || '', valueRaw: item[5] || '', clsAfter: item[6], trail: item[7] };
+  return structuredSlot(chart, i, cr, shape, { label: item[2].slice(1, -1), values: ['0', item[5] || ''] });
+}
+
+
+function structuredReadField(chart, body, i, cr, no) {
+  const field = STRUCTURED_FIELD_RE.exec(body);
+  if (!field) return no;
+  let bits;
+  let form;
+  if (field[5] !== undefined) {
+    bits = Number(field[5]);
+    form = 'plus';
+  } else {
+    const start = Number(field[2]);
+    const end = field[4] !== undefined ? Number(field[4]) : start;
+    if (start !== chart.next) {
+      return 'Line ' + (i + 1) + ' starts at bit ' + start + ' where the field above ends at bit ' + (chart.next - 1) + ', and the fields of a packet can’t leave a gap or overlap.';
+    }
+    if (end < start) return 'Line ' + (i + 1) + ' ends before it starts.';
+    bits = end - start + 1;
+    form = field[4] !== undefined ? 'range' : 'single';
+  }
+  if (bits < 1) return 'Line ' + (i + 1) + ' is a field no bits wide.';
+  chart.next += bits;
+  const shape = { indent: field[1], form, dash: field[3] || '-', plusRaw: field[5] || '', colon: field[6], labelRaw: field[7], trail: field[8] };
+  return structuredSlot(chart, i, cr, shape, { label: field[7].slice(1, -1), values: [String(bits)] });
+}
+
+function structuredReadRadar(chart, body, i, cr, no) {
+  if (STRUCTURED_RADAR_OPTION_RE.test(body)) return '';
+  const axis = STRUCTURED_AXIS_LINE_RE.exec(body);
+  if (axis) {
+    for (const piece of structuredCsvPieces(axis[2]) || []) {
+      const item = STRUCTURED_AXIS_ITEM_RE.exec(piece.core);
+      if (!item) return 'Line ' + (i + 1) + ' isn’t an axis the rows can read.';
+      chart.axes.push({ id: item[1], label: item[2] === undefined ? item[1] : item[2], line: i, cr });
+    }
+    return '';
+  }
+  const curve = STRUCTURED_CURVE_RE.exec(body);
+  if (!curve) return body.trim().startsWith('curve') ? 'Line ' + (i + 1) + ' holds more than one curve, or a curve over more than one line; the rows read one curve to a line.' : no;
+  const braces = curve[7];
+  const list = chartListParts(braces, 0, braces.length - 1);
+  const keyed = list.items.length > 0 && list.items.every((item) => STRUCTURED_KEYED_RE.test(item));
+  const shape = { lead: curve[1], id: curve[2], labelOpen: curve[3] || '', labelClose: curve[5] || '', hasLabel: curve[3] !== undefined, gap: curve[6], list, keyed, trail: curve[8], line: i };
+  chart.curves.push({ shape, cr, name: curve[4] === undefined ? curve[2] : curve[4] });
+  return '';
+}
+
+
+function structuredFinish(chart) {
+  if (chart.kind === 'radar') {
+    for (const curve of chart.curves) {
+      const { shape } = curve;
+      let values;
+      if (shape.keyed) {
+        const byKey = new Map(shape.list.items.map((item) => {
+          const [, prefix, value] = STRUCTURED_KEYED_RE.exec(item);
+          return [prefix.replace(/[ \t]*:[ \t]*$/, ''), value];
+        }));
+        if (byKey.size !== chart.axes.length || chart.axes.some((axis) => !byKey.has(axis.id))) {
+          return 'Curve “' + curve.name + '” names axes the chart does not draw, or leaves one out, so it can’t line up as a row.';
+        }
+        values = chart.axes.map((axis) => byKey.get(axis.id));
+      } else {
+        values = shape.list.items.map((item) => item.trim());
+        if (values.length !== chart.axes.length) {
+          return 'Curve “' + curve.name + '” holds ' + values.length + ' values for ' + chart.axes.length + ' axes, so it can’t line up as a row.';
+        }
+      }
+      if (values.some((value) => !CHART_XY_NUMBER_RE.test(value))) return 'Curve “' + curve.name + '” holds something that isn’t a number.';
+      structuredSlot(chart, shape.line, curve.cr, shape, { label: curve.name, values });
+    }
+    chart.axesRead = chart.axes.length;
+  }
+  if (chart.kind === 'treemap') {
+    const stack = [];
+    chart.slots.forEach((slot, i) => {
+      const width = slot.shape.indent.replace(/\t/g, '    ').length;
+      while (stack.length && stack[stack.length - 1] >= width) stack.pop();
+      stack.push(width);
+      chart.rows[i].values[0] = String(stack.length);
+      slot.read.values[0] = String(stack.length);
+    });
+  }
+  return '';
+}
+
+
+function structuredCsvPieces(body) {
+  const pieces = [];
+  let quoted = false;
+  let start = 0;
+  const take = (end) => {
+    const raw = body.slice(start, end);
+    const lead = /^[ \t]*/.exec(raw)[0];
+    const core = raw.slice(lead.length).replace(/[ \t]*$/, '');
+    const trail = raw.slice(lead.length + core.length);
+    const value = core.length >= 2 && core.startsWith('"') && core.endsWith('"') ? core.slice(1, -1).replace(/""/g, '"') : core;
+    pieces.push({ lead, core, trail, value });
+  };
+  for (let i = 0; i < body.length; i += 1) {
+    if (body[i] === '"') quoted = !quoted;
+    else if (body[i] === ',' && !quoted) {
+      take(i);
+      start = i + 1;
+    }
+  }
+  if (quoted) return null;
+  take(body.length);
+  return pieces;
+}
+
+function structuredCsvCell(value) {
+  return /[,"]|^\s|\s$/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value;
+}
+
+
+function structuredColumns(chart) {
+  if (chart.kind === 'sankey') return ['From', 'To', 'Amount'];
+  if (chart.kind === 'journey') return ['Step', 'Score', 'Who'];
+  if (chart.kind === 'quadrant') return ['Point', 'X', 'Y'];
+  if (chart.kind === 'packet') return ['Label', 'Width'];
+  if (chart.kind === 'radar') return ['Curve', ...chart.axes.map((axis) => axis.label)];
+  return ['Name', 'Level', 'Value'];
+}
+
+
+function structuredFieldProblem(chart, column, value) {
+  const typed = String(value);
+  const trimmed = typed.trim();
+  const kind = chart.kind;
+  if (column === 0) {
+    if (!trimmed) return 'A name needs at least one character.';
+    if (kind === 'journey' && /[:#;]/.test(typed)) return 'A step can’t hold a colon, a hash or a semicolon.';
+    if (kind === 'quadrant' && /[:[\]]/.test(typed)) return 'A point’s name can’t hold a colon or a square bracket.';
+    if ((kind === 'packet' || kind === 'radar' || kind === 'treemap') && typed.includes('"')) return 'A name can’t hold a straight double quote.';
+    return '';
+  }
+  if (kind === 'sankey') {
+    if (column === 1) return trimmed ? '' : 'A name needs at least one character.';
+    return CHART_PIE_NUMBER_RE.test(trimmed) ? '' : 'An amount is a number of zero or more, like 42 or 1.5.';
+  }
+  if (kind === 'journey') {
+    if (column === 1) return CHART_PIE_NUMBER_RE.test(trimmed) ? '' : 'A score is a number, like 1 or 5.';
+    return /[:#;]/.test(typed) ? 'Who can’t hold a colon, a hash or a semicolon.' : '';
+  }
+  if (kind === 'quadrant') {
+    return CHART_XY_NUMBER_RE.test(trimmed) && Number(trimmed) >= 0 && Number(trimmed) <= 1 ? '' : 'A position is a number from 0 to 1, like 0.25.';
+  }
+  if (kind === 'packet') return STRUCTURED_WHOLE_RE.test(trimmed) && Number(trimmed) > 0 ? '' : 'A field is a whole number of bits, 1 or more.';
+  if (kind === 'radar') return CHART_XY_NUMBER_RE.test(trimmed) ? '' : 'A value is a number, like 42, -3 or 1.5.';
+  if (column === 1) return STRUCTURED_WHOLE_RE.test(trimmed) && Number(trimmed) > 0 ? '' : 'A level is a whole number, 1 or more.';
+  return !trimmed || CHART_PIE_NUMBER_RE.test(trimmed) ? '' : 'A value is a number of zero or more, or blank for a section.';
+}
+
+
+function chartRowsProblem(chart, rows) {
+  const found = [];
+  if (!chart) return found;
+  if (chart.kind === 'treemap') {
+    rows.forEach((row, i) => {
+      const level = Number(row.values[0]);
+      const above = i ? Number(rows[i - 1].values[0]) : 0;
+      if (level > above + 1) found.push({ index: i, column: 1, problem: i ? 'A level can be at most one deeper than the row above it.' : 'The first row is level 1.' });
+      if (chartRowHasChildren(chart, rows, i) && String(row.values[1]).trim()) found.push({ index: i, column: 2, problem: 'A section is sized by what it holds, so it takes no value.' });
+    });
+  }
+  if (chart.kind === 'sankey') {
+    rows.forEach((row, i) => {
+      if (row.label.trim() && row.label.trim() === String(row.values[0]).trim()) found.push({ index: i, column: 1, problem: 'A connection can’t run from a node to itself.' });
+    });
+  }
+  return found;
+}
+
+function chartRowHasChildren(chart, rows, index) {
+  return chart.kind === 'treemap' && index + 1 < rows.length && Number(rows[index + 1].values[0]) > Number(rows[index].values[0]);
+}
+
+
+function chartRowPlace(chart, rows, index) {
+  if (!chart || chart.kind !== 'packet') return '';
+  let start = 0;
+  for (let i = 0; i < index; i += 1) start += Number(rows[i].values[0]) || 0;
+  const bits = Number(rows[index].values[0]) || 0;
+  return bits <= 1 ? String(start) : start + '–' + (start + bits - 1);
+}
+
+function structuredNewRow(chart) {
+  const n = chart.rows.length + 1;
+  const last = chart.rows[chart.rows.length - 1];
+  if (chart.kind === 'sankey') return { label: last ? last.values[0] : 'Start', values: ['Node ' + n, '1'], from: null };
+  if (chart.kind === 'journey') {
+    const task = chart.rows.filter((row) => !row.section).pop();
+    return { label: 'Step ' + n, values: ['3', task ? task.values[1] : 'Me'], from: null };
+  }
+  if (chart.kind === 'quadrant') return { label: 'Point ' + n, values: ['0.5', '0.5'], from: null };
+  if (chart.kind === 'packet') return { label: 'Field ' + n, values: ['8'], from: null };
+  if (chart.kind === 'radar') return { label: 'Curve ' + n, values: chart.axes.map(() => '0'), from: null };
+  return { label: 'Item ' + n, values: [last ? last.values[0] : '1', '1'], from: null };
+}
+
+
+function chartNewSection(chart) {
+  return { label: 'Section ' + (chart.rows.filter((row) => row.section).length + 1), values: [], section: true, from: null };
+}
+
+
+function addChartAxis(chart, name) {
+  if (!chart || chart.kind !== 'radar') return;
+  const used = new Set(chart.axes.map((axis) => axis.id));
+  let n = chart.axes.length + 1;
+  while (used.has('a' + n)) n += 1;
+  const last = chart.axes[chart.axes.length - 1];
+  chart.axes.push({ id: 'a' + n, label: name, line: last ? last.line : -1, cr: last ? last.cr : chartLineEnd(chart.lines), added: true });
+  for (const row of chart.rows) row.values.push('0');
+}
+
+
+function structuredRowText(chart, row, index, context) {
+  const known = row.from !== null && row.from !== undefined && row.from < chart.slots.length ? chart.slots[row.from] : null;
+  const slot = known && known.read.section === !!row.section ? known : null;
+  const read = slot ? slot.read : { label: null, values: [] };
+  const shape = slot ? slot.shape : structuredFreshShape(chart, row);
+  const same = (n) => read.values[n] !== undefined && String(row.values[n]).trim() === read.values[n];
+  if (chart.kind === 'sankey') {
+    const values = [row.label, row.values[0], row.values[1]];
+    return shape.pieces.map((piece, n) => {
+      const keep = (n === 0 ? row.label === read.label : same(n - 1)) && piece.core !== undefined;
+      return piece.lead + (keep ? piece.core : structuredCsvCell(String(values[n]).trim())) + piece.trail;
+    }).join(',');
+  }
+  if (chart.kind === 'journey') {
+    if (row.section) return shape.indent + 'section' + shape.gap + row.label.trim() + shape.trail;
+    const who = same(1) ? shape.whoRaw : String(row.values[1]).split(',').map((one) => one.trim()).filter(Boolean).join(', ');
+    const tail = who ? (shape.second || ': ') + who : same(1) ? shape.second : '';
+    return shape.indent + row.label.trim() + shape.colon + String(row.values[0]).trim() + tail + shape.trail;
+  }
+  if (chart.kind === 'quadrant') {
+    return shape.indent + row.label.trim() + shape.cls + shape.open + String(row.values[0]).trim() + shape.comma + String(row.values[1]).trim() + shape.close + shape.tail;
+  }
+  if (chart.kind === 'packet') {
+    const bits = Number(row.values[0]);
+    const start = context.next;
+    context.next += bits;
+    const label = row.label === read.label ? shape.labelRaw : '"' + row.label + '"';
+    let range;
+    if (shape.form === 'plus') range = '+' + (same(0) ? shape.plusRaw : String(bits));
+    else if (shape.form === 'single' && bits === 1) range = String(start);
+    else range = start + shape.dash + (start + bits - 1);
+    return shape.indent + range + shape.colon + label + shape.trail;
+  }
+  if (chart.kind === 'radar') return structuredCurveText(chart, row, shape, read, context);
+  const level = Number(row.values[0]);
+  const indent = slot && same(0) ? shape.indent : structuredTreemapIndent(chart, context, level);
+  context.levels[level] = indent;
+  context.levels.length = level + 1;
+  const value = String(row.values[1]).trim();
+  const name = row.label === read.label ? shape.nameRaw : '"' + row.label + '"';
+  const sized = !value ? '' : (shape.colon || ': ') + (same(1) ? shape.valueRaw : value);
+  return indent + name + shape.cls + sized + shape.clsAfter + shape.trail;
+}
+
+function structuredTreemapIndent(chart, context, level) {
+  if (context.levels[level] !== undefined) return context.levels[level];
+  const unit = chart.unit || '    ';
+  if (level > 1 && context.levels[level - 1] !== undefined) return context.levels[level - 1] + unit;
+  return unit.repeat(Math.max(0, level - 1));
+}
+
+function structuredCurveText(chart, row, shape, read, context) {
+  let id = shape.id;
+  if (!id) {
+    let n = chart.rows.length;
+    while (context.ids.has('c' + n)) n += 1;
+    id = 'c' + n;
+    context.ids.add(id);
+  }
+  let label;
+  if (shape.hasLabel) label = shape.labelOpen + (row.label === read.label ? read.label : row.label.trim()) + shape.labelClose;
+  else label = row.label.trim() === id ? '' : '["' + row.label.trim() + '"]';
+  let cores;
+  if (shape.keyed) {
+    const at = new Map(chart.axes.map((axis, a) => [axis.id, a]));
+    const written = new Set();
+    cores = shape.list.items.map((item) => {
+      const [, prefix] = STRUCTURED_KEYED_RE.exec(item);
+      const key = prefix.replace(/[ \t]*:[ \t]*$/, '');
+      written.add(key);
+      return prefix + String(row.values[at.get(key)]).trim();
+    });
+    chart.axes.forEach((axis, a) => {
+      if (!written.has(axis.id)) cores.push(axis.id + ': ' + String(row.values[a]).trim());
+    });
+  } else {
+    cores = row.values.map((value) => String(value).trim());
+  }
+  return shape.lead + id + label + shape.gap + chartWriteList(shape.list, cores) + shape.trail;
+}
+
+
+function structuredFreshShape(chart, row) {
+  const like = chart.slots.filter((slot) => slot.read.section === !!row.section).pop();
+  const indent = like ? like.shape.indent || '' : chart.kind === 'sankey' ? '' : '    ';
+  if (chart.kind === 'sankey') return { pieces: [{ lead: '', trail: '' }, { lead: '', trail: '' }, { lead: '', trail: '' }] };
+  if (chart.kind === 'journey') {
+    return row.section ? { indent, gap: ' ', trail: '' } : { indent: like ? indent : '      ', colon: like ? like.shape.colon : ': ', second: like ? like.shape.second || ': ' : ': ', whoRaw: '', trail: '' };
+  }
+  if (chart.kind === 'quadrant') return { indent, cls: '', open: like ? like.shape.open : ': [', comma: like ? like.shape.comma : ', ', close: like ? like.shape.close : ']', tail: '' };
+  if (chart.kind === 'packet') return { indent: like ? indent : '', form: 'plus', dash: '-', plusRaw: '', colon: like ? like.shape.colon : ': ', labelRaw: '', trail: '' };
+  if (chart.kind === 'radar') {
+    const list = like ? like.shape.list : chartListParts('{}', 0, 1);
+    return { lead: like ? like.shape.lead : '  curve ', id: '', labelOpen: '["', labelClose: '"]', hasLabel: true, gap: '', list: { head: list.head, items: [], seps: list.seps, tail: list.tail }, keyed: false, trail: '' };
+  }
+  return { indent: '', nameRaw: '', cls: '', colon: like ? like.shape.colon || ': ' : ': ', valueRaw: '', clsAfter: '', trail: '' };
+}
+
+
+function writeStructuredChart(chart) {
+  if (!chart || chart.refusal) return chart ? chart.lines.join('\n') : '';
+  const lines = chart.lines;
+  const swap = new Map();
+  const after = new Map();
+  const put = (at, text) => {
+    if (!after.has(at)) after.set(at, []);
+    after.get(at).push(text);
+  };
+  const end = chartLineEnd(lines);
+  const indent = structuredIndent(chart);
+  for (const setting of chart.settingLines) {
+    const values = setting.names.map((name) => structuredSetting(chart, name).value.trim());
+    const read = setting.names.map((name) => structuredSetting(chart, name).read);
+    if (values.every((value, n) => value === read[n].trim())) continue;
+    const words = values.length > 1 && values[1] ? values[0] + ' --> ' + values[1] : values[0];
+    const text = values.every((value) => !value) ? null : (setting.line >= 0 ? setting.indent : indent) + setting.keyword + setting.gap + words + setting.trail;
+    if (setting.line >= 0) swap.set(setting.line, text === null ? null : text + setting.cr);
+    else if (text !== null) put(chart.header, text + end);
+  }
+  structuredWriteAxes(chart, swap, put, indent, end);
+  const context = { next: 0, levels: [], ids: new Set(chart.slots.map((slot) => slot.shape.id).filter(Boolean)) };
+  const texts = chart.rows.map((row, i) => structuredRowText(chart, row, i, context));
+  const slots = chart.slots.slice().sort((a, b) => a.line - b.line);
+  texts.forEach((text, i) => {
+    if (i < slots.length) swap.set(slots[i].line, text + slots[i].cr);
+  });
+  for (let i = texts.length; i < slots.length; i += 1) swap.set(slots[i].line, null);
+  const tail = slots.length ? slots[slots.length - 1].line : chartLastLine(lines);
+  for (const text of texts.slice(slots.length)) put(tail, text + (slots.length ? slots[slots.length - 1].cr : end));
+  const out = [];
+  lines.forEach((line, i) => {
+    const now = swap.has(i) ? swap.get(i) : line;
+    if (now !== null) out.push(now);
+    if (after.has(i)) out.push(...after.get(i));
+  });
+  return out.join('\n');
+}
+
+
+function structuredWriteAxes(chart, swap, put, indent, end) {
+  if (chart.kind !== 'radar') return;
+  const added = chart.axes.filter((axis) => axis.added);
+  if (!added.length) return;
+  const words = added.map((axis) => axis.id + '["' + axis.label + '"]').join(', ');
+  const last = chart.axes.filter((axis) => !axis.added).pop();
+  if (!last) {
+    put(chart.header, indent + 'axis ' + words + end);
+    return;
+  }
+  const body = chart.lines[last.line].replace(/\r$/, '');
+  swap.set(last.line, body.replace(/[ \t]*$/, '') + ', ' + words + body.slice(body.replace(/[ \t]*$/, '').length) + last.cr);
+}
+
+function structuredSetting(chart, name) {
+  return chart.settings.find((one) => one.name === name) || { name, value: '', read: '' };
+}
+
+
+function structuredIndent(chart) {
+  const setting = chart.settingLines.find((one) => one.line >= 0);
+  if (setting) return setting.indent;
+  const slot = chart.slots[0];
+  if (slot && slot.shape.indent !== undefined) return slot.shape.indent;
+  if (slot && slot.shape.lead !== undefined) return /^[ \t]*/.exec(slot.shape.lead)[0];
+  return chart.kind === 'sankey' ? '' : '    ';
+}
+
+
+function structuredSettingProblem(chart, name, value) {
+  const typed = String(value).trim();
+  if ((name === 'Max' || name === 'Min') && typed && !CHART_XY_NUMBER_RE.test(typed)) return 'A limit is a number, like 100, or blank.';
+  if ((name === 'X high' || name === 'Y high') && typed && !structuredSetting(chart, name.replace('high', 'low')).value.trim()) return 'A high end needs a low end beside it.';
+  if (/-->/.test(typed)) return 'A setting can’t hold an arrow.';
+  return '';
 }
 
 const STATE_LIMIT = 1_000_000;
@@ -7132,6 +7717,7 @@ if (flowSheetExport) {
 const chartRowsHost = document.getElementById('chartRows');
 const FLOW_TIP_ROWS =
   'Change a label or number in the rows beside the text · Add row puts one at the end · Alt+Up and Alt+Down move the row you are in; a pie draws by size, so only its legend moves.';
+const CHART_SECTION_SIZED = 'A section is sized by what it holds.';
 let chartRowsTimer = 0;
 
 
@@ -7145,16 +7731,21 @@ function drawChartRows(rebuild) {
     chartRowsHost.innerHTML = '';
     return;
   }
-  if (!rebuild && chartRowsHost.querySelector('.chart-rows-add')) return;
+  if (!rebuild && chartRowsHost.querySelector('.chart-rows-add')) {
+    refreshChartRows(chart);
+    return;
+  }
   buildChartRows(chart);
 }
 
 function buildChartRows(chart) {
   chartRowsHost.innerHTML = '';
   const columns = chartColumns(chart);
+  if (chart.settings && chart.settings.length) chartRowsHost.appendChild(chartSettingsElement(chart));
+  const placed = chart.kind === 'packet';
   const head = document.createElement('div');
-  head.className = 'chart-rows-head';
-  for (const name of columns) {
+  head.className = placed ? 'chart-rows-head chart-row-placed' : 'chart-rows-head';
+  for (const name of placed ? ['Bits', ...columns] : columns) {
     const cell = document.createElement('span');
     cell.textContent = name;
     head.appendChild(cell);
@@ -7162,12 +7753,40 @@ function buildChartRows(chart) {
   chartRowsHost.appendChild(head);
   chartRowsHost.style.setProperty('--chart-series', String(columns.length - 1));
   chart.rows.forEach((row, index) => chartRowsHost.appendChild(chartRowElement(chart, row, index)));
-  const add = document.createElement('button');
-  add.type = 'button';
-  add.className = 'chart-rows-add';
-  add.textContent = 'Add row';
-  add.addEventListener('click', addChartRow);
-  chartRowsHost.appendChild(add);
+  const actions = document.createElement('div');
+  actions.className = 'chart-rows-actions';
+  actions.appendChild(chartRowsButton('chart-rows-add', 'Add row', addChartRow));
+  if (chart.kind === 'journey') actions.appendChild(chartRowsButton('chart-rows-add-section', 'Add section', addChartSection));
+  if (chart.kind === 'radar') actions.appendChild(chartRowsButton('chart-rows-add-axis', 'Add axis', addChartAxisColumn));
+  chartRowsHost.appendChild(actions);
+  refreshChartRows(chart);
+}
+
+function chartRowsButton(className, words, press) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = words;
+  button.addEventListener('click', press);
+  return button;
+}
+
+
+function chartSettingsElement(chart) {
+  const box = document.createElement('div');
+  box.className = 'chart-rows-settings';
+  for (const setting of chart.settings) {
+    const label = document.createElement('label');
+    label.className = 'chart-setting';
+    const name = document.createElement('span');
+    name.textContent = setting.name;
+    label.appendChild(name);
+    const field = chartField(setting.value, -1, setting.name);
+    field.chartSetting = setting.name;
+    label.appendChild(field);
+    box.appendChild(label);
+  }
+  return box;
 }
 
 function chartRowElement(chart, row, index) {
@@ -7175,16 +7794,30 @@ function chartRowElement(chart, row, index) {
   line.className = 'chart-row';
   
   line.chartFrom = index;
-  if (row.label === null) {
+  const names = chartColumns(chart);
+  if (row.section) {
+    
+    line.chartSection = true;
+    const field = chartField(row.label, 0, 'Section');
+    field.classList.add('chart-row-section');
+    line.appendChild(field);
+  } else if (row.label === null) {
     const place = document.createElement('span');
     place.className = 'chart-row-place';
     place.textContent = String(index + 1);
     line.appendChild(place);
   } else {
-    line.appendChild(chartField(row.label, 0, 'Label'));
+    if (chart.kind === 'packet') {
+      line.classList.add('chart-row-placed');
+      const place = document.createElement('span');
+      place.className = 'chart-row-place';
+      line.appendChild(place);
+    }
+    const label = chartField(row.label, 0, names[0]);
+    if (chart.kind === 'treemap') label.classList.add('chart-row-nested');
+    line.appendChild(label);
   }
-  const names = chartColumns(chart);
-  row.values.forEach((value, i) => line.appendChild(chartField(value, i + 1, names[i + 1])));
+  if (!row.section) row.values.forEach((value, i) => line.appendChild(chartField(value, i + 1, names[i + 1])));
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'chart-row-remove';
@@ -7197,6 +7830,30 @@ function chartRowElement(chart, row, index) {
   remove.addEventListener('click', () => removeChartRow(line));
   line.appendChild(remove);
   return line;
+}
+
+
+function refreshChartRows(chart) {
+  if (chart.kind !== 'packet' && chart.kind !== 'treemap') return;
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  const rows = lines.map((line) => ({ values: Array.from(line.querySelectorAll('.flow-field')).filter((one) => one.chartColumn > 0).map((one) => one.value.trim()) }));
+  lines.forEach((line, index) => {
+    if (chart.kind === 'packet') {
+      const place = line.querySelector('.chart-row-place');
+      if (place) place.textContent = chartRowPlace(chart, rows, index);
+      return;
+    }
+    const fields = Array.from(line.querySelectorAll('.flow-field'));
+    const name = fields.find((one) => one.chartColumn === 0);
+    const value = fields.find((one) => one.chartColumn === 2);
+    if (name) name.style.setProperty('--chart-level', String(Math.max(1, Number(rows[index].values[0]) || 1)));
+    if (value) {
+      const holds = chartRowHasChildren(chart, rows, index);
+      value.disabled = holds;
+      if (holds) value.title = CHART_SECTION_SIZED;
+      else if (value.title === CHART_SECTION_SIZED) value.title = '';
+    }
+  });
 }
 
 function chartField(value, column, name) {
@@ -7216,24 +7873,42 @@ function chartField(value, column, name) {
   return field;
 }
 
+function markChartField(field, problem) {
+  field.classList.toggle('is-invalid', !!problem);
+  field.title = problem;
+}
+
 
 function chartRowsFromGrid(chart) {
   let bad = false;
   const rows = [];
-  for (const line of chartRowsHost.querySelectorAll('.chart-row')) {
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  for (const line of lines) {
     const fields = line.querySelectorAll('.flow-field');
-    const labeled = !line.querySelector('.chart-row-place');
+    const labeled = !line.querySelector('.chart-row-place') || chart.kind === 'packet';
     const row = { label: null, values: [], from: Number.isInteger(line.chartFrom) ? line.chartFrom : null };
+    if (line.chartSection) row.section = true;
     for (const field of fields) {
       const problem = chartFieldProblem(chart, field.chartColumn, field.value);
-      field.classList.toggle('is-invalid', !!problem);
-      field.title = problem;
+      markChartField(field, problem);
       if (problem) bad = true;
       if (field.chartColumn === 0) row.label = field.value;
       else row.values.push(field.value.trim());
     }
     if (!labeled) row.label = null;
     rows.push(row);
+  }
+  for (const found of chartRowsProblem(chart, rows)) {
+    const field = Array.from(lines[found.index].querySelectorAll('.flow-field')).find((one) => one.chartColumn === found.column);
+    if (field && !field.disabled) {
+      markChartField(field, found.problem);
+      bad = true;
+    }
+  }
+  for (const field of chartRowsHost.querySelectorAll('.chart-rows-settings .flow-field')) {
+    const problem = structuredSettingProblem(chart, field.chartSetting, field.value);
+    markChartField(field, problem);
+    if (problem) bad = true;
   }
   return bad ? null : rows;
 }
@@ -7244,6 +7919,10 @@ function writeChartRows(rebuild) {
   const chart = flowSession && flowSession.chart;
   if (!chart || chart.refusal || !chartRowsHost) return false;
   const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  for (const field of chartRowsHost.querySelectorAll('.chart-rows-settings .flow-field')) {
+    const setting = chart.settings.find((one) => one.name === field.chartSetting);
+    if (setting) setting.value = field.value;
+  }
   const rows = chartRowsFromGrid(chart);
   if (!rows) return false;
   chart.rows = rows;
@@ -7271,14 +7950,27 @@ function focusChartRow(index, column) {
   if (field) field.focus();
 }
 
-function addChartRow() {
+
+function changeChartShape(change, focusColumn) {
   if (!flowSession || !flowSession.chart) return;
   if (!writeChartRows()) return;
   const chart = flowSession.chart;
-  chart.rows.push(chartNewRow(chart));
+  change(chart);
   setFlowText(writeChart(chart), 'rows');
   buildChartRows(flowSession.chart);
-  focusChartRow(flowSession.chart.rows.length - 1, 0);
+  focusChartRow(flowSession.chart.rows.length - 1, focusColumn);
+}
+
+function addChartRow() {
+  changeChartShape((chart) => chart.rows.push(chartNewRow(chart)), 0);
+}
+
+function addChartSection() {
+  changeChartShape((chart) => chart.rows.push(chartNewSection(chart)), 0);
+}
+
+function addChartAxisColumn() {
+  changeChartShape((chart) => addChartAxis(chart, 'Axis ' + (chart.axes.length + 1)), chartColumns(flowSession.chart).length);
 }
 
 function removeChartRow(line) {
@@ -10297,30 +10989,8 @@ window.leafMinimap.setEnabled(minimapEnabled);
 if (narrowWindowQuery && narrowWindowQuery.addEventListener) {
   narrowWindowQuery.addEventListener('change', (event) => window.leafMinimap.setEnabled(!event.matches));
 }
-const SPEED_READER_SKIP_SELECTOR = [
-  'code',
-  'pre',
-  'kbd',
-  'samp',
-  'script',
-  'style',
-  'textarea',
-  'input',
-  'select',
-  'button',
-  'svg',
-  'math',
-  '.katex',
-  '.mermaid',
-  '.library-pane',
-  '.tab-bar',
-  '.app-bar',
-  '.document-minimap',
-  '.glossary-sheet',
-  '.docs-pager',
-  '[data-speed-reader-skip]',
-  '.speed-reader-anchor',
-].join(',');
+
+const SPEED_READER_SKIP_SELECTOR = `${PROSE_SKIP_SELECTOR},.speed-reader-anchor`;
 
 let speedReaderSegmenterHeld;
 function speedReaderSegmenter() {
@@ -10488,7 +11158,308 @@ function readerEditingAllowed() {
 }
 
 
-const FLASH_READER_SKIP_SELECTOR = SPEED_READER_SKIP_SELECTOR.split(',').filter((part) => part !== '.speed-reader-anchor').join(',');
+const readAloudButton = document.getElementById('readAloudButton');
+
+let readAloud = null;
+
+let readAloudSentenceSplitter;
+
+const READ_ALOUD_SPEEDS = [75, 100, 125, 150, 200];
+let readAloudVoice = typeof LEAF_SETTINGS.readAloudVoice === 'string' ? LEAF_SETTINGS.readAloudVoice : '';
+let readAloudSpeed = READ_ALOUD_SPEEDS.includes(Number(LEAF_SETTINGS.readAloudSpeed)) ? Number(LEAF_SETTINGS.readAloudSpeed) : 100;
+const readAloudBar = document.getElementById('readAloudBar');
+const readAloudVoiceChoice = document.getElementById('readAloudVoice');
+const readAloudSpeedChoice = document.getElementById('readAloudSpeed');
+
+function readAloudEngine() {
+  return window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function' ? window.speechSynthesis : null;
+}
+
+
+function readAloudText(block) {
+  const nodes = [];
+  let text = '';
+  if (!block || (block.matches && block.matches(PROSE_SKIP_SELECTOR))) return { text, nodes };
+  let lineBox = null;
+  let gap = false;
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    const skipped = parent && parent.closest(PROSE_SKIP_SELECTOR);
+    if (skipped && block.contains(skipped)) {
+      gap = true;
+      continue;
+    }
+    const box = parent && parent.closest(FLASH_READER_LINE_BOXES);
+    if ((gap || (lineBox && box !== lineBox)) && text && !/\s$/.test(text)) text += ' ';
+    gap = false;
+    lineBox = box;
+    nodes.push({ node, start: text.length });
+    text += node.nodeValue || '';
+  }
+  return { text, nodes };
+}
+
+
+function readAloudSentences(text) {
+  if (readAloudSentenceSplitter === undefined) {
+    readAloudSentenceSplitter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter(undefined, { granularity: 'sentence' }) : null;
+  }
+  const parts = readAloudSentenceSplitter
+    ? Array.from(readAloudSentenceSplitter.segment(text), (part) => ({ start: part.index, text: part.segment }))
+    : [{ start: 0, text }];
+  return parts.filter((part) => /[\p{L}\p{N}]/u.test(part.text));
+}
+
+
+function readAloudLoad(session, mark = null) {
+  const { text, nodes } = readAloudText(session.blocks[session.index]);
+  session.nodes = nodes;
+  session.sentences = readAloudSentences(text);
+  session.at = 0;
+  const held = mark && mark.node ? nodes.find((one) => one.node === mark.node) : null;
+  if (held) {
+    const offset = held.start + Math.max(0, mark.offset);
+    const at = session.sentences.findIndex((sentence) => sentence.start + sentence.text.length > offset);
+    session.at = at < 0 ? session.sentences.length : at;
+  }
+}
+
+function readAloudSettle(session) {
+  while (session.at >= session.sentences.length) {
+    session.index += 1;
+    if (session.index >= session.blocks.length) return false;
+    readAloudLoad(session);
+  }
+  return true;
+}
+
+
+function readAloudLocalVoices() {
+  const engine = readAloudEngine();
+  const voices = engine && engine.getVoices ? Array.from(engine.getVoices() || []) : [];
+  return { all: voices, local: voices.filter((voice) => voice && voice.localService === true) };
+}
+
+function readAloudLanguageFirst(voices) {
+  const language = String(navigator.language || '').split('-')[0].toLowerCase();
+  const own = (voice) => String(voice.lang || '').toLowerCase().split(/[-_]/)[0] === language;
+  return [...voices.filter(own), ...voices.filter((voice) => !own(voice))];
+}
+
+function readAloudChosenVoice() {
+  const { all, local } = readAloudLocalVoices();
+  const saved = readAloudVoice ? local.find((voice) => voice.name === readAloudVoice) : null;
+  if (saved) return saved;
+  const engineDefault = all.find((voice) => voice && voice.default);
+  if (!all.length || (engineDefault && engineDefault.localService === true)) return null;
+  return readAloudLanguageFirst(local)[0] || null;
+}
+
+function readAloudOffered() {
+  return Boolean(readAloudEngine()) && !readingIsContainedPage() && !codeViewActive && !graphViewOpen && !activeWebTab();
+}
+
+
+function startReadAloud() {
+  if (readAloud || !readAloudOffered()) return;
+  const { all, local } = readAloudLocalVoices();
+  if (all.length && !local.length) {
+    leafToast('No voice on this computer can read the page without sending it away.');
+    return;
+  }
+  const blocks = documentBlocks(readingDocumentRoot());
+  if (!blocks.length) return;
+  
+  closeFlashReader();
+  const start = flashReaderStartPoint(blocks);
+  const session = { blocks, index: start.index, nodes: [], sentences: [], at: 0, utterance: null, follow: true };
+  readAloudLoad(session, start.mark);
+  if (!readAloudSettle(session)) return;
+  readAloud = session;
+  readAloudEngine().cancel();
+  renderReadAloudSwitch();
+  speakReadAloudSentence(session);
+}
+
+
+function speakReadAloudSentence(session) {
+  const engine = readAloudEngine();
+  const block = session.blocks[session.index];
+  if (readAloud !== session || !engine || !block || block.isConnected === false) {
+    stopReadAloud();
+    return;
+  }
+  const utterance = new window.SpeechSynthesisUtterance(session.sentences[session.at].text);
+  const voice = readAloudChosenVoice();
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  }
+  utterance.rate = readAloudSpeed / 100;
+  utterance.onstart = () => {
+    if (readAloud === session && session.utterance === utterance) lightReadAloudSentence(session);
+  };
+  utterance.onboundary = (event) => {
+    if (readAloud === session && session.utterance === utterance && event && event.name === 'word') lightReadAloudWord(session, event);
+  };
+  utterance.onend = () => readAloudSentenceDone(session, utterance);
+  utterance.onerror = () => {
+    if (readAloud === session && session.utterance === utterance) stopReadAloud();
+  };
+  session.utterance = utterance;
+  engine.speak(utterance);
+}
+function readAloudSentenceDone(session, utterance) {
+  if (readAloud !== session || session.utterance !== utterance) return;
+  session.at += 1;
+  if (!readAloudSettle(session)) {
+    stopReadAloud();
+    return;
+  }
+  speakReadAloudSentence(session);
+}
+
+function stopReadAloud() {
+  if (!readAloud) return;
+  readAloud = null;
+  const engine = readAloudEngine();
+  if (engine) engine.cancel();
+  paintReadAloud(READ_ALOUD_SENTENCE, null);
+  paintReadAloud(READ_ALOUD_WORD, null);
+  renderReadAloudSwitch();
+}
+
+
+
+const READ_ALOUD_SENTENCE = 'leaf-read-aloud-sentence';
+const READ_ALOUD_WORD = 'leaf-read-aloud-word';
+
+
+function readAloudPoint(nodes, offset, closing) {
+  let found = null;
+  for (const one of nodes) {
+    if (closing ? one.start < offset : one.start <= offset) found = one;
+    else break;
+  }
+  if (!found) return null;
+  return { node: found.node, offset: Math.max(0, Math.min(offset - found.start, (found.node.nodeValue || '').length)) };
+}
+function readAloudRange(session, from, to) {
+  const start = readAloudPoint(session.nodes, from, false);
+  const end = readAloudPoint(session.nodes, to, true);
+  if (!start || !end) return null;
+  const range = document.createRange();
+  range.setStart(start.node, start.offset);
+  range.setEnd(end.node, end.offset);
+  return range;
+}
+
+
+function paintReadAloud(name, range) {
+  if (!window.CSS || !CSS.highlights || typeof Highlight !== 'function') return;
+  if (range) CSS.highlights.set(name, new Highlight(range));
+  else CSS.highlights.delete(name);
+}
+
+function lightReadAloudSentence(session) {
+  const sentence = session.sentences[session.at];
+  const spoken = sentence.text.trimEnd();
+  const range = readAloudRange(session, sentence.start, sentence.start + spoken.length);
+  paintReadAloud(READ_ALOUD_SENTENCE, range);
+  paintReadAloud(READ_ALOUD_WORD, null);
+  followReadAloud(session, range);
+}
+
+
+function lightReadAloudWord(session, event) {
+  const sentence = session.sentences[session.at];
+  const at = Math.max(0, Number(event.charIndex) || 0);
+  const named = Number(event.charLength);
+  const length = named > 0 ? named : ((/^[\p{L}\p{N}'’-]+/u.exec(sentence.text.slice(at)) || [''])[0].length);
+  if (!length) return;
+  const range = readAloudRange(session, sentence.start + at, sentence.start + at + length);
+  paintReadAloud(READ_ALOUD_WORD, range);
+  followReadAloud(session, range);
+}
+
+
+function followReadAloud(session, range) {
+  if (!session.follow || !range || !range.getBoundingClientRect) return;
+  const box = range.getBoundingClientRect();
+  if (!box || (!box.width && !box.height)) return;
+  const view = app.getBoundingClientRect();
+  if (box.top >= view.top && box.bottom <= view.bottom) return;
+  app.scrollTop += box.top - view.top - (view.bottom - view.top) / 3;
+}
+function readAloudReaderMoved(event) {
+  if (!readAloud || !event || !event.target) return;
+  if (app && app.contains && app.contains(event.target)) readAloud.follow = false;
+}
+for (const type of ['wheel', 'pointerdown', 'touchstart', 'keydown']) {
+  document.addEventListener(type, readAloudReaderMoved, { capture: true, passive: true });
+}
+
+function renderReadAloudSwitch() {
+  setSubtoolState(readAloudButton, Boolean(readAloud), 'Read aloud');
+  renderReadAloudBar();
+}
+
+if (readAloudButton) {
+  readAloudButton.addEventListener('click', () => (readAloud ? stopReadAloud() : startReadAloud()));
+}
+
+
+
+
+function renderReadAloudBar() {
+  if (!readAloudBar) return;
+  const showing = Boolean(readAloud) && !findOpen;
+  if (showing && readAloudBar.hidden) renderReadAloudVoices();
+  readAloudBar.hidden = !showing;
+}
+
+
+function readAloudVoiceLabel(name) {
+  return String(name).split(' - ')[0].replace(/^Microsoft /, '');
+}
+
+function renderReadAloudVoices() {
+  if (!readAloudVoiceChoice) return;
+  const { local } = readAloudLocalVoices();
+  const rows = [['', 'System'], ...readAloudLanguageFirst(local).map((voice) => [voice.name, readAloudVoiceLabel(voice.name)])];
+  readAloudVoiceChoice.textContent = '';
+  for (const [value, label] of rows) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    readAloudVoiceChoice.append(option);
+  }
+  readAloudVoiceChoice.value = local.some((voice) => voice.name === readAloudVoice) ? readAloudVoice : '';
+  if (readAloudSpeedChoice) readAloudSpeedChoice.value = String(readAloudSpeed);
+}
+
+
+function setReadAloudChoice(voice, speed) {
+  readAloudVoice = String(voice || '');
+  if (READ_ALOUD_SPEEDS.includes(Number(speed))) readAloudSpeed = Number(speed);
+  send({ command: 'setReadAloud', voice: readAloudVoice, speed: readAloudSpeed });
+}
+
+if (readAloudBar) {
+  if (readAloudVoiceChoice) readAloudVoiceChoice.addEventListener('change', () => setReadAloudChoice(readAloudVoiceChoice.value, readAloudSpeed));
+  if (readAloudSpeedChoice) readAloudSpeedChoice.addEventListener('change', () => setReadAloudChoice(readAloudVoice, readAloudSpeedChoice.value));
+  const stop = document.getElementById('readAloudStop');
+  if (stop) stop.addEventListener('click', stopReadAloud);
+}
+
+if (readAloudEngine() && readAloudEngine().addEventListener) {
+  readAloudEngine().addEventListener('voiceschanged', () => {
+    if (readAloudBar && !readAloudBar.hidden) renderReadAloudVoices();
+  });
+}
+
+
 
 const FLASH_READER_LINE_BOXES = 'p,li,dt,dd,td,th,h1,h2,h3,h4,h5,h6,blockquote,figcaption,div,section,article,header,footer,summary,caption';
 const FLASH_READER_SENTENCE_PAUSE_MS = 150;
@@ -10508,7 +11479,7 @@ let flashReader = null;
 function flashReaderWords(block, mark = null) {
   const words = [];
   let startAt = -1;
-  if (!block || (block.matches && block.matches(FLASH_READER_SKIP_SELECTOR))) return { words, startAt };
+  if (!block || (block.matches && block.matches(PROSE_SKIP_SELECTOR))) return { words, startAt };
   let run = '';
   let markAt = -1;
   let lineBox = null;
@@ -10526,7 +11497,7 @@ function flashReaderWords(block, mark = null) {
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const parent = node.parentElement;
-    const skipped = parent && parent.closest(FLASH_READER_SKIP_SELECTOR);
+    const skipped = parent && parent.closest(PROSE_SKIP_SELECTOR);
     if (skipped && block.contains(skipped)) {
       flush();
       if (mark && node === mark.node && startAt < 0) markAt = 0;
@@ -10630,6 +11601,8 @@ function openFlashReader() {
   if (!flashReaderBox || readingIsContainedPage() || codeViewActive || graphViewOpen || activeWebTab()) return;
   const blocks = documentBlocks(readingDocumentRoot());
   if (!blocks.length) return;
+  
+  stopReadAloud();
   const stream = flashReaderStream(blocks, flashReaderStartPoint(blocks));
   
   if (!flashReaderSettle(stream)) return;
@@ -11252,6 +12225,13 @@ function activeDocumentIsUntitled() {
 
 const pagerHtmlByPath = new Map();
 
+const pagerHtmlByStrip = new WeakMap();
+
+const documentPagerNodes = new WeakSet();
+function isDocumentPagerNode(node) {
+  return !!node && documentPagerNodes.has(node);
+}
+
 function requestDocumentPager(path) {
   const body = app.querySelector('.document-body');
   if (activeDocumentIsUntitled()) {
@@ -11260,6 +12240,7 @@ function requestDocumentPager(path) {
   }
   const placeholder = body?.querySelector('.docs-pager-loading');
   if (!placeholder || !path) return;
+  documentPagerNodes.add(placeholder);
   if (pagerHtmlByPath.has(path)) applyDocumentPager(placeholder, pagerHtmlByPath.get(path));
   send({ command: 'loadPager', path });
 }
@@ -11274,6 +12255,8 @@ function applyDocumentPager(current, html) {
     scheduleReaderLayoutUpdate();
     return;
   }
+  pagerHtmlByStrip.set(pager, html);
+  documentPagerNodes.add(pager);
   current.replaceWith(pager);
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
@@ -11285,6 +12268,7 @@ window.leafSetPager = (state) => {
   const body = app.querySelector('.document-body');
   const current = body ? body.querySelector('.docs-pager') : null;
   if (current) {
+    if (pagerHtmlByStrip.get(current) === (state.html || '')) return;
     applyDocumentPager(current, state.html);
     return;
   }
@@ -11294,6 +12278,8 @@ window.leafSetPager = (state) => {
   wrapper.innerHTML = state.html;
   const pager = wrapper.firstElementChild;
   if (!pager) return;
+  pagerHtmlByStrip.set(pager, state.html);
+  documentPagerNodes.add(pager);
   body.appendChild(pager);
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
@@ -14540,6 +15526,12 @@ function renderViewTools(current) {
   }
   
   if (flashReaderButton) flashReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
+  
+  if (readAloudButton) {
+    readAloudButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage() || !readAloudEngine();
+    if (readAloudButton.hidden) stopReadAloud();
+    renderReadAloudSwitch();
+  }
   renderCodeTools(current === 'code' && !onWebTab);
   showViewToolsIfAny();
   anchorToolTray(current);
@@ -14677,6 +15669,7 @@ if (flashReaderButton) {
 
 function setReaderView(view) {
   closeFlashReader();
+  stopReadAloud();
   pendingReaderView = view;
   renderReaderToolbar(readerViewsStand());
   if (view === 'graph') {
@@ -30888,6 +31881,8 @@ function openFindBar({ replacing = false } = {}) {
   const opening = !findOpen;
   findOpen = true;
   findBar.hidden = false;
+  
+  renderReadAloudBar();
   if (opening) {
     findScope = activeDocumentPath() ? 'file' : 'vault';
     findSeedFromSelection();
@@ -30906,6 +31901,7 @@ function closeFindBar() {
   if (!findOpen) return;
   findOpen = false;
   findBar.hidden = true;
+  renderReadAloudBar();
   hideFindScopeMenu();
   
   if (findingAllFiles()) clearLibrarySearch();
@@ -34607,6 +35603,7 @@ function siteFrameReady() {
   forgetRenderedText();
   publishDocumentOutline();
   closeFlashReader();
+  stopReadAloud();
   applySpeedReaderToDocument();
   invalidateMinimapPreview();
   scheduleMinimapPreviewUpdate();
@@ -36434,6 +37431,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     if (arriving) applyFrontmatterAsks(readerLayout);
     
     closeFlashReader();
+    stopReadAloud();
     applySpeedReaderToDocument();
     
     bindReadingEditor(state.document, { deferCaret: true });
@@ -38669,6 +39667,8 @@ const LEAF_MERMAID_ICONS = {
     'speed-reader-on': { body: "<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>", width: 24, height: 24 },
     'speed-reader-off': { body: "<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>", width: 24, height: 24 },
     'flash-reader': { body: "<path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/>", width: 24, height: 24 },
+    'read-aloud-on': { body: "<path d=\"M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z\"/><path d=\"M16 9a5 5 0 0 1 0 6\"/><path d=\"M19.364 18.364a9 9 0 0 0 0-12.728\"/>", width: 24, height: 24 },
+    'read-aloud-off': { body: "<path d=\"M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z\"/>", width: 24, height: 24 },
     'wand': { body: "<path d=\"M15 4V2\"/><path d=\"M15 16v-2\"/><path d=\"M8 9h2\"/><path d=\"M20 9h2\"/><path d=\"M17.8 11.8 19 13\"/><path d=\"M15 9h.01\"/><path d=\"M17.8 6.2 19 5\"/><path d=\"m3 21 9-9\"/><path d=\"M12.2 6.2 11 5\"/>", width: 24, height: 24 },
     'cloud': { body: "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"/>", width: 24, height: 24 },
     'export': { body: "<path d=\"M12 13v8l-4-4\"/><path d=\"m12 21 4-4\"/><path d=\"M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284\"/>", width: 24, height: 24 },
@@ -45259,10 +46259,82 @@ function recordMinimapClone(source, clone, whole) {
 function minimapChangedCell(record) {
   const target = record.target && (record.target.nodeType === 3 ? record.target.parentElement : record.target);
   const source = minimapSourceElement();
+  const pager = source && minimapChangedPager(record, source);
+  if (pager) return pager;
   if (!target || !source || target === source || isDocumentRun(target) || !source.contains(target)) return null;
   const cell = target.closest('td, th, .table-lens-bar');
   if (cell) return cell;
   return target.closest('pre') || target;
+}
+
+
+function minimapChangedPager(record, source) {
+  if (record.type !== 'childList') return null;
+  const removed = [...record.removedNodes];
+  const moved = [...record.addedNodes, ...removed];
+  if (!moved.length || !moved.every(isDocumentPagerNode)) return null;
+  const parent = record.target;
+  if (parent !== source && !(isDocumentRun(parent) && parent.parentNode === source && parent === source.lastElementChild)) return null;
+  if ([...record.addedNodes].some((node) => node.parentNode === parent && node !== parent.lastElementChild)) return null;
+  return { pager: true, parent, removed, after: record.nextSibling };
+}
+
+
+function patchMinimapPager(change, metrics) {
+  const { parent, removed } = change;
+  const body = minimapSourceElement();
+  if (parent !== body && parent !== body?.lastElementChild) return false;
+  const last = parent.lastElementChild;
+  const strip = isDocumentPagerNode(last) ? last : null;
+  const fresh = () => {
+    const holder = document.createElement('div');
+    const copy = holder.appendChild(strip.cloneNode(true));
+    stripMinimapCloneContent(holder);
+    recordMinimapClone(strip, copy, true);
+    return copy;
+  };
+  const held = removed.map((node) => minimapCloneMap.get(node)).find((entry) => entry && entry.clone.parentNode);
+  if (held) {
+    if (strip) held.clone.replaceWith(fresh());
+    else held.clone.remove();
+    return 'copied';
+  }
+  const path = [];
+  let source = parent;
+  while (source && !minimapCloneMap.has(source)) {
+    path.unshift(source);
+    source = source.parentNode;
+  }
+  if (!source) return false;
+  const entry = minimapCloneMap.get(source);
+  if (!entry.whole) {
+    
+    if (!minimapBuiltRange || !strip && !removed.length) return false;
+    const top = strip ? minimapBlockEdges(strip, app.getBoundingClientRect().top, metrics.scrollTop).top : metrics.scrollHeight;
+    return top >= minimapBuiltRange.bottom ? 'below' : false;
+  }
+  let copy = entry.clone;
+  const kept = (holder) => [...holder.childNodes].filter((node) => node.nodeType !== 1 || !node.matches(MINIMAP_CLONE_DROPS));
+  for (const step of path) {
+    copy = copy.childNodes[kept(source).indexOf(step)];
+    if (!copy || copy.tagName !== step.tagName) return false;
+    source = step;
+  }
+  const siblings = kept(parent);
+  if (strip) {
+    const at = siblings.indexOf(strip);
+    const old = copy.childNodes[at];
+    if (old && old.nodeType === 1 && old.tagName === strip.tagName) old.replaceWith(fresh());
+    else if (at === copy.childNodes.length) copy.appendChild(fresh());
+    else return false;
+    return 'copied';
+  }
+  
+  const at = change.after && change.after.parentNode === parent ? siblings.indexOf(change.after) : siblings.length;
+  const old = at < 0 ? null : copy.childNodes[at];
+  if (!old || old.nodeType !== 1 || old.tagName !== removed[0].tagName) return false;
+  old.remove();
+  return 'copied';
 }
 
 function noteMinimapCellChanges(records) {
@@ -45283,6 +46355,21 @@ function patchMinimapPreview(metrics) {
   
   const grown = metrics.scrollHeight - minimapCloneHeight;
   if (grown && minimapSlides && minimapSlides.length) return false;
+  const pagers = cells.filter((cell) => cell.pager);
+  
+  if (pagers.length && pagers.length < cells.length) return false;
+  if (pagers.length) {
+    const drawn = pagers.map((change) => patchMinimapPager(change, metrics));
+    if (drawn.includes(false)) return false;
+    if (grown) {
+      minimapCloneHeight = metrics.scrollHeight;
+      
+      if (drawn.includes('copied')) moveMinimapBuiltFoot(grown);
+      const content = currentMinimap()?.querySelector('.document-minimap-content');
+      if (content) content.style.height = `${metrics.scaledDocumentHeight}px`;
+    }
+    return true;
+  }
   for (const cell of cells) {
     const path = [];
     let source = cell;

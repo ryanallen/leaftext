@@ -15,7 +15,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
-Four more preferences are saved here but set elsewhere, where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+Five more preferences are saved here but set elsewhere, where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice and speed, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
@@ -69,6 +69,8 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "speed_reader_enabled": false,
   "flash_reader_wpm": 300,
   "flash_reader_chunk": 1,
+  "read_aloud_voice": "",
+  "read_aloud_speed": 100,
   "code_intel_enabled": true,
   "reading_unlocked": false,
   "code_unlocked": false,
@@ -168,6 +170,16 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Words count toward the [Grove](09-progress.md) only once each has stood its full time, and never twice with what you read by scrolling
 - Leaves the speed reader as it was, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
 - Saved as `flash_reader_wpm` (100 to 1000, 300 by default) and `flash_reader_chunk` (1 to 3 words, 1 by default)
+
+### Read aloud
+
+- The speaker after Flash words on the reading view's [toolbar](02-navigation.md#the-floating-toolbar) reads the page out loud, starting at the sentence you selected, or else at the first block on screen; press it again to stop
+- Speaks through the voices your computer already has, and only those that run on it, so no word of a document leaves the machine; nothing to pay for and nothing to sign in to
+- The sentence being spoken is washed lightly and the word being spoken more strongly, and the page scrolls to keep them on screen until you scroll it yourself
+- While it reads, a small bar stands where the find bar does, holding the voice, the speed (0.75× to 2×) and a cross that stops it; a change is heard from the next sentence. The bar steps aside while find is open, and the voice reads on
+- Code, math, diagrams and controls are skipped, the same as Flash words
+- Stops on a view change, another document, or opening Flash words, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
+- Saved as `read_aloud_voice` (a voice's full name, empty for the system's own) and `read_aloud_speed` (75, 100, 125, 150 or 200 percent, 100 by default)
 
 ### Typing help
 

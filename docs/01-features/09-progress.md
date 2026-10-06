@@ -20,7 +20,7 @@ Each area grows from one kind of thing you already do, whether you do it by hand
 | --- | --- |
 | Leafing | Reading documents |
 | Scribing | Writing prose |
-| Marking | Highlighting passages and hanging notes off them |
+| Marking | Highlighting passages, hanging notes off them, and starting or replying to a comment on one |
 | Charting | Drawing flowcharts, including diagrams an agent writes into a note through Leaftext |
 | Tabling | Filling in tables |
 | Furnishing | Ticking checkboxes, writing fields, placing pictures, and giving a slide its build, once for each slide each time the app is opened |

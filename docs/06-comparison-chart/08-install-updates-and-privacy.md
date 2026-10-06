@@ -134,6 +134,7 @@
 | Speed Reader mode | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Speed Reader never writes | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Flash words mode | [✅][l-flash-words] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Read aloud | [✅][l-read-aloud] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Typing help default | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pager, minimap always | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Small launch window | [✅][l-window] | ? | ? | ? |
@@ -308,6 +309,7 @@
 [l-calendar-date]: ../01-features/05-settings.md#calendar-date
 [l-speed-reader]: ../01-features/05-settings.md#speed-reader
 [l-flash-words]: ../01-features/05-settings.md#flash-words
+[l-read-aloud]: ../01-features/05-settings.md#read-aloud
 [l-typing-help]: ../01-features/05-settings.md#typing-help
 [l-pager]: ../01-features/05-settings.md#pager
 [l-settings-updates]: ../01-features/05-settings.md#updates

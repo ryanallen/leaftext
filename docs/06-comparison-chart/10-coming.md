@@ -14,7 +14,6 @@
 | Deck export per slide | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Custom heading anchors | [❌][l-roadmap] | ? | ? | [❌][c-seen] |
 | Glossary word forms | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | ElevenLabs read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Frontmatter top sheet | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | HTML in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
