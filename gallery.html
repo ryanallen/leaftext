@@ -6492,38 +6492,38 @@ body.is-maximized #winMaximize .wc-restore {
   background-blend-mode: screen, screen, screen, screen, multiply;
   /* The curve paints every dot in the theme's shadow ink, black or black at a fifth, so a dot darkens whatever it lands on by being black — no blend mode, which could not see past the host's own group anyway. */
   filter: var(--lt-grain-shadow-curve);
-  /* Where this band lies over the band of a surface under it, `markShadowCrossing` writes that lower band's rectangle on the host in this band's coordinates, and the four top layers subtract its ring — top, bottom, left and right strips one spread deep — so a crossing draws only the lower shadow while this one still darkens the lower surface's face. Unwritten, each length is the token's zero and the four strips have no area. */
-  /* The punch that takes the host's own face out, over four ramps that take the band's ink from full against that face to nothing at the rim. The ramps run here as well as in the background stack because the two do different things: the background pair shrinks the dot, and these fade what is left, so the band reaches true zero at its outer edge rather than stopping on the faintest row it still draws. The punch is the top layer under those four and subtracts; the four below it intersect, which multiplies their alpha the way a corner needs. */
+  /* The punch on top takes the host's own face out, over four ramps that take the band's ink from full against that face to nothing at the rim. The ramps run here as well as in the background stack because the two do different things: the background pair shrinks the dot, and these fade what is left, so the band reaches true zero at its outer edge rather than stopping on the faintest row it still draws. The top three ramps intersect, which multiplies their alpha the way a corner needs. */
+  /* Where this band lies over the band of a surface under it, `markShadowCrossing` writes that lower band's rectangle on the host in this band's coordinates, and the four bottom layers are its ring — top, bottom, left and right strips one spread deep, unioned — which the lowest ramp subtracts, so a crossing draws only the lower shadow while this one still darkens the lower surface's face. They sit under the band because a layer composited `subtract` keeps itself and erases everything under it across its whole clip box: on top, each strip wiped the band everywhere but inside itself. Unwritten, each length is the token's zero, the strips are never painted, and the ramp subtracts nothing. */
   -webkit-mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
     linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
-  -webkit-mask-origin: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
-  -webkit-mask-clip: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  -webkit-mask-origin: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
+  -webkit-mask-clip: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y), 0 0, 0 0, 0 0, 0 0, 0 0;
-  -webkit-mask-size: var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h), auto, auto, auto, auto, auto;
-  -webkit-mask-composite: source-out, source-out, source-out, source-out, source-out, intersect, intersect, intersect, add;
+  -webkit-mask-position: 0 0, 0 0, 0 0, 0 0, 0 0, var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y);
+  -webkit-mask-size: auto, auto, auto, auto, auto, var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h);
+  -webkit-mask-composite: source-out, source-in, source-in, source-in, source-out, source-over, source-over, source-over, source-over;
   mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
     linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
-  mask-origin: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
-  mask-clip: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-origin: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
+  mask-clip: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
   mask-repeat: no-repeat;
-  mask-position: var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y), 0 0, 0 0, 0 0, 0 0, 0 0;
-  mask-size: var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h), auto, auto, auto, auto, auto;
-  mask-composite: subtract, subtract, subtract, subtract, subtract, intersect, intersect, intersect, add;
+  mask-position: 0 0, 0 0, 0 0, 0 0, 0 0, var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y);
+  mask-size: auto, auto, auto, auto, auto, var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h);
+  mask-composite: subtract, intersect, intersect, intersect, subtract, add, add, add, add;
 }
 /* The one host on that list sitting inside the document rather than over it, which makes one line of the shared rule wrong for it: `--lt-z-below` drops the layer behind `.reader-shell` and `.library-shell`, both opaque and neither opening a stacking context, so it lands at `.app-surface` and never draws at all. The mask's punch layer still takes the card's own face out, which is what keeps a dot off the words. */
 .document-body .docs-pager a::before {
@@ -8218,7 +8218,7 @@ body.library-resizing button {
   /* The gutter the page is held off the left frame by, which only a shut pane opens — see library.css. */
   --reader-toolbar-gutter: 0px;
   /* The bar's own height plus the gap it floats above the page's edge. Written once and never changed, so nothing inherits a new value when the bar arrives; the two rules below spend it. */
-  --reader-toolbar-room: 52px;
+  --reader-toolbar-room: 56px;
 }
 /* An embedded host hides the bar with a rule, so the window state stays off that host. The page takes the resolved padding rather than the variable: a custom property inherits, so declaring the room on `body` — or on `.document-body` — re-resolved it on every element of the open document, which cost a megabyte note 55 to 130 ms of style on the frame the bar's class lands in. Writing the padding costs half a millisecond. */
 body.has-reader-toolbar:not(.is-embedded) .document-body {
@@ -8241,8 +8241,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   display: flex;
   align-items: center;
   gap: var(--lt-space-2);
-  /* Off the page's bottom edge by the same 8px the card is held off the frame. */
-  margin-bottom: var(--lt-space-8);
+  /* Off the page's bottom edge by the shadow's own depth, so the band ends on the page's edge rather than past it. */
+  margin-bottom: var(--lt-shadow-spread);
   /* The rail measure stays fixed while views collapse the column they do not draw. The gutter is subtracted because a left inset moves the page's own middle right, and a right margin that moves a centered box left has to shrink to follow it. */
   margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-edits) - var(--reader-toolbar-gutter));
   padding: var(--lt-space-4);
@@ -8423,9 +8423,19 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   /* The nub answers the pointer, which is how the tray is reached at all; clipped to the nub, it can take nothing else. */
   pointer-events: auto;
   transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-160) var(--lt-ease-accelerate);
+  /* Left out of the crossing: it sits inside the bar at a place this sheet fixes, so its band runs down both sides and the bar's face covers what lies below the bar's top edge. Held at zero because the lengths inherit, and a cut written on the bar would otherwise land here in the bar's coordinates. */
+  --lt-shadow-under-x: 0px;
+  --lt-shadow-under-y: 0px;
+  --lt-shadow-under-w: 0px;
+  --lt-shadow-under-h: 0px;
 }
 .reader-tool-tray[hidden] {
   display: none;
+}
+/* Parked, the nub throws no band, or a tab of dots stands up off the bar over the lit button. It goes as the tray slams home, on the same duration, so it is gone before the nub seats. */
+.reader-tool-tray::before {
+  opacity: 0;
+  transition: opacity var(--lt-duration-160) var(--lt-ease-accelerate);
 }
 /* Home in three legs, the way the library's pane comes home. The slam above arrives on the nub, this rides a little back out of it, and the seat below lands on it — one curve cannot leave its target again, so `graph.js` stages these two as classes and the stylesheet keeps the heights. Both stand above the open rule and carry its own specificity, so a pointer or a keyboard coming back mid-bounce wins on source order and the tray springs out from wherever it had reached. */
 .reader-tool-tray.is-reader-tray-bouncing {
@@ -8443,6 +8453,11 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   /* The tools' measured height plus both visible steps, the hidden foot, and the tray and bar strokes. */
   height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2);
   transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-200) var(--lt-ease-overshoot);
+}
+/* The band arrives with the spring out, on its duration. */
+.reader-toolbar.has-open-tray .reader-tool-tray::before {
+  opacity: 1;
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
 }
 .reader-tool-tray-clip {
   align-self: stretch;

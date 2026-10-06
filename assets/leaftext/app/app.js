@@ -8898,7 +8898,7 @@ function leafPlaceFloating(el, x, y) {
   markShadowCrossing(el);
 }
 
-const SHADOW_CROSSING_LEFT_OUT = /ghost|docs-pager|table-lens-menu/;
+const SHADOW_CROSSING_LEFT_OUT = /ghost|docs-pager|table-lens-menu|reader-tool-tray/;
 let shadowCrossingHosts = '';
 let shadowCrossingObserver = null;
 const shadowCrossingObserved = new WeakSet();
@@ -15664,7 +15664,6 @@ function anchorToolTray(current) {
     if (part !== readerToolbar) return;
   }
   readerToolbar.style.setProperty('--reader-tray-left', `${Math.round(middle)}px`);
-  markShadowCrossing(readerToolTray);
   
   if (readerViewTools) {
     readerToolbar.style.setProperty('--reader-tray-height', `${Math.round(readerViewTools.offsetHeight)}px`);
@@ -44932,11 +44931,12 @@ const MINIMAP_GESTURE_SLACK_BEHIND = 0.125;
 const MINIMAP_WIDEN_REST_MS = 400;
 
 function scheduleMinimapPreviewUpdate(slack = MINIMAP_WINDOW_SLACK) {
+  
+  minimapPendingSlack = Math.max(minimapPendingSlack, slack);
   if (readingHasHeldBlocks()) {
     markMinimapWarming();
     return;
   }
-  minimapPendingSlack = Math.max(minimapPendingSlack, slack);
   if (minimapPreviewFrame || minimapPreviewHolds || libraryPaneIsMoving()) {
     return;
   }

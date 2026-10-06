@@ -6487,35 +6487,35 @@ body.is-maximized #winMaximize .wc-restore {
   
   
   -webkit-mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
     linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
-  -webkit-mask-origin: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
-  -webkit-mask-clip: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  -webkit-mask-origin: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
+  -webkit-mask-clip: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y), 0 0, 0 0, 0 0, 0 0, 0 0;
-  -webkit-mask-size: var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h), auto, auto, auto, auto, auto;
-  -webkit-mask-composite: source-out, source-out, source-out, source-out, source-out, intersect, intersect, intersect, add;
+  -webkit-mask-position: 0 0, 0 0, 0 0, 0 0, 0 0, var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y);
+  -webkit-mask-size: auto, auto, auto, auto, auto, var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h);
+  -webkit-mask-composite: source-out, source-in, source-in, source-in, source-out, source-over, source-over, source-over, source-over;
   mask-image: linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
-    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
     linear-gradient(to right, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to left, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
     linear-gradient(to bottom, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
-    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread));
-  mask-origin: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
-  mask-clip: border-box, border-box, border-box, border-box, content-box, border-box, border-box, border-box, border-box;
+    linear-gradient(to top, transparent 0, var(--lt-mask-opaque) var(--lt-shadow-spread)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque)),
+    linear-gradient(var(--lt-mask-opaque), var(--lt-mask-opaque));
+  mask-origin: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
+  mask-clip: content-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box, border-box;
   mask-repeat: no-repeat;
-  mask-position: var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y), 0 0, 0 0, 0 0, 0 0, 0 0;
-  mask-size: var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h), auto, auto, auto, auto, auto;
-  mask-composite: subtract, subtract, subtract, subtract, subtract, intersect, intersect, intersect, add;
+  mask-position: 0 0, 0 0, 0 0, 0 0, 0 0, var(--lt-shadow-under-x) var(--lt-shadow-under-y), var(--lt-shadow-under-x) calc(var(--lt-shadow-under-y) + var(--lt-shadow-under-h) - var(--lt-shadow-spread)), var(--lt-shadow-under-x) var(--lt-shadow-under-y), calc(var(--lt-shadow-under-x) + var(--lt-shadow-under-w) - var(--lt-shadow-spread)) var(--lt-shadow-under-y);
+  mask-size: auto, auto, auto, auto, auto, var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-under-w) var(--lt-shadow-spread), var(--lt-shadow-spread) var(--lt-shadow-under-h), var(--lt-shadow-spread) var(--lt-shadow-under-h);
+  mask-composite: subtract, intersect, intersect, intersect, subtract, add, add, add, add;
 }
 
 .document-body .docs-pager a::before {
@@ -8200,7 +8200,7 @@ body.library-resizing button {
   
   --reader-toolbar-gutter: 0px;
   
-  --reader-toolbar-room: 52px;
+  --reader-toolbar-room: 56px;
 }
 
 body.has-reader-toolbar:not(.is-embedded) .document-body {
@@ -8224,7 +8224,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   align-items: center;
   gap: var(--lt-space-2);
   
-  margin-bottom: var(--lt-space-8);
+  margin-bottom: var(--lt-shadow-spread);
   
   margin-right: calc(var(--reader-toolbar-rail) - var(--reader-toolbar-edits) - var(--reader-toolbar-gutter));
   padding: var(--lt-space-4);
@@ -8405,9 +8405,19 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   
   pointer-events: auto;
   transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-160) var(--lt-ease-accelerate);
+  
+  --lt-shadow-under-x: 0px;
+  --lt-shadow-under-y: 0px;
+  --lt-shadow-under-w: 0px;
+  --lt-shadow-under-h: 0px;
 }
 .reader-tool-tray[hidden] {
   display: none;
+}
+
+.reader-tool-tray::before {
+  opacity: 0;
+  transition: opacity var(--lt-duration-160) var(--lt-ease-accelerate);
 }
 
 .reader-tool-tray.is-reader-tray-bouncing {
@@ -8425,6 +8435,11 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   
   height: calc(var(--reader-tray-height, 80px) + var(--lt-space-2) * 2 + var(--reader-tray-foot) + var(--lt-stroke-1) * 2);
   transition: left var(--lt-duration-200) var(--lt-ease-overshoot), height var(--lt-duration-200) var(--lt-ease-overshoot);
+}
+
+.reader-toolbar.has-open-tray .reader-tool-tray::before {
+  opacity: 1;
+  transition: opacity var(--lt-duration-200) var(--lt-ease-decelerate);
 }
 .reader-tool-tray-clip {
   align-self: stretch;
