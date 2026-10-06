@@ -11297,8 +11297,11 @@ function speakReadAloudSentence(session) {
     utterance.lang = voice.lang;
   }
   utterance.rate = readAloudSpeed / 100;
+  
   utterance.onstart = () => {
-    if (readAloud === session && session.utterance === utterance) lightReadAloudSentence(session);
+    if (readAloud !== session || session.utterance !== utterance) return;
+    readingInput();
+    lightReadAloudSentence(session);
   };
   utterance.onboundary = (event) => {
     if (readAloud === session && session.utterance === utterance && event && event.name === 'word') lightReadAloudWord(session, event);
@@ -11478,20 +11481,35 @@ let flashReader = null;
 
 function flashReaderWords(block, mark = null) {
   const words = [];
+  const places = [];
   let startAt = -1;
-  if (!block || (block.matches && block.matches(PROSE_SKIP_SELECTOR))) return { words, startAt };
+  if (!block || (block.matches && block.matches(PROSE_SKIP_SELECTOR))) return { words, places, startAt };
   let run = '';
+  
+  let pieces = [];
   let markAt = -1;
   let lineBox = null;
+  
+  let piece = 0;
+  const pieceAt = (at) => {
+    while (piece + 1 < pieces.length && pieces[piece + 1].from <= at) piece += 1;
+    return pieces[piece];
+  };
   const flush = () => {
     const pattern = /\S+/g;
     for (let found = pattern.exec(run); found; found = pattern.exec(run)) {
       if (markAt >= 0 && startAt < 0 && found.index + found[0].length > markAt) startAt = words.length;
       words.push(found[0]);
+      const last = found.index + found[0].length - 1;
+      const first = pieceAt(found.index);
+      const end = pieceAt(last);
+      places.push({ startNode: first.node, startOffset: found.index - first.from, endNode: end.node, endOffset: last - end.from + 1 });
     }
     
     if (markAt >= 0 && startAt < 0) startAt = words.length;
     run = '';
+    pieces = [];
+    piece = 0;
     markAt = -1;
   };
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -11507,11 +11525,12 @@ function flashReaderWords(block, mark = null) {
     if (lineBox && box !== lineBox) run += ' ';
     lineBox = box;
     if (mark && node === mark.node) markAt = run.length + Math.max(0, mark.offset);
+    pieces.push({ node, from: run.length });
     run += node.nodeValue || '';
   }
   flush();
   if (mark && !mark.node && startAt < 0) startAt = 0;
-  return { words, startAt: startAt >= 0 && startAt < words.length ? startAt : (mark ? -1 : 0) };
+  return { words, places, startAt: startAt >= 0 && startAt < words.length ? startAt : (mark ? -1 : 0) };
 }
 
 
@@ -11562,9 +11581,10 @@ function flashReaderStartPoint(blocks) {
 
 
 function flashReaderStream(blocks, start) {
-  const stream = { blocks, index: start.index, words: [], at: 0 };
+  const stream = { blocks, index: start.index, words: [], places: [], at: 0 };
   const first = flashReaderWords(blocks[start.index], start.mark);
   stream.words = first.words;
+  stream.places = first.places;
   stream.at = first.startAt < 0 ? first.words.length : first.startAt;
   return stream;
 }
@@ -11573,14 +11593,14 @@ function flashReaderSettle(stream) {
   while (stream.at >= stream.words.length) {
     stream.index += 1;
     if (stream.index >= stream.blocks.length) return false;
-    stream.words = flashReaderWords(stream.blocks[stream.index]).words;
+    ({ words: stream.words, places: stream.places } = flashReaderWords(stream.blocks[stream.index]));
     stream.at = 0;
   }
   return true;
 }
 
 function flashReaderSeek(stream, index, at) {
-  if (index !== stream.index) stream.words = flashReaderWords(stream.blocks[index]).words;
+  if (index !== stream.index) ({ words: stream.words, places: stream.places } = flashReaderWords(stream.blocks[index]));
   stream.index = index;
   stream.at = at;
 }
@@ -11608,21 +11628,79 @@ function openFlashReader() {
   if (!flashReaderSettle(stream)) return;
   flashReader = { stream, history: [], chunk: null, timer: 0, playing: true, path: activeDocumentPath(), active: null, returnFocus: document.activeElement };
   flashReaderBox.hidden = false;
+  window.addEventListener('keydown', flashReaderWindowKey, true);
+  window.addEventListener('pointerdown', flashReaderWindowPress, true);
   renderFlashReaderControls();
   showFlashReaderChunk();
   flashReaderBox.focus();
 }
 
 
-function closeFlashReader() {
+function flashReaderWindowKey(event) {
+  if (event.key !== 'Escape' || !flashReader) return;
+  event.preventDefault();
+  event.stopPropagation();
+  closeFlashReader();
+}
+
+
+function flashReaderWindowPress(event) {
+  if (!flashReader || (flashReaderBox && event.target && flashReaderBox.contains(event.target))) return;
+  event.preventDefault();
+  event.stopPropagation();
+  closeFlashReader();
+  takeRestOfFlashReaderPress();
+}
+
+
+function takeRestOfFlashReaderPress() {
+  const left = new Set(['pointerup', 'click']);
+  const letGo = () => {
+    for (const type of ['pointerup', 'click']) window.removeEventListener(type, take, true);
+    window.removeEventListener('pointerdown', letGo, true);
+    window.removeEventListener('keydown', letGo, true);
+  };
+  const take = (event) => {
+    if (!left.delete(event.type)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (!left.size) letGo();
+  };
+  for (const type of ['pointerup', 'click']) window.addEventListener(type, take, true);
+  window.addEventListener('pointerdown', letGo, true);
+  window.addEventListener('keydown', letGo, true);
+}
+
+
+function closeFlashReader(shown = null) {
   if (!flashReader) return;
   const session = flashReader;
   flashReader = null;
+  window.removeEventListener('keydown', flashReaderWindowKey, true);
+  window.removeEventListener('pointerdown', flashReaderWindowPress, true);
   clearTimeout(session.timer);
   if (session.active) session.active.classList.remove('flash-reader-active');
   if (flashReaderBox) flashReaderBox.hidden = true;
+  selectFlashReaderWord(shown || flashReaderWordShown(session));
   const back = session.returnFocus && session.returnFocus.isConnected !== false && !session.returnFocus.hidden ? session.returnFocus : flashReaderButton;
   if (back && back.focus) back.focus();
+}
+
+
+function flashReaderWordShown(session, at = session.chunk ? session.chunk.start : -1) {
+  const { stream } = session;
+  const place = at >= 0 ? stream.places[at] : null;
+  return place ? { block: stream.blocks[stream.index], place } : null;
+}
+
+
+function selectFlashReaderWord(shown) {
+  if (!shown || !shown.block || shown.block.isConnected === false) return;
+  const { startNode, startOffset, endNode, endOffset } = shown.place;
+  for (const node of [startNode, endNode]) if (!node || node.isConnected === false || !shown.block.contains(node)) return;
+  if (endOffset > String(endNode.nodeValue || '').length) return;
+  const selection = window.getSelection ? window.getSelection() : null;
+  if (selection && selection.setBaseAndExtent) selection.setBaseAndExtent(startNode, startOffset, endNode, endOffset);
 }
 
 
@@ -11730,10 +11808,11 @@ function stepFlashReader(direction) {
     return;
   }
   session.history.push({ index: stream.index, at: stream.at });
+  const lastShown = flashReaderWordShown(session, session.chunk.end - 1);
   stream.at = session.chunk.end;
   if (!flashReaderSettle(stream)) {
     
-    closeFlashReader();
+    closeFlashReader(lastShown);
     return;
   }
   showFlashReaderChunk();
@@ -11757,14 +11836,13 @@ function setFlashReaderPace(wpm, chunk) {
 if (flashReaderBox) {
   
   flashReaderBox.addEventListener('keydown', (event) => {
-    if (event.target && event.target.tagName === 'SELECT' && event.key !== 'Escape') return;
+    if (event.target && event.target.tagName === 'SELECT') return;
     const actions = {
       ' ': toggleFlashReaderPlaying,
       ArrowLeft: () => stepFlashReader(-1),
       ArrowRight: () => stepFlashReader(1),
       ArrowUp: () => setFlashReaderPace(flashReaderWpm + 25, flashReaderChunk),
       ArrowDown: () => setFlashReaderPace(flashReaderWpm - 25, flashReaderChunk),
-      Escape: closeFlashReader,
     };
     const action = actions[event.key];
     if (!action) return;
@@ -11778,7 +11856,7 @@ if (flashReaderBox) {
     [document.getElementById('flashReaderForward'), () => stepFlashReader(1)],
     [document.getElementById('flashReaderSlower'), () => setFlashReaderPace(flashReaderWpm - 25, flashReaderChunk)],
     [document.getElementById('flashReaderFaster'), () => setFlashReaderPace(flashReaderWpm + 25, flashReaderChunk)],
-    [document.getElementById('flashReaderClose'), closeFlashReader],
+    [document.getElementById('flashReaderClose'), () => closeFlashReader()],
   ]) {
     if (button) button.addEventListener('click', action);
   }
@@ -18410,6 +18488,11 @@ function moveKeptDocumentBy(doc, move) {
   for (const held of Array.isArray(doc.swaps) ? doc.swaps : []) {
     held.start = move(held.start);
     held.end = move(held.end);
+  }
+  for (const thread of Array.isArray(doc.threads) ? doc.threads : []) {
+    if (!thread) continue;
+    thread.start = move(thread.start);
+    thread.end = move(thread.end);
   }
   doc.source = documentSourceBytes();
 }
@@ -31292,6 +31375,16 @@ function drawResolvedComments(body, threads) {
   }
   return list;
 }
+
+
+window.leafThreadsWritten = (answer) => {
+  const splice = answer && answer.splice;
+  if (!splice || !Number.isSafeInteger(splice.start) || !Number.isSafeInteger(splice.end) || typeof splice.text !== 'string') return;
+  advanceRangesForWrites([splice]);
+  const threads = Array.isArray(answer.threads) ? answer.threads : [];
+  if (currentState && currentState.document) currentState.document.threads = threads;
+  drawDocumentComments(app.querySelector('.document-body'), threads);
+};
 
 
 function drawDocumentComments(body, threads) {

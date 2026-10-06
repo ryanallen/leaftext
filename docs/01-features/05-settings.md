@@ -164,8 +164,9 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 - The lightning button beside the speed reader on the reading view's [toolbar](02-navigation.md#the-floating-toolbar) opens a box over the page that shows the words a word or a few at a time, starting at the word you selected, or else at the first block on screen
 - The letter your eye rests on sits between two short marks, so a word of any length lands in the same place
-- The page dims around the block being read and scrolls to follow it; closing leaves you at that block
-- Space pauses and plays, Left and Right step back and forward, Up and Down change the pace by 25 words a minute, and Escape closes; every key has a button beside it in the box
+- The page dims around the block being read and scrolls to follow it; closing leaves you at that block with the word you stopped on selected, ready to copy or to start from again, and a locked page stays locked
+- Space pauses and plays, Left and Right step back and forward, Up and Down change the pace by 25 words a minute, and Escape closes it wherever the keyboard is; every key has a button beside it in the box
+- A click anywhere outside the box closes it and does nothing else, so it never starts editing or presses what is under it
 - Code, math, diagrams and controls are skipped, and a sentence or a block ends its chunk with a short pause
 - Words count toward the [Grove](09-progress.md) only once each has stood its full time, and never twice with what you read by scrolling
 - Leaves the speed reader as it was, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
