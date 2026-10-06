@@ -15,6 +15,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Your first vault](#your-first-vault) | With no vault yet, the start screen offers to add your notes folder, and the pane says once what a vault buys you |
 | [File tree](#file-tree) | One folder at a time, with a breadcrumb showing where you are and a row that steps back out; every folder you open appears at once |
 | [The open document's headings](#the-open-documents-headings) | Open a document and the pane holds its outline instead of the files, the page's own title first and the heading you are reading lit; a back row puts the files back, and so does asking the pane for a folder |
+| [What links here](#what-links-here) | Under a note's headings: the notes that link to it, the notes that name it without a link — one press writes the link — and the notes about the same thing |
 | [Breadcrumb](#file-tree) | The folder path under the app bar; every crumb steps back to that level, and what does not fit collapses into a `…` menu |
 | [Search](#search) | Filename and content search across the active vault, from the [find bar](02-navigation.md#find-in-this-document)'s **All files** |
 | [Skipped folders](#skipped-folders) | A folder a machine filled — build output, a package cache — is listed and openable, and not read or watched. The search line says when one was left out |
@@ -154,7 +155,17 @@ Opening a document swaps the file list for that document's [outline](02-navigati
 - Under that row, **On this page** names the list, with how many headings it holds at its right. Each level reads a step smaller than the one above it, and the levels below the second sit in quieter ink, so the shape of the document shows without counting the indents.
 - Once you have put the files back and walked the pane somewhere, it stays there. Marking a favorite, closing or moving a tab, and a page opening behind the one you are reading all leave the pane on the folder you left it on; only going to a different document brings that document's headings up.
 - An HTML file, and a web page opened by its address, lists its own headings too, read out of the page as it is drawn and read again whenever the page changes size, so a page that builds its headings as it runs lists them once they are there. Clicking a row scrolls the page to that heading, and the row under the top of the page is lit as you scroll.
-- A document with only a title, or none, has no outline, so the files stay where they are.
+- A document with only a title, or none, has no outline, so the files stay where they are — unless something links to it or names it, below.
+
+### What links here
+
+Under a note's headings, the pane says what else in your notes is about it, in up to three groups, each headed the way **On this page** is with how many notes it holds at its right. A group with nothing in it is not drawn.
+
+- **Links here** lists every note that links to this one — a `[[wiki link]]`, a link through one of its [other names](#other-names), or an ordinary Markdown link — with the line the link sits on. Pressing a row opens that note at the line.
+- **Names it without linking it** lists every Markdown note that says this note's name, or one of its other names, in its prose: whole words, in any case, and never inside a link, a code span, a code block, raw HTML or frontmatter. A note that already links here is in the group above instead. A name two notes share is offered only for the one a `[[wiki link]]` of that name would reach.
+- **Link**, at the right of each of those rows, opens that note at the words and writes a link over them — `[the words as written](Station%20handbook.md)`, a relative path from that note's folder — as one step **Undo** takes back. Nothing is saved until you save. If the words have moved since the list was drawn, nothing is written, the app says so, and the list is drawn again.
+- **About the same thing** lists up to ten other notes that share this note's rarest words, or link to the same notes it does, most alike first; each row names the rare words the two share. A word most of your notes use counts for nothing, and a long note is weighed against its length so it is not about everything. A note already in either group above is left out of this one.
+- Inside a [vault](#vaults) the groups read every note in it, and are drawn again whenever a note changes on disk. Outside one they read the note's own folder, the same bound the [graph](#graph) draws.
 
 ### File types
 

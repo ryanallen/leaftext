@@ -36,7 +36,6 @@
 | --- | --- | --- | --- | --- |
 | Richer library pane | [❌][l-roadmap] | ? | ? | ? |
 | Drag files around | [❌][l-roadmap] | [✅][o-dnd] | [✅][t-files] | ? |
-| Backlinks and mentions | [❌][l-roadmap] | [✅][o-backlinks] | [❌][t-seen] | [❌][c-seen] |
 | Clickable tags | [❌][l-roadmap] | [✅][o-tags] | [❌][t-seen] | [✅][c-seen] |
 | Clientless cloud services | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cloud documents opened | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -172,7 +171,6 @@
 [o-cursors]: https://obsidian.md/help/multiple-cursors
 [o-attach]: https://obsidian.md/help/attachments
 [o-dnd]: https://obsidian.md/help/drag-and-drop
-[o-backlinks]: https://obsidian.md/help/plugins/backlinks
 [o-tags]: https://obsidian.md/help/tags
 [t-export]: https://support.typora.io/Export/
 [t-md-export]: https://support.typora.io/Markdown-Export/

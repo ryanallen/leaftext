@@ -377,6 +377,8 @@ export const COMMANDS = {
   codeCompleteHeadings: [ANSWERED],
   codeHoverNote: [ANSWERED],
   codeLint: [ANSWERED],
+  smartLinks: [LATER, 'the-published-site-does-not-say-what-links-to-a-note'],
+  linkMention: [LATER, 'the-published-site-does-not-say-what-links-to-a-note'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],

@@ -272,6 +272,14 @@
 | Thirty-two per note | [✅][l-names] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Works outside vaults | [✅][l-names] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
+## What links here
+
+| Feature | Leaftext | Obsidian | Typora | Calibre |
+| --- | --- | --- | --- | --- |
+| Backlinks and mentions | [✅][l-links-here] | [✅][o-backlinks] | [❌][t-seen] | [❌][c-seen] |
+| One-press mention links | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
+| Related notes | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
+
 ## Graph
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
@@ -443,6 +451,7 @@
 [l-tasks]: ../01-features/03-library.md#scheduled-tasks
 [l-calendar]: ../01-features/03-library.md#calendar
 [l-names]: ../01-features/03-library.md#other-names
+[l-links-here]: ../01-features/03-library.md#what-links-here
 [l-graph]: ../01-features/03-library.md#graph
 [l-github]: ../01-features/03-library.md#github-sync
 [l-clone]: ../01-features/03-library.md#clone-a-repository
@@ -469,6 +478,7 @@
 [o-tags]: https://obsidian.md/help/tags
 [o-aliases]: https://obsidian.md/help/aliases
 [o-graph]: https://obsidian.md/help/plugins/graph
+[o-backlinks]: https://obsidian.md/help/plugins/backlinks
 [o-props]: https://obsidian.md/help/properties
 [o-symlinks]: https://obsidian.md/help/symlinks
 [o-git]: https://obsidian.md/help/sync-notes

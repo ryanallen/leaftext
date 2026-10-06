@@ -512,6 +512,8 @@
 | File names before aliases | [✅][l-typing-help] | ? | [❌][t-seen] | [❌][c-seen] |
 | Missing notes left alone | [✅][l-typing-help] | ? | [❌][t-seen] | [❌][c-seen] |
 | Cross-note heading completion | [✅][l-typing-help] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |
+| Completion in the page | [✅][l-typing-help] | [✅][o-links] | [❌][t-seen] | [❌][c-seen] |
+| Linked notes offered first | [✅][l-typing-help] | ? | [❌][t-seen] | [❌][c-seen] |
 
 ## Saving
 

@@ -203,7 +203,7 @@ Press a [tag](docs/01-features/03-library.md#tags) in a note's prose or fields t
 
 ![The graph view filling the page: document nodes joined by arrowed lines, the open document highlighted larger in the accent color, names floating beneath the nodes](imgs/graph.png)
 
-The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. Web addresses are nodes too, so two notes citing one page share it. **[Graph →](docs/01-features/03-library.md#graph)**
+The [graph view](docs/01-features/03-library.md#graph) maps the links between your documents, so you can see the shape of what you've written instead of scrolling a list. Notes you'd forgotten turn out to be next door to the one you're reading. Web addresses are nodes too, so two notes citing one page share it. Under a note's headings, the library pane says [what links here](docs/01-features/03-library.md#what-links-here), which notes name it without a link — one press writes it — and which are about the same thing. **[Graph →](docs/01-features/03-library.md#graph)**
 
 ### Push a vault to GitHub
 

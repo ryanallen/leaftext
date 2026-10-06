@@ -532,10 +532,12 @@ While you type Markdown in the code view, the editor can offer what Leaftext alr
 
 This is **IntelliSense** — the completion popup, hover card and squiggly underline [Monaco](#editing-the-source) brings from Visual Studio Code. Monaco draws them; Leaftext supplies the answers, and they are your notes rather than code. The docs call it *typing help* because that is what it does for prose.
 
-- **Type `[[`** and a popup lists your notes — the whole vault, or the folder beside the document. A note's [other names](03-library.md#other-names) are listed too, each saying which file it opens. Keep typing to filter; pick one and the link closes itself.
+- **Type `[[`** and a popup lists your notes — the whole vault, or the folder beside the document — with the notes that [link here](03-library.md#what-links-here) first. A note's [other names](03-library.md#other-names) are listed too, each saying which file it opens. Keep typing to filter; pick one and the link closes itself.
 - **Type `[[Note#`** for that note's headings, or **`](#`** for the open document's own anchors. Anchors are the exact ones the [reading view](01-rendering.md#headings) gives its headings, so a completed link always lands.
 - **Hover a `[[wikilink]]`** for a card with the note's opening lines.
 - **Broken links get a wavy underline** — a moment after you stop typing, links whose file does not exist and wiki names no note answers to are marked, with a plain-words message on hover. The same underline says when two notes answer to one name, and when a note lists more [other names](03-library.md#other-names) than are used.
+
+**`[[` in the reading view.** Type `[[` in a paragraph you are [editing in the page](#inline-editing-the-reading-view) and a list opens under it: the notes that link here under **Near this note**, then every note. Keep typing to narrow it, move with the arrow keys and press **Enter** to pick. The typed `[[` and what followed it become an ordinary link — `[Weir crest](Weir%20crest.md)`, a path from this note's folder — so the words read and follow in the page, on a published site and in any editor. **Escape** closes the list and leaves what you typed.
 
 It never interrupts prose: suggestions appear only on those triggers, never as you type ordinary words. The **wand** on the [floating toolbar](02-navigation.md#the-floating-toolbar) — in the recess above the code view's own button, the code view's counterpart to the reading view's [padlock](#the-padlock) — turns the whole thing on and off. On by default, remembered across restarts ([settings](05-settings.md#typing-help)).
 
