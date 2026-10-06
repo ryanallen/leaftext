@@ -11035,6 +11035,153 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-toolbar:not(.has-block-formats) .selection-format-divider {
   display: none;
 }
+/* ---- Comment threads ----------------------------------------------------
+   A marker in the right margin level with the block a thread is about, the panel it floats under that block, and the Resolved list at the foot of the page. The layer stands at the end of the body with no height, and every marker and panel is placed from it by document-comments.js. */
+.comment-layer {
+  position: relative;
+  height: 0;
+}
+.comment-marker {
+  position: absolute;
+  right: -40px;
+  z-index: var(--lt-z-20);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+  /* Several threads on one block stand one under another. */
+  transform: translateY(calc(var(--comment-stack, 0) * 28px));
+}
+@media (hover: hover) {
+  .comment-marker:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+}
+.comment-marker:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+}
+.comment-marker.is-open {
+  color: var(--lt-accent-ink);
+}
+/* The dot that says a thread is still open. */
+.comment-marker.is-open::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--lt-radius-full);
+  background: var(--lt-accent);
+}
+.comment-panel {
+  position: absolute;
+  left: 0;
+  z-index: var(--lt-z-20);
+  width: min(420px, 100%);
+  margin-top: var(--lt-space-8);
+  padding: var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-elevated);
+  box-shadow: var(--lt-shadow-spotlight);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-45);
+  color: var(--lt-foreground);
+}
+.comment-quote {
+  margin-bottom: var(--lt-space-8);
+  padding-left: var(--lt-space-8);
+  border-left: var(--lt-stroke-2) solid var(--lt-border);
+  color: var(--lt-muted-foreground);
+}
+.comment-message {
+  margin-bottom: var(--lt-space-8);
+}
+.comment-message-time {
+  font-size: var(--lt-text-11-5);
+  color: var(--lt-muted-foreground);
+}
+.comment-message-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.comment-resolve,
+.comment-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  cursor: pointer;
+}
+.comment-resolve {
+  position: absolute;
+  top: var(--lt-space-8);
+  right: var(--lt-space-8);
+}
+@media (hover: hover) {
+  .comment-resolve:hover,
+  .comment-send:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+}
+.comment-resolve:focus-visible,
+.comment-send:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+}
+.comment-reply {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--lt-space-4);
+  margin-top: var(--lt-space-4);
+}
+.comment-reply-input {
+  flex: 1;
+  min-height: 28px;
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  color: var(--lt-foreground);
+  font: inherit;
+  resize: vertical;
+}
+.comment-reply-input:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+}
+.resolved-comments {
+  margin-top: var(--lt-space-32);
+  padding-top: var(--lt-space-16);
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  line-height: var(--lt-leading-1-45);
+}
+.resolved-comments-title {
+  margin: 0 0 var(--lt-space-12);
+  font-size: var(--lt-text-14);
+  font-weight: var(--lt-weight-600);
+  color: var(--lt-muted-foreground);
+}
+.resolved-comment {
+  margin-bottom: var(--lt-space-16);
+}
 .document-body blockquote {
   border-left: 0.25em solid var(--lt-markdown-blockquote-border);
   color: var(--lt-markdown-blockquote-foreground);
@@ -17123,6 +17270,75 @@ p.front-more {
   color: var(--lt-muted-foreground);
   font-size: var(--lt-text-11-5);
 }
+/* A pie or xy chart's numbers as rows, between the note and the text: a label, a column per series and the remove button. `--chart-series` is how many series columns the chart has. */
+.chart-rows[hidden] {
+  display: none;
+}
+.chart-rows {
+  flex: 0 1 auto;
+  max-height: 55%;
+  display: grid;
+  gap: var(--lt-space-4);
+  padding: 0 var(--lt-space-14) var(--lt-space-10);
+  overflow: auto;
+}
+.chart-rows-head,
+.chart-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(var(--chart-series, 1), minmax(0, 1fr)) 28px;
+  gap: var(--lt-space-6);
+  align-items: center;
+}
+.chart-rows-head {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11-5);
+  font-weight: var(--lt-weight-600);
+}
+/* A numeric axis names no points, so its first column is where the point stands rather than a field. */
+.chart-row-place {
+  padding: 0 var(--lt-space-10);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-13);
+}
+.chart-row-remove {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: transparent;
+  color: var(--lt-muted-foreground);
+}
+.chart-row-remove:disabled {
+  opacity: var(--lt-opacity-40);
+}
+.chart-rows-add {
+  justify-self: start;
+  padding: var(--lt-space-6) var(--lt-space-10);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+  font-size: var(--lt-text-12);
+}
+@media (hover: hover) {
+  .chart-row-remove:not(:disabled):hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+}
+.chart-row-remove:focus-visible,
+.chart-rows-add:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-shadow-focus);
+}
+/* A value the chart cannot take: nothing is written while it stands, and the reason is the field's title. */
+.flow-field.is-invalid {
+  border-color: var(--lt-danger);
+}
 .flow-code {
   flex: 1 1 45%;
   min-height: 0;
@@ -17962,7 +18178,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 85 icons, and all 154 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 85 icons, and all 162 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -17994,7 +18210,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>85</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>154</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>162</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18420,7 +18636,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">154 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">162 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -18568,6 +18784,34 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Task date</h3><code class="built">.task-date</code><span class="built">task-dates.js</span></header>
 <div class="stage"><div class="document-body"><ul><li><input type="checkbox"> Winter cleanup schedule <button type="button" class="doc-badge doc-badge--red task-date">Sep 2</button></li><li><input type="checkbox" checked> Book the meeting room <button type="button" class="doc-badge doc-badge--gray task-date">Sep 10</button></li><li><input type="checkbox"> Pay the water bill <button type="button" class="doc-badge doc-badge--green task-date">Sep 11</button></li><li><input type="checkbox"> Ask about the late arrivals <button type="button" class="doc-badge doc-badge--amber task-date">Sep 12</button></li><li><input type="checkbox"> Renew the lease <button type="button" class="doc-badge doc-badge--gray task-date">Jan 4 2027</button></li></ul></div><div class="context-menu" style="position:static;width:220px"><button type="button" class="context-menu-item">Today<span class="task-date-when">Sep 7</span></button><button type="button" class="context-menu-item">Tomorrow<span class="task-date-when">Sep 8</span></button><button type="button" class="context-menu-item">Next Monday<span class="task-date-when">Sep 14</span></button><div class="context-menu-item"><input type="text" class="rename-input" value="09/22/2026" placeholder="MM/DD/YYYY"></div><div class="context-menu-separator"></div><button type="button" class="context-menu-item">Clear the date</button></div></div>
+</section>
+<section class="part">
+<header><h3>Comment marker</h3><code class="built">.comment-marker</code><span class="built">document-comments.js — beside the block a comment thread is about, in the layer at the foot of the body, with a dot while the thread is open</span></header>
+<div class="stage"><div class="document-body" style="padding-right:48px"><p>Every download resolves through the release.</p><div class="comment-layer" style="height:32px"><button type="button" class="comment-marker is-open" style="top:0;right:40px"><span class="lt-icon lt-icon-comment"></span></button><button type="button" class="comment-marker" style="top:0;right:0"><span class="lt-icon lt-icon-comment"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Comment panel</h3><code class="built">.comment-panel</code><span class="built">document-comments.js — floated under the block when its marker or the bar's Comment is pressed</span></header>
+<div class="stage"><div class="comment-panel" style="position:static"><div class="comment-quote">Every download</div><div class="comment-message"><div class="comment-message-time">26 September 2026, 3:40pm</div><div class="comment-message-text">Should the Mac build go first?</div></div><button type="button" class="comment-resolve"><span class="lt-icon lt-icon-check"></span></button><div class="comment-reply"><textarea class="comment-reply-input" rows="1" placeholder="Reply"></textarea><button type="button" class="comment-send"><span class="lt-icon lt-icon-forward-long"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>Comment message</h3><code class="built">.comment-message</code><span class="built">document-comments.js — one message and its time, in the panel and in the Resolved list</span></header>
+<div class="stage"><div class="comment-message"><div class="comment-message-time">26 September 2026, 3:52pm</div><div class="comment-message-text">No, both start at once.</div></div></div>
+</section>
+<section class="part">
+<header><h3>Comment reply</h3><code class="built">.comment-reply</code><span class="built">document-comments.js — the field a message is written in, sent on Enter or its arrow</span></header>
+<div class="stage"><div class="comment-reply" style="width:320px"><textarea class="comment-reply-input" rows="1" placeholder="Reply"></textarea><button type="button" class="comment-send"><span class="lt-icon lt-icon-forward-long"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>Comment resolve</h3><code class="built">.comment-resolve</code><span class="built">document-comments.js — the check that resolves an open thread</span></header>
+<div class="stage"><button type="button" class="comment-resolve" style="position:static"><span class="lt-icon lt-icon-check"></span></button></div>
+</section>
+<section class="part">
+<header><h3>Resolved comments</h3><code class="built">.resolved-comments</code><span class="built">document-comments.js — the finished threads at the foot of the page, oldest resolution first, above the Previous/Next strip</span></header>
+<div class="stage"><section class="resolved-comments"><div class="resolved-comments-title" role="heading" aria-level="2">Resolved</div><div class="resolved-comment"><div class="comment-quote">Every download</div><div class="comment-message"><div class="comment-message-time">26 September 2026, 3:40pm</div><div class="comment-message-text">Should the Mac build go first?</div></div><div class="comment-message-time">Resolved 26 September 2026, 4:02pm</div></div></section></div>
+</section>
+<section class="part">
+<header><h3>Resolved comment</h3><code class="built">.resolved-comment</code><span class="built">document-comments.js — one finished thread in the Resolved list, or one whose words are gone</span></header>
+<div class="stage"><div class="resolved-comment"><div class="comment-quote">vanished words</div><div class="comment-message"><div class="comment-message-time">26 September 2026, 8:00am</div><div class="comment-message-text">Gone one.</div></div><div class="comment-message-time">The words this was about are no longer in the note</div></div></div>
 </section>
 <section class="part">
 <header><h3>Breadcrumb menu</h3><code class="built">.crumb-menu</code><span class="built">library.js</span></header>
@@ -18796,6 +19040,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Shape picker form</h3><code class="built">.flow-form</code><span class="built">flow-picker.js</span></header>
 <div class="stage"><div class="flow-picker-head" style="max-width:520px"><div class="flow-form"><label class="flow-form-row"><span class="flow-form-label">Name</span><input class="flow-field" type="text" value="Read the file"></label><label class="flow-form-row"><span class="flow-form-label">Link</span><input class="flow-field" type="text" placeholder="Where clicking this box goes"></label><label class="flow-form-row"><span class="flow-form-label">Icon</span><input class="flow-field" type="text" placeholder="leaf:back"></label><label class="flow-form-row"><span class="flow-form-label">Picture</span><input class="flow-field" type="text" placeholder="A picture beside this document, or its address"></label></div></div></div>
+</section>
+<section class="part">
+<header><h3>Chart rows</h3><code class="built">.chart</code><span class="built">data-chart-rows.js, in the diagram sheet's text pane while a pie or xy chart reads as rows: a label column, one column per series, a remove button per row and Add row; a numeric axis shows each point's place instead of a label field, and is-invalid marks a field the chart cannot take</span></header>
+<div class="stage"><div class="chart-rows" style="max-width:340px;--chart-series:1"><div class="chart-rows-head"><span>Label</span><span>Value</span></div><div class="chart-row"><input class="flow-field" type="text" value="Apples"><input class="flow-field" type="text" value="42"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row"><input class="flow-field" type="text" value="Pears"><input class="flow-field is-invalid" type="text" value="-3"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><button type="button" class="chart-rows-add">Add row</button></div></div>
 </section>
 <section class="part">
 <header><h3>Color swatches</h3><code class="built">.flow-swatch</code><span class="built">flow-picker.js, under a selected box, group or line: none, the chart's own colors, then a new one; is-current marks the one worn and is-none the empty one</span></header>

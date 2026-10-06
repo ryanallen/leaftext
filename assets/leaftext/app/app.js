@@ -3065,6 +3065,243 @@ function flowMoveNode(graph, id, beforeId) {
   graph.nodes.splice(at < 0 ? graph.nodes.length : at, 0, node);
 }
 
+
+const CHART_PIE_HEADER_RE = /^[ \t]*pie(?:[ \t]+showData)?(?:[ \t]+title(?:[ \t].*)?)?[ \t]*$/i;
+const CHART_XY_HEADER_RE = /^[ \t]*xychart(?:-beta)?(?:[ \t]+(?:horizontal|vertical))?[ \t]*$/i;
+const CHART_SLICE_RE = /^([ \t]*)"([^"]*)"([ \t]*:[ \t]*)(\S+)([ \t]*)$/;
+const CHART_SERIES_RE = /^[ \t]*(bar|line)\b/i;
+const CHART_X_AXIS_RE = /^[ \t]*x-axis\b/i;
+const CHART_ACC_BLOCK_RE = /^[ \t]*accDescr[ \t]*\{/;
+
+const CHART_PIE_NUMBER_RE = /^\d+(?:\.\d+)?$/;
+const CHART_XY_NUMBER_RE = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+
+const CHART_BARE_WORD_RE = /^[A-Za-z0-9_]+$/;
+
+function chartRefused(kind, why) {
+  return { kind, refusal: why, rows: [], series: [], axis: null, lines: [], slices: [] };
+}
+
+
+function chartListParts(body, open, close) {
+  const inner = body.slice(open + 1, close);
+  const lead = /^\s*/.exec(inner)[0];
+  const trail = inner.length > lead.length ? /\s*$/.exec(inner)[0] : '';
+  const middle = inner.slice(lead.length, inner.length - trail.length);
+  const items = [];
+  const seps = [];
+  if (middle) {
+    let quoted = false;
+    let start = 0;
+    for (let i = 0; i < middle.length; i += 1) {
+      const c = middle[i];
+      if (c === '"') quoted = !quoted;
+      else if (c === ',' && !quoted) {
+        const piece = middle.slice(start, i);
+        const core = piece.trimEnd();
+        items.push(core);
+        let next = i + 1;
+        while (next < middle.length && /\s/.test(middle[next])) next += 1;
+        seps.push(piece.slice(core.length) + middle.slice(i, next));
+        start = next;
+        i = next - 1;
+      }
+    }
+    items.push(middle.slice(start));
+  }
+  return { head: body.slice(0, open + 1) + lead, items, seps, tail: trail + body.slice(close) };
+}
+
+
+function chartListBounds(body) {
+  let quoted = false;
+  let open = -1;
+  for (let i = 0; i < body.length; i += 1) {
+    if (body[i] === '"') quoted = !quoted;
+    else if (!quoted && body[i] === '[') {
+      open = i;
+      break;
+    }
+  }
+  return { open, close: open < 0 ? -1 : body.lastIndexOf(']') };
+}
+
+function chartUnquote(core) {
+  return core.length >= 2 && core.startsWith('"') && core.endsWith('"') ? core.slice(1, -1) : core;
+}
+
+function chartSeriesTitle(body) {
+  const title = /^[ \t]*(?:bar|line)[ \t]+"([^"]*)"/i.exec(body);
+  return title ? title[1] : '';
+}
+
+
+function readChart(text) {
+  if (typeof text !== 'string') return null;
+  const lines = text.split('\n');
+  const at = flowHeaderLine(lines);
+  if (at < 0 || at >= lines.length) return null;
+  const header = lines[at].replace(/\r$/, '');
+  const kind = CHART_PIE_HEADER_RE.test(header) ? 'pie' : CHART_XY_HEADER_RE.test(header) ? 'xy' : '';
+  if (!kind) return null;
+  const chart = { kind, refusal: '', header: at, lines, slices: [], series: [], axis: null, rows: [] };
+  let inAcc = false;
+  for (let i = at + 1; i < lines.length; i += 1) {
+    const cr = lines[i].endsWith('\r') ? '\r' : '';
+    const body = cr ? lines[i].slice(0, -1) : lines[i];
+    if (inAcc) {
+      if (body.includes('}')) inAcc = false;
+      continue;
+    }
+    if (!body.trim() || FLOW_COMMENT_RE.test(body)) continue;
+    if (CHART_ACC_BLOCK_RE.test(body)) {
+      inAcc = !body.includes('}');
+      continue;
+    }
+    if (kind === 'pie') {
+      if (!body.trim().startsWith('"')) continue;
+      const slice = CHART_SLICE_RE.exec(body);
+      if (!slice || !CHART_XY_NUMBER_RE.test(slice[4])) return chartRefused(kind, 'Line ' + (i + 1) + ' is a slice the rows can’t read.');
+      chart.slices.push({ line: i, cr, indent: slice[1], colon: slice[3], trail: slice[5] });
+      chart.rows.push({ label: slice[2], values: [slice[4]], from: chart.rows.length });
+      continue;
+    }
+    const isAxis = CHART_X_AXIS_RE.test(body);
+    const series = CHART_SERIES_RE.exec(body);
+    if (!isAxis && !series) continue;
+    const { open, close } = chartListBounds(body);
+    if (open >= 0 && close < open) return chartRefused(kind, 'Line ' + (i + 1) + ' carries its list on past the line; the rows read a list written on one line.');
+    if (isAxis) {
+      if (chart.axis) return chartRefused(kind, 'There are two x-axis lines, so the rows can’t tell which names the points.');
+      chart.axis = open < 0 ? { line: i, cr, list: null } : { line: i, cr, list: chartListParts(body, open, close) };
+      continue;
+    }
+    if (open < 0) return chartRefused(kind, 'Line ' + (i + 1) + ' has no list of numbers the rows can read.');
+    const kindWord = series[1].toLowerCase();
+    chart.series.push({ line: i, cr, kind: kindWord, title: chartSeriesTitle(body), list: chartListParts(body, open, close) });
+  }
+  if (kind === 'xy') {
+    const lengths = new Set(chart.series.map((one) => one.list.items.length));
+    if (lengths.size > 1) return chartRefused(kind, 'The series here hold different numbers of values, so they can’t line up as rows.');
+    const named = chart.axis && chart.axis.list;
+    const count = chart.series.length ? chart.series[0].list.items.length : named ? named.items.length : 0;
+    if (named && chart.series.length && named.items.length !== count) {
+      return chartRefused(kind, 'The x-axis names ' + named.items.length + ' points and the series hold ' + count + ' values each, so they can’t line up as rows.');
+    }
+    for (let r = 0; r < count; r += 1) {
+      chart.rows.push({
+        label: named ? chartUnquote(named.items[r]) : null,
+        values: chart.series.map((one) => one.list.items[r]),
+        from: r,
+      });
+    }
+  }
+  return chart;
+}
+
+
+function chartColumns(chart) {
+  if (!chart) return [];
+  if (chart.kind === 'pie') return ['Label', 'Value'];
+  const first = chart.axis && chart.axis.list ? 'Category' : 'Point';
+  const counts = { bar: 0, line: 0 };
+  for (const one of chart.series) counts[one.kind] += 1;
+  const seen = { bar: 0, line: 0 };
+  const names = chart.series.map((one) => {
+    seen[one.kind] += 1;
+    if (one.title) return one.title;
+    const word = one.kind === 'bar' ? 'Bar' : 'Line';
+    return counts[one.kind] > 1 ? word + ' ' + seen[one.kind] : word;
+  });
+  return [first, ...names];
+}
+
+
+function chartFieldProblem(chart, column, value) {
+  const typed = String(value);
+  if (column === 0) {
+    if (!typed.trim()) return 'A label needs at least one character.';
+    if (typed.includes('"')) return 'A label can’t hold a straight double quote.';
+    return '';
+  }
+  if (chart && chart.kind === 'pie') {
+    return CHART_PIE_NUMBER_RE.test(typed.trim()) ? '' : 'A slice is a number of zero or more, like 42 or 1.5.';
+  }
+  return CHART_XY_NUMBER_RE.test(typed.trim()) ? '' : 'A value is a number, like 42, -3 or 1.5.';
+}
+
+
+function chartWriteList(list, cores) {
+  const spare = list.seps.length ? list.seps[list.seps.length - 1] : ', ';
+  let out = list.head;
+  cores.forEach((core, i) => {
+    if (i) out += i - 1 < list.seps.length ? list.seps[i - 1] : spare;
+    out += core;
+  });
+  return out + list.tail;
+}
+
+function chartCategoryCore(chart, row) {
+  const items = chart.axis.list.items;
+  const was = row.from !== null && row.from !== undefined && row.from < items.length ? items[row.from] : null;
+  if (was !== null && chartUnquote(was) === row.label) return was;
+  return CHART_BARE_WORD_RE.test(row.label) ? row.label : '"' + row.label + '"';
+}
+
+
+function writeChart(chart) {
+  if (!chart || chart.refusal) return chart ? chart.lines.join('\n') : '';
+  const lines = chart.lines.slice();
+  if (chart.kind === 'xy') {
+    for (let s = 0; s < chart.series.length; s += 1) {
+      const one = chart.series[s];
+      lines[one.line] = chartWriteList(one.list, chart.rows.map((row) => String(row.values[s]).trim())) + one.cr;
+    }
+    if (chart.axis && chart.axis.list) {
+      lines[chart.axis.line] = chartWriteList(chart.axis.list, chart.rows.map((row) => chartCategoryCore(chart, row))) + chart.axis.cr;
+    }
+    return lines.join('\n');
+  }
+  const slices = chart.slices;
+  const fallback = slices.length ? slices[slices.length - 1] : { indent: '    ', colon: ' : ', trail: '', cr: chartLineEnd(lines) };
+  const sliceLine = (row, cr) => {
+    const shape = row.from !== null && row.from !== undefined && row.from < slices.length ? slices[row.from] : fallback;
+    return shape.indent + '"' + row.label + '"' + shape.colon + String(row.values[0]).trim() + shape.trail + cr;
+  };
+  
+  const drop = new Set();
+  chart.rows.forEach((row, i) => {
+    if (i < slices.length) lines[slices[i].line] = sliceLine(row, slices[i].cr);
+  });
+  for (let i = chart.rows.length; i < slices.length; i += 1) drop.add(slices[i].line);
+  const extra = chart.rows.slice(slices.length).map((row) => sliceLine(row, fallback.cr));
+  const after = slices.length ? slices[slices.length - 1].line : chartLastLine(lines);
+  const out = [];
+  lines.forEach((line, i) => {
+    if (!drop.has(i)) out.push(line);
+    if (i === after) out.push(...extra);
+  });
+  return out.join('\n');
+}
+
+
+function chartLineEnd(lines) {
+  return lines.some((line) => line.endsWith('\r')) ? '\r' : '';
+}
+
+
+function chartLastLine(lines) {
+  for (let i = lines.length - 1; i >= 0; i -= 1) if (lines[i].trim()) return i;
+  return lines.length - 1;
+}
+
+
+function chartNewRow(chart) {
+  const n = chart.rows.length + 1;
+  if (chart.kind === 'pie') return { label: 'Slice ' + n, values: ['0'], from: null };
+  return { label: chart.axis && chart.axis.list ? 'Item ' + n : null, values: chart.series.map(() => '0'), from: null };
+}
+
 const STATE_LIMIT = 1_000_000;
 const STATE_LINES_LIMIT = 10_000;
 const STATE_DEPTH_LIMIT = 32;
@@ -3515,7 +3752,7 @@ function openFlowSheet({ title, text, save }) {
   dropFlowSaveWait();
   flowLastFocus = document.activeElement;
   
-  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, grammar: null, sequence: null, sequenceSelection: null, sequenceHits: new WeakMap(), sequenceMapped: [], sequenceMapProblem: '', title: title || '', titledText: null };
+  flowSession = { save, text: typeof text === 'string' ? text : '', graph: null, grammar: null, chart: null, sequence: null, sequenceSelection: null, sequenceHits: new WeakMap(), sequenceMapped: [], sequenceMapProblem: '', title: title || '', titledText: null };
   flowSelection = null;
   flowDrawn = null;
   
@@ -3563,6 +3800,7 @@ function closeFlowSheet() {
   }
   window.clearTimeout(flowCodeTimer);
   window.clearTimeout(flowDrawTimer);
+  window.clearTimeout(chartRowsTimer);
   document.removeEventListener('keydown', onFlowSheetKey);
   flowBackdrop.classList.remove('open');
   flowSheet.classList.remove('open');
@@ -3588,6 +3826,7 @@ function saveFlowSheet() {
   if (!flowSession) return;
   closeFlowLabelBox(true);
   
+  flushChartRows();
   flushFlowCode();
   if (flowSheetSave && flowSheetSave.disabled) return;
   const save = flowSession.save;
@@ -3656,15 +3895,18 @@ function onFlowSheetKey(event) {
 
 function setFlowText(text, from) {
   if (!flowSession) return;
-  if (from === 'code') recordFlowStep();
+  if (from === 'code' || from === 'rows') recordFlowStep();
   flowSession.text = text;
   flowSession.sequence = isSequenceSource(text) ? parseSequence(text) : null;
+  flowSession.chart = flowSession.sequence ? null : readChart(text);
   flowSession.grammar = isStateSource(text) ? 'state' : 'flow';
   flowSession.graph = flowSession.sequence ? null : flowSession.grammar === 'state' ? parseState(text) : parseFlow(text);
   if (flowSession.renameWhenPlaced && (!flowSession.graph || !flowFindNode(flowSession.graph, flowSession.renameWhenPlaced))) flowSession.renameWhenPlaced = null;
   if (flowSession.sequence) flowSession.sequenceSelection = null;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   if (from !== 'code' && flowCode) flowCode.value = text;
+  
+  drawChartRows(from !== 'rows');
   redrawFlowSheet();
   flowBefore = flowSnapshot();
 }
@@ -3714,10 +3956,12 @@ function applyFlowState(state) {
   flowSession.text = state.text;
   flowSession.graph = state.graph ? JSON.parse(JSON.stringify(state.graph)) : null;
   flowSession.sequence = isSequenceSource(state.text) ? parseSequence(state.text) : null;
+  flowSession.chart = flowSession.sequence ? null : readChart(state.text);
   flowSession.sequenceSelection = flowSession.sequence ? flowSession.sequence.parts.find((part) => part.start === state.sequenceAt) || null : null;
   flowSelection = state.selection ? { kind: state.selection.kind, id: state.selection.id } : null;
   flowChosen = (state.chosen || []).map((item) => ({ kind: item.kind, id: item.id }));
   if (flowCode) flowCode.value = state.text;
+  drawChartRows(true);
   redrawFlowSheet();
   flowBefore = flowSnapshot();
 }
@@ -3812,7 +4056,8 @@ function restoreFlowHint() {
   }
   
   if (!graph) {
-    setFlowHint(FLOW_TIP_PREVIEW);
+    const chart = flowSession && flowSession.chart;
+    setFlowHint(chart && !chart.refusal ? FLOW_TIP_ROWS : FLOW_TIP_PREVIEW);
     return;
   }
   if (!flowSelection) {
@@ -4222,9 +4467,11 @@ function drawFlowNotice() {
   if (!flowNotice) return;
   const graph = flowSession && flowSession.graph;
   const sequence = flowSession && flowSession.sequence;
+  const chart = flowSession && flowSession.chart;
   
   const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '') || (sequence && flowSession.sequenceMapProblem) || '';
-  const message = sequence ? problem : !graph
+  
+  const message = sequence ? problem : chart ? problem || (chart.refusal ? chart.refusal + FLOW_AS_TEXT : '') : !graph
     ? problem || ((flowSession && flowSession.grammar === 'state' ? stateRefusal(flowSession.text) : flowRefusal(flowSession ? flowSession.text : '')) || FLOW_UNMODELED) + FLOW_AS_TEXT
     : !graph.nodes.length && !graph.state
       ? FLOW_NOTHING_YET
@@ -6881,6 +7128,192 @@ if (flowSheetExport) {
   });
 }
 
+
+const chartRowsHost = document.getElementById('chartRows');
+const FLOW_TIP_ROWS =
+  'Change a label or number in the rows beside the text · Add row puts one at the end · Alt+Up and Alt+Down move the row you are in; a pie draws by size, so only its legend moves.';
+let chartRowsTimer = 0;
+
+
+function drawChartRows(rebuild) {
+  if (!chartRowsHost) return;
+  const chart = flowSession && flowSession.chart;
+  const shown = !!chart && !chart.refusal;
+  chartRowsHost.hidden = !shown;
+  if (!shown) {
+    window.clearTimeout(chartRowsTimer);
+    chartRowsHost.innerHTML = '';
+    return;
+  }
+  if (!rebuild && chartRowsHost.querySelector('.chart-rows-add')) return;
+  buildChartRows(chart);
+}
+
+function buildChartRows(chart) {
+  chartRowsHost.innerHTML = '';
+  const columns = chartColumns(chart);
+  const head = document.createElement('div');
+  head.className = 'chart-rows-head';
+  for (const name of columns) {
+    const cell = document.createElement('span');
+    cell.textContent = name;
+    head.appendChild(cell);
+  }
+  chartRowsHost.appendChild(head);
+  chartRowsHost.style.setProperty('--chart-series', String(columns.length - 1));
+  chart.rows.forEach((row, index) => chartRowsHost.appendChild(chartRowElement(chart, row, index)));
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'chart-rows-add';
+  add.textContent = 'Add row';
+  add.addEventListener('click', addChartRow);
+  chartRowsHost.appendChild(add);
+}
+
+function chartRowElement(chart, row, index) {
+  const line = document.createElement('div');
+  line.className = 'chart-row';
+  
+  line.chartFrom = index;
+  if (row.label === null) {
+    const place = document.createElement('span');
+    place.className = 'chart-row-place';
+    place.textContent = String(index + 1);
+    line.appendChild(place);
+  } else {
+    line.appendChild(chartField(row.label, 0, 'Label'));
+  }
+  const names = chartColumns(chart);
+  row.values.forEach((value, i) => line.appendChild(chartField(value, i + 1, names[i + 1])));
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'chart-row-remove';
+  remove.setAttribute('aria-label', 'Remove this row');
+  remove.title = 'Remove this row';
+  remove.disabled = chart.rows.length <= 1;
+  const icon = document.createElement('span');
+  icon.className = 'lt-icon lt-icon-close';
+  remove.appendChild(icon);
+  remove.addEventListener('click', () => removeChartRow(line));
+  line.appendChild(remove);
+  return line;
+}
+
+function chartField(value, column, name) {
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.className = 'flow-field';
+  field.value = value;
+  field.spellcheck = false;
+  field.setAttribute('aria-label', name);
+  field.chartColumn = column;
+  field.addEventListener('input', () => {
+    window.clearTimeout(chartRowsTimer);
+    chartRowsTimer = window.setTimeout(writeChartRows, 180);
+  });
+  field.addEventListener('blur', flushChartRows);
+  field.addEventListener('keydown', onChartRowKey);
+  return field;
+}
+
+
+function chartRowsFromGrid(chart) {
+  let bad = false;
+  const rows = [];
+  for (const line of chartRowsHost.querySelectorAll('.chart-row')) {
+    const fields = line.querySelectorAll('.flow-field');
+    const labeled = !line.querySelector('.chart-row-place');
+    const row = { label: null, values: [], from: Number.isInteger(line.chartFrom) ? line.chartFrom : null };
+    for (const field of fields) {
+      const problem = chartFieldProblem(chart, field.chartColumn, field.value);
+      field.classList.toggle('is-invalid', !!problem);
+      field.title = problem;
+      if (problem) bad = true;
+      if (field.chartColumn === 0) row.label = field.value;
+      else row.values.push(field.value.trim());
+    }
+    if (!labeled) row.label = null;
+    rows.push(row);
+  }
+  return bad ? null : rows;
+}
+
+
+function writeChartRows(rebuild) {
+  window.clearTimeout(chartRowsTimer);
+  const chart = flowSession && flowSession.chart;
+  if (!chart || chart.refusal || !chartRowsHost) return false;
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  const rows = chartRowsFromGrid(chart);
+  if (!rows) return false;
+  chart.rows = rows;
+  const text = writeChart(chart);
+  lines.forEach((line, index) => {
+    line.chartFrom = index;
+  });
+  if (text !== flowSession.text) setFlowText(text, 'rows');
+  if (rebuild === true) buildChartRows(flowSession.chart);
+  return true;
+}
+
+
+function flushChartRows() {
+  if (!flowSession || !chartRowsHost || chartRowsHost.hidden) return;
+  writeChartRows();
+}
+
+function focusChartRow(index, column) {
+  const lines = chartRowsHost.querySelectorAll('.chart-row');
+  const line = lines[Math.max(0, Math.min(index, lines.length - 1))];
+  if (!line) return;
+  const fields = Array.from(line.querySelectorAll('.flow-field'));
+  const field = fields.find((one) => one.chartColumn === column) || fields[0];
+  if (field) field.focus();
+}
+
+function addChartRow() {
+  if (!flowSession || !flowSession.chart) return;
+  if (!writeChartRows()) return;
+  const chart = flowSession.chart;
+  chart.rows.push(chartNewRow(chart));
+  setFlowText(writeChart(chart), 'rows');
+  buildChartRows(flowSession.chart);
+  focusChartRow(flowSession.chart.rows.length - 1, 0);
+}
+
+function removeChartRow(line) {
+  if (!flowSession || !flowSession.chart) return;
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  const at = lines.indexOf(line);
+  if (at < 0 || lines.length <= 1) return;
+  if (!writeChartRows()) return;
+  const chart = flowSession.chart;
+  chart.rows.splice(at, 1);
+  setFlowText(writeChart(chart), 'rows');
+  buildChartRows(flowSession.chart);
+  focusChartRow(at, 0);
+}
+
+
+function onChartRowKey(event) {
+  if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
+  const field = event.target;
+  const line = field && field.closest && field.closest('.chart-row');
+  if (!line || !flowSession || !flowSession.chart) return;
+  event.preventDefault();
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  const at = lines.indexOf(line);
+  const to = at + (event.key === 'ArrowUp' ? -1 : 1);
+  if (at < 0 || to < 0 || to >= lines.length) return;
+  if (!writeChartRows()) return;
+  const chart = flowSession.chart;
+  const [moved] = chart.rows.splice(at, 1);
+  chart.rows.splice(to, 0, moved);
+  setFlowText(writeChart(chart), 'rows');
+  buildChartRows(flowSession.chart);
+  focusChartRow(to, field.chartColumn);
+}
+
 if (window.__leafSite) {
   const historyActions = document.querySelector('.history-actions');
   if (historyActions) historyActions.remove();
@@ -8633,7 +9066,7 @@ if (exportPdfButton) {
   });
 }
 
-const PAGE_EXPORT_CONTROLS = '.code-copy, .image-lane-corner, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close, .docs-pager';
+const PAGE_EXPORT_CONTROLS = '.code-copy, .image-lane-corner, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close, .comment-layer, .docs-pager';
 
 
 
@@ -19524,6 +19957,8 @@ const RANGE_NAMES = [
   { kind: 'date', found: 'data-date-start', start: 'dateStart', end: 'dateEnd' },
   
   { kind: 'frame', found: 'data-frame-start', start: 'frameStart', end: 'frameEnd' },
+  
+  { kind: 'thread', found: 'data-thread-start', start: 'threadStart', end: 'threadEnd', drawnByPage: true },
 ];
 
 const rangeNamesOf = (kind) => RANGE_NAMES.find((pair) => pair.kind === kind) || null;
@@ -19633,7 +20068,8 @@ function forgetDrawnRanges(el) {
 
 function adoptDrawnRanges(body) {
   if (!body) return;
-  RANGE_NAMES.forEach(({ kind, found }) => {
+  RANGE_NAMES.forEach(({ kind, found, drawnByPage }) => {
+    if (drawnByPage) return;
     body.querySelectorAll('[' + found + ']').forEach((el) => {
       const held = drawnRanges.get(el);
       if (held && held[kind]) return;
@@ -22786,6 +23222,7 @@ function bindReadingEditor(doc, { deferCaret = false } = {}) {
     bindTaskCheckboxes(doc.tasks || []);
     drawTaskDates(doc.tasks || []);
     markComputedTableCells(body, doc.computed || []);
+    drawDocumentComments(body, doc.threads || []);
   }
   setReadingPageHasContainerBlankLines(blankLinesInContainers.length > 0);
   
@@ -26841,6 +27278,13 @@ function isTableControlNode(node) {
   return !!node && (node === tableRowHandle || node === tableColumnHandle);
 }
 
+
+function recordIsTableControlOnly(record) {
+  if (record.type !== 'childList') return false;
+  const moved = [...record.addedNodes, ...record.removedNodes];
+  return moved.length > 0 && moved.every((node) => isTableControlNode(node) || isTableSizingGrip(node));
+}
+
 let tableAimingProof = null;
 
 function clearTableAimingProof() {
@@ -26852,14 +27296,14 @@ function tableAimingSafe(table) {
   if (tableAimingProof && tableAimingProof.table !== table) clearTableAimingProof();
   if (!tableAimingProof) {
     const proof = { table, safe: false, dirty: true, observer: null };
-    proof.observer = new MutationObserver(() => { proof.dirty = true; });
+    proof.observer = new MutationObserver((records) => { if (!records.every(recordIsTableControlOnly)) proof.dirty = true; });
     if (typeof proof.observer.takeRecords !== 'function') return tableWysiwygSafe(table);
     proof.observer.observe(table, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     tableAimingProof = proof;
   }
   const proof = tableAimingProof;
   
-  if (proof.observer.takeRecords().length) proof.dirty = true;
+  if (!proof.observer.takeRecords().every(recordIsTableControlOnly)) proof.dirty = true;
   if (proof.dirty) {
     proof.safe = tableWysiwygSafe(table);
     proof.dirty = false;
@@ -28653,6 +29097,7 @@ const READING_FORMATS = [
   { id: 'copy', label: 'Copy', icon: '<span class="lt-icon lt-icon-copy"></span>' },
   { id: 'highlight', label: 'Highlight', icon: '<span class="lt-icon lt-icon-highlighter"></span>' },
   { id: 'annotate', label: 'Annotate', icon: '<span class="lt-icon lt-icon-footnote"></span>' },
+  { id: 'comment', label: 'Comment', icon: '<span class="lt-icon lt-icon-comment"></span>' },
 ];
 
 
@@ -29028,6 +29473,11 @@ function applyReadingFormat(format) {
   if (format.id === 'copy') copySelectionText();
   else if (format.id === 'highlight') applyHighlight();
   else if (format.id === 'annotate') applyAnnotate();
+  else if (format.id === 'comment') {
+    const range = selectionToolbarRange;
+    hideSelectionToolbar();
+    startDocumentComment(range);
+  }
 }
 
 
@@ -29622,6 +30072,294 @@ window.addEventListener('keydown', (event) => {
 window.addEventListener('resize', () => {
   if (selectionToolbar && !selectionToolbar.hidden) syncSelectionToolbar();
 });
+
+
+
+
+
+
+
+let commentLayer = null;
+let commentPanel = null;
+let commentPanelThread = null;
+let commentLayerResize = null;
+let commentsDrawn = [];
+
+
+function threadNow(date = new Date()) {
+  const two = (value) => String(value).padStart(2, '0');
+  const offset = -date.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const hours = two(Math.floor(Math.abs(offset) / 60));
+  return `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}T${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}${sign}${hours}:${two(Math.abs(offset) % 60)}`;
+}
+
+const THREAD_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+
+function threadTimeLabel(at) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(at || ''));
+  if (!parts) return '';
+  const hour = Number(parts[4]);
+  const clock = `${hour % 12 || 12}:${parts[5]}${hour < 12 ? 'am' : 'pm'}`;
+  return `${Number(parts[3])} ${THREAD_MONTHS[Number(parts[2]) - 1] || ''} ${parts[1]}, ${clock}`;
+}
+
+
+function resolvedCommentOrder(threads) {
+  const when = (at) => Date.parse(at) || 0;
+  const resolved = threads.filter((thread) => thread.resolved).sort((a, b) => when(a.resolved) - when(b.resolved));
+  const gone = threads.filter((thread) => !thread.resolved && thread.block == null).sort((a, b) => when(a.messages[0].at) - when(b.messages[0].at));
+  return [...resolved, ...gone];
+}
+
+
+function commentBlockElement(body, thread) {
+  return thread.block == null ? null : body.querySelector(`[data-block-id="${Number(thread.block)}"]`);
+}
+
+
+function commentSelectionBlock(range) {
+  const body = app.querySelector('.document-body');
+  let node = range && range.startContainer;
+  let found = null;
+  for (let el = node && (node.nodeType === 1 ? node : node.parentElement); el && el !== body; el = el.parentElement) {
+    if (hasRangeOf(el, 'block')) found = el;
+  }
+  return found;
+}
+
+function commentElement(tag, className, text) {
+  const el = document.createElement(tag);
+  el.className = className;
+  if (text != null) el.textContent = text;
+  return el;
+}
+
+
+function commentMessageRow(message) {
+  const row = commentElement('div', 'comment-message');
+  row.appendChild(commentElement('div', 'comment-message-time', threadTimeLabel(message.at)));
+  row.appendChild(commentElement('div', 'comment-message-text', message.text));
+  return row;
+}
+
+
+function sendThreadWrite(write, keepOpen) {
+  commentPanelThread = keepOpen;
+  closeCommentPanel(true);
+  sendEditCommand({ command: 'writeThread', write });
+}
+
+
+function commentReplyField(placeholder, send) {
+  const field = commentElement('div', 'comment-reply');
+  const input = document.createElement('textarea');
+  input.className = 'comment-reply-input';
+  input.rows = 1;
+  input.placeholder = placeholder;
+  input.setAttribute('aria-label', placeholder);
+  const arrow = commentElement('button', 'comment-send');
+  arrow.type = 'button';
+  arrow.title = 'Send';
+  arrow.setAttribute('aria-label', 'Send');
+  arrow.appendChild(commentElement('span', 'lt-icon lt-icon-forward-long'));
+  const go = () => {
+    const text = input.value;
+    if (text.trim()) send(text);
+  };
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      go();
+    }
+  });
+  arrow.addEventListener('click', go);
+  field.append(input, arrow);
+  return field;
+}
+
+function onCommentOutsidePress(event) {
+  if (commentPanel && !commentPanel.contains(event.target) && !event.target.closest?.('.comment-marker')) closeCommentPanel();
+}
+
+function onCommentEscape(event) {
+  if (event.key === 'Escape' && commentPanel) {
+    event.stopPropagation();
+    closeCommentPanel();
+  }
+}
+
+function closeCommentPanel(keep) {
+  if (!keep) commentPanelThread = null;
+  if (commentPanel) commentPanel.remove();
+  commentPanel = null;
+  document.removeEventListener('pointerdown', onCommentOutsidePress, true);
+  document.removeEventListener('keydown', onCommentEscape, true);
+}
+
+
+function openCommentPanel(block, fill) {
+  closeCommentPanel(true);
+  if (!commentLayer || !block) return null;
+  commentPanel = commentElement('div', 'comment-panel');
+  commentPanel.setAttribute('role', 'dialog');
+  commentPanel.setAttribute('aria-label', 'Comment');
+  fill(commentPanel);
+  commentPanel.addEventListener('pointerdown', (event) => event.stopPropagation());
+  commentLayer.appendChild(commentPanel);
+  placeCommentPanel(block);
+  document.addEventListener('pointerdown', onCommentOutsidePress, true);
+  document.addEventListener('keydown', onCommentEscape, true);
+  const input = commentPanel.querySelector('textarea');
+  if (input) input.focus({ preventScroll: true });
+  return commentPanel;
+}
+
+
+function openThreadPanel(thread, block) {
+  openCommentPanel(block, (panel) => {
+    panel.appendChild(commentElement('div', 'comment-quote', thread.quote));
+    thread.messages.forEach((message) => panel.appendChild(commentMessageRow(message)));
+    if (thread.resolved) {
+      panel.appendChild(commentElement('div', 'comment-message-time', `Resolved ${threadTimeLabel(thread.resolved)}`));
+      return;
+    }
+    const marker = Array.from(commentLayer.querySelectorAll('.comment-marker')).find((each) => each.dataset.first === thread.messages[0].at);
+    const named = () => {
+      const { start, end } = rangeOf(marker, 'thread');
+      return { start, end, first: thread.messages[0].at };
+    };
+    const resolve = commentElement('button', 'comment-resolve');
+    resolve.type = 'button';
+    resolve.title = 'Resolve';
+    resolve.setAttribute('aria-label', 'Resolve');
+    resolve.innerHTML = '<span class="lt-icon lt-icon-check"></span>';
+    resolve.addEventListener('click', () => sendThreadWrite({ action: 'resolve', ...named(), at: threadNow() }, null));
+    panel.appendChild(resolve);
+    panel.appendChild(commentReplyField('Reply', (text) => sendThreadWrite({ action: 'reply', ...named(), text, at: threadNow() }, thread.messages[0].at)));
+  });
+  commentPanelThread = thread.messages[0].at;
+}
+
+
+function startDocumentComment(range) {
+  const block = commentSelectionBlock(range);
+  const quote = range ? range.toString().replace(/\s+/g, ' ').trim() : '';
+  if (!block || !quote) return;
+  const { start } = rangeOf(block, 'block');
+  if (!Number.isFinite(start)) return;
+  openCommentPanel(block, (panel) => {
+    panel.appendChild(commentElement('div', 'comment-quote', quote));
+    panel.appendChild(commentReplyField('Comment', (text) => {
+      const at = threadNow();
+      sendThreadWrite({ action: 'start', block: start, quote, text, at }, at);
+    }));
+  });
+}
+
+function placeCommentPanel(block) {
+  if (!commentPanel || !commentLayer || !block) return;
+  commentPanel.style.top = `${block.getBoundingClientRect().bottom - commentLayer.getBoundingClientRect().top}px`;
+}
+
+
+function placeCommentMarkers() {
+  if (!commentLayer) return;
+  
+  const top = commentLayer.getBoundingClientRect().top;
+  const stacked = new Map();
+  commentLayer.querySelectorAll('.comment-marker').forEach((marker) => {
+    const block = marker.commentBlock;
+    if (!block || !block.isConnected) return;
+    const place = stacked.get(block) || 0;
+    stacked.set(block, place + 1);
+    marker.style.top = `${block.getBoundingClientRect().top - top}px`;
+    marker.style.setProperty('--comment-stack', String(place));
+  });
+}
+
+
+function drawResolvedComments(body, threads) {
+  const listed = resolvedCommentOrder(threads);
+  if (!listed.length) return null;
+  const list = commentElement('section', 'resolved-comments');
+  list.setAttribute('aria-label', 'Resolved comments');
+  
+  const title = commentElement('div', 'resolved-comments-title', 'Resolved');
+  title.setAttribute('role', 'heading');
+  title.setAttribute('aria-level', '2');
+  list.appendChild(title);
+  for (const thread of listed) {
+    const entry = commentElement('div', 'resolved-comment');
+    entry.appendChild(commentElement('div', 'comment-quote', thread.quote));
+    thread.messages.forEach((message) => entry.appendChild(commentMessageRow(message)));
+    entry.appendChild(commentElement('div', 'comment-message-time', thread.resolved ? `Resolved ${threadTimeLabel(thread.resolved)}` : 'The words this was about are no longer in the note'));
+    list.appendChild(entry);
+  }
+  return list;
+}
+
+
+function drawDocumentComments(body, threads) {
+  if (commentLayerResize) commentLayerResize.disconnect();
+  commentLayerResize = null;
+  commentLayer = null;
+  commentPanel = null;
+  
+  if (body) body.querySelectorAll('.comment-layer, .resolved-comments').forEach((drawn) => drawn.remove());
+  commentsDrawn = Array.isArray(threads) ? threads.filter((thread) => thread && Array.isArray(thread.messages) && thread.messages.length) : [];
+  if (!body || !commentsDrawn.length) {
+    commentPanelThread = null;
+    return;
+  }
+  commentLayer = commentElement('div', 'comment-layer');
+  for (const thread of commentsDrawn) {
+    const block = commentBlockElement(body, thread);
+    if (!block) continue;
+    const marker = commentElement('button', thread.resolved ? 'comment-marker' : 'comment-marker is-open');
+    marker.type = 'button';
+    marker.title = thread.resolved ? 'Resolved comment' : 'Comment';
+    marker.setAttribute('aria-label', marker.title);
+    marker.innerHTML = '<span class="lt-icon lt-icon-comment"></span>';
+    marker.dataset.first = thread.messages[0].at;
+    marker.commentBlock = block;
+    setRangeOf(marker, 'thread', thread.start, thread.end);
+    marker.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (commentPanelThread === thread.messages[0].at && commentPanel) closeCommentPanel();
+      else openThreadPanel(thread, block);
+    });
+    commentLayer.appendChild(marker);
+  }
+  const resolved = drawResolvedComments(body, commentsDrawn);
+  body.appendChild(commentLayer);
+  if (resolved) {
+    body.appendChild(resolved);
+    
+    const pager = body.querySelector('.docs-pager, .docs-pager-loading');
+    if (pager) body.appendChild(pager);
+  }
+  const place = () => {
+    placeCommentMarkers();
+    if (commentPanel && commentPanelThread) {
+      const open = commentsDrawn.find((thread) => thread.messages[0].at === commentPanelThread);
+      placeCommentPanel(open && commentBlockElement(body, open));
+    }
+  };
+  
+  if (typeof ResizeObserver === 'function') {
+    commentLayerResize = new ResizeObserver(place);
+    commentLayerResize.observe(body);
+  } else place();
+  
+  const reopen = commentPanelThread && commentsDrawn.find((thread) => thread.messages[0].at === commentPanelThread && !thread.resolved);
+  commentPanelThread = null;
+  if (reopen) {
+    const block = commentBlockElement(body, reopen);
+    if (block) openThreadPanel(reopen, block);
+  }
+}
 
 
 
@@ -30238,7 +30976,9 @@ function watchFindRender() {
   
   forgetRenderedText();
   let queued = 0;
-  findRenderObserver = new MutationObserver(() => {
+  findRenderObserver = new MutationObserver((records) => {
+    
+    if (records.every(recordIsTableControlOnly)) return;
     forgetRenderedText();
     if (queued) return;
     queued = window.setTimeout(() => {
@@ -30692,7 +31432,7 @@ function watchReadingCursorRender() {
   if (readingCursorWatch || typeof MutationObserver !== 'function') return;
   readingCursorWatch = new MutationObserver((records) => {
     
-    if (records.every((record) => readingCursorLayer && readingCursorLayer.contains(record.target))) return;
+    if (records.every((record) => (readingCursorLayer && readingCursorLayer.contains(record.target)) || recordIsTableControlOnly(record))) return;
     queueReadingCursorDraw();
   });
   readingCursorWatch.observe(app, { childList: true, subtree: true });
@@ -42533,14 +43273,8 @@ function minimapSourceElement() {
   return readingDocumentRoot();
 }
 
-function minimapRecordIsTableControlOnly(record) {
-  if (record.type !== 'childList') return false;
-  const moved = [...record.addedNodes, ...record.removedNodes];
-  return moved.length > 0 && moved.every((node) => isTableControlNode(node) || isTableSizingGrip(node));
-}
-
 function minimapBodyChanged(records) {
-  if (records.every(minimapRecordIsTableControlOnly)) return;
+  if (records.every(recordIsTableControlOnly)) return;
   if (!noteMinimapCellChanges(records)) invalidateMinimapPreview();
 }
 function bindDocumentMinimapPreview(track) {
@@ -44489,7 +45223,7 @@ function minimapWindowRows(source, appTop, scrollTop, top, bottom) {
     holder = rows[deeper];
   }
 }
-const MINIMAP_CLONE_DROPS = 'textarea, .table-row-handle, .table-column-handle';
+const MINIMAP_CLONE_DROPS = 'textarea, .table-row-handle, .table-column-handle, .comment-layer';
 var minimapCloneMap;
 var minimapCloneHeight;
 var minimapChangedCells;
@@ -44533,7 +45267,7 @@ function minimapChangedCell(record) {
 
 function noteMinimapCellChanges(records) {
   if (readingIsContainedPage()) return false;
-  const cells = records.filter((record) => !minimapRecordIsTableControlOnly(record)).map(minimapChangedCell);
+  const cells = records.filter((record) => !recordIsTableControlOnly(record)).map(minimapChangedCell);
   if (!cells.length || cells.some((cell) => !cell)) return false;
   cells.forEach((cell) => minimapChangedCells.add(cell));
   invalidateMinimapMetrics();

@@ -66,6 +66,10 @@ The document as its raw source — line-numbered, editable, and colored for Mark
 
 A `<details>` / `<summary>` pair, folded away until you click it. Add `open` to start it expanded.
 
+## Comment thread
+
+A conversation about one block of a Markdown note: started on selected words with **Comment** on the [format bar](GLOSSARY.md#format-bar), kept as one line above the block, marked in the margin with a dot while open, and moved to the Resolved list at the foot of the page once resolved. See [Editing](01-features/07-editing.md#comments).
+
 ## CommonMark
 
 The Markdown standard Leaftext parses. [GFM](GLOSSARY.md#gfm) is what it adds on top.
@@ -128,7 +132,7 @@ A `[^name]` reference in the text with its definition collected at the foot of t
 
 ## Format bar
 
-The small bar that appears over words you highlight: copy, highlight and annotate for the words on any page, and on an unlocked one bold, italic, strikethrough, code and link in front of those, then text, a bigger or smaller heading, and quote for the whole [block](GLOSSARY.md#block). A button with nowhere to go grays out. What it holds follows the [padlock](GLOSSARY.md#padlock), because marking a passage up needs no block opened for typing. See [Editing](01-features/07-editing.md#the-format-bar).
+The small bar that appears over words you highlight: copy, highlight, annotate and [comment](GLOSSARY.md#comment-thread) for the words on any page, and on an unlocked one bold, italic, strikethrough, code and link in front of those, then text, a bigger or smaller heading, and quote for the whole [block](GLOSSARY.md#block). A button with nowhere to go grays out. What it holds follows the [padlock](GLOSSARY.md#padlock), because marking a passage up needs no block opened for typing. See [Editing](01-features/07-editing.md#the-format-bar).
 
 ## Formula line
 

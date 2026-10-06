@@ -260,6 +260,12 @@
 | Backticks fenced safely | [✅][l-format-bar] | ? | ? | [❌][c-seen] |
 | No empty formatting | [✅][l-format-bar] | ? | ? | [❌][c-seen] |
 
+## Comments
+
+| Feature | Leaftext | Obsidian | Typora | Calibre |
+| --- | --- | --- | --- | --- |
+| Threaded comments | [✅][l-comments] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+
 ## Padlock and undo
 
 | Feature | Leaftext | Obsidian | Typora | Calibre |
@@ -651,6 +657,7 @@
 [l-table-edit]: ../01-features/07-editing.md#editing-a-table
 [l-formulas]: ../01-features/07-editing.md#a-table-that-adds-itself-up
 [l-format-bar]: ../01-features/07-editing.md#the-format-bar
+[l-comments]: ../01-features/07-editing.md#comments
 [l-padlock]: ../01-features/07-editing.md#the-padlock
 [l-undo]: ../01-features/07-editing.md#undo
 [l-flow]: ../01-features/07-editing.md#the-flowchart-editor
