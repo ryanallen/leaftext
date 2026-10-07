@@ -12,6 +12,8 @@ The Old French prose *Merlin*, retold from Robert de Boron's poem, from the crea
 
 **What the marks mean.** They are Paris and Ulrich's, kept as printed. A bold page number in brackets is where a page of the 1886 edition begins, and links to that page of the scan. Square brackets hold a letter or word Paris and Ulrich added to the Huth manuscript, and round brackets one they would take out; read the text with the first and without the second. A folio reference in italics, *(f. 20 a)*, is where a leaf and column of the Huth manuscript begin. A note numbered for its page, such as 3-1, gives the Huth manuscript's own reading where Paris and Ulrich changed it, as their footnotes do, or records one of the corrections they printed in their errata at the end of volume two. *En marge* gives, in modern French, the summaries Paris and Ulrich printed in the margin. The English headings are this translation's, set at the same places in both texts, so the two outlines match.
 
+---
+
 ## Part 1: The devils ruin a family, and one fathers a child with the last daughter left
 
 ### Christ empties hell, and the devils meet to plan
@@ -1709,6 +1711,8 @@ viers cui il euust nule male volenté de chou qu'il ont esté contre son sacre e
 Ore dist li contes que Artus fu agenoilliés et prist l'espee as ses mains jointes et le leva de l'englume aussi legierement comme se elle n'i tenist riens. Et lors porta l'espee entre ses mains (et) toute droite, et le menerent a l'au(f. 75 a)tel et il le mist sus. Et quant il il l'i ot mise, si le sacrerent et oinsent et fisent tout chou c'on doit faire a roy. Quant Artus fu sacrés et la messe chantee, s'e\[n\] issirent dou moustier, si esgarderent, et ne virent point del perron, et ne sorent qu'il fu devenus. Ensi fu Artus esleus a roi, et tint la terre et le regne de Logres lonc tans a pais.
 
 > *En marge.* et le sacre le jour de la Pentecôte.
+
+---
 
 ## Credits
 

@@ -9081,6 +9081,36 @@ function tabStaysInItsWindow(index) {
 function tabIsAlone() {
   return ((currentState && currentState.tabs) || []).length < 2;
 }
+
+let tabArrival = null;
+window.leafTabArrivalAt = (x, width) => {
+  if (!tabArrival) {
+    const tabs = Array.from(tabBar.querySelectorAll('.tab'))
+      .filter((el) => !el.hidden)
+      .map((el) => {
+        const rect = el.getBoundingClientRect();
+        return { pos: Number(el.dataset.tabPos), el, mid: rect.left + rect.width / 2 };
+      })
+      .sort((a, b) => a.mid - b.mid);
+    tabArrival = { tabs, before: -1, slot: null };
+  }
+  const found = tabArrival.tabs.findIndex((entry) => x < entry.mid);
+  const before = found === -1 ? tabArrival.tabs.length : found;
+  if (before !== tabArrival.before) {
+    tabArrival.before = before;
+    tabArrival.tabs.forEach((entry, i) => { entry.el.style.transform = i >= before ? 'translateX(' + width + 'px)' : ''; });
+  }
+  const slot = before < tabArrival.tabs.length ? tabArrival.tabs[before].pos : ((currentState && currentState.tabs) || []).length;
+  if (slot !== tabArrival.slot) {
+    tabArrival.slot = slot;
+    send({ command: 'tabArrivalSlot', slot });
+  }
+};
+function tabArrivalLeave() {
+  if (!tabArrival) return;
+  tabArrival.tabs.forEach((entry) => { entry.el.style.transform = ''; });
+  tabArrival = null;
+}
 document.addEventListener('pointermove', (event) => {
   if (!tabDrag) return;
   if (!tabDrag.moved) {
@@ -9105,7 +9135,16 @@ document.addEventListener('pointermove', (event) => {
     drawSplitDropZone(false);
     tabDrag.to = tabDrag.filteredFrom;
     updateTabSlides();
+    
+    if (!tabStaysInItsWindow(tabDrag.index)) {
+      tabDrag.over = true;
+      send({ command: 'tabDragOver', width: tabDrag.draggedWidth });
+    }
     return;
+  }
+  if (tabDrag.over) {
+    tabDrag.over = false;
+    send({ command: 'tabDragOff' });
   }
   
   const pastStrip = event.clientY > tabDrag.stripBottom || event.clientX > tabDrag.stripRight;
@@ -9132,6 +9171,8 @@ function endTabDrag(commit, event) {
   if (drag.ghost) { coverWebSurface(false, drag.ghost); drag.ghost.remove(); }
   
   const tearingOut = drag.moved && commit && !!drag.outside && !tabStaysInItsWindow(drag.index);
+  
+  if (drag.over && !tearingOut) send({ command: 'tabDragOff' });
   if (drag.outside) {
     drag.beside = false;
     drag.closing = null;
@@ -18149,16 +18190,39 @@ window.leafSmartLinks = (answer) => {
   renderLibraryOutline();
   renderSmartLinks();
 };
-function smartLinkRowHtml(row, at, linkable) {
+
+function smartLinkFolderWords(rows) {
+  const words = rows.map(() => '');
+  const byName = new Map();
+  rows.forEach((row, at) => {
+    const name = (String(row.path || '').split(/[\\/]/).pop() || '').toLowerCase();
+    if (!byName.has(name)) byName.set(name, []);
+    byName.get(name).push(at);
+  });
+  for (const members of byName.values()) {
+    if (members.length < 2) continue;
+    const folders = members.map((at) => String(rows[at].path || '').split(/[\\/]+/).filter(Boolean).slice(0, -1));
+    let shared = 0;
+    while (folders.every((folder) => shared < folder.length && folder[shared].toLowerCase() === folders[0][shared].toLowerCase())) shared += 1;
+    members.forEach((at, index) => {
+      const rest = folders[index].slice(shared);
+      words[at] = rest.length ? rest.join('/') : shared ? folders[index][shared - 1] : libraryRootLabel();
+    });
+  }
+  return words;
+}
+function smartLinkRowHtml(row, at, linkable, folder) {
   const line = row.snippet ? `<span class="library-hit-snippet">${escapeText(row.snippet)}</span>` : '';
-  const hit = `<button type="button" class="library-hit${linkable ? ' library-links-hit' : ''}" data-smart-row="${at}" title="${escapeAttr(row.path)}"><span class="library-hit-title">${documentNameMarkup(row.path)}</span>${line}</button>`;
+  const also = folder ? `<span class="library-hit-alias">${escapeText(folder)}</span>` : '';
+  const hit = `<button type="button" class="library-hit${linkable ? ' library-links-hit' : ''}" data-smart-row="${at}" title="${escapeAttr(row.path)}"><span class="library-hit-title">${documentNameMarkup(row.path, also)}</span>${line}</button>`;
   if (!linkable) return hit;
   return `<div class="library-links-row">${hit}<button type="button" class="theme-mode-btn library-links-link" data-smart-link="${at}" title="${escapeAttr(`Link these words to ${documentNameParts(smartLinksAnswer.path).stem}`)}">Link</button></div>`;
 }
 function smartLinkGroupHtml(key, label) {
   const group = smartLinksAnswer[key];
   if (!group || !group.rows.length) return '';
-  const rows = group.rows.map((row, at) => smartLinkRowHtml(row, `${key}:${at}`, key === 'mentions')).join('');
+  const folders = smartLinkFolderWords(group.rows);
+  const rows = group.rows.map((row, at) => smartLinkRowHtml(row, `${key}:${at}`, key === 'mentions', folders[at])).join('');
   return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}</span></div>${rows}`;
 }
 function smartLinkRow(address) {
@@ -19925,6 +19989,8 @@ function renderTabs(state) {
     renderLibraryCrumbs(libraryChain);
     return;
   }
+  
+  tabArrivalLeave();
   const tabs = state.tabs || [];
   if (window.leafConsolePrune) window.leafConsolePrune(tabs);
   pruneWebTabPalettes(state);

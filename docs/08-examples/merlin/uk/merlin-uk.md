@@ -23,6 +23,8 @@ The contract came with a second clause: obey it, and you can take from those und
 I'm translating these stories to witness them building this new contract from the old one. It grew out of the church into law and money because in God we trust. We can rely on strangers because a court or a bank stands behind them, so we stopped needing the people next door. That's why so many of us live in buildings full of neighbours we've never met, and stories like these are how we got here.
 <!-- /why -->
 
+---
+
 ## Part 1: The devils ruin a family, and one fathers a child with the last daughter left
 
 ### Christ empties hell, and the devils meet to plan
@@ -2456,6 +2458,8 @@ When Arthur heard this, he cried with pity, as did many barons, and said, "As tr
 ### Arthur lifts the sword once more and is crowned king
 
 The story says Arthur knelt, took the sword in his joined hands, and lifted it from the anvil as easily as if nothing held it. Then he carried it upright in front of him, and they led him to the altar, where he laid it down. Then they anointed and crowned him, and did everything a coronation calls for. When the rite was over and the mass sung, they came out of the church and looked, and saw nothing of the stone, and didn't know what had become of it. So Arthur was chosen king, and he held the land and the kingdom of Logres in peace for a long time.
+
+---
 
 ## Notes on this translation
 

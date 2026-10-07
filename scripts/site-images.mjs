@@ -224,13 +224,15 @@ function selfTest() {
     problems.push('a page naming a picture nobody wrote went uncounted, and the publish would deploy the broken frame');
   }
 
-  // And the one thing that must be true of the real tree: every picture a page asks for is one this converts, so no page is left half moved.
+  // And the one thing that must be true of the real tree: every PNG a page asks for is one this converts, so no page is left half moved. A photograph kept as a JPEG beside the book it scans has nothing to convert and is served as the page wrote it.
   let asked = 0;
+  let photographs = 0;
   const stranded = [];
   for (const page of documentationPages()) {
     for (const reference of referencesIn(page, readFileSync(join(root, page), 'utf8'))) {
       asked += 1;
-      if (!convertible(reference.path)) stranded.push(`${page} asks for '${reference.src}', which is not a PNG under ${PICTURE_DIR}/`);
+      if (/\.jpe?g$/i.test(reference.path)) photographs += 1;
+      else if (!convertible(reference.path)) stranded.push(`${page} asks for '${reference.src}', which is not a PNG under ${PICTURE_DIR}/`);
     }
   }
   problems.push(...stranded);
@@ -241,6 +243,6 @@ function selfTest() {
     process.exit(1);
   }
   console.log(
-    `pictures: ${asked} references, every one a PNG under ${PICTURE_DIR}/, moved onto WebP where the page draws them, left alone inside a code span, inside a fence, on another host and outside ${PICTURE_DIR}/, and a page naming one nobody wrote stops the publish`
+    `pictures: ${asked} references, every one a PNG under ${PICTURE_DIR}/ or one of ${photographs} photographs served as written, moved onto WebP where the page draws them, left alone inside a code span, inside a fence, on another host and outside ${PICTURE_DIR}/, and a page naming one nobody wrote stops the publish`
   );
 }
