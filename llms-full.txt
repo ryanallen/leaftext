@@ -142,6 +142,41 @@
 - Markdown: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md
 - Summary: The terms below occur in the Standard Ebooks edition of Sir Thomas Malory's Le Morte d'Arthur beside this page. They explain the old words, the names and the places that can stop a first-time reade...
 
+## Glossary for Merlin
+- Page: https://leaftext.com/docs/08-examples/merlin/GLOSSARY.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/GLOSSARY.md
+- Summary: The terms below occur in Merlin, the English translation beside this page, and in the Old French text it was made from: Robert de Boron's Merlin, from the Huth manuscript (London, British Library, ...
+
+## How it was made
+- Page: https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.md
+- Summary: What each linked phrase in the line under the book's title means: each section says what its file is for, then opens it.
+
+## Merlin
+- Page: https://leaftext.com/docs/08-examples/merlin/merlin-old-french.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/merlin-old-french.md
+- Summary: Merlin, after Robert de Boron
+
+## Scans
+- Page: https://leaftext.com/docs/08-examples/merlin/merlin-scans.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/merlin-scans.md
+- Summary: Every page this book was read against, kept two ways: a link to the page where it was found online, and a copy saved beside the book, so every page can still be checked if the site that holds it go...
+
+## Merlin
+- Page: https://leaftext.com/docs/08-examples/merlin/merlin.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/merlin.md
+- Summary: Merlin, after Robert de Boron
+
+## Glossary for Merlin
+- Page: https://leaftext.com/docs/08-examples/merlin/uk/GLOSSARY.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/uk/GLOSSARY.md
+- Summary: The terms below occur in Merlin, the English translation beside this page, and in the Old French text it was made from: Robert de Boron's Merlin, from the Huth manuscript (London, British Library, ...
+
+## Merlin
+- Page: https://leaftext.com/docs/08-examples/merlin/uk/merlin-uk.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/uk/merlin-uk.md
+- Summary: Merlin, after Robert de Boron
+
 ## Glossary
 - Page: https://leaftext.com/docs/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/GLOSSARY.md

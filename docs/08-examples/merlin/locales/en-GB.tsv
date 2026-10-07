@@ -1,0 +1,9 @@
+id	kind	us	target	scope	reason
+toise-tower	measure	twenty feet or so	six metres or so	all	Source: trois toises u quatre, Paris–Ulrich 1:38, Vortigern's tower; a toise is about 1.95 m, so three or four are 5.8 to 7.8 m; US rounds the lower reading loosely to twenty feet or so, UK to six metres or so, since ONS gives metric for a building's height; reaches page 38 and the glossary's toises
+toise-length	measure	about six and a half feet	about two metres	all	Source: toise, Paris–Ulrich 1:38; about 1.95 m; US about six and a half feet, UK about two metres; reaches the glossary's toises
+liue-road	measure	a mile and a half	a mile and a half	all	Source: demie liue, Paris–Ulrich 1:49, the peasant's road; a league of about three miles, so half is a mile and a half; ONS keeps miles for a journey, so UK reads as US; reaches page 49 and the glossary's liue
+pie-anvil	measure	a good half a foot high	a good half a foot high	all	Source: largement demi pié haute, Paris–Ulrich 1:135, the anvil on the stone; the French measure is itself a foot, about 32 cm, so half is about 16 cm; UK keeps the source's own unit, as the US does
+pie-anvil	exception	a good half a foot high	a good half a foot high	page-135	The anvil keeps the French's own foot in both editions; a metric figure would be more exact than largement demi pié
+liue-road	exception	a mile and a half	a mile and a half	page-49	A journey stays in miles in the UK edition
+gotten	word	gotten	got	page-14	UK usage: she'd got angry; Oxford Learner's gives gotten as North American
+license-noun	spelling	license	licence	all	UK spelling of the noun; outside the stamped credits this book uses license only as the noun, in the license paragraph under Credits; the verb licensed stays

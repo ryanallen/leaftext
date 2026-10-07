@@ -33,6 +33,7 @@ flowchart LR
 | [Get help](04-help.md) | Where to ask a question and read what other people already asked, what to say when you ask, and what the pages here already answer |
 | [Privacy](07-privacy.md) | What the app reads, where it keeps it and who it talks to, how Google Drive shortcuts open in your browser |
 | [Le Morte d'Arthur](08-examples/le-morte-darthur/le-morte-darthur.epub) | A whole book to open and read, Standard Ebooks' edition of Malory, with [its glossary](08-examples/le-morte-darthur/GLOSSARY.md) underlining the old words, the names and the places |
+| [Merlin](08-examples/merlin/merlin.md) | Robert de Boron's *Merlin*, newly translated from the Old French into [US](08-examples/merlin/merlin.md) and [UK English](08-examples/merlin/uk/merlin-uk.md): every page number opens the [French](08-examples/merlin/merlin-old-french.md), every French page opens its [scan](08-examples/merlin/merlin-scans.md), the [glossary](08-examples/merlin/GLOSSARY.md) underlines the people, places and old words, and [how it was made](08-examples/merlin/merlin-how-it-was-made.md) opens every list the translation was held to |
 | [How it compares](05-compare.md) | Leaftext beside Obsidian, Typora and Calibre, row by row with a source for each cell, how it works beside AI, and what is on the roadmap; every feature sits on one of the ten [comparison chart](06-comparison-chart/01-files-and-formats.md) pages it lists |
 
 ## Features

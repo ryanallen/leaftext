@@ -51,6 +51,8 @@ Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each op
 
 **[Read *Le Morte d'Arthur* here, with its glossary →](docs/08-examples/le-morte-darthur/le-morte-darthur.epub)**
 
+**[Read Robert de Boron's *Merlin* here, newly translated from the Old French →](docs/08-examples/merlin/merlin.md)** In US or [UK English](docs/08-examples/merlin/uk/merlin-uk.md), with the [French it was translated from](docs/08-examples/merlin/merlin-old-french.md) and the [scans of the printed book](docs/08-examples/merlin/merlin-scans.md) a press away.
+
 ### Markdown, rendered the way GitHub renders it
 
 ![Leaftext reading view rendering a Markdown document](imgs/rendering-2x.png)

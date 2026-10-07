@@ -435,6 +435,8 @@ The last four items are the same actions the [library pane's menu](03-library.md
 
 A document draws its terms from a shared glossary file. You do not have to link them yourself: wherever a defined term appears in the text, Leaftext links it for you. Clicking one does not switch documents: it opens that single glossary entry in a sheet that slides up over the page you are reading, so you keep your place underneath.
 
+**[Read *Merlin* to see it →](../08-examples/merlin/merlin.md)** Robert de Boron's book, newly translated, underlines every name, place and old word its [glossary](../08-examples/merlin/GLOSSARY.md) defines, and the [UK edition](../08-examples/merlin/uk/merlin-uk.md) reads [its own](../08-examples/merlin/uk/GLOSSARY.md).
+
 - Terms are matched automatically in Markdown, [XML](01-rendering.md#xml), [JSON and YAML](01-rendering.md#data-files-json-and-yaml) and [INI](01-rendering.md#ini-files) files, [email](01-rendering.md#email-eml), [EPUB books](01-rendering.md#epub-books), and [Word, Excel, PowerPoint and OpenDocument files](01-rendering.md#office-and-opendocument-files) — whole words, ignoring case — so the same glossary covers every page with no per-page markup. A term of several words is matched across whatever whitespace the document puts between them, so a term written across a line break links as one term and keeps the break where the author wrote it.
 - Text that is already a link, or inside code, is left alone, and the glossary file never links its own entries to themselves.
 - Dismiss the sheet with its close button, by clicking outside it, with the `Escape` key, or by dragging the grab bar at its top downwards — a short flick is enough, and letting go partway lets it spring back.

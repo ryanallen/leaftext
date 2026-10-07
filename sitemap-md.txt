@@ -26,5 +26,12 @@ https://leaftext.com/docs/06-comparison-chart/09-export-and-the-published-site.m
 https://leaftext.com/docs/06-comparison-chart/10-coming.md
 https://leaftext.com/docs/07-privacy.md
 https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md
+https://leaftext.com/docs/08-examples/merlin/GLOSSARY.md
+https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.md
+https://leaftext.com/docs/08-examples/merlin/merlin-old-french.md
+https://leaftext.com/docs/08-examples/merlin/merlin-scans.md
+https://leaftext.com/docs/08-examples/merlin/merlin.md
+https://leaftext.com/docs/08-examples/merlin/uk/GLOSSARY.md
+https://leaftext.com/docs/08-examples/merlin/uk/merlin-uk.md
 https://leaftext.com/docs/GLOSSARY.md
 https://leaftext.com/docs/README.md
