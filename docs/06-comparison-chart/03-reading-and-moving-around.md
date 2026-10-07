@@ -66,6 +66,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Many open documents | [✅][l-tabs] | [✅][o-tabs] | [✅][t-keys] | [❌][c-seen] |
+| Tabs torn into windows | [✅][l-tabs] | ? | ? | ? |
 | Tabs inside one document | [✅][l-doc-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Strip scrolls, never squeezes | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Wheel scrolls tabs | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

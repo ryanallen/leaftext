@@ -166,6 +166,7 @@ Under a note's headings, the pane says what else in your notes is about it, in u
 - **Link**, at the right of each of those rows, opens that note at the words and writes a link over them — `[the words as written](Station%20handbook.md)`, a relative path from that note's folder — as one step **Undo** takes back. Nothing is saved until you save. If the words have moved since the list was drawn, nothing is written, the app says so, and the list is drawn again.
 - **About the same thing** lists up to ten other notes that share this note's rarest words, or link to the same notes it does, most alike first; each row names the rare words the two share. A word most of your notes use counts for nothing, and a long note is weighed against its length so it is not about everything. A note already in either group above is left out of this one.
 - Inside a [vault](#vaults) the groups read every note in it, and are drawn again whenever a note changes on disk. Outside one they read the note's own folder, the same bound the [graph](#graph) draws.
+- On a published site, the pane draws **Links here** alone, from the links published with the site's document list, so every page that links to this one is listed whatever folder it is in. A row has no line under it, and pressing it opens that page at its top.
 
 ### File types
 

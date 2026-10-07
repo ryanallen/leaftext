@@ -87,7 +87,17 @@ async function load(url, fetchWith = fetch) {
     // The same, for a term of the glossary `setGlossary` already handed over, answered out of the module's own copy so the text never crosses again.
     heldGlossaryEntryPreview: (path, slug) => typeof api.leaf_held_glossary_entry_preview === 'function'
       ? JSON.parse(withStrings((...args) => api.leaf_held_glossary_entry_preview(...args), path, slug) || 'null') : undefined,
-    graph: (documents, seed, scope) => JSON.parse(withStrings(api.leaf_graph, JSON.stringify(documents), seed, scope) || 'null'),
+    // The site's listing, read once by the module for the map and the pane's groups. A module older than the page holds nothing, and neither is drawn.
+    holdListing: (documents) => {
+      if (typeof api.leaf_hold_listing !== 'function') return false;
+      const listing = write(JSON.stringify(documents));
+      const held = Boolean(api.leaf_hold_listing(...listing));
+      api.leaf_free(...listing);
+      return held;
+    },
+    graph: (seed, scope) => typeof api.leaf_hold_listing === 'function'
+      ? JSON.parse(withStrings(api.leaf_graph, seed, scope) || 'null') : null,
+    smartLinks: (path) => typeof api.leaf_smart_links === 'function' ? withStrings(api.leaf_smart_links, path) : null,
     corpusAdd: (path, bytes) => {
       if (typeof api.leaf_corpus_add !== 'function') return false;
       const name = write(path);
@@ -271,6 +281,7 @@ export const COMMANDS = {
   closeTab: [REFUSED, 'the browser owns tabs on a site'],
   switchTab: [REFUSED, 'the browser owns tabs on a site'],
   moveTab: [REFUSED, 'the browser owns tabs on a site'],
+  tearOutTab: [REFUSED, 'the browser owns windows on a site'],
   openBeside: [REFUSED, 'the browser owns tabs on a site'],
   openBesidePath: [REFUSED, 'the browser owns tabs on a site'],
   closeBeside: [REFUSED, 'the browser owns tabs on a site'],
@@ -377,8 +388,8 @@ export const COMMANDS = {
   codeCompleteHeadings: [ANSWERED],
   codeHoverNote: [ANSWERED],
   codeLint: [ANSWERED],
-  smartLinks: [LATER, 'the-published-site-does-not-say-what-links-to-a-note'],
-  linkMention: [LATER, 'the-published-site-does-not-say-what-links-to-a-note'],
+  smartLinks: [ANSWERED], // Links here alone, from the links the listing publishes: the other two groups read every page's text, which a site does not fetch to draw a page.
+  linkMention: [REFUSED, 'a site offers no mention to link, because finding one means reading every published page’s text'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],
@@ -551,6 +562,14 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // Every picture address this page made out of the open book, let go together when another document opens: revoking one as it scrolls away would leave nothing to decode it from when the reader scrolls back.
   const minted = [];
   const known = new Set(documents.map((entry) => entry.path));
+  // Whether the module holds the listing: asked for on the first map or groups that needs it, and never again either way. A listing published before links were is never handed over.
+  let listingHeld = null;
+  const holdListing = () => {
+    if (listingHeld === null) {
+      listingHeld = documents.every((entry) => entry.links && typeof entry.links === 'object') && core.holdListing(documents);
+    }
+    return listingHeld;
+  };
   let corpusLoading = null;
   let corpusReady = false;
   let currentSearch = null;
@@ -1347,7 +1366,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         if (documents.some((entry) => !entry.links || typeof entry.links !== 'object')) {
           throw new Error('The map needs this site published again.');
         }
-        answer = core.graph(documents, open || '', String(scope || 'small'));
+        answer = holdListing() ? core.graph(open || '', String(scope || 'small')) : null;
         if (!answer || !Array.isArray(answer.nodes) || !Array.isArray(answer.edges)) {
           throw new Error('The map could not be read.');
         }
@@ -1355,6 +1374,12 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
         answer = { error: { message: (error && error.message) || 'The map could not be read.' } };
       }
       run(`window.leafSetGraph(${JSON.stringify(answer)});`);
+    },
+    // Where the listing was not held, the module answers the note with no groups.
+    smartLinks: ({ path }) => {
+      holdListing();
+      const script = core.smartLinks(String(path || ''));
+      if (script) run(script);
     },
     openRecent: (command) => {
       stampPlace(command);

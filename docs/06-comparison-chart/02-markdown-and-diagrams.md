@@ -224,6 +224,7 @@
 | Open in flowchart editor | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Point-to-edit sequence diagrams | [✅][l-sequence-editor] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Point-to-edit state diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
+| Point-to-edit concept diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
 | Chart values as rows | [✅][l-flowchart-editor] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Boxes as links | [✅][l-mermaid] | [✅][o-adv] | ? | [❌][c-seen] |
 | App icons in boxes | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
