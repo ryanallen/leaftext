@@ -22666,9 +22666,24 @@ function bindTaskCheckboxes(tasks) {
     box.removeAttribute('disabled');
     box.dataset.taskIndex = String(index);
     box.addEventListener('change', () => {
+      drawTaskDone(box);
       sendTaskToggle(box, index);
     });
+    
+    box.addEventListener('task-set', () => drawTaskDone(box));
   });
+}
+
+
+function drawTaskDone(box) {
+  for (let node = box.nextSibling; node; node = node.nextSibling) {
+    if (node.nodeType !== 1) continue;
+    if (node.tagName === 'UL' || node.tagName === 'OL') return;
+    if (node.classList.contains('task-words')) {
+      node.classList.toggle('task-done', box.checked);
+      return;
+    }
+  }
 }
 
 
@@ -22677,7 +22692,11 @@ function bindTaskCheckboxes(tasks) {
 function sendTaskToggle(box, index) {
   const drawn = box.checked;
   const token = leafWaitForEdit((held, why) => {
-    if (!held) box.checked = !drawn;
+    if (!held) {
+      box.checked = !drawn;
+      
+      box.dispatchEvent(new Event('task-set'));
+    }
     
     if (why) leafToast(why, 'error');
   });
@@ -22702,7 +22721,9 @@ function bindTableCheckboxesIn(table) {
   table.querySelectorAll('td input[type="checkbox"]').forEach((box) => {
     const cell = box.closest('td');
     box.removeAttribute('disabled');
+    box.addEventListener('task-set', () => drawTaskDone(box));
     box.addEventListener('change', () => {
+      drawTaskDone(box);
       
       const whole = tableWysiwygSafe(table) ? tableDomToMarkdown(table) : sliceSourceBytes(start, end);
       sendCheckboxBlockEdit(table, start, end, whole, tableCellPosition(table, cell), box);
@@ -22975,6 +22996,11 @@ function isSpeedReaderAnchor(el) {
 }
 
 
+function isTaskWords(el) {
+  return !!(el.classList && el.classList.contains('task-words'));
+}
+
+
 
 
 function badgeToneOf(el) {
@@ -23148,7 +23174,7 @@ function inlineDomToMarkdown(node) {
       return;
     }
     
-    if (MARKDOWN_RAW_INLINE_TAGS.has(tag) && !isSpeedReaderAnchor(child)) {
+    if (MARKDOWN_RAW_INLINE_TAGS.has(tag) && !isSpeedReaderAnchor(child) && !isTaskWords(child)) {
       out += rawInlineHtmlToMarkdown(child, tag);
       return;
     }
@@ -23344,8 +23370,9 @@ function tableDelimiterCells(headCells) {
 function tableCellMarkdown(cell) {
   const box = cell.querySelector('input[type="checkbox"]');
   const text = tableCellWords(inlineDomToMarkdown(cell));
-  if (box && !text) return box.checked ? '[x]' : '[ ]';
-  return text;
+  if (!box) return text;
+  const marker = box.checked ? '[x]' : '[ ]';
+  return text ? marker + ' ' + text : marker;
 }
 
 
@@ -24853,7 +24880,10 @@ function commitBlockLeaving(el, start, end, text) {
 function sendCheckboxBlockEdit(el, start, end, text, cell, box) {
   const drawn = box.checked;
   const token = leafWaitForEdit((held, why) => {
-    if (!held) box.checked = !drawn;
+    if (!held) {
+      box.checked = !drawn;
+      box.dispatchEvent(new Event('task-set'));
+    }
     if (why) leafToast(why, 'error');
   });
   send({ command: 'editBlock', start, end, text, autosave: true, cell, token });

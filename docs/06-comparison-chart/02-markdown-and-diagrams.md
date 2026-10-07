@@ -105,6 +105,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Task checkboxes | [✅][l-tasks] | [✅][o-syntax] | [✅][t-md] | [❌][c-seen] |
+| Ticked tasks dimmed | [✅][l-tasks] | ? | ? | [❌][c-seen] |
 | Task due dates | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Colored by due date | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Quick date menu | [✅][l-tasks] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

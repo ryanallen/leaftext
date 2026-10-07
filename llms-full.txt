@@ -137,6 +137,21 @@
 - Markdown: https://leaftext.com/docs/07-privacy.md
 - Summary: Leaftext is a desktop app for reading and writing your own documents, made by one person. There is no Leaftext account and no Leaftext server: nothing you open, write or connect is sent to the make...
 
+## Sources of the Arthurian shelf
+- Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.html
+- Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.md
+- Summary: Every published book on the shelf, by where it sits in the story. Each work's page says when it was written and on what evidence, which edition the book is translated from and why that edition is f...
+
+## Merlin
+- Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/robert-de-boron-merlin.html
+- Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/robert-de-boron-merlin.md
+- Summary: Written in Old French, c. 1200–1210. Robert de Boron's Joseph, which the Merlin follows on from, names his lord Gautier de Montbéliard, who left on the Fourth Crusade in 1202 and died in the East i...
+
+## The whole story
+- Page: https://leaftext.com/docs/08-examples/arthurian-shelf/story-map.html
+- Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/story-map.md
+- Summary: Every episode of the Arthurian legend the published books tell, in the story's own order, from Britain's founding to after Camlann. A note in each book links the episode its passage belongs to, and...
+
 ## Glossary for Le Morte d'Arthur
 - Page: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md

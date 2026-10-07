@@ -10323,6 +10323,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   cursor: default;
 }
 
+.document-body .task-words.task-done {
+  opacity: var(--lt-opacity-60);
+}
+
 .document-body .leaf-editable:not(table) {
   cursor: text;
 }

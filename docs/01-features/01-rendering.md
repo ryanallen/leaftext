@@ -351,7 +351,7 @@ A table with one column and at most one body row draws as a card. A header on it
 
 **A table with a few rows in it can become a relational table.** Point at a table with a header row and two or more body rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
 
-A table cell whose entire content is a task-list marker — `[ ]` or `[x]` — renders as a checkbox, so a table can carry a status column:
+A table cell that starts with a task-list marker — `[ ]` or `[x]` — renders it as a checkbox, so a table can carry a status column, and words after the marker sit beside the box and dim while it is ticked:
 
 | Step            | Done  |
 | --------------- | ----- |
@@ -368,6 +368,8 @@ Narrow the reader far enough that the grid no longer fits and the table stops be
 - [x] Render a page
 - [x] Search the library
 - [ ] Reformat the source on save (out of scope — edits are saved verbatim)
+
+A ticked task's own words are drawn dimmed, the way a finished item reads; a task nested under it, and the date badge on its line, keep their own strength.
 
 A task can carry a date at the end of its line, written `📅 09/16/2026` — month, day and four-digit year. It is drawn as a short badge after the words, `Sep 16`, with the year only when it is not this one: red once the day has passed, green on the day itself, amber from tomorrow through the next seven days, and gray when it is later or the box is ticked. Pressing the badge opens a menu offering today, tomorrow and next Monday, a box for any other date, and a row that clears it. Picking one rewrites only that date in the file, and undo puts it back. A date written any other way stays part of the words.
 

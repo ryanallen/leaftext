@@ -29,9 +29,9 @@ I'm translating these stories to witness them building this new contract from th
 
 ### Christ empties hell, and the devils meet to plan
 
-<a id="page-1"></a>[\[Paris–Ulrich 1:1\]](../merlin-old-french.md#page-1) The story says that Satan was furious when our Lord came into hell and led Adam and Eve out,[^1-1][^1-2] with as many of the others as he chose. When the devils heard, they were stunned. They gathered and said, "Who's this man who has beaten us, broken down our walls, dragged out everything we'd hidden, and done whatever he likes? We never thought anyone could be born from a woman and not be ours. But this one is free of us, and he does all he can to destroy and torment us. How could he come into the world without any of the earthly pleasure that belongs to us, and still do this to us?"
+<a id="page-1"></a>[\[Paris–Ulrich 1:1\]](../merlin-old-french.md#page-1) The story says that Satan was furious when our Lord came into hell and led Adam and Eve out,[^1-1][^1-2] with as many of the others as he chose.[^1-3] When the devils heard, they were stunned. They gathered and said, "Who's this man who has beaten us, broken down our walls, dragged out everything we'd hidden, and done whatever he likes? We never thought anyone could be born from a woman and not be ours. But this one is free of us, and he does all he can to destroy and torment us. How could he come into the world without any of the earthly pleasure that belongs to us, and still do this to us?"
 
-Then one of the devils answered, "Friends, what ruined us is the very thing we thought would serve us best.[^1-3]
+Then one of the devils answered, "Friends, what ruined us is the very thing we thought would serve us best.[^1-4]
 
 <a id="page-2"></a>[\[Paris–Ulrich 1:2\]](../merlin-old-french.md#page-2) "Remember how the prophets said the Son of God would come to earth to save the sinners descended from Adam and Eve? So we captured the ones who said he'd come and free them from hell. They kept saying it until it happened. He's freed everyone we held, and we can't take anything back. He's carried off all who believe he was born to a woman, so completely that we never got a single one of them. We never saw it coming."
 
@@ -65,7 +65,7 @@ The one who'd said he had power over the woman wasted no time. He went to her an
 
 ### A devil kills a rich man's animals, and the man gives him everything
 
-She was the wife of a rich man who owned large herds and plenty of other wealth. They had a son and three daughters. The devil got straight to work. He went to the fields where the man's sheep grazed and killed some of them.
+She was the wife of a rich man who owned large herds and plenty of other wealth.[^4-1] They had a son and three daughters. The devil got straight to work. He went to the fields where the man's sheep grazed and killed some of them.
 
 Another day he came to the woman and asked how he could trick her husband. She said the best way was to make him angry by taking what was his. "Take his things," she said, "and he'll rage like a madman."
 
@@ -181,7 +181,7 @@ So the holy man taught her, and she was very afraid of being tricked.
 
 ### The older sister goes to bed angry, and a devil gets her pregnant
 
-Then the girl went home, firm in her faith and very humble before God. Decent men and women came to her again and again and said, "Young woman, your sisters' wicked lives must frighten you. Think carefully now, and don't be discouraged. You're very rich, with a large inheritance, and any respectable man would be glad to know you were living well; he'd be happy to marry you."
+Then the girl went home, firm in her faith and very humble before God.[^11-1] Decent men and women came to her again and again and said, "Young woman, your sisters' wicked lives must frighten you. Think carefully now, and don't be discouraged. You're very rich, with a large inheritance, and any respectable man would be glad to know you were living well; he'd be happy to marry you."
 
 "May our Lord protect me as he knows I need," she said.
 
@@ -221,7 +221,7 @@ The night passed and day came. As soon as it was light, the devil took the young
 
 ### The older sister confesses, and the holy man can hardly believe her
 
-<a id="page-14"></a>[\[Paris–Ulrich 1:14\]](../merlin-old-french.md#page-14) The story says that once they'd come, the young woman set out to see her confessor.
+<a id="page-14"></a>[\[Paris–Ulrich 1:14\]](../merlin-old-french.md#page-14) The story says that once they'd come, the young woman set out to see her confessor.[^14-1]
 
 When she arrived and the holy man saw her, he said, "My daughter, you're in trouble, I think; I can see you're terribly frightened."
 
@@ -321,15 +321,15 @@ When that was done, the holy man spoke to her from outside: "When you've had the
 
 ### Merlin is born and baptised
 
-<a id="page-19"></a>[\[Paris–Ulrich 1:19\]](../merlin-old-french.md#page-19) So she stayed a long time in the tower, and the judges had arranged for everything the women with her needed and sent it in. They lived there as you've heard, and she had a child when the Lord God chose. When he was born, he had, as he was bound to, the mind and the power of the devil who had fathered him.
+<a id="page-19"></a>[\[Paris–Ulrich 1:19\]](../merlin-old-french.md#page-19) So she stayed a long time in the tower, and the judges had arranged for everything the women with her needed and sent it in.[^19-1] They lived there as you've heard, and she had a child when the Lord God chose. When he was born, he had, as he was bound to, the mind and the power of the devil who had fathered him.
 
-But the demon had been a fool, because our Lord had redeemed her with his death and pardoned the sin for her true repentance,[^19-1] and he had only fooled her by trickery. As soon as she knew she'd been tricked, she asked for mercy as she should, and put herself in the care and under the authority of the Church and of God, and kept the commandments her confessor had given her.
+But the demon had been a fool, because our Lord had redeemed her with his death and pardoned the sin for her true repentance,[^19-2] and he had only fooled her by trickery. As soon as she knew she'd been tricked, she asked for mercy as she should, and put herself in the care and under the authority of the Church and of God, and kept the commandments her confessor had given her.
 
 So God didn't want the devil to lose what he was owed there, what he'd gone to all that trouble for: he wanted the child to have the devil's skill, his power to know everything said and done in the past, and the boy had all of it.
 
-Our Lord, who sees everything, chose that the sin should do her no harm at all, because of the mother's repentance and the sincere confession he knew was in her heart, since it hadn't happened by her will or wish, and because of baptism, in which she'd been washed at the font; and he gave the child the gift of knowing the future.[^19-2]
+Our Lord, who sees everything, chose that the sin should do her no harm at all, because of the mother's repentance and the sincere confession he knew was in her heart, since it hadn't happened by her will or wish, and because of baptism, in which she'd been washed at the font; and he gave the child the gift of knowing the future.[^19-3]
 
-So from the devil he knew what had been said and done in the past. As for what lay ahead, our Lord wanted him to know that too, on God's side, to weigh against the other gift.[^19-3] Now he can turn whichever way he likes: if he wants, he can give the devil his due, and our Lord his.
+So from the devil he knew what had been said and done in the past. As for what lay ahead, our Lord wanted him to know that too, on God's side, to weigh against the other gift.[^19-4] Now he can turn whichever way he likes: if he wants, he can give the devil his due, and our Lord his.
 
 <a id="page-20"></a>[\[Paris–Ulrich 1:20\]](../merlin-old-french.md#page-20) The demon formed nothing in him but the body. It's our Lord who puts in the spirit, to see and hear and understand, giving each of us intelligence and memory as he pleases, and he gave this child more than others, because he'd need it badly. Then we'll see which side he takes.
 
@@ -569,7 +569,7 @@ Merlin said, "It's the way of every wicked heart to notice the bad more than the
 
 ### Blaise agrees to write Merlin's book of Joseph and the Grail
 
-Blaise answered, "I'll be glad to write it. But I call on you, in the name of the Father, the Son and the Holy Spirit, of the kind lady who carried God in her body, of all his angels, archangels and apostles, and of everything that's God's, never to trick me or lead me astray, or do anything that wouldn't please our Lord."
+Blaise answered, "I'll be glad to write it.[^31-1] But I call on you, in the name of the Father, the Son and the Holy Spirit, of the kind lady who carried God in her body, of all his angels, archangels and apostles, and of everything that's God's, never to trick me or lead me astray, or do anything that wouldn't please our Lord."
 
 "May every creature you've named turn God against me," Merlin answered, "if I do anything to you that goes against his will."
 
@@ -601,9 +601,9 @@ England hadn't yet had a Christian ruler, and of those who held the throne befor
 
 ### Vortigern, steward to King Constans, won't fight for the young King Moine
 
-The story says there was a king in England called Constans. He reigned a long time and had three sons: Moine, Pendragon and Uther. He also had a steward, Vortigern, who was very wise and clever and a good knight by the standards of those days. Constans died, and the people asked who should be crowned in his place. Most agreed on Moine.
+The story says there was a king in England called Constans.[^33-2] He reigned a long time and had three sons: Moine, Pendragon and Uther. He also had a steward, Vortigern, who was very wise and clever and a good knight by the standards of those days. Constans died, and the people asked who should be crowned in his place. Most agreed on Moine.
 
-Once Moine was on the throne, war broke out, with Vortigern still his steward. The Saxons attacked King Moine, and those who held the law of Rome came many times to fight the Christians.[^33-2] Vortigern, who ran the land, did just as he liked. The young ruler wasn't as wise or brave as he needed to be. Vortigern had drawn much of the country and the people's hearts to himself, and knew they thought highly of him.
+Once Moine was on the throne, war broke out, with Vortigern still his steward. The Saxons attacked King Moine, and those who held the law of Rome came many times to fight the Christians.[^33-3] Vortigern, who ran the land, did just as he liked. The young ruler wasn't as wise or brave as he needed to be. Vortigern had drawn much of the country and the people's hearts to himself, and knew they thought highly of him.
 
 <a id="page-34"></a>[\[Paris–Ulrich 1:34\]](../merlin-old-french.md#page-34) He grew proud, and seeing that no one else could do what he did, he said he'd have nothing more to do with the king's war, and stood back. When the Saxons heard that Vortigern had left the fighting, they gathered and came against the Christians with a great army.
 
@@ -641,7 +641,7 @@ So the two men agreed to take the boys to foreign countries in the east, where t
 
 ### Vortigern kills Moine's murderers, marries a Saxon and sees his tower fall
 
-The story says that Vortigern was chosen king, as I've told you. When he'd been crowned and was lord of the land, the men who'd killed King Moine came to him. Vortigern gave no sign he'd ever seen them before. They burst in on him and began to throw it in his face that he owed his throne to them and that they'd murdered King Moine. When Vortigern heard them say they'd done away with their lord, he had them all arrested. "You've condemned yourselves," he said, "because you had no right to do it.
+The story says that Vortigern was chosen king, as I've told you.[^36-1] When he'd been crowned and was lord of the land, the men who'd killed King Moine came to him. Vortigern gave no sign he'd ever seen them before. They burst in on him and began to throw it in his face that he owed his throne to them and that they'd murdered King Moine. When Vortigern heard them say they'd done away with their lord, he had them all arrested. "You've condemned yourselves," he said, "because you had no right to do it.
 
 <a id="page-37"></a>[\[Paris–Ulrich 1:37\]](../merlin-old-french.md#page-37) "You'd do the same to me if you could. But I'll know very well how to guard against it."
 
@@ -739,7 +739,7 @@ Vortigern said he'd have them well guarded while he sent for the boy's blood.
 
 ### Vortigern's messengers find the boy Merlin, and he tells them who he is
 
-<a id="page-43"></a>[\[Paris–Ulrich 1:43\]](../merlin-old-french.md#page-43) "That way, as we've told you, your tower will stand, if it's ever going to."
+<a id="page-43"></a>[\[Paris–Ulrich 1:43\]](../merlin-old-french.md#page-43) "That way, as we've told you, your tower will stand, if it's ever going to."[^43-1]
 
 Vortigern had all his clerks put in a strong house and gave them all they needed. He chose his messengers and sent them out everywhere, two by two; there were twelve of them. He made them swear on the relics that whoever could find the child would kill him, bring back the blood, and not come home until they'd found him. That's how, as you've heard, Vortigern sent for Merlin.
 
@@ -905,7 +905,7 @@ So Merlin and the messengers rode out together to meet Vortigern. When Merlin sa
 
 ### Merlin shames the clerks and tells Vortigern what lies under the tower
 
-The story says the king then brought Merlin to the tower that kept falling. The clerks were summoned and came in, and Merlin had one of the messengers who'd come with him ask them, "Why do you say it can't stand?"
+The story says the king then brought Merlin to the tower that kept falling.[^53-1] The clerks were summoned and came in, and Merlin had one of the messengers who'd come with him ask them, "Why do you say it can't stand?"
 
 "We know nothing about why it falls," they answered, "but we've told the king how it'll hold."
 
@@ -1039,7 +1039,7 @@ Vortigern was devastated to hear this news and to know these people were coming.
 
 ### Merlin goes to Blaise, and Constans's sons land at Winchester
 
-<a id="page-61"></a>[\[Paris–Ulrich 1:61\]](../merlin-old-french.md#page-61) So Merlin told Vortigern the princes would land at the port of Winchester three months from that day. Vortigern summoned his people for the date Merlin had given, to meet them at the shore. When they'd all gathered, none of them knew why he'd sent for them, except those who'd been at that meeting.
+<a id="page-61"></a>[\[Paris–Ulrich 1:61\]](../merlin-old-french.md#page-61) So Merlin told Vortigern the princes would land at the port of Winchester three months from that day.[^61-1] Vortigern summoned his people for the date Merlin had given, to meet them at the shore. When they'd all gathered, none of them knew why he'd sent for them, except those who'd been at that meeting.
 
 Merlin wasn't there. As soon as he'd explained why the tower fell and what the two dragons meant, he said goodbye to the king, telling Vortigern he'd done what he'd set out to do. So Merlin went to Blaise in Northumberland and told him all this. Blaise wrote it down, and it's from his book that we still know it. Merlin stayed there a long time, until the sons of Constans came looking for him.
 
@@ -1049,7 +1049,7 @@ Vortigern waited at the port with a great army for the day Merlin had named. On 
 
 When the people on the beach heard that these were their own lord's children, they could see the princes had the stronger force, and that fighting them could go badly. They told Vortigern so.
 
-<a id="page-62"></a>[\[Paris–Ulrich 1:62\]](../merlin-old-french.md#page-62) When Vortigern saw that most of his people were leaving him and had already gone over to Pendragon, he was afraid. He told the men who couldn't desert him, the ones Hengist the Saxon had sent him, to stock the castle well,[^61-1] and they did it as best they could.
+<a id="page-62"></a>[\[Paris–Ulrich 1:62\]](../merlin-old-french.md#page-62) When Vortigern saw that most of his people were leaving him and had already gone over to Pendragon, he was afraid. He told the men who couldn't desert him, the ones Hengist the Saxon had sent him, to stock the castle well,[^61-2] and they did it as best they could.
 
 The ships came in, and once they'd landed, the knights stepped out fully armed, with all the rest of the people after them. They made for Vortigern's walls. Many of the people who saw their rightful lords coming went out to meet them and received them as their own. Those on Vortigern's side shut themselves in and held out all they could, while the men outside attacked hard. They kept on until Pendragon set the place on fire. The flames caught and destroyed a great part of it, and Vortigern burned to death in them.
 
@@ -1069,7 +1069,7 @@ Among them were five of the men who'd been there when Merlin spoke to Vortigern 
 
 ### Merlin, disguised as a woodcutter, tells Pendragon's messengers where to find him
 
-So Pendragon sent messengers all over the kingdom to look for Merlin. Merlin knew of it, and as soon as he'd talked with Blaise, he made his way as fast as he could to a town where he was sure the king's men were staying. He came in as a woodcutter, an axe on his shoulder, wearing big leggings and a tunic in rags. His hair was a shaggy tangle, and with his long beard he looked like a wild man.
+So Pendragon sent messengers all over the kingdom to look for Merlin.[^63-1] Merlin knew of it, and as soon as he'd talked with Blaise, he made his way as fast as he could to a town where he was sure the king's men were staying. He came in as a woodcutter, an axe on his shoulder, wearing big leggings and a tunic in rags. His hair was a shaggy tangle, and with his long beard he looked like a wild man.
 
 That was how he walked into a house where they were lodging. They stared at him in amazement, and one said to another, "That one looks like a bad sort."
 
@@ -1221,13 +1221,13 @@ When the king heard this remarkable story, he asked, "Merlin, what did you look 
 
 ### Merlin goes to Blaise, and Pendragon tells Uther about him
 
-The story says that this was how Merlin came to know King Pendragon. He said goodbye and went to his master Blaise and told him all of it again, and Blaise wrote it down, and it's through him that we know it. Pendragon travelled on, day after day, until he reached Uther, who was delighted to see him. As soon as they'd greeted each other, Pendragon took his brother aside, told him of Hengist's death as Merlin had told it, and asked whether it was true.
+The story says that this was how Merlin came to know King Pendragon.[^71-2] He said goodbye and went to his master Blaise and told him all of it again, and Blaise wrote it down, and it's through him that we know it. Pendragon travelled on, day after day, until he reached Uther, who was delighted to see him. As soon as they'd greeted each other, Pendragon took his brother aside, told him of Hengist's death as Merlin had told it, and asked whether it was true.
 
 "I don't know who told you," said Uther, "but God help me, you've told me something I thought no one knew but God and a very old gentleman who told it to me in private. I didn't think anyone could have found out. For God's sake, tell me who told you this. I'm astonished you know it."
 
 "I know it well," said Pendragon, "but please, tell me who the gentleman was who saved you from death. From what I've learned, if it weren't for him, Hengist would have killed you."
 
-"My lord, I swear I don't know who he was. But he seemed a wise, decent man, and because of that I trusted him, since he told me nothing I shouldn't believe. It took great daring for someone to try to murder me in our army and in my tent."[^71-2]
+"My lord, I swear I don't know who he was. But he seemed a wise, decent man, and because of that I trusted him, since he told me nothing I shouldn't believe. It took great daring for someone to try to murder me in our army and in my tent."[^71-3]
 
 "Would you know the man again if you saw him?" asked Pendragon.
 
@@ -1367,7 +1367,7 @@ Then both brothers begged Merlin, for God's sake, and because they'd trust him i
 
 ### Merlin advises peace with the Saxons still in the land
 
-The story says that Merlin said goodbye to Pendragon and Uther to take on a look the people of the land would know him by. Leaving them, he called on the men who'd once advised Vortigern. When they saw him, they were overjoyed and ran at once to tell Pendragon he'd come. The news delighted him, and he went out to greet Merlin. "Merlin," said his friends, "here's the king coming to meet you." Pendragon made a great fuss of him and took him to his lodging.
+The story says that Merlin said goodbye to Pendragon and Uther to take on a look the people of the land would know him by.[^78-1] Leaving them, he called on the men who'd once advised Vortigern. When they saw him, they were overjoyed and ran at once to tell Pendragon he'd come. The news delighted him, and he went out to greet Merlin. "Merlin," said his friends, "here's the king coming to meet you." Pendragon made a great fuss of him and took him to his lodging.
 
 As soon as Merlin was inside, the king's advisers drew Pendragon aside. "My lord, here's Merlin, the best seer there is. Ask him to tell you how you'll take that castle and how the war between you and the Saxons will end. If he's willing, he'll tell you." Pendragon said he'd be very glad to. They left it there for the moment, since he wanted to treat Merlin with great respect.
 
@@ -1493,7 +1493,7 @@ After that Merlin came to Pendragon and his brother Uther and told them, with de
 
 ### Merlin warns that the Saxons are coming and tells how to beat them
 
-"Do you remember the Saxons you threw out of your land after Hengist died?"
+"Do you remember the Saxons you threw out of your land after Hengist died?"[^86-1]
 
 "Yes, very well."
 
@@ -1565,9 +1565,9 @@ After Pendragon's death, Uther was left, and became king. He had the Christians'
 
 ### Uther takes the name Pendragon, and Merlin sends for stones from Ireland
 
-The king was overjoyed to see Merlin. "Uther," said Merlin, "I want you to tell your people what I told you about the Saxons who'd come into your land, the promise you and Pendragon together made me, and the oaths you swore each other."
+The king was overjoyed to see Merlin.[^92-1] "Uther," said Merlin, "I want you to tell your people what I told you about the Saxons who'd come into your land, the promise you and Pendragon together made me, and the oaths you swore each other."
 
-Uther told them all of it: everything that had passed between him and Pendragon, and all Merlin had said about the dragon, which the two of them had understood no better than anyone else. Then Merlin explained what it meant: its coming had signalled Pendragon's death and King Uther's rise. So the name was given to Uther as a surname, to honour his brother,[^92-1] for the sign that had appeared and what it stood for, and from then on he was always called Uther Pendragon. That was how the barons learned what Merlin had wanted, and the orders he'd given the pair.
+Uther told them all of it: everything that had passed between him and Pendragon, and all Merlin had said about the dragon, which the two of them had understood no better than anyone else. Then Merlin explained what it meant: its coming had signalled Pendragon's death and King Uther's rise. So the name was given to Uther as a surname, to honour his brother,[^92-2] for the sign that had appeared and what it stood for, and from then on he was always called Uther Pendragon. That was how the barons learned what Merlin had wanted, and the orders he'd given the pair.
 
 Things stayed that way a long while, and Merlin was very close to Uther Pendragon and his advisers. Then one day, when Uther Pendragon was settled in his kingdom, Merlin called him and said, "What are you going to do for Pendragon, who lies at Salisbury?"
 
@@ -1577,7 +1577,7 @@ Things stayed that way a long while, and Merlin was very close to Uther Pendrago
 
 "What can I do?" the king asked.
 
-"Set out to make something never known before, that people will talk about forever."[^92-2]
+"Set out to make something never known before, that people will talk about forever."[^92-3]
 
 "I'd be glad to," he answered.
 
@@ -1613,11 +1613,11 @@ The king promised Merlin he'd never speak of it. Then Merlin said, "Sire, the tr
 
 ### Merlin tells Uther about the table of the Last Supper and Joseph's table
 
-<a id="page-95"></a>[\[Paris–Ulrich 1:95\]](../merlin-old-french.md#page-95) "Sire, you must believe that our Lord came to earth to save the world, and sat at the Last Supper and said to the apostles, 'One of you is going to betray me.' The one who did that wrong was cut off from their company, just as our Lord had said. After that, Sire, our Lord died for us, and a knight asked for the body and took it down from the cross.
+<a id="page-95"></a>[\[Paris–Ulrich 1:95\]](../merlin-old-french.md#page-95) "Sire, you must believe that our Lord came to earth to save the world, and sat at the Last Supper and said to the apostles, 'One of you is going to betray me.' The one who did that wrong was cut off from their company, just as our Lord had said.[^95-1] After that, Sire, our Lord died for us, and a knight asked for the body and took it down from the cross.
 
 "Then, Sire, our Lord rose again, and after Jesus Christ's death this soldier was in a wild wasteland, with part of his family and many others who were with him. When a great famine struck them, they complained to the knight who led them, and he prayed God to show him why they were suffering such hardship.
 
-"Our Lord told him to build a table in the name of the one at the Supper, square in shape, and to drape it well in white cloths, and set on it a vessel he had, from which Jesus and the apostles had eaten at the Supper, and to cover that completely except on his own side. Brons, his brother-in-law, caught a fish, and it was laid in the middle of the table, next to the dish, in front of Joseph of Arimathea.[^95-1] Through that vessel the good were separated from the wicked. Whoever could sit there, Sire, had everything their heart wanted.
+"Our Lord told him to build a table in the name of the one at the Supper, square in shape, and to drape it well in white cloths, and set on it a vessel he had, from which Jesus and the apostles had eaten at the Supper, and to cover that completely except on his own side. Brons, his brother-in-law, caught a fish, and it was laid in the middle of the table, next to the dish, in front of Joseph of Arimathea.[^95-2] Through that vessel the good were separated from the wicked. Whoever could sit there, Sire, had everything their heart wanted.
 
 "There was always one empty seat there, Sire, standing for where Judas sat at the Supper; when he heard our Lord say those words were meant for him, he left God's company. His place stayed vacant until our Lord set a man in it to make the twelve apostles whole. So these two tables belong together, and at the second, Joseph's, our Lord gave all who sat there what their hearts wanted. People call the vessel that gives them this grace the Grail. If you'll trust me, you'll found a third in the name of the Trinity, and each of the three will stand for one of the Trinity's powers.
 
@@ -1671,7 +1671,7 @@ Then the king asked him, "Merlin, where are you going? Won't you come to every f
 
 ### Merlin goes to Blaise, and Uther falls in love with Igraine at Christmas
 
-The story says that Merlin left Uther Pendragon and went to Blaise in Northumberland, and told him these things, how the table had been founded, and many others you'll hear in his book. Merlin stayed away more than two years and never came near the king. For a long time Uther regularly held his court at Carduel, until one day he took it into his head to summon all his barons, and to have them bring their wives. So he called them for Christmas, sending his letters everywhere, and they did just as he'd ordered.
+The story says that Merlin left Uther Pendragon and went to Blaise in Northumberland, and told him these things, how the table had been founded, and many others you'll hear in his book.[^98-2] Merlin stayed away more than two years and never came near the king. For a long time Uther regularly held his court at Carduel, until one day he took it into his head to summon all his barons, and to have them bring their wives. So he called them for Christmas, sending his letters everywhere, and they did just as he'd ordered.
 
 <a id="page-99"></a>[\[Paris–Ulrich 1:99\]](../merlin-old-french.md#page-99) You can be sure that plenty of young women, girls and knights came. I can't and shouldn't name everyone at that court, but I'll tell you of those my story speaks of. This much I want you to know: the duke of Tintagel was there, and brought his wife, Igraine.[^99-1] When the king saw her, he fell deeply in love with her, though he never showed it, except that his eyes went to her more than to the others. She noticed it herself, and knew in her heart that Uther liked looking at her. Once she'd seen it, she avoided him all she could and was slow to come near him, since she was a very decent woman and very beautiful.
 
@@ -1801,7 +1801,7 @@ At this news Uther was furious. He sent throughout his kingdom to summon his bar
 
 ### Uther besieges the duke and longs for Igraine
 
-The story says that the king besieged the duke in his castle. He was there a long time and couldn't take it, which upset him badly. He was also in agony over Igraine, until one day he sat in his tent and cried. When his men saw his tears, they went out and left him alone. Ulfin, who was outside, heard of it, came in and found him crying, and was very sorry, and asked him why.
+The story says that the king besieged the duke in his castle.[^106-1] He was there a long time and couldn't take it, which upset him badly. He was also in agony over Igraine, until one day he sat in his tent and cried. When his men saw his tears, they went out and left him alone. Ulfin, who was outside, heard of it, came in and found him crying, and was very sorry, and asked him why.
 
 <a id="page-107"></a>[\[Paris–Ulrich 1:107\]](../merlin-old-french.md#page-107) "Ulfin," said the king, "you must know why, since you know Igraine is killing me. I've lost all the rest a man needs, and I can't see any cure, so I know I'll die of it."
 
@@ -2067,7 +2067,7 @@ From Lot's bride came Mordred, Sir Gawain, Agravain, Guerrehès and Gahariès.[^
 
 ### Uther asks Igraine whose child she's carrying
 
-So Uther had Igraine, and kept her until her pregnancy showed. One night, lying beside her, he put his hand on her belly and asked whose child she was carrying.
+So Uther had Igraine, and kept her until her pregnancy showed.[^120-4] One night, lying beside her, he put his hand on her belly and asked whose child she was carrying.
 
 <a id="page-121"></a>[\[Paris–Ulrich 1:121\]](../merlin-old-french.md#page-121) It couldn't be his from their marriage on, since he'd written down every night he'd spent with her; nor could it be the duke's, who hadn't slept with her for a long while before he died. When she heard the question, Igraine was ashamed and began to cry. "Sire," she said, "I can't make you believe a lie about what you know. I'll tell you nothing but the truth; only, for God's sake, have mercy on me, because what I have to say is strange and true, if you promise you won't leave me."
 
@@ -2191,7 +2191,7 @@ Ector took him in his arms and saw how handsome he was, and wanted to know wheth
 
 ### Ector raises Arthur, and the Saxons beat Uther's army while he's sick
 
-The story says that Merlin left Ector, and Ector had the child baptised at once, and named Arthur. Then he brought him to his wife. "My lady, here's the baby I asked you so much about."
+The story says that Merlin left Ector, and Ector had the child baptised at once, and named Arthur.[^126-3] Then he brought him to his wife. "My lady, here's the baby I asked you so much about."
 
 She said he was very welcome, held him, and wanted to know whether he'd been christened. Her husband said he had, and was called Arthur. Then she nursed and raised him, and sent her own son to be fed by another woman.
 
@@ -2269,7 +2269,7 @@ Then Merlin rose, and all the others, who were amazed that the king had spoken; 
 
 ### Uther is buried, and the barons ask Merlin for a king
 
-So King Uther Pendragon died that night, and the land was left without an heir.[^131-2] The barons, the clerks and the archbishops gave him the finest service and the greatest honour they could. The day after the burial, the lords and all the Church's bishops gathered to decide how the people would be governed, and couldn't agree on anyone. Then they said together they'd ask Merlin, since he was very wise, and no one had ever known him to give bad advice. So they all agreed on Merlin, and sent for him. When he came, they said, "Merlin, we know your wisdom, and how much you've loved the kings of this realm.
+So King Uther Pendragon died that night, and the land was left without an heir.[^131-2][^131-3] The barons, the clerks and the archbishops gave him the finest service and the greatest honour they could. The day after the burial, the lords and all the Church's bishops gathered to decide how the people would be governed, and couldn't agree on anyone. Then they said together they'd ask Merlin, since he was very wise, and no one had ever known him to give bad advice. So they all agreed on Merlin, and sent for him. When he came, they said, "Merlin, we know your wisdom, and how much you've loved the kings of this realm.
 
 <a id="page-132"></a>[\[Paris–Ulrich 1:132\]](../merlin-old-french.md#page-132) "You can see the land's been left without an heir, and a country with no lord is worth little. So we beg you, for God's sake, to help us choose a man who can govern the kingdom for the good of the Church and the salvation of the people."
 
@@ -2349,7 +2349,7 @@ When Ector saw it, he was astonished, and asked how he'd come by it. Kay said he
 
 ### Ector sees through Kay's lie, and Arthur draws the sword again
 
-When Ector heard his son say this, he didn't believe him, and told him he knew it was false. The two of them went to the church, Arthur following. When Ector saw the stone with the sword gone, he said, "Kay, don't lie to me. How did you get this out? I'll know if you're not honest, and I'll never love you again."
+When Ector heard his son say this, he didn't believe him, and told him he knew it was false.[^138-2] The two of them went to the church, Arthur following. When Ector saw the stone with the sword gone, he said, "Kay, don't lie to me. How did you get this out? I'll know if you're not honest, and I'll never love you again."
 
 Kay answered, ashamed, "Sir, here's the truth. My brother Arthur brought it to me, and I don't know how he got it."
 
@@ -2437,7 +2437,7 @@ Arthur answered, "You want me to take your oaths, give you back your lands and h
 
 ### The barons test Arthur with gifts until Pentecost
 
-When the barons heard the boy's answer, they said he'd be very wise if he lived, he'd answered so well. Then they said, "Sir, it would be much better if you were anointed king at Pentecost." Meanwhile, with the archbishop's permission, they obeyed Arthur. They had valuable goods and great jewels brought, to see if he'd be greedy for any. He asked the men he knew about each person's merit, and acted on what he heard.
+When the barons heard the boy's answer, they said he'd be very wise if he lived, he'd answered so well.[^144-1] Then they said, "Sir, it would be much better if you were anointed king at Pentecost." Meanwhile, with the archbishop's permission, they obeyed Arthur. They had valuable goods and great jewels brought, to see if he'd be greedy for any. He asked the men he knew about each person's merit, and acted on what he heard.
 
 <a id="page-145"></a>[\[Paris–Ulrich 1:145\]](../merlin-old-french.md#page-145) Once he'd taken all the goods, he shared them out, as I've told you, by what each one deserved, giving each what he needed most.
 
@@ -2587,23 +2587,33 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^1-2]: The French is *nostre sires*: God, here Christ, who, as this opening tells it, had gone down into hell and taken Adam and Eve out of it. The French uses it as his name, so the English capitalises it; a lower-case "lord" would mean a master of land and people.<sup>[\*](#new-in-this-translation)</sup>
 
-[^1-3]: The words "the very thing we thought would serve us best" are Paris and Ulrich's addition, in square brackets in their French text; the Huth manuscript doesn't have them.
+[^1-3]: In the whole story: [Christ empties hell, and the devils plan a prophet of their own](../../arthurian-shelf/story-map.md#the-devils-plan-a-prophet).<sup>[\*](#new-in-this-translation)</sup>
+
+[^1-4]: The words "the very thing we thought would serve us best" are Paris and Ulrich's addition, in square brackets in their French text; the Huth manuscript doesn't have them.
 
 [^3-1]: The Huth manuscript reads *ces oevres*, "these acts"; Paris and Ulrich print *ses oevres*, "his acts", and the English follows them: "his work". Whose work is meant, the man's or the Lord's, the French leaves open.
 
+[^4-1]: In the whole story: [A devil ruins a rich man's family and leads two daughters astray](../../arthurian-shelf/story-map.md#a-devil-ruins-a-rich-mans-family).<sup>[\*](#new-in-this-translation)</sup>
+
 [^6-1]: The words "and so they did" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
+[^11-1]: In the whole story: [A devil fathers a child on the eldest daughter as she sleeps](../../arthurian-shelf/story-map.md#a-devil-fathers-a-child-on-the-eldest-daughter).<sup>[\*](#new-in-this-translation)</sup>
+
 [^12-1]: The Huth manuscript's words here are out of order (*porroit oublier de f. engingnier chou*); the English follows the order Paris and Ulrich give them: "he could never make her forget what the holy man had told her".
+
+[^14-1]: In the whole story: [The mother confesses to Blaise, and the judges lock her in a tower](../../arthurian-shelf/story-map.md#the-mother-confesses-and-is-held-in-a-tower).<sup>[\*](#new-in-this-translation)</sup>
 
 [^15-1]: The words "before God" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^16-1]: Paris and Ulrich take a letter out of each of the Huth manuscript's words here, *seuur* and *venue*, to read *seuu*, "knowledge", and *veue*, "sight", and the English follows them: "to my knowledge or in my sight".
 
-[^19-1]: The words "and pardoned the sin" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
+[^19-1]: In the whole story: [Merlin is born and speaks for his mother at her trial](../../arthurian-shelf/story-map.md#merlin-is-born).<sup>[\*](#new-in-this-translation)</sup>
 
-[^19-2]: This is where Merlin is given his two kinds of knowledge: the past from the devil who fathered him, the future from God, to weigh against it. [Geoffrey of Monmouth's](https://archive.org/details/historiesoftheki037587mbp) Merlin, some sixty years earlier, already had a spirit for a father and could foretell what was to come; Robert de Boron is the one who says where each half comes from. The later Merlin romances, Malory's among them, take both halves as given.<sup>[\*](#new-in-this-translation)</sup>
+[^19-2]: The words "and pardoned the sin" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^19-3]: The Huth manuscript reads *pour rendre*, "to give back"; Paris and Ulrich print *pour endroit de*, "as for", and the English follows them.
+[^19-3]: This is where Merlin is given his two kinds of knowledge: the past from the devil who fathered him, the future from God, to weigh against it. [Geoffrey of Monmouth's](https://archive.org/details/historiesoftheki037587mbp) Merlin, some sixty years earlier, already had a spirit for a father and could foretell what was to come; Robert de Boron is the one who says where each half comes from. The later Merlin romances, Malory's among them, take both halves as given.<sup>[\*](#new-in-this-translation)</sup>
+
+[^19-4]: The Huth manuscript reads *pour rendre*, "to give back"; Paris and Ulrich print *pour endroit de*, "as for", and the English follows them.
 
 [^20-1]: The order to have him baptised, *et commandés*, "and order", is Paris and Ulrich's addition. The Huth manuscript, as Paris and Ulrich's note gives it, reads *Et la mere dist as varles daual*: the mother speaks to the young men below, who the child is let down to.
 
@@ -2611,9 +2621,15 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^30-1]: The Huth manuscript reads "my skill and my cunning"; Paris and Ulrich print "their", and the English follows them.
 
+[^31-1]: In the whole story: [Blaise agrees to write Merlin's book of Joseph and the Grail](../../arthurian-shelf/story-map.md#blaise-writes-merlins-book).<sup>[\*](#new-in-this-translation)</sup>
+
 [^33-1]: The words "and the one about the lineages I've mentioned" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^33-2]: So Paris and Ulrich print it: those who held "the law of Rome", which elsewhere in the French is the Church's own faith, come to fight the Christians. Who they are, the sentence doesn't say, and the English keeps its words rather than guess.<sup>[\*](#new-in-this-translation)</sup>
+[^33-2]: In the whole story: [Vortigern has King Moine killed and takes the throne](../../arthurian-shelf/story-map.md#vortigern-takes-the-throne).<sup>[\*](#new-in-this-translation)</sup>
+
+[^33-3]: So Paris and Ulrich print it: those who held "the law of Rome", which elsewhere in the French is the Church's own faith, come to fight the Christians. Who they are, the sentence doesn't say, and the English keeps its words rather than guess.<sup>[\*](#new-in-this-translation)</sup>
+
+[^36-1]: In the whole story: [Vortigern's tower keeps falling, and his clerks blame a fatherless child](../../arthurian-shelf/story-map.md#vortigerns-tower-keeps-falling).<sup>[\*](#new-in-this-translation)</sup>
 
 [^38-1]: The words from "she was the first" to "his affairs now" are Paris and Ulrich's addition; the Huth manuscript goes straight from "Let everyone who hears this story know" to the Christians' grief.
 
@@ -2626,6 +2642,8 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 [^39-2]: The words "by an art called astronomy" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^41-1]: The word "conceived" is Paris and Ulrich's addition here; the Huth manuscript has it only when the wisest clerk says the same thing back to the others.
+
+[^43-1]: In the whole story: [Vortigern's messengers find Merlin and bring him to the king](../../arthurian-shelf/story-map.md#the-messengers-bring-merlin-to-vortigern).<sup>[\*](#new-in-this-translation)</sup>
 
 [^44-1]: The question "Who told you that?", and the words that bring in Merlin's answer, are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
@@ -2643,6 +2661,8 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^51-1]: The word "from" is Paris and Ulrich's addition, for "near"; the Huth manuscript has them come to a day's journey "where Vortigern was".
 
+[^53-1]: In the whole story: [Merlin shows Vortigern the two dragons under his tower](../../arthurian-shelf/story-map.md#merlin-shows-vortigern-the-dragons).<sup>[\*](#new-in-this-translation)</sup>
+
 [^54-1]: The words "and the earth", "hard on them under the load of the building" and "with such force that all the water churns" are Paris and Ulrich's additions. In the Huth manuscript, when the dragons feel the pool weigh on them, they simply turn over and make such a din that everything above has to come down.
 
 [^56-1]: The Huth manuscript compares the red dragon with "the handsome one"; Paris and Ulrich print "the white".
@@ -2651,7 +2671,11 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^58-1]: The French is *par la forche de l'autre art*, "by the power of the other art", and doesn't name it. From what Merlin says next, it seems to be the clerks' astronomy, reading the future in the stars and the elements, set against the knowledge he has from God.<sup>[\*](#new-in-this-translation)</sup>
 
-[^61-1]: The words "the ones Hengist the Saxon had sent him" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
+[^61-1]: In the whole story: [Constans's sons land, and Pendragon is made king](../../arthurian-shelf/story-map.md#pendragon-is-made-king).<sup>[\*](#new-in-this-translation)</sup>
+
+[^61-2]: The words "the ones Hengist the Saxon had sent him" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
+
+[^63-1]: In the whole story: [Merlin comes to Pendragon's men in one disguise after another](../../arthurian-shelf/story-map.md#merlin-comes-to-pendragon-in-disguise).<sup>[\*](#new-in-this-translation)</sup>
 
 [^64-1]: The Huth manuscript reads "of those who told you that you should look for Merlin"; Paris and Ulrich print "who claimed they knew Merlin", and the English follows them.
 
@@ -2665,13 +2689,17 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^71-1]: The Huth manuscript reads "after you speak to me"; Paris and Ulrich print "to him", and the English follows them: "after you've talked with him".
 
-[^71-2]: The Huth manuscript gives these words to the king and reads "your army" and "your tent"; Paris and Ulrich take out "the king" and print "our army" and "my tent", so the words stay Uther's.
+[^71-2]: In the whole story: [Merlin tricks Uther, and the brothers beg him to stay](../../arthurian-shelf/story-map.md#merlin-agrees-to-serve-the-brothers).<sup>[\*](#new-in-this-translation)</sup>
+
+[^71-3]: The Huth manuscript gives these words to the king and reads "your army" and "your tent"; Paris and Ulrich take out "the king" and print "our army" and "my tent", so the words stay Uther's.
 
 [^73-1]: The Huth manuscript reads "when he spoke to Pendragon"; Paris and Ulrich print "to Uther", and the English follows them.
 
 [^73-2]: The words from "He came to Uther's lodging" to "at his tent", and the king's "I think it's", are Paris and Ulrich's addition; the Huth manuscript goes straight from Merlin taking his old shape to the king naming Merlin.
 
 [^75-1]: The words "You understand very little of what the man can do" are Paris and Ulrich's addition. In their place, the Huth manuscript says of Uther, or of the king, that he "knew well what Merlin could do", words Paris and Ulrich take out.
+
+[^78-1]: In the whole story: [Merlin makes peace with the Saxons, and a jealous baron tests him](../../arthurian-shelf/story-map.md#a-jealous-baron-tests-merlin).<sup>[\*](#new-in-this-translation)</sup>
 
 [^80-1]: The words "the king's advisers" are Paris and Ulrich's addition; in the Huth manuscript Merlin comes to rule over the king himself.
 
@@ -2685,6 +2713,8 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^85-3]: The words "who the English called by his true baptismal name, Aurelius Ambrosius" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
+[^86-1]: In the whole story: [The brothers fight the Saxons at Salisbury](../../arthurian-shelf/story-map.md#the-battle-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
+
 [^87-1]: The Huth manuscript names the month *jung*, June, here, and *jungnet*, July, for the last week the army gathers in; Paris and Ulrich add and take out *net*, so the Saxons come on the eleventh of July, after the army has gathered in the last week of June, and the English follows them: "the eleventh day of July".
 
 [^89-1]: The words "from the river and", "in the middle of the fields", and "in the morning, when the Saxons want to march, charge them and" are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
@@ -2695,23 +2725,31 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^90-3]: The words from "Then they said goodbye" to "in this battle" are Paris and Ulrich's addition; the Huth manuscript goes straight from Merlin's advice to the king to his leaving for Blaise.
 
-[^92-1]: The Huth manuscript reads *a son frere*, "to his brother"; Paris and Ulrich print *a seurenon*, "as a surname", and the English follows them.
+[^92-1]: In the whole story: [Merlin brings stones from Ireland and raises them at Salisbury](../../arthurian-shelf/story-map.md#the-stones-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
 
-[^92-2]: The Huth manuscript reads "something that isn't known, and you'll hear my words forever"; Paris and Ulrich print "something that was never known, and there'll be talk of it forever", and the English follows them: "something never known before, that people will talk about forever".
+[^92-2]: The Huth manuscript reads *a son frere*, "to his brother"; Paris and Ulrich print *a seurenon*, "as a surname", and the English follows them.
+
+[^92-3]: The Huth manuscript reads "something that isn't known, and you'll hear my words forever"; Paris and Ulrich print "something that was never known, and there'll be talk of it forever", and the English follows them: "something never known before, that people will talk about forever".
 
 [^93-1]: The words "and I'll have kept my promise to Pendragon" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^94-1]: The Huth manuscript reads "something that can never be known"; Paris and Ulrich print "never be finished" and add "by any other mortal man", and the English follows them: "no other mortal man could ever finish".
 
-[^95-1]: The words "When a great famine struck them", "square in shape", "to drape it well", "from which Jesus and the apostles had eaten at the Supper" and "to cover that completely", and the sentence on Brons and the fish, are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
+[^95-1]: In the whole story: [Merlin makes Uther the Round Table, with one empty seat](../../arthurian-shelf/story-map.md#the-round-table).<sup>[\*](#new-in-this-translation)</sup>
+
+[^95-2]: The words "When a great famine struck them", "square in shape", "to drape it well", "from which Jesus and the apostles had eaten at the Supper" and "to cover that completely", and the sentence on Brons and the fish, are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
 
 [^98-1]: The Huth manuscript reads "the son of the one who's to fill it"; Paris and Ulrich print "who's to father him", and the English follows them: "learned he's to father such a child".
+
+[^98-2]: In the whole story: [Uther falls in love with Igraine and makes war on her husband](../../arthurian-shelf/story-map.md#uther-falls-in-love-with-igraine).<sup>[\*](#new-in-this-translation)</sup>
 
 [^99-1]: Malory tells this in [Book I, chapter 1](../../malory-sources/malory-map.tsv). There, Uther has long been at war with the duke, sends for him and his wife, and makes peace with him; Igraine refuses the king and tells her husband, and the two ride home by night from that first court, with no Christmas feast, no gold cup and no go-between.<sup>[\*](#new-in-this-translation)</sup>
 
 [^100-1]: The words "keep from knowing" are Paris and Ulrich's addition; without them, the Huth manuscript says only that Igraine could no longer hold out.
 
 [^101-1]: The 1886 edition prints *dens*, where the sense and the same phrase elsewhere want *dons*, "gifts"; Paris and Ulrich's errata don't correct it, and the English says "fine gifts".<sup>[\*](#new-in-this-translation)</sup>
+
+[^106-1]: In the whole story: [Merlin brings Uther to Igraine in her husband's shape](../../arthurian-shelf/story-map.md#merlin-brings-uther-to-igraine).<sup>[\*](#new-in-this-translation)</sup>
 
 [^107-1]: Paris and Ulrich add *vuis*, "empty". Nothing in this story has told of anyone trying that seat; the English gives Uther's fear as the French does.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -2743,6 +2781,8 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^120-3]: The name Agravain is Paris and Ulrich's addition; the Huth manuscript doesn't have it.
 
+[^120-4]: In the whole story: [Arthur is born and given to Ector to raise](../../arthurian-shelf/story-map.md#arthur-is-born-and-given-to-ector).<sup>[\*](#new-in-this-translation)</sup>
+
 [^121-1]: The words "who looked like the duke" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^121-2]: The Huth manuscript reads *vint*, "came"; Paris and Ulrich print *jut*, that he slept with her, and the English follows them.
@@ -2759,6 +2799,8 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^126-2]: The words "great good is to come to you" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
+[^126-3]: In the whole story: [Uther, sick, is carried into a last battle with the Saxons](../../arthurian-shelf/story-map.md#uther-is-carried-into-his-last-battle).<sup>[\*](#new-in-this-translation)</sup>
+
 [^127-1]: The words "complaining bitterly" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^128-1]: The French is *litiere*: a bed or couch on two poles, carried by men or slung between two horses. It was how a king, a great lord or a lady travelled when they couldn't or wouldn't ride, and a rich one could be curtained and cushioned, far from a hospital stretcher. Uther's gout keeps him off a horse, so Merlin has him carried to the battle lying down.<sup>[\*](#new-in-this-translation)</sup>
@@ -2771,7 +2813,9 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^131-1]: Malory tells this in [Book I, chapter 4](../../malory-sources/malory-map.tsv). There Merlin asks the dying king aloud, before all his barons, whether his son Arthur will be king after him, and Uther answers so that everyone hears, giving Arthur God's blessing and his own and telling him to claim the crown. Here Merlin whispers in the king's ear, and no one learns what Uther said to him.<sup>[\*](#new-in-this-translation)</sup>
 
-[^131-2]: The Huth manuscript reads *fu*, "was"; Paris and Ulrich print *fina*, "died", and the English follows them.
+[^131-2]: In the whole story: [A sword appears in a stone, and Arthur draws it for Kay](../../arthurian-shelf/story-map.md#the-sword-in-the-stone).<sup>[\*](#new-in-this-translation)</sup>
+
+[^131-3]: The Huth manuscript reads *fu*, "was"; Paris and Ulrich print *fina*, "died", and the English follows them.
 
 [^132-1]: The Huth manuscript reads *comme*, "as"; Paris and Ulrich print *hom*, "a man", and the English follows them.
 
@@ -2803,6 +2847,8 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^138-1]: Malory tells this in [Book I, chapter 5](../../malory-sources/malory-map.tsv). There Arthur finds the lodging locked, since everyone has gone out to watch the jousting, and he goes straight to the sword in the stone.<sup>[\*](#new-in-this-translation)</sup>
 
+[^138-2]: In the whole story: [The barons put off choosing Arthur from feast to feast](../../arthurian-shelf/story-map.md#the-barons-put-off-arthur).<sup>[\*](#new-in-this-translation)</sup>
+
 [^139-1]: The words "lord of" and "my" are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
 
 [^139-2]: Malory tells this in [Book I, chapter 6](../../malory-sources/malory-map.tsv). There Sir Ector and Sir Kay kneel to Arthur, and Ector tells him he isn't his father and asks that Kay be made steward of all his lands.<sup>[\*](#new-in-this-translation)</sup>
@@ -2810,5 +2856,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 [^143-1]: The Huth manuscript reads *escrit*, "writing"; Paris and Ulrich print *respit*, "delay", and the English follows them: "put off".
 
 [^143-2]: The words "we find him fit" stand for Paris and Ulrich's addition, *nous le trouvons tel*, and they take out the "not" the Huth manuscript gives, which would ask for the delay only if he shouldn't be king; the English follows them.
+
+[^144-1]: In the whole story: [Arthur is knighted and crowned at Pentecost](../../arthurian-shelf/story-map.md#arthur-is-crowned).<sup>[\*](#new-in-this-translation)</sup>
 
 [^145-1]: Malory tells this in [Book I, chapter 7](../../malory-sources/malory-map.tsv). There the lords put off the choice until the common people cry out at Pentecost that they'll have Arthur king; he's made a knight by the best man there, crowned, and swears to rule justly, and then gives back the lands taken since Uther died.<sup>[\*](#new-in-this-translation)</sup>

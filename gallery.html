@@ -10356,6 +10356,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body input[type="checkbox"]:not([disabled]) {
   cursor: default;
 }
+/* A ticked task's own words, quieter the way a finished item reads; the renderer and the page mark them, so nested items stay at full strength. */
+.document-body .task-words.task-done {
+  opacity: var(--lt-opacity-60);
+}
 /* Live editing affordances: text caret on hover, a focus ring while editing, and the monospace source font for XML blocks edited as raw source. */
 .document-body .leaf-editable:not(table) {
   cursor: text;
@@ -18320,7 +18324,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 165 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 166 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -18352,7 +18356,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>165</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>166</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18780,7 +18784,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">165 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">166 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -18932,6 +18936,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Task date</h3><code class="built">.task-date</code><span class="built">task-dates.js</span></header>
 <div class="stage"><div class="document-body"><ul><li><input type="checkbox"> Winter cleanup schedule <button type="button" class="doc-badge doc-badge--red task-date">Sep 2</button></li><li><input type="checkbox" checked> Book the meeting room <button type="button" class="doc-badge doc-badge--gray task-date">Sep 10</button></li><li><input type="checkbox"> Pay the water bill <button type="button" class="doc-badge doc-badge--green task-date">Sep 11</button></li><li><input type="checkbox"> Ask about the late arrivals <button type="button" class="doc-badge doc-badge--amber task-date">Sep 12</button></li><li><input type="checkbox"> Renew the lease <button type="button" class="doc-badge doc-badge--gray task-date">Jan 4 2027</button></li></ul></div><div class="context-menu" style="position:static;width:220px"><button type="button" class="context-menu-item">Today<span class="task-date-when">Sep 7</span></button><button type="button" class="context-menu-item">Tomorrow<span class="task-date-when">Sep 8</span></button><button type="button" class="context-menu-item">Next Monday<span class="task-date-when">Sep 14</span></button><div class="context-menu-item"><input type="text" class="rename-input" value="09/22/2026" placeholder="MM/DD/YYYY"></div><div class="context-menu-separator"></div><button type="button" class="context-menu-item">Clear the date</button></div></div>
+</section>
+<section class="part">
+<header><h3>Task words</h3><code class="built">.task-words</code><span class="built">task_words in markdown/events.rs, flipped by drawTaskDone in reading-blocks.js — a ticked task's own words at lt-opacity-60</span></header>
+<div class="stage"><div class="document-body"><ul><li><input type="checkbox" checked> <span class="task-words task-done">Book the meeting room</span></li><li><input type="checkbox"> <span class="task-words">Pay the water bill</span></li></ul></div></div>
 </section>
 <section class="part">
 <header><h3>Comment marker</h3><code class="built">.comment-marker</code><span class="built">document-comments.js — beside the block a comment thread is about, in the layer at the foot of the body, with a dot while the thread is open</span></header>
