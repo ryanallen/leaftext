@@ -1028,15 +1028,6 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     history.replaceState(Object.assign({}, entry, { place }), '', location.href);
   }
 
-  /** Put the reader back where an entry says they were: the place they left it if it has one, else the heading it was opened at. */
-  function restorePlace(anchor, place) {
-    if (place && typeof window.leafRestoreScrollAnchor === 'function') {
-      window.leafRestoreScrollAnchor(place);
-      return;
-    }
-    if (anchor && typeof window.leafScrollToFragment === 'function') window.leafScrollToFragment(anchor);
-  }
-
   /** A link to a heading in the document already open: the page scrolls to it, and the jump is a step the browser can walk back out of. */
   function jumpToHeading(anchor, command) {
     if (!open || !anchor) return;
@@ -1045,13 +1036,25 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (typeof window.leafScrollToFragment === 'function') window.leafScrollToFragment(anchor);
   }
 
+  /** The document script's first call with one more argument before its close. The buffer's script carries a second line after it, and a JSON payload never holds a raw line break, so the first one ends the call. */
+  function withArgument(script, argument) {
+    const end = script.indexOf('\n');
+    const call = end === -1 ? script : script.slice(0, end);
+    if (!call.endsWith(');')) return script;
+    return `${call.slice(0, -2)}, ${argument});${end === -1 ? '' : script.slice(end)}`;
+  }
+
   /** Draw a document out of its bytes: the page and the marks. The Previous/Next strip waits for the page's own ask, which a whole HTML page never makes. Opening one and leaving its source both come through here; neither the address nor the pane is touched. */
-  function drawDocument(path, bytes, { keepPlace = false } = {}) {
+  function drawDocument(path, bytes, { keepPlace = false, heading = '', place = null } = {}) {
     for (const address of minted.splice(0)) URL.revokeObjectURL(address);
     run('window.leafForgetMintedPictures && window.leafForgetMintedPictures();');
     const script = buffer && held?.path === path ? core.bufferDocumentScript(buffer) : core.documentScript(bytes, path);
     // An edit's redraw goes through the page's reload, as the desktop's does, so the reader stays where they were rather than landing at the top.
-    run(keepPlace && script ? script.replace(/^window\.leafSetState\(/,'window.leafReloadDocument(') : script);
+    if (keepPlace && script) run(script.replace(/^window\.leafSetState\(/, 'window.leafReloadDocument('));
+    // Back's place and a link's heading both ride the draw, as they do on the desktop: sent beside it, either lands a frame before a heavy page is drawn and the render then puts the reader back at the top.
+    else if (place && script) run(withArgument(script.replace(/^window\.leafSetState\(/, 'window.leafSwitchTab('), JSON.stringify(place)));
+    else if (heading && script) run(withArgument(script, JSON.stringify(heading)));
+    else run(script);
     run(`window.leafSetFavorites(${JSON.stringify(favorites)});`);
   }
 
@@ -1185,13 +1188,12 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       glossary = words == null ? null : chosen;
     }
     if (address) writeAddress(path, anchor);
-    drawDocument(path, source);
+    drawDocument(path, source, { heading: place ? '' : anchor, place });
     // The index is built once the page is idle, since no card asks inside the 300 ms rest it waits for. Safari ships no idle callback.
     if (handed) (typeof requestIdleCallback === 'function' ? requestIdleCallback : setTimeout)(() => core.indexGlossary());
     // The pane follows the document, the way it does in the app.
     showFolder(path.includes('/') ? path.split('/').slice(0, -1).join('/') : '');
     repointHead(path, anchor, pageByPath.get(path));
-    restorePlace(anchor, place);
   }
 
   /** The document the reader arrived on: whatever the address names, or the fallback. Its entry is replaced rather than added to. */
@@ -1216,7 +1218,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       await openDocument(path, { anchor, place, address: false });
       return;
     }
-    restorePlace(anchor, place);
+    // Inside the document already drawn, so the page's own one-frame landing finds it: the place the reader left if the entry has one, else the heading it was opened at.
+    if (place && typeof window.leafRestoreScrollAnchor === 'function') window.leafRestoreScrollAnchor(place);
+    else if (anchor && typeof window.leafScrollToFragment === 'function') window.leafScrollToFragment(anchor);
   }
 
   // Both, because one gesture raises different ones in different browsers: a traverse raises the first, a hash typed into the bar the second. Watched here rather than in the loader beside it — whatever writes the address reads it back.

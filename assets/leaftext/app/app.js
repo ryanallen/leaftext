@@ -9082,6 +9082,12 @@ function tabIsAlone() {
   return ((currentState && currentState.tabs) || []).length < 2;
 }
 
+function markTabTearing(drag, tearing) {
+  if (!!drag.tearing === tearing) return;
+  drag.tearing = tearing;
+  if (drag.ghost) drag.ghost.classList.toggle('tears-out', tearing);
+}
+
 let tabArrival = null;
 window.leafTabArrivalAt = (x, width) => {
   if (!tabArrival) {
@@ -9114,7 +9120,8 @@ function tabArrivalLeave() {
 document.addEventListener('pointermove', (event) => {
   if (!tabDrag) return;
   if (!tabDrag.moved) {
-    if (Math.abs(event.clientX - tabDrag.startX) < 4) return;
+    
+    if (Math.hypot(event.clientX - tabDrag.startX, event.clientY - tabDrag.startY) < 4) return;
     tabDrag.moved = true;
     tabDrag.el.classList.add('tab-dragging');
     leafHoldPointer(tabDrag.el, tabDrag.pointerId);
@@ -9123,6 +9130,7 @@ document.addEventListener('pointermove', (event) => {
   tabDrag.lastX = event.clientX;
   tabDrag.lastY = event.clientY;
   tabDrag.outside = outsideThePage(event.clientX, event.clientY);
+  markTabTearing(tabDrag, false);
   
   const heldX = tabDrag.outside ? Math.min(Math.max(event.clientX, 0), window.innerWidth - 1) : event.clientX;
   const heldY = tabDrag.outside ? Math.min(Math.max(event.clientY, 0), window.innerHeight - 1) : event.clientY;
@@ -9156,6 +9164,13 @@ document.addEventListener('pointermove', (event) => {
   
   tabDrag.column = columnStripUnder(event.clientX, event.clientY, tabDrag.el);
   if (tabDrag.column) return;
+  
+  if (event.clientY >= tabDrag.stripBottom + tabDrag.box.height && !tabStaysInItsWindow(tabDrag.index) && !tabIsAlone()) {
+    markTabTearing(tabDrag, true);
+    tabDrag.to = tabDrag.filteredFrom;
+    updateTabSlides();
+    return;
+  }
   tabDrag.to = tabDropIndex(event.clientX);
   updateTabSlides();
   autoScrollTabBar(event.clientX);
@@ -9170,7 +9185,7 @@ function endTabDrag(commit, event) {
   drawSplitDropZone(false);
   if (drag.ghost) { coverWebSurface(false, drag.ghost); drag.ghost.remove(); }
   
-  const tearingOut = drag.moved && commit && !!drag.outside && !tabStaysInItsWindow(drag.index);
+  const tearingOut = drag.moved && commit && (drag.outside ? !tabStaysInItsWindow(drag.index) : !!drag.tearing);
   
   if (drag.over && !tearingOut) send({ command: 'tabDragOff' });
   if (drag.outside) {
@@ -17716,7 +17731,7 @@ function highlightSnippet(snippet) {
     .split('').join('</mark>');
 }
 
-function buildSearchHitRow(hit) {
+function buildSearchHitRow(hit, folder) {
   const button = document.createElement('button');
   button.setAttribute('type', 'button');
   button.className = 'library-hit';
@@ -17732,11 +17747,11 @@ function buildSearchHitRow(hit) {
     
     send({ command: 'openRecent', path, search: true });
   });
-  updateSearchHitRow(button, hit);
+  updateSearchHitRow(button, hit, folder);
   return button;
 }
 
-function updateSearchHitRow(button, hit) {
+function updateSearchHitRow(button, hit, folder = '') {
   const path = (hit && hit.absPath) || '';
   const anchor = (hit && hit.anchor) || '';
   
@@ -17748,10 +17763,11 @@ function updateSearchHitRow(button, hit) {
   button.dataset.anchor = anchor;
   button.dataset.line = String(line);
   const drawn = button.leafSearchRow;
-  if (drawn && drawn.path === path && drawn.alias === alias && drawn.snippet === snippet) return;
-  button.leafSearchRow = { path, alias, snippet };
+  if (drawn && drawn.path === path && drawn.alias === alias && drawn.folder === folder && drawn.snippet === snippet) return;
+  button.leafSearchRow = { path, alias, folder, snippet };
   button.setAttribute('title', path);
-  const also = alias ? `<span class="library-hit-alias">${escapeText(alias)}</span>` : '';
+  
+  const also = [folder, alias].filter(Boolean).map((words) => `<span class="library-hit-alias">${escapeText(words)}</span>`).join('');
   button.innerHTML = `<span class="library-hit-title">${documentNameMarkup(path, also)}</span><span class="library-hit-snippet">${highlightSnippet(snippet)}</span>`;
 }
 
@@ -17792,11 +17808,13 @@ function drawSearchRows(headHtml, hits) {
   const list = librarySearchResults;
   const drawn = librarySearchRowElements;
   const next = new Map();
-  const rows = hits.map((hit) => {
+  
+  const folders = documentFolderWords(hits.map((hit) => (hit && hit.absPath) || ''));
+  const rows = hits.map((hit, at) => {
     const key = searchHitKey(hit);
     const kept = drawn.get(key);
-    if (kept) updateSearchHitRow(kept, hit);
-    const row = kept || buildSearchHitRow(hit);
+    if (kept) updateSearchHitRow(kept, hit, folders[at]);
+    const row = kept || buildSearchHitRow(hit, folders[at]);
     next.set(key, row);
     return row;
   });
@@ -18190,27 +18208,6 @@ window.leafSmartLinks = (answer) => {
   renderLibraryOutline();
   renderSmartLinks();
 };
-
-function smartLinkFolderWords(rows) {
-  const words = rows.map(() => '');
-  const byName = new Map();
-  rows.forEach((row, at) => {
-    const name = (String(row.path || '').split(/[\\/]/).pop() || '').toLowerCase();
-    if (!byName.has(name)) byName.set(name, []);
-    byName.get(name).push(at);
-  });
-  for (const members of byName.values()) {
-    if (members.length < 2) continue;
-    const folders = members.map((at) => String(rows[at].path || '').split(/[\\/]+/).filter(Boolean).slice(0, -1));
-    let shared = 0;
-    while (folders.every((folder) => shared < folder.length && folder[shared].toLowerCase() === folders[0][shared].toLowerCase())) shared += 1;
-    members.forEach((at, index) => {
-      const rest = folders[index].slice(shared);
-      words[at] = rest.length ? rest.join('/') : shared ? folders[index][shared - 1] : libraryRootLabel();
-    });
-  }
-  return words;
-}
 function smartLinkRowHtml(row, at, linkable, folder) {
   const line = row.snippet ? `<span class="library-hit-snippet">${escapeText(row.snippet)}</span>` : '';
   const also = folder ? `<span class="library-hit-alias">${escapeText(folder)}</span>` : '';
@@ -18221,7 +18218,7 @@ function smartLinkRowHtml(row, at, linkable, folder) {
 function smartLinkGroupHtml(key, label) {
   const group = smartLinksAnswer[key];
   if (!group || !group.rows.length) return '';
-  const folders = smartLinkFolderWords(group.rows);
+  const folders = documentFolderWords(group.rows.map((row) => row.path));
   const rows = group.rows.map((row, at) => smartLinkRowHtml(row, `${key}:${at}`, key === 'mentions', folders[at])).join('');
   return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}</span></div>${rows}`;
 }
@@ -18724,7 +18721,7 @@ async function checkForUpdate(force) {
 
 renderUpdateButton();
 
-checkForUpdate(true);
+checkForUpdate(!window.__leafLaterWindow);
 
 function updaterWindowActivityChanged(active) {
   if (active) checkForUpdate();
@@ -19863,6 +19860,28 @@ function documentNameMarkup(path, stemTail) {
   const { stem, extension } = documentNameParts(path);
   const badge = extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '';
   return `<span class="file-name-stem">${escapeText(stem)}${stemTail || ''}</span>${badge}`;
+}
+
+function documentFolderWords(paths) {
+  const keys = paths.map((path) => String(path || ''));
+  const byName = new Map();
+  for (const path of new Set(keys)) {
+    const name = (path.split(/[\\/]/).pop() || '').toLowerCase();
+    if (!byName.has(name)) byName.set(name, []);
+    byName.get(name).push(path);
+  }
+  const words = new Map();
+  for (const members of byName.values()) {
+    if (members.length < 2) continue;
+    const folders = members.map((path) => path.split(/[\\/]+/).filter(Boolean).slice(0, -1));
+    let shared = 0;
+    while (folders.every((folder) => shared < folder.length && folder[shared].toLowerCase() === folders[0][shared].toLowerCase())) shared += 1;
+    members.forEach((path, index) => {
+      const rest = folders[index].slice(shared);
+      words.set(path, rest.length ? rest.join('/') : shared ? folders[index][shared - 1] : libraryRootLabel());
+    });
+  }
+  return keys.map((path) => words.get(path) || '');
 }
 
 function currentFavorites() {
@@ -22604,6 +22623,13 @@ function readingTaskCheckboxes() {
   return Array.from(body.querySelectorAll('input[type="checkbox"]')).filter((box) => !box.closest('td'));
 }
 
+
+function taskBoxAt(index) {
+  const body = app.querySelector('.document-body');
+  if (!body || !Number.isInteger(index) || index < 0) return null;
+  return body.querySelector(`input[type="checkbox"][data-task-index="${index}"]`);
+}
+
 function bindTaskCheckboxes(tasks) {
   const boxes = readingTaskCheckboxes();
   const count = Array.isArray(tasks) ? tasks.length : 0;
@@ -22818,7 +22844,10 @@ function drawTaskDates(tasks) {
     chip.dataset.taskDue = task.due;
     setRangeOf(chip, 'date', task.due_range.start, task.due_range.end);
     token.replaceWith(chip);
-    box.addEventListener('change', () => setTaskDateTone(chip, taskDateTone(task.due, box.checked, taskToday())));
+    const retone = () => setTaskDateTone(chip, taskDateTone(task.due, box.checked, taskToday()));
+    box.addEventListener('change', retone);
+    
+    box.addEventListener('task-set', retone);
     chip.addEventListener('click', (event) => {
       
       event.stopPropagation();
@@ -25471,6 +25500,14 @@ window.leafBlocksResynced = (state) => {
   if (!state) return;
   markEditHoldResynced();
   if (state.splice) spliceDocumentSource(state.splice.start, state.splice.end, state.splice.text);
+  
+  if (state.tick) {
+    const box = taskBoxAt(state.tick.index);
+    if (box && box.checked !== !!state.tick.checked) {
+      box.checked = !!state.tick.checked;
+      box.dispatchEvent(new Event('task-set'));
+    }
+  }
   const path = activeDocumentPath();
   if (path) {
     const wasUndoable = undoableByPath.get(path) === true;

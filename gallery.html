@@ -5729,6 +5729,10 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
 .tab-drag-ghost .tab {
   flex: 1 1 auto;
 }
+/* Where a release stands the tab in a window of its own: the dashed accent edge the beside zone wears, drawn as an outline so the copy keeps its size. */
+.tab-drag-ghost.tears-out {
+  outline: var(--lt-stroke-1) dashed var(--lt-accent);
+}
 .tab-bar.tabs-settling .tab {
   transition: none;
 }

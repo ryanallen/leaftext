@@ -359,6 +359,7 @@ On a published site, **All files** searches every page the site serves. The firs
 | Multiple terms | Every term must appear, in a name, the folder or the body |
 | More than words | The box takes a [filter](#filtering) — `#work status:open due:<friday -draft` |
 | Rows per file | Up to three, one per line the words are on — a word found twice on one line is one row with both places marked |
+| Two files of one name | Each row says its folder beside the name, so a `README` at the top and one in `docs/` read `README leaftext` and `README docs`. A file whose name no other result shares carries none, however many rows it has |
 | Result limit | The best 50 files. Past that the count says so — "84 results in the first 50 files" |
 | Folders left out | Named in the same line, with how many — "12 results · 1 folder of generated files not read". Rest on the line to see which. See [Skipped folders](#skipped-folders) |
 | Text left out | A vault too big to read whole reads its notes first — Markdown, text, web pages, mail, Word, PowerPoint, OpenDocument and books — and its data files after, and searches the text past what it holds after the rest, straight off the disk, so those rows arrive under the first ones. The same line says "12 results · part of the vault's text not read" until every file has been searched, then goes. See **Documents read** under [Facts](#facts) |
