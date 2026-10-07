@@ -11,6 +11,11 @@ import { sitePage } from './web-page.mjs';
 
 export const pageOf = (path) => /\.md$/i.test(path) ? path.replace(/\.md$/i, '.html') : '';
 
+/** The photograph a documentation page unfurls with where somebody shares it, taken at the publish by `site-thumbnails.mjs`. */
+export const CARD_DIR = 'cards';
+export const cardOf = (path) => /\.md$/i.test(path) ? `${CARD_DIR}/${path.replace(/\.md$/i, '.png')}` : '';
+export const CARD_SIZE = { width: 1200, height: 630 };
+
 const stripOrder = (segment) => segment.replace(/^\d+[-_]+/, '');
 function titleFromPath(path) {
   let slug = path.replace(/\/README\.md$/i, '').replace(/\.md$/i, '');
@@ -94,6 +99,11 @@ export function pageHead(fragment, path, source) {
   for (const key of ['og:title', 'twitter:title']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', title);
   for (const key of ['og:description', 'twitter:description']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', summary);
   head = replaceTag(head, 'meta', 'property', 'og:url', 'content', `${origin}/${page}`);
+  // The page's own photograph, which `site-thumbnails.mjs` takes after the bake, so a shared link shows what it opens rather than the front page's window.
+  for (const key of ['og:image', 'twitter:image']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', `${origin}/${cardOf(path)}`);
+  head = replaceTag(head, 'meta', 'property', 'og:image:width', 'content', CARD_SIZE.width);
+  head = replaceTag(head, 'meta', 'property', 'og:image:height', 'content', CARD_SIZE.height);
+  for (const key of ['og:image:alt', 'twitter:image:alt']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', title);
   if (!/<a\s+href="README\.md">README\.md<\/a>/.test(foot)) throw new Error(`${SITE_FRAGMENT} lost its noscript source link`);
   foot = foot.replace(/<a\s+href="README\.md">README\.md<\/a>/, `<a href="/${path}">${escaped(path)}</a>`);
   const rooted = (html) => html.replace(/\b(href|src)="([^"#][^"]*)"/g, (whole, attr, value) => /^(?:[a-z][a-z\d+.-]*:|\/)/i.test(value) ? whole : `${attr}="/${value}"`);

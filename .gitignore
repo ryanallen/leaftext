@@ -14,6 +14,8 @@
 .agents/settings.local.json
 # The pictures the publish writes beside their PNG masters. Never committed: the repo keeps one format so nothing that takes, joins or checks a picture learns a second.
 /imgs/**/*.webp
+# The photograph of every documentation page a shared link unfurls with, taken by the site's own deploy after the bake. Never committed: it is of the page going up, and a committed one is of whatever the page said the day somebody took it.
+/cards
 
 # The voice skill, linked in from the writing checkout on this machine
 .agents/skills/ryan/

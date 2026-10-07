@@ -124,6 +124,27 @@ jobs:
       - name: Write the pages through the app beside them
         run: node scripts/site-assets.mjs --bake
 
+      # The pictures an earlier run already took. Each page's own key in
+      # cards/keys.json decides whether it is taken again, so this restores the
+      # newest run's pictures even where the key below moved, and a publish that
+      # changed one page photographs that page alone.
+      - name: Cache the link card photographs
+        uses: actions/cache@v4
+        with:
+          path: cards
+          key: ${{ runner.os }}-cards-${{ hashFiles('README.md', 'docs/**/*.md', 'assets/leaftext/**', 'scripts/site-thumbnails.mjs') }}
+          restore-keys: |
+            ${{ runner.os }}-cards-
+
+      # Every documentation page photographed, so a link pasted into a chat
+      # unfurls with the page it opens. After the bake, because every head it
+      # wrote already names its picture, and before the upload, which takes the
+      # pictures with the pages. It runs the runner's own Chrome and installs
+      # nothing, and a page it could not photograph stops the run by name rather
+      # than going out naming a picture that is not there.
+      - name: Photograph every documentation page for its link card
+        run: node scripts/site-thumbnails.mjs --write
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 

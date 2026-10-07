@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
-import { SITE_FRAGMENT, inPlaceSite, pageOf, writeDocsList } from './site-page.mjs';
+import { CARD_DIR, SITE_FRAGMENT, cardOf, inPlaceSite, pageOf, writeDocsList } from './site-page.mjs';
 import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
 import { FRONT_LAYOUT_CLASS, layoutFrontPage } from '../site/front-page-layout.js';
 
@@ -160,6 +160,12 @@ export async function bakeSite(leaf, project, from = root, { layout = frontLayou
     ...[...pages].map(([path, html]) => [path, fillMarks(html, project)]),
   ]);
 }
+
+/** Every picture a documentation page unfurls with, which `site-thumbnails.mjs` writes after the bake — one per page the bake writes, and the keys that say when each was taken. */
+export function cardPaths() {
+  return [...docsPaths().filter((path) => pageOf(path)).map((path) => cardOf(`docs/${path}`)), CARD_KEYS];
+}
+export const CARD_KEYS = `${CARD_DIR}/keys.json`;
 
 /** The documentation address, and the folder whose file list the publish writes into it. */
 export const DOCS_PAGE = 'docs/index.html';
