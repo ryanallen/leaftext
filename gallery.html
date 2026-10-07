@@ -9589,6 +9589,18 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   font-weight: var(--type-display-weight);
   line-height: var(--type-display-line);
 }
+/* The meter an author wrote in a poem's frontmatter, after its title and wrapping with it. The name is drawn here off the attribute, so the heading holds no words the file does not. */
+.document-body .poem-meter-detail {
+  margin-left: var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-body-size);
+  font-weight: var(--lt-weight-400);
+  line-height: var(--type-body-line);
+  user-select: none;
+}
+.document-body .poem-meter-name::before {
+  content: attr(data-meter);
+}
 /* h1 takes the base heading color; h2–h6 each have their own token, so a theme can tint the deeper levels or leave them equal. */
 .document-body h2 {
   color: var(--lt-markdown-heading-2);
@@ -15672,29 +15684,6 @@ p.front-more {
   font-size: var(--lt-text-11);
   font-weight: var(--lt-weight-600);
 }
-/* The recorded-day card: the Grove sheet's whole body while one saved day is in doubt, so nothing else is drawn over the one thing there is to answer. */
-.grove-claim {
-  display: grid;
-  gap: var(--lt-space-8);
-  justify-items: start;
-  max-width: 420px;
-  padding: var(--lt-space-16);
-  border: var(--lt-stroke-1) solid var(--lt-accent);
-  border-radius: var(--lt-radius-lg);
-  background: var(--lt-surface-elevated);
-}
-.grove-claim .grove-level-bar {
-  width: 100%;
-}
-.grove-claim-eyebrow {
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-16);
-  font-weight: var(--lt-weight-700);
-}
-.grove-claim-earned {
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-13);
-}
 /* The claim press is held, not clicked: a fill under its words crosses it on the hold's length and drains faster when let go, because a hold abandoned is a departure. The fill sits a layer below the words inside the button's own stacking context, so the words never go under it. */
 .grove-claim-press {
   position: relative;
@@ -18797,6 +18786,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
 </section>
 <section class="part">
+<header><h3>Poem meter</h3><code class="built">.poem-meter-detail</code><span class="built">render-document.js — the meter a poem's frontmatter names, after its title, linked where the renderer linked the field to the nearest glossary</span></header>
+<div class="stage"><div class="document-body"><h1 data-lead-heading>The Coming of Arthur<span class="poem-meter-detail" contenteditable="false"><a class="poem-meter-name" href="glossary:iambic-pentameter" data-meter="iambic pentameter"></a></span></h1></div></div>
+</section>
+<section class="part">
 <header><h3>Document tab divider</h3><code class="built">.doc-tab-name</code><span class="built">events.rs, from a whole Markdown tab comment</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tab-name" data-tab="1">Overview</div><p>One part of the document.</p></div></div>
 </section>
@@ -19067,10 +19060,6 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Level bar</h3><code class="built">.grove-level-bar</code><span class="built">profile.js, inside each Growth area row and under the Grove number</span></header>
 <div class="stage"><div style="max-width:220px;display:grid;gap:8px"><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" aria-label="Charting: 0 of 3 XP toward level 4"><span class="grove-level-bar-fill" style="--grove-fill:0"></span></span><span class="grove-bar-words">0 of 3 XP toward level 4</span><span class="grove-level-bar" role="progressbar" aria-valuemin="0" aria-valuemax="12" aria-valuenow="6" aria-label="Leafing: 6 of 12 XP toward level 13"><span class="grove-level-bar-fill" style="--grove-fill:0.5"></span></span><span class="grove-bar-words">6 of 12 XP toward level 13</span><span class="grove-level-bar" aria-hidden="true"><span class="grove-level-bar-fill" style="--grove-fill:1"></span></span><span class="grove-bar-words">At its ceiling, level 50</span></div></div>
-</section>
-<section class="part">
-<header><h3>Grove day review</h3><code class="built">.grove-claim</code><span class="built">profile.js, the Grove sheet's whole body while one recorded day waits for the reader</span></header>
-<div class="stage"><div class="leaf-sheet grove-sheet open" style="position:static;max-width:520px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><button type="button" class="leaf-sheet-close"><span class="lt-icon lt-icon-close"></span></button></div><div class="grove-sheet-body"><div class="grove-claim"><span class="grove-claim-eyebrow">Check one recorded day</span><span class="grove-claim-earned">18 XP was saved under 15 September before Leaftext knew your local day. Did that growth happen on 14 September?</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action">Keep 15 September</button><button type="button" class="grove-tree-action is-spend">Move to 14 September</button></span></div></div></div></div>
 </section>
 <section class="part">
 <header><h3>Grove bar full</h3><code class="built">.grove-head-claim</code><span class="built">profile.js, in place of the Grove's thin bar the moment its pool earns the next level: the whole bar becomes a hold to claim the next level</span></header>

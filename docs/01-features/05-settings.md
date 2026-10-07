@@ -162,7 +162,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 ### Flash words
 
-- The lightning button beside the speed reader on the reading view's [toolbar](02-navigation.md#the-floating-toolbar) opens a box over the page that shows the words a word or a few at a time, starting at the word you selected, or else at the first block on screen
+- The lightning button beside the speed reader on the reading view's [toolbar](02-navigation.md#the-floating-toolbar) opens a box over the page that shows the words a word or a few at a time, starting at the word you selected or clicked on, or else at the first block on screen
 - The letter your eye rests on sits between two short marks, so a word of any length lands in the same place
 - The page dims around the block being read and scrolls to follow it; closing leaves you at that block with the word you stopped on selected, ready to copy or to start from again, and a locked page stays locked
 - Space pauses and plays, Left and Right step back and forward, Up and Down change the pace by 25 words a minute, and Escape closes it wherever the keyboard is; every key has a button beside it in the box

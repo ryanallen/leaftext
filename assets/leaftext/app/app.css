@@ -9556,6 +9556,18 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   line-height: var(--type-display-line);
 }
 
+.document-body .poem-meter-detail {
+  margin-left: var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-body-size);
+  font-weight: var(--lt-weight-400);
+  line-height: var(--type-body-line);
+  user-select: none;
+}
+.document-body .poem-meter-name::before {
+  content: attr(data-meter);
+}
+
 .document-body h2 {
   color: var(--lt-markdown-heading-2);
   border-bottom: var(--lt-stroke-1) solid var(--lt-markdown-rule);
@@ -15611,29 +15623,6 @@ p.front-more {
   color: var(--lt-primary-ink);
   font-size: var(--lt-text-11);
   font-weight: var(--lt-weight-600);
-}
-
-.grove-claim {
-  display: grid;
-  gap: var(--lt-space-8);
-  justify-items: start;
-  max-width: 420px;
-  padding: var(--lt-space-16);
-  border: var(--lt-stroke-1) solid var(--lt-accent);
-  border-radius: var(--lt-radius-lg);
-  background: var(--lt-surface-elevated);
-}
-.grove-claim .grove-level-bar {
-  width: 100%;
-}
-.grove-claim-eyebrow {
-  color: var(--lt-foreground);
-  font-size: var(--lt-text-16);
-  font-weight: var(--lt-weight-700);
-}
-.grove-claim-earned {
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-13);
 }
 
 .grove-claim-press {

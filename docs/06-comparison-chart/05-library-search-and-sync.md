@@ -48,6 +48,7 @@
 | Six cloud services found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No account held | [✅][l-cloud] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Moved cloud folders found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Google Drive app fetched | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Late installs found | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cloud mark on vaults | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Client records read | [✅][l-cloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

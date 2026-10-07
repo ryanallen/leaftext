@@ -12570,16 +12570,18 @@ function flashReaderFocusAt(word) {
 
 function flashReaderStartPoint(blocks) {
   const selection = window.getSelection ? window.getSelection() : null;
-  const range = selection && selection.rangeCount && !selection.isCollapsed ? selection.getRangeAt(0) : null;
+  const range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
   const node = range ? range.startContainer : null;
+  const view = app.getBoundingClientRect();
+  const onScreen = (box) => Boolean(box) && box.bottom > view.top && box.top < view.bottom && box.height > 0;
   if (node) {
     const index = blocks.findIndex((block) => block === node || block.contains(node));
-    if (index >= 0) return { index, mark: node.nodeType === 3 ? { node, offset: range.startOffset } : { node: null, offset: 0 } };
+    const rects = index >= 0 && selection.isCollapsed && range.getClientRects ? range.getClientRects() : null;
+    const taken = index >= 0 && (!selection.isCollapsed || onScreen(rects && rects.length ? rects[0] : blocks[index].getBoundingClientRect()));
+    if (taken) return { index, mark: node.nodeType === 3 ? { node, offset: range.startOffset } : { node: null, offset: 0 } };
   }
-  const view = app.getBoundingClientRect();
   for (let index = 0; index < blocks.length; index += 1) {
-    const box = blocks[index].getBoundingClientRect();
-    if (box.bottom > view.top && box.top < view.bottom && box.height > 0) return { index, mark: null };
+    if (onScreen(blocks[index].getBoundingClientRect())) return { index, mark: null };
   }
   return { index: 0, mark: null };
 }
@@ -14722,6 +14724,7 @@ function sinceInWords(seconds) {
 
 const SERVICE_VAULT_ROWS = [
   ['Dropbox', 'Copy one Dropbox folder through its API', () => showDropboxVaultForm()],
+  ['Google Drive', 'Get the Google Drive app and open your Drive', () => startGoogleDriveSetup()],
   ['OneDrive', 'Copy one OneDrive folder through Microsoft Graph', () => showMicrosoftVaultForm('OneDrive', 'onedrive')],
   ['SharePoint', 'Copy one SharePoint folder through Microsoft Graph', () => showMicrosoftVaultForm('SharePoint', 'sharepoint')],
   ['Box', 'Copy one Box folder through its API', () => showBoxVaultForm()],
@@ -14730,6 +14733,8 @@ const SERVICE_VAULT_ROWS = [
 ];
 function pushServiceVaultRows(items) {
   for (const [label, title, run] of SERVICE_VAULT_ROWS) {
+    
+    if (label === 'Google Drive' && !(Array.isArray(cloudFolders) && !cloudFolders.some((folder) => folder && folder.id === 'gdrive'))) continue;
     items.push({ label: `${label}…`, title, icon: CLOUD_ICON_SVG, keepOpen: true, run });
   }
 }
@@ -14788,6 +14793,25 @@ function startServiceWait(heading, service, command, checksServer = false) {
   command.attemptId = attemptId;
   send(command);
 }
+
+function startGoogleDriveSetup() {
+  const attemptId = `service-${++serviceWaitSequence}`;
+  showCrumbMenu(crumbMenuOwner, [
+    { heading: 'Google Drive', form: true },
+    { note: 'Downloading the Google Drive app from Google. Its installer opens when this finishes.' },
+    { buttons: [{ label: 'Cancel', keepOpen: true, run: () => {
+      send({ command: 'cancelServiceSignIn', attemptId });
+      waitingServiceForm = null;
+      hideCrumbMenu();
+    } }] },
+  ]);
+  waitingServiceForm = { note: crumbMenu.querySelector('.crumb-menu-note'), attemptId };
+  send({ command: 'setUpGoogleDrive', attemptId });
+}
+window.leafGoogleDriveSetupNote = (attemptId, text) => {
+  if (!waitingServiceForm || waitingServiceForm.attemptId !== attemptId || !waitingServiceForm.note) return;
+  waitingServiceForm.note.textContent = text;
+};
 window.leafSignInEnded = (attemptId) => {
   if (!waitingServiceForm || waitingServiceForm.attemptId !== attemptId) return;
   if (!crumbMenu.hidden && crumbMenu.contains(waitingServiceForm.note)) hideCrumbMenu();
@@ -19401,6 +19425,7 @@ window.leafSwapParagraph = (swap) => {
   currentState.renderKey = swap.renderKey;
   if (fresh !== old) rewatchReadingBlock(old, fresh);
   if (heading) updateSwappedHeadingOutline(fresh, oldId);
+  if (heading) drawPoemMeter(body);
   window.leafDocumentWords(swap.path, swap.words);
   readerAnchorBlocks = null;
   pendingEditAnchor = null;
@@ -23062,6 +23087,8 @@ function inlineDomToMarkdown(node) {
     if (child.nodeType !== Node.ELEMENT_NODE) return;
     
     if (isTableSizingGrip(child)) return;
+    
+    if (child.classList && child.classList.contains('poem-meter-detail')) return;
     
     if (isRenderedFootnoteMark(child)) return;
     const tag = child.tagName.toLowerCase();
@@ -34241,13 +34268,11 @@ function groveBarIsFull(profile) {
 }
 function groveLevelWords(profile) {
   if (!profile.enabled) return 'Grove';
-  if (profile.dayReview) return 'Check a day';
   
   return groveBarIsFull(profile) ? `Grove ${formatCount(profile.grove)} full` : `Grove ${formatCount(profile.grove)}`;
 }
 function grovePillName(profile) {
   if (!profile.enabled) return 'Your Grove, not recording';
-  if (profile.dayReview) return 'Your Grove, check one recorded day';
   if (groveBarIsFull(profile)) return `Your Grove, level ${formatCount(Number(profile.grove) + 1)} is ready to claim`;
   return `Your Grove, level ${formatCount(profile.grove)}`;
 }
@@ -34263,7 +34288,7 @@ function drawGrovePill() {
   libraryProfileLabel.textContent = !area ? words : `+${formatCount(moment.xp)} ${area.name}`;
   
   libraryProfile.setAttribute('aria-label', grovePillName(leafProfile));
-  libraryProfile.classList.toggle('has-claim', !!leafProfile.dayReview || groveBarIsFull(leafProfile));
+  libraryProfile.classList.toggle('has-claim', groveBarIsFull(leafProfile));
   libraryProfile.classList.toggle('is-paying', !!area);
   libraryProfile.title = !area ? words : `${area.name}: ${groveBarWords(area)}`;
   if (!libraryProfileBar) return;
@@ -35154,7 +35179,7 @@ function onGroveClaimKey(event) {
 
 
 function groveOverviewIsOpen() {
-  return !!(groveSheet && !groveSheet.hidden && leafProfile && leafProfile.enabled && !groveAllXpOpen && !leafProfile.dayReview && !groveClaim);
+  return !!(groveSheet && !groveSheet.hidden && leafProfile && leafProfile.enabled && !groveAllXpOpen && !groveClaim);
 }
 
 var GROVE_RECEIPT_STAND_MS = 2000;
@@ -35303,11 +35328,6 @@ window.leafGrowthLog = function (page) {
   groveAllXp = { entries: held.concat(page.entries || []), total: Number(page.total) || 0, more: !!page.more };
   drawGroveSheet();
 };
-function groveDayReviewView(review) {
-  const earlier = groveDayWords(review.earlier, new Date(), true);
-  const later = groveDayWords(review.later, new Date(), true);
-  return `<div class="grove-claim" data-grove-day-review="true"><span class="grove-claim-eyebrow">Check one recorded day</span><span class="grove-claim-earned">${escapeText(`${formatCountLabel(review.xp, 'XP', 'XP')} was saved under ${later} before Leaftext knew your local day. Did that growth happen on ${earlier}?`)}</span><span class="grove-tree-actions"><button type="button" class="grove-tree-action" data-grove-day-keep="true">${escapeText(`Keep ${later}`)}</button><button type="button" class="grove-tree-action is-spend" data-grove-day-move="true">${escapeText(`Move to ${earlier}`)}</button></span></div>`;
-}
 function drawGroveHead() {
   if (groveBack) groveBack.hidden = !groveAllXpOpen;
   groveSwitch.hidden = groveAllXpOpen;
@@ -35333,12 +35353,6 @@ function drawGroveAllXpOff() {
 function onGroveBodyClick(event) {
   const target = event.target;
   const find = (selector) => (target && target.closest ? target.closest(selector) : null);
-  const reviewChoice = find('[data-grove-day-keep], [data-grove-day-move]');
-  if (reviewChoice && leafProfile && leafProfile.dayReview) {
-    const review = leafProfile.dayReview;
-    send({ command: 'resolveProgressDay', earlier: review.earlier, later: review.later, choice: reviewChoice.hasAttribute('data-grove-day-move') ? 'move' : 'keep' });
-    return;
-  }
   const tab = find('[data-grove-tab]');
   if (tab) return showGroveTab(tab.dataset.groveTab);
   const claim = find('[data-grove-claim-press]');
@@ -35438,12 +35452,12 @@ function groveToday(today) {
 }
 var GROVE_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-function groveDayWords(day, today = new Date(), full = false) {
-  if (!full && day === groveLocalDay(today)) return 'Today';
-  if (!full && day === groveLocalDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1))) return 'Yesterday';
+function groveDayWords(day, today = new Date()) {
+  if (day === groveLocalDay(today)) return 'Today';
+  if (day === groveLocalDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1))) return 'Yesterday';
   const [year, month, date] = String(day).split('-').map(Number);
   if (!year || !month || !date || !GROVE_MONTHS[month - 1]) return String(day);
-  return !full && year === today.getFullYear() ? `${date} ${GROVE_MONTHS[month - 1]}` : `${date} ${GROVE_MONTHS[month - 1]} ${year}`;
+  return year === today.getFullYear() ?`${date} ${GROVE_MONTHS[month - 1]}` : `${date} ${GROVE_MONTHS[month - 1]} ${year}`;
 }
 
 function groveEarnedLately(recent, today = new Date()) {
@@ -35521,12 +35535,6 @@ function drawGroveSheet() {
   const areas = Array.isArray(leafProfile.areas) ? leafProfile.areas : [];
   if (groveAllXpOpen) {
     groveSheetBody.innerHTML = `${groveAdminRow()}${groveAllXpView()}`;
-    return;
-  }
-  if (leafProfile.dayReview) {
-    groveSheetBody.innerHTML = `${groveAdminRow()}${groveDayReviewView(leafProfile.dayReview)}`;
-    const press = groveSheetBody.querySelector('[data-grove-day-keep]');
-    if (press) leafFocusForKeyboard(press);
     return;
   }
   drawGroveTabs(true);
@@ -35806,7 +35814,7 @@ function openGroveSheet() {
   drawGroveSheet();
   openSheet(groveSheet, groveBackdrop);
   document.addEventListener('keydown', onGroveKey);
-  leafFocusForKeyboard(groveSheetBody.querySelector('[data-grove-day-keep], [data-grove-claim-press]') || groveSwitch);
+  leafFocusForKeyboard(groveSheetBody.querySelector('[data-grove-claim-press]') || groveSwitch);
   
   playGroveReceipts();
 }
@@ -38710,7 +38718,8 @@ function drawSwappedBlock(old, html, start, end, layoutClass = '') {
   const kept = fresh.tagName === old.tagName && active !== old && (!active || !old.contains(active)) && markdownBlockWysiwygSafe(old) === markdownBlockWysiwygSafe(fresh);
   if (kept) {
     const heldBelow = old.classList.contains('is-held-below');
-    const marks = new Set(['data-block-id', 'data-block-kind', 'data-editable', 'data-src-start', 'data-src-end']);
+    
+    const marks = new Set(['data-block-id', 'data-block-kind', 'data-editable', 'data-src-start', 'data-src-end', 'data-lead-heading']);
     for (const name of old.getAttributeNames()) if (!marks.has(name)) old.removeAttribute(name);
     if (heldBelow) old.classList.add('is-held-below');
     if (layoutClass) old.classList.add(layoutClass);
@@ -38724,6 +38733,7 @@ function drawSwappedBlock(old, html, start, end, layoutClass = '') {
   if (old.dataset.blockId != null) fresh.dataset.blockId = old.dataset.blockId;
   fresh.dataset.blockKind = old.dataset.blockKind;
   if (old.dataset.editable) fresh.dataset.editable = old.dataset.editable;
+  if (old.hasAttribute('data-lead-heading') && fresh.tagName === 'H1') fresh.dataset.leadHeading = '';
   if (old.classList.contains('is-held-below')) fresh.classList.add('is-held-below');
   if (layoutClass) fresh.classList.add(layoutClass);
   putDrawnRun([old], [fresh], null, null, old.parentElement);
@@ -38743,6 +38753,33 @@ function replayParagraphSwaps(doc, body) {
     }
   }
   if (headingsChanged) publishDocumentOutline();
+}
+
+function poemMeterOf(root) {
+  const cell = root && root.querySelector('.frontmatter td[data-leaf-field="meter"][data-leaf-field-kind="text"]');
+  const name = cell ? cell.textContent.trim() : '';
+  if (!name) return null;
+  const links = cell.querySelectorAll('a[href]');
+  const href = links.length === 1 ? links[0].getAttribute('href') : '';
+  const whole = /^glossary:/i.test(href) && links[0].textContent.trim() === name;
+  return { name, href: whole ? href : '' };
+}
+
+function drawPoemMeter(body) {
+  const title = body && body.querySelector('h1[data-lead-heading]');
+  if (!title) return;
+  title.querySelectorAll('.poem-meter-detail').forEach((detail) => detail.remove());
+  const meter = body.__poemMeter;
+  if (!meter) return;
+  const detail = document.createElement('span');
+  detail.className = 'poem-meter-detail';
+  detail.setAttribute('contenteditable', 'false');
+  const name = document.createElement(meter.href ? 'a' : 'span');
+  if (meter.href) name.setAttribute('href', meter.href);
+  name.className = 'poem-meter-name';
+  name.dataset.meter = meter.name;
+  detail.appendChild(name);
+  title.appendChild(detail);
 }
 function replayChapterSwaps(doc, body) {
   if (!doc || !Array.isArray(doc.chapterSwaps) || !body) return;
@@ -38874,9 +38911,13 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     stopReadAloud();
     applySpeedReaderToDocument();
     
+    const readingBody = app.querySelector('.document-body');
+    if (readingBody) readingBody.__poemMeter = poemMeterOf(readerLayout);
+    
     bindReadingEditor(state.document, { deferCaret: true });
     replayChapterSwaps(state.document, app.querySelector('.document-body'));
     replayParagraphSwaps(state.document, app.querySelector('.document-body'));
+    drawPoemMeter(readingBody);
     
     repinSizedTables(renderedPath);
     renderDocumentTabs(readerLayout?.querySelector('.document-body'), renderedPath);

@@ -92,6 +92,8 @@ Remove one and it comes back the next time Leaftext looks, which is when it star
 
 On Windows the Google Drive app mounts each signed-in account as a drive of its own, labeled with the account. Leaftext finds every one and adds its **My Drive** as a vault named for the account — **My Drive (you@example.com)** — so two accounts are two vaults you can tell apart; Shared drives and Other computers stay in the library. A name you give one is kept. These drives download a file the moment anything reads it, so in them Leaftext lists every note by name, time and size without reading any: rows carry no title or preview, a field rule hides nothing there, and search, the map, fields and Home's tasks do not look inside them. A note is fetched when you open it.
 
+No Google Drive app yet? **New vault… → Google Drive…** gets it for you. Leaftext downloads Google's own installer from Google and opens it, so your computer asks whether to let Google's app install; then you sign in to Google Drive in its own window, and your **My Drive** opens in Leaftext by itself the moment its folder appears. If the app is already installed but signed out, the same row just starts it. If the download fails, Google's download page opens in your browser instead. Cancel stops the wait, and the row is not shown on a computer that already has a Google Drive folder, since that folder is already a vault.
+
 A vault *inside* one of these folders wears the cloud too. Where the files end up is what the mark is about, and a folder under Dropbox syncs exactly as Dropbox does.
 
 ## Browsing

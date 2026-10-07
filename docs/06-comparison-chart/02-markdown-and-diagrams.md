@@ -54,6 +54,7 @@
 | Quoted items keep commas | [✅][l-frontmatter] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Broken frontmatter still renders | [✅][l-frontmatter] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Fields edited in place | [✅][l-frontmatter] | [✅][o-props] | [❌][t-seen] | [❌][c-seen] |
+| Poem meter beside title | [✅][l-frontmatter] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Code blocks
 

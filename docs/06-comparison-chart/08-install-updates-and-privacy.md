@@ -134,6 +134,7 @@
 | Speed Reader mode | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Speed Reader never writes | [✅][l-speed-reader] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Flash words mode | [✅][l-flash-words] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Flash from clicked word | [✅][l-flash-words] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Read aloud | [✅][l-read-aloud] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Typing help default | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pager, minimap always | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
