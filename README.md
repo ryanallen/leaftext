@@ -278,7 +278,7 @@ Four things, and none of them carries a word you wrote:
 - **The release check** — it asks GitHub whether a newer version exists.
 - **The update download** — when one does, it fetches that installer.
 - **A theme's font** — from Google Fonts, the first time you pick that theme.
-- **The By meaning model** — from Hugging Face, once, the first time you press [By meaning](docs/01-features/03-library.md#what-links-here); after that it runs on your machine.
+- **The By meaning model** — from Hugging Face, when you turn [By meaning](docs/01-features/03-library.md#what-links-here) on; after that it runs on your machine, and turning it off or uninstalling Leaftext deletes it.
 
 The connections are the ones you set up: [GitHub sync](docs/01-features/03-library.md#github-sync) pushes a vault to your own repository using your installed `git`. [Storage service vaults](docs/01-features/03-library.md#storage-services) connect Dropbox, OneDrive, SharePoint or Box to a local copy of your files. Their credentials stay in your operating system's credential store.
 

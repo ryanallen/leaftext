@@ -45,7 +45,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{config_dir}/mcp.json` | Kept for outside tool servers, in the `mcpServers` shape. No part of Leaftext reads this file or starts a server yet — [outside tools are still coming](../05-compare.md#outside-tools-through-mcp). When they arrive it is read from this folder alone, never from a vault, a document or a link, and a server is switched off with `"disabled": true` rather than deleted. A server names either a `command` the app starts or a `url` it reaches over HTTPS, never both, and an address may carry a `clientId` for a sign-in server that will not let the app register itself. An address is signed in through your own browser, and that sign-in is kept in the machine's credential store, never in this file — which is why a `headers` entry is refused |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/remote/<vault id>` | Local files for a [storage service vault](03-library.md#storage-services), including edits waiting to be sent |
-| `{data_dir}/models/potion-base-8M` | The model [By meaning](#by-meaning) scores with, downloaded on its first press and checked file by file before it is kept |
+| `{data_dir}/models/potion-base-8M` | The model [By meaning](#by-meaning) scores with, downloaded when it is turned on, checked file by file before it is kept, and deleted when it is turned off or the app is uninstalled |
 | `{data_dir}/webview2` | WebView2 data |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 | `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
@@ -193,7 +193,8 @@ Leaftext removes broken entries from the recent list automatically and collapses
 ### By meaning
 
 - Off by default, toggled with **By meaning** at the right of **About the same thing** in the [library pane](03-library.md#what-links-here)
-- On, that group is scored by what the notes say rather than the words they share; the first press downloads a small model once into `{data_dir}/models/potion-base-8M`, and after that no note's text leaves this machine
+- On, that group is scored by what the notes say rather than the words they share; turning it on downloads a small model into `{data_dir}/models/potion-base-8M`, and after that no note's text leaves this machine
+- Off, the model is deleted, a download still running is stopped first, and uninstalling Leaftext deletes it too
 - Saved as `related_by_meaning`
 
 ### Pager

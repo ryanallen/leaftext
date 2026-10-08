@@ -258,6 +258,7 @@ export const COMMANDS = {
   newConsole: [REFUSED, 'a published page cannot start a local command line'],
   consoleInput: [REFUSED, 'a published page has no console process to receive input'],
   consolePaste: [REFUSED, 'a published page has no console process to receive pasted text'],
+  consoleCopy: [REFUSED, 'a published page has no console to copy from'],
   consoleResize: [REFUSED, 'a published page has no console process to resize'],
   pasteFile: [REFUSED, 'nothing here writes to a disk'],
   revealFile: [REFUSED, 'there is no file manager to show it in'],

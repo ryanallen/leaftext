@@ -5656,12 +5656,13 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   align-items: center;
   gap: var(--lt-space-1);
   flex: 0 0 auto;
-  max-width: 132px;
+  
+  max-width: min(132px, 100%);
   
   padding: 0 var(--lt-space-4);
   user-select: none;
   
-  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
+  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized);
 }
 
 .tab,
@@ -5680,24 +5681,6 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-color: transparent;
-}
-.tab-active {
-  
-  max-width: 100%;
-}
-.tab-active,
-.grove-tab.is-chosen {
-  
-  margin: 0 var(--lt-space-12);
-}
-
-.tab-active:first-child,
-.grove-tab.is-chosen:first-child {
-  margin-left: 0;
-}
-.tab-active:last-child,
-.grove-tab.is-chosen:last-child {
-  margin-right: 0;
 }
 
 
@@ -5822,7 +5805,6 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
 .tab-active .tab-label {
   
   color: var(--tab-label-ink, var(--lt-foreground));
-  max-width: none;
   -webkit-mask-image: none;
   mask-image: none;
   
@@ -10634,13 +10616,19 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   margin-right: 0;
   margin-left: calc(-0.762em - var(--lt-space-6) - var(--drop-cap-letter, 0em) / 2);
 }
-.document-body.has-illuminated-headings h1::first-letter,
-.document-body.has-illuminated-headings h2::first-letter,
-.document-body.has-illuminated-headings h3::first-letter,
-.document-body.has-illuminated-headings h4::first-letter,
-.document-body.has-illuminated-headings h5::first-letter,
-.document-body.has-illuminated-headings h6::first-letter {
-  color: var(--lt-primary-ink);
+
+.document-body.has-illuminated-headings h1:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h2:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h3:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h4:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h5:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h6:not(.is-drop-cap)::first-letter {
+  color: var(--lt-primary-foreground);
+  background: var(--lt-icon-leaf) right 0.04em bottom 0.04em / 0.55em no-repeat, var(--lt-primary);
+  background-blend-mode: soft-light;
+  padding: 0 0.14em;
+  margin-right: 0.06em;
+  border-radius: var(--lt-radius-sm);
 }
 
 .document-body.has-drop-cap.has-illuminated-headings h1.is-drop-cap::first-letter,
@@ -14224,16 +14212,10 @@ body.is-home-row-dragging .home-list-scroll li {
 @media (max-width: 640px) {
   
   .tab {
-    max-width: 104px;
-  }
-  .tab-active {
-    max-width: min(200px, 100%);
+    max-width: min(104px, 100%);
   }
   .tab-label {
     max-width: 96px;
-  }
-  .tab-active .tab-label {
-    max-width: 184px;
   }
 }
 @media (max-width: 600px) {

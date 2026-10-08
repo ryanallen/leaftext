@@ -18190,8 +18190,8 @@ window.leafMeaningState = (answer) => {
 function meaningButtonHtml() {
   const label = meaningOn && meaningPercent !== null ? `By meaning ${meaningPercent}%` : 'By meaning';
   const title = meaningOn
-    ? 'Scored by what the notes say, with the model on this machine. Press to go back to shared words.'
-    : 'Score these by what the notes say rather than the words they share. Downloads a 30 MB model once from Hugging Face; no note leaves this device.';
+    ? 'Scored by what the notes say, with the model on this machine. Press to go back to shared words and delete the model.'
+    : 'Score these by what the notes say rather than the words they share. Downloads a 30 MB model from Hugging Face, deleted again when you turn this off; no note leaves this device.';
   return `<button type="button" class="theme-mode-btn library-links-meaning${meaningOn ? ' is-active' : ''}" data-meaning-toggle="related" aria-pressed="${meaningOn}" title="${escapeAttr(title)}">${escapeText(label)}</button>`;
 }
 
@@ -35674,7 +35674,7 @@ function groveForagingWords(area) {
   }
   const worth = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts.join('');
   const left = finds.length ? `${worth ? ' — ' : ''}${formatCount(finds.length)} things to find, ${formatCount(finds.filter((find) => find.found).length)} found` : '';
-  return `Stops at level ${formatCount(area.cap)}${worth || left ? ': ' : ''}${worth}${left}.`;
+  return `${area.name} stops at level ${formatCount(area.cap)}${worth || left ? ': ' : ''}${worth}${left}.`;
 }
 
 var GROVE_LANDMARKS = [
@@ -40009,15 +40009,28 @@ function makeConsoleLayer(id) {
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
 
-function consolePasteKey(event) {
-  if (isMacPlatform || event.key.toLowerCase() !== 'v' || !event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+
+function consoleShortcutKey(event) {
+  const key = event.key.toLowerCase();
+  if (isMacPlatform || (key !== 'v' && key !== 'c') || !event.ctrlKey || event.metaKey || event.altKey) return;
+  if (key === 'v' && event.shiftKey) return;
   const entry = frontConsoleEntry();
   if (!entry?.terminal || entry.layer.hidden || !event.target.classList?.contains('xterm-helper-textarea') || !entry.layer.contains(event.target)) return;
+  if (key === 'c') {
+    const selected = entry.terminal.hasSelection();
+    if (!selected && !event.shiftKey) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!selected) return;
+    send({ command: 'consoleCopy', id: consoleFrontId, text: entry.terminal.getSelection() });
+    entry.terminal.clearSelection();
+    return;
+  }
   event.preventDefault();
   event.stopImmediatePropagation();
   send({ command: 'consolePaste', id: consoleFrontId });
 }
-document.addEventListener('keydown', consolePasteKey, true);
+document.addEventListener('keydown', consoleShortcutKey, true);
 
 function consoleScrollElement() {
   const entry = frontConsoleEntry();

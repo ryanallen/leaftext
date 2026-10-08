@@ -5578,7 +5578,7 @@ body.frameless.is-fullscreen .startup-card {
 }
 .tab-bar {
   display: flex;
-  /* Tighter than the bar's 16px on purpose: a strip of open documents is one list, not a run of unrelated controls. The active tab adds a 12px margin of its own on top of this, so 4px here plus 12px there is the 16px of daylight that keeps it from reading as fused to the tab beside it. Move the two together. */
+  /* Tighter than the bar's 16px on purpose: a strip of open documents is one list, not a run of unrelated controls. The selected tab stands this same 4px off its neighbors, so a press never moves the tabs beside it. */
   gap: var(--lt-space-4);
   min-width: 0;
   /* Full header height, but the tabs hang from the bar's bottom edge (where the active one covers the reader divider) under a shoulder of chrome — which is what gives their top corners room to round. */
@@ -5601,7 +5601,7 @@ body.frameless.is-fullscreen .startup-card {
   /* Never wider than the tabs in it: the plus stands after the groups and rests against the last tab, and a group that took the rest of the row would push it to the strip's end with a gap of nothing in between. It still gives room up, so a full strip shrinks the group and the plus comes to rest at the strip's own end. */
   flex: 0 1 auto;
   overflow-x: auto;
-  /* The bar's own 16px, spent inside the box that scrolls so the space beside the first and last tab matches every other space in the row — which is why a selected tab at an end drops its own margin rather than adding to this. It is also what caps --tab-flare: a flare wider than this inset is clipped flat by the scroll box and the end tab's corner draws as a straight run. */
+  /* The bar's own 16px, spent inside the box that scrolls so the space beside the first and last tab matches every other space in the row. It is also what caps --tab-flare: a flare wider than this inset is clipped flat by the scroll box and the end tab's corner draws as a straight run. */
   padding: 0 var(--lt-space-16);
   /* A scrolled group's mask is a stacking context, which shuts each tab's own place above the divider inside the group; the group stands where its tabs do so the selected tab still opens into the page. */
   position: relative;
@@ -5664,12 +5664,13 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   align-items: center;
   gap: var(--lt-space-1);
   flex: 0 0 auto;
-  max-width: 132px;
+  /* One cap for every tab, selected or not, so a press never changes a width; and never past its group, so a narrow card ends a tab with its own corner rather than cutting it off. */
+  max-width: min(132px, 100%);
   /* Even, so the gap after the name mirrors the gap before it. Neither corner button is in flow, so neither buys room of its own; what the name trails off into is the label's own padding and this. */
   padding: 0 var(--lt-space-4);
   user-select: none;
   /* Emphasized: a tab neither arrives nor leaves, the strip rearranges around it. */
-  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized), margin var(--lt-duration-120) var(--lt-ease-emphasized);
+  transition: max-width var(--lt-duration-120) var(--lt-ease-emphasized), transform var(--lt-duration-120) var(--lt-ease-emphasized);
 }
 /* The tab's drawing, which the Grove's Growth and Tree tabs share so the app has one tab pattern. The Grove's are buttons, so they are named by their role as well: one class alone loses to the bare button's hover, whose fill takes the grain off. */
 .tab,
@@ -5688,24 +5689,6 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   background-size: var(--lt-grain-tile) var(--lt-grain-tile);
   background-repeat: repeat;
   background-color: transparent;
-}
-.tab-active {
-  /* Capped at its group, so a group narrower than the tab ends it with its own corner rather than cutting it off. */
-  max-width: 100%;
-}
-.tab-active,
-.grove-tab.is-chosen {
-  /* Daylight beside the selected tab: 12px on top of the strip's 4px gap, bought only beside another tab and only by the selected one, so it stands clear of its neighbors. It is the strip's own spacing, not room the small flare below asks for. It is in the transition above, or every tab to the right jumps when the selection moves. */
-  margin: 0 var(--lt-space-12);
-}
-/* At an end of the strip there is no neighbor to stand clear of, and the strip's own 16px inset is already the widest space in the row, so the margin here would only push the tab past it. A one-tab strip is both ends and drops both. */
-.tab-active:first-child,
-.grove-tab.is-chosen:first-child {
-  margin-left: 0;
-}
-.tab-active:last-child,
-.grove-tab.is-chosen:last-child {
-  margin-right: 0;
 }
 /* The tab standing in the column that does not have the keys. It is that card's own front tab and is drawn selected like any other, so this class carries no drawing at all: it is the mark the press arithmetic and the drag hand-over read. Which card the commands act on is said by the floating bar standing under it — a line of accent under a deselected tab said it twice and said it in a color. */
 /* The tab stays in its own slot holding its space while a copy of it is carried — a tab and its copy both drawn would be two of one tab — and the others slide over the slot it leaves. */
@@ -5830,10 +5813,9 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
 .tab-active .tab-label {
   /* Full-strength ink so the selected name stays readable on the surface it joins. */
   color: var(--tab-label-ink, var(--lt-foreground));
-  max-width: none;
   -webkit-mask-image: none;
   mask-image: none;
-  /* A fade would bite a name that fits, since this label is exactly as wide as its text; an ellipsis draws only once the tab is capped. */
+  /* A fade would bite a name that fits; an ellipsis draws only once the name is cut. */
   text-overflow: ellipsis;
 }
 @media (hover: hover) {
@@ -10668,13 +10650,19 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   margin-right: 0;
   margin-left: calc(-0.762em - var(--lt-space-6) - var(--drop-cap-letter, 0em) / 2);
 }
-.document-body.has-illuminated-headings h1::first-letter,
-.document-body.has-illuminated-headings h2::first-letter,
-.document-body.has-illuminated-headings h3::first-letter,
-.document-body.has-illuminated-headings h4::first-letter,
-.document-body.has-illuminated-headings h5::first-letter,
-.document-body.has-illuminated-headings h6::first-letter {
-  color: var(--lt-primary-ink);
+/* The letter stands on its own accent tile with the leaf blended into its corner. A floated first letter ignores width, so the tile hugs each letter by padding. */
+.document-body.has-illuminated-headings h1:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h2:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h3:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h4:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h5:not(.is-drop-cap)::first-letter,
+.document-body.has-illuminated-headings h6:not(.is-drop-cap)::first-letter {
+  color: var(--lt-primary-foreground);
+  background: var(--lt-icon-leaf) right 0.04em bottom 0.04em / 0.55em no-repeat, var(--lt-primary);
+  background-blend-mode: soft-light;
+  padding: 0 0.14em;
+  margin-right: 0.06em;
+  border-radius: var(--lt-radius-sm);
 }
 /* The cap's own color outranks the one above, so a heading wearing both says so again. */
 .document-body.has-drop-cap.has-illuminated-headings h1.is-drop-cap::first-letter,
@@ -14280,16 +14268,10 @@ body.is-home-row-dragging .home-list-scroll li {
 @media (max-width: 640px) {
   /* No padding or gap here: the lead and trailing zones carry their own insets, and adding the bar's on top shifts the logo off the library header's 12px it is meant to line up with — the whole left group slides right as the window narrows. */
   .tab {
-    max-width: 104px;
-  }
-  .tab-active {
-    max-width: min(200px, 100%);
+    max-width: min(104px, 100%);
   }
   .tab-label {
     max-width: 96px;
-  }
-  .tab-active .tab-label {
-    max-width: 184px;
   }
 }
 @media (max-width: 600px) {
