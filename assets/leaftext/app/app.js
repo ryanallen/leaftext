@@ -783,7 +783,7 @@ const COLUMN_STATE_NAMES = [
   
   'readerLoadingSafety', 'readerLoadingOwner',
   
-  'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'drawnRanges', 'chapterMembers', 'heldChapterMember',
+  'heldSourceText', 'heldSourceBytes', 'heldSourceStamp', 'heldSourceEnding', 'drawnRanges', 'chapterMembers', 'heldChapterMember',
   
   'unlockedLayer', 'readingHasContainerBlankLines',
   
@@ -849,6 +849,7 @@ function saveColumnState(column) {
   held.heldSourceText = heldSourceText;
   held.heldSourceBytes = heldSourceBytes;
   held.heldSourceStamp = heldSourceStamp;
+  held.heldSourceEnding = heldSourceEnding;
   held.drawnRanges = drawnRanges;
   held.chapterMembers = chapterMembers;
   held.heldChapterMember = heldChapterMember;
@@ -977,6 +978,7 @@ function loadColumnState(column) {
   heldSourceText = held.heldSourceText;
   heldSourceBytes = held.heldSourceBytes;
   heldSourceStamp = held.heldSourceStamp;
+  heldSourceEnding = held.heldSourceEnding;
   drawnRanges = held.drawnRanges;
   chapterMembers = held.chapterMembers;
   heldChapterMember = held.heldChapterMember;
@@ -22070,16 +22072,32 @@ let heldSourceText = '';
 let heldSourceBytes = null;
 let heldSourceStamp = null;
 
+let heldSourceEnding = null;
+
+function lineEndingOf(source) {
+  const bytes = source instanceof Uint8Array;
+  const at = source.indexOf(bytes ? 10 : '\n');
+  if (at < 0) return null;
+  return (bytes ? source[at - 1] === 13 : source[at - 1] === '\r') ? '\r\n' : '\n';
+}
+
+
+function documentSourceEnding() {
+  return heldSourceEnding || '\n';
+}
+
 
 function setDocumentSource(text, stamp) {
   heldSourceStamp = stamp && Number.isSafeInteger(stamp.serial) ? { serial: stamp.serial, splices: 0 } : null;
   if (text instanceof Uint8Array) {
     heldSourceBytes = text;
     heldSourceText = null;
+    heldSourceEnding = lineEndingOf(text);
     return;
   }
   heldSourceText = typeof text === 'string' ? text : '';
   heldSourceBytes = null;
+  heldSourceEnding = lineEndingOf(heldSourceText);
 }
 
 function captureReadingDocumentState() {
@@ -22087,6 +22105,7 @@ function captureReadingDocumentState() {
     sourceText: heldSourceText,
     sourceBytes: heldSourceBytes,
     sourceStamp: heldSourceStamp && { ...heldSourceStamp },
+    sourceEnding: heldSourceEnding,
     ranges: drawnRanges,
     format: currentDocumentFormat,
     dialect: currentDocumentDialect,
@@ -22104,6 +22123,7 @@ function restoreReadingDocumentState(state) {
   heldSourceText = state.sourceText;
   heldSourceBytes = state.sourceBytes;
   heldSourceStamp = state.sourceStamp && { ...state.sourceStamp };
+  heldSourceEnding = state.sourceEnding || null;
   drawnRanges = state.ranges;
   currentDocumentFormat = state.format;
   currentDocumentDialect = state.dialect;
@@ -22192,6 +22212,7 @@ function spliceDocumentSource(start, end, text) {
   next.set(bytes.subarray(to), from + written.length);
   heldSourceBytes = next;
   heldSourceText = null;
+  if (heldSourceEnding === null) heldSourceEnding = lineEndingOf(written);
   if (heldSourceStamp) heldSourceStamp.splices += 1;
 }
 
@@ -22212,6 +22233,7 @@ function spliceDocumentSourceRanges(writes) {
   next.set(bytes.subarray(read), writeAt);
   heldSourceBytes = next;
   heldSourceText = null;
+  if (heldSourceEnding === null) heldSourceEnding = lineEndingOf(next);
   if (heldSourceStamp) heldSourceStamp.splices += writes.length;
 }
 
@@ -23793,6 +23815,9 @@ function releaseEditCommand(message, after) {
   const outgoing = withOrphanedNotesRemoved(message);
   if (message.path) outgoing.path = message.path;
   
+  if (typeof outgoing.text === 'string') outgoing.text = inDocumentEnding(outgoing.text);
+  if (Array.isArray(outgoing.blocks)) for (const block of outgoing.blocks) if (block && typeof block.text === 'string') block.text = inDocumentEnding(block.text);
+  
   if (sentTextNamesFormulaCarrier(outgoing)) currentState.document.recalculates = true;
   
   if (outgoing.command === 'editBlock' || outgoing.command === 'editBlocks') {
@@ -24485,17 +24510,18 @@ function emailNoteBlockToSource(el, ending) {
 
 
 function documentLineEnding() {
-  if (currentDocumentFormat !== 'eml') return '\n';
-  const bytes = documentSourceBytes();
-  for (let at = 0; at + 1 < bytes.length; at += 1) {
-    if (bytes[at] === 13 && bytes[at + 1] === 10) return '\r\n';
-  }
-  return '\n';
+  return documentSourceEnding();
+}
+
+
+function inDocumentEnding(text) {
+  if (typeof text !== 'string' || currentDocumentFormat === 'eml' || documentSourceEnding() !== '\r\n') return text;
+  return text.includes('\n') ? text.replace(/\r?\n/g, '\r\n') : text;
 }
 
 
 function blockSeparator() {
-  return currentDocumentFormat === 'xml' ? '\n' : documentLineEnding().repeat(2);
+  return currentDocumentFormat === 'xml' ? documentLineEnding() : documentLineEnding().repeat(2);
 }
 
 
@@ -24670,17 +24696,19 @@ function sendLiveBlockEdit(el, words) {
   
   if (edit.text === (el.__liveText === undefined ? el.__editBaseline : el.__liveText)) return;
   if (treeTextRefused(el, edit.text)) return;
+  
+  const text = inDocumentEnding(edit.text);
   sendEditCommand({
     command: 'editBlock',
     start: edit.start,
     end: edit.end,
-    text: edit.text,
+    text,
     live: true,
     continuing: el.__liveStarted === true,
   });
   el.__liveStarted = true;
   el.__liveText = edit.text;
-  advanceLiveRanges(el, edit);
+  advanceLiveRanges(el, { ...edit, text });
   if (el.__epubRuns) el.__lastRunWords = el.textContent;
 }
 
@@ -25833,7 +25861,7 @@ function splitBlockAtCaret(el) {
     sendBlockSplice(el, start, end, part1 + separator + part2);
     setPendingCaret(el.dataset.packed === 'true'
       ? { srcStart: start, packedSplit: true, textOffset: 0 }
-      : { srcStart: start + utf8ByteLength(part1) + utf8ByteLength(separator), textOffset: 0 });
+      : { srcStart: start + utf8ByteLength(inDocumentEnding(part1)) + utf8ByteLength(separator), textOffset: 0 });
     carryToPendingCaret();
   } else if (blockDomToSource(el) !== el.__editBaseline) {
     
@@ -25952,7 +25980,7 @@ function splitTreeBlockAtCaret(el) {
   carryTreeTyping(el);
   sendBlockSplice(el, start, end, first + separator + open + escapeTreeText(part2) + close);
   setPendingCaret({
-    srcStart: start + utf8ByteLength(first) + utf8ByteLength(separator),
+    srcStart: start + utf8ByteLength(inDocumentEnding(first)) + utf8ByteLength(separator),
     textOffset: 0,
   });
   carryToPendingCaret();
@@ -26240,7 +26268,8 @@ function openInsertBlock(
     if (block.__committed) return false;
     block.__committed = true;
     const typed = typedBlockText(block);
-    const lead = typed ? prefix + typed + close + separator : separator;
+    
+    const lead = inDocumentEnding(typed ? prefix + typed + close + separator : separator);
     const token = insertEditToken(option);
     const at = startNow();
     
@@ -26358,8 +26387,8 @@ function openMediumStart(body) {
     const parts = [];
     if (titleText) parts.push(titleMarker + titleText);
     if (storyText) parts.push(storyMarker + storyText);
-    const lead = parts.length ? parts.join('\n\n') + '\n\n' : '';
-    const text = extra ? lead + extra.text : parts.join('\n\n');
+    const lead = inDocumentEnding(parts.length ? parts.join('\n\n') + '\n\n' : '');
+    const text = inDocumentEnding(extra ? lead + extra.text : parts.join('\n\n'));
     
     const token = insertEditToken(extra);
     
@@ -26380,7 +26409,7 @@ function openMediumStart(body) {
     } else if (chainBelow && parts.length) {
       
       setPendingCaret({
-        srcStart: utf8ByteLength(text) - utf8ByteLength(parts[parts.length - 1]),
+        srcStart: utf8ByteLength(text) - utf8ByteLength(inDocumentEnding(parts[parts.length - 1])),
         insertBelow: true,
         blockSpec: chainSpec,
       });
@@ -28378,7 +28407,7 @@ function runGapInsert(gap, option) {
 
 
 function blockInsertCaret(option, at) {
-  const into = option.caretAt ? utf8ByteLength(option.text.slice(0, option.caretAt)) : 0;
+  const into = option.caretAt ? utf8ByteLength(inDocumentEnding(option.text.slice(0, option.caretAt))) : 0;
   const caret = { srcStart: at + into };
   if (option.caretSelects) caret.textEnd = option.caretSelects.length;
   return caret;
@@ -37436,6 +37465,7 @@ function sendContainedLeafWrite(node, write) {
   const typing = containedTyping;
   if (!typing || !write) return;
   const continuing = !!typing.last && typing.last.node === node && typing.last.at === write.start;
+  write = { ...write, text: inDocumentEnding(write.text) };
   const sent = sendEditCommand(
     { command: 'editBlocks', blocks: [{ start: write.start, end: write.end, text: write.text }], continuing, standing: true },
     { el: typing.page.body }

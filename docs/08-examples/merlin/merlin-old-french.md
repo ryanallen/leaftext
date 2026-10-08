@@ -896,7 +896,7 @@ verrai ja devant vous a vostre ostel. Et cil qui autre fois[^78-1] m'avront veu 
 
 ## Part 4: The brothers fight the Saxons at Salisbury, and Merlin gives Uther the stones and the Round Table
 
-### Merlin advises peace with the Saxons still in the land
+### Merlin tells Pendragon to send the Saxons off in ships
 
 Chi endroit dist li contes que *(49 b)* Merlins prist congiet a Pandragon et a Uter pour prendre samblance a quoi les gens de la terre le reconneussent. Quant Merlins s'en parti d'aus, si vint a cheus qui avoient esté dou conseil Vertigier. Et quant cil le virent, si en furent moult lié, et maintenant coururent dire au roy que Merlins estoit venus. Et quant li rois l'oi, si en fu moult liés et ala a l'encontre de li. Et cil qui amoient Merlin li disent : « Merlins, veschi le roi qui vient encontre vous. » Grans fu la joie que li rois fist de Merlin, si l'en mena a son hostel. Et si tost comme il fu laiens, les gens dou conseil le roi le traisent a une part, se li disent : « Sire, veschi Merlin qui est li mieudres devins qui soit. Mais priiés li que il vous die comment vous prenderés cel chastiel et que il vous die a quoi la guerre des Saisnes et de vous venra. Et saichiés, se il veult, il le vous dira bien. » Et li rois dist que il li demandera moult volentiers. Lors laissierent atant ester pour chou que li rois voloit Merlin moult honnerer. Et quant vint au tierch jour apriès, si fu tous li consaus le roi assamblés. Lors mist li rois Merlin a conseil de che que ses consaus li avoit dit : « Merlins, biaus dous amis, jou ai oi dire que vous estes moult sages, si vous pri et requier que vous me di(49 c)tes comment je porrai cel chastiel avoir, et de ces Saisnes qui sont en ceste terre, se je les
 
