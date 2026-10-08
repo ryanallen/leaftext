@@ -36,6 +36,10 @@ A relation is labeled by the target row's name. Where the first column is writte
 
 Point at the relation to see the row it found, and press it to open the target file on that row — the first row whose first cell reads as the address, unless a heading of the same name comes first. A red relation means the target row is not there. A dashed gray relation means the target file is outside the set Leaftext has read, so it may still contain the row.
 
+## Show a row in another note
+
+Write a link to a row alone on its own line — `[why-1](made-with.md#why-1)` — and Leaftext draws the row's words there instead of the link: the same next filled cell a relation is labeled with, in the note's own body text. Edit the row in its table and save, and every open note that shows it redraws with the new words, keeping your place. Nothing is copied into the note; the file still holds the link, so GitHub, Obsidian and other readers show a working link to the row. Point at the words to see where they come from, and press them to open the table on that row. A link with other words beside it, inside a list or a table cell, or to a heading rather than a row stays a link. A note shows rows from at most 16 other files.
+
 ## Describe a table
 
 You do not have to set up a relational table. If Leaftext guesses a column wrong, press **Describe**. It writes an optional `leaf:table` HTML comment directly above the table with the type, key or relation correction. The comment is hidden in Leaftext, GitHub, Obsidian and VS Code; a malformed comment is ignored rather than partly applied.
@@ -54,7 +58,7 @@ To point words that are already written at a row — a cell holding plain words,
 
 The same bar works on a Leaftext site published to the web and on a document embedded in another product: **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe** all do what they do in the desktop app.
 
-A published site resolves relations only among the pages it serves. A link to a row in another page of the site becomes a relation; a link to a page the site does not publish reads as a red relation, because that page is not there. A site reads at most 64 pages for one table, and a relation into a page past that reads as a dashed gray relation rather than a broken one.
+A published site resolves relations only among the pages it serves. A link to a row in another page of the site becomes a relation; a link to a page the site does not publish reads as a red relation, because that page is not there. A site reads at most 64 pages for one table, and a relation into a page past that reads as a dashed gray relation rather than a broken one. A row shown in a note is fetched from the site before the page is drawn; a row in a page the site does not serve stays a link.
 
 An embedded document holds only itself, so it reads no other document: its link columns stay ordinary links, and every other view, sort and filter works as usual.
 

@@ -185,6 +185,14 @@ async function load(url, fetchWith = fetch) {
       api.leaf_free(at, length);
     },
     render: (source, path) => JSON.parse(withStrings(api.leaf_render, source, path) || 'null'),
+    // The served pages a note's lone row links point at, and their text handed back before the render. A module older than the page has neither, and every such link stays a card.
+    namedRowFiles: (source, path) => (typeof api.leaf_named_row_files === 'function' ? JSON.parse(withStrings(api.leaf_named_row_files, source, path) || '[]') : []),
+    setNamedRows: (pages) => {
+      if (typeof api.leaf_set_named_rows !== 'function') return;
+      const [at, length] = write(JSON.stringify(pages || {}));
+      api.leaf_set_named_rows(at, length);
+      api.leaf_free(at, length);
+    },
     // This host cannot import the buffer wrapper; the module owns the bytes after open.
     bufferOpen: (body, path) => {
       if (typeof api.leaf_buffer_open !== 'function') return 0;
@@ -1177,6 +1185,16 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     if (typeof token === 'number') run(`window.leafEditAnswered(${token}, ${!!took}, null);`);
   }
 
+  /** Fetch every served page a note's lone row links point at and hand their text over, so the render draws each row's words. A page the site does not serve, or one whose fetch died, is left out and its link stays a card. */
+  async function handNamedRows(path, source) {
+    const text = new TextDecoder().decode(source);
+    const wanted = /\.md#/i.test(text) ? core.namedRowFiles(text, path).filter((one) => known.has(one)) : [];
+    const texts = await Promise.all(wanted.map(tableText));
+    const pages = {};
+    wanted.forEach((one, at) => { if (texts[at] != null) pages[one] = texts[at]; });
+    core.setNamedRows(pages);
+  }
+
   async function openDocument(path, { anchor = '', place = null, address = true } = {}) {
     if (!known.has(path)) return;
     keepWords();
@@ -1185,6 +1203,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     closeBuffer();
     const chosen = glossaryFor(path);
     const [source, words] = await Promise.all([read(path), glossarySource(chosen)]);
+    await handNamedRows(path, source);
     held = { path, bytes: source };
     // Laid over the published bytes rather than opened as them, so the buffer is dirty and Save lights, as the desktop's own restore does.
     const typed = keptWords(path, source);

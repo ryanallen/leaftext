@@ -23541,7 +23541,7 @@ function inlineMarkdownDomWysiwygSafe(el) {
 
 
 function markdownBlockWysiwygSafe(el) {
-  return !el.classList?.contains('link-card') && inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
+  return !el.classList?.contains('link-card') && !el.hasAttribute?.('data-leaf-row') && inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
 }
 
 
@@ -40980,7 +40980,7 @@ function resolvedHoverDetail(rawHref) {
 
 const HOVERABLE_LINK = 'a[href], a.link-goes-nowhere';
 function linkHoverTarget(node) {
-  const link = node?.closest?.(HOVERABLE_LINK);
+  const link = node?.closest?.(HOVERABLE_LINK) || namedRowLink(node);
   if (link) return link;
   const summary = node?.closest?.('summary');
   const section = summary?.parentElement;
@@ -41151,7 +41151,8 @@ let documentLinksBound = false;
 
 function documentLinkFor(target) {
   const link = target && target.closest ? target.closest('a[href]') : null;
-  if (!link || !app.contains(link)) return null;
+  if (!link) return namedRowLink(target);
+  if (!app.contains(link)) return null;
   return link.closest('.document-body') || link.closest('.table-sheet-overlay') ? link : null;
 }
 
@@ -41268,13 +41269,24 @@ const pendingLinkCardPictures = new Set();
 const pendingLinkCardLengths = new Set();
 
 function linkCardLink(block) {
-  if (!block || block.tagName !== 'P' || !isDocumentBlock(block)) return null;
+  if (!block || block.tagName !== 'P' || !isDocumentBlock(block) || block.hasAttribute('data-leaf-row')) return null;
   const picture = block.querySelector(':scope > .link-card-picture');
   const first = picture ? picture.nextSibling : block.firstChild;
   if (!first || first !== block.lastChild || first.nodeType !== 1 || first.tagName !== 'A') return null;
   if (!first.hasAttribute('href') || first.children.length) return null;
   const kind = linkKindFromHref(first.getAttribute('href'));
   return kind && kind !== 'In-page jump' ? { link: first, kind } : null;
+}
+
+
+function namedRowLink(node) {
+  const row = node?.closest?.('[data-leaf-row]');
+  if (!row || !app.contains(row) || !row.closest('.document-body')) return null;
+  if (!row.__rowLink) {
+    row.__rowLink = document.createElement('a');
+    row.__rowLink.setAttribute('href', row.getAttribute('data-leaf-row'));
+  }
+  return row.__rowLink;
 }
 
 function linkCardLength(block, key) {
