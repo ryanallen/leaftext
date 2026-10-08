@@ -2,11 +2,17 @@
 
 # Merlin
 
-*Merlin*, after Robert de Boron
+*Merlin*, after Robert de Boron, text established by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen)
 
 ## About this text
 
 The Old French prose *Merlin*, retold from Robert de Boron's poem, from the creation of Merlin in hell to the crowning of Arthur, as Gaston Paris and Jacob Ulrich printed it in 1886, established page by page from three scans of their edition and read against the page image of each. It is the text the [English translation](merlin.md) beside it was made from, and every page marker below links to that page of the scan.
+
+<!-- made-with -->
+Translated with machine assistance by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 10 million new tokens so far on this book; a working translation, not a scholarly edition.
+
+How it was made: built by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen), [who designed the system that made it](merlin-how-it-was-made.md#designed-the-system), [all checks passed](merlin-how-it-was-made.md#all-checks-passed), [readable first](merlin-how-it-was-made.md#readable-first), [plain speech](merlin-how-it-was-made.md#plain-speech), [shaped for English](merlin-how-it-was-made.md#shaped-for-english), [every link said](merlin-how-it-was-made.md#every-link-said), [nothing said twice](merlin-how-it-was-made.md#nothing-said-twice), [the right word each time](merlin-how-it-was-made.md#the-right-word-each-time), [no word worn out](merlin-how-it-was-made.md#no-word-worn-out), [modern idiom](merlin-how-it-was-made.md#modern-idiom), [US English](merlin-how-it-was-made.md#us-english), [English word order](merlin-how-it-was-made.md#english-word-order), [natural tenses](merlin-how-it-was-made.md#natural-tenses), [contractions](merlin-how-it-was-made.md#contractions), [neutral tone](merlin-how-it-was-made.md#neutral-tone), [gender neutral](merlin-how-it-was-made.md#gender-neutral), [no false echoes](merlin-how-it-was-made.md#no-false-echoes), [prose and verse read aloud; source lines and stanzas kept](merlin-how-it-was-made.md#read-aloud), [scenes read for movement](merlin-how-it-was-made.md#scenes-read-for-movement), [checked against the scan](merlin-how-it-was-made.md#checked-against-the-scan), [sources named](merlin-how-it-was-made.md#sources-named), [honest where unsure](merlin-how-it-was-made.md#honest-where-unsure), [no borrowed wording](merlin-how-it-was-made.md#no-borrowed-wording), [source over Malory](merlin-how-it-was-made.md#source-over-malory), [translated by manifest](merlin-how-it-was-made.md#translated-by-manifest), [every choice logged](merlin-how-it-was-made.md#every-choice-logged), [changes carried everywhere](merlin-how-it-was-made.md#changes-carried-everywhere), [story headings](merlin-how-it-was-made.md#story-headings), [matching outlines](merlin-how-it-was-made.md#matching-outlines), [laid out for screens](merlin-how-it-was-made.md#laid-out-for-screens), [pages linked to scans](merlin-how-it-was-made.md#pages-linked-to-scans), [endnotes](merlin-how-it-was-made.md#endnotes), [Malory cross-referenced](merlin-how-it-was-made.md#malory-cross-referenced), [additions marked](merlin-how-it-was-made.md#additions-marked), [sourced glossary](merlin-how-it-was-made.md#sourced-glossary), [modern names](merlin-how-it-was-made.md#modern-names), [places located from sources](merlin-how-it-was-made.md#places-located-from-sources), [no guessed identities](merlin-how-it-was-made.md#no-guessed-identities), [no common words glossed](merlin-how-it-was-made.md#no-common-words-glossed), [free with credit](merlin-how-it-was-made.md#free-with-credit).
+<!-- /made-with -->
 
 **Source.** Robert de Boron. *Merlin*. London, British Library, Additional MS 38117 (the Huth manuscript), ff. 18v–74r. In *Merlin, roman en prose du XIIIe siècle, publié avec la mise en prose du poème de Merlin de Robert de Boron d'après le manuscrit appartenant à M. Alfred H. Huth*, edited by Gaston Paris and Jacob Ulrich, 1:1–146. Société des anciens textes français. Paris: Firmin Didot, 1886. University of Toronto copy, [scanned by the Internet Archive](https://archive.org/details/merlinromanenpro01robeuoft); read beside the [Bibliothèque nationale de France's copy](https://archive.org/details/bnf-bpt6k6572853v) and the [New York Public Library's](https://archive.org/details/merlin00ulrigoog). Every page of the Toronto copy this text cites is also [saved beside it](merlin-scans.md), with a link to where it was found, in case the Internet Archive goes down.
 
@@ -1714,69 +1720,7 @@ Ore dist li contes que Artus fu agenoilliés et prist l'espee as ses mains joint
 
 ---
 
-## Credits
-
-<!-- made-with -->
-Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), more than 10 million new tokens so far on this book; a working translation, not a scholarly edition.
-
-How it was made: built by Ryan Allen[^ryan-allen], who read and edited every line[^how-read-and-edited], all checks passed[^how-all-checks-passed], readable first[^how-readable-first], plain speech[^how-plain-speech], shaped for English[^how-shaped-for-english], every link said[^how-every-link-said], nothing said twice[^how-nothing-said-twice], the right word each time[^how-the-right-word-each-time], no word worn out[^how-no-word-worn-out], modern idiom[^how-modern-idiom], US English[^how-us-english], [English word order](merlin-how-it-was-made.md#english-word-order), natural tenses[^how-natural-tenses], [contractions](merlin-how-it-was-made.md#contractions), neutral tone[^how-neutral-tone], gender neutral[^how-gender-neutral], no false echoes[^how-no-false-echoes], prose and verse read aloud; source lines and stanzas kept[^how-read-aloud], scenes read for movement[^how-scenes-read-for-movement], [checked against the scan](merlin-how-it-was-made.md#checked-against-the-scan), sources named[^how-sources-named], honest where unsure[^how-honest-where-unsure], no borrowed wording[^how-no-borrowed-wording], source over Malory[^how-source-over-malory], [translated by manifest](merlin-how-it-was-made.md#translated-by-manifest), [every choice logged](merlin-how-it-was-made.md#every-choice-logged), [changes carried everywhere](merlin-how-it-was-made.md#changes-carried-everywhere), story headings[^how-story-headings], [matching outlines](merlin-how-it-was-made.md#matching-outlines), laid out for screens[^how-laid-out-for-screens], [pages linked to scans](merlin-how-it-was-made.md#pages-linked-to-scans), [endnotes](merlin-how-it-was-made.md#endnotes), Malory cross-referenced[^how-malory-cross-referenced], [additions marked](merlin-how-it-was-made.md#additions-marked), [sourced glossary](merlin-how-it-was-made.md#sourced-glossary), [modern names](merlin-how-it-was-made.md#modern-names), [places located from sources](merlin-how-it-was-made.md#places-located-from-sources), no guessed identities[^how-no-guessed-identities], no common words glossed[^how-no-common-words-glossed], free with credit[^how-free-with-credit].
-
-[^ryan-allen]: **Ryan Allen** designs and builds software. Good work disappears into what it's for. [ryanallen.com](https://ryanallen.com) · [GitHub](https://github.com/ryanallen) · [LinkedIn](https://www.linkedin.com/in/ryanallencom) · [Leaftext](https://leaftext.com)
-
-[^how-read-and-edited]: Ryan Allen read every line of the translation, its notes and its glossary, rewrote whatever read wrong, and has the final word on how the English reads.
-
-[^how-all-checks-passed]: Every range was run through the book's own check tool and the shelf's checks, and nothing was ticked done until they passed: a missing page, a broken link, an old word, a word repeated too soon, a wrong mark and a change nobody logged are all refused.
-
-[^how-readable-first]: Each passage is told the way a good English writer would tell it today, then checked against the source so every event, person and act is there and nothing is invented.
-
-[^how-plain-speech]: No Bible cadence and no stiff old-translation voice: no chains of "and… and… and", no solemn word order, no word nobody says now.
-
-[^how-shaped-for-english]: Each sentence is written as English, not in the source's grammar: a verb rather than a noun made of one, never a clause hanging off a clause, and what someone must do before where or why, with nothing lost. Every sentence that says a common verb twice was read and either rewritten or kept with the reason.
-
-[^how-every-link-said]: Where the source joins a cause and its effect with a bare "and", the English says how they connect, with "to", "by", "so", "until" or "because".
-
-[^how-nothing-said-twice]: What the source says twice, a doubled verb or a speech the narration has just told, is said once, unless a speaker repeats it on purpose.
-
-[^how-the-right-word-each-time]: A source word with several senses takes the English its moment needs, never one word everywhere and never the vaguest.
-
-[^how-no-word-worn-out]: No word comes back within forty words of itself, names and the commonest grammar words aside; the second use takes another word or goes.
-
-[^how-modern-idiom]: Old English turns give way to the ones people use now, in how people talk to and about each other as much as in rare words: "pregnant", "said goodbye", "my mom". Every word judged old is kept in the shelf's list, and the check refuses each one.
-
-[^how-us-english]: The reviewed US master uses Merriam-Webster spelling and usage, the article a US reader says, as "an herb", *The Chicago Manual of Style*, and lengths and distances in feet and miles. A later UK edition is made from that master.
-
-[^how-natural-tenses]: The story is told in the simple past wherever the order of events is plain, as English tells it, not in the source's stacked past tenses.
-
-[^how-neutral-tone]: No archaism and no color the source doesn't give, but a hard word stays hard.
-
-[^how-gender-neutral]: Where the source means anyone, the English says "they", "people" or "anyone", never "he" and never a pair of pronouns; a figure the source names keeps the pronoun the source gives.
-
-[^how-no-false-echoes]: No English turn that calls up a better-known story the source doesn't mean: Christ leads Adam and Eve out of hell, never "casts them out", which calls up Eden.
-
-[^how-read-aloud]: Every sentence or line was read aloud and its slack cut with no fact dropped; prose stays in paragraphs, and verse keeps its lines and stanzas, and its beat and rhyme wherever they survive.
-
-[^how-scenes-read-for-movement]: Each whole scene was read for what each speaker wants and where it turns, and the whole book in order, so the dialogue and paragraph breaks carry it; nothing the source doesn't give was added.
-
-[^how-sources-named]: Every reading says whose it is: the scholars who edited the text by name, the printing by its year, the handwritten copy by its own name, and this translation's own work as "this translation", never "we".
-
-[^how-honest-where-unsure]: Where the dictionaries leave a passage open, it's translated as the scholars who edited the text read it, and the doubt is given in an endnote, never smoothed over.
-
-[^how-no-borrowed-wording]: Nothing was translated from Malory's English or any modern translation; they were used only to find where a passage sits in the legend.
-
-[^how-source-over-malory]: Where Malory tells a passage differently, the source is the story and his version goes in a note; where sources are joined into one book, the one written first leads.
-
-[^how-story-headings]: Every heading says what happens in its section, in a short plain sentence, so the headings alone tell the story, without giving away how a fight, a trial, a prophecy or a secret turns out.
-
-[^how-laid-out-for-screens]: Laid out as a modern book read on a screen: a new speaker starts a new paragraph, no paragraph runs past 130 words, and the punctuation is a US book's.
-
-[^how-malory-cross-referenced]: Where Malory's *Le Morte d'Arthur* tells the same passage, an endnote names his book and chapters; where it doesn't, nothing is said.
-
-[^how-no-guessed-identities]: When a figure might be a better-known person from another book, the glossary says so only where the sources do; it never guesses.
-
-[^how-no-common-words-glossed]: No ordinary English word is a glossary entry, since an entry is underlined on every page of every book that shares the glossary.
-
-[^how-free-with-credit]: Anyone may use this book freely, crediting Ryan Allen, under the CC BY 4.0 license given with these credits.
-<!-- /made-with -->
+## License
 
 Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Anyone may copy, change, print or sell them if they credit Ryan Allen, link to the license and indicate changes. The medieval source text remains in the public domain.
 

@@ -1,25 +1,39 @@
 # Merlin
 
-*Merlin*, after Robert de Boron
-
-## About this translation
-
-Robert de Boron's *Merlin* tells how the devils plotted a prophet of their own, how Merlin was born and turned to God's side, and how he served three kings until Arthur drew the sword from the stone and was crowned. Robert told it in French verse early in the thirteenth century, between his *Joseph*, which tells how the cup of the Last Supper was carried west, and a *Perceval* that survives only in prose. Only 504 lines of his *Merlin* survive, but the whole story survives in prose. This is that prose in plain modern English, translated from the [Old French text](merlin-old-french.md) Gaston Paris and Jacob Ulrich printed in 1886 from the Huth manuscript, which is published beside it. It ends with Arthur crowned; the Huth manuscript goes on into a sequel found in no other French copy, which this book leaves out. Each bracketed page number in the English opens the same page of the French, and each one there opens the scan of the printed book. The [glossary](GLOSSARY.md) explains the people, places and old words; press any underlined name to see its entry.
+*Merlin*, after Robert de Boron, translated by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen)
 
 **Read in:** [UK English](uk/merlin-uk.md)
 
-**Source.** Robert de Boron. *Merlin*. London, British Library, Additional MS 38117 (the Huth manuscript), ff. 18v–74r. In *Merlin, roman en prose du XIIIe siècle, publié avec la mise en prose du poème de Merlin de Robert de Boron d'après le manuscrit appartenant à M. Alfred H. Huth*, edited by Gaston Paris and Jacob Ulrich, 1:1–146. Société des anciens textes français. Paris: Firmin Didot, 1886. University of Toronto copy, [scanned by the Internet Archive](https://archive.org/details/merlinromanenpro01robeuoft); read beside the [Bibliothèque nationale de France's copy](https://archive.org/details/bnf-bpt6k6572853v) and the [New York Public Library's](https://archive.org/details/merlin00ulrigoog). Every page of the Toronto copy this book cites is also [saved beside it](merlin-scans.md), with a link to where it was found, in case the Internet Archive goes down.
+## About this translation
+
+Robert de Boron's *Merlin* tells how devils plan their own prophet, how Merlin was born into Christianity, and moves that agenda forward through the church and crown. Robert wrote it in French verse early in the thirteenth century, between his *Joseph* and a *Perceval*. Only 504 lines of the poem are left, but the whole story comes down in prose. This is that prose in English, translated from the [Old French text](merlin-old-french.md) of Paris and Ulrich's 1886 edition. The Huth manuscript goes on into a sequel, left out here.
+
+<!-- made-with -->
+Translated with machine assistance by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 10 million new tokens so far on this book; a working translation, not a scholarly edition.
+
+How it was made: built by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen), [who designed the system that made it](merlin-how-it-was-made.md#designed-the-system), [all checks passed](merlin-how-it-was-made.md#all-checks-passed), [readable first](merlin-how-it-was-made.md#readable-first), [plain speech](merlin-how-it-was-made.md#plain-speech), [shaped for English](merlin-how-it-was-made.md#shaped-for-english), [every link said](merlin-how-it-was-made.md#every-link-said), [nothing said twice](merlin-how-it-was-made.md#nothing-said-twice), [the right word each time](merlin-how-it-was-made.md#the-right-word-each-time), [no word worn out](merlin-how-it-was-made.md#no-word-worn-out), [modern idiom](merlin-how-it-was-made.md#modern-idiom), [US English](merlin-how-it-was-made.md#us-english), [English word order](merlin-how-it-was-made.md#english-word-order), [natural tenses](merlin-how-it-was-made.md#natural-tenses), [contractions](merlin-how-it-was-made.md#contractions), [neutral tone](merlin-how-it-was-made.md#neutral-tone), [gender neutral](merlin-how-it-was-made.md#gender-neutral), [no false echoes](merlin-how-it-was-made.md#no-false-echoes), [prose and verse read aloud; source lines and stanzas kept](merlin-how-it-was-made.md#read-aloud), [scenes read for movement](merlin-how-it-was-made.md#scenes-read-for-movement), [checked against the scan](merlin-how-it-was-made.md#checked-against-the-scan), [sources named](merlin-how-it-was-made.md#sources-named), [honest where unsure](merlin-how-it-was-made.md#honest-where-unsure), [no borrowed wording](merlin-how-it-was-made.md#no-borrowed-wording), [source over Malory](merlin-how-it-was-made.md#source-over-malory), [translated by manifest](merlin-how-it-was-made.md#translated-by-manifest), [every choice logged](merlin-how-it-was-made.md#every-choice-logged), [changes carried everywhere](merlin-how-it-was-made.md#changes-carried-everywhere), [story headings](merlin-how-it-was-made.md#story-headings), [matching outlines](merlin-how-it-was-made.md#matching-outlines), [laid out for screens](merlin-how-it-was-made.md#laid-out-for-screens), [pages linked to scans](merlin-how-it-was-made.md#pages-linked-to-scans), [endnotes](merlin-how-it-was-made.md#endnotes), [Malory cross-referenced](merlin-how-it-was-made.md#malory-cross-referenced), [additions marked](merlin-how-it-was-made.md#additions-marked), [sourced glossary](merlin-how-it-was-made.md#sourced-glossary), [modern names](merlin-how-it-was-made.md#modern-names), [places located from sources](merlin-how-it-was-made.md#places-located-from-sources), [no guessed identities](merlin-how-it-was-made.md#no-guessed-identities), [no common words glossed](merlin-how-it-was-made.md#no-common-words-glossed), [free with credit](merlin-how-it-was-made.md#free-with-credit).
+<!-- /made-with -->
+
+**How it was translated.** The French came first. Each page was read from three scans of the 1886 edition, with Paris and Ulrich's margin notes set apart from the story, every word the three machine readings disagreed on checked against the image, and their printed corrections applied, before any of it was put into English.
+
+**What Paris and Ulrich's marks become.** Their French sets in square brackets what they added to the Huth manuscript, including a few gaps they filled from another copy, [Paris, Bibliothèque nationale de France, français 747](https://archivesetmanuscrits.bnf.fr/ark:/12148/cc125398c), and in round brackets a word they'd take out. The English reads their text, the added words in and the others out, with an endnote where an addition or a changed reading touches the sense. Their summaries in the margin and their footnotes stay in the French; the English tells the story alone.
+
+**Names and titles.** People and places go by the names an English reader knows, such as Arthur, Uther, Igraine and Logres, and the glossary lists every spelling the French gives them. The first two endnotes say how the English handles the French's names for the devil and for God.
+
+**The endnotes.** Some report Paris and Ulrich's own work on the text: a word they added, a reading of the Huth manuscript they changed, a correction from their errata. The rest, marked with an [asterisk](#new-in-this-translation), explain a custom, say who a reference means, and, from Part 5 on, name the chapters of [Malory's *Le Morte d'Arthur*](https://standardebooks.org/ebooks/thomas-malory/le-morte-darthur) that tell the same events.
+
+**Gaston Paris's introduction.** The 1886 edition opens on some eighty pages of French by Gaston Paris, left out here. He describes the Huth manuscript, once owned by the scholar Du Cange, and what it holds: prose versions of Robert's *Joseph* and *Merlin*, then the sequel, which is what makes the book so valuable. He argues that Robert took much of *Merlin* from [Geoffrey of Monmouth's history of Britain](https://archive.org/details/historiesoftheki037587mbp), which he knew only loosely, from a French version: Robert gives King Constant a son called Moine, makes Winchester a port and takes Logres for a city. Most of the introduction is about the sequel, the Grail quest after it, and the later books drawn from them, Malory's among them. It comes before page 1 in each of the scans the Sources name.
 
 ## Why this book
 
 <!-- why -->
-Before God wrote rules, gods were how we tried to control the chaos of reality. As humans we personify whatever happens to us: the storm rages because it's angry, and a bribe might cool it down. Each village had its own gods, and when villages fought, the winner's gods rose while the loser's gods fell. A beaten kingdom, the people of Judah after Babylon burned Jerusalem, decided their god hadn't lost; their god was punishing them for breaking the deal. Defeat made that god stronger and portable. A contract strangers could carry anywhere, not tied to nature.
+Before one god wrote the rules, many gods were how we tried to control the chaos of reality. As humans we personify what happens to us: the storm rages because it's angry, and a bribe might cool it down. Villages had their own gods, and when neighbors fought, the winner's gods rose while the loser's gods fell. A defeated kingdom, the people of Judah after Babylon burned Jerusalem, decided their god hadn't lost. It was punishing them. Defeat made that god stronger and portable. A contract strangers could carry anywhere, not tied to nature.
 
-The Britons wrote Arthur into the contract of that old storm God, Yahweh, and Arthurian legend is how you watch it happen. In the old Welsh stories, Arthur hunts a magic pig with giants and kills a witch, and Merlin is a wild prophet in the woods, about as close to a druid as the sources get. A century later, English and French Christians make Merlin a devil's son baptized to work for God, and send Arthur's knights hunting for the cup from the Last Supper, where the best knight is basically a saint. Same king, now working for the church. Get ready for a lot of Jesus talk.
+The Britons wrote Arthur into the contract of Yahweh, that old storm god, and Arthurian legend is how you watch it happen. In the old Welsh stories, Arthur fights giants, hunts a magic boar and kills a witch. Merlin is a wild prophet living in the woods, about as close to a druid as the sources get. A century later, Christian writers rework Arthur into something like fanfic for their faith. Merlin becomes a devil's son baptized for their god, and the knights chase a cup from their prophet's last supper. Get ready for a lot of Jesus talk.
 
-The contract came with a second clause: obey it, and you can take from those under a different contract. Arthur's legend runs on that clause. In the ninth-century [*History of the Britons*](https://www.gutenberg.org/ebooks/1972), Arthur carries an image of the Virgin Mary into his eighth battle and drives off the Saxons "through the power of our Lord Jesus Christ." In Robert de Boron's *Merlin*, Merlin tells two British brothers the Saxons "don't believe in the Trinity," so whoever dies fighting them, "doesn't need to fear death much." Then God picks the next king with a sword driven through an anvil, its letters saying whoever pulls it out rules "by the election of Jesus Christ." God could have picked a king with a book or a plow and went with a sword.
+The contract also licenses conquest, and anyone is fair game. Take from everyone, and have a man with a title pour water on you. Arthur's legend runs on it. He is conceived in rape, arranged by their god's own prophet, who disguises Uther as a woman's husband so he can have sex with her all night. Then their remade god crowns the child with a sword through an anvil. It could have chosen a book or a plow.
 
-I'm translating these stories to witness them building this new contract from the old one. It grew out of the church into law and money because in God we trust. We can rely on strangers because a court or a bank stands behind them, so we stopped needing the people next door. That's why so many of us live in buildings full of neighbors we've never met, and stories like these are how we got here.
+I'm translating these stories to witness them building this new contract from the old one. It grew out of the church into law and money because in God we trust. We can rely on strangers because a court or a bank stands behind them, so we stopped needing the people next door. That's why so many of us live alone in buildings full of neighbors we've never met, and stories like these are how we got here.
 <!-- /why -->
 
 ---
@@ -2460,18 +2474,6 @@ The story says Arthur knelt, took the sword in his joined hands, and lifted it f
 
 ---
 
-## Notes on this translation
-
-**How it was translated.** The French came first. Each page was read from three scans of the 1886 edition, with Paris and Ulrich's margin notes set apart from the story, every word the three machine readings disagreed on checked against the image, and their printed corrections applied, before any of it was put into English.
-
-**What Paris and Ulrich's marks become.** Their French sets in square brackets what they added to the Huth manuscript, including a few gaps they filled from another copy, [Paris, Bibliothèque nationale de France, français 747](https://archivesetmanuscrits.bnf.fr/ark:/12148/cc125398c), and in round brackets a word they'd take out. The English reads their text, the added words in and the others out, with an endnote where an addition or a changed reading touches the sense. Their summaries in the margin and their footnotes stay in the French; the English tells the story alone.
-
-**Names and titles.** People and places go by the names an English reader knows, such as Arthur, Uther, Igraine and Logres, and the glossary lists every spelling the French gives them. The first two endnotes say how the English handles the French's names for the devil and for God.
-
-**The endnotes.** Some report Paris and Ulrich's own work on the text: a word they added, a reading of the Huth manuscript they changed, a correction from their errata. The rest, marked with an [asterisk](#new-in-this-translation), explain a custom, say who a reference means, and, from Part 5 on, name the chapters of [Malory's *Le Morte d'Arthur*](https://standardebooks.org/ebooks/thomas-malory/le-morte-darthur) that tell the same events.
-
-**Gaston Paris's introduction.** The 1886 edition opens on some eighty pages of French by Gaston Paris, left out here. He describes the Huth manuscript, once owned by the scholar Du Cange, and what it holds: prose versions of Robert's *Joseph* and *Merlin*, then the sequel, which is what makes the book so valuable. He argues that Robert took much of *Merlin* from [Geoffrey of Monmouth's history of Britain](https://archive.org/details/historiesoftheki037587mbp), which he knew only loosely, from a French version: Robert gives King Constant a son called Moine, makes Winchester a port and takes Logres for a city. Most of the introduction is about the sequel, the Grail quest after it, and the later books drawn from them, Malory's among them. It comes before page 1 in each of the scans the source block names.
-
 ## Sources
 
 Every edition, scan, dictionary and word list this translation rests on, in *Chicago* form, each with what it was used for. A page cited as "Paris–Ulrich 1:38" is volume 1, page 38, of the first entry.
@@ -2482,7 +2484,7 @@ Every edition, scan, dictionary and word list this translation rests on, in *Chi
 
 **The scans**
 
-- Paris and Ulrich, *Merlin*, vol. 1. University of Toronto copy. [Internet Archive](https://archive.org/details/merlinromanenpro01robeuoft). Every page of the French was read against its images, and every page marker links to them.
+- Paris and Ulrich, *Merlin*, vol. 1. University of Toronto copy. [Internet Archive](https://archive.org/details/merlinromanenpro01robeuoft). Every page of the French was read against its images, and every page marker links to them. Every page this book cites is also [saved beside it](merlin-scans.md), with a link to where it was found, in case the Internet Archive goes down.
 - Paris and Ulrich, *Merlin*, vol. 1. Bibliothèque nationale de France copy. [Internet Archive](https://archive.org/details/bnf-bpt6k6572853v). Its machine-read text was the second of three readings compared word by word.
 - Paris and Ulrich, *Merlin*, vol. 1. New York Public Library copy, scanned by Google. [Internet Archive](https://archive.org/details/merlin00ulrigoog). The third reading.
 - Paris and Ulrich, *Merlin*, vol. 2. University of Toronto copy. [Internet Archive](https://archive.org/details/merlinromanenpro02robeuoft). The word list, name index and errata were read from its images.
@@ -2512,69 +2514,7 @@ Every edition, scan, dictionary and word list this translation rests on, in *Chi
 - NLTK Project. "Stopwords Corpus: English." NLTK Data. GitHub. [github.com/nltk/nltk_data](https://github.com/nltk/nltk_data). The grammar words, with the commonest everyday ones, that may come back within forty words.
 - This shelf's own lists of old words, contractions and English word order, judged and grown as the translation went, which the English is checked against.
 
-## Credits
-
-<!-- made-with -->
-Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), more than 10 million new tokens so far on this book; a working translation, not a scholarly edition.
-
-How it was made: built by Ryan Allen[^ryan-allen], who read and edited every line[^how-read-and-edited], all checks passed[^how-all-checks-passed], readable first[^how-readable-first], plain speech[^how-plain-speech], shaped for English[^how-shaped-for-english], every link said[^how-every-link-said], nothing said twice[^how-nothing-said-twice], the right word each time[^how-the-right-word-each-time], no word worn out[^how-no-word-worn-out], modern idiom[^how-modern-idiom], US English[^how-us-english], [English word order](merlin-how-it-was-made.md#english-word-order), natural tenses[^how-natural-tenses], [contractions](merlin-how-it-was-made.md#contractions), neutral tone[^how-neutral-tone], gender neutral[^how-gender-neutral], no false echoes[^how-no-false-echoes], prose and verse read aloud; source lines and stanzas kept[^how-read-aloud], scenes read for movement[^how-scenes-read-for-movement], [checked against the scan](merlin-how-it-was-made.md#checked-against-the-scan), sources named[^how-sources-named], honest where unsure[^how-honest-where-unsure], no borrowed wording[^how-no-borrowed-wording], source over Malory[^how-source-over-malory], [translated by manifest](merlin-how-it-was-made.md#translated-by-manifest), [every choice logged](merlin-how-it-was-made.md#every-choice-logged), [changes carried everywhere](merlin-how-it-was-made.md#changes-carried-everywhere), story headings[^how-story-headings], [matching outlines](merlin-how-it-was-made.md#matching-outlines), laid out for screens[^how-laid-out-for-screens], [pages linked to scans](merlin-how-it-was-made.md#pages-linked-to-scans), [endnotes](merlin-how-it-was-made.md#endnotes), Malory cross-referenced[^how-malory-cross-referenced], [additions marked](merlin-how-it-was-made.md#additions-marked), [sourced glossary](merlin-how-it-was-made.md#sourced-glossary), [modern names](merlin-how-it-was-made.md#modern-names), [places located from sources](merlin-how-it-was-made.md#places-located-from-sources), no guessed identities[^how-no-guessed-identities], no common words glossed[^how-no-common-words-glossed], free with credit[^how-free-with-credit].
-
-[^ryan-allen]: **Ryan Allen** designs and builds software. Good work disappears into what it's for. [ryanallen.com](https://ryanallen.com) · [GitHub](https://github.com/ryanallen) · [LinkedIn](https://www.linkedin.com/in/ryanallencom) · [Leaftext](https://leaftext.com)
-
-[^how-read-and-edited]: Ryan Allen read every line of the translation, its notes and its glossary, rewrote whatever read wrong, and has the final word on how the English reads.
-
-[^how-all-checks-passed]: Every range was run through the book's own check tool and the shelf's checks, and nothing was ticked done until they passed: a missing page, a broken link, an old word, a word repeated too soon, a wrong mark and a change nobody logged are all refused.
-
-[^how-readable-first]: Each passage is told the way a good English writer would tell it today, then checked against the source so every event, person and act is there and nothing is invented.
-
-[^how-plain-speech]: No Bible cadence and no stiff old-translation voice: no chains of "and… and… and", no solemn word order, no word nobody says now.
-
-[^how-shaped-for-english]: Each sentence is written as English, not in the source's grammar: a verb rather than a noun made of one, never a clause hanging off a clause, and what someone must do before where or why, with nothing lost. Every sentence that says a common verb twice was read and either rewritten or kept with the reason.
-
-[^how-every-link-said]: Where the source joins a cause and its effect with a bare "and", the English says how they connect, with "to", "by", "so", "until" or "because".
-
-[^how-nothing-said-twice]: What the source says twice, a doubled verb or a speech the narration has just told, is said once, unless a speaker repeats it on purpose.
-
-[^how-the-right-word-each-time]: A source word with several senses takes the English its moment needs, never one word everywhere and never the vaguest.
-
-[^how-no-word-worn-out]: No word comes back within forty words of itself, names and the commonest grammar words aside; the second use takes another word or goes.
-
-[^how-modern-idiom]: Old English turns give way to the ones people use now, in how people talk to and about each other as much as in rare words: "pregnant", "said goodbye", "my mom". Every word judged old is kept in the shelf's list, and the check refuses each one.
-
-[^how-us-english]: The reviewed US master uses Merriam-Webster spelling and usage, the article a US reader says, as "an herb", *The Chicago Manual of Style*, and lengths and distances in feet and miles. A later UK edition is made from that master.
-
-[^how-natural-tenses]: The story is told in the simple past wherever the order of events is plain, as English tells it, not in the source's stacked past tenses.
-
-[^how-neutral-tone]: No archaism and no color the source doesn't give, but a hard word stays hard.
-
-[^how-gender-neutral]: Where the source means anyone, the English says "they", "people" or "anyone", never "he" and never a pair of pronouns; a figure the source names keeps the pronoun the source gives.
-
-[^how-no-false-echoes]: No English turn that calls up a better-known story the source doesn't mean: Christ leads Adam and Eve out of hell, never "casts them out", which calls up Eden.
-
-[^how-read-aloud]: Every sentence or line was read aloud and its slack cut with no fact dropped; prose stays in paragraphs, and verse keeps its lines and stanzas, and its beat and rhyme wherever they survive.
-
-[^how-scenes-read-for-movement]: Each whole scene was read for what each speaker wants and where it turns, and the whole book in order, so the dialogue and paragraph breaks carry it; nothing the source doesn't give was added.
-
-[^how-sources-named]: Every reading says whose it is: the scholars who edited the text by name, the printing by its year, the handwritten copy by its own name, and this translation's own work as "this translation", never "we".
-
-[^how-honest-where-unsure]: Where the dictionaries leave a passage open, it's translated as the scholars who edited the text read it, and the doubt is given in an endnote, never smoothed over.
-
-[^how-no-borrowed-wording]: Nothing was translated from Malory's English or any modern translation; they were used only to find where a passage sits in the legend.
-
-[^how-source-over-malory]: Where Malory tells a passage differently, the source is the story and his version goes in a note; where sources are joined into one book, the one written first leads.
-
-[^how-story-headings]: Every heading says what happens in its section, in a short plain sentence, so the headings alone tell the story, without giving away how a fight, a trial, a prophecy or a secret turns out.
-
-[^how-laid-out-for-screens]: Laid out as a modern book read on a screen: a new speaker starts a new paragraph, no paragraph runs past 130 words, and the punctuation is a US book's.
-
-[^how-malory-cross-referenced]: Where Malory's *Le Morte d'Arthur* tells the same passage, an endnote names his book and chapters; where it doesn't, nothing is said.
-
-[^how-no-guessed-identities]: When a figure might be a better-known person from another book, the glossary says so only where the sources do; it never guesses.
-
-[^how-no-common-words-glossed]: No ordinary English word is a glossary entry, since an entry is underlined on every page of every book that shares the glossary.
-
-[^how-free-with-credit]: Anyone may use this book freely, crediting Ryan Allen, under the CC BY 4.0 license given with these credits.
-<!-- /made-with -->
+## License
 
 Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Anyone may copy, change, print or sell them if they credit Ryan Allen, link to the license and indicate changes. The medieval source text remains in the public domain.
 
