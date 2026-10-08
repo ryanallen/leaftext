@@ -40043,6 +40043,8 @@ window.leafConsoleFront = id => {
   if (id === null) return;
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   entry.layer.hidden = false;
+  
+  sayStartupDrawn(true);
   if (changed || !currentMinimap()) {
     setMinimapMarkup(renderDocumentMinimap(true));
     const minimap = currentMinimap();

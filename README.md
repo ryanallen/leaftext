@@ -109,7 +109,7 @@ An `.epub` is a zip of chapters, and Leaftext draws the whole of it as one page 
 
 ![PowerShell showing Leaftext printing a field guide with ruled headings, a numbered link, tasks, a table and the link address at the foot](imgs/terminal-print.png)
 
-Type `leaftext --print notes.md` in cmd or PowerShell to read a rendered Markdown file right at your prompt. Every file the window reads can print there too, with the terminal's colors; redirect the output to a file and it becomes plain text. On a Mac, run `/Applications/leaftext.app/Contents/MacOS/leaftext --print notes.md` in Terminal. **[Reading at a prompt →](docs/01-features/01-rendering.md#reading-at-a-prompt)**
+Type `leaftext --print notes.md` in cmd or PowerShell to read a rendered Markdown file right at your prompt. Every file the window reads can print there too, with the terminal's colors, and a folder prints as the library pane lists it; redirect the output to a file and it becomes plain text. On a Mac, run `/Applications/leaftext.app/Contents/MacOS/leaftext --print notes.md` in Terminal. **[Reading at a prompt →](docs/01-features/01-rendering.md#reading-at-a-prompt)**
 
 ### Read faster when you need to
 

@@ -193,7 +193,9 @@ What prints as what:
 - A picture prints `[picture: its description]`, dimmed.
 - Footnotes print at the foot, their references in square brackets, like `[1]`.
 
-Printing opens no window, reads only the one file, writes nothing, and a copy open in a window never hears of it.
+Hand it a folder instead — `leaftext --print notes` — and it lists that folder the way the [library pane](03-library.md#browsing) does: the folder's path as the heading, then its folders, each with its document count, then its documents, each with its title beside the file name where the two differ. A dimmed last line counts the files the pane leaves out, in the pane's own words. The same three words work on a folder.
+
+Printing opens no window, reads only the one file or the one folder, writes nothing, and a copy open in a window never hears of it.
 
 On a Mac the program is inside the app: run `/Applications/leaftext.app/Contents/MacOS/leaftext --print notes.md` in Terminal, or add `alias leaftext=/Applications/leaftext.app/Contents/MacOS/leaftext` to your shell's profile and type `leaftext --print notes.md` from then on.
 
