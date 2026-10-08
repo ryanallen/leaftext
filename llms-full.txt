@@ -162,6 +162,11 @@
 - Markdown: https://leaftext.com/docs/08-examples/merlin/GLOSSARY.md
 - Summary: Read in: UK English
 
+## Made with
+- Page: https://leaftext.com/docs/08-examples/merlin/made-with.html
+- Markdown: https://leaftext.com/docs/08-examples/merlin/made-with.md
+- Summary: What every Arthurian book says about how it was made: the made-with line, the how line under it, and the notes they point at. These tables hold what every book on the shelf was made by, not one boo...
+
 ## How it was made
 - Page: https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.md

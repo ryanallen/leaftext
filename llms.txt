@@ -36,6 +36,7 @@
 - [The whole story](https://leaftext.com/docs/08-examples/arthurian-shelf/story-map.md)
 - [Glossary for Le Morte d'Arthur](https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.md)
 - [Glossary for Merlin](https://leaftext.com/docs/08-examples/merlin/GLOSSARY.md)
+- [Made with](https://leaftext.com/docs/08-examples/merlin/made-with.md)
 - [How it was made](https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.md)
 - [Merlin](https://leaftext.com/docs/08-examples/merlin/merlin-old-french.md)
 - [Scans](https://leaftext.com/docs/08-examples/merlin/merlin-scans.md)
