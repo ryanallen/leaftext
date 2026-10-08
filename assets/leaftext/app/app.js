@@ -36130,6 +36130,11 @@ function markDropCap(body) {
   const take = (parent, insideAChapter) => {
     for (const el of parent.children) {
       if (/^H[1-6]$/.test(el.tagName)) {
+        
+        if (!insideAChapter) {
+          el.classList.add('is-drop-cap');
+          return true;
+        }
         heading = heading || el;
         continue;
       }
@@ -36159,7 +36164,7 @@ function markDropCap(body) {
 }
 
 function measureDropCap(body) {
-  const block = body.isConnected === false ? null : body.querySelector('p.is-drop-cap');
+  const block = body.isConnected === false ? null : body.querySelector('.is-drop-cap');
   if (!block) return;
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
   let text = walker.nextNode();

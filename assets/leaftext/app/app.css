@@ -10599,14 +10599,40 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   margin-left: calc(-0.762em - var(--lt-space-6) - var(--drop-cap-letter, 0em) / 2);
 }
 
+.document-body.has-drop-cap h1.is-drop-cap,
+.document-body.has-drop-cap h2.is-drop-cap,
+.document-body.has-drop-cap h3.is-drop-cap,
+.document-body.has-drop-cap h4.is-drop-cap,
+.document-body.has-drop-cap h5.is-drop-cap,
+.document-body.has-drop-cap h6.is-drop-cap {
+  display: flow-root;
+}
+.document-body.has-drop-cap h1.is-drop-cap::before,
+.document-body.has-drop-cap h2.is-drop-cap::before,
+.document-body.has-drop-cap h3.is-drop-cap::before,
+.document-body.has-drop-cap h4.is-drop-cap::before,
+.document-body.has-drop-cap h5.is-drop-cap::before,
+.document-body.has-drop-cap h6.is-drop-cap::before {
+  content: "";
+  float: left;
+  width: 3.353em;
+  height: 3.353em;
+  margin-right: var(--lt-space-6);
+  color: var(--lt-primary-ink);
+  background-color: currentColor;
+  -webkit-mask: var(--lt-icon-drop-cap-frame) center / contain no-repeat;
+  mask: var(--lt-icon-drop-cap-frame) center / contain no-repeat;
+}
 .document-body.has-drop-cap h1.is-drop-cap::first-letter,
 .document-body.has-drop-cap h2.is-drop-cap::first-letter,
 .document-body.has-drop-cap h3.is-drop-cap::first-letter,
 .document-body.has-drop-cap h4.is-drop-cap::first-letter,
 .document-body.has-drop-cap h5.is-drop-cap::first-letter,
 .document-body.has-drop-cap h6.is-drop-cap::first-letter {
-  float: none;
   font-size: 2.2em;
+  margin-top: 0.262em;
+  margin-right: 0;
+  margin-left: calc(-0.762em - var(--lt-space-6) - var(--drop-cap-letter, 0em) / 2);
 }
 .document-body.has-illuminated-headings h1::first-letter,
 .document-body.has-illuminated-headings h2::first-letter,
