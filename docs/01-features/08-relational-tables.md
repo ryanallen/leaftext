@@ -44,6 +44,12 @@ You do not have to set up a relational table. If Leaftext guesses a column wrong
 
 Open the [reading-view padlock](07-editing.md#the-padlock) to edit. A date, a value from a short list or a relation can open a picker instead of a caret. Dragging a board card to another column changes that row's grouping cell. Each action writes only the cell that changed and is one Undo step.
 
+### Point at a row without typing its address
+
+Press an empty cell in a column that holds only relations or nothing yet. A menu opens under the cell with a search box: type part of a name, and the rows of every table in the vault — or, outside a vault, in the notes around this one — whose name holds those words are listed under the note they come from. Pick one and the cell becomes a link to that row, written relative to this note so it opens anywhere. Press Enter without picking a row to type the words into the cell instead, or Escape to leave it.
+
+To point words that are already written at a row — a cell holding plain words, or a phrase in a paragraph — select them and press the link button on the format bar. Type part of a name instead of an address and the same rows are listed under the box; pick one to link the words to it. An address typed or pasted into the box is written as it always was.
+
 ## On a published site and in an embed
 
 The same bar works on a Leaftext site published to the web and on a document embedded in another product: **Table**, **Cards**, **Board**, **List**, **Sort**, **Filter** and **Describe** all do what they do in the desktop app.
@@ -51,3 +57,5 @@ The same bar works on a Leaftext site published to the web and on a document emb
 A published site resolves relations only among the pages it serves. A link to a row in another page of the site becomes a relation; a link to a page the site does not publish reads as a red relation, because that page is not there. A site reads at most 64 pages for one table, and a relation into a page past that reads as a dashed gray relation rather than a broken one.
 
 An embedded document holds only itself, so it reads no other document: its link columns stay ordinary links, and every other view, sort and filter works as usual.
+
+The search box that lists rows from other notes is the desktop app's: on a site or in an embed the menu offers the rows the column already points into, and typed words filter those.

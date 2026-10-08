@@ -15,7 +15,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
-Five more preferences are saved here but set elsewhere, where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice and speed, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+Six more preferences are saved here but set elsewhere, where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice and speed, [typing help](#typing-help), [By meaning](#by-meaning), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
@@ -45,6 +45,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{config_dir}/mcp.json` | Kept for outside tool servers, in the `mcpServers` shape. No part of Leaftext reads this file or starts a server yet — [outside tools are still coming](../05-compare.md#outside-tools-through-mcp). When they arrive it is read from this folder alone, never from a vault, a document or a link, and a server is switched off with `"disabled": true` rather than deleted. A server names either a `command` the app starts or a `url` it reaches over HTTPS, never both, and an address may carry a `clientId` for a sign-in server that will not let the app register itself. An address is signed in through your own browser, and that sign-in is kept in the machine's credential store, never in this file — which is why a `headers` entry is refused |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/remote/<vault id>` | Local files for a [storage service vault](03-library.md#storage-services), including edits waiting to be sent |
+| `{data_dir}/models/potion-base-8M` | The model [By meaning](#by-meaning) scores with, downloaded on its first press and checked file by file before it is kept |
 | `{data_dir}/webview2` | WebView2 data |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 | `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
@@ -72,6 +73,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "read_aloud_voice": "",
   "read_aloud_speed": 100,
   "code_intel_enabled": true,
+  "related_by_meaning": false,
   "reading_unlocked": false,
   "code_unlocked": false,
   "theme_family": "random",
@@ -187,6 +189,12 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - On by default, toggled with the wand on the code view's [toolbar](07-editing.md#typing-help)
 - Monaco's IntelliSense, answered from your notes: suggests them after `[[`, headings after `#`, previews a note on hover, and underlines [broken links](07-editing.md#typing-help) in the code view
 - Saved as `code_intel_enabled`
+
+### By meaning
+
+- Off by default, toggled with **By meaning** at the right of **About the same thing** in the [library pane](03-library.md#what-links-here)
+- On, that group is scored by what the notes say rather than the words they share; the first press downloads a small model once into `{data_dir}/models/potion-base-8M`, and after that no note's text leaves this machine
+- Saved as `related_by_meaning`
 
 ### Pager
 

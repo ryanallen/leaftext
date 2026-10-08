@@ -9075,7 +9075,7 @@ function outsideThePage(x, y) {
 function tabStaysInItsWindow(index) {
   const tabs = (currentState && currentState.tabs) || [];
   const kind = tabs[index] && tabs[index].kind;
-  return kind === 'console' || kind === 'harness';
+  return kind === 'harness';
 }
 
 function tabIsAlone() {
@@ -18176,6 +18176,23 @@ const SMART_LINK_GROUPS = [
 
 let smartLinksAsked = null;
 
+const MEANING_OFFERED = !!window.__leafSettings && typeof window.__leafSettings === 'object' && Object.prototype.hasOwnProperty.call(window.__leafSettings, 'relatedByMeaning');
+let meaningOn = MEANING_OFFERED && window.__leafSettings.relatedByMeaning === true;
+let meaningPercent = null;
+window.leafMeaningState = (answer) => {
+  if (!answer) return;
+  meaningOn = answer.state !== 'off';
+  meaningPercent = answer.state === 'downloading' && Number.isFinite(answer.percent) ? answer.percent : null;
+  if (smartLinksAnswer) renderSmartLinks();
+};
+function meaningButtonHtml() {
+  const label = meaningOn && meaningPercent !== null ? `By meaning ${meaningPercent}%` : 'By meaning';
+  const title = meaningOn
+    ? 'Scored by what the notes say, with the model on this machine. Press to go back to shared words.'
+    : 'Score these by what the notes say rather than the words they share. Downloads a 30 MB model once from Hugging Face; no note leaves this device.';
+  return `<button type="button" class="theme-mode-btn library-links-meaning${meaningOn ? ' is-active' : ''}" data-meaning-toggle="related" aria-pressed="${meaningOn}" title="${escapeAttr(title)}">${escapeText(label)}</button>`;
+}
+
 function sameNotePath(a, b) {
   return !!a && !!b && a.replace(/\\/g, '/').toLowerCase() === b.replace(/\\/g, '/').toLowerCase();
 }
@@ -18222,8 +18239,9 @@ function relativeNoteHref(from, to) {
   const encode = (segment) => segment.replace(/[ %()[\]<>#?]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
   return [...folder.slice(shared).map(() => '..'), ...target.slice(shared).map(encode)].join('/');
 }
+
 function smartLinksHaveRows() {
-  return !!smartLinksAnswer && SMART_LINK_GROUPS.some(([key]) => smartLinksAnswer[key] && smartLinksAnswer[key].rows.length > 0);
+  return !!smartLinksAnswer && (MEANING_OFFERED || SMART_LINK_GROUPS.some(([key]) => smartLinksAnswer[key] && smartLinksAnswer[key].rows.length > 0));
 }
 window.leafSmartLinks = (answer) => {
   if (!answer || !sameNotePath(answer.path, librarySelectedPath)) return;
@@ -18240,11 +18258,12 @@ function smartLinkRowHtml(row, at, linkable, folder) {
   return `<div class="library-links-row">${hit}<button type="button" class="theme-mode-btn library-links-link" data-smart-link="${at}" title="${escapeAttr(`Link these words to ${documentNameParts(smartLinksAnswer.path).stem}`)}">Link</button></div>`;
 }
 function smartLinkGroupHtml(key, label) {
-  const group = smartLinksAnswer[key];
-  if (!group || !group.rows.length) return '';
+  const group = smartLinksAnswer[key] || { total: 0, rows: [] };
+  const switchable = key === 'related' && MEANING_OFFERED;
+  if (!group.rows.length && !switchable) return '';
   const folders = documentFolderWords(group.rows.map((row) => row.path));
   const rows = group.rows.map((row, at) => smartLinkRowHtml(row, `${key}:${at}`, key === 'mentions', folders[at])).join('');
-  return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}</span></div>${rows}`;
+  return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}${switchable ? meaningButtonHtml() : ''}</span></div>${rows}`;
 }
 function smartLinkRow(address) {
   const [key, at] = String(address || '').split(':');
@@ -18270,6 +18289,15 @@ function renderSmartLinks() {
       if (!row || !smartLinksAnswer) return;
       pendingSearchJump = row.line ? { path: row.path, anchor: '', line: row.line } : null;
       send({ command: 'linkMention', path: row.path, target: smartLinksAnswer.path, start: row.start, end: row.end, words: row.words });
+    });
+  }
+  const meaning = libraryLinks.querySelector('[data-meaning-toggle]');
+  if (meaning) {
+    meaning.addEventListener('click', () => {
+      meaningOn = !meaningOn;
+      meaningPercent = null;
+      send({ command: 'setRelatedByMeaning', on: meaningOn });
+      renderSmartLinks();
     });
   }
   renderLibraryLists();
@@ -30682,15 +30710,100 @@ function tableLensPickerFor(view, at) {
 }
 
 
-function openTableLensPicker(table, cell, at) {
+function tableLinkIsLocal(link) {
+  return !/^[a-z][a-z0-9+.-]+:/i.test(link.getAttribute('href') || '');
+}
+
+
+function tableCellHoldsOnlyRelations(cell) {
+  if (cell.querySelector('input, img, picture, svg, video')) return false;
+  let rest = cell.textContent || '';
+  const links = Array.from(cell.querySelectorAll('a[href]'));
+  if (!links.every(tableLinkIsLocal)) return false;
+  links.forEach((link) => {
+    rest = rest.replace(link.textContent || '', '');
+  });
+  return !/[^\s,;]/.test(rest);
+}
+
+
+function tableColumnTakesRelation(table, at) {
+  return Array.from(table.querySelectorAll('tbody tr')).every((row) => {
+    const cell = row.children[at];
+    return !cell || tableCellHoldsOnlyRelations(cell);
+  });
+}
+
+
+function tablePickerAt(table, cell, at) {
   const view = tableLensOf(table);
+  if (view && view.layout !== 'grid') return '';
   const kind = tableLensPickerFor(view, at);
+  if (kind) return kind;
+  return tableCellHoldsOnlyRelations(cell) && tableColumnTakesRelation(table, at) ? 'relation' : '';
+}
+
+
+let tableRowsToken = 0;
+let tableRowsWaiting = null;
+window.leafTableRows = (answer) => {
+  if (!answer || answer.token !== tableRowsToken || !tableRowsWaiting) return;
+  const waiting = tableRowsWaiting;
+  tableRowsWaiting = null;
+  waiting(answer);
+};
+
+
+function askTableRows(words, answered) {
+  if (!hostAnswers('tableRows')) return false;
+  tableRowsToken += 1;
+  tableRowsWaiting = answered;
+  send({ command: 'tableRows', words, token: tableRowsToken });
+  return true;
+}
+
+
+function tableRowDocument(href) {
+  return String(href || '').split('#')[0];
+}
+
+
+function drawTableRowsList(box, rows, picked) {
+  Array.from(box.children).forEach((child) => child.remove());
+  let group = null;
+  rows.forEach((row) => {
+    const where = row.document || tableRowDocument(row.href);
+    if (where !== group) {
+      group = where;
+      const label = document.createElement('div');
+      label.className = 'table-lens-group';
+      label.textContent = where;
+      box.appendChild(label);
+    }
+    const item = tableLensMenuRow(row.label, false);
+    item.addEventListener('pointerdown', (event) => event.preventDefault());
+    item.addEventListener('click', () => picked(row));
+    box.appendChild(item);
+  });
+}
+
+
+function tableRowLinkWords(label) {
+  return String(label).replace(/[[\]\\]/g, '\\$&');
+}
+
+
+function openTableLensPicker(table, cell, at) {
+  const kind = tablePickerAt(table, cell, at);
   if (!kind) return false;
+  const view = tableLensOf(table);
+  const column = view && view.model ? view.model.columns[at] : null;
   closeTableLensPicker();
+  const lane = table.closest('.table-lane') || table.parentElement;
+  if (!lane) return false;
   const menu = document.createElement('div');
   menu.className = 'table-lens-menu table-lens-picker leaf-scroll';
   menu.__lensCell = cell;
-  
   const written = (markdown) => {
     menu.remove();
     closeTableLensPicker();
@@ -30705,11 +30818,8 @@ function openTableLensPicker(table, cell, at) {
     box.value = (cell.textContent || '').trim();
     box.addEventListener('change', () => written(box.value));
     menu.appendChild(box);
-  } else {
-    const column = view.model.columns[at];
-    const rows = kind === 'select'
-      ? column.values.map((value) => [value, value])
-      : column.choices.map((choice) => [choice.label, `[${choice.label}](${choice.href})`]);
+  } else if (kind === 'select') {
+    const rows = column.values.map((value) => [value, value]);
     
     rows.unshift(['Nothing', '']);
     rows.forEach(([label, markdown]) => {
@@ -30717,10 +30827,55 @@ function openTableLensPicker(table, cell, at) {
       row.addEventListener('click', () => written(markdown));
       menu.appendChild(row);
     });
+  } else {
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.className = 'table-lens-input';
+    search.setAttribute('aria-label', 'Find a row');
+    search.placeholder = 'Find a row';
+    menu.appendChild(search);
+    const nothing = tableLensMenuRow('Nothing', false);
+    nothing.addEventListener('click', () => written(''));
+    menu.appendChild(nothing);
+    
+    const list = document.createElement('div');
+    list.style.display = 'contents';
+    menu.appendChild(list);
+    const own = column && column.choices ? column.choices : [];
+    const pick = (row) => written(`[${tableRowLinkWords(row.label)}](${row.href})`);
+    const drawOwn = (words) => {
+      const wanted = words.toLowerCase().split(/\s+/).filter(Boolean);
+      drawTableRowsList(list, own.filter((choice) => wanted.every((word) => choice.label.toLowerCase().includes(word))), pick);
+    };
+    drawOwn('');
+    search.addEventListener('input', () => {
+      const words = search.value.trim();
+      if (!words || !askTableRows(words, (answer) => drawTableRowsList(list, answer.rows || [], pick))) drawOwn(words);
+    });
+    search.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        
+        written(search.value.trim());
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        menu.remove();
+        closeTableLensPicker();
+      }
+    });
+    setTimeout(() => search.focus(), 0);
   }
 
-  cell.appendChild(menu);
+  const cellBox = cell.getBoundingClientRect();
+  const laneBox = lane.getBoundingClientRect();
+  menu.style.left = `${cellBox.left - laneBox.left}px`;
+  menu.style.top = `${cellBox.bottom - laneBox.top}px`;
+  lane.appendChild(menu);
   cell.classList.add('is-lens-picking');
+  if (!table.__lensPickerScroll) {
+    table.__lensPickerScroll = true;
+    table.addEventListener('scroll', () => closeTableLensPicker(), { passive: true });
+  }
   return true;
 }
 
@@ -30741,10 +30896,10 @@ function bindTableLensPickers() {
       const cell = aimed ? aimed.closest('td') : null;
       if (!cell || aimed.closest('.table-lens-picker')) return;
       const table = cell.closest('table[data-block-kind="table"]');
-      const view = table ? tableLensOf(table) : null;
-      if (!view || view.layout !== 'grid' || !tableTakesControls(table)) return;
+      if (!table) return;
       const at = Array.from(cell.parentElement.children).indexOf(cell);
-      if (!tableLensPickerFor(view, at)) return;
+      
+      if (!tablePickerAt(table, cell, at) || !tableTakesControls(table)) return;
       event.preventDefault();
       event.stopPropagation();
       openTableLensPicker(table, cell, at);
@@ -31487,6 +31642,7 @@ function closeSelectionInputBox() {
   selectionToolbar.classList.remove('is-linking');
   selectionToolbar.classList.remove('is-noting');
   selectionToolbar.classList.remove('is-toning');
+  if (selectionToolbar.__rowsList) selectionToolbar.__rowsList.hidden = true;
   if (selectionToolbarLinkInput) {
     selectionToolbarLinkInput.value = '';
     selectionToolbarLinkInput.placeholder = SELECTION_LINK_PLACEHOLDER;
@@ -32130,6 +32286,35 @@ function openSelectionLinkBox(format = null) {
   armSelectionInputOutsidePress();
 }
 
+
+function selectionLinkReadsAsAddress(words) {
+  return /^[a-z][a-z0-9+.-]*:|\/|^#|\.[a-z0-9]{1,5}($|[#?])/i.test(words);
+}
+
+
+function drawSelectionLinkRows() {
+  if (!selectionToolbar || !selectionToolbar.classList.contains('is-linking')) return;
+  let list = selectionToolbar.__rowsList;
+  if (!list) {
+    list = document.createElement('div');
+    list.className = 'table-lens-menu leaf-scroll';
+    selectionToolbar.__rowsList = list;
+    selectionToolbar.appendChild(list);
+  }
+  const words = selectionToolbarLinkInput.value.trim();
+  list.hidden = true;
+  if (!words || selectionLinkReadsAsAddress(words)) return;
+  askTableRows(words, (answer) => {
+    if (!selectionToolbar.classList.contains('is-linking')) return;
+    const rows = answer.rows || [];
+    drawTableRowsList(list, rows, (row) => {
+      selectionToolbarLinkInput.value = row.href;
+      commitSelectionLink();
+    });
+    list.hidden = !rows.length;
+  });
+}
+
 function commitSelectionLink() {
   const url = selectionToolbarLinkInput.value.trim();
   const format = selectionToolbarLinkFormat;
@@ -32317,6 +32502,8 @@ function bindSelectionToolbar() {
   }
   selectionToolbar.insertBefore(selectionToolbarToneRow, selectionToolbar.querySelector('.selection-toolbar-point'));
 
+  
+  selectionToolbarLinkInput.addEventListener('input', () => drawSelectionLinkRows());
   selectionToolbarLinkInput.addEventListener('keydown', (event) => {
     
     const noting = selectionToolbar.classList.contains('is-noting');
@@ -39854,6 +40041,24 @@ window.leafConsoleOutput = (id, bytes) => {
       entry.mapOutputPending = true;
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
     });
+  });
+};
+
+
+window.leafConsoleReplay = (id, bytes) => {
+  const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  if (entry.frame) cancelAnimationFrame(entry.frame);
+  entry.frame = 0;
+  entry.decoder = new TextDecoder();
+  entry.pending = [bytes];
+  entry.pendingBytes = bytes.length;
+  if (!entry.terminal) return;
+  entry.pending = [];
+  entry.pendingBytes = 0;
+  entry.terminal.reset();
+  entry.terminal.write(entry.decoder.decode(new Uint8Array(bytes), { stream: true }), () => {
+    entry.map = null;
+    if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
 };
 

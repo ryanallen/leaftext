@@ -41,6 +41,19 @@ async function load(url, fetchWith = fetch) {
     for (const [at, length] of written) api.leaf_free(at, length);
     return answer;
   };
+  // An answer that is a media type, a zero byte and the bytes.
+  const typed = (call, text) => {
+    const [at, length] = write(text);
+    const answer = call(at, length);
+    api.leaf_free(at, length);
+    if (!answer) return null;
+    const size = new DataView(api.memory.buffer).getUint32(answer, true);
+    const whole = new Uint8Array(api.memory.buffer, answer + 4, size);
+    const split = whole.indexOf(0);
+    const picture = split < 0 ? null : { type: decoder.decode(whole.subarray(0, split)), bytes: whole.slice(split + 1) };
+    api.leaf_free(answer, 4 + size);
+    return picture;
+  };
 
   return {
     pageFile: (request) => withStrings(api.leaf_one_file_page, JSON.stringify(request)),
@@ -145,19 +158,11 @@ async function load(url, fetchWith = fetch) {
       if (typeof api.leaf_set_mints_pictures === 'function') api.leaf_set_mints_pictures(mints ? 1 : 0);
     },
     // One picture out of the kept book, as its media type and bytes, or nothing where the module refused it.
-    bookPicture: (member) => {
-      if (typeof api.leaf_book_picture !== 'function') return null;
-      const [at, length] = write(member);
-      const answer = api.leaf_book_picture(at, length);
-      api.leaf_free(at, length);
-      if (!answer) return null;
-      const size = new DataView(api.memory.buffer).getUint32(answer, true);
-      const whole = new Uint8Array(api.memory.buffer, answer + 4, size);
-      const split = whole.indexOf(0);
-      const picture = split < 0 ? null : { type: decoder.decode(whole.subarray(0, split)), bytes: whole.slice(split + 1) };
-      api.leaf_free(answer, 4 + size);
-      return picture;
-    },
+    bookPicture: (member) => typeof api.leaf_book_picture === 'function' ? typed(api.leaf_book_picture, member) : null,
+    // The page's book: the ask for its drawing, the picture addresses that drawing names, and the packed book as its type and bytes.
+    bookExportAsk: (path, css) => withStrings(api.leaf_book_export_ask, path, css),
+    bookPictureAddresses: (markup) => JSON.parse(withStrings(api.leaf_book_picture_addresses, markup) || '[]'),
+    bookExport: (request) => typed(api.leaf_book_export, JSON.stringify(request)),
     glossaryScript: (href) => withStrings(api.leaf_glossary_script, href || ''),
     // Index the held glossary's entries ahead of the first card. A module older than the page has no such export, and its first card builds the index as it always did.
     indexGlossary: () => {
@@ -393,7 +398,9 @@ export const COMMANDS = {
   codeLint: [ANSWERED],
   smartLinks: [ANSWERED], // Links here alone, from the links the listing publishes: the other two groups read every page's text, which a site does not fetch to draw a page.
   linkMention: [REFUSED, 'a site offers no mention to link, because finding one means reading every published page’s text'],
+  setRelatedByMeaning: [REFUSED, 'a published page holds no model to score by meaning, and the page draws no By meaning button where it was handed no setting'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
+  tableRows: [REFUSED, 'listing every row would fetch every page this site serves on the first keystroke'],
   toggleTask: [ANSWERED],
   editBlock: [ANSWERED],
   resendDocumentSource: [REFUSED, 'This host always sends the whole document source.'],
@@ -414,7 +421,7 @@ export const COMMANDS = {
   exportPicture: [ANSWERED],
   printPicturePdf: [ANSWERED],
   exportPdf: [ANSWERED], // Optional slide page height is applied by the shared paper hold.
-  exportPageHtml: [ANSWERED],
+  exportPageHtml: [ANSWERED], // A path ending .epub is the book, packed by the module and downloaded.
   exportSite: [REFUSED, 'a published site cannot write a folder on disk'],
   exportSitePage: [REFUSED, 'a published site has no folder export in progress'],
   cancelExportSite: [REFUSED, 'a published site has no folder export in progress'],
@@ -1234,65 +1241,94 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   let exportMinimapScript = null;
   let exportStylesheet = null;
   let exportMathCss = null;
-  const mathForPage = async () => {
-    if (exportMathCss !== null) return exportMathCss;
+  let exportMath = null;
+  const base64Of = (chunks) => {
+    let binary = '';
+    for (const chunk of chunks) for (let at = 0; at < chunk.length; at += 8192) binary += String.fromCharCode(...chunk.subarray(at, at + 8192));
+    return btoa(binary);
+  };
+  // The math stylesheet as it is spelled and each face it names in base64, which the one-file page inlines and a book carries as members.
+  const mathFiles = async () => {
+    if (exportMath !== null) return exportMath;
     const response = await fetchWith(assetBase() + 'katex/katex.min.css');
     if (!response.ok) throw new Error('The math stylesheet could not be loaded.');
-    let css = await response.text();
+    const css = await response.text();
+    const faces = {};
     for (const name of new Set([...css.matchAll(/fonts\/(KaTeX_[\w-]+\.woff2)/g)].map((match) => match[1]))) {
       const font = await fetchWith(assetBase() + 'katex/fonts/' + name);
       if (!font.ok) throw new Error('A math font could not be loaded.');
-      const bytes = new Uint8Array(await font.arrayBuffer());
-      let binary = '';
-      for (let at = 0; at < bytes.length; at += 8192) binary += String.fromCharCode(...bytes.subarray(at, at + 8192));
-      css = css.replaceAll('fonts/' + name, 'data:font/woff2;base64,' + btoa(binary));
+      faces[name] = base64Of([new Uint8Array(await font.arrayBuffer())]);
     }
-    exportMathCss = css.replace(/,url\(fonts\/KaTeX_[^)]*\.(?:woff|ttf)\) format\("[^"]+"\)/g, '');
-    return exportMathCss;
+    return (exportMath = { css, faces });
   };
-  const downloadPageFile = async (command) => {
-    const template = document.createElement('template');
-    template.innerHTML = String(command.markup || '');
+  const mathForPage = async () => {
+    if (exportMathCss !== null) return exportMathCss;
+    const { css, faces } = await mathFiles();
+    let inlined = css;
+    for (const [name, encoded] of Object.entries(faces)) inlined = inlined.replaceAll('fonts/' + name, 'data:font/woff2;base64,' + encoded);
+    return (exportMathCss = inlined.replace(/,url\(fonts\/KaTeX_[^)]*\.(?:woff|ttf)\) format\("[^"]+"\)/g, ''));
+  };
+  // Each same-site or blob picture's type and bytes by address, 64 MB across the page; any other address is not fetched.
+  const fetchPictures = async (addresses) => {
+    const fetched = new Map();
     let total = 0;
-    for (const picture of (template.content || template).querySelectorAll('img[src]')) {
-      const address = picture.getAttribute('src');
+    for (const address of addresses) {
       let url;
       try { url = new URL(address, document.baseURI); } catch (_) { continue; }
-      if (url.protocol !== 'blob:' && url.origin !== location.origin) continue;
+      if (fetched.has(address) || (url.protocol !== 'blob:' && url.origin !== location.origin)) continue;
       const response = await fetchWith(url.href);
       if (!response.ok) continue;
       const chunks = [];
-      if (response.body?.getReader) {
-        const reader = response.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          total += value.length;
-          if (total > 64 * 1024 * 1024) { await reader.cancel(); throw new Error('This page has more than 64 MB of pictures.'); }
-          chunks.push(value);
-        }
-      } else {
-        const value = new Uint8Array(await response.arrayBuffer());
+      const reader = response.body?.getReader ? response.body.getReader() : null;
+      while (true) {
+        const { done, value } = reader ? await reader.read() : chunks.length ? { done: true } : { value: new Uint8Array(await response.arrayBuffer()) };
+        if (done) break;
         total += value.length;
-        if (total > 64 * 1024 * 1024) throw new Error('This page has more than 64 MB of pictures.');
+        if (total > 64 * 1024 * 1024) { await reader?.cancel(); throw new Error('This page has more than 64 MB of pictures.'); }
         chunks.push(value);
       }
-      let binary = '';
-      for (const chunk of chunks) for (let at = 0; at < chunk.length; at += 8192) binary += String.fromCharCode(...chunk.subarray(at, at + 8192));
-      picture.setAttribute('src', `data:${response.headers.get('content-type') || 'application/octet-stream'};base64,${btoa(binary)}`);
+      fetched.set(address, { type: response.headers.get('content-type') || 'application/octet-stream', chunks });
+    }
+    return fetched;
+  };
+  // The window's own sheet as this site serves it, which the one-file page carries and a book's ask and packer both split.
+  const windowSheet = async () => {
+    if (exportStylesheet !== null) return exportStylesheet;
+    const response = await fetchWith(assetBase() + 'app.css');
+    if (!response.ok) throw new Error('The page stylesheet could not be loaded.');
+    return (exportStylesheet = await response.text());
+  };
+  // The book packed by the module from the page's XHTML, with every picture the packer will ask for fetched first.
+  const downloadBook = async (command) => {
+    const markup = String(command.markup || '');
+    const fetched = await fetchPictures(core.bookPictureAddresses(markup));
+    const pictures = Object.fromEntries([...fetched].map(([address, got]) => [address, base64Of(got.chunks)]));
+    const math = markup.includes('class="katex') ? await mathFiles() : null;
+    const name = String(command.path || 'document.epub').split(/[\\/]/).pop();
+    const answer = core.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), pictures, math });
+    if (!answer || answer.type === 'error') throw new Error(answer ? new TextDecoder().decode(answer.bytes) : 'That book could not be exported.');
+    window.__leafBrowserDownload(name, answer.type, answer.bytes);
+  };
+  const showExportFailure = (error) => run(`window.leafShowError(${JSON.stringify(String(error && error.message || error))});`);
+  // The open document's name with the ending a download takes.
+  const exportName = (ending) => (open || 'document').split('/').pop().replace(/\.[^.]*$/, '') + ending;
+  const downloadPageFile = async (command) => {
+    if (/\.epub$/i.test(String(command.path || ''))) return downloadBook(command);
+    const template = document.createElement('template');
+    template.innerHTML = String(command.markup || '');
+    const pictures = [...(template.content || template).querySelectorAll('img[src]')];
+    const fetched = await fetchPictures(pictures.map((picture) => picture.getAttribute('src')));
+    for (const picture of pictures) {
+      const got = fetched.get(picture.getAttribute('src'));
+      if (got) picture.setAttribute('src', `data:${got.type};base64,${base64Of(got.chunks)}`);
     }
     if (exportMinimapScript === null) {
       const response = await fetchWith(assetBase() + 'export-minimap.js');
       if (!response.ok) throw new Error('The page minimap could not be loaded.');
       exportMinimapScript = (await response.text()).replace('\nexport function initMinimap', '\nfunction initMinimap') + "\ninitMinimap(document.querySelector('.document-body'));";
     }
-    if (exportStylesheet === null) {
-      const response = await fetchWith(assetBase() + 'app.css');
-      if (!response.ok) throw new Error('The page stylesheet could not be loaded.');
-      exportStylesheet = await response.text();
-    }
     const mathCss = template.innerHTML.includes('class="katex') ? await mathForPage() : '';
-    const html = core.pageFile({ ...command, markup: template.innerHTML, stylesheet: exportStylesheet, minimapScript: exportMinimapScript, mathCss });
+    const html = core.pageFile({ ...command, markup: template.innerHTML, stylesheet: await windowSheet(), minimapScript: exportMinimapScript, mathCss });
     if (!html) throw new Error('That page could not be exported.');
     const address = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
     const link = document.createElement('a');
@@ -1580,9 +1616,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     },
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
     exportPdf: (command) => command.format === 'onefile'
-      ? run(`window.leafExportPageHtml(${JSON.stringify((open || 'document').split('/').pop().replace(/\.[^.]*$/, '') + '.html')}, false, null, true);`)
-      : window.print(),
-    exportPageHtml: (command) => downloadPageFile(command).catch((error) => run(`window.leafShowError(${JSON.stringify(String(error && error.message || error))});`)),
+      ? run(`window.leafExportPageHtml(${JSON.stringify(exportName('.html'))}, false, null, true);`)
+      : command.format === 'epub' ? windowSheet().then((css) => run(core.bookExportAsk(exportName('.epub'), css))).catch(showExportFailure) : window.print(),
+    exportPageHtml: (command) => downloadPageFile(command).catch(showExportFailure),
     pickDiagramPath: (command) => {
       const name = (open || 'diagram').split('/').pop().replace(/\.[^.]*$/, '') + '.' + (command.format || 'png');
       run(`window.leafDiagramPathPicked(${Number(command.token)}, ${JSON.stringify(name)});`);
@@ -1703,8 +1739,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     console.info('this host does not answer', command.command, '—', reason);
   }
 
-  // What this host can write the page out as. A browser has no save window and no disk, so its one row is the browser's own print — which is what `exportPdf` reaches here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
-  window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }, { id: 'onefile', label: 'Web page, one file' }];
+  // What this host can write the page out as. A browser has no save window and no disk, so PDF is the browser's own print and the other two rows are downloads the page builds here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
+  window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }, { id: 'onefile', label: 'Web page, one file' }, { id: 'epub', label: 'EPUB book' }];
   window.__leafBrowserExportMenu = true;
   // A refresh, a closed tab and a walk off the site all raise it.
   addEventListener('pagehide', keepWords);

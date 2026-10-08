@@ -13,6 +13,8 @@
 | Whole-page JPEG | [✅][l-export] | ? | ? | [❌][c-seen] |
 | Web page export | [✅][l-export] | [❌][o-seen] | [✅][t-export] | [✅][c-seen] |
 | One-file web page | [✅][l-export] | ? | ? | ? |
+| EPUB book export | [✅][l-export] | [❌][o-seen] | [✅][t-export] | [✅][c-faq] |
+| EPUB from the site | [✅][l-export] | ? | ? | ? |
 | Folder to static site | [✅][l-folder] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Shared assets folder | [✅][l-export] | ? | ? | ? |
 | Reused exported copies | [✅][l-export] | ? | ? | ? |
@@ -111,6 +113,7 @@
 [l-site-links-here]: ../01-features/03-library.md#what-links-here
 [t-export]: https://support.typora.io/Export/
 [c-seen]: ../05-compare.md#calibre
+[c-faq]: https://manual.calibre-ebook.com/faq.html
 [o-publish]: https://obsidian.md/help/publish
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora

@@ -17,7 +17,6 @@
 | ElevenLabs read aloud | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Frontmatter top sheet | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | HTML in browser | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| EPUB export | [❌][l-roadmap] | [❌][o-seen] | [✅][t-export] | [✅][c-faq] |
 | Markdown export | [❌][l-roadmap] | [❌][o-seen] | [✅][t-md-export] | [❌][c-seen] |
 
 ## Writing plans

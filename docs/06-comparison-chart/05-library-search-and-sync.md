@@ -280,6 +280,7 @@
 | Backlinks and mentions | [✅][l-links-here] | [✅][o-backlinks] | [❌][t-seen] | [❌][c-seen] |
 | One-press mention links | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
 | Related notes | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
+| Related by meaning | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
 
 ## Graph
 
@@ -384,6 +385,7 @@
 | Feature | Leaftext | Obsidian | Typora | Calibre |
 | --- | --- | --- | --- | --- |
 | Folder console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Console torn out | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
 | Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |

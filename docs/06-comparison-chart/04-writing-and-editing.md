@@ -592,6 +592,7 @@
 | Describe writes correction | [✅][l-rdb-describe] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Malformed comments ignored | [✅][l-rdb-describe] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cell pickers | [✅][l-rdb-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Row link picker | [✅][l-rdb-pick] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Board drags write cell | [✅][l-rdb-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | One undo per change | [✅][l-rdb-edit] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Types guessed from values | [✅][l-rdb-views] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -683,6 +684,7 @@
 [l-rdb-relations]: ../01-features/08-relational-tables.md#relations
 [l-rdb-describe]: ../01-features/08-relational-tables.md#describe-a-table
 [l-rdb-edit]: ../01-features/08-relational-tables.md#editing-a-relational-table
+[l-rdb-pick]: ../01-features/08-relational-tables.md#point-at-a-row-without-typing-its-address
 [l-open-links]: ../01-features/02-navigation.md#opening-a-link-in-a-new-page
 [l-tabs]: ../01-features/02-navigation.md#tabs
 [l-favorites]: ../01-features/02-navigation.md#favorites

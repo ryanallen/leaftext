@@ -5751,8 +5751,12 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
   --lt-grain-dot: var(--app-bar-grain);
   background-color: var(--tab-fill);
   color: var(--lt-foreground);
-  /* The strip's margin above would lift it off the row's hairline its neighbor stands on. */
-  margin-bottom: calc(-1 * var(--lt-stroke-1));
+  /* Over the row's hairline, so its fill opens the line into the sheet. */
+  z-index: 2;
+}
+/* The row draws the Grove's one line, so a Grove tab draws none of its own; zero wide rather than transparent, so its feet stand on its own bottom edge. */
+.grove-tab[role="tab"] {
+  border-bottom-width: 0;
 }
 .tab-active,
 .grove-tab.is-chosen {
@@ -5794,6 +5798,11 @@ body.has-split .tab-bar.has-two-groups > .strip-part-beside {
 .grove-tab.is-chosen::after {
   right: calc(-1 * var(--tab-flare));
   background: radial-gradient(circle at 100% 0, var(--tab-flare-arc));
+}
+/* A Grove tab has no bottom stroke, so its padding box already ends on the row's line. */
+.grove-tab.is-chosen::before,
+.grove-tab.is-chosen::after {
+  bottom: 0;
 }
 /* The Grove's row starts at its first tab's own edge, where the strip's starts 16px before it, so a flare there would hang past the start of the line. */
 .grove-tab.is-chosen:first-child::before {
@@ -7121,6 +7130,12 @@ body.library-resizing button {
   flex: none;
   margin-top: var(--lt-space-4);
   padding: var(--lt-space-4) var(--lt-space-6);
+}
+/* **By meaning**, at the right of the About the same thing heading: pressed while the model scores the rows. */
+.library-links-meaning {
+  flex: none;
+  margin-left: var(--lt-space-4);
+  padding: var(--lt-space-2) var(--lt-space-6);
 }
 /* A heading, drawn as the file rows beside it are drawn — one full-width target, stepped in by how deep the section sits. */
 .library-outline-row {
@@ -13516,14 +13531,19 @@ body.table-resizing.is-row button {
   text-decoration-color: var(--lt-muted-foreground);
 }
 
-/* The picker over one cell. It hangs off the cell rather than off the page, so a table scrolled sideways carries it. */
-.document-body td.is-lens-picking {
-  position: relative;
-}
+/* The picker over one cell. It hangs in the table's lane rather than in the cell, because the table clips what is inside it; the page places it under the cell. */
 .table-lens-picker {
-  top: 100%;
-  left: 0;
   margin-block-start: var(--lt-space-1);
+}
+/* The list under the format bar's link box is put away by its attribute, which the flex display above would otherwise outrank. */
+.table-lens-menu[hidden] {
+  display: none;
+}
+/* The document a run of rows comes from, over those rows. */
+.table-lens-group {
+  padding: var(--lt-space-2) var(--lt-space-6) 0;
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12-5);
 }
 /* Lives in the shell's own column, outside the page — so no bleed and nothing to out-stack: it never overlaps the bar or the card.
 
@@ -16182,17 +16202,26 @@ p.front-more {
 }
 /* The Growth and Tree tabs under the sheet head, drawn as the document strip's tabs by the rules in app-bar.css; the row's hairline is the line the chosen tab opens through. */
 .grove-tabs {
+  position: relative;
   display: flex;
   flex: none;
   gap: var(--lt-space-4);
+}
+/* The row's hairline, drawn once over the unchosen tabs and under the chosen one, because a tab's own line pulled down onto a second one rounds half a device pixel off it. */
+.grove-tabs::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border-bottom: var(--lt-stroke-1) solid var(--lt-border);
+  pointer-events: none;
 }
 .grove-tabs[hidden] {
   display: none;
 }
 .grove-tab {
-  /* Down onto the row's hairline, so a tab's own bottom stroke is the line and the chosen one's open bottom covers it. */
-  margin-bottom: calc(-1 * var(--lt-stroke-1));
   /* The strip's tab and its label's padding and stroke together, since this button is both. */
   padding: calc(var(--lt-space-6) + var(--lt-stroke-1)) calc(var(--lt-space-4) + var(--lt-space-14) + var(--lt-stroke-1));
   cursor: default;
@@ -18982,8 +19011,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="library-results find-results" style="max-height:none"><p class="library-results-count"><span class="lt-spinner library-results-spinner"></span>Searching…</p><p class="library-results-count">14 results</p><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Note links</h3><code class="built">.library-links</code><span class="built">library-links.js, under the open note's headings in the pane: what links here, what names it without linking it — each such row carrying **Link**, the small button that writes the link — and what else is about the same thing, each group headed the way **On this page** is; two rows of one file name each carry their folder beside the name</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:400px"><div class="library-outline library-links"><div class="library-outline-note"><span class="library-outline-note-label">Links here</span><span class="library-outline-count">3 notes</span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Weir crest</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">See [[Station handbook]] for the boundary rule.</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">Vault</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">docs</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><div class="library-outline-note"><span class="library-outline-note-label">Names it without linking it</span><span class="library-outline-count">1 note</span></div><div class="library-links-row"><button type="button" class="library-hit library-links-hit"><span class="library-hit-title"><span class="file-name-stem">Frost calendar</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">The station handbook sets the first frost date.</span></button><button type="button" class="theme-mode-btn library-links-link">Link</button></div></div></div></div>
+<header><h3>Note links</h3><code class="built">.library-links</code><span class="built">library-links.js, under the open note's headings in the pane: what links here, what names it without linking it — each such row carrying **Link**, the small button that writes the link — and what else is about the same thing — its heading carrying **By meaning** at its right where the desktop handed the page the setting, pressed while a model on this machine scores the rows — each group headed the way **On this page** is; two rows of one file name each carry their folder beside the name</span></header>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:400px"><div class="library-outline library-links"><div class="library-outline-note"><span class="library-outline-note-label">Links here</span><span class="library-outline-count">3 notes</span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Weir crest</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">See [[Station handbook]] for the boundary rule.</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">Vault</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">docs</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><div class="library-outline-note"><span class="library-outline-note-label">Names it without linking it</span><span class="library-outline-count">1 note</span></div><div class="library-links-row"><button type="button" class="library-hit library-links-hit"><span class="library-hit-title"><span class="file-name-stem">Frost calendar</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">The station handbook sets the first frost date.</span></button><button type="button" class="theme-mode-btn library-links-link">Link</button></div><div class="library-outline-note"><span class="library-outline-note-label">About the same thing</span><span class="library-outline-count">1 note<button type="button" class="theme-mode-btn library-links-meaning is-active" aria-pressed="true">By meaning</button></span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Winter heating</span><span class="file-type-badge">MD</span></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Link list at the caret</h3><code class="built">.reading-link-popup</code><span class="built">reading-link-popup.js, under the [[ typed in a paragraph being edited: this note's neighbors under **Near this note**, then every note under **Every note**, each a name with its folder at the right and the picked one washed</span></header>
@@ -19423,7 +19452,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Table lens menu</h3><code class="built">.table-lens-menu</code><span class="built">table-lens.js</span></header>
-<div class="stage"><div class="table-lens-bar" style="position:relative;opacity:1;pointer-events:auto;height:180px;align-items:flex-start"><div class="table-lens-menu" style="position:static"><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">title</span></button><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">status</span><span class="lt-icon lt-icon-check table-lens-menu-check"></span></button><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">pages</span><span class="table-lens-menu-trail">Low to high</span></button><div class="table-lens-range"><input type="text" class="table-lens-input" placeholder="From"><input type="text" class="table-lens-input" placeholder="To"></div><button type="button" class="table-lens-menu-item table-lens-menu-clear"><span class="table-lens-menu-label">Clear this filter</span></button></div></div></div>
+<div class="stage"><div class="table-lens-bar" style="position:relative;opacity:1;pointer-events:auto;height:180px;align-items:flex-start"><div class="table-lens-menu" style="position:static"><div class="table-lens-group">../people/authors.md</div><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">title</span></button><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">status</span><span class="lt-icon lt-icon-check table-lens-menu-check"></span></button><button type="button" class="table-lens-menu-item"><span class="table-lens-menu-label">pages</span><span class="table-lens-menu-trail">Low to high</span></button><div class="table-lens-range"><input type="text" class="table-lens-input" placeholder="From"><input type="text" class="table-lens-input" placeholder="To"></div><button type="button" class="table-lens-menu-item table-lens-menu-clear"><span class="table-lens-menu-label">Clear this filter</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Table lens chip</h3><code class="built">.table-lens-chip</code><span class="built">table-lens.js</span></header>
