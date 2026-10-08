@@ -28,13 +28,13 @@ How it was made: built by [Ryan Allen](../merlin-how-it-was-made.md#ryan-allen),
 ## Why this book
 
 <!-- why -->
-Before one god wrote the rules, many gods were how we tried to control the chaos of reality. As humans we personify what happens to us: the storm rages because it's angry, and a bribe might cool it down. Villages had their own gods, and when neighbours fought, the winner's gods rose while the loser's gods fell. A defeated kingdom, the people of Judah after Babylon burned Jerusalem, decided their god hadn't lost. It was punishing them. Defeat made that god stronger and portable. A contract strangers could carry anywhere, not tied to nature.
+[why-1](../made-with.md#why-1)
 
-The Britons wrote Arthur into the contract of Yahweh, that old storm god, and Arthurian legend is how you watch it happen. In the old Welsh stories, Arthur fights giants, hunts a magic boar and kills a witch. Merlin is a wild prophet living in the woods, about as close to a druid as the sources get. A century later, Christian writers rework Arthur into something like fanfic for their faith. Merlin becomes a devil's son baptised for their god, and the knights chase a cup from their prophet's last supper. Get ready for a lot of Jesus talk.
+[why-2](../made-with.md#why-2)
 
-The contract also licenses conquest, and anyone is fair game. Take from everyone, and have a man with a title pour water on you. Arthur's legend runs on it. He is conceived in rape, arranged by their god's own prophet, who disguises Uther as a woman's husband so he can have sex with her all night. Then their remade god crowns the child with a sword through an anvil. It could have chosen a book or a plough.
+[why-3](../made-with.md#why-3)
 
-I'm translating these stories to witness them building this new contract from the old one. It grew out of the church into law and money because in God we trust. We can rely on strangers because a court or a bank stands behind them, so we stopped needing the people next door. That's why so many of us live alone in buildings full of neighbours we've never met, and stories like these are how we got here.
+[why-4](../made-with.md#why-4)
 <!-- /why -->
 
 ---

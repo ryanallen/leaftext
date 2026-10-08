@@ -10798,7 +10798,12 @@ function bookExportForm(copy) {
   copy.querySelectorAll('a').forEach((link) => {
     bookGlossaryLink(link);
     const href = link.getAttribute('href');
-    if (href !== null && !BOOK_EXPORT_KEPT_LINK.test(href.trim())) link.removeAttribute('href');
+    if (href === null || BOOK_EXPORT_KEPT_LINK.test(href.trim())) return;
+    
+    const online = typeof window.__leafLinkAddress === 'function' ? window.__leafLinkAddress(href.trim()) : null;
+    if (typeof online === 'string' && online) link.setAttribute('href', online);
+    else if (link.hasAttribute('id') || link.hasAttribute('name')) link.removeAttribute('href');
+    else link.replaceWith(...link.childNodes);
   });
   ['img', 'source'].forEach((tag) => copy.querySelectorAll(tag).forEach((picture) => picture.removeAttribute('srcset')));
   markBookNotes(copy);
@@ -10814,15 +10819,8 @@ function bookGlossaryLink(link) {
 }
 
 function markBookNotes(copy) {
-  copy.querySelectorAll('sup.footnote-reference a').forEach((link) => {
-    link.setAttribute('epub:type', 'noteref');
-    link.setAttribute('role', 'doc-noteref');
-  });
-  copy.querySelectorAll('.footnote-definition').forEach((note) => {
-    note.setAttribute('epub:type', 'footnote');
-    note.setAttribute('role', 'doc-footnote');
-  });
-  copy.querySelectorAll('.footnote-backref').forEach((back) => back.setAttribute('role', 'doc-backlink'));
+  copy.querySelectorAll('sup.footnote-reference a').forEach((link) => link.setAttribute('epub:type', 'noteref'));
+  copy.querySelectorAll('.footnote-definition').forEach((note) => note.setAttribute('epub:type', 'footnote'));
 }
 
 function containedPageBookMarkup() {
@@ -40352,6 +40350,7 @@ function setLinkHoverLength(count, unit) {
   linkHoverTipLines.hidden = !text;
 }
 window.leafDocumentLength = (token, count, unit) => {
+  linkCardTokenAnswered(token);
   const key = pendingLengthTokens.get(token);
   const known = typeof count === 'number' && count >= 0 && Object.hasOwn(DOCUMENT_LENGTH_UNITS, unit);
   
@@ -40874,6 +40873,7 @@ function linkPreviewSectionHtml(html, href) {
   return html.slice(0, opened + 1) + linkPreviewOpeningHtml(blocks) + '</article>';
 }
 window.leafLinkPreview = (token, html) => {
+  linkCardTokenAnswered(token);
   const key = pendingPreviewTokens.get(token);
   let note = html;
   
@@ -41268,6 +41268,10 @@ const waitingLinkCards = new Map();
 const pendingLinkCardPictures = new Set();
 const pendingLinkCardLengths = new Set();
 
+const LINK_CARD_QUESTIONS_AT_HOST = 6;
+const linkCardLine = [];
+const linkCardTokensAtHost = new Set();
+
 function linkCardLink(block) {
   if (!block || block.tagName !== 'P' || !isDocumentBlock(block) || block.hasAttribute('data-leaf-row')) return null;
   const picture = block.querySelector(':scope > .link-card-picture');
@@ -41384,17 +41388,38 @@ function askLinkCard(block) {
   if (!waiting) waitingLinkCards.set(key, waiting = new Set());
   waiting.add(block);
   if (wantsPicture && hostAnswers('previewLink') && !pendingLinkCardPictures.has(key) && pendingPreviewTokens.get(activeHoverToken) !== key) {
-    const token = nextLinkCardToken++;
     pendingLinkCardPictures.add(key);
-    pendingPreviewTokens.set(token, key);
-    send({ command: 'previewLink', href: key, token });
+    linkCardLine.push({ key, picture: true });
   }
   if (wantsLength && hostAnswers('documentLength') && !pendingLinkCardLengths.has(key) && pendingLengthTokens.get(activeHoverToken) !== key) {
-    const token = nextLinkCardToken++;
     pendingLinkCardLengths.add(key);
-    pendingLengthTokens.set(token, key);
-    send({ command: 'documentLength', href: key, token });
+    linkCardLine.push({ key, picture: false });
   }
+  sendLinkCardQuestions();
+}
+
+function linkCardStillNear(key) {
+  const waiting = waitingLinkCards.get(key);
+  return !!waiting && [...waiting].some((block) => block.isConnected && block.__linkCardNear && block.__linkCardKey === key);
+}
+
+function sendLinkCardQuestions() {
+  while (linkCardTokensAtHost.size < LINK_CARD_QUESTIONS_AT_HOST && linkCardLine.length) {
+    const { key, picture } = linkCardLine.shift();
+    const pending = picture ? pendingLinkCardPictures : pendingLinkCardLengths;
+    const cache = picture ? linkPreviewCache : documentLengthCache;
+    
+    if (!linkCardStillNear(key) || (cache.has(key) && !staleLinkAnswers.has(key))) { pending.delete(key); continue; }
+    const token = nextLinkCardToken++;
+    linkCardTokensAtHost.add(token);
+    (picture ? pendingPreviewTokens : pendingLengthTokens).set(token, key);
+    send({ command: picture ? 'previewLink' : 'documentLength', href: key, token, card: true });
+  }
+}
+
+
+function linkCardTokenAnswered(token) {
+  if (linkCardTokensAtHost.delete(token)) sendLinkCardQuestions();
 }
 
 function watchLinkCard(block) {

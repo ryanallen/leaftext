@@ -9310,7 +9310,6 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   display: inline-block;
   box-sizing: border-box;
   width: calc((100% - 2 * var(--lt-space-16)) / 3);
-  height: 18rem;
   margin: var(--lt-space-8) 0 var(--lt-space-8) var(--lt-space-16);
   padding: var(--lt-space-12);
   vertical-align: top;
@@ -9325,7 +9324,9 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   display: block;
   font-weight: var(--lt-weight-600);
   text-decoration: none;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .document-body .link-card::after {
   content: attr(data-link-card-kind) "\A" attr(data-link-card-address);
@@ -9333,13 +9334,16 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   margin-top: var(--lt-space-8);
   color: var(--lt-muted-foreground);
   font-size: var(--type-caption-size);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .document-body .link-card-picture {
   height: 11rem;
   margin-bottom: var(--lt-space-12);
-  background: var(--lt-wash-hover);
+  padding-bottom: var(--lt-space-8);
+  border-bottom: var(--lt-stroke-1) solid var(--lt-border);
   overflow: hidden;
 }
 .document-body .link-card:not(.is-page-card)::before {
@@ -11955,7 +11959,8 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body .footnote-definition-label {
   font-family: var(--app-font);
 }
-.document-body .footnote-definition {
+.document-body .footnote-definition,
+.document-body [data-leaf-note-body="1"] {
   border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);
   color: var(--lt-muted-foreground);
   font-size: var(--type-caption-size);

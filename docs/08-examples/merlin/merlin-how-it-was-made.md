@@ -132,7 +132,7 @@ Each whole scene was read for what each speaker wants and where it turns, and th
 
 The source text this translation was made from, established page by page against scans of the printed edition: misread letters restored, damaged words settled and the printed corrections applied, each with a note. Where the machine-read text and the page disagree, the scan wins.
 
-[Open merlin-old-french.md](merlin-old-french.md)
+[Open made-with.md](made-with.md)
 
 <a id="sources-named"></a>
 
@@ -194,7 +194,7 @@ Every heading says what happens in its section, in a short plain sentence, so th
 
 The source text carries the same headings as the translation, in English, at the same places, so the two outlines match one for one and a heading in either opens the same passage.
 
-[Open merlin-old-french.md](merlin-old-french.md)
+[Open made-with.md](made-with.md)
 
 <a id="laid-out-for-screens"></a>
 

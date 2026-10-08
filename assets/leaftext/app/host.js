@@ -162,6 +162,18 @@ async function load(url, fetchWith = fetch) {
     // The page's book: the ask for its drawing, the picture addresses that drawing names, and the packed book as its type and bytes.
     bookExportAsk: (path, css) => withStrings(api.leaf_book_export_ask, path, css),
     bookPictureAddresses: (markup) => JSON.parse(withStrings(api.leaf_book_picture_addresses, markup) || '[]'),
+    // One fetched picture's chunks written straight into the module's memory, which the module keeps for the next book rather than copying.
+    bookExportPicture: (address, chunks) => {
+      const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const at = api.leaf_alloc(length);
+      const memory = new Uint8Array(api.memory.buffer);
+      let offset = at;
+      for (const chunk of chunks) { memory.set(chunk, offset); offset += chunk.length; }
+      const [name, nameLength] = write(address);
+      const kept = api.leaf_book_export_picture(name, nameLength, at, length);
+      api.leaf_free(name, nameLength);
+      return !!kept;
+    },
     bookExport: (request) => typed(api.leaf_book_export, JSON.stringify(request)),
     glossaryScript: (href) => withStrings(api.leaf_glossary_script, href || ''),
     // Index the held glossary's entries ahead of the first card. A module older than the page has no such export, and its first card builds the index as it always did.
@@ -1323,11 +1335,15 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   const downloadBook = async (command) => {
     const markup = String(command.markup || '');
     const fetched = await fetchPictures(core.bookPictureAddresses(markup));
-    const pictures = Object.fromEntries([...fetched].map(([address, got]) => [address, base64Of(got.chunks)]));
+    // Each picture crosses as its bytes, and its chunks go once they have.
+    for (const [address, got] of fetched) {
+      core.bookExportPicture(address, got.chunks);
+      fetched.delete(address);
+    }
     const math = markup.includes('class="katex') ? await mathFiles() : null;
     const name = String(command.path || 'document.epub').split(/[\\/]/).pop();
     // The glossary the module holds is drawn under its own path, so an entry's pictures and links resolve where the glossary sits.
-    const answer = core.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), pictures, math, glossaryPath: glossary || '' });
+    const answer = core.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), math, glossaryPath: glossary || '' });
     if (!answer || answer.type === 'error') throw new Error(answer ? new TextDecoder().decode(answer.bytes) : 'That book could not be exported.');
     window.__leafBrowserDownload(name, answer.type, answer.bytes);
   };
@@ -1764,6 +1780,11 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // What this host can write the page out as. A browser has no save window and no disk, so PDF is the browser's own print and the other two rows are downloads the page builds here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
   window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }, { id: 'onefile', label: 'Web page, one file' }, { id: 'epub', label: 'EPUB book' }];
   window.__leafBrowserExportMenu = true;
+  // Where a link to another page of this site is read, as a whole address a saved book can carry, or null where the site lists nothing there.
+  window.__leafLinkAddress = (href) => {
+    const target = open ? resolveFrom(open, href) : null;
+    return target ? new URL(addressFor(target.path, target.anchor), location.href).href : null;
+  };
   // A refresh, a closed tab and a walk off the site all raise it.
   addEventListener('pagehide', keepWords);
   window.ipc = { postMessage: handle };
