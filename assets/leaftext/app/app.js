@@ -9887,11 +9887,12 @@ const leafStepBackNumbers = () => {
 };
 
 const leafWindowFocusIsNative = () => typeof window.__leafHostAnswers !== 'function';
+const leafPageWatchesFocus = () => !!window.__leafMacFrame && leafWindowFocusIsNative();
 window.addEventListener('blur', () => {
-  if (leafWindowFocusIsNative()) window.leafSetWindowActive(false);
+  if (leafPageWatchesFocus()) window.leafSetWindowActive(false);
 });
 window.addEventListener('focus', () => {
-  if (leafWindowFocusIsNative()) window.leafSetWindowActive(true);
+  if (leafPageWatchesFocus()) window.leafSetWindowActive(true);
 });
 
 const LEAF_FLOAT_MARGIN = 8;
@@ -10774,6 +10775,9 @@ const PAGE_EXPORT_WRAPPER_CLOSE = '</div></main></div>';
 
 const BOOK_EXPORT_KEPT_LINK = /^(https?:|mailto:|#)/i;
 
+const BOOK_GLOSSARY_ANCHOR = '#leaf-glossary-';
+const BOOK_EPUB_NAMESPACE = 'http://www.idpf.org/2007/ops';
+
 function pageExportMarkup(asBook) {
   
   if (readingIsContainedPage()) return asBook ? containedPageBookMarkup() : containedPageExportMarkup();
@@ -10792,11 +10796,33 @@ function pageExportMarkup(asBook) {
 
 function bookExportForm(copy) {
   copy.querySelectorAll('a').forEach((link) => {
+    bookGlossaryLink(link);
     const href = link.getAttribute('href');
     if (href !== null && !BOOK_EXPORT_KEPT_LINK.test(href.trim())) link.removeAttribute('href');
   });
   ['img', 'source'].forEach((tag) => copy.querySelectorAll(tag).forEach((picture) => picture.removeAttribute('srcset')));
+  markBookNotes(copy);
   return new XMLSerializer().serializeToString(copy);
+}
+
+function bookGlossaryLink(link) {
+  const href = link.getAttribute('href');
+  if (href === null || !/^glossary:/i.test(href.trim())) return;
+  link.setAttribute('href', BOOK_GLOSSARY_ANCHOR + href.trim().slice('glossary:'.length));
+  link.setAttribute('role', 'doc-glossref');
+  link.setAttributeNS(BOOK_EPUB_NAMESPACE, 'epub:type', 'glossref');
+}
+
+function markBookNotes(copy) {
+  copy.querySelectorAll('sup.footnote-reference a').forEach((link) => {
+    link.setAttribute('epub:type', 'noteref');
+    link.setAttribute('role', 'doc-noteref');
+  });
+  copy.querySelectorAll('.footnote-definition').forEach((note) => {
+    note.setAttribute('epub:type', 'footnote');
+    note.setAttribute('role', 'doc-footnote');
+  });
+  copy.querySelectorAll('.footnote-backref').forEach((back) => back.setAttribute('role', 'doc-backlink'));
 }
 
 function containedPageBookMarkup() {
@@ -18173,7 +18199,7 @@ const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVer
 const SMART_LINK_GROUPS = [
   ['links', 'Links here'],
   ['mentions', 'Names it without linking it'],
-  ['related', 'About the same thing'],
+  ['related', 'Related notes'],
 ];
 
 let smartLinksAsked = null;

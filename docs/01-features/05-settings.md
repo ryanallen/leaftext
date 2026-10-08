@@ -192,7 +192,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 ### By meaning
 
-- Off by default, toggled with **By meaning** at the right of **About the same thing** in the [library pane](03-library.md#what-links-here)
+- Off by default, toggled with **By meaning** at the right of **Related notes** in the [library pane](03-library.md#what-links-here)
 - On, that group is scored by what the notes say rather than the words they share; turning it on downloads a small model into `{data_dir}/models/potion-base-8M`, and after that no note's text leaves this machine
 - Off, the model is deleted, a download still running is stopped first, and uninstalling Leaftext deletes it too
 - Saved as `related_by_meaning`

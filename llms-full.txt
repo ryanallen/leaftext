@@ -160,17 +160,17 @@
 ## Glossary for Merlin
 - Page: https://leaftext.com/docs/08-examples/merlin/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/GLOSSARY.md
-- Summary: The terms below occur in Merlin, the English translation beside this page, and in the Old French text it was made from: Robert de Boron's Merlin, from the Huth manuscript (London, British Library, ...
+- Summary: Read in: UK English
 
 ## How it was made
 - Page: https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/merlin-how-it-was-made.md
-- Summary: What each linked phrase in the line under the book's title means: each section says what its file is for, then opens it.
+- Summary: Who made this book, and what each phrase of the how line in its note means: each section says what the phrase means, then opens its file where it has one.
 
 ## Merlin
 - Page: https://leaftext.com/docs/08-examples/merlin/merlin-old-french.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/merlin-old-french.md
-- Summary: Merlin, after Robert de Boron
+- Summary: Merlin, after Robert de Boron, text established by Ryan Allen
 
 ## Scans
 - Page: https://leaftext.com/docs/08-examples/merlin/merlin-scans.html
@@ -180,17 +180,17 @@
 ## Merlin
 - Page: https://leaftext.com/docs/08-examples/merlin/merlin.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/merlin.md
-- Summary: Merlin, after Robert de Boron
+- Summary: Merlin, after Robert de Boron, translated by Ryan Allen
 
 ## Glossary for Merlin
 - Page: https://leaftext.com/docs/08-examples/merlin/uk/GLOSSARY.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/uk/GLOSSARY.md
-- Summary: The terms below occur in Merlin, the English translation beside this page, and in the Old French text it was made from: Robert de Boron's Merlin, from the Huth manuscript (London, British Library, ...
+- Summary: Read in: US English
 
 ## Merlin
 - Page: https://leaftext.com/docs/08-examples/merlin/uk/merlin-uk.html
 - Markdown: https://leaftext.com/docs/08-examples/merlin/uk/merlin-uk.md
-- Summary: Merlin, after Robert de Boron
+- Summary: Merlin, after Robert de Boron, translated by Ryan Allen
 
 ## Glossary
 - Page: https://leaftext.com/docs/GLOSSARY.html

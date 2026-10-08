@@ -30,7 +30,7 @@ Sort a column once for ascending order, again for descending order and a third t
 
 ## Relations
 
-A Markdown link in a cell can point to a row in another table. For example, `[Le Guin](authors.md#le-guin)` points to the row whose first-column value is `le-guin` in `authors.md`. The link continues to open normally in GitHub, Obsidian and other Markdown readers; Leaftext adds the row lookup when it can read the target.
+A Markdown link in a cell can point to a row in another table. For example, `[Le Guin](authors.md#le-guin)` points to the row whose first-column value is `le-guin` in `authors.md`. The row can be in any table of that note, so a note keeping two lists can be pointed into either; where two of its tables hold the same first-column value, the relation lands on the first one, the same row the link opens on. The link continues to open normally in GitHub, Obsidian and other Markdown readers; Leaftext adds the row lookup when it can read the target.
 
 A relation is labeled by the target row's name. Where the first column is written as words — `| Name | Born |` with `Le Guin | 1929` — the name is that first cell, so the link above reads Le Guin. Where the first column is written as its own address — `| id | Name |` with `le-guin | Ursula K. Le Guin` — the label is the next filled cell, Ursula K. Le Guin. The same name is shown when you point at the relation, offered in a relation cell's picker, and listed in a column that shows which rows point back.
 

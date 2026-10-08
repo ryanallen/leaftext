@@ -20,10 +20,13 @@ async function fetched(path) {
   return {
     ok: true,
     status: response.status,
+    headers: response.headers,
     arrayBuffer: async () => {
       const bytes = await response.bytes();
       return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     },
+    // Made only when a picture is saved out of the page, from the bytes already read.
+    blob: async () => new Blob([await response.bytes()], { type: response.headers.get('content-type') || '' }),
     text: () => response.text(),
     json: () => response.json(),
   };

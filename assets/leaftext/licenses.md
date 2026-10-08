@@ -2,7 +2,7 @@
 
 # Licenses
 
-Leaftext 4.8.4 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
+Leaftext 4.8.5 carries the drawings, libraries and Rust packages below, each under its author's own license, reproduced here word for word.
 
 ## Drawings
 

@@ -10149,8 +10149,10 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 
 .document-body a[href^="glossary:" i],
 .document-body a[href*="GLOSSARY.md#" i],
+.document-body a[data-leaf-glossary-ref="1"],
 :root[data-speed-reader="true"] .document-body a[href^="glossary:" i],
-:root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i] {
+:root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i],
+:root[data-speed-reader="true"] .document-body a[data-leaf-glossary-ref="1"] {
   color: inherit;
   text-decoration: underline dotted;
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
@@ -10158,7 +10160,8 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 @media (hover: hover) {
   .document-body a[href^="glossary:" i]:hover,
-  .document-body a[href*="GLOSSARY.md#" i]:hover {
+  .document-body a[href*="GLOSSARY.md#" i]:hover,
+  .document-body a[data-leaf-glossary-ref="1"]:hover {
     color: inherit;
     text-decoration: underline dotted;
     text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);

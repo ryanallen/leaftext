@@ -7113,7 +7113,7 @@ body.library-resizing button {
   margin-top: var(--lt-space-4);
   padding: var(--lt-space-4) var(--lt-space-6);
 }
-/* **By meaning**, at the right of the About the same thing heading: pressed while the model scores the rows. */
+/* **By meaning**, at the right of the Related notes heading: pressed while the model scores the rows. */
 .library-links-meaning {
   flex: none;
   margin-left: var(--lt-space-4);
@@ -10180,11 +10180,13 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 ::highlight(leaf-read-aloud-word) {
   background-color: color-mix(in srgb, var(--lt-primary) 45%, transparent);
 }
-/* Glossary term links: a quiet dotted underline in the surrounding text's color (not the accent), so a term stays discoverable without standing out. Matches both `glossary:slug` and a `…/GLOSSARY.md#slug` link; placed last so it wins ties against the generic link/hover rules above. */
+/* Glossary term links: a quiet dotted underline in the surrounding text's color (not the accent), so a term stays discoverable without standing out. Matches `glossary:slug`, a `…/GLOSSARY.md#slug` link and a glossary name in a book; placed last so it wins ties against the generic link/hover rules above. */
 .document-body a[href^="glossary:" i],
 .document-body a[href*="GLOSSARY.md#" i],
+.document-body a[data-leaf-glossary-ref="1"],
 :root[data-speed-reader="true"] .document-body a[href^="glossary:" i],
-:root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i] {
+:root[data-speed-reader="true"] .document-body a[href*="GLOSSARY.md#" i],
+:root[data-speed-reader="true"] .document-body a[data-leaf-glossary-ref="1"] {
   color: inherit;
   text-decoration: underline dotted;
   text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
@@ -10192,7 +10194,8 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 }
 @media (hover: hover) {
   .document-body a[href^="glossary:" i]:hover,
-  .document-body a[href*="GLOSSARY.md#" i]:hover {
+  .document-body a[href*="GLOSSARY.md#" i]:hover,
+  .document-body a[data-leaf-glossary-ref="1"]:hover {
     color: inherit;
     text-decoration: underline dotted;
     text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
@@ -19020,7 +19023,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Note links</h3><code class="built">.library-links</code><span class="built">library-links.js, under the open note's headings in the pane: what links here, what names it without linking it — each such row carrying **Link**, the small button that writes the link — and what else is about the same thing — its heading carrying **By meaning** at its right where the desktop handed the page the setting, pressed while a model on this machine scores the rows — each group headed the way **On this page** is; two rows of one file name each carry their folder beside the name</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:400px"><div class="library-outline library-links"><div class="library-outline-note"><span class="library-outline-note-label">Links here</span><span class="library-outline-count">3 notes</span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Weir crest</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">See [[Station handbook]] for the boundary rule.</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">Vault</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">docs</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><div class="library-outline-note"><span class="library-outline-note-label">Names it without linking it</span><span class="library-outline-count">1 note</span></div><div class="library-links-row"><button type="button" class="library-hit library-links-hit"><span class="library-hit-title"><span class="file-name-stem">Frost calendar</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">The station handbook sets the first frost date.</span></button><button type="button" class="theme-mode-btn library-links-link">Link</button></div><div class="library-outline-note"><span class="library-outline-note-label">About the same thing</span><span class="library-outline-count">1 note<button type="button" class="theme-mode-btn library-links-meaning is-active" aria-pressed="true">By meaning</button></span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Winter heating</span><span class="file-type-badge">MD</span></span></button></div></div></div>
+<div class="stage"><div class="library-pane" style="position:static;width:240px;height:400px"><div class="library-outline library-links"><div class="library-outline-note"><span class="library-outline-note-label">Links here</span><span class="library-outline-count">3 notes</span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Weir crest</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">See [[Station handbook]] for the boundary rule.</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">Vault</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">docs</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><div class="library-outline-note"><span class="library-outline-note-label">Names it without linking it</span><span class="library-outline-count">1 note</span></div><div class="library-links-row"><button type="button" class="library-hit library-links-hit"><span class="library-hit-title"><span class="file-name-stem">Frost calendar</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">The station handbook sets the first frost date.</span></button><button type="button" class="theme-mode-btn library-links-link">Link</button></div><div class="library-outline-note"><span class="library-outline-note-label">Related notes</span><span class="library-outline-count">1 note<button type="button" class="theme-mode-btn library-links-meaning is-active" aria-pressed="true">By meaning</button></span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Winter heating</span><span class="file-type-badge">MD</span></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Link list at the caret</h3><code class="built">.reading-link-popup</code><span class="built">reading-link-popup.js, under the [[ typed in a paragraph being edited: this note's neighbors under **Near this note**, then every note under **Every note**, each a name with its folder at the right and the picked one washed</span></header>

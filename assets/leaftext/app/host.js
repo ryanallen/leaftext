@@ -1277,8 +1277,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       let url;
       try { url = new URL(address, document.baseURI); } catch (_) { continue; }
       if (fetched.has(address) || (url.protocol !== 'blob:' && url.origin !== location.origin)) continue;
-      const response = await fetchWith(url.href);
-      if (!response.ok) continue;
+      // A published site's fetch throws on a picture it does not have, which is skipped like one answered not ok.
+      const response = await fetchWith(url.href).catch(() => null);
+      if (!response?.ok) continue;
       const chunks = [];
       const reader = response.body?.getReader ? response.body.getReader() : null;
       while (true) {
@@ -1306,7 +1307,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     const pictures = Object.fromEntries([...fetched].map(([address, got]) => [address, base64Of(got.chunks)]));
     const math = markup.includes('class="katex') ? await mathFiles() : null;
     const name = String(command.path || 'document.epub').split(/[\\/]/).pop();
-    const answer = core.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), pictures, math });
+    // The glossary the module holds is drawn under its own path, so an entry's pictures and links resolve where the glossary sits.
+    const answer = core.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), pictures, math, glossaryPath: glossary || '' });
     if (!answer || answer.type === 'error') throw new Error(answer ? new TextDecoder().decode(answer.bytes) : 'That book could not be exported.');
     window.__leafBrowserDownload(name, answer.type, answer.bytes);
   };
@@ -1632,8 +1634,8 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
       run(`window.leafPicturePathPicked(${Number(command.token)}, ${JSON.stringify(name + '.' + (command.format || 'png'))});`);
     },
     exportPicture: (command) => {
-      fetchWith(command.source).then(async (response) => {
-        if (!response.ok) throw new Error('That picture could not be downloaded.');
+      fetchWith(command.source).catch(() => null).then(async (response) => {
+        if (!response?.ok) throw new Error('That picture could not be downloaded.');
         if (command.format === 'md') {
           const bytes = new Uint8Array(await response.arrayBuffer());
           let binary = '';
