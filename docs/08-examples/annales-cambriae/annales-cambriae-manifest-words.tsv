@@ -1,0 +1,180 @@
+latin	normalized	kind	english	also	first_page	reason	standard	exceptions
+an'	an	word	the year	year, where a year is named without "the"	152	each an' marks a year; the English opens each annal on its year A.D., as the ticket's design says, and leaves a bare an' out	Lewis and Short; Du Cange; Merriam-Webster	152: each an' is a year, which the English gives in figures at the head of its annal, and a year with no entry is left out; 153: the same, each year in figures at the head of its annal; 154: the same, each year in figures at the head of its annal; 155: the same, each year in figures at the head of its annal; 156: the same, each year in figures at the head of its annal; 157: the same, each year in figures at the head of its annal; 158: the same, each year in figures at the head of its annal; 159: the same, each year in figures at the head of its annal; 160: the same, each year in figures at the head of its annal; 161: the same, each year in figures at the head of its annal; 162: the same, each year in figures at the head of its annal; 163: the same, each year in figures at the head of its annal; 164: the same, each year in figures at the head of its annal; 165: the same, each year in figures at the head of its annal; 166: the same, each year in figures at the head of its annal; 167: the same, each year in figures at the head of its annal; 168: the same, each year in figures at the head of its annal, and the an' Phillimore cancels inside clitauc at 939 left out; 169: the same, each year in figures at the head of its annal, and the years to 977 with no entry left out
+arthur	arthur	name	Arthur		154	the form every English reader knows	Phillimore's notes; Merriam-Webster
+badonis	badonis	name	Badon		154	the battle's name, as English writing gives it	Phillimore's notes; Merriam-Webster
+bellum	bellum	word	battle	fight, where a second battle comes close after the first	154	the plain word	Lewis and Short; Du Cange; Merriam-Webster
+inbrittannia	brittannia	name	Britain		154	the island, as English names it	Phillimore's notes; Merriam-Webster
+cam lann	cam lann	name	Camlann		154	the battle's name, as English writing gives it, joined into one word	Phillimore's notes; Merriam-Webster
+cat	cat	word	battle		157	Old Welsh for a battle, written into the Latin	Silvan Evans, A Dictionary of the Welsh Language; Merriam-Webster	160: the three battles of 722, bellum, gueith and cat, are named in one "three battles", which the Latin's bellum takes
+columcille	columcille	name	Columba		154	the name English readers know, the title of his Wikipedia article; the Irish form is a row of old-words.tsv	Phillimore's notes; Merriam-Webster
+dexterales	dexterales	word	southern		160	Old Welsh deheu, "right hand", is also the south, which the Latin puts as "right-hand"	Lewis and Short; Du Cange; Merriam-Webster
+dormitatio	dormitatio	word	dies	does, where "and so does" takes a second death in one annal	154	a saint's death, told as a sleep; the English says the death, and the endnote at 544 the Latin's figure, by /translate's "A death is said as a death"	Lewis and Short; Du Cange; Merriam-Webster	
+gentiles	gentiles	word	heathens		162	the Norse raiders, as the annals' Latin calls them	Lewis and Short; Du Cange; Merriam-Webster
+gueith	gueith	word	battle	fight, where a second battle comes close after the first	154	Old Welsh for a battle, written into the Latin	Silvan Evans, A Dictionary of the Welsh Language; Merriam-Webster	160: the three battles of 722, bellum, gueith and cat, are named in one "three battles", which the Latin's bellum takes
+hibernia	hibernia	name	Ireland		154	the island, as English names it	Phillimore's notes; Merriam-Webster
+iugulatur	iugulatur	word	is killed	are killed, where two are killed together	157	a killing, as the annals use the word, not only a cut throat	Lewis and Short; Du Cange; Merriam-Webster
+medraut	medraut	name	Mordred		154	the name English readers know, the title of his Wikipedia article; the Welsh form is a row of old-words.tsv	Phillimore's notes; Merriam-Webster
+mortalitas	mortalitas	word	plague	sickness, where a second plague comes close after the first	154	a great dying, as the annals use the word	Lewis and Short; Du Cange; Merriam-Webster
+pausat	pausat	word	dies		155	a churchman's or a king's death, told as a pause; the English says the death, and the endnote at 501 the Latin's figure, by /translate's "A death is said as a death"	Lewis and Short; Du Cange; Merriam-Webster	
+naſcitur	nascitur	word	is born		153	the plain English for a birth	Lewis and Short; Merriam-Webster
+ſanctuſ, ſancta, ſanctæ	sanctus	word	Saint		153	the title English still sets before a saint's name	Lewis and Short; Du Cange; Merriam-Webster
+epiſcopuſ, epiſcopi, epiſcopo	episcopus	word	bishop	churchman, where a second bishop comes close after the first	153	the plain word	Lewis and Short; Du Cange; Merriam-Webster
+papa	papa	word	Pope		153	the title English gives the bishop of Rome	Lewis and Short; Du Cange; Merriam-Webster
+migratur	migratur	word	dies		153	a saint's death, told as a travel to the Lord; the English says the death, and the endnote at 457 the Latin's figure, by /translate's "A death is said as a death"	Lewis and Short; Du Cange; Merriam-Webster	
+quieſ	quies	word	dies		153	a churchman's death, told as a rest; the English says the death, and the endnote at 468 the Latin's word, by /translate's "A death is said as a death"	Lewis and Short; Du Cange; Merriam-Webster	
+crucem	crux	word	cross		154	the cross Christ died on, the plain word	Lewis and Short; Merriam-Webster
+corruerunt	corruerunt	word	fall		154	a death in battle, said as English says it of soldiers	Lewis and Short; Merriam-Webster
+uictoꝛeſ	uictores	word	win		154	"the Britons were the victors", said with a verb, as English says it	Lewis and Short; Merriam-Webster
+brittoneſ	brittones	word	Britons		154	the people, never "the British", as the Latin skill says	Phillimore's notes; Merriam-Webster
+rex	rex	word	king	ruler, where a second king comes close after the first	155	the plain word	Lewis and Short; Merriam-Webster
+moritur	moritur	word	dies	does, where "and so does" takes a second death in one annal; die, where the annal names two who die	155	the plain word for a death the annals tell without a saint's rest or sleep	Lewis and Short; Merriam-Webster
+obíít	obiit	word	dies	does, where "and so does" takes a second death in one annal	155	the plain word, as for moritur	Lewis and Short; Merriam-Webster	
+exíít	exiit	word	goes		155	a journey out, said plainly	Lewis and Short; Merriam-Webster
+filiuſ, filíí	filius	word	son	father, said of the father, "whose father was Beli", where a second son of an entry would come too close to the first	155	the plain word; Phillimore reads filíí as filius at 613	Lewis and Short; Phillimore's notes; Merriam-Webster
+map	map	word	son		156	Old Welsh and Irish for a son, written into the Latin	Silvan Evans, A Dictionary of the Welsh Language; Merriam-Webster
+conuerſio	conuersio	word	turns		156	a king turning to God, said with a verb, as English says it	Lewis and Short; Du Cange; Merriam-Webster
+conuertit	conuertit	word	bring		156	a people converted, said as brought to Christ, the plain turn	Lewis and Short; Du Cange; Merriam-Webster
+angloſ	anglos	word	the English		156	the English people, kept apart from the Saxons as the Latin keeps them	Phillimore's notes; Merriam-Webster
+Sinoduſ	sinodus	word	synod		156	a meeting of the Church's bishops, as churches still call it today	Lewis and Short; Du Cange; Merriam-Webster
+obituſ	obitus	word	death		156	the plain word	Lewis and Short; Merriam-Webster
+diſpoſitio, Diſpoſitio	dispositio	word	is buried	buried, after another verb	156	Phillimore reads depositio, a saint's burial, which the English says as a burial	Phillimore's notes; Du Cange; Merriam-Webster	
+cecidit	cecidit	word	falls	is cut down, where a second death follows in the same entry	156	a death in battle, as for corruerunt	Lewis and Short; Merriam-Webster	
+Brigida, brigidæ	brigida	name	Brigid		153	the name English readers know, the title of her Wikipedia article	Phillimore's notes; Merriam-Webster
+Patriciuſ	patricius	name	Patrick		153	the name English readers know	Phillimore's notes; Merriam-Webster
+benigni	benignus	name	Benignus		153	the bishop's Latin name, which English keeps	Phillimore's notes; Merriam-Webster
+leone	leo	name	Leo		153	the pope's name, as English gives it	Phillimore's notes; Merriam-Webster
+ebur	ebur	name	Ebur		153	the bishop's name as the annals give it; no standard reference names him otherwise	Phillimore's notes; Merriam-Webster
+ciarani	ciaranus	name	Ciarán		154	the Irish name, the title of the saints' Wikipedia articles	Phillimore's notes; Merriam-Webster
+mailcun	mailcun	name	Maelgwn		155	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+genedotæ	genedotae	name	Gwynedd		155	the kingdom's Welsh name; Phillimore reads guenedotæ	Phillimore's notes; Merriam-Webster
+Gabran, gabran	gabran	name	Gabrán		155	the Irish name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+dungart	dungart	name	Domangart		155	Gabrán's father, by the name his Wikipedia article gives him	Phillimore's notes; Merriam-Webster
+armterid	armterid	name	Arfderydd		155	the Welsh name of the battle, the title of its Wikipedia article	Phillimore's notes; Merriam-Webster
+Brendan bẏror	brendan byror	name	Brendan of Birr		155	the saint and his monastery, as his Wikipedia article names him	Phillimore's notes; Merriam-Webster
+Guurci	guurci	name	Gwrgi		155	the Welsh name, as the Welsh genealogies spell it now	Phillimore's notes; Merriam-Webster
+peretur	peretur	name	Peredur		155	the Welsh name, as the Welsh genealogies spell it now	Phillimore's notes; Merriam-Webster
+danieliſ	daniel	name	Deiniol		156	the Welsh saint, the title of his Wikipedia article, not the prophet Daniel	Phillimore's notes; Merriam-Webster
+bancorum	bancorum	name	Bangor		156	the see, as English names it	Phillimore's notes; Merriam-Webster
+conſtantini	constantinus	name	Constantine		156	the name English gives every king so called	Phillimore's notes; Merriam-Webster
+Dunaut	dunaut	name	Dunod		156	the Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+Aguſtinuſ	augustinus	name	Augustine		156	the name English gives the first archbishop of Canterbury	Phillimore's notes; Merriam-Webster
+Gregoriuſ	gregorius	name	Gregory		156	the pope's name, as English gives it	Phillimore's notes; Merriam-Webster
+Dauid	dauid	name	David		156	the saint's name, as English gives it	Phillimore's notes; Merriam-Webster
+urbiſ legion	urbs legion	name	City of the Legion		156	the history's name for the same Roman city, which no reference settles between Chester and Caerleon	Phillimore's notes; Merriam-Webster
+Aidān	aidan	name	Áedán		156	the Irish name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+Conthigirni	conthigirnus	name	Kentigern		156	the saint's name, as English gives it	Phillimore's notes; Merriam-Webster
+dibric	dibric	name	Dubricius		156	the saint's Latin name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+cair legion	cair legion	name	Chester		156	the Welsh name of Chester, the City of the Legions on the Dee	Phillimore's notes; Merriam-Webster
+ſelim	selim	name	Selyf		156	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+cinan	cinan	name	Cynan		156	the Welsh name, as Selyf's Wikipedia article gives his father	Phillimore's notes; Merriam-Webster
+iacob	iacob	name	Iago		156	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+Columcillæ	columcillae	name	Columba		155	the same saint as columcille, in another of Harley MS 3859's spellings	Phillimore's notes; Merriam-Webster
+uenit, uenerunt	uenire	word	comes	come, where several come	157	the plain verb, in the present the annals are told in	Lewis and Short; Merriam-Webster	166: Anarawd's coming at 894 begins on page 166 and its English opens page 167's paragraph
+regnare, regnauit	regnare	word	reign	rules, for a bishop over his see, where "reigns" would make him a king	157	the plain word for a king's rule	Lewis and Short; Du Cange; Merriam-Webster
+uictor, uictoꝛ	uictor	word	wins		157	"was the victor", said with a verb, as uictores is "win"	Lewis and Short; Merriam-Webster
+inſula, ininſula, inſvla	insula	word	island		157	the plain word	Lewis and Short; Merriam-Webster
+Strageſ	strages	word	slaughter	killing, where a second slaughter comes close after the first	158	a great killing in battle, the plain word	Lewis and Short; Merriam-Webster
+Combuſtio, comburit, incenſum	comburere	word	burns	burned; burn	158	a burning, said with a verb	Lewis and Short; Merriam-Webster
+Stella, ſtellæ	stella	word	star		158	the plain word	Lewis and Short; Merriam-Webster
+dormit	dormit	word	dies		161	a churchman's death, told as a sleep, as for dormitatio	Lewis and Short; Du Cange; Merriam-Webster	
+occiſuſ, occiditur, occiduntur	occidere	word	is killed	kill, where the killers are named first; are killed, where two are killed together	161	the plain word for a killing	Lewis and Short; Merriam-Webster
+uaſtata, uaſtauit, Vaſtatio, Vaſtati, uaſtauerunt	uastare	word	laid waste	lays … waste; lay waste	162	the plain phrase for a land ravaged by an army	Lewis and Short; Merriam-Webster
+moriuntur	moriuntur	word	die	do, where "and so do" takes a second pair after a first death	163	the plain word, as for moritur, where two die	Lewis and Short; Merriam-Webster	
+arx, Arx, Arcem	arx	word	fortress		164	a fort on a height, the plain word	Lewis and Short; Merriam-Webster
+agentilibuſ	gentilibus	word	heathens	raiders, where a second heathens comes close after the first	165	the Norse raiders, as for gentiles	Lewis and Short; Du Cange; Merriam-Webster
+ueneno	ueneno	word	poison		168	the plain word	Lewis and Short; Merriam-Webster
+fracta	fracta	word	is breached	is sacked, for a town or church looted rather than a wall broken	166	a fortress broken into, the plain word	Lewis and Short; Merriam-Webster
+Et guin, Etguin, et guin	etguin	name	Edwin		157	Phillimore reads Etguin, Edwin, the name his Wikipedia article gives him	Phillimore's notes; Merriam-Webster
+catguol laun, Catguollaun, catguollaan, catguol-aum	catguollaun	name	Cadwallon		157	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+cantſcaul	cantscaul	name	Heavenfield		157	the English name of the battle, whose Wikipedia article gives this entry's Bellum Cantscaul	Phillimore's notes; Merriam-Webster
+meicen	meicen	name	Meicen		157	the title of its Wikipedia article, which gives Meigen as another spelling; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+ſabrine	sabrina	name	Severn		158	the river, as English names it	Phillimore's notes; Merriam-Webster
+cocboẏ	cocboy	name	Maserfield		158	the English name of the battle, the title of its Wikipedia article	Phillimore's notes; Merriam-Webster
+nordorum	nordorum	name	Northumbrians		158	the Latin's "northerners", the people of Northumbria	Lewis and Short; Merriam-Webster
+eoba	eoba	name	Eowa		158	the king's name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+merciorum	merciorum	name	Mercians		158	the people of Mercia, as English names them	Phillimore's notes; Merriam-Webster	162: Offa's death at 796 begins on page 162 and its English opens page 163's paragraph
+demeticæ	demeticae	name	Dyfed		158	the kingdom's Welsh name	Phillimore's notes; Merriam-Webster
+gaíí campi	gaii campi	name	Winwaed		158	the English name of the battle, the title of its Wikipedia article	Phillimore's notes; Merriam-Webster
+Pantha	pantha	name	Penda		158	the king's name, as English writing gives it	Phillimore's notes; Merriam-Webster
+Oſguid	osguid	name	Oswiu		158	the king's name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+broc mail	broc mail	name	Brochfael		158	Brochfael as Wikipedia spells the name, in Brochfael ab Elisedd, which gives Brochmail as its old spelling; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+catgualart	catgualart	name	Cadwaladr		159	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+Alch frit	alch frit	name	Aldfrith		160	the king's name, the title of his Wikipedia article; Phillimore reads Alchfrit	Phillimore's notes; Merriam-Webster
+pipínuſ	pipinus	name	Pepin		160	the name English gives every Frankish Pepin	Phillimore's notes; Merriam-Webster
+francorum	francorum	name	Franks		160	the people, as English names them	Lewis and Short; Merriam-Webster
+cornuenſeſ	cornuenses	name	the Cornish		160	the people of Cornwall, as English names them	Phillimore's notes; Merriam-Webster
+mortiſ carno	mortis carno	name	Mount Carno		160	Phillimore reads montis, "of the mountain"	Phillimore's notes; Merriam-Webster
+Beda	beda	name	Bede		161	the name English gives the priest of Jarrow	Phillimore's notes; Merriam-Webster
+pictorum, pictoſ	picti	name	Picts		161	the people, as English names them	Phillimore's notes; Merriam-Webster
+moce tauc	moce tauc	name	Mocetauc		161	Phillimore reads the two words as one name	Phillimore's notes; Merriam-Webster
+talargan	talargan	name	Talorgan		161	the king's name, as his Wikipedia article gives it	Phillimore's notes; Merriam-Webster
+teudubr	teudubr	name	Teudebur		161	the title of his Wikipedia article, Teudebur of Alt Clut; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Rotri, Roſtri	rotri	name	Rhodri		161	the Welsh name, as Welsh spells it now; Phillimore reads Rostri as Rotri	Phillimore's notes; Merriam-Webster
+Eꝺpalꝺ	edpald	name	Aethelbald		161	the king's name, as English writing gives it, with ae for the letter æ	Phillimore's notes; Merriam-Webster
+hirford	hirford	name	Hereford		161	the town, as English names it	Phillimore's notes; Merriam-Webster
+dunnagual	dunnagual	name	Dumnagual		161	the title of his Wikipedia article, Dumnagual III of Alt Clut, which gives Dyfnwal ap Tewdwr as his Welsh name; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+elbodugo, Elbodg	elbodugus	name	Elfodd		162	the bishop's name, the title of his Wikipedia article; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+morgetiud, margetiud	morgetiud	name	Maredudd		162	the king's Welsh name, as Welsh spells it now	Phillimore's notes; Merriam-Webster	162: Maredudd's death at 796 begins on page 162 and its English opens page 163's paragraph
+rudglann	rudglann	name	Rhuddlan		163	the town's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+Caratauc	caratauc	name	Caradog		163	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+guenedote	guenedote	name	Gwynedd		163	the kingdom's Welsh name, as for genedotæ	Phillimore's notes; Merriam-Webster
+Arthgen	arthgen	name	Arthen		163	the king's Welsh name, as Welsh spells it now	Phillimore's notes; Merriam-Webster
+cereticiaun, cetericiaun	cereticiaun	name	Ceredigion		163	the kingdom's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+catell pouiſ	catell pouis	name	Cadell of Powys		163	the Welsh name and his kingdom, as Welsh spells them now	Phillimore's notes; Merriam-Webster
+pouiſ, poẏuiſ	pouis	name	Powys		164	the kingdom's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+miniu, inminiu, miniú	miniu	name	St Davids		163	the see, the title of its Wikipedia article; Menevia, its Latin name, is the title of a modern Catholic diocese; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+De cantorum, detantorum	decantorum	name	Deganwy		163	the fort's Welsh name, the title of its Wikipedia article; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+demonia, Mon, inmón, món	mon	name	Anglesey		164	the island, as English names it; demonia is de Monia, "from Mon"	Phillimore's notes; Merriam-Webster
+lannmaéſ	lannmaes	name	Llanfaes		164	the place's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+mermin	mermin	name	Merfyn		165	the king's Welsh name, as Welsh spells it now	Phillimore's notes; Merriam-Webster
+broceniauc, bricheniauc	broceniauc	name	Brycheiniog		165	the kingdom's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+Cinnen rex pouiſ	cinnen rex pouis	name	Cyngen		165	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+opergelei	opergelei	name	Abergele		165	the town's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+ionathan	ionathan	name	Jonathan		165	the name, as English spells it	Lewis and Short; Merriam-Webster
+gliuiſigng	gliuisigng	name	Glywysing		165	the kingdom's Welsh name; Phillimore takes the Latin for a slip	Phillimore's notes; Merriam-Webster
+Ciannant in mer	ciannant in mer	name	Cian of Nevern		165	Phillimore reads Cian nant nimer, Cian of Nant Nyfer, now Nevern	Phillimore's notes; Merriam-Webster
+ebrauc	ebrauc	name	York		165	the city, as English names it	Phillimore's notes; Merriam-Webster
+Cat brin onnen	cat brin onnen	name	Brin Onnen		165	the Old Welsh place name kept, the battle said by battle's own word	Phillimore's notes; Merriam-Webster
+Cat gueithen	cat gueithen	name	Catgueithen		165	Phillimore reads the two words as one name	Phillimore's notes; Merriam-Webster
+Guoccaun	guoccaun	name	Gwgon		166	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+cerniu	cerniu	name	Cornwall		166	the land, as English names it	Phillimore's notes; Merriam-Webster
+diu ſul	diu sul	word	Sunday		166	Phillimore reads the Old Welsh as Sunday's battle	Phillimore's notes; Silvan Evans, A Dictionary of the Welsh Language; Merriam-Webster
+conguoẏ	conguoy	name	Conwy		166	the river's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+Aed map neill	aed map neill	name	Áed son of Niall		166	the Irish name, as his Wikipedia article gives it	Phillimore's notes; Merriam-Webster
+Cerb all	cerb all	name	Cerball		166	Phillimore reads the two words as one name	Phillimore's notes; Merriam-Webster
+Himeẏd	himeyd	name	Hyfaidd		166	the Welsh name, as Phillimore gives it spelled now	Phillimore's notes; Merriam-Webster
+Anaraut	anaraut	name	Anarawd		166	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster	166: Anarawd's coming at 894 begins on page 166 and its English opens page 167's paragraph
+angliſ	anglis	word	the English		166	the English people, as for angloſ	Phillimore's notes; Merriam-Webster	166: the English coming at 894 begins on page 166 and its English opens page 167's paragraph
+ſtrat tui	strat tui	name	Ystrad Tywi		167	the land's Welsh name; Phillimore reads tiui	Phillimore's notes; Merriam-Webster
+Hord mani	hord mani	word	the Norsemen		167	Phillimore reads Nordmani; Norsemen, the title of the Wikipedia article Northmen redirects to; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+loẏcr	loycr	name	England		167	the Welsh name for England, which Wikipedia's Lloegr redirects to; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+guinnliguiauc	guinnliguiauc	name	Gwynllwg		167	the land's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+Albrit	albrit	name	Alfred		167	the king's name, as English gives it	Phillimore's notes; Merriam-Webster
+giuoẏſ	giuoys	name	Wessex		167	Phillimore reads king of the Gewissi, the West Saxons, whose kingdom English calls Wessex	Phillimore's notes; Merriam-Webster
+Igmunt	igmunt	name	Ingimundr		167	the Norse leader's name, the title of his Wikipedia article, Ingimundr (tenth century), which gives Igmunt among his names; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+maeſ oſmeliavn	maes osmeliaun	name	Maes Osmeliaun		167	the Welsh place name, in plain letters	Phillimore's notes; Merriam-Webster
+Loumarch	loumarch	name	Llywarch		167	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+hiemid	hiemid	name	Hyfaidd		167	Phillimore's spelling now of the same name, himeid	Phillimore's notes; Merriam-Webster
+arguiſtli	arguistli	name	Arwystli		167	the land's Welsh name, as it's spelled now	Phillimore's notes; Merriam-Webster
+Catell rex	catell rex	name	King Cadell		167	the king's Welsh name, as Welsh spells it now	Phillimore's notes; Merriam-Webster
+Ælfled	aelfled	name	Aethelflaed		168	the Lady of the Mercians, by the name her Wikipedia article gives her, with ae for the letter æ	Phillimore's notes; Merriam-Webster
+brune	brune	name	Brunanburh		168	the battle's name, the title of its Wikipedia article	Phillimore's notes; Merriam-Webster
+Ædelſtan	aedelstan	name	Aethelstan		168	the king's name, the title of his Wikipedia article, with ae for the letter æ	Phillimore's notes; Merriam-Webster
+Abloẏc	abloyc	name	Abloyc		168	the name in plain letters	Phillimore's notes; Merriam-Webster
+Catel filiuſ artmail	catel filius artmail	name	Cadell		168	the Welsh name, as Welsh spells it now	Phillimore's notes; Merriam-Webster
+iudgual	iudgual	name	Idwal		168	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
+Cenioẏd	cenioyd	name	Cenioyd		162	the name in plain letters	Phillimore's notes; Merriam-Webster
+Cemoẏth	cemoyth	name	Cemoyth		165	the name in plain letters	Phillimore's notes; Merriam-Webster
+Eadmund	eadmund	name	Edmund		169	the king's name, as English gives it	Phillimore's notes; Merriam-Webster
+cat guocaun	cat guocaun	name	Cadwgan		169	the king's Welsh name, the title of his Wikipedia article, Cadwgan ab Owain, who dies in 951; by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Eugem	eugem	name	Owain		163	the king of Dyfed's name, as his Wikipedia article, Owain ap Maredudd (Dyfed), spells it; by /glossary's rule on names	Wikipedia, "Owain ap Maredudd (Dyfed)"; Merriam-Webster
+guriat	guriat	name	Gwriad		166	the prince's name, as his Wikipedia article, Gwriad ap Merfyn, spells it; by /glossary's rule on names	Wikipedia, "Gwriad ap Merfyn"; Merriam-Webster
+Oſbrit	osbrit	name	Osberht		160	the king's name, as his Wikipedia article, Osberht of Northumbria, spells it; by /glossary's rule on names	Wikipedia, "Osberht of Northumbria"; Merriam-Webster
+Cudberth	cudberth	name	Cuthbert		162	the English name as Wikipedia spells every bearer of it; no article names this abbot; by /glossary's rule on names	Wikipedia, "Cuthbert"; Merriam-Webster
+Himeid	himeid	name	Hyfaidd		168	the Welsh name as Wikipedia spells it, in Hyfaidd ap Bleddri; by /glossary's rule on names	Wikipedia, "Hyfaidd ap Bleddri"; Merriam-Webster
+Clitauc	clitauc	name	Clydog		168	the Welsh name as Wikipedia spells it, in Seisyll ap Clydog; by /glossary's rule on names	Wikipedia, "Seisyll ap Clydog"; Merriam-Webster
+iudriſ	iudris	name	Idris		158	the Welsh name as Wikipedia spells it; by /glossary's rule on names	Wikipedia, "Idris"; Merriam-Webster
+grip hiud	grip hiud	name	Gruffudd		163	the Welsh name as Wikipedia spells it; by /glossary's rule on names	Wikipedia, "Gruffudd"; Merriam-Webster	163: the year 814 begins on page 163 and its English opens page 164's paragraph
+ſaturbiu	saturbiu	name	Sadyrnfyw		164	the bishop's name, as his Wikipedia article, Sadyrnfyw, spells it; by /glossary's rule on names	Wikipedia, "Sadyrnfyw"; Merriam-Webster
+iudhail, iuꝺhail	iudhail	name	Ithel		162	the Welsh name as Wikipedia spells it, in Ithel ap Morgan; by /glossary's rule on names	Wikipedia, "Ithel ap Morgan"; Merriam-Webster
+Dungarth	dungarth	name	Donyarth		166	the king's name, the title of his Wikipedia article, which gives Dungarth as another; by /glossary's rule on names	Wikipedia, "Donyarth"; Merriam-Webster

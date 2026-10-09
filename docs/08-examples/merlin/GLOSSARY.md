@@ -154,7 +154,7 @@ To grow lighter.
 
 ## aler
 
-To go; of a person, to pass away.
+To go; of a person, to die.
 
 ## Ambrosius Aurelianus
 

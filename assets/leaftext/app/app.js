@@ -10796,19 +10796,43 @@ function pageExportMarkup(asBook) {
     if (element.classList.contains('is-passed')) element.classList.remove('is-passed');
     if (element.getAttribute('class') === '') element.removeAttribute('class');
   }
-  if (!asBook) return PAGE_EXPORT_WRAPPER_OPEN + copy.outerHTML + PAGE_EXPORT_WRAPPER_CLOSE;
+  if (!asBook) {
+    siteLinkAddresses(copy);
+    return PAGE_EXPORT_WRAPPER_OPEN + copy.outerHTML + PAGE_EXPORT_WRAPPER_CLOSE;
+  }
   return PAGE_EXPORT_WRAPPER_OPEN + bookExportForm(copy) + PAGE_EXPORT_WRAPPER_CLOSE;
 }
 
-function bookExportForm(copy) {
-  copy.querySelectorAll('a').forEach((link) => {
-    bookGlossaryLink(link);
+function siteLinkAddresses(root, unanswered) {
+  const written = [];
+  const answer = typeof window.__leafLinkAddress === 'function' ? window.__leafLinkAddress : null;
+  root.querySelectorAll('a').forEach((link) => {
     const href = link.getAttribute('href');
     if (href === null || BOOK_EXPORT_KEPT_LINK.test(href.trim())) return;
-    
-    const online = typeof window.__leafLinkAddress === 'function' ? window.__leafLinkAddress(href.trim()) : null;
-    if (typeof online === 'string' && online) link.setAttribute('href', online);
-    else if (link.hasAttribute('id') || link.hasAttribute('name')) link.removeAttribute('href');
+    const online = answer ? answer(href.trim()) : null;
+    if (typeof online === 'string' && online) {
+      written.push([link, href]);
+      link.setAttribute('href', online);
+    } else if (unanswered) unanswered(link);
+  });
+  return written;
+}
+
+let printedLinkAddresses = [];
+window.addEventListener('beforeprint', () => {
+  if (typeof window.__leafLinkAddress !== 'function' || printedLinkAddresses.length) return;
+  const root = readingIsContainedPage() ? siteFrameDocument() : app && app.querySelector('.document-body');
+  if (root) printedLinkAddresses = siteLinkAddresses(root);
+});
+window.addEventListener('afterprint', () => {
+  for (const [link, href] of printedLinkAddresses) link.setAttribute('href', href);
+  printedLinkAddresses = [];
+});
+
+function bookExportForm(copy) {
+  copy.querySelectorAll('a').forEach(bookGlossaryLink);
+  siteLinkAddresses(copy, (link) => {
+    if (link.hasAttribute('id') || link.hasAttribute('name')) link.removeAttribute('href');
     else link.replaceWith(...link.childNodes);
   });
   ['img', 'source'].forEach((tag) => copy.querySelectorAll(tag).forEach((picture) => picture.removeAttribute('srcset')));
@@ -38259,6 +38283,7 @@ function containedPageExportDocument(page) {
 
 function containedPageExportMarkup() {
   const clone = containedPageExportDocument(siteFrameDocument());
+  if (clone && clone.querySelectorAll) siteLinkAddresses(clone);
   return clone ? `<!doctype html>${clone.outerHTML}` : '';
 }
 

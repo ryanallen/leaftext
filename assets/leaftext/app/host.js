@@ -1784,8 +1784,10 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // What this host can write the page out as. A browser has no save window and no disk, so PDF is the browser's own print and the other two rows are downloads the page builds here. Said out loud rather than left empty, because the page draws this list as a menu on a Mac and an unnamed row would offer a reader something nothing behind it can make.
   window.__leafPageExports = [{ id: 'pdf', label: 'PDF' }, { id: 'onefile', label: 'Web page, one file' }, { id: 'epub', label: 'EPUB book' }];
   window.__leafBrowserExportMenu = true;
-  // Where a link to another page of this site is read, as a whole address a saved book can carry, or null where the site lists nothing there.
+  // Where a link to another page of this site is read, as a whole address a saved book can carry, or null where the site lists nothing there. A glossary name is read on the nearest glossary's page, at the heading its name is the id of.
   window.__leafLinkAddress = (href) => {
+    const name = /^glossary:/i.test(href) ? href.slice('glossary:'.length) : null, sheet = name && open ? glossaryFor(open) : '';
+    if (name !== null) return sheet ? new URL(addressFor(sheet, name), location.href).href : null;
     const target = open ? resolveFrom(open, href) : null;
     return target ? new URL(addressFor(target.path, target.anchor), location.href).href : null;
   };

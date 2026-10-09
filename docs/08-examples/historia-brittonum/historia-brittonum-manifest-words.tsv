@@ -1,0 +1,111 @@
+latin	normalized	kind	english	also	first_page	reason	standard	exceptions
+Ambrosius, Ambrosii, Ambrosio	ambrosius	name	Ambrosius		171	the history's own name; kept apart from Merlin's Aurelius Ambrosius	Lucas's Nomina hominum; Merriam-Webster	168: Ambrose, bishop of Milan, whom English calls Ambrose, not the boy of the dragons
+Arthur	arthur	name	Arthur		199	the form every English reader knows	Lucas's Nomina hominum; Merriam-Webster	
+Brittannia	brittannia	name	Britain		147	the island, as English names it	Lucas's Geographica; Merriam-Webster	200: in the page's last sentence, which opens page 201's paragraph, where the page turns inside it
+Brittones	brittones	word	the Britons		147	the people, never "the British", by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
+Cabal	cabal	name	Cavall		217	the name readers know Arthur's dog by, the title of his Wikipedia article; Cabal is an English word	Lucas's Nomina hominum; Merriam-Webster	
+Cantia, Chent, Cantorum, Cantiae	cantia	name	Kent		179	the land as English names it	Lucas's Geographica; Merriam-Webster	
+Catgualart	catgualart	name	Cadwaladr		208	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	
+Catguollauni, Catgublaun	catguollaunus	name	Cadwallon		204	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	207: in the page's last sentence, which opens page 208's paragraph, where the page turns inside it
+Cunedag	cunedag	name	Cunedda		205	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
+dux bellorum, dux … bellorum	dux bellorum	phrase	the leader in the battles		199	dux is a leader, never a duke, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster	
+Embreis Guletic	embreis guletic	name	Emrys Wledig		186	the Welsh name the boy gives, in its modern Welsh form	Lucas's Nomina hominum; Merriam-Webster	
+Germanus, Germani, Germano	germanus	name	Germanus		172	the bishop's Latin name, which English keeps	Lucas's Nomina hominum; Merriam-Webster	
+Guenedota, Guined	guenedota	name	Gwynedd		205	the kingdom's Welsh name	Lucas's Geographica; Merriam-Webster	181: in the page's last sentence, which opens page 182's paragraph, where the page turns inside it
+Guorthemir	guorthemir	name	Vortimer		186	the form English writing uses, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
+Guorthigirnus, Guorthigirni, Guorthigirno, Guorthigirn, Guorthegirnus	guorthigirnus	name	Vortigern		171	the form every English reader knows, as Merlin's English has it	Lucas's Nomina hominum; Merriam-Webster	177: in the page's last sentence, which opens page 178's paragraph, where the page turns inside it
+Hencgistus, Hencgisti, Hengistus, Hengisti, Hengisto	hencgistus	name	Hengist		171	the form every English reader knows, as Merlin's English has it	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
+Hibernia	hibernia	name	Ireland		155	the island, as English names it	Lucas's Geographica; Merriam-Webster	194: in the page's last sentence, which opens page 195's paragraph, where the page turns inside it
+Hors, Horso	hors	name	Horsa		171	the form English writing uses, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
+Mailcunus	mailcunus	name	Maelgwn		205	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
+Neirin	neirin	name	Aneirin		205	the poet's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster	
+Osguid	osguid	name	Oswiu		202	the form English writing uses, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	204: in the page's last sentence, which opens page 205's paragraph, where the page turns inside it
+Patricius	patricius	name	Patrick		194	the form every English reader knows	Lucas's Nomina hominum; Merriam-Webster	
+Sabrina, Sabrinae	sabrina	name	the Severn		214	the river, as English names it	Lucas's Geographica; Merriam-Webster	
+Saxones	saxones	word	the Saxons		147	the people, kept apart from the English as the text keeps them, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster	190: inside Hengist's Old English cry, kept as the history writes it, with its meaning in an endnote
+Taliessin	taliessin	name	Taliesin		205	the poet's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster	
+Tanet	tanet	name	Thanet		171	the island, as English names it	Lucas's Geographica; Merriam-Webster	171: in the page's last sentence, which opens page 172's paragraph, where the page turns inside it
+Urbgen	urbgen	name	Urien		206	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Agnominis	agnomen	name	Agnoman		154	Nemed's father as the Irish tale of the settlements names him, the form Wikipedia gives	Lucas's Nomina hominum; Merriam-Webster
+Alanus, Alaneus, Alanei	alanus	name	Alanus		159	one name for the man the history spells two ways in one account, so the reader sees one man	Lucas's Nomina hominum; Merriam-Webster	159: the sentence naming him opens page 160's paragraph, where the page turns inside it
+Armoricas, Armorici	armorica	name	Brittany		148	the land as English names it; Armorica is its Latin name	Lucas's Geographica; Merriam-Webster
+Bruto, Britto	brutus	name	Brutus		147	the form English writing gives the man Britain is named for; Britto is another form of his name	Lucas's Nomina hominum; Merriam-Webster
+censum	census	word	tribute	payment, where tribute was just said	162	what a subject people pays its ruler, never a count of people	Lewis and Short; Merriam-Webster
+Cetgueli	cetgueli	name	Kidwelly		156	the town as English names it	Lucas's Geographica; Merriam-Webster
+ciulis, ciula, ciulae	ciula	word	ship	fleet, of every ship together; boat, of one ship just named	155	the Old English ceol, a keel, the history's word for a seagoing ship	Lewis and Short; Du Cange; Merriam-Webster
+Dalrieta, Darieta	dalrieta	name	Dál Riata		156	the kingdom's name as Wikipedia files it	Lucas's Geographica; Merriam-Webster
+Demetorum	demetae	name	Dyfed		156	the kingdom the Demetae's name lives on in, as the annals' English says it	Lucas's Geographica; Merriam-Webster
+duces, ducibus	dux	word	leaders	commanders, of an army's officers	165	dux is a leader, never a duke, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster
+Gueith	gueith	name	Isle of Wight		148	the island as English names it	Lucas's Geographica; Merriam-Webster
+Guir, Guyr	guir	name	Gower		156	the peninsula as English names it	Lucas's Geographica; Merriam-Webster
+Heli	heli	name	Eli		153	the priest's name as English Bibles give it	Merriam-Webster
+Hessitio, Hisitione, Hisitionis, Hisition	hessitio	name	Hessitio		160	one name for the man the history spells two ways, the form it gives first	Lucas's Nomina hominum; Merriam-Webster
+Karitius	karitius	name	Carausius		165	the emperor's name as English writing gives it, the title of his Wikipedia article	Merriam-Webster
+legatos, legationem, legatione, legati	legatus	word	envoys	message, of what the envoys bring	162	people sent to speak for a ruler; "legates" is a Church word now	Lewis and Short; Merriam-Webster
+magum, magus, magi	magus	word	seer	man, where seer was just said	150	a learned man who reads what's to come; "wizard" or "magician" would make him a conjurer	Lewis and Short; Du Cange; Merriam-Webster
+Mermini	merminus	name	Merfyn		158	the king's name in its modern Welsh form, as Wikipedia files him	Merriam-Webster
+milium, milia	milia	word	miles	thousand, where it counts people or years, not a distance	147	a Roman mile of a thousand paces, about four thousand eight hundred fifty feet; the US master keeps the source's round number in miles	Lewis and Short; Merriam-Webster	154: quattuor milia hominum, "four thousand people," milia as a number, not a measure; 196: tria milia and duodecim milia, three thousand priests and twelve thousand people, counts, not a measure; 209: quinque milia, five thousand years, a count, not a measure
+Nimeth	nimeth	name	Nemed		154	the name the Irish tale of the settlements gives him, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Orcades	orcades	name	Orkney		154	the islands as English names them	Lucas's Geographica; Merriam-Webster	179: in the page's last sentence, which opens page 180's paragraph, where the page turns inside it
+Partholomus	partholomus	name	Partholón		154	the name the Irish tale of the settlements gives him, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+regulis, regulos, regulus	regulus	word	lesser kings	lesser king, for one	164	kings under a high king, not little ones	Lewis and Short; Du Cange; Merriam-Webster
+Scotti, Scottorum, Scottos	scotti	word	the Irish	Irish, after another people named with "the"	147	Latin's name for the Irish; "the Scots" would make a reader think of Scotland, which they named later	Lewis and Short; Du Cange; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
+vaticinationem	vaticinatio	word	prophecy		150	what the seer foresees, said as the noun English uses	Lewis and Short; Merriam-Webster
+virtutibus	virtus	word	miracles		166	in a saint's story, a miracle, not virtue, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster
+Catel	catel	name	Cadell		176	the modern Welsh form of the servant's name, as Wikipedia files him under Cadell Ddyrnllug	Lucas's Nomina hominum; Merriam-Webster
+Catell Durnluc	catell durnluc	name	Cadell Ddyrnllwg		176	the title of his Wikipedia article; by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Povisorum	povisi	name	Powys		176	the kingdom as English names it	Lucas's Geographica; Merriam-Webster
+Guorthegirniaun	guorthigirniaun	name	Gwrtheyrnion		191	the district's modern Welsh name, as Wikipedia files it	Lucas's Geographica; Merriam-Webster
+Buelt, Buelitiae	buelt	name	Builth		192	the name the town of Builth Wells keeps, as English says it	Lucas's Geographica; Merriam-Webster
+Hereri	hereri	name	Snowdonia		182	the mountains' name, the title of the Wikipedia article Eryri, their Welsh name, leads to; by /glossary's rule on names	Lucas's Geographica; Merriam-Webster	
+Gleguissing	gleguissing	name	Glywysing		183	the kingdom's modern Welsh name, as Wikipedia files it	Lucas's Geographica; Merriam-Webster
+Germania, Germaniam	germania	name	Germany		171	the land the Saxons came from, as English names it	Lewis and Short; Merriam-Webster	200: in the page's last sentence, which opens page 201's paragraph, where the page turns inside it
+Teibi	teibi	name	Teifi		191	the river's modern Welsh name, as English maps give it	Lucas's Geographica; Merriam-Webster
+Gloecester	gloecester	name	Gloucester		193	the city as English names it	Lucas's Geographica; Merriam-Webster
+Caelestino	caelestinus	name	Celestine		194	the pope's name as English gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Iserinus	iserinus	name	Iserninus		195	the bishop's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Amatheam, Amatheo	amatheus	name	Amatheus		195	the name as Lucas's index gives it; the history joins "king" to it, which the English keeps beside it	Lucas's Nomina hominum; Merriam-Webster
+Loygare	loygare	name	Lóegaire		196	the king's name, as his Wikipedia article, Lóegaire mac Néill, spells it; by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Conachta	conachta	name	Connacht		196	the province as English names it	Lucas's Geographica; Merriam-Webster	196: in the page's last sentence, which opens page 197's paragraph, where the page turns inside it
+Moyses	moyses	name	Moses		198	the name as English Bibles give it	Merriam-Webster
+Mariae	maria	name	Mary		200	the name as English gives it	Merriam-Webster
+Osguald	osguald	name	Oswald		202	the king's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Alcfrid	alcfrid	name	Alhfrith		202	the name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Aelfguin	aelfguin	name	Aelfwine		202	the name Wikipedia files him under, Ælfwine, written with ae, since the English writes no æ	Lucas's Nomina hominum; Merriam-Webster
+Echfird, Echgfrid, Ecgfird, Ecgfrid	ecgfrid	name	Ecgfrith		202	the name Wikipedia files both kings who bear it under, the Northumbrian and the Mercian	Lucas's Nomina hominum; Merriam-Webster
+Ecgfird ipse est Ecgfrid	ecgfird ipse est ecgfrid	phrase	Ecgfrith		204	two spellings of one name, which the English says once	Lucas's Nomina hominum; Merriam-Webster
+Aedlfred Flesaur, Eadfered Flesaurs	aedlfred flesaur	name	Aethelfrith Flesaur		202	the king's name as Wikipedia files him, Æthelfrith, written with ae, with the history's byname kept	Lucas's Nomina hominum; Merriam-Webster
+Eadfred, Eadlfrid	eadfred	name	Aethelfrith		207	the king's name as Wikipedia files him, Æthelfrith, written with ae	Lucas's Nomina hominum; Merriam-Webster
+Eadguin, Eoguin, Aedgum, Edgum, Eadgum	eadguin	name	Edwin		203	the name every English reader knows, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Pubba, Pybba, Pippa	pubba	name	Pybba		204	one name for the man the history spells three ways, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Pantha	pantha	name	Penda		204	another spelling of Penda, so the reader sees one king	Lucas's Nomina hominum; Merriam-Webster
+Eua, Eoua	eua	name	Eowa		204	the name as Wikipedia files him, so the reader sees one man for the history's two spellings	Lucas's Nomina hominum; Merriam-Webster
+Onnan	onnan	name	Anna		208	the East Anglian king's name as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Eastanglorum, Easteranglorum	eastangli	word	the East Angles		203	the people, as English names them	Lucas's Geographica; Merriam-Webster
+Merciorum	mercii	word	the Mercians		203	the people, as English names them	Lucas's Geographica; Merriam-Webster
+Nordorum	nordi	word	the Northumbrians		208	"the northerners," the English north of the Humber, as English names them	Lucas's Geographica; Merriam-Webster
+Deurorum	deuri	word	the Deirans		204	the people of Deira, as English names them	Lucas's Geographica; Merriam-Webster
+Deur	deur	name	Deira		204	the kingdom as English names it	Lucas's Geographica; Merriam-Webster
+Beornica, Birneich, Berneich	beornica	name	Bernicia		201	the kingdom as English names it	Lucas's Geographica; Merriam-Webster
+Riderchhen	riderchhen	name	Rhydderch Hen		206	the king's name in its modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Guallanc	guallanc	name	Gwallog		206	the king's name, as his Wikipedia article, Gwallog ap Llênog, spells it; by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Certic	certic	name	Ceretic		206	the king of Elmet's name as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Metcaud, Medcaut	metcaud	name	Lindisfarne		206	the island as English names it; Medcaut is its old British name	Lucas's Geographica; Merriam-Webster
+Cudbert	cudbert	name	Cuthbert		208	the saint's name as English gives it	Lucas's Nomina hominum; Merriam-Webster
+Catgabail	catgabail	name	Cadafael		208	the king's name in its modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Catgabail Catguommed	catgabail catguommed	name	Cadafael Cadomedd		208	the king and his byname in their modern Welsh form, as Wikipedia files him; the byname's meaning goes in an endnote	Lucas's Nomina hominum; Merriam-Webster
+Rum map Urbgen	rum map urbgen	name	Rhun son of Urien		206	Rhun's name in its modern Welsh form, the Welsh *map*, "son of," said in English	Lucas's Nomina hominum; Merriam-Webster
+Gregorio	gregorius	name	Gregory		206	the pope's name as English gives it	Merriam-Webster
+Stillitionem, Stillitione	stillitio	name	Stilicho		209	the consul's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Gueith Lin Garan	gueith lin garan	name	Gueith Lin Garan		203	the battle's Welsh name, kept, its meaning in an endnote; not the Isle of Wight, whose Latin name it shares a word with	Lucas's Geographica; Merriam-Webster
+Cair Guorthigirn	cair guorthigirn	name	Cair Guorthigirn		186	the fort's Welsh name, kept, its meaning, "Vortigern's fort," in an endnote	Lucas's Geographica; Merriam-Webster
+Cair Guent	cair guent	name	Cair Guent		211	the city's Welsh name, kept as the history gives it, its place in an endnote	Lucas's Geographica; Merriam-Webster
+Carn Cabal	carn cabal	name	Carn Cabal		217	the cairn's Welsh name, kept, its meaning, "Cavall's cairn," in an endnote	Lucas's Geographica; Merriam-Webster
+Guoy	guoy	name	the Wye		215	the river as English names it	Lucas's Geographica; Merriam-Webster
+Guent	guent	name	Gwent		215	the region's Welsh name, which English uses	Lucas's Geographica; Merriam-Webster
+Iltutus, Iltutum	iltutus	name	Illtud		215	the saint's name in its modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	215: in the page's last sentence, which opens page 216's paragraph, where the page turns inside it
+Cereticiaun	cereticiaun	name	Ceredigion		218	the region's modern Welsh name, as Wikipedia files it	Lucas's Geographica; Merriam-Webster
+ambronum	ambrones	word	savages		203	the Latin's insult for the English, savage raiders, kept as hard as the source makes it	Lewis and Short; Du Cange; Merriam-Webster
+militis	miles	word	warrior	soldier, of a fighting man of no name	155	Arthur's title here, a fighting man; "knight" would call up the romances of a later age	Lewis and Short; Du Cange; Merriam-Webster
+pedes	pes	word	feet		215	a Roman foot, about eleven and a half inches, so the spring's twenty feet are about nineteen and a half feet; the US master keeps the source's round number in feet	Lewis and Short; Merriam-Webster	217: in the page's last sentence, which opens page 218's paragraph, where the page turns inside it
+cubitorum	cubitus	word	feet		218	a cubit, about a foot and a half; four cubits, about six feet, said in the US master in feet	Lewis and Short; Merriam-Webster
