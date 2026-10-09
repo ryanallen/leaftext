@@ -40897,20 +40897,29 @@ window.leafConsoleOutput = (id, encoded) => {
     while (entry.pendingBytes > 1_048_576 && entry.pending.length > 1) entry.pendingBytes -= entry.pending.shift().length;
     return;
   }
-  entry.pending.push(bytes);
-  if (entry.frame) return;
+  
+  if (entry.frame) {
+    entry.pending.push(bytes);
+    return;
+  }
+  writeConsoleOutput(id, entry, entry.decoder.decode(bytes, { stream: true }));
   entry.frame = requestAnimationFrame(() => {
     entry.frame = 0;
+    if (!entry.pending.length) return;
     let text = '';
     for (const chunk of entry.pending) text += entry.decoder.decode(chunk, { stream: true });
     entry.pending = [];
-    entry.terminal.write(text, () => {
-      entry.mapOutputPending = true;
-      consoleWritten(id, entry);
-      if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
-    });
+    writeConsoleOutput(id, entry, text);
   });
 };
+
+function writeConsoleOutput(id, entry, text) {
+  entry.terminal.write(text, () => {
+    entry.mapOutputPending = true;
+    consoleWritten(id, entry);
+    if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
+  });
+}
 
 
 window.leafConsoleReplay = (id, encoded) => {
