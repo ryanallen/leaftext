@@ -309,6 +309,8 @@
 | Pages keep theme attributes | [✅][l-html] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Wiki link length capped | [✅][l-wiki] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Terminal rendering | [✅][l-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Books by chapter, printed | [✅][l-prompt-book] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Math printed as symbols | [✅][l-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-rendering]: ../01-features/01-rendering.md
 [l-summary]: ../01-features/01-rendering.md#summary
@@ -337,6 +339,7 @@
 [l-inline-html]: ../01-features/01-rendering.md#inline-html
 [l-wiki]: ../01-features/01-rendering.md#wiki-links
 [l-prompt]: ../01-features/01-rendering.md#reading-at-a-prompt
+[l-prompt-book]: ../01-features/01-rendering.md#a-book-a-chapter-at-a-time
 [l-hints]: ../01-features/02-navigation.md#link-hints
 [o-formats]: https://obsidian.md/help/file-formats
 [o-cli]: https://obsidian.md/help/cli

@@ -40321,7 +40321,7 @@ function makeConsoleLayer(id) {
   host.className = 'console-terminal';
   layer.appendChild(host);
   consoleShell.appendChild(layer);
-  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, sentSize: null };
+  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -40331,11 +40331,7 @@ function makeConsoleLayer(id) {
     terminal.loadAddon(fit);
     terminal.open(host);
     terminal.onData(data => send({ command: 'consoleInput', id, data }));
-    terminal.onScroll(() => {
-      if (consoleFrontId !== id) return;
-      updateMinimapViewport();
-      scheduleMinimapPreviewUpdate();
-    });
+    terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
     entry.fit = fit;
     entry.observer = new ResizeObserver(() => {
@@ -40361,6 +40357,17 @@ function makeConsoleLayer(id) {
     }
   }).catch(error => leafToast(error.message));
   return entry;
+}
+
+
+function consoleScrolled(id, entry) {
+  if (consoleFrontId !== id || entry.scrollFrame) return;
+  entry.scrollFrame = requestAnimationFrame(() => {
+    entry.scrollFrame = 0;
+    if (consoleFrontId !== id) return;
+    updateMinimapViewport();
+    scheduleMinimapPreviewUpdate();
+  });
 }
 
 
@@ -40490,6 +40497,7 @@ window.leafConsolePrune = tabs => {
   for (const [id, entry] of consoleLayers) {
     if (tabs.some(tab => tab.kind === 'console' && tab.webId === id)) continue;
     if (entry.frame) cancelAnimationFrame(entry.frame);
+    if (entry.scrollFrame) cancelAnimationFrame(entry.scrollFrame);
     if (entry.observer) entry.observer.disconnect();
     if (entry.terminal) entry.terminal.dispose();
     entry.layer.remove();

@@ -173,11 +173,13 @@ Leaftext opens source and configuration files as a file-name heading above one h
 
 Type `leaftext --print notes.md` at a cmd or PowerShell prompt and the document prints right there, rendered, and the prompt comes back under the last line. Every format above prints, through the same render the window draws, so a JSON file prints as its tree, a message as its headers and body, and a Word file as its words.
 
-Three words may follow the file, in any order:
+These may follow the file, in any order:
 
 - `--styled` prints in the terminal's own colors even where the text is going somewhere other than a terminal.
 - `--plain` prints no colors at all, and wins over `--styled`.
 - `--width <columns>` wraps paragraphs at that many columns.
+- `--contents` lists a book's chapters, one numbered line each.
+- `--chapter <number>` prints that one chapter of a book.
 
 At a prompt the text is styled and wraps at the terminal's width. Sent through a pipe or into a file it is plain and wraps nowhere, so `leaftext --print notes.md > notes.txt` writes clean text. A `NO_COLOR` variable holding anything turns colors off everywhere.
 
@@ -187,13 +189,18 @@ What prints as what:
 - A paragraph wraps at the width, and stays on one line where there is none.
 - A list indents under its markers, and a task prints `[x]` or `[ ]`.
 - A quote and an alert print behind a bar, the alert's kind leading it.
-- A code block, a math block and a diagram print as written, indented, because the window is what draws math and diagrams.
+- Math prints as symbols: `$e^{i\pi}+1=0$` reads `e^(iπ)+1=0`, and a math block prints indented on its own. A command it does not know prints as written.
+- A code block and a diagram print as written, indented, because the window is what draws diagrams.
 - A table lines its columns up under its headers and keeps each column's alignment.
 - A link prints its words followed by a number in angle brackets, like `install notes<1>`, and the addresses are listed after everything else, one to a line under a short rule, `<1> docs/install.md`. An address linked more than once keeps one number. A link whose words are its address prints the address once and takes no number, and a link within the same document prints its words alone.
 - A picture prints `[picture: its description]`, dimmed.
 - Footnotes print at the foot, their references in square brackets, like `[1]`.
 
-Hand it a folder instead — `leaftext --print notes` — and it lists that folder the way the [library pane](03-library.md#browsing) does: the folder's path as the heading, then its folders, each with its document count, then its documents, each with its title beside the file name where the two differ. A dimmed last line counts the files the pane leaves out, in the pane's own words. The same three words work on a folder.
+Hand it a folder instead — `leaftext --print notes` — and it lists that folder the way the [library pane](03-library.md#browsing) does: the folder's path as the heading, then its folders, each with its document count, then its documents, each with its title beside the file name where the two differ. A dimmed last line counts the files the pane leaves out, in the pane's own words. The three words that style and wrap the text work on a folder.
+
+### A book a chapter at a time
+
+An EPUB or Kindle book prints whole, which can run to thousands of lines, so a book can be read a chapter at a time. `leaftext --print dune.epub --contents` lists its chapters in reading order, one numbered line each, named by the book's own contents where it names one, else by the chapter's heading, else by its opening words, dimmed because that name is a guess. `leaftext --print dune.epub --chapter 9` then prints chapter 9 alone. A chapter is each part the window draws one after another down the page, so a Kindle book's parts are its chapters. Asking for chapters of anything but a book, or for a number past the last chapter, says so and prints nothing.
 
 Printing opens no window, reads only the one file or the one folder, writes nothing, and a copy open in a window never hears of it.
 
