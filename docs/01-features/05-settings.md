@@ -15,7 +15,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
-Five more preferences are saved here but set elsewhere, where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice and speed, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+Other preferences are saved here but set where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice, speed and ElevenLabs model, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
@@ -44,6 +44,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{config_dir}/growth-log.jsonl` | Every gain [your Grove](09-progress.md#see-xp-as-it-lands) has kept, one line each with the time it happened on your own clock, what you did and what it was worth — never a file name or a word of a document. It is trimmed back to its newest 20,000 lines when it passes 3 MB |
 | `{config_dir}/mcp.json` | Kept for outside tool servers, in the `mcpServers` shape. No part of Leaftext reads this file or starts a server yet — [outside tools are still coming](../05-compare.md#outside-tools-through-mcp). When they arrive it is read from this folder alone, never from a vault, a document or a link, and a server is switched off with `"disabled": true` rather than deleted. A server names either a `command` the app starts or a `url` it reaches over HTTPS, never both, and an address may carry a `clientId` for a sign-in server that will not let the app register itself. An address is signed in through your own browser, and that sign-in is kept in the machine's credential store, never in this file — which is why a `headers` entry is refused |
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
+| `{data_dir}/spoken-audio` | Completed ElevenLabs passages and their word timing, kept until you forget that account in the speaker's voice list |
 | `{data_dir}/remote/<vault id>` | Local files for a [storage service vault](03-library.md#storage-services), including edits waiting to be sent |
 | `{data_dir}/models` | Nothing Leaftext writes now: a model an earlier version downloaded here is deleted when the app starts, and uninstalling deletes the folder too |
 | `{data_dir}/webview2` | WebView2 data |
@@ -72,6 +73,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "flash_reader_chunk": 1,
   "read_aloud_voice": "",
   "read_aloud_speed": 100,
+  "elevenlabs_model": "eleven_flash_v2_5",
   "code_intel_enabled": true,
   "reading_unlocked": false,
   "code_unlocked": false,
@@ -176,12 +178,15 @@ Leaftext removes broken entries from the recent list automatically and collapses
 ### Read aloud
 
 - The speaker after Flash words on the reading view's [toolbar](02-navigation.md#the-floating-toolbar) reads the page out loud, starting at the sentence you selected, or else at the first block on screen; press it again to stop
-- Speaks through the voices your computer already has, and only those that run on it, so no word of a document leaves the machine; nothing to pay for and nothing to sign in to
+- Computer voices run on your machine, so a computer voice sends no word of the document away and needs no account
+- On desktop, **Connect ElevenLabs…** in the voice list accepts your key, checks it with ElevenLabs and adds voices from your account. The key and account identifier stay in the system credential store, outside `settings.json`
+- The first press with an ElevenLabs voice shows how many uncached characters may be sent, names the Flash v2.5 or Multilingual v2 model, and waits for Continue; Cancel sends no passage. A completed passage replays from kept audio without another paid request
+- **Forget account and audio** removes the credential and that account's stored passages. A failed request stops with a message and never silently switches to a computer voice
 - The sentence being spoken is washed lightly and the word being spoken more strongly, and the page scrolls to keep them on screen until you scroll it yourself
 - While it reads, a small bar stands where the find bar does, holding the voice, the speed (0.75× to 2×) and a cross that stops it; a change is heard from the next sentence. The bar steps aside while find is open, and the voice reads on
 - Code, math, diagrams and controls are skipped, the same as Flash words
 - Stops on a view change, another document, or opening Flash words, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
-- Saved as `read_aloud_voice` (a voice's full name, empty for the system's own) and `read_aloud_speed` (75, 100, 125, 150 or 200 percent, 100 by default)
+- Saved as `read_aloud_voice` (a computer voice's full name, a provider-prefixed ElevenLabs voice ID, or empty for System), `read_aloud_speed` (75, 100, 125, 150 or 200 percent, 100 by default), and `elevenlabs_model` (Flash v2.5 by default)
 
 ### Typing help
 

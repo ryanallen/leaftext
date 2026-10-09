@@ -15023,6 +15023,47 @@ p.front-more {
   color: var(--lt-foreground);
   font-family: var(--app-font);
 }
+.elevenlabs-sheet {
+  background-color: var(--lt-surface-elevated);
+}
+.elevenlabs-sheet-body {
+  display: grid;
+  gap: var(--lt-space-14);
+  padding: var(--lt-space-20) 0;
+}
+.elevenlabs-sheet-body[hidden] {
+  display: none;
+}
+.elevenlabs-sheet-body h2,
+.elevenlabs-sheet-body p {
+  margin: 0;
+}
+.elevenlabs-sheet-body label {
+  display: grid;
+  gap: var(--lt-space-6);
+}
+.elevenlabs-sheet-body input,
+.elevenlabs-sheet-body select {
+  padding: var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+}
+.elevenlabs-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--lt-space-8);
+}
+.elevenlabs-sheet-actions button {
+  padding: var(--lt-space-8) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+}
 .theme-sheet-head {
   display: flex;
   align-items: center;
@@ -18368,7 +18409,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 166 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 167 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -18400,7 +18441,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>166</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>167</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18828,7 +18869,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">166 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">167 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -19212,6 +19253,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Read aloud bar</h3><code class="built">.read-aloud-bar</code><span class="built">app-shell.html, driven by read-aloud.js while the page is read, in the find bar's place and wearing its classes</span></header>
 <div class="stage"><div class="find-bar read-aloud-bar" style="position:static"><div class="find-row"><label class="reader-subselect leaf-select"><select aria-label="Voice"><option>System</option><option selected>David</option><option>Zira</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><label class="reader-subselect leaf-select"><select aria-label="Speed"><option>0.75×</option><option selected>1×</option><option>1.25×</option><option>1.5×</option><option>2×</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div></div></div>
+</section>
+<section class="part">
+<header><h3>ElevenLabs sheet</h3><code class="built">.elevenlabs-sheet</code><span class="built">app-shell.html, opened from the read aloud voice list</span></header>
+<div class="stage"><aside class="leaf-sheet theme-sheet elevenlabs-sheet open" style="position:static;transform:none"><div class="leaf-sheet-grip"></div><div class="elevenlabs-sheet-body"><h2>ElevenLabs voices</h2><label>API key <input type="password"></label><label>Model <select><option>Flash v2.5</option></select></label><p>Uncached text is sent to ElevenLabs when you continue a paid reading.</p><div class="elevenlabs-sheet-actions"><button>Forget account and audio</button><button>Connect</button></div></div></aside></div>
 </section>
 <section class="part">
 <header><h3>Reading cursor</h3><code class="built">.reading-cursor</code><span class="built">reading-cursors.js, one per place in a set of cursors on the page being read — every match taken from the find bar, or a place added with Ctrl or Cmd and a click — in a layer inside the reader that blinks them together and rests while the window is behind another</span></header>

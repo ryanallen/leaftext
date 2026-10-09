@@ -12213,6 +12213,98 @@ let readAloudSpeed = READ_ALOUD_SPEEDS.includes(Number(LEAF_SETTINGS.readAloudSp
 const readAloudBar = document.getElementById('readAloudBar');
 const readAloudVoiceChoice = document.getElementById('readAloudVoice');
 const readAloudSpeedChoice = document.getElementById('readAloudSpeed');
+const elevenLabsSheet = document.getElementById('elevenLabsSheet');
+const elevenLabsBackdrop = document.getElementById('elevenLabsBackdrop');
+const elevenLabsKey = document.getElementById('elevenLabsKey');
+const elevenLabsModel = document.getElementById('elevenLabsModel');
+const elevenLabsStatus = document.getElementById('elevenLabsStatus');
+const elevenLabsConnection = document.getElementById('elevenLabsConnection');
+const elevenLabsConsent = document.getElementById('elevenLabsConsent');
+const elevenLabsCount = document.getElementById('elevenLabsCount');
+const elevenLabsModelName = document.getElementById('elevenLabsModelName');
+let elevenLabsVoices = [];
+let elevenLabsAsked = false;
+let elevenLabsRequest = 0;
+
+function elevenLabsDesktop() {
+  return !window.__leafSite && !window.__leafEmbedded;
+}
+function showElevenLabsSheet() {
+  if (!elevenLabsDesktop() || !elevenLabsSheet) return;
+  elevenLabsConnection.hidden = false;
+  elevenLabsConsent.hidden = true;
+  elevenLabsSheet.hidden = false;
+  elevenLabsBackdrop.hidden = false;
+  elevenLabsSheet.classList.add('open');
+  elevenLabsBackdrop.classList.add('open');
+  if (!elevenLabsAsked) {
+    elevenLabsAsked = true;
+    send({ command: 'listElevenLabsVoices' });
+  }
+  if (elevenLabsKey) elevenLabsKey.focus();
+}
+function showElevenLabsConsent(count) {
+  if (!elevenLabsSheet) return;
+  elevenLabsConnection.hidden = true;
+  elevenLabsConsent.hidden = false;
+  elevenLabsCount.textContent = count.toLocaleString();
+  elevenLabsModelName.textContent = elevenLabsModel.value === 'eleven_multilingual_v2' ? 'Multilingual v2' : 'Flash v2.5';
+  elevenLabsSheet.hidden = false;
+  elevenLabsBackdrop.hidden = false;
+  elevenLabsSheet.classList.add('open');
+  elevenLabsBackdrop.classList.add('open');
+}
+function hideElevenLabsSheet() {
+  if (!elevenLabsSheet) return;
+  elevenLabsSheet.classList.remove('open');
+  elevenLabsBackdrop.classList.remove('open');
+  elevenLabsSheet.hidden = true;
+  elevenLabsBackdrop.hidden = true;
+  elevenLabsConnection.hidden = false;
+  elevenLabsConsent.hidden = true;
+  if (elevenLabsKey) elevenLabsKey.value = '';
+}
+if (elevenLabsSheet) {
+  elevenLabsModel.value = LEAF_SETTINGS.elevenLabsModel === 'eleven_multilingual_v2' ? 'eleven_multilingual_v2' : 'eleven_flash_v2_5';
+  const close = () => {
+    const consent = !elevenLabsConsent.hidden;
+    hideElevenLabsSheet();
+    if (consent) stopReadAloud();
+  };
+  document.getElementById('elevenLabsClose').addEventListener('click', close);
+  elevenLabsBackdrop.addEventListener('click', close);
+  document.getElementById('elevenLabsConnect').addEventListener('click', () => {
+    const key = elevenLabsKey.value.trim();
+    elevenLabsKey.value = '';
+    if (!key) return;
+    elevenLabsStatus.textContent = 'Connecting…';
+    send({ command: 'connectElevenLabs', key });
+  });
+  document.getElementById('elevenLabsForget').addEventListener('click', () => send({ command: 'forgetElevenLabs' }));
+  elevenLabsModel.addEventListener('change', () => {
+    if (readAloud && readAloud.paid) stopReadAloud();
+    send({ command: 'setElevenLabsModel', model: elevenLabsModel.value });
+  });
+  document.getElementById('elevenLabsCancel').addEventListener('click', () => { hideElevenLabsSheet(); stopReadAloud(); });
+  document.getElementById('elevenLabsContinue').addEventListener('click', () => {
+    if (!readAloud || !readAloud.paid || !readAloud.prepared) return;
+    send({ command: 'authorizeElevenLabs', token: readAloud.token });
+    hideElevenLabsSheet();
+    requestPaidSentence(readAloud);
+  });
+}
+window.leafElevenLabsAccount = (account) => {
+  elevenLabsVoices = account && Array.isArray(account.voices) ? account.voices.filter((voice) => voice && typeof voice.id === 'string' && typeof voice.name === 'string') : [];
+  if (readAloudVoice.startsWith('elevenlabs:') && !elevenLabsVoices.some((voice) => `elevenlabs:${voice.id}` === readAloudVoice)) {
+    setReadAloudChoice('', readAloudSpeed);
+  }
+  if (elevenLabsStatus) elevenLabsStatus.textContent = account ? 'Connected to ElevenLabs.' : 'Connect an ElevenLabs account to use its voices.';
+  renderReadAloudVoices();
+};
+window.leafElevenLabsError = (message) => {
+  elevenLabsAsked = false;
+  if (elevenLabsStatus) elevenLabsStatus.textContent = String(message || 'ElevenLabs could not answer.');
+};
 
 function readAloudEngine() {
   return window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function' ? window.speechSynthesis : null;
@@ -12254,11 +12346,33 @@ function readAloudSentences(text) {
   return parts.filter((part) => /[\p{L}\p{N}]/u.test(part.text));
 }
 
+function readAloudPaidSentences(text) {
+  const bounded = [];
+  for (const part of readAloudSentences(text)) {
+    const scalars = Array.from(part.text);
+    let used = 0;
+    let start = part.start;
+    while (used < scalars.length) {
+      let end = Math.min(used + 2000, scalars.length);
+      if (end < scalars.length) {
+        for (let at = end; at > used + 1; at -= 1) {
+          if (/\s/u.test(scalars[at - 1])) { end = at; break; }
+        }
+      }
+      const passage = scalars.slice(used, end).join('');
+      if (/[\p{L}\p{N}]/u.test(passage)) bounded.push({ start, text: passage });
+      start += passage.length;
+      used = end;
+    }
+  }
+  return bounded;
+}
+
 
 function readAloudLoad(session, mark = null) {
   const { text, nodes } = readAloudText(session.blocks[session.index]);
   session.nodes = nodes;
-  session.sentences = readAloudSentences(text);
+  session.sentences = session.paid ? readAloudPaidSentences(text) : readAloudSentences(text);
   session.at = 0;
   const held = mark && mark.node ? nodes.find((one) => one.node === mark.node) : null;
   if (held) {
@@ -12300,14 +12414,15 @@ function readAloudChosenVoice() {
 }
 
 function readAloudOffered() {
-  return Boolean(readAloudEngine()) && !readingIsContainedPage() && !codeViewActive && !graphViewOpen && !activeWebTab();
+  return Boolean(readAloudEngine() || (elevenLabsDesktop() && readAloudVoice.startsWith('elevenlabs:'))) && !readingIsContainedPage() && !codeViewActive && !graphViewOpen && !activeWebTab();
 }
 
 
 function startReadAloud() {
   if (readAloud || !readAloudOffered()) return;
+  const paid = elevenLabsDesktop() && readAloudVoice.startsWith('elevenlabs:');
   const { all, local } = readAloudLocalVoices();
-  if (all.length && !local.length) {
+  if (!paid && all.length && !local.length) {
     leafToast('No voice on this computer can read the page without sending it away.');
     return;
   }
@@ -12316,13 +12431,136 @@ function startReadAloud() {
   
   closeFlashReader();
   const start = flashReaderStartPoint(blocks);
-  const session = { blocks, index: start.index, nodes: [], sentences: [], at: 0, utterance: null, follow: true };
+  const session = { blocks, index: start.index, nodes: [], sentences: [], at: 0, utterance: null, follow: true, paid };
   readAloudLoad(session, start.mark);
   if (!readAloudSettle(session)) return;
   readAloud = session;
-  readAloudEngine().cancel();
+  if (readAloudEngine()) readAloudEngine().cancel();
   renderReadAloudSwitch();
-  speakReadAloudSentence(session);
+  if (paid) preparePaidReading(session);
+  else speakReadAloudSentence(session);
+}
+
+function preparePaidReading(session) {
+  const passages = session.sentences.slice(session.at).map((part) => part.text);
+  for (let at = session.index + 1; at < session.blocks.length; at += 1) {
+    for (const part of readAloudPaidSentences(readAloudText(session.blocks[at]).text)) passages.push(part.text);
+  }
+  if (!passages.length) { stopReadAloud(); return; }
+  session.passages = passages;
+  session.passageIndex = 0;
+  session.token = ++elevenLabsRequest;
+  session.prepared = false;
+  send({ command: 'prepareElevenLabs', token: session.token, voice: readAloudVoice.slice('elevenlabs:'.length), model: elevenLabsModel.value, passages });
+}
+window.leafElevenLabsPrepared = (token, cached, error) => {
+  const session = readAloud;
+  if (!session || !session.paid || session.token !== token) return;
+  if (error) { leafToast(String(error)); stopReadAloud(); return; }
+  if (!Array.isArray(cached) || cached.length !== session.passages.length) { leafToast('ElevenLabs could not check the stored audio.'); stopReadAloud(); return; }
+  session.prepared = true;
+  const count = session.passages.reduce((sum, passage, at) => sum + (cached[at] ? 0 : Array.from(passage).length), 0);
+  if (count) showElevenLabsConsent(count);
+  else requestPaidSentence(session);
+};
+
+function requestPaidSentence(session) {
+  if (readAloud !== session || !session.prepared) return;
+  const sentence = session.sentences[session.at];
+  if (!sentence) { stopReadAloud(); return; }
+  send({ command: 'elevenLabsPassage', token: session.token, sequence: session.passageIndex, voice: readAloudVoice.slice('elevenlabs:'.length), model: elevenLabsModel.value, text: sentence.text });
+}
+function prefetchPaidSentence(session) {
+  const sequence = session.passageIndex + 1;
+  const text = session.passages[sequence];
+  if (!text || session.prefetching === sequence) return;
+  session.prefetching = sequence;
+  send({ command: 'elevenLabsPassage', token: session.token, sequence, voice: readAloudVoice.slice('elevenlabs:'.length), model: elevenLabsModel.value, text });
+}
+window.leafElevenLabsPassage = (token, sequence, passage, error) => {
+  const session = readAloud;
+  if (!session || !session.paid || session.token !== token) return;
+  if (error || !passage || !passage.alignment || !passage.url) {
+    leafToast(String(error || 'ElevenLabs could not load the passage.'));
+    stopReadAloud();
+    return;
+  }
+  if (sequence < session.passageIndex || sequence > session.passageIndex + 1) return;
+  if (sequence === session.passageIndex + 1) {
+    if (!Array.isArray(passage.alignment.characters) || passage.alignment.characters.join('') !== session.passages[sequence]) {
+      leafToast('ElevenLabs timing did not match the passage.');
+      stopReadAloud();
+      return;
+    }
+    session.prefetched = { sequence, passage };
+    return;
+  }
+  const sentence = session.sentences[session.at];
+  const alignment = passage.alignment;
+  if (!sentence || !Array.isArray(alignment.characters) || alignment.characters.join('') !== sentence.text ||
+      !Array.isArray(alignment.starts) || alignment.starts.length !== alignment.characters.length) {
+    leafToast('ElevenLabs timing did not match the passage.');
+    stopReadAloud();
+    return;
+  }
+  const offsets = [0];
+  for (const character of alignment.characters) offsets.push(offsets[offsets.length - 1] + character.length);
+  const audio = new Audio(passage.url);
+  session.audio = audio;
+  audio.playbackRate = readAloudSpeed / 100;
+  audio.onplay = () => {
+    if (readAloud !== session || session.audio !== audio) return;
+    readingInput();
+    lightReadAloudSentence(session);
+    paidAudioFrame(session, audio, alignment, offsets);
+    prefetchPaidSentence(session);
+  };
+  audio.onended = () => {
+    if (readAloud !== session || session.audio !== audio) return;
+    session.audio = null;
+    session.at += 1;
+    session.passageIndex += 1;
+    if (readAloudSettle(session)) {
+      if (session.prefetched && session.prefetched.sequence === session.passageIndex) {
+        const ready = session.prefetched;
+        session.prefetched = null;
+        window.leafElevenLabsPassage(session.token, ready.sequence, ready.passage, null);
+      } else if (session.prefetching !== session.passageIndex) requestPaidSentence(session);
+    }
+    else stopReadAloud();
+  };
+  audio.onerror = () => {
+    if (readAloud !== session || session.audio !== audio) return;
+    leafToast('The stored ElevenLabs audio could not be played.');
+    stopReadAloud();
+  };
+  const started = audio.play();
+  if (started && typeof started.catch === 'function') started.catch(() => audio.onerror());
+};
+
+function paidAudioFrame(session, audio, alignment, offsets) {
+  if (readAloud !== session || session.audio !== audio) return;
+  const time = audio.currentTime;
+  let low = 0;
+  let high = alignment.starts.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    if (alignment.starts[middle] <= time) low = middle + 1;
+    else high = middle;
+  }
+  let at = low - 1;
+  if (at >= 0 && /[\p{L}\p{N}]/u.test(alignment.characters[at])) {
+    let from = at;
+    let to = at + 1;
+    const word = (character) => /[\p{L}\p{N}'’-]/u.test(character);
+    while (from > 0 && word(alignment.characters[from - 1])) from -= 1;
+    while (to < alignment.characters.length && word(alignment.characters[to])) to += 1;
+    const sentence = session.sentences[session.at];
+    const range = readAloudRange(session, sentence.start + offsets[from], sentence.start + offsets[to]);
+    paintReadAloud(READ_ALOUD_WORD, range);
+    followReadAloud(session, range);
+  }
+  if (typeof requestAnimationFrame === 'function') session.audioFrame = requestAnimationFrame(() => paidAudioFrame(session, audio, alignment, offsets));
 }
 
 
@@ -12368,7 +12606,14 @@ function readAloudSentenceDone(session, utterance) {
 
 function stopReadAloud() {
   if (!readAloud) return;
+  const session = readAloud;
   readAloud = null;
+  if (session.paid) {
+    send({ command: 'cancelElevenLabs', token: session.token });
+    if (elevenLabsConsent && !elevenLabsConsent.hidden) hideElevenLabsSheet();
+  }
+  if (session.audioFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(session.audioFrame);
+  if (session.audio) { session.audio.pause(); session.audio.removeAttribute('src'); }
   const engine = readAloudEngine();
   if (engine) engine.cancel();
   paintReadAloud(READ_ALOUD_SENTENCE, null);
@@ -12474,6 +12719,13 @@ function renderReadAloudVoices() {
   if (!readAloudVoiceChoice) return;
   const { local } = readAloudLocalVoices();
   const rows = [['', 'System'], ...readAloudLanguageFirst(local).map((voice) => [voice.name, readAloudVoiceLabel(voice.name)])];
+  if (elevenLabsDesktop()) {
+    for (const voice of elevenLabsVoices) rows.push([`elevenlabs:${voice.id}`, `${voice.name} · ElevenLabs`]);
+    if (readAloudVoice.startsWith('elevenlabs:') && !rows.some(([value]) => value === readAloudVoice)) {
+      rows.push([readAloudVoice, 'Saved ElevenLabs voice']);
+    }
+    rows.push(['__connect_elevenlabs__', 'Connect ElevenLabs…']);
+  }
   readAloudVoiceChoice.textContent = '';
   for (const [value, label] of rows) {
     const option = document.createElement('option');
@@ -12481,19 +12733,25 @@ function renderReadAloudVoices() {
     option.textContent = label;
     readAloudVoiceChoice.append(option);
   }
-  readAloudVoiceChoice.value = local.some((voice) => voice.name === readAloudVoice) ? readAloudVoice : '';
+  readAloudVoiceChoice.value = rows.some(([value]) => value === readAloudVoice) ? readAloudVoice : '';
   if (readAloudSpeedChoice) readAloudSpeedChoice.value = String(readAloudSpeed);
 }
 
 
 function setReadAloudChoice(voice, speed) {
+  if (readAloud && (readAloud.paid || String(voice).startsWith('elevenlabs:'))) stopReadAloud();
   readAloudVoice = String(voice || '');
   if (READ_ALOUD_SPEEDS.includes(Number(speed))) readAloudSpeed = Number(speed);
   send({ command: 'setReadAloud', voice: readAloudVoice, speed: readAloudSpeed });
 }
 
 if (readAloudBar) {
-  if (readAloudVoiceChoice) readAloudVoiceChoice.addEventListener('change', () => setReadAloudChoice(readAloudVoiceChoice.value, readAloudSpeed));
+  if (readAloudVoiceChoice) readAloudVoiceChoice.addEventListener('change', () => {
+    if (readAloudVoiceChoice.value === '__connect_elevenlabs__') {
+      renderReadAloudVoices();
+      showElevenLabsSheet();
+    } else setReadAloudChoice(readAloudVoiceChoice.value, readAloudSpeed);
+  });
   if (readAloudSpeedChoice) readAloudSpeedChoice.addEventListener('change', () => setReadAloudChoice(readAloudVoice, readAloudSpeedChoice.value));
   const stop = document.getElementById('readAloudStop');
   if (stop) stop.addEventListener('click', stopReadAloud);
@@ -17026,7 +17284,7 @@ function renderViewTools(current) {
   if (flashReaderButton) flashReaderButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage();
   
   if (readAloudButton) {
-    readAloudButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage() || !readAloudEngine();
+    readAloudButton.hidden = onWebTab || current !== 'reading' || readingIsContainedPage() || !readAloudOffered();
     if (readAloudButton.hidden) stopReadAloud();
     renderReadAloudSwitch();
   }
@@ -19680,6 +19938,17 @@ window.leafSetState = (state, heading) => {
     finishSetState();
   });
 };
+
+function leafBootState(state) {
+  const tab = state && Array.isArray(state.tabs) && state.active != null ? state.tabs[state.active] : null;
+  if (!tab || tab.kind === 'web' || state.document) {
+    window.leafSetState(state);
+    return;
+  }
+  currentState = state;
+  renderReaderToolbar(readerViewsStand());
+  renderTabs(currentState);
+}
 
 window.leafCodeReturnCached = (state, key) => {
   takePayloadSplit(state);
@@ -48860,7 +49129,7 @@ runSettlePass();
 window.__leafBooted = true;
 
 send({ command: 'frontEndReady', today: groveLocalDay(new Date()) });
-window.leafSetState(window.__leafInitialState || { recent: [], favorites: [], document: null });
+leafBootState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
 if (window.__leafRetiredGoogleNotice) {
   leafQueueToast(window.__leafRetiredGoogleNotice, 'ok');

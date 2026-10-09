@@ -336,6 +336,14 @@ export const COMMANDS = {
   setSpeedReaderEnabled: [ANSWERED],
   setFlashReader: [ANSWERED],
   setReadAloud: [ANSWERED],
+  connectElevenLabs: [REFUSED, 'a site has no system credential store'],
+  forgetElevenLabs: [REFUSED, 'a site has no system credential store'],
+  listElevenLabsVoices: [REFUSED, 'a site has no system credential store'],
+  setElevenLabsModel: [REFUSED, 'a site offers only computer voices'],
+  prepareElevenLabs: [REFUSED, 'a site has no private paid audio cache'],
+  authorizeElevenLabs: [REFUSED, 'a site has no private paid audio cache'],
+  cancelElevenLabs: [REFUSED, 'a site has no private paid audio cache'],
+  elevenLabsPassage: [REFUSED, 'a site has no private paid audio cache'],
   setCodeIntelEnabled: [ANSWERED],
   reportReading: [REFUSED, 'the reading record is a file on the reader’s own disk, and a site keeps no record — the page reports reading reached only where the host handed it one, so nothing sends this'],
   groveAdmin: [REFUSED, 'a site keeps no reading record, so there is nothing for admin mode to reset or unlock — the Grove never stands and nothing sends this'],
@@ -483,8 +491,7 @@ export function landingPath(documents) {
 export function sayMissing(file, reason) {
   const app = typeof document === 'undefined' ? null : document.getElementById('app');
   if (!app) return;
-  const text = (value) =>
-    String(value == null ? '' : value).replace(/[&<>]/g, (one) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[one]);
+  const text = (value) => String(value == null ? '' : value).replace(/[&<>]/g, (one) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[one]);
   // Words the publish drew into the page stay: the reader can still read them, so the failure is said under them rather than over them.
   const baked = app.querySelector('.baked-page');
   if (baked) {
@@ -496,12 +503,7 @@ export function sayMissing(file, reason) {
     return;
   }
   app.className = 'reader-shell empty';
-  app.innerHTML = `
-    <section class="empty-state">
-      <h1>A file this site needs did not arrive</h1>
-      <p class="empty-subtitle">${text(file || 'One of its files')} could not be read${reason ? ` — ${text(reason)}` : ''}.</p>
-      <p class="empty-description">The pages here fetch each other, which a browser only allows over a server. Opened straight from a folder on this machine, none of them arrives; published, this one is not in the folder.</p>
-    </section>`;
+  app.innerHTML = `<section class="empty-state"><h1>A file this site needs did not arrive</h1><p class="empty-subtitle">${text(file || 'One of its files')} could not be read${reason ? ` — ${text(reason)}` : ''}.</p><p class="empty-description">The pages here fetch each other, which a browser only allows over a server. Opened straight from a folder on this machine, none of them arrives; published, this one is not in the folder.</p></section>`;
 }
 
 /** Point the page's canonical address and its Markdown alternate at the document on screen, so a crawler or a reader copying the address from the head is handed the page they are on rather than the one they arrived at. Only the two lines a page already carries are moved; a page without them gains none. */
@@ -949,10 +951,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   function pagerHtml(path) {
     const at = order.indexOf(path);
     if (at === -1) return '';
-    const link = (to, side, kicker) =>
-      to === undefined
-        ? '<span></span>'
-        : `<a class="docs-pager-${side}" href="${to}"><span class="docs-pager-label">${kicker}</span>${label(to)}</a>`;
+    const link = (to, side, kicker) => (to === undefined ? '<span></span>' : `<a class="docs-pager-${side}" href="${to}"><span class="docs-pager-label">${kicker}</span>${label(to)}</a>`);
     const previous = order[at - 1];
     const next = order[at + 1];
     if (previous === undefined && next === undefined) return '';

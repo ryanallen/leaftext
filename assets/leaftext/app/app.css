@@ -14963,6 +14963,47 @@ p.front-more {
   color: var(--lt-foreground);
   font-family: var(--app-font);
 }
+.elevenlabs-sheet {
+  background-color: var(--lt-surface-elevated);
+}
+.elevenlabs-sheet-body {
+  display: grid;
+  gap: var(--lt-space-14);
+  padding: var(--lt-space-20) 0;
+}
+.elevenlabs-sheet-body[hidden] {
+  display: none;
+}
+.elevenlabs-sheet-body h2,
+.elevenlabs-sheet-body p {
+  margin: 0;
+}
+.elevenlabs-sheet-body label {
+  display: grid;
+  gap: var(--lt-space-6);
+}
+.elevenlabs-sheet-body input,
+.elevenlabs-sheet-body select {
+  padding: var(--lt-space-8);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+}
+.elevenlabs-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--lt-space-8);
+}
+.elevenlabs-sheet-actions button {
+  padding: var(--lt-space-8) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface-elevated);
+  color: var(--lt-foreground);
+  font: inherit;
+}
 .theme-sheet-head {
   display: flex;
   align-items: center;

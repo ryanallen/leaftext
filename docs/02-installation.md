@@ -194,7 +194,7 @@ No, never. Leaftext installs into your user profile and runs from there, so neit
 
 ### Does it need an internet connection
 
-Only for two things, neither of which carries your words: checking GitHub for a newer version, and fetching a [theme's font](01-features/06-themes.md#fonts) from Google Fonts the first time you pick that theme. Reading, writing, searching, and diagrams all work offline.
+Only for two things, neither of which carries your words: checking GitHub for a newer version, and fetching a [theme's font](01-features/06-themes.md#fonts) from Google Fonts the first time you pick that theme. Reading, writing, searching, and diagrams all work offline. Connections you set up yourself — [GitHub sync](01-features/03-library.md#github-sync), [storage service vaults](01-features/03-library.md#storage-services) and [ElevenLabs read aloud](01-features/05-settings.md#read-aloud), which sends a passage only after you press Continue — need one too.
 
 ### Where are my settings stored
 
