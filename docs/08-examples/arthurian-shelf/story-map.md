@@ -254,7 +254,7 @@ As the Saxons grow in Britain and Hengist's son Octa settles in Kent, Arthur lea
 
 ### Strange sights of Britain include Arthur's dog's footprint and his son's grave
 
-The history lists Britain's and Ireland's strange sights, from Loch Lomond's sixty islands and the Severn's fighting waves to a stone at Builth printed by Arthur's dog Cavall while hunting the boar Troynt, and the grave of Arthur's son Anir, which changes length each time it's measured.
+The history lists Britain's and Ireland's strange sights, from Loch Lomond's sixty islands and the Severn's fighting waves to a stone at Builth printed by Arthur's dog Cavall while hunting the boar Twrch Trwyth, and the grave of Arthur's son Anir, which changes length each time it's measured.
 
 ## Arthur's end
 
