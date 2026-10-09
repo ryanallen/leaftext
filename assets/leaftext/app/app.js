@@ -31564,26 +31564,24 @@ function closeTableLensPicker() {
 }
 
 
+function pressTableLensPicker(event) {
+  const aimed = event.target && event.target.closest ? event.target : null;
+  const cell = aimed ? aimed.closest('td') : null;
+  
+  if (!cell || aimed.closest('.table-lens-picker') || aimed.closest('.table-sizer')) return;
+  const table = cell.closest('table[data-block-kind="table"]');
+  if (!table) return;
+  const at = Array.from(cell.parentElement.children).indexOf(cell);
+  
+  if (!tablePickerAt(table, cell, at) || !tableTakesControls(table)) return;
+  event.preventDefault();
+  event.stopPropagation();
+  openTableLensPicker(table, cell, at);
+}
 function bindTableLensPickers() {
   if (!app || app.__lensPickersBound) return;
   app.__lensPickersBound = true;
-  onColumn(
-    'pointerdown',
-    (event) => {
-      const aimed = event.target && event.target.closest ? event.target : null;
-      const cell = aimed ? aimed.closest('td') : null;
-      if (!cell || aimed.closest('.table-lens-picker')) return;
-      const table = cell.closest('table[data-block-kind="table"]');
-      if (!table) return;
-      const at = Array.from(cell.parentElement.children).indexOf(cell);
-      
-      if (!tablePickerAt(table, cell, at) || !tableTakesControls(table)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      openTableLensPicker(table, cell, at);
-    },
-    true
-  );
+  onColumn('pointerdown', pressTableLensPicker, true);
 }
 
 
@@ -40724,6 +40722,12 @@ function makeConsoleLayer(id) {
     terminal.loadAddon(fit);
     terminal.open(host);
     
+    const render = terminal.renderer.render.bind(terminal.renderer);
+    terminal.renderer.render = (...args) => {
+      if (layer.hidden) entry.drawOwed = true;
+      else render(...args);
+    };
+    
     const showScrollbar = terminal.showScrollbar;
     terminal.showScrollbar = function () { if (!minimapEnabled) showScrollbar.call(this); };
     
@@ -40874,6 +40878,11 @@ window.leafConsoleFront = id => {
   if (entry.fit) {
     entry.fit.fit();
     sendConsoleSize(id, entry);
+    if (entry.drawOwed) {
+      entry.drawOwed = false;
+      const terminal = entry.terminal;
+      terminal.renderer.render(terminal.wasmTerm, true, terminal.viewportY, terminal, terminal.scrollbarOpacity);
+    }
     entry.terminal.focus();
     scheduleMinimapPreviewUpdate();
   }
@@ -45394,6 +45403,11 @@ function refitTableSizingPlacement(table) {
   applyTableSizingPlacement(table);
   invalidateMinimapPreview();
 }
+
+function tableSizingCap(container, held) {
+  const available = container.getBoundingClientRect().width;
+  return available > 0 ? Math.max(TABLE_COLUMN_FLOOR, available - held.leading) : Infinity;
+}
 function applyTableSizingPlacement(table) {
   const held = table.__tableSizingPlacement;
   const container = tableSizingContainer(table);
@@ -45414,8 +45428,7 @@ function applyTableSizingPlacement(table) {
       }
     }
   }
-  const available = container.getBoundingClientRect().width;
-  const width = available > 0 ? Math.min(held.width, Math.max(TABLE_COLUMN_FLOOR, available - held.leading)) : held.width;
+  const width = Math.min(held.width, tableSizingCap(container, held));
   if (table.parentElement.classList.contains('table-lane')) {
     container.style.justifyContent = 'start';
     container.style.gridTemplateColumns = Math.max(TABLE_COLUMN_FLOOR, width) + 'px';
@@ -45430,6 +45443,20 @@ function applyTableSizingPlacement(table) {
   table.style.width = width + 'px';
   table.style.maxWidth = width + 'px';
 }
+
+function holdTableAtDrawnColumns(drag, sizes, held, cap) {
+  const drawn = tableSizingWidths(drag.parts);
+  const wanted = drawn.reduce((sum, one) => sum + one, 0) + drag.borders;
+  if (Math.abs(wanted - held.width) <= 0.5) return;
+  
+  const limit = Math.max(cap, drag.sizes.reduce((sum, one) => sum + one, 0) + drag.borders);
+  if (wanted > limit + 0.5) {
+    sizes[drag.at] = Math.max(TABLE_COLUMN_FLOOR, drawn[drag.at] - (wanted - limit));
+    pinTableColumnWidths(drag.parts, sizes);
+  }
+  held.width = Math.max(TABLE_COLUMN_FLOOR, Math.min(wanted, limit));
+  applyTableSizingPlacement(drag.table);
+}
 function applyPendingTableSize() {
   const drag = tableSizeDrag;
   if (!drag) return;
@@ -45440,10 +45467,16 @@ function applyPendingTableSize() {
   withColumn(drag.owner, () => {
     const sizes = drag.sizes.slice();
     sizes[drag.at] = drag.pending;
+    const delta = drag.pending - drag.base;
+    const container = drag.kind === 'column' ? tableSizingContainer(drag.table) : null;
+    
+    const cap = container && !drag.edge ? tableSizingCap(container, drag.placement) : Infinity;
+    
+    const excess = drag.placement.width + delta - cap;
+    if (excess > 0 && drag.at + 1 < sizes.length) sizes[drag.at + 1] = Math.max(TABLE_COLUMN_FLOOR, drag.sizes[drag.at + 1] - excess);
     drag.table.classList.add('is-reader-sized');
     if (drag.kind === 'row') pinTableRowHeights(drag.parts, sizes);
     else pinTableColumnWidths(drag.parts, sizes);
-    const delta = drag.pending - drag.base;
     const held = { ...drag.placement };
     if (drag.kind === 'column') {
       held.width = Math.max(TABLE_COLUMN_FLOOR, drag.placement.width + delta);
@@ -45451,6 +45484,7 @@ function applyPendingTableSize() {
     } else if (drag.edge === 'top') held.block = Math.max(-drag.gap, drag.placement.block - delta);
     drag.table.__tableSizingPlacement = held;
     applyTableSizingPlacement(drag.table);
+    if (drag.kind === 'column' && !drag.edge) holdTableAtDrawnColumns(drag, sizes, held, cap);
     drag.table.scrollLeft = drag.scrollLeft;
     const rectangle = drag.table.getBoundingClientRect();
     const drift = drag.edge === 'top' ? rectangle.bottom - drag.rectangle.bottom : rectangle.top - drag.rectangle.top;
@@ -45508,11 +45542,12 @@ document.addEventListener('pointerdown', (event) => {
     const previous = container.previousElementSibling;
     const gap = nested ? 0 : previous ? Math.max(0, box.top - previous.getBoundingClientRect().bottom - placement.block) : 0;
     const base = aimed.parts[aimed.at].getBoundingClientRect()[row ? 'height' : 'width'];
+    const sizes = row ? aimed.parts.map((part) => part.style.height ? parseFloat(part.style.height) : null) : tableSizingWidths(aimed.parts);
     let floor = row ? tableRowContentHeight(aimed.parts[aimed.at]) : TABLE_COLUMN_FLOOR;
     if (aimed.edge === 'right' || aimed.edge === 'left') floor = Math.max(floor, base - rectangle.width + TABLE_COLUMN_FLOOR);
     const turn = (aimed.table.__tableSizingTurn || 0) + 1;
     aimed.table.__tableSizingTurn = turn;
-    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes: row ? aimed.parts.map((part) => part.style.height ? parseFloat(part.style.height) : null) : tableSizingWidths(aimed.parts), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement, width: rectangle.width }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
+    tableSizeDrag = { ...aimed, turn, owner, pointerId: event.pointerId, sizes, borders: row ? 0 : Math.max(0, rectangle.width - sizes.reduce((sum, one) => sum + one, 0)), base, floor, from: row ? event.clientY : event.clientX, frame: 0, pending: null, placement: { ...placement, width: rectangle.width }, rectangle, gap, reader: readerScrollElement(), scrollLeft: aimed.table.scrollLeft || 0 };
     leafHoldPointer(aimed.grip, event.pointerId);
     document.body.classList.add('table-resizing');
     document.body.classList.toggle('is-row', row);
