@@ -10,7 +10,7 @@
 The *History of the Britons* tells Britain's story from its first settlers to the wars with the Saxons, and it's the first book to name Arthur, as the leader of the Britons in twelve battles. A Welsh writer put it together in Latin in 829 or 830 CE, the fourth year of King Merfyn of Gwynedd, as the book itself says. Later copies credit it to a monk named Nennius, but scholars doubt it, so the writer's name is uncertain. Historians don't read it as fact: much of the book is legend, a founding story made up to give the Britons a glorious ancestry, tracing them back to Troy the way Rome traced itself to Aeneas. This translation follows its oldest copy, London, British Library, Harley MS 3859, as Theodor Mommsen printed it in 1898, and leaves out the prologue naming Nennius and the Irish version Mommsen prints beside the text, which belong to later copies.
 
 <!-- made-with -->
-Translated with machine assistance by [Ryan Allen](../historia-brittonum-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 5 million new tokens so far on this book; a working translation, not a scholarly edition.
+Translated with machine assistance by [Ryan Allen](../historia-brittonum-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 6 million new tokens so far on this book; a working translation, not a scholarly edition.
 
 How it was made: built by [Ryan Allen](../historia-brittonum-how-it-was-made.md#ryan-allen), [who designed the system that made it](../historia-brittonum-how-it-was-made.md#designed-the-system), [all checks passed](../historia-brittonum-how-it-was-made.md#all-checks-passed), [readable first](../historia-brittonum-how-it-was-made.md#readable-first), [plain speech](../historia-brittonum-how-it-was-made.md#plain-speech), [shaped for English](../historia-brittonum-how-it-was-made.md#shaped-for-english), [every link said](../historia-brittonum-how-it-was-made.md#every-link-said), [nothing said twice](../historia-brittonum-how-it-was-made.md#nothing-said-twice), [the right word each time](../historia-brittonum-how-it-was-made.md#the-right-word-each-time), [no word worn out](../historia-brittonum-how-it-was-made.md#no-word-worn-out), [modern idiom](../historia-brittonum-how-it-was-made.md#modern-idiom), [US English](../historia-brittonum-how-it-was-made.md#us-english), [English word order](../historia-brittonum-how-it-was-made.md#english-word-order), [natural tenses](../historia-brittonum-how-it-was-made.md#natural-tenses), [contractions](../historia-brittonum-how-it-was-made.md#contractions), [neutral tone](../historia-brittonum-how-it-was-made.md#neutral-tone), [gender neutral](../historia-brittonum-how-it-was-made.md#gender-neutral), [no false echoes](../historia-brittonum-how-it-was-made.md#no-false-echoes), [prose and verse read aloud; source lines and stanzas kept](../historia-brittonum-how-it-was-made.md#read-aloud), [scenes read for movement](../historia-brittonum-how-it-was-made.md#scenes-read-for-movement), [checked against the scan](../historia-brittonum-how-it-was-made.md#checked-against-the-scan), [sources named](../historia-brittonum-how-it-was-made.md#sources-named), [honest where unsure](../historia-brittonum-how-it-was-made.md#honest-where-unsure), [no borrowed wording](../historia-brittonum-how-it-was-made.md#no-borrowed-wording), [translated by manifest](../historia-brittonum-how-it-was-made.md#translated-by-manifest), [every choice logged](../historia-brittonum-how-it-was-made.md#every-choice-logged), [changes carried everywhere](../historia-brittonum-how-it-was-made.md#changes-carried-everywhere), [story headings](../historia-brittonum-how-it-was-made.md#story-headings), [matching outlines](../historia-brittonum-how-it-was-made.md#matching-outlines), [laid out for screens](../historia-brittonum-how-it-was-made.md#laid-out-for-screens), [pages linked to scans](../historia-brittonum-how-it-was-made.md#pages-linked-to-scans), [endnotes](../historia-brittonum-how-it-was-made.md#endnotes), [additions marked](../historia-brittonum-how-it-was-made.md#additions-marked), [sourced glossary](../historia-brittonum-how-it-was-made.md#sourced-glossary), [modern names](../historia-brittonum-how-it-was-made.md#modern-names), [places located from sources](../historia-brittonum-how-it-was-made.md#places-located-from-sources), [no guessed identities](../historia-brittonum-how-it-was-made.md#no-guessed-identities), [no common words glossed](../historia-brittonum-how-it-was-made.md#no-common-words-glossed), [free with credit](../historia-brittonum-how-it-was-made.md#free-with-credit).
 <!-- /made-with -->
@@ -131,7 +131,7 @@ From the Saxons' first year in Britain to King Merfyn's fourth, four hundred twe
 
 I found another account of this Brutus in the old books of our ancestors. After the Flood Noah's three sons divided the world into three parts: Shem spread his borders in Asia, Ham in Africa and Japheth in Europe.
 
-<a id="page-160"></a>[\[Mommsen 160\]](../historia-brittonum-latin.md#page-160) The first man of Japheth's line to come to Europe was Alanus, and his three children came with him, Hessitio, Armenon and Negue. Hessitio had four, Francus, Romanus, Brutus and Albanus. Armenon had five, Gothus, Valagothus, Gebidus, Burgundus and Longobardus. Negue had three, Vandalus, Saxo and Boguarus. From Hessitio descended four peoples, the Franks, the Latins, the Albans and the Britons; from Armenon five, the Goths, the Walagoths, the Gepids, the Burgundians and the Lombards; and from Negue four, the Bavarians, the Vandals, the Saxons and the Thuringians. These peoples spread out over all of Europe.
+<a id="page-160"></a>[\[Mommsen 160\]](../historia-brittonum-latin.md#page-160) The first man of Japheth's line to come to Europe was Alanus, and his three children came with him, Hessitio, Armenon and Negue. Hessitio had four, Francus, Romanus, Brutus and Albanus. Armenon had five, Gothus, Valagothus, Gebidus, Burgundus and Longobardus. Negue had three, Vandalus, Saxo and Boguarus.[^160-1] From Hessitio descended four peoples, the Franks, the Latins, the Albans and the Britons; from Armenon five, the Goths, the Walagoths, the Gepids, the Burgundians and the Lombards; and from Negue four, the Bavarians, the Vandals, the Saxons and the Thuringians. These peoples spread out over all of Europe.
 
 <a id="page-161"></a>[\[Mommsen 161\]](../historia-brittonum-latin.md#page-161) Alanus, they say, was born to Fetebir, and his line runs back, father to father, through Ougomun, Thoi, Boib, Simeon, Mair, Ethach, Aurthach, Ecthet, Oth, Abir, Ra, Ezra, Izrau, Baath, Iobaath, Iovan, Japheth, Noah, Lamech, Methuselah, Enoch, Jared, Mahalalel, Cainan, Enos and Seth to Adam, son of the living God. I learned this from what the old men handed down.
 
@@ -746,7 +746,9 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^159-1]: Easter was dated by tables of nineteen-year cycles, each made of an *ogdoad*, its first eight years, and a *hendecad*, its last eleven. "Two years into its ogdoad" puts the time of writing in the second year of a new cycle.<sup>[\*](#new-in-this-translation)</sup>
 
-[^161-1]: Rea Silvia is the mother of Romulus and Remus in Roman legend, and Numa Pompilius Rome's second king; this account makes them Brutus's forebears.<sup>[\*](#new-in-this-translation)</sup>
+[^160-1]: This is the history's table of the peoples of Europe, traced to Alanus's three sons; it also survives on its own, as the Frankish Table of Nations. Hessitio's, Armenon's and Negue's sons are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
+
+[^161-1]: Two lines run Brutus back here, one through Alanus to Adam and one through Rea Silvia to Japheth, joining Troy to the Bible. Most of the names between Alanus and Japheth, from Fetebir to Iovan, are known from this genealogy alone. Rea Silvia is the mother of Romulus and Remus in Roman legend, and Numa Pompilius Rome's second king; this account makes them Brutus's forebears.<sup>[\*](#new-in-this-translation)</sup>
 
 [^162-1]: In the whole story: [The Romans rule Britain from Julius Caesar until they leave](../../arthurian-shelf/story-map.md#the-romans-rule-britain).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -782,7 +784,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^171-2]: The history doesn't say who this Ambrosius is. Further on, the fatherless boy of the dragons gives his name as Ambrosius, and Vortigern's son Pasgen rules by the gift of an Ambrosius who's king over all the kings of the Britons.<sup>[\*](#new-in-this-translation)</sup>
 
-[^171-3]: Woden was the chief god of the pagan English, and their kings traced their families back to him.<sup>[\*](#new-in-this-translation)</sup>
+[^171-3]: Woden was the chief god of the pagan English, and their kings traced their families back to him. Hengist's line, through Wihtgils, Witta and Wecta to Woden and on through Frealaf, Fredulf and Fodepald to Geta, is the one the kings of Kent claimed; most of its names are known from such royal genealogies alone.<sup>[\*](#new-in-this-translation)</sup>
 
 [^172-1]: Thanet, in the far northeast of Kent, was an island until the channel between it and the mainland silted up. *Ruoihm* is the Britons' name for it as the Harleian manuscript spells it.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -854,7 +856,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^192-1]: The history counts three sons, then names a fourth.<sup>[\*](#new-in-this-translation)</sup>
 
-[^193-1]: *Guortheneu* is a second name the genealogy gives Vortigern; what it means is uncertain.<sup>[\*](#new-in-this-translation)</sup>
+[^193-1]: *Guortheneu* is a second name the genealogy gives Vortigern; what it means is uncertain. The line from Tewdwr back to Glovi is the royal family of Builth and Gwrtheyrnion, and most of its names, from Guoidcant to Guitaul, are known from it alone, as are Glovi's sons Bonus, Paul and Mauron.<sup>[\*](#new-in-this-translation)</sup>
 
 [^193-2]: In the whole story: [Patrick is sent to Ireland and preaches to the Irish](../../arthurian-shelf/story-map.md#patrick-preaches-to-the-irish).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -894,23 +896,23 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^202-1]: In the whole story: [The English kings' families are traced back to Woden](../../arthurian-shelf/story-map.md#the-english-kings-families-are-traced).<sup>[\*](#new-in-this-translation)</sup>
 
-[^202-2]: The history promises twelve sons and names eight, one of them called a queen. Mommsen prints the names as the Harleian manuscript spells them, and this translation keeps those spellings in the lists of names.<sup>[\*](#new-in-this-translation)</sup>
+[^202-2]: The history promises twelve sons and names eight, one of them called a queen. Mommsen prints the names as the Harleian manuscript spells them, and this translation keeps those spellings in the lists of names. The lines on this page, from Woden down to Ida, Ida's sons and Aethelfrith's, are the royal genealogy of Bernicia, and most of their names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
 
 [^202-3]: Aethelfrith, king of Bernicia and then of Deira, ruled from about 593 to 616 CE; *Flesaur* is the history's byname for him, of uncertain meaning.<sup>[\*](#new-in-this-translation)</sup>
 
 [^203-1]: The Latin's *Birdei* is Bridei, son of Beli, king of the Picts. Gueith Lin Garan is Welsh for "the battle of Heron Lake," the battle the English call Nechtansmere, in 685 CE. The Latin calls the Saxons *ambrones*, a word for savage raiders.<sup>[\*](#new-in-this-translation)</sup>
 
-[^203-2]: Aethelberht is Aethelberht, the king of Kent who received the first mission from Rome, at the end of the sixth century CE.<sup>[\*](#new-in-this-translation)</sup>
+[^203-2]: The Latin's *Ealdbert* is Aethelberht, the king of Kent who received the first mission from Rome, at the end of the sixth century CE. The lines of Kent and the East Angles that follow are royal genealogies, and most of their names, from Casser to Rippan and from Guecha to Elric, are known from such lists alone, as is Royth, Rhiainfellt's father.<sup>[\*](#new-in-this-translation)</sup>
 
-[^204-1]: The Latin's *Eadlbald* is the Mercian king Aethelbald, who died in 757 CE. This Ecgfrith is the son of the great Offa of Mercia, and died in 796 CE; he isn't the Northumbrian king of the same name.<sup>[\*](#new-in-this-translation)</sup>
+[^204-1]: The Mercian line runs from Woden through Guedolgeat to Pybba, and Ecgfrith's back through Offa, Thingfrith, Eanwulf and Ossulf to Eowa; most of its names are known from such royal genealogies alone. The Latin's *Eadlbald* is the Mercian king Aethelbald, who died in 757 CE. This Ecgfrith is the son of the great Offa of Mercia, and died in 796 CE; he isn't the Northumbrian king of the same name.<sup>[\*](#new-in-this-translation)</sup>
 
 [^204-2]: Deira was the English kingdom between the Humber and the Tees, around York; Bernicia lay north of it. The Latin gives the split in Welsh, *Deur o Birneich*, "Deira from Bernicia."<sup>[\*](#new-in-this-translation)</sup>
 
-[^204-3]: The list runs the generations together: Aella, the Latin's *Ulli*, was the first king of Deira, Edwin was his son, and Osfrith and Eadfrith were Edwin's sons.<sup>[\*](#new-in-this-translation)</sup>
+[^204-3]: The list runs the generations together: Aella, the Latin's *Ulli*, was the first king of Deira, Edwin was his son, and Osfrith and Eadfrith were Edwin's sons. The Deiran line from Woden through Beldeg and Soemil to Aella is a royal genealogy, and most of its names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
 
 [^204-4]: Meicen is the battle the English call Hatfield Chase, in 633 CE, where Cadwallon and Penda killed Edwin.<sup>[\*](#new-in-this-translation)</sup>
 
-[^205-1]: Eadbyrth and Ecgbirth are Eadberht, king of Northumbria, and his brother Ecgberht, the first archbishop of York, in the eighth century CE; "the first of their nation" seems to mean the first archbishop of their people.<sup>[\*](#new-in-this-translation)</sup>
+[^205-1]: Eadbyrth and Ecgbirth are Eadberht, king of Northumbria, and his brother Ecgberht, the first archbishop of York, in the eighth century CE; "the first of their nation" seems to mean the first archbishop of their people. The lines on this page, Ida's down to them and Ailguin's through Oslach to Oslaph, are royal genealogies whose middle names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
 
 [^205-2]: Din Guayrdi is Bamburgh, on the coast of Northumberland. The Latin, *unxit Dinguayrdi Guurth Berneich*, is hard to construe; this translation follows the usual reading, that Ida joined the fort to Bernicia.<sup>[\*](#new-in-this-translation)</sup>
 

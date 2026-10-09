@@ -107,6 +107,8 @@ Also: Adan, Evain
 
 The first man and woman, who Christ takes out of hell.
 
+Wikipedia: [Adam and Eve](https://en.wikipedia.org/wiki/Adam_and_Eve)
+
 ## adeser
 
 To touch.
@@ -133,6 +135,8 @@ Also: Agrevains
 
 A son of King Lot of Orkney, Gawain's brother.
 
+Wikipedia: [Agravain](https://en.wikipedia.org/wiki/Agravain)
+
 ## aiole
 
 A grandmother.
@@ -147,21 +151,21 @@ To summon someone by letter to appear on a fixed day; the judges summon Merlin's
 
 A kinsman of Joseph of Arimathea who led a company of his own; his story goes into Blaise's book.
 
+Wikipedia: [Fisher King](https://en.wikipedia.org/wiki/Fisher_King)
+
 ## alegier
 
 Also: aliege
 
 To grow lighter.
 
-## aler
-
-To go; of a person, to die.
-
 ## Ambrosius Aurelianus
 
 Also: Aurelius Ambroisius
 
 Pendragon's baptismal name, which the English called him by.
+
+Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aurelianus)
 
 ## amentevoir
 
@@ -218,6 +222,8 @@ To burn; burning is the death the law gives Merlin's mother if she can't name th
 Also: Artus, Artu
 
 The son of Uther and Igraine.
+
+Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
 ## assenement
 
@@ -283,6 +289,8 @@ Also: Blaises
 
 The holy man who hears the confession of Merlin's mother and stands by her, and who writes down in a book what Merlin tells him.
 
+Wikipedia: [Merlin](https://en.wikipedia.org/wiki/Merlin)
+
 ## boine fin
 
 Also: bonne fin
@@ -305,6 +313,8 @@ A knight of the Duke of Tintagel's who the duke trusts.
 
 A brother-in-law of Joseph of Arimathea, who catches the fish laid on Joseph's table beside the vessel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Fisher King](https://en.wikipedia.org/wiki/Fisher_King)
+
 ## Candeler
 
 Also: Chandeler
@@ -314,6 +324,8 @@ Candlemas, the Church's feast of the Presentation of Christ in the Temple on Feb
 ## Carduel
 
 A town of the Arthurian stories, which this one places in Wales, where Uther holds court. It's often identified with Carlisle, in northwest England, but the text doesn't tie it to a modern town.
+
+Wikipedia: [List of locations associated with Arthurian legend](https://en.wikipedia.org/wiki/List_of_locations_associated_with_Arthurian_legend)
 
 ## chainne
 
@@ -356,8 +368,6 @@ Leave to depart from a lord's court; the duke goes home without it, and Uther ca
 To advise; also, to speak together in low voices.
 
 ## Constans
-
-Also: Constant
 
 A king of England, the father of Moine, Pendragon and Uther.
 
@@ -489,6 +499,8 @@ Also: Auctor
 
 A worthy knight of Uther's, Kay's father, who Merlin brings the newborn Arthur to raise as his own.
 
+Wikipedia: [Ector (Arthurian legend)](https://en.wikipedia.org/wiki/Ector_(Arthurian_legend))
+
 ## edefis
 
 Also: edefiemens
@@ -555,6 +567,8 @@ Also: Engleterre, Engletere
 
 The southern and largest part of Great Britain, where most of this story takes place; the romance doesn't draw its modern borders.
 
+Wikipedia: [England](https://en.wikipedia.org/wiki/England)
+
 ## englume
 
 An anvil: the one of iron set on the block of stone, with the sword driven through it to the hilt.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
@@ -607,12 +621,6 @@ What one needs, necessities.
 
 A fleet.
 
-## fie
-
-Also: fies
-
-A time, as in once or three times.
-
 ## fisike
 
 Medicine, the learned art of healing and of the nature of things; for her knowledge of it Morgue is called Morgan le Fay.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
@@ -630,6 +638,8 @@ To mock, to make fun of: Ulfin tells Igraine she may be mocking him.<sup>[\*](GL
 ## Gaheris
 
 A son of King Lot of Orkney, Gawain's brother.
+
+Wikipedia: [Gaheris](https://en.wikipedia.org/wiki/Gaheris)
 
 ## galilee
 
@@ -655,6 +665,8 @@ A low fellow, a thug; the younger sister brings a crowd of them to her sister's 
 
 A son of King Lot of Orkney, Gawain's brother.
 
+Wikipedia: [Gareth](https://en.wikipedia.org/wiki/Gareth)
+
 ## garsoil
 
 A word that a passage Paris and Ulrich added says Hengist's daughter was the first to say in England. Geoffrey of Monmouth tells of a daughter of Hengist who greets Vortigern at a feast with a cup of wine and an Old English wish of health, and dates from it the drinking greeting of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
@@ -668,6 +680,8 @@ A waste, a wilderness: the *deserte gastine* where Joseph's people go hungry aft
 Also: Gauvain, Gauvains
 
 A son of King Lot of Orkney.
+
+Wikipedia: [Gawain](https://en.wikipedia.org/wiki/Gawain)
 
 ## genvre
 
@@ -688,6 +702,8 @@ Baggage and gear: the duke's knights leave theirs behind and keep only their arm
 Also: Hangus, Hanguis, Hangu
 
 The leader of the Saxons.
+
+Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
 ## herbegier
 
@@ -711,6 +727,8 @@ Also: saint graal, graal
 
 The holy vessel of Joseph of Arimathea's story; Merlin tells Blaise he'll go to live among the people who keep it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Holy Grail](https://en.wikipedia.org/wiki/Holy_Grail)
+
 ## homme sauvage
 
 A wild man, one who lives in the woods apart from other people; Merlin comes as a woodcutter so shaggy and long-bearded that he looks like one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
@@ -729,10 +747,6 @@ Homage, the vow by which a vassal became a lord's man and held land from him; Ar
 
 Honours: worldly rank, and the lands and offices that go with it, which a vassal holds from a lord; the barons ask Arthur to give them back theirs to hold from him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
-## huge
-
-A chest, a coffer.
-
 ## hurepé
 
 Also: hurepés
@@ -745,11 +759,15 @@ Also: Ygerne, Igerne
 
 The Duke of Tintagel's wife.
 
+Wikipedia: [Igraine](https://en.wikipedia.org/wiki/Igraine)
+
 ## Ireland
 
 Also: Irlande
 
 The large island west of Great Britain, across the Irish Sea.
+
+Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
 ## iretage
 
@@ -764,6 +782,8 @@ To confess, to own up.
 Also: Jesucrist, Jesucris, Jhesucrist, Jesus
 
 Christ, whose coming to hell takes from the devils the souls they held.
+
+Wikipedia: [Jesus](https://en.wikipedia.org/wiki/Jesus)
 
 ## Jordain
 
@@ -783,6 +803,8 @@ Also: Joseph
 
 The man given Christ's body from the cross, whose story of the Grail Blaise writes into his book.
 
+Wikipedia: [Joseph of Arimathea](https://en.wikipedia.org/wiki/Joseph_of_Arimathea)
+
 ## jovle
 
 Young.
@@ -790,6 +812,8 @@ Young.
 ## Judas
 
 The apostle who betrayed Christ; the empty place at Joseph's table stands for the one he left at the Last Supper.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Judas Iscariot](https://en.wikipedia.org/wiki/Judas_Iscariot)
 
 ## jungnet
 
@@ -804,6 +828,16 @@ Justice in its hard sense, punishment by law; to do justiche of someone is to pu
 Also: Ké, Kés
 
 Ector's son, brought up alongside Arthur.
+
+Wikipedia: [Sir Kay](https://en.wikipedia.org/wiki/Sir_Kay)
+
+## King Lot
+
+Also: Loth
+
+King of Orkney, who marries a daughter of Igraine's.
+
+Wikipedia: [King Lot](https://en.wikipedia.org/wiki/King_Lot)
 
 ## laidengier
 
@@ -835,6 +869,8 @@ The Book of the Prophecies of Merlin, begun when the king and his people resolve
 
 The Britons' legendary kingdom, which Uther rules, and in this story also its chief city, where he holds court and dies; neither is on a modern map.
 
+Wikipedia: [Logres](https://en.wikipedia.org/wiki/Logres)
+
 ## loiier
 
 A reward, a fee paid for a service; the old man asks what reward the king will give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
@@ -845,15 +881,11 @@ Also: Londres
 
 The city on the Thames in southeastern England where Uther is crowned after the battle of Salisbury.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [London](https://en.wikipedia.org/wiki/London)
+
 ## los
 
 Advice.
-
-## Lot
-
-Also: Loth
-
-King of Orkney, who marries a daughter of Igraine's.
 
 ## maistre eglise
 
@@ -875,6 +907,8 @@ Also: sainte Marie
 
 The mother of Christ, who the older sister calls on when she wakes.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Mary, mother of Jesus](https://en.wikipedia.org/wiki/Mary,_mother_of_Jesus)
+
 ## menistres
 
 Also: menistre
@@ -886,6 +920,8 @@ The clergy, who the devils say Christ left on earth to save sinners who repent a
 Also: Merlins, Mierlin, Mierlins
 
 A child fathered by a devil with a devout woman, who knows what's past from his father and the future from God.
+
+Wikipedia: [Merlin](https://en.wikipedia.org/wiki/Merlin)
 
 ## mesaesmer
 
@@ -921,11 +957,15 @@ Also: Mordrès
 
 A son born to King Lot's wife, named first among Gawain's brothers.
 
+Wikipedia: [Mordred](https://en.wikipedia.org/wiki/Mordred)
+
 ## Morgan le Fay
 
 Also: Morgue
 
 A daughter of Igraine's who Uther sends to a house of religion to learn to read and write, where she learns the seven arts, astronomy and medicine.
+
+Wikipedia: [Morgan le Fay](https://en.wikipedia.org/wiki/Morgan_le_Fay)
 
 ## Morgans
 
@@ -943,6 +983,8 @@ A church; Pendragon is coming back from one when the next stranger comes to him.
 
 King of Sorhaut, who marries another of Igraine's daughters.
 
+Wikipedia: [King Nentres](https://en.wikipedia.org/wiki/King_Nentres)
+
 ## nonains
 
 Nuns; Merlin takes the messengers to the house of nuns where he's had his mother take the veil.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
@@ -956,6 +998,8 @@ A nurse who suckles another woman's child. Ector blames Kay's faults on the nurs
 Also: Norhomberlande
 
 The far north of Britain, where Merlin sends Blaise to write his book, a wild country thick with great forests. The name means the land north of the Humber; the romance gives it no modern borders.
+
+Wikipedia: [Northumberland](https://en.wikipedia.org/wiki/Northumberland)
 
 ## nueches
 
@@ -978,6 +1022,8 @@ A road, a journey.
 Also: Orkenie, Orkanie
 
 The islands north of mainland Scotland, made King Lot's kingdom in this story.
+
+Wikipedia: [Orkney](https://en.wikipedia.org/wiki/Orkney)
 
 ## ostoiier
 
@@ -1002,6 +1048,8 @@ A pilgrimage, a journey to a holy place; the peasant has bought leather to mend 
 Also: Pandragon, Pandragons
 
 King Constans's second son, Uther's older brother.
+
+Wikipedia: [Pendragon](https://en.wikipedia.org/wiki/Pendragon)
 
 ## penitanche
 
@@ -1103,11 +1151,15 @@ Also: Romme
 
 The city in central Italy where the pope is based; the story's "law of Rome" means the faith of the Church.
 
+Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
+
 ## Round Table
 
 Also: table reonde, tierche table
 
 The third table, which Merlin bids Uther found in the name of the Trinity after the table of the Last Supper and Joseph's table; he makes it at Carduel and seats fifty of the worthiest men of the land at it, with one place left empty.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Round Table](https://en.wikipedia.org/wiki/Round_Table)
 
 ## sacre
 
@@ -1129,11 +1181,15 @@ Also: Salesbieres
 
 The plain around Salisbury, in Wiltshire in southern England, where this story sets the Britons' battle with the Saxons.
 
+Wikipedia: [Salisbury](https://en.wikipedia.org/wiki/Salisbury)
+
 ## Satan
 
 Also: Sathanas
 
 The devil by name; the judge's mother swears by him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Satan](https://en.wikipedia.org/wiki/Satan)
 
 ## saudees
 
@@ -1145,9 +1201,11 @@ So long as it's honourable: the one limit set on the gift Uther swears to give M
 
 ## Saxons
 
-Also: Saisnes, Saisne
+Also: Saisnes, Saisne, Saxon
 
 The heathen people from over the sea who come to win England.
+
+Wikipedia: [Saxons](https://en.wikipedia.org/wiki/Saxons)
 
 ## segnier
 
@@ -1217,6 +1275,8 @@ To give bad advice.
 
 Latin, "We praise you, God": the hymn of thanks the clergy sing when the sword is found and again when Arthur draws it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Te Deum](https://en.wikipedia.org/wiki/Te_Deum)
+
 ## teche
 
 Also: teches
@@ -1228,6 +1288,8 @@ A quality, a trait.
 Also: Teintaguel, Tintaguel, Tintageul
 
 The coastal headland in Cornwall where this story places the castle of the duke whose wife is Igraine. The castle visible there today was built centuries later.
+
+Wikipedia: [Tintagel](https://en.wikipedia.org/wiki/Tintagel)
 
 ## toises
 
@@ -1253,6 +1315,8 @@ Also: Urfin, Urfins
 
 An adviser of Uther's.
 
+Wikipedia: [Gorlois](https://en.wikipedia.org/wiki/Gorlois)
+
 ## Ursin
 
 Also: Ursins
@@ -1264,6 +1328,8 @@ An adviser of Pendragon's, sent with two others to ask the Saxons for a truce.<s
 Also: Uther Pendragon, Uter, Uters, Uter Pandragon, Uters Pandragons
 
 King Constans's youngest son, Pendragon's brother, who takes his brother's name when he becomes king.
+
+Wikipedia: [Uther Pendragon](https://en.wikipedia.org/wiki/Uther_Pendragon)
 
 ## vaissiel
 
@@ -1305,14 +1371,20 @@ Also: Vertigier, Vertigiers
 
 King Moine's steward, the most powerful man in the land.
 
+Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
+
 ## Wales
 
 Also: Gales
 
 The country on the western side of Great Britain where this story places Carduel.
 
+Wikipedia: [Wales](https://en.wikipedia.org/wiki/Wales)
+
 ## Winchester
 
 Also: Wincestre
 
 A city in Hampshire, inland in southern England, which this story makes a seaport where Pendragon and Uther land.
+
+Wikipedia: [Winchester](https://en.wikipedia.org/wiki/Winchester)

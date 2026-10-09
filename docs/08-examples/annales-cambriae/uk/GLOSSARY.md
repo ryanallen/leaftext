@@ -6,7 +6,7 @@
 The people, places and old words of *The Welsh Annals*.
 
 <!-- made-with -->
-Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), more than 5 million new tokens so far on this book; a working translation, not a scholarly edition.
+Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), more than 6 million new tokens so far on this book; a working translation, not a scholarly edition.
 
 How it was made: built by Ryan Allen[^ryan-allen], who designed the system that made it[^how-designed-the-system], all checks passed[^how-all-checks-passed], readable first[^how-readable-first], plain speech[^how-plain-speech], shaped for English[^how-shaped-for-english], every link said[^how-every-link-said], nothing said twice[^how-nothing-said-twice], the right word each time[^how-the-right-word-each-time], no word worn out[^how-no-word-worn-out], modern idiom[^how-modern-idiom], US English[^how-us-english], [English word order](../annales-cambriae-how-it-was-made.md#english-word-order), natural tenses[^how-natural-tenses], [contractions](../annales-cambriae-how-it-was-made.md#contractions), neutral tone[^how-neutral-tone], gender neutral[^how-gender-neutral], no false echoes[^how-no-false-echoes], prose and verse read aloud; source lines and stanzas kept[^how-read-aloud], scenes read for movement[^how-scenes-read-for-movement], [checked against the scan](../annales-cambriae-how-it-was-made.md#checked-against-the-scan), sources named[^how-sources-named], honest where unsure[^how-honest-where-unsure], no borrowed wording[^how-no-borrowed-wording], source over Malory[^how-source-over-malory], [translated by manifest](../annales-cambriae-how-it-was-made.md#translated-by-manifest), [every choice logged](../annales-cambriae-how-it-was-made.md#every-choice-logged), [changes carried everywhere](../annales-cambriae-how-it-was-made.md#changes-carried-everywhere), story headings[^how-story-headings], [matching outlines](../annales-cambriae-how-it-was-made.md#matching-outlines), laid out for screens[^how-laid-out-for-screens], [pages linked to scans](../annales-cambriae-how-it-was-made.md#pages-linked-to-scans), [endnotes](../annales-cambriae-how-it-was-made.md#endnotes), Malory cross-referenced[^how-malory-cross-referenced], [additions marked](../annales-cambriae-how-it-was-made.md#additions-marked), [sourced glossary](../annales-cambriae-how-it-was-made.md#sourced-glossary), [modern names](../annales-cambriae-how-it-was-made.md#modern-names), [places located from sources](../annales-cambriae-how-it-was-made.md#places-located-from-sources), no guessed identities[^how-no-guessed-identities], no common words glossed[^how-no-common-words-glossed], free with credit[^how-free-with-credit].
 
@@ -79,6 +79,8 @@ Also: opergelei
 
 A town on the north coast of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Abergele](https://en.wikipedia.org/wiki/Abergele)
+
 ## Abloyc
 
 Also: Abloẏc
@@ -91,11 +93,27 @@ Also: adomnan
 
 An Irish abbot of Iona and writer of Columba's life.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Adomnán](https://en.wikipedia.org/wiki/Adomn%C3%A1n)
+
 ## Áed Findliath
 
 Also: Aed map neill
 
 An Irish high king, the son of Niall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Áed son of Niall
+
+Áed Findliath, a high king of Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Áed Findliath](https://en.wikipedia.org/wiki/%C3%81ed_Findliath)
+
+## Áedán
+
+Also: Edwin
+
+Áedán son of Gabrán, a king of Dál Riata.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Áedán mac Gabráin](https://en.wikipedia.org/wiki/%C3%81ed%C3%A1n_mac_Gabr%C3%A1in)
 
 ## Áedán mac Gabráin
 
@@ -103,11 +121,41 @@ Also: Aidān
 
 A king of the Irish of Dál Riata in western Scotland, the son of Gabrán.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Aethelbald
+
+A king of Mercia; the annals call him king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Æthelbald of Mercia](https://en.wikipedia.org/wiki/%C3%86thelbald_of_Mercia)
+
+## Aethelflaed
+
+Also: Aethelflaed
+
+Æthelflæd, Lady of the Mercians, who the annals call queen.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Æthelflæd](https://en.wikipedia.org/wiki/%C3%86thelfl%C3%A6d)
+
+## Aethelstan
+
+Also: Ædelſtan, Aethelstan
+
+Æthelstan, king of the English in the tenth century.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Æthelstan](https://en.wikipedia.org/wiki/%C3%86thelstan)
+
 ## Aldfrith
 
 Also: Alch frit
 
 A king of the Northumbrians The annals call him a king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Aldfrith of Northumbria](https://en.wikipedia.org/wiki/Aldfrith_of_Northumbria)
+
+## Alfred
+
+Alfred the Great, king of the West Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Alfred the Great](https://en.wikipedia.org/wiki/Alfred_the_Great)
 
 ## Alfred the Great
 
@@ -121,6 +169,16 @@ Also: alt clut
 
 The fortress of the Britons of the north on Dumbarton Rock, on the Firth of Clyde.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Dumbarton Castle](https://en.wikipedia.org/wiki/Dumbarton_Castle)
+
+## Anarawd
+
+Also: Anarawd
+
+Anarawd son of Rhodri, king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Anarawd ap Rhodri](https://en.wikipedia.org/wiki/Anarawd_ap_Rhodri)
+
 ## Anarawd ap Rhodri
 
 Also: Anaraut
@@ -133,11 +191,15 @@ Also: Mon, inmón, món
 
 The island off the north-west coast of Wales, Môn in Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Anglesey](https://en.wikipedia.org/wiki/Anglesey)
+
 ## Arfderydd
 
 Also: armterid
 
 A place in the north of Britain where a battle is fought.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Battle of Arfderydd](https://en.wikipedia.org/wiki/Battle_of_Arfderydd)
 
 ## Arthen
 
@@ -145,11 +207,19 @@ Also: Arthgen
 
 A king of Ceredigion.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Seisyll ap Clydog](https://en.wikipedia.org/wiki/Seisyll_ap_Clydog)
+
 ## Arthur
 
 Also: arthur
 
 The leader who carries the cross of Christ at Badon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
+
+## Artmail
+
+The father of the Cadell who dies of poison.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Arwystli
 
@@ -157,11 +227,23 @@ Also: arguiſtli
 
 A district of mid Wales, in the upper Severn valley.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Arwystli](https://en.wikipedia.org/wiki/Arwystli)
+
 ## Asser
 
 Also: aſſer
 
 A bishop and scholar of St Davids, who wrote the life of King Alfred.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Asser](https://en.wikipedia.org/wiki/Asser)
+
+## Augustine
+
+Also: Augustine, Aguſtinuſ
+
+Augustine, sent from Rome to bring the English to Christ, the first archbishop of Canterbury.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Augustine of Canterbury](https://en.wikipedia.org/wiki/Augustine_of_Canterbury)
 
 ## Augustine of Canterbury
 
@@ -175,11 +257,15 @@ Also: badoniſ
 
 The place where the Britons fight the battle in which Arthur carries the cross.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of Badon](https://en.wikipedia.org/wiki/Battle_of_Badon)
+
 ## Bangor
 
 Also: bancorum
 
 The monastery and bishop's seat at Bangor in north-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Bangor, Gwynedd](https://en.wikipedia.org/wiki/Bangor,_Gwynedd)
 
 ## Bannguolou
 
@@ -193,17 +279,29 @@ Also: Beda
 
 The Northumbrian priest and monk who wrote the history of the English church.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Bede](https://en.wikipedia.org/wiki/Bede)
+
 ## Beli son of Elfin
 
 Also: Beli filiuſ elfin
 
 A king of the Britons of Alt Clut.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Beli II of Alt Clut](https://en.wikipedia.org/wiki/Beli_II_of_Alt_Clut)
+
 ## Belin
 
 Also: Belin
 
 A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Benignus
+
+Also: benigni, Benignus
+
+Benignus, Patrick's follower as head of the church at Armagh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Benignus of Armagh](https://en.wikipedia.org/wiki/Benignus_of_Armagh)
 
 ## Benignus of Armagh
 
@@ -223,11 +321,15 @@ Also: Brendan bẏror
 
 An Irish abbot of Birr.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Brendan of Birr](https://en.wikipedia.org/wiki/Brendan_of_Birr)
+
 ## Brigid
 
 Also: Brigida, brigidæ
 
 An Irish saint and abbess.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Brigid of Kildare](https://en.wikipedia.org/wiki/Brigid_of_Kildare)
 
 ## Brin Onnen
 
@@ -241,6 +343,16 @@ Also: inbrittannia
 
 The island of Great Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
+
+## Britons
+
+Also: Britons
+
+The Celtic people of Britain whose history this is, the forebears of the Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
+
 ## Brochfael
 
 Also: broc mail
@@ -253,11 +365,21 @@ Also: brune
 
 The place of a great battle between the English and the Norse and Scots.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of Brunanburh](https://en.wikipedia.org/wiki/Battle_of_Brunanburh)
+
 ## Brycheiniog
 
 Also: broceniauc, bricheniauc
 
 A small kingdom of south-east Wales, later Brecknockshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Brycheiniog](https://en.wikipedia.org/wiki/Brycheiniog)
+
+## Cadell
+
+Also: catell, Catell, Catel, King Cadell
+
+The name of several Welsh kings in the annals, among them Cadell son of Rhodri and Cadell son of Artmail.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cadell ap Rhodri
 
@@ -271,6 +393,8 @@ Also: catell pouiſ
 
 A king of Powys.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Cadell ap Brochfael](https://en.wikipedia.org/wiki/Cadell_ap_Brochfael)
+
 ## Cadell son of Artmail
 
 Also: Catel filiuſ artmail
@@ -283,9 +407,11 @@ Also: catgualart
 
 A king of Gwynedd, the son of Cadwallon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Cadwaladr ap Cadwallon](https://en.wikipedia.org/wiki/Cadwaladr_ap_Cadwallon)
+
 ## Cadwallon ap Cadfan
 
-Also: catguol laun, Catguollaun, catguollaan, catguol-aum
+Also: catguol laun, Catguollaun, catguollaan, catguol-aum, Cadwallon
 
 A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
@@ -295,11 +421,21 @@ Also: cat guocaun
 
 A son of Owain, killed by the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Cadwgan ab Owain](https://en.wikipedia.org/wiki/Cadwgan_ab_Owain)
+
 ## Camlann
 
 Also: cam lann
 
 The place of the battle in which the annals name Arthur and Mordred.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Battle of Camlann](https://en.wikipedia.org/wiki/Battle_of_Camlann)
+
+## Caradog
+
+Caradog son of Meirion, a king of Gwynedd the Saxons kill.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Caradog ap Meirion](https://en.wikipedia.org/wiki/Caradog_ap_Meirion)
 
 ## Caradog ap Meirion
 
@@ -309,9 +445,11 @@ A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Carno
 
-Also: bellum carno
+Also: bellum carno, Mount Carno
 
 The place of a battle in Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Carno](https://en.wikipedia.org/wiki/Carno)
 
 ## Catgueithen
 
@@ -337,11 +475,15 @@ Also: Cerb all
 
 A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Cerball mac Dúnlainge](https://en.wikipedia.org/wiki/Cerball_mac_D%C3%BAnlainge)
+
 ## Ceredigion
 
 Also: cereticiaun, cetericiaun
 
 A kingdom of west Wales, on Cardigan Bay.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Kingdom of Ceredigion](https://en.wikipedia.org/wiki/Kingdom_of_Ceredigion)
 
 ## Ceretic of Elmet
 
@@ -361,6 +503,8 @@ Also: cair legion
 
 The City of the Legions, a Roman fortress town on the River Dee.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Chester](https://en.wikipedia.org/wiki/Chester)
+
 ## Cian of Nevern
 
 Also: Ciannant in mer
@@ -373,11 +517,19 @@ Also: ciarani
 
 An Irish saint.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Ciarán of Clonmacnoise](https://en.wikipedia.org/wiki/Ciar%C3%A1n_of_Clonmacnoise)
+
 ## Cinauc
 
 Also: cinauc
 
 A bishop.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Cincen
+
+Also: Cinan, cinan
+
+The father of the Gruffudd who his brother Elisedd has killed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cincenn
 
@@ -397,6 +549,8 @@ Also: urbiſ legion
 
 A city where a synod meets.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
+
 ## Clydog
 
 Also: Clitauc
@@ -409,11 +563,15 @@ Also: columcille, Columcillæ, Columcille
 
 An Irish saint and abbot, Colm Cille in Irish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Columba](https://en.wikipedia.org/wiki/Columba)
+
 ## Constantine
 
 Also: conſtantini
 
 A king who turns to the Lord.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Constantine of Dumnonia](https://en.wikipedia.org/wiki/Constantine_of_Dumnonia)
 
 ## Conwy
 
@@ -421,11 +579,21 @@ Also: conguoẏ
 
 The river of north Wales that runs to the sea at Conwy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Conwy](https://en.wikipedia.org/wiki/Conwy)
+
+## Cornish
+
+The people of Cornwall, in the far southwest of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Cornish people](https://en.wikipedia.org/wiki/Cornish_people)
+
 ## Cornwall
 
 Also: cornuenſeſ, cerniu
 
 The south-western peninsula of Britain, a British kingdom in these years.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Cornwall](https://en.wikipedia.org/wiki/Cornwall)
 
 ## Cumméne Fota
 
@@ -433,9 +601,11 @@ Also: Commene fota
 
 An Irish bishop and scholar, Cumméne the Tall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Cumméne Fota](https://en.wikipedia.org/wiki/Cumm%C3%A9ne_Fota)
+
 ## Cuthbert the abbot
 
-Also: Cudberth
+Also: Cudberth, Cuthbert
 
 An abbot.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
@@ -451,6 +621,14 @@ Also: filíí cinan
 
 A king of Powys, the father of Selyf.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Cyngen
+
+Also: Cyngen
+
+Cyngen son of Cadell, king of Powys, who dies in Rome.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Cyngen ap Cadell](https://en.wikipedia.org/wiki/Cyngen_ap_Cadell)
+
 ## Cyngen ap Cadell
 
 Also: Cinnen rex pouiſ
@@ -463,17 +641,23 @@ Also: Dauid
 
 The bishop and patron saint of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Saint David](https://en.wikipedia.org/wiki/Saint_David)
+
 ## Deganwy
 
 Also: De cantorum, detantorum
 
 A hill fort on the Conwy estuary, the fort of the Decanti.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Deganwy](https://en.wikipedia.org/wiki/Deganwy)
+
 ## Deiniol
 
 Also: danieliſ
 
 The first bishop of Bangor.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Deiniol](https://en.wikipedia.org/wiki/Deiniol)
 
 ## Dinas Neguid
 
@@ -487,6 +671,14 @@ Also: dinmeir
 
 The place of a battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Domangart
+
+Also: Domangart, dungart
+
+Domangart Réti, king of Dál Riata, the father of Gabrán.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Domangart Réti](https://en.wikipedia.org/wiki/Domangart_R%C3%A9ti)
+
 ## Domangart Réti
 
 Also: dungart
@@ -499,11 +691,15 @@ Also: Dungarth
 
 A king of Cornwall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Donyarth](https://en.wikipedia.org/wiki/Donyarth)
+
 ## Dubricius
 
 Also: dibric
 
 A bishop of south-east Wales, Dyfrig in Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Dubricius](https://en.wikipedia.org/wiki/Dubricius)
 
 ## Dumnagual son of Teudebur
 
@@ -511,11 +707,15 @@ Also: dunnagual
 
 A king of the Britons of Alt Clut.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Dumnagual III of Alt Clut](https://en.wikipedia.org/wiki/Dumnagual_III_of_Alt_Clut)
+
 ## Dunod
 
 Also: Dunaut
 
 A king of the north of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Dunod Fawr](https://en.wikipedia.org/wiki/Dunod_Fawr)
 
 ## Duta
 
@@ -529,11 +729,21 @@ Also: demeticæ, demetorum
 
 A kingdom of south-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
+
 ## Ebur
 
 Also: ebur
 
 A bishop the annals give a great age.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Edmund
+
+Also: Eadmund
+
+Edmund, king of the English, who the annals call king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Edmund I](https://en.wikipedia.org/wiki/Edmund_I)
 
 ## Edmund I
 
@@ -547,11 +757,21 @@ Also: guin, Etguin, et guin
 
 A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Edwin of Northumbria](https://en.wikipedia.org/wiki/Edwin_of_Northumbria)
+
 ## Elfodd
 
 Also: elbodugo, Elbodg
 
 A bishop of Gwynedd, called the man of God.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Elfodd](https://en.wikipedia.org/wiki/Elfodd)
+
+## Elisedd
+
+Also: elized
+
+The name of two men in the annals: the brother who has Gruffudd killed, and Idwal's son, killed by the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Eneuris
 
@@ -565,6 +785,16 @@ Also: loẏcr
 
 The English lands beside Wales, which the annals call by the Welsh name for England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [England](https://en.wikipedia.org/wiki/England)
+
+## Eowa
+
+Also: Eowa
+
+A king of the Mercians, Penda's brother.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Eowa of Mercia](https://en.wikipedia.org/wiki/Eowa_of_Mercia)
+
 ## Eowa of Mercia
 
 Also: eoba
@@ -576,6 +806,8 @@ A king of the Mercians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 Also: euboniam, ineubonia
 
 A land near Britain, perhaps the Isle of Man.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
 ## Ffernfael son of Ithel
 
@@ -595,11 +827,15 @@ Also: francorum
 
 The people who ruled what's now France and western Germany.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Franks](https://en.wikipedia.org/wiki/Franks)
+
 ## Gabrán
 
 Also: Gabran, gabran
 
 A king of the Irish of Dál Riata in western Scotland, the son of Domangart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Gabrán mac Domangairt](https://en.wikipedia.org/wiki/Gabr%C3%A1n_mac_Domangairt)
 
 ## Gart Mailauc
 
@@ -613,6 +849,8 @@ Also: Gildaſ
 
 A British monk who wrote on the ruin of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
+
 ## Glannauc
 
 Also: glannauc
@@ -625,11 +863,15 @@ Also: gliuiſigng
 
 A kingdom of south-east Wales, between the Usk and the Tawe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Glywysing](https://en.wikipedia.org/wiki/Glywysing)
+
 ## Gregory the Great
 
-Also: Gregoriuſ
+Also: Gregoriuſ, Gregory
 
 The pope who sent Augustine to the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Pope Gregory I](https://en.wikipedia.org/wiki/Pope_Gregory_I)
 
 ## Gruffudd
 
@@ -655,6 +897,14 @@ Also: guent
 
 A kingdom of south-east Wales, between the Wye and the Usk.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Kingdom of Gwent](https://en.wikipedia.org/wiki/Kingdom_of_Gwent)
+
+## Gwgon
+
+Gwgon son of Meurig, a king of Ceredigion who drowns.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Gwgon ap Meurig](https://en.wikipedia.org/wiki/Gwgon_ap_Meurig)
+
 ## Gwgon ap Meurig
 
 Also: Guoccaun
@@ -667,11 +917,15 @@ Also: Guurci
 
 A king of the north of Britain, the brother of Peredur.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Peredur](https://en.wikipedia.org/wiki/Peredur)
+
 ## Gwriad
 
 Also: guriat
 
 A son of Rhodri, killed with him by the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Gwriad ap Merfyn](https://en.wikipedia.org/wiki/Gwriad_ap_Merfyn)
 
 ## Gwynedd
 
@@ -679,11 +933,15 @@ Also: genedotæ, guenedote
 
 A kingdom of north-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Kingdom of Gwynedd](https://en.wikipedia.org/wiki/Kingdom_of_Gwynedd)
+
 ## Gwynllwg
 
 Also: guinnliguiauc
 
 A district of south-east Wales, between the Rhymney and the Usk.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Gwynllwg](https://en.wikipedia.org/wiki/Gwynllwg)
 
 ## Heavenfield
 
@@ -691,17 +949,31 @@ Also: cantſcaul
 
 The place of a battle near Hexham, in the north of England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of Heavenfield](https://en.wikipedia.org/wiki/Battle_of_Heavenfield)
+
 ## Hehil
 
 Also: hehil
 
 The place of a battle among the Cornish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of Hehil](https://en.wikipedia.org/wiki/Battle_of_Hehil)
+
 ## Hereford
 
 Also: hirford
 
 A town on the Wye near the Welsh border.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Hereford](https://en.wikipedia.org/wiki/Hereford)
+
+## Hyfaidd
+
+Also: Hyfaidd
+
+Hyfaidd son of Bleddri, a king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Hyfaidd ap Bleddri](https://en.wikipedia.org/wiki/Hyfaidd_ap_Bleddri)
 
 ## Hyfaidd ap Bleddri
 
@@ -715,11 +987,25 @@ Also: Himeid
 
 A son of Clydog.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Hywel
+
+Also: Hywel
+
+The name of several Welsh kings in the annals, the last of them Hywel the Good, king of the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Hywel Dda](https://en.wikipedia.org/wiki/Hywel_Dda)
+
 ## Hywel Dda
 
 Also: Higuel rex
 
 A king of most of Wales, Hywel the Good.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Iago
+
+Iago son of Beli, a king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Iago ap Beli](https://en.wikipedia.org/wiki/Iago_ap_Beli)
 
 ## Iago ap Beli
 
@@ -733,11 +1019,23 @@ Also: iudriſ
 
 A man the annals say was killed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Idwal
+
+Idwal the Bald, a king of Gwynedd the Saxons kill.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Idwal Foel](https://en.wikipedia.org/wiki/Idwal_Foel)
+
 ## Idwal Foel
 
 Also: iudgual
 
 A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Idwallon
+
+Also: Idwallon
+
+A man whose death the annals record; who he was isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Ingimundr
 
@@ -745,17 +1043,31 @@ Also: Igmunt
 
 A Norse leader driven from Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Ingimundr (tenth century)](https://en.wikipedia.org/wiki/Ingimundr_(tenth_century))
+
 ## Ireland
 
 Also: hibernia, inhibernia, adhiberniam
 
 The island west of Great Britain, across the Irish Sea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
+
+## Ithel
+
+A king of Gwent the men of Brycheiniog kill; also the father of Ffernfael.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
 ## Ithel of Gwent
 
 Also: iuꝺhail
 
 A king of Gwent.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Jonathan
+
+Also: ionathan
+
+The lord of Abergele.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Jonathan of Abergele
 
@@ -769,6 +1081,8 @@ Also: Conthigirni
 
 A bishop of the Britons of the north, also called Mungo.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Saint Mungo](https://en.wikipedia.org/wiki/Saint_Mungo)
+
 ## Laudent
 
 Also: Laudent
@@ -780,6 +1094,14 @@ A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)
 Also: lannmaéſ
 
 A place in the east of Anglesey.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Llanfaes](https://en.wikipedia.org/wiki/Llanfaes)
+
+## Llywarch
+
+Llywarch son of Hyfaidd, a king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Llywarch ap Hyfaidd](https://en.wikipedia.org/wiki/Llywarch_ap_Hyfaidd)
 
 ## Llywarch ap Hyfaidd
 
@@ -795,15 +1117,25 @@ A bishop in St Davids.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Maelgwn Gwynedd
 
-Also: mailcun
+Also: mailcun, Maelgwn
 
 A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Maelgwn Gwynedd](https://en.wikipedia.org/wiki/Maelgwn_Gwynedd)
 
 ## Maes Osmeliaun
 
 Also: maeſ oſmeliavn
 
 A field on Anglesey that Ingimundr holds.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Maredudd
+
+Also: Maredudd
+
+Maredudd son of Tewdws, a ruler of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Maredudd ap Tewdws](https://en.wikipedia.org/wiki/Maredudd_ap_Tewdws)
 
 ## Maredudd ap Tewdws
 
@@ -817,11 +1149,15 @@ Also: cocboẏ
 
 The place where Oswald and Eowa fight.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of Maserfield](https://en.wikipedia.org/wiki/Battle_of_Maserfield)
+
 ## Meicen
 
 Also: meicen
 
 The battle where Cadwallon kills Edwin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Meicen](https://en.wikipedia.org/wiki/Meicen)
 
 ## Mellitus
 
@@ -829,11 +1165,23 @@ Also: mellituſ
 
 A missionary sent with Augustine, later bishop of London.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Mellitus](https://en.wikipedia.org/wiki/Mellitus)
+
 ## Mercia
 
-Also: merciorum
+Also: merciorum, Mercians
 
 The kingdom of the Mercians in the English Midlands.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Mercia](https://en.wikipedia.org/wiki/Mercia)
+
+## Merfyn
+
+Also: Merfyn
+
+Merfyn Frych, king of Gwynedd; the history is written in his fourth year.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Merfyn Frych](https://en.wikipedia.org/wiki/Merfyn_Frych)
 
 ## Merfyn Frych
 
@@ -841,11 +1189,27 @@ Also: mermin
 
 A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Meurig
+
+Also: Meurig
+
+The man after who a well in Gwent is named.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Meurig ab Arthfael](https://en.wikipedia.org/wiki/Meurig_ab_Arthfael)
+
 ## Mocetauc
 
 Also: moce tauc
 
 The place of a battle between the Picts and the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Moni Iudeorum
+
+Also: iudeorum
+
+The annals' garbled name for Mynyw, David's see, now St Davids, in the southwest of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [St Davids](https://en.wikipedia.org/wiki/St_Davids)
 
 ## Monid Carno
 
@@ -853,11 +1217,21 @@ Also: mortiſ carno
 
 The place of a battle in central Scotland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+## Morcant
+
+Also: Morcant
+
+A king of the Britons of the north, Urien's rival.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Morcant Bulc](https://en.wikipedia.org/wiki/Morcant_Bulc)
+
 ## Mordred
 
 Also: medraut
 
 A man the annals name with Arthur in the battle of Camlann.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Mordred](https://en.wikipedia.org/wiki/Mordred)
 
 ## Nobis
 
@@ -865,11 +1239,15 @@ Also: Nobiſ epiſcopuſ
 
 A bishop in St Davids.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Nobis (bishop)](https://en.wikipedia.org/wiki/Nobis_(bishop))
+
 ## Norsemen
 
 Also: Hord mani
 
 Raiders from Scandinavia, the Vikings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Norsemen](https://en.wikipedia.org/wiki/Norsemen)
 
 ## Northumbria
 
@@ -877,11 +1255,23 @@ Also: nordorum
 
 The English kingdom north of the Humber.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
+
+## Northumbrians
+
+Also: Northumbrians
+
+The people of Northumbria, in the north of England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
+
 ## Offa
 
 Also: offa
 
 A king of the Mercians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Offa of Mercia](https://en.wikipedia.org/wiki/Offa_of_Mercia)
 
 ## Osberht
 
@@ -889,11 +1279,15 @@ Also: Oſbrit
 
 A king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Osberht of Northumbria](https://en.wikipedia.org/wiki/Osberht_of_Northumbria)
+
 ## Oswald
 
 Also: oſuuald
 
 A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Oswald of Northumbria](https://en.wikipedia.org/wiki/Oswald_of_Northumbria)
 
 ## Oswiu
 
@@ -901,11 +1295,17 @@ Also: Oſguid
 
 A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Oswiu](https://en.wikipedia.org/wiki/Oswiu)
+
 ## Ougen
 
 Also: Ougen
 
 A king of the Picts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Owain
+
+The name of two men in the annals: Owain son of Maredudd, of Dyfed, and the father of Cadwgan.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Owain son of Maredudd
 
@@ -913,11 +1313,15 @@ Also: Eugem
 
 A son of Maredudd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Owain ap Maredudd (Dyfed)](https://en.wikipedia.org/wiki/Owain_ap_Maredudd_(Dyfed))
+
 ## Patrick
 
 Also: Patriciuſ
 
 The saint who preached the faith in Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Saint Patrick](https://en.wikipedia.org/wiki/Saint_Patrick)
 
 ## Pencon
 
@@ -925,17 +1329,23 @@ Also: pencon
 
 The place of a battle the southern Britons fight.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of Pencon](https://en.wikipedia.org/wiki/Battle_of_Pencon)
+
 ## Penda
 
 Also: Pantha
 
 A king of the Mercians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Penda of Mercia](https://en.wikipedia.org/wiki/Penda_of_Mercia)
+
 ## Pepin of Herstal
 
-Also: pipínuſ
+Also: pipínuſ, Pepin
 
 The ruler of the Franks The annals call him a king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Pepin of Herstal](https://en.wikipedia.org/wiki/Pepin_of_Herstal)
 
 ## Peredur
 
@@ -943,11 +1353,15 @@ Also: peretur
 
 A king of the north of Britain, the brother of Gwrgi.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Peredur](https://en.wikipedia.org/wiki/Peredur)
+
 ## Picts
 
 Also: pictorum, pictoſ
 
 The people of eastern and northern Scotland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
 ## Pope Leo
 
@@ -955,17 +1369,29 @@ Also: leone
 
 The bishop of Rome, Leo I.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Pope Leo I](https://en.wikipedia.org/wiki/Pope_Leo_I)
+
 ## Powys
 
 Also: pouiſ, poẏuiſ
 
 A kingdom of mid and north-east Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Kingdom of Powys](https://en.wikipedia.org/wiki/Kingdom_of_Powys)
+
 ## Regin
 
 Also: regin rex
 
 A king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Rhodri
+
+Also: Rotri, Rhodri, rotri
+
+The name of several Welsh kings in the annals, among them Rhodri the Great and Rhodri son of Hywel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Rhodri Mawr](https://en.wikipedia.org/wiki/Rhodri_Mawr)
 
 ## Rhodri ap Hyfaidd
 
@@ -997,9 +1423,11 @@ Also: rudglann
 
 A place on the River Clwyd in north-east Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Rhuddlan](https://en.wikipedia.org/wiki/Rhuddlan)
+
 ## Rhun ap Urien
 
-Also: run filiuſ urbgen
+Also: run filiuſ urbgen, Rhun
 
 A son of Urien.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
@@ -1009,17 +1437,29 @@ Also: rome, inroma, adromam
 
 The city in central Italy, the pope's seat.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
+
 ## Sadyrnfyw
 
-Also: ſaturbiu hail
+Also: ſaturbiu hail, Hael
 
 A man of St Davids, called Hael.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Sadyrnfyw](https://en.wikipedia.org/wiki/Sadyrnfyw)
 
 ## Saxons
 
 Also: ſaxoneſ, ſaxonum, ſaxonibuſ, aſaxonibuſ
 
 The English The Welsh called them Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Saxons](https://en.wikipedia.org/wiki/Saxons)
+
+## Selyf
+
+Selyf son of Cynan, a king of Powys cut down at the battle of Chester.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Selyf ap Cynan](https://en.wikipedia.org/wiki/Selyf_ap_Cynan)
 
 ## Selyf ap Cynan
 
@@ -1033,11 +1473,15 @@ Also: ſabrine
 
 The longest river of Britain, flowing from mid Wales to the Bristol Channel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
+
 ## St Davids
 
 Also: miniu, inminiu, miniú
 
 St Davids, the bishop's seat in the far west of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [St Davids](https://en.wikipedia.org/wiki/St_Davids)
 
 ## Strathclyde
 
@@ -1045,11 +1489,19 @@ Also: ſtrat clut
 
 The kingdom of the Britons of the Clyde valley.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Strathclyde](https://en.wikipedia.org/wiki/Strathclyde)
+
 ## Sunday battle
 
 Also: diu ſul
 
 A battle on Anglesey, named in Old Welsh for the day it was fought.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Talorgan
+
+Also: talargan
+
+A king of the Picts the Britons kill at Mocetauc.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Talorgan son of Fergus
 
@@ -1063,6 +1515,8 @@ Also: teudubr
 
 A king of the Britons of Alt Clut.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Teudebur of Alt Clut](https://en.wikipedia.org/wiki/Teudebur_of_Alt_Clut)
+
 ## Trifun
 
 Also: Trifun
@@ -1075,11 +1529,15 @@ Also: urbgen
 
 A king of Rheged in the north of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Urien Rheged](https://en.wikipedia.org/wiki/Urien_Rheged)
+
 ## Wessex
 
 Also: giuoẏſ
 
 The kingdom of the West Saxons, called the Gewisse.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Wessex](https://en.wikipedia.org/wiki/Wessex)
 
 ## Winwaed
 
@@ -1087,17 +1545,23 @@ Also: gaíí campi
 
 The place of a slaughter, called the field of Gai.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [Battle of the Winwaed](https://en.wikipedia.org/wiki/Battle_of_the_Winwaed)
+
 ## York
 
 Also: ebrauc
 
 The city in the north of England, Efrog in Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
+Wikipedia: [York](https://en.wikipedia.org/wiki/York)
+
 ## Ystrad Tywi
 
 Also: ſtrat tui
 
 The valley of the River Tywi in south-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Ystrad Tywi](https://en.wikipedia.org/wiki/Ystrad_Tywi)
 
 ## Æthelbald of Mercia
 

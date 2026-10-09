@@ -8198,9 +8198,6 @@ body.library-resizing button {
 }
 .console-layer[hidden] { display: none; }
 .console-terminal { width: 100%; height: 100%; }
-:root[data-minimap-enabled="true"] .console-layer .xterm .xterm-scrollable-element > .scrollbar { display: none; }
-:root[data-minimap-enabled="true"] .console-layer .xterm-viewport { scrollbar-width: none; }
-:root[data-minimap-enabled="true"] .console-layer .xterm-viewport::-webkit-scrollbar { display: none; }
 .console-front #app, .console-front .reader-toolbar { visibility: hidden; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); }
 .console-minimap-preview { position: relative; overflow: hidden; color: var(--lt-markdown-foreground); font-family: monospace; font-size: var(--lt-text-12); }

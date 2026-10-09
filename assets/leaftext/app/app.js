@@ -40576,35 +40576,132 @@ const consoleLayers = new Map();
 let consoleRuntime = null;
 var consoleShell = document.getElementById('libraryShell');
 
+function consoleColorNumber(color) {
+  const [red = 0, green = 0, blue = 0] = (String(color).match(/\d+/g) || []).map(Number);
+  return (red << 16) | (green << 8) | blue;
+}
+
+
+function paintConsoleTheme(entry) {
+  const renderer = entry.terminal.renderer;
+  if (!renderer) return;
+  const made = { foreground: consoleColorNumber(entry.theme.foreground), background: consoleColorNumber(entry.theme.background) };
+  const paint = renderer.rgbToCSS.bind(renderer);
+  renderer.rgbToCSS = (red, green, blue) => {
+    const color = (red << 16) | (green << 8) | blue;
+    if (color === made.foreground) return entry.theme.foreground;
+    if (color === made.background) return entry.theme.background;
+    return paint(red, green, blue);
+  };
+}
+
 function refreshConsoleTheme() {
   for (const entry of consoleLayers.values()) {
     if (!entry.terminal) continue;
     const colors = getComputedStyle(entry.layer);
-    const theme = entry.terminal.options.theme || {};
-    if (theme.background !== colors.backgroundColor || theme.foreground !== colors.color) {
-      entry.terminal.options.theme = { ...theme, background: colors.backgroundColor, foreground: colors.color };
+    if (entry.theme.background !== colors.backgroundColor || entry.theme.foreground !== colors.color) {
+      entry.theme = { background: colors.backgroundColor, foreground: colors.color };
+      const terminal = entry.terminal;
+      terminal.renderer?.setTheme(entry.theme);
+      terminal.renderer?.render(terminal.wasmTerm, true, terminal.viewportY, terminal, 0);
     }
   }
 }
 
-function consoleAsset(kind, tag, parent) {
-  return new Promise((resolve, reject) => {
-    const element = document.createElement(tag);
-    if (tag === 'script') element.src = window.__lt.assets[kind];
-    else { element.rel = 'stylesheet'; element.href = window.__lt.assets[kind]; }
-    element.onload = resolve;
-    element.onerror = () => reject(new Error(`The console could not load ${kind}`));
-    parent.appendChild(element);
-  });
-}
-
 function loadConsoleRuntime() {
   if (!consoleRuntime) {
-    consoleRuntime = consoleAsset('xtermCss', 'link', document.head)
-      .then(() => consoleAsset('xterm', 'script', document.head))
-      .then(() => consoleAsset('xtermFit', 'script', document.head));
+    consoleRuntime = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.crossOrigin = 'anonymous';
+      script.src = window.__lt.assets.ghosttyWeb;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('The console could not load its terminal'));
+      document.head.appendChild(script);
+    }).then(() => window.GhosttyWeb.init());
   }
   return consoleRuntime;
+}
+
+
+function consoleBuffer(entry) {
+  const terminal = entry.terminal;
+  const active = terminal.buffer.active;
+  const baseY = active.type === 'normal' ? terminal.getScrollbackLength() : 0;
+  return {
+    length: active.length,
+    baseY,
+    viewportY: Math.max(0, Math.round(baseY - terminal.viewportY)),
+    getLine: index => consoleLine(active.getLine(index)),
+    scrollToLine: line => terminal.scrollToLine(Math.max(0, baseY - line)),
+  };
+}
+
+
+function consoleLine(line) {
+  if (!line) return undefined;
+  return {
+    translateToString(trimRight = false) {
+      let text = '';
+      for (let column = 0; column < line.length; column += 1) {
+        const cell = line.getCell(column);
+        if (!cell || cell.getWidth() === 0) continue;
+        text += cell.getCode() === 0 ? ' ' : cell.getChars();
+      }
+      return trimRight ? text.trimEnd() : text;
+    },
+  };
+}
+
+function consoleLineText(entry, index) {
+  return consoleLine(entry.terminal.buffer.active.getLine(index))?.translateToString(true) ?? null;
+}
+
+
+function registerConsoleMarker(entry, offset = 0) {
+  const buffer = consoleBuffer(entry);
+  const line = buffer.baseY + entry.terminal.buffer.active.cursorY + offset;
+  if (line < 0 || line >= buffer.length) return undefined;
+  const listeners = [];
+  const marker = {
+    line,
+    text: null,
+    isDisposed: false,
+    onDispose: listener => { listeners.push(listener); return { dispose() { listeners.splice(listeners.indexOf(listener) >>> 0, 1); } }; },
+    dispose() {
+      if (marker.isDisposed) return;
+      marker.isDisposed = true;
+      marker.line = -1;
+      entry.markers.delete(marker);
+      for (const listener of listeners.splice(0)) listener();
+    },
+  };
+  entry.markers.add(marker);
+  holdConsoleMarkers(entry);
+  return marker;
+}
+
+function holdConsoleMarkers(entry) {
+  if (!entry.markers.size || entry.terminal.buffer.active.type !== 'normal') return;
+  const baseY = entry.terminal.getScrollbackLength();
+  for (const marker of [...entry.markers]) {
+    if (marker.text !== null && consoleLineText(entry, marker.line) !== marker.text) {
+      let line = marker.line - 1;
+      while (line >= 0 && consoleLineText(entry, line) !== marker.text) line -= 1;
+      if (line < 0) { marker.dispose(); continue; }
+      marker.line = line;
+    }
+    if (marker.text === null && marker.line < baseY) marker.text = consoleLineText(entry, marker.line);
+  }
+}
+
+
+function consoleWritten(id, entry) {
+  const type = entry.terminal.buffer.active.type;
+  if (type !== entry.bufferType) {
+    entry.bufferType = type;
+    if (consoleFrontId === id) writeConsoleFade();
+  }
+  holdConsoleMarkers(entry);
 }
 
 function makeConsoleLayer(id) {
@@ -40615,19 +40712,37 @@ function makeConsoleLayer(id) {
   host.className = 'console-terminal';
   layer.appendChild(host);
   consoleShell.appendChild(layer);
-  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null };
+  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set() };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
     const colors = getComputedStyle(layer);
-    const terminal = new window.Terminal({ scrollback: 1000, convertEol: false, theme: { background: colors.backgroundColor, foreground: colors.color } });
-    const fit = new window.FitAddon.FitAddon();
+    entry.theme = { background: colors.backgroundColor, foreground: colors.color };
+    
+    const terminal = new window.GhosttyWeb.Terminal({ scrollback: 1000 * 256 * 16, convertEol: false, theme: entry.theme });
+    const fit = new window.GhosttyWeb.FitAddon();
     terminal.loadAddon(fit);
     terminal.open(host);
+    
+    const showScrollbar = terminal.showScrollbar;
+    terminal.showScrollbar = function () { if (!minimapEnabled) showScrollbar.call(this); };
+    
+    const pressScrollbar = terminal.handleMouseDown;
+    host.removeEventListener('mousedown', pressScrollbar, { capture: true });
+    terminal.handleMouseDown = event => { if (!minimapEnabled) pressScrollbar(event); };
+    host.addEventListener('mousedown', terminal.handleMouseDown, { capture: true });
+    terminal.registerMarker = offset => registerConsoleMarker(entry, offset);
+    
+    const write = terminal.write.bind(terminal);
+    terminal.write = (data, done) => {
+      const place = terminal.viewportY ? consoleBuffer(entry).viewportY : null;
+      write(data, done);
+      if (place !== null) consoleBuffer(entry).scrollToLine(place);
+    };
     terminal.onData(data => send({ command: 'consoleInput', id, data }));
     terminal.onScroll(() => consoleScrolled(id, entry));
-    terminal.buffer.onBufferChange(() => { if (consoleFrontId === id) writeConsoleFade(); });
     entry.terminal = terminal;
+    paintConsoleTheme(entry);
     entry.fit = fit;
     entry.observer = new ResizeObserver(() => {
       if (consoleFrontId !== id) return;
@@ -40642,6 +40757,7 @@ function makeConsoleLayer(id) {
     entry.pendingBytes = 0;
     terminal.write(opening, () => {
       entry.map = null;
+      consoleWritten(id, entry);
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
     });
     if (consoleFrontId === id) {
@@ -40677,8 +40793,12 @@ function sendConsoleSize(id, entry) {
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
 
+function consoleScreen(terminal) {
+  return terminal.renderer?.getCanvas() || null;
+}
+
 function consoleRowHeight(terminal) {
-  return Math.max(1, terminal.element.querySelector('.xterm-screen')?.clientHeight / terminal.rows || 1);
+  return Math.max(1, consoleScreen(terminal)?.clientHeight / terminal.rows || 1);
 }
 
 
@@ -40699,7 +40819,7 @@ function consoleShortcutKey(event) {
   if (isMacPlatform || (key !== 'v' && key !== 'c') || !event.ctrlKey || event.metaKey || event.altKey) return;
   if (key === 'v' && event.shiftKey) return;
   const entry = frontConsoleEntry();
-  if (!entry?.terminal || entry.layer.hidden || !event.target.classList?.contains('xterm-helper-textarea') || !entry.layer.contains(event.target)) return;
+  if (!entry?.terminal || entry.layer.hidden || (event.target !== entry.terminal.element && event.target !== entry.terminal.textarea)) return;
   if (key === 'c') {
     const selected = entry.terminal.hasSelection();
     if (!selected && !event.shiftKey) return;
@@ -40723,10 +40843,10 @@ function consoleScrollElement() {
     const terminal = entry.terminal;
     const lineHeight = () => consoleRowHeight(terminal);
     entry.scroll = {
-      get scrollHeight() { return terminal.buffer.active.length * lineHeight(); },
+      get scrollHeight() { return consoleBuffer(entry).length * lineHeight(); },
       get clientHeight() { return terminal.rows * lineHeight(); },
-      get scrollTop() { return terminal.buffer.active.viewportY * lineHeight(); },
-      set scrollTop(value) { terminal.scrollToLine(Math.round(value / lineHeight())); },
+      get scrollTop() { return consoleBuffer(entry).viewportY * lineHeight(); },
+      set scrollTop(value) { consoleBuffer(entry).scrollToLine(Math.round(value / lineHeight())); },
     };
   }
   return entry.scroll;
@@ -40786,6 +40906,7 @@ window.leafConsoleOutput = (id, encoded) => {
     entry.pending = [];
     entry.terminal.write(text, () => {
       entry.mapOutputPending = true;
+      consoleWritten(id, entry);
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
     });
   });
@@ -40804,8 +40925,10 @@ window.leafConsoleReplay = (id, encoded) => {
   entry.pending = [];
   entry.pendingBytes = 0;
   entry.terminal.reset();
+  for (const marker of [...entry.markers]) marker.dispose();
   entry.terminal.write(entry.decoder.decode(bytes, { stream: true }), () => {
     entry.map = null;
+    consoleWritten(id, entry);
     if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
 };
@@ -46813,7 +46936,7 @@ function bindDocumentMinimap() {
 
 function minimapSourceElement() {
   const console = frontConsoleEntry();
-  if (console?.terminal) return console.terminal.element.querySelector('.xterm-screen');
+  if (console?.terminal) return consoleScreen(console.terminal);
   return readingDocumentRoot();
 }
 
@@ -48568,7 +48691,7 @@ function measureDocumentMinimap(track) {
 function updateConsoleMinimapPreview(track, content, minimap) {
   const entry = frontConsoleEntry();
   if (!entry?.terminal) return;
-  const buffer = entry.terminal.buffer.active;
+  const buffer = consoleBuffer(entry);
   const metrics = measureDocumentMinimap(track);
   const length = buffer.length;
   const lineHeight = metrics.scrollHeight / Math.max(1, length);

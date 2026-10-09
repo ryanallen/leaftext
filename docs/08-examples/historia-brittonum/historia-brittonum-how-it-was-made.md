@@ -224,7 +224,7 @@ A note or glossary entry this translation adds, rather than one the printed edit
 
 ## Sourced glossary
 
-The glossary of the people, places and words the book uses: each entry comes from the printed edition's own index or word list, or is marked as added, with the page it was found on, and its terms are underlined in the text.
+The glossary of the people, places and words the book uses: each entry comes from the printed edition's own index or word list, or is marked as added, with the page it was found on, and its terms are underlined in the text. Every person, place and people the book names has an entry, linked to its Wikipedia article where there is one, except the names of a family tree, which one endnote explains.
 
 [Open GLOSSARY.md](GLOSSARY.md)
 
