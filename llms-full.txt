@@ -137,10 +137,60 @@
 - Markdown: https://leaftext.com/docs/07-privacy.md
 - Summary: Leaftext is a desktop app for reading and writing your own documents, made by one person. There is no Leaftext account and no Leaftext server: nothing you open, write or connect is sent to the make...
 
+## Glossary for The Welsh Annals
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/GLOSSARY.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/GLOSSARY.md
+- Summary: Read in: UK English
+
+## How it was made
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae-how-it-was-made.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae-how-it-was-made.md
+- Summary: Who made this book, and what each phrase of the how line in its note means: each section says what the phrase means, then opens its file where it has one.
+
+## The Welsh Annals
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae-latin.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae-latin.md
+- Summary: Annales Cambriae, text established by Ryan Allen
+
+## Scans
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae-scans.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae-scans.md
+- Summary: Every page this book was read against, kept two ways: a link to the page where it was found online, and a copy saved beside the book, so every page can still be checked if the site that holds it go...
+
+## The Welsh Annals
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae.md
+- Summary: Annales Cambriae, translated by Ryan Allen
+
+## Made with
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/made-with.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/made-with.md
+- Summary: What every Arthurian book says about how it was made: the made-with line, the how line under it, and the notes they point at. These tables hold what every book on the shelf was made by, not one boo...
+
+## Glossary for The Welsh Annals
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/uk/GLOSSARY.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/uk/GLOSSARY.md
+- Summary: Read in: US English
+
+## The Welsh Annals
+- Page: https://leaftext.com/docs/08-examples/annales-cambriae/uk/annales-cambriae-uk.html
+- Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/uk/annales-cambriae-uk.md
+- Summary: Annales Cambriae, translated by Ryan Allen
+
 ## Sources of the Arthurian shelf
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.html
 - Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.md
 - Summary: Every published book on the shelf, by where it sits in the story. Each work's page says when it was written and on what evidence, which edition the book is translated from and why that edition is f...
+
+## The Welsh Annals
+- Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/annales-cambriae.html
+- Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/annales-cambriae.md
+- Summary: Written in Latin, second half of the tenth century. Phillimore, page 144: the years are written down to 977, though the last event recorded is the death of Rhodri ab Hywel Dda in 954; the annals ar...
+
+## The History of the Britons
+- Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/historia-brittonum.html
+- Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/historia-brittonum.md
+- Summary: Written in Latin, 829–830. Chapter 16 counts its own year as the fourth of King Merfyn of Gwynedd, "annus Mermini regis quartus", and Merfyn began to reign in 825; Mommsen dates Harley MS 3859, the...
 
 ## Merlin
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/robert-de-boron-merlin.html
@@ -151,6 +201,46 @@
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/story-map.html
 - Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/story-map.md
 - Summary: Every episode of the Arthurian legend the published books tell, in the story's own order, from Britain's founding to after Camlann. A note in each book links the episode its passage belongs to, and...
+
+## Glossary for The History of the Britons
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/GLOSSARY.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/GLOSSARY.md
+- Summary: Read in: UK English
+
+## How it was made
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum-how-it-was-made.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum-how-it-was-made.md
+- Summary: Who made this book, and what each phrase of the how line in its note means: each section says what the phrase means, then opens its file where it has one.
+
+## The History of the Britons
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum-latin.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum-latin.md
+- Summary: Historia Brittonum, text established by Ryan Allen
+
+## Scans
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum-scans.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum-scans.md
+- Summary: Every page this book was read against, kept two ways: a link to the page where it was found online, and a copy saved beside the book, so every page can still be checked if the site that holds it go...
+
+## The History of the Britons
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/historia-brittonum.md
+- Summary: Historia Brittonum, translated by Ryan Allen
+
+## Made with
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/made-with.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/made-with.md
+- Summary: What every Arthurian book says about how it was made: the made-with line, the how line under it, and the notes they point at. These tables hold what every book on the shelf was made by, not one boo...
+
+## Glossary for The History of the Britons
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/uk/GLOSSARY.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/uk/GLOSSARY.md
+- Summary: Read in: US English
+
+## The History of the Britons
+- Page: https://leaftext.com/docs/08-examples/historia-brittonum/uk/historia-brittonum-uk.html
+- Markdown: https://leaftext.com/docs/08-examples/historia-brittonum/uk/historia-brittonum-uk.md
+- Summary: Historia Brittonum, translated by Ryan Allen
 
 ## Glossary for Le Morte d'Arthur
 - Page: https://leaftext.com/docs/08-examples/le-morte-darthur/GLOSSARY.html
