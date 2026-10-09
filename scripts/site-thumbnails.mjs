@@ -16,7 +16,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ASSET_DIR, BUILT_COLORS_MODULE, BUILT_MODULE, BUILT_PLAIN_MODULE, CARD_KEYS, LISTING, previewAnswers } from './site-assets.mjs';
+import { ASSET_DIR, BUILT_BOOK_MODULE, BUILT_COLORS_MODULE, BUILT_MODULE, BUILT_PLAIN_MODULE, CARD_KEYS, LISTING, previewAnswers } from './site-assets.mjs';
 import { CARD_SIZE, cardOf, filesUnder } from './site-page.mjs';
 import { staticServer } from './serve-static.mjs';
 import { instantiateCore } from './web-module.mjs';
@@ -154,7 +154,7 @@ async function main(args) {
   let ahead = new Map();
   if (preview) {
     if (!existsSync(BUILT_MODULE)) throw new Error('the browser module is not built — run: just build-web');
-    ahead = await previewAnswers(await instantiateCore(BUILT_MODULE), readFileSync(BUILT_PLAIN_MODULE), readFileSync(BUILT_COLORS_MODULE));
+    ahead = await previewAnswers(await instantiateCore(BUILT_MODULE), readFileSync(BUILT_PLAIN_MODULE), readFileSync(BUILT_COLORS_MODULE), readFileSync(BUILT_BOOK_MODULE));
   }
   const served = (path) => ahead.get(path) ?? readFileSync(join(root, path));
   const listing = JSON.parse(String(served(LISTING)));

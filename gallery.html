@@ -6990,7 +6990,9 @@ body.is-library-settling .app-bar::after {
   touch-action: none;
 }
 .library-shell.library-closed .library-divider {
-  display: none;
+  left: var(--lt-stroke-1);
+  right: auto;
+  width: calc(var(--reader-gutter) - var(--lt-stroke-1));
 }
 .library-shell.library-closed .library-crumbs,
 .library-shell.library-closed .library-foot {

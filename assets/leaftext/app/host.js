@@ -7,6 +7,7 @@
 // Beside the rest of the front end, which is beside the page for a folder export and another site's address for a site that carries none of its own. Read off the page rather than off this file's own address, because the check boots this file as a plain script, where a module's address has no spelling.
 const MODULE = 'leaftext.wasm';
 const COLORS_MODULE = 'leaftext-colors.wasm';
+const BOOK_MODULE = 'leaftext-book.wasm';
 
 /** Where the front end is served from, as the page was written to say. */
 export function assetBase() {
@@ -162,6 +163,8 @@ async function load(url, fetchWith = fetch) {
     // The page's book: the ask for its drawing, the picture addresses that drawing names, and the packed book as its type and bytes.
     bookExportAsk: (path, css) => withStrings(api.leaf_book_export_ask, path, css),
     bookPictureAddresses: (markup) => JSON.parse(withStrings(api.leaf_book_picture_addresses, markup) || '[]'),
+    // Every glossary entry the book's drawing links, drawn out of the glossary this module holds, for the book module that holds none.
+    bookGlossaryEntries: (markup, glossaryPath) => (typeof api.leaf_book_glossary_entries === 'function' ? JSON.parse(withStrings(api.leaf_book_glossary_entries, markup, glossaryPath || '') || '{}') : {}),
     // One fetched picture's chunks written straight into the module's memory, which the module keeps for the next book rather than copying.
     bookExportPicture: (address, chunks) => {
       const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
@@ -561,6 +564,9 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   const askedFences = new WeakSet();
   let colors = null;
   let colorsLoading = null;
+  // The book packer, fetched the first time a reader exports a book and kept from then on. A fetch that failed is let go, so the next press asks again.
+  let bookLoading = null;
+  const bookModule = () => (bookLoading ||= load(assetBase() + BOOK_MODULE, fetchWith).catch(() => { bookLoading = null; throw new Error('The book packer could not be loaded, so no book was written.'); }));
   window.__leafColorFences = () => {
     const body = document.querySelector('.document-body');
     if (!body) return;
@@ -1334,16 +1340,16 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
   // The book packed by the module from the page's XHTML, with every picture the packer will ask for fetched first.
   const downloadBook = async (command) => {
     const markup = String(command.markup || '');
-    const fetched = await fetchPictures(core.bookPictureAddresses(markup));
+    const book = await bookModule();
+    const fetched = await fetchPictures(book.bookPictureAddresses(markup));
     // Each picture crosses as its bytes, and its chunks go once they have.
     for (const [address, got] of fetched) {
-      core.bookExportPicture(address, got.chunks);
+      book.bookExportPicture(address, got.chunks);
       fetched.delete(address);
     }
     const math = markup.includes('class="katex') ? await mathFiles() : null;
     const name = String(command.path || 'document.epub').split(/[\\/]/).pop();
-    // The glossary the module holds is drawn under its own path, so an entry's pictures and links resolve where the glossary sits.
-    const answer = core.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), math, glossaryPath: glossary || '' });
+    const answer = book.bookExport({ ...command, windowSheet: await windowSheet(), markup, name, modified: Math.floor(Date.now() / 1000), math, glossary: core.bookGlossaryEntries(markup, glossary || '') });
     if (!answer || answer.type === 'error') throw new Error(answer ? new TextDecoder().decode(answer.bytes) : 'That book could not be exported.');
     window.__leafBrowserDownload(name, answer.type, answer.bytes);
   };
@@ -1655,7 +1661,7 @@ export async function startLeaftext({ documents, name = '', read, imageSizes = {
     // The browser's own print, which is the only route a page has: a site cannot open a save dialog or write a file, so the panel is what asks where the PDF goes here. The desktop writes the file itself and shows no panel at all. The page a browser prints is prepared by the same `@media print` block, which keys on the classes a site draws its documents through, so the sheets carry the whole document in its theme either way.
     exportPdf: (command) => command.format === 'onefile'
       ? run(`window.leafExportPageHtml(${JSON.stringify(exportName('.html'))}, false, null, true);`)
-      : command.format === 'epub' ? windowSheet().then((css) => run(core.bookExportAsk(exportName('.epub'), css))).catch(showExportFailure) : window.print(),
+      : command.format === 'epub' ? Promise.all([windowSheet(), bookModule()]).then(([css, book]) => run(book.bookExportAsk(exportName('.epub'), css))).catch(showExportFailure) : window.print(),
     exportPageHtml: (command) => downloadPageFile(command).catch(showExportFailure),
     pickDiagramPath: (command) => {
       const name = (open || 'diagram').split('/').pop().replace(/\.[^.]*$/, '') + '.' + (command.format || 'png');

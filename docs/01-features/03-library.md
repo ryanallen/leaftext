@@ -658,7 +658,7 @@ On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does 
 | Long tables | Tables beyond the view take their new width one at a time after the pane lands. If you scroll while they settle, they wait until the scroll stops, then the nearest table settles first. |
 | Motion | Opening springs slightly past its width and settles; closing slams to the page's padding, bounces off it once and seats there, the pane's contents fading with the travel. The pane, the tabs above it and the page edge move as one, dragging the divider tracks the pointer exactly, and under [Reduce Motion](05-settings.md#reduce-motion) both land instantly |
 | Opening width | 240 px, or the width of the buttons at the left end of the app bar where those come to more — the leaf, the panel button and the history arrows, and on macOS the window's own three dots beside them. That group is sized to the pane so the tab strip begins at the pane's edge, and a pane opening inside it would leave the first tab over the page. A width you dragged to is restored exactly as you left it, at any size |
-| Snap shut | Drag narrower than 40 px |
+| Snap shut | Drag narrower than 40 px to close the pane; press just left of the page and drag right to open it again |
 | Reader minimum | Reader stays at least 360 px wide |
 | Small window | Too tight for a pane beside the page, so the library becomes a full-width sheet over it — see [Narrow windows](#narrow-windows) |
 

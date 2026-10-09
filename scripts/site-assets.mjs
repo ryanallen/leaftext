@@ -42,6 +42,8 @@ export const LICENSES_PATH = `${ASSET_DIR}/licenses.md`;
 /** The app's own module, page script and stylesheet — the whole app a page runs. */
 export const APP_MODULE_PATH = `${APP_DIR}/leaftext.wasm`;
 export const APP_COLORS_PATH = `${APP_DIR}/leaftext-colors.wasm`;
+/** The book packer, fetched only when a reader exports a book. */
+export const APP_BOOK_PATH = `${APP_DIR}/leaftext-book.wasm`;
 export const APP_SCRIPT_PATH = `${APP_DIR}/app.js`;
 export const APP_STYLES_PATH = `${APP_DIR}/app.css`;
 
@@ -81,6 +83,7 @@ export const PUBLISHED = [
   LICENSES_PATH,
   APP_MODULE_PATH,
   APP_COLORS_PATH,
+  APP_BOOK_PATH,
   APP_SCRIPT_PATH,
   APP_STYLES_PATH,
   ...HOST_FILES.map(([path]) => path),
@@ -91,6 +94,7 @@ export const PUBLISHED = [
 export const BUILT_MODULE = join(root, 'web', 'dist', 'leaftext-app.wasm');
 export const BUILT_PLAIN_MODULE = join(root, 'web', 'dist', 'leaftext-embed.wasm');
 export const BUILT_COLORS_MODULE = join(root, 'web', 'dist', 'leaftext-colors.wasm');
+export const BUILT_BOOK_MODULE = join(root, 'web', 'dist', 'leaftext-book.wasm');
 
 /** The page every address on the site is, the listing it reads, and the document it opens on. */
 export const FRONT_PAGE = 'index.html';
@@ -212,7 +216,7 @@ export function bakeDocsPage(page, paths) {
  *
  * The publish writes these to disk and the local preview answers them straight to a browser, so one table is what stops the preview drawing a page through the copy the last publish left beside it.
  */
-export function publishedAssets(app, plainBytes, colorsBytes) {
+export function publishedAssets(app, plainBytes, colorsBytes, bookBytes) {
   return new Map([
     // The repository rides beside the version because the public side has no `Cargo.toml` to read: this file is what a bake over there reads its own project address back out of.
     [VERSION_PATH, `${JSON.stringify({ version: appVersion(), repository: project().url }, null, 2)}\n`],
@@ -220,6 +224,7 @@ export function publishedAssets(app, plainBytes, colorsBytes) {
     [LICENSES_PATH, licensesDocument(appVersion())],
     [APP_MODULE_PATH, plainBytes],
     [APP_COLORS_PATH, colorsBytes],
+    [APP_BOOK_PATH, bookBytes],
     [APP_SCRIPT_PATH, app.script()],
     [APP_STYLES_PATH, app.styles()],
     ...HOST_FILES.map(([path, from]) => [path, readFileSync(join(root, from))]),
@@ -244,8 +249,8 @@ export function siteProject({ bakeOnly = false } = {}) {
  *
  * Unbaked none of the pages is in it and the published files still are, so a browser gets the tree as it stands.
  */
-export async function previewAnswers(app, plainBytes, colorsBytes, { baked = true } = {}) {
-  const answers = new Map(publishedAssets(app, plainBytes, colorsBytes));
+export async function previewAnswers(app, plainBytes, colorsBytes, bookBytes, { baked = true } = {}) {
+  const answers = new Map(publishedAssets(app, plainBytes, colorsBytes, bookBytes));
   if (baked) {
     for (const [path, bytes] of await bakeSite(app, siteProject())) answers.set(path, bytes);
     answers.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsPaths()));
@@ -332,7 +337,7 @@ async function main() {
   }
 
   // The bake above is a check, not an output, on `--write`: the hand-over fills its clone out of the commit and the deploy bakes its own copy.
-  const bytesFor = bakeOnly ? baked : publishedAssets(app, readFileSync(BUILT_PLAIN_MODULE), readFileSync(BUILT_COLORS_MODULE));
+  const bytesFor = bakeOnly ? baked : publishedAssets(app, readFileSync(BUILT_PLAIN_MODULE), readFileSync(BUILT_COLORS_MODULE), readFileSync(BUILT_BOOK_MODULE));
   for (const path of writtenPaths({ bakeOnly })) {
     mkdirSync(dirname(join(root, path)), { recursive: true });
     writeFileSync(join(root, path), bytesFor.get(path));

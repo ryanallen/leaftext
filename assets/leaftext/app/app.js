@@ -13290,10 +13290,12 @@ function endDividerDrag(flushPendingWidth) {
   if (flushPendingWidth) scheduleMinimapPreviewUpdate();
 }
 libraryDivider.addEventListener('pointerdown', (event) => {
-  if (event.button !== 0 || libraryIsClosed()) return;
+  const fromShut = libraryIsClosed();
+  if (event.button !== 0 || (fromShut && (!libraryUserClosed || libraryTooNarrow()))) return;
   event.preventDefault();
+  if (fromShut) endLibraryMotion();
   settleWindowWidths();
-  dividerDrag = { pointerId: event.pointerId, frame: 0, pendingWidth: null, drawing: paneDrawingState() };
+  dividerDrag = { pointerId: event.pointerId, frame: 0, pendingWidth: null, drawing: paneDrawingState(), fromShut };
   leafHoldPointer(libraryDivider, event.pointerId);
   document.body.classList.add('library-resizing');
 });
@@ -13301,6 +13303,15 @@ document.addEventListener('pointermove', (event) => {
   if (!dividerDrag || event.pointerId !== dividerDrag.pointerId) return;
   
   const raw = event.clientX - libraryShell.getBoundingClientRect().left;
+  if (dividerDrag.fromShut) {
+    if (raw < SNAP_SHUT) return;
+    dividerDrag.fromShut = false;
+    libraryUserClosed = false;
+    applyPaneLayout(true);
+    dividerDrag.pendingWidth = clampOpenPaneWidth(raw);
+    applyPendingDividerWidth();
+    return;
+  }
   if (raw < SNAP_SHUT) {
     
     endDividerDrag();
@@ -13314,11 +13325,19 @@ document.addEventListener('pointermove', (event) => {
 });
 document.addEventListener('pointerup', (event) => {
   if (!dividerDrag || event.pointerId !== dividerDrag.pointerId) return;
+  if (dividerDrag.fromShut) {
+    endDividerDrag(false);
+    return;
+  }
   endDividerDrag(true);
   persistLibraryLayout();
 });
 document.addEventListener('pointercancel', (event) => {
   if (!dividerDrag || event.pointerId !== dividerDrag.pointerId) return;
+  if (dividerDrag.fromShut) {
+    endDividerDrag(false);
+    return;
+  }
   
   endDividerDrag(true);
   persistLibraryLayout();
@@ -40354,7 +40373,7 @@ function makeConsoleLayer(id) {
     });
     entry.observer.observe(layer);
     let opening = '';
-    for (const bytes of entry.pending) opening += entry.decoder.decode(new Uint8Array(bytes), { stream: true });
+    for (const bytes of entry.pending) opening += entry.decoder.decode(bytes, { stream: true });
     entry.pending = [];
     entry.pendingBytes = 0;
     terminal.write(opening, () => {
@@ -40445,7 +40464,16 @@ window.leafConsoleFront = id => {
   }
 };
 
-window.leafConsoleOutput = (id, bytes) => {
+
+function consoleBytes(encoded) {
+  const text = atob(encoded);
+  const bytes = new Uint8Array(text.length);
+  for (let index = 0; index < text.length; index += 1) bytes[index] = text.charCodeAt(index);
+  return bytes;
+}
+
+window.leafConsoleOutput = (id, encoded) => {
+  const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   if (!entry.terminal) {
     entry.pending.push(bytes);
@@ -40458,7 +40486,7 @@ window.leafConsoleOutput = (id, bytes) => {
   entry.frame = requestAnimationFrame(() => {
     entry.frame = 0;
     let text = '';
-    for (const chunk of entry.pending) text += entry.decoder.decode(new Uint8Array(chunk), { stream: true });
+    for (const chunk of entry.pending) text += entry.decoder.decode(chunk, { stream: true });
     entry.pending = [];
     entry.terminal.write(text, () => {
       entry.mapOutputPending = true;
@@ -40468,7 +40496,8 @@ window.leafConsoleOutput = (id, bytes) => {
 };
 
 
-window.leafConsoleReplay = (id, bytes) => {
+window.leafConsoleReplay = (id, encoded) => {
+  const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   if (entry.frame) cancelAnimationFrame(entry.frame);
   entry.frame = 0;
@@ -40479,7 +40508,7 @@ window.leafConsoleReplay = (id, bytes) => {
   entry.pending = [];
   entry.pendingBytes = 0;
   entry.terminal.reset();
-  entry.terminal.write(entry.decoder.decode(new Uint8Array(bytes), { stream: true }), () => {
+  entry.terminal.write(entry.decoder.decode(bytes, { stream: true }), () => {
     entry.map = null;
     if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
