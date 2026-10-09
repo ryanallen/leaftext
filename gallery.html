@@ -12004,6 +12004,9 @@ body.is-block-dragging .document-body [data-src-start] {
 .document-body .footnote-definition-label {
   font-family: var(--app-font);
 }
+.document-body .footnote-reference-after::before {
+  content: ",";
+}
 .document-body .footnote-definition,
 .document-body [data-leaf-note-body="1"] {
   border-top: var(--lt-stroke-1) solid var(--lt-markdown-rule);

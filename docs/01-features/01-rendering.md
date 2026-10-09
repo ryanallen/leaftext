@@ -828,7 +828,7 @@ Bare commit hashes are **not** linked. GitHub turns any run of 7 or 40 hex chara
 
 ### Footnotes
 
-Footnotes collect at the foot of the page, each with a back-link.[^one] Reference one twice[^one] or add more.[^two]
+Footnotes collect at the foot of the page, each with a back-link.[^one] Reference one twice[^one] or add more.[^two] Two markers set straight after one another are drawn with a raised comma between them,[^one][^two] so a 1 and a 2 never read as 12, and a book or a page saved from it keeps that comma.
 
 Rest the pointer on a footnote marker to read its note in the link card without leaving the sentence. The same gesture reads marked endnotes in a book; pressing the marker still goes to the note. A book's marked notes are drawn as footnotes are, smaller and quieter than the story and each under a thin rule. A screen reader hears each marker as a note reference, each note as a footnote and each back-arrow as the way back.
 

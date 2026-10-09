@@ -10821,6 +10821,11 @@ function bookGlossaryLink(link) {
 function markBookNotes(copy) {
   copy.querySelectorAll('sup.footnote-reference a').forEach((link) => link.setAttribute('epub:type', 'noteref'));
   copy.querySelectorAll('.footnote-definition').forEach((note) => note.setAttribute('epub:type', 'footnote'));
+  
+  copy.querySelectorAll('sup.footnote-reference-after').forEach((mark) => {
+    mark.prepend(document.createTextNode(','));
+    mark.classList.remove('footnote-reference-after');
+  });
 }
 
 function containedPageBookMarkup() {
@@ -40736,6 +40741,44 @@ function localFootnoteTarget(link, rawHref) {
   if (bookReference && target.getAttribute('data-leaf-note-body') === '1') return target;
   return null;
 }
+
+const LANDING_BLOCK = 'h1, h2, h3, h4, h5, h6, p, li, dt, dd, blockquote, figcaption, td, th, pre, .footnote-definition, [data-leaf-note-body="1"]';
+const LANDING_WORDS_READ = 120;
+const LANDING_WORDS_SHOWN = 80;
+function inPageLandingWords(link, rawHref) {
+  const href = String(rawHref || '');
+  const at = href.indexOf('#');
+  if (at < 0 || at === href.length - 1) return '';
+  const body = link.closest('.document-body');
+  if (!body) return '';
+  
+  if (link.parentElement?.matches('sup.footnote-reference') || link.getAttribute('data-leaf-note-ref') === '1') {
+    const own = link.textContent.replace(/\s+/g, ' ').trim();
+    return link.getAttribute('data-leaf-glossary-ref') === '1' ? own : ('Note ' + own).trim();
+  }
+  let id;
+  try { id = decodeURIComponent(href.slice(at + 1)); } catch (e) { return ''; }
+  
+  const root = typeof link.getRootNode === 'function' ? link.getRootNode() : null;
+  const target = (root && typeof root.getElementById === 'function' ? root : document).getElementById(id);
+  if (!target || target.closest('.document-body') !== body) return '';
+  const block = target.closest(LANDING_BLOCK) || target;
+  let words = '';
+  let seen = 0;
+  const walk = [[block, 0]];
+  while (walk.length && words.length < LANDING_WORDS_READ && seen++ < LINK_PREVIEW_OPENING_BYTES) {
+    const top = walk[walk.length - 1];
+    const node = top[0].childNodes[top[1]++];
+    if (!node) walk.pop();
+    else if (node.nodeType === 3) words += String(node.nodeValue || '').slice(0, LANDING_WORDS_READ);
+    else if (node.nodeType === 1 && walk.length < 64 && !node.hidden && node.getAttribute('aria-hidden') !== 'true'
+        && !node.matches('.footnote-definition-label, .footnote-backref, [data-leaf-note-backlink="1"]')) walk.push([node, 0]);
+  }
+  const flat = words.replace(/\s+/g, ' ').trim();
+  if (flat.length <= LANDING_WORDS_SHOWN) return flat;
+  const space = flat.slice(0, LANDING_WORDS_SHOWN + 1).lastIndexOf(' ');
+  return (space > 0 ? flat.slice(0, space) : flat.slice(0, LANDING_WORDS_SHOWN)).trimEnd() + '…';
+}
 function localFootnoteHtml(target, section = false) {
   let remaining = LINK_PREVIEW_OPENING_BYTES;
   let visited = 0;
@@ -40958,6 +41001,8 @@ function foldedPathParts(parts) {
 }
 
 function hoverDetailForKind(kind, rawHref) {
+  
+  if (kind === 'In-page jump') return hoverDetail(String(rawHref || '').replace(/^([^#]*#)leaf-book-item-\d+-/, '$1'));
   return kind === 'Opens in another app' ? resolvedHoverDetail(rawHref) : hoverDetail(rawHref);
 }
 
@@ -41020,7 +41065,7 @@ function startLinkHover(event) {
   activeHoverLink = link;
   linkHoverPointer = event;
   linkHoverTipKind.textContent = info.kind;
-  linkHoverTipDetail.textContent = info.detail;
+  linkHoverTipDetail.textContent = (!section && info.kind === 'In-page jump' && inPageLandingWords(link, rawHref)) || info.detail;
   const token = ++activeHoverToken;
   setLinkHoverLength(null);
   const entry = info.kind === 'Glossary entry';
