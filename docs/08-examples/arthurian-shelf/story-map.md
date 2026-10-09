@@ -88,7 +88,7 @@ Saint Germanus comes to preach in Britain; the cruel King Benli shuts him out, a
 
 ### Vortigern marries Hengist's daughter and gives the Saxons Kent
 
-The Saxons on Thanet outgrow what the Britons can give them, Hengist sends home for more warriors and his daughter, Vortigern falls in love with her at a feast and gives Kent for her, and Octha and Ebissa take lands in the north.
+The Saxons on Thanet outgrow what the Britons can give them, Hengist sends home for more warriors and his daughter, Vortigern falls in love with her at a feast and gives Kent for her, and Octa and Ebissa take lands in the north.
 
 <a id="germanus-rebukes-vortigern"></a>
 
@@ -248,7 +248,7 @@ Malory tells this in [Book I, chapter 7](../malory-sources/malory-map.tsv).
 
 ### Arthur leads the Britons' kings in twelve battles against the Saxons
 
-As the Saxons grow in Britain and Hengist's son Octha settles in Kent, Arthur leads the British kings in twelve battles, carries an image of Mary at Guinnion and strikes down nine hundred sixty men alone at Mount Badon, while the Saxons send to Germany for more kings.
+As the Saxons grow in Britain and Hengist's son Octa settles in Kent, Arthur leads the British kings in twelve battles, carries an image of Mary at Guinnion and strikes down nine hundred sixty men alone at Mount Badon, while the Saxons send to Germany for more kings.
 
 <a id="britains-strange-sights"></a>
 
