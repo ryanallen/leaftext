@@ -40601,12 +40601,14 @@ function makeConsoleLayer(id) {
     terminal.open(host);
     terminal.onData(data => send({ command: 'consoleInput', id, data }));
     terminal.onScroll(() => consoleScrolled(id, entry));
+    terminal.buffer.onBufferChange(() => { if (consoleFrontId === id) writeConsoleFade(); });
     entry.terminal = terminal;
     entry.fit = fit;
     entry.observer = new ResizeObserver(() => {
       if (consoleFrontId !== id) return;
       fit.fit();
       sendConsoleSize(id, entry);
+      writeConsoleFade();
     });
     entry.observer.observe(layer);
     let opening = '';
@@ -40623,6 +40625,7 @@ function makeConsoleLayer(id) {
       terminal.focus();
       bindDocumentMinimap();
       scheduleMinimapPreviewUpdate();
+      writeConsoleFade();
     }
   }).catch(error => leafToast(error.message));
   return entry;
@@ -40648,6 +40651,22 @@ function sendConsoleSize(id, entry) {
 }
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
+
+function consoleRowHeight(terminal) {
+  return Math.max(1, terminal.element.querySelector('.xterm-screen')?.clientHeight / terminal.rows || 1);
+}
+
+
+function writeConsoleFade() {
+  const fade = leftColumn?.fade;
+  if (!fade) return;
+  const entry = frontConsoleEntry();
+  if (entry?.terminal && !entry.layer.hidden && entry.terminal.buffer.active.type === 'alternate') {
+    fade.style.setProperty('--reader-edge-fade-top', `calc(var(--console-inset-top) + ${consoleRowHeight(entry.terminal)}px)`);
+  } else {
+    fade.style.removeProperty('--reader-edge-fade-top');
+  }
+}
 
 
 function consoleShortcutKey(event) {
@@ -40677,7 +40696,7 @@ function consoleScrollElement() {
   if (!entry?.terminal) return null;
   if (!entry.scroll) {
     const terminal = entry.terminal;
-    const lineHeight = () => Math.max(1, terminal.element.querySelector('.xterm-screen')?.clientHeight / terminal.rows || 1);
+    const lineHeight = () => consoleRowHeight(terminal);
     entry.scroll = {
       get scrollHeight() { return terminal.buffer.active.length * lineHeight(); },
       get clientHeight() { return terminal.rows * lineHeight(); },
@@ -40693,7 +40712,10 @@ window.leafConsoleFront = id => {
   consoleFrontId = id;
   document.body.classList.toggle('console-front', id !== null);
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
-  if (id === null) return;
+  if (id === null) {
+    writeConsoleFade();
+    return;
+  }
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   entry.layer.hidden = false;
   
@@ -40710,6 +40732,7 @@ window.leafConsoleFront = id => {
     entry.terminal.focus();
     scheduleMinimapPreviewUpdate();
   }
+  writeConsoleFade();
 };
 
 

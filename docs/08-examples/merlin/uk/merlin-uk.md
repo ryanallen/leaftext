@@ -1493,7 +1493,7 @@ The story now leaves Pendragon and Uther and turns to Merlin. He was with Blaise
 
 That was how a book was begun that's called the Book of Merlin's Prophecies, about what he said of the kings of England and all the other things he spoke of later.[^85-1] That's why it doesn't say who Merlin is or where he came from, since they wrote down only what he said.[^85-2]
 
-Merlin stayed with Blaise a long while. In that time King Pendragon, who the English called by his true baptismal name, Aurelius Ambrosius, did whatever Merlin said, and so did his brother Uther.[^85-3]
+Merlin stayed with Blaise a long while. In that time King Pendragon, who the English called by his true baptismal name, Ambrosius Aurelianus, did whatever Merlin said, and so did his brother Uther.[^85-3]
 
 <a id="page-86"></a>[\[Paris–Ulrich 1:86\]](../merlin-old-french.md#page-86) When Merlin knew they'd spoken so and meant to put his words on record, he told Blaise, and Blaise asked him, "Merlin, will their book be like the one I'm making?"
 
@@ -1631,7 +1631,7 @@ The king promised Merlin he'd never speak of it. Then Merlin said, "Sire, the tr
 
 "Then, Sire, our Lord rose again, and after Jesus Christ's death this soldier was in a wild wasteland, with part of his family and many others who were with him. When a great famine struck them, they complained to the knight who led them, and he prayed God to show him why they were suffering such hardship.
 
-"Our Lord told him to build a table in the name of the one at the Supper, square in shape, and to drape it well in white cloths. He was to set on it a vessel he had, from which Jesus and the apostles had eaten at the Supper, and to cover that completely except on his own side. Brons, his brother-in-law, caught a fish, which was laid in front of Joseph of Arimathea, in the middle of the table beside the vessel.[^95-2] Through it the good were separated from the wicked. Whoever could sit there, Sire, had everything their heart wanted.
+"Our Lord told him to build a table in the name of the one at the Supper, square in shape, and to drape it well in white cloths. He was to set on it a vessel he had, from which Jesus and the apostles had eaten at the Supper, and to cover that completely except on his own side. Bron, his brother-in-law, caught a fish, which was laid in front of Joseph of Arimathea, in the middle of the table beside the vessel.[^95-2] Through it the good were separated from the wicked. Whoever could sit there, Sire, had everything their heart wanted.
 
 "There was always one empty seat there, Sire, standing for where Judas sat at the Supper; when he heard our Lord say those words were meant for him, he left God's company. His place stayed vacant until our Lord set a man in it to make the twelve apostles whole. So these two tables belong together, and at the second, Joseph's, our Lord gave all who sat there what their hearts wanted. People call the vessel that gives them this grace the Grail. If you'll trust me, you'll found a third in the name of the Trinity, and each of the three will stand for one of the Trinity's powers.
 
@@ -2077,7 +2077,7 @@ She said nothing. Her relatives and the duke's all spoke up. "No one could refus
 
 So the peace was sworn on both sides, and Uther Pendragon took Igraine as his wife and gave her daughter to King Lot of Orkney.[^120-1] The wedding was held on the thirteenth day after the two weeks that followed the talks; the duke had been killed twenty-one days before they met, so you can count two full months from the night Uther had slept with her in her room.[^120-2]
 
-From Lot's bride came Mordred, Sir Gawain, Agravain, Guerrehès and Gahariès.[^120-3] King Neutres of Sorhaut married Morgans, another daughter, born out of wedlock. The king sent a third, Morgue, to a convent on the advice of all her friends together, to learn to read and write, and she studied so well that she mastered the seven arts. She knew astonishing things about astronomy and practised it constantly, and was deeply skilled in medicine, which is why Morgue was called Morgan le Fay. The king provided for all the other children, and he loved the duke's relatives very much.
+From Lot's bride came Mordred, Sir Gawain, Agravain, Gareth and Gaheris.[^120-3] King Nentres of Sorhaut married Morgans, another daughter, born out of wedlock. The king sent a third, Morgue, to a convent on the advice of all her friends together, to learn to read and write, and she studied so well that she mastered the seven arts. She knew astonishing things about astronomy and practised it constantly, and was deeply skilled in medicine, which is why Morgue was called Morgan le Fay. The king provided for all the other children, and he loved the duke's relatives very much.
 
 ### Uther asks Igraine whose child she's carrying
 
@@ -2651,7 +2651,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^85-2]: The Huth manuscript reads "or who he was"; Paris and Ulrich print "or where he came from", and the English follows them.
 
-[^85-3]: The words "who the English called by his true baptismal name, Aurelius Ambrosius" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
+[^85-3]: The words "who the English called by his true baptismal name, Ambrosius Aurelianus" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^86-1]: In the whole story: [The brothers fight the Saxons at Salisbury](../../arthurian-shelf/story-map.md#the-battle-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -2677,7 +2677,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^95-1]: In the whole story: [Merlin makes Uther the Round Table, with one empty seat](../../arthurian-shelf/story-map.md#the-round-table).<sup>[\*](#new-in-this-translation)</sup>
 
-[^95-2]: The words "When a great famine struck them", "square in shape", "to drape it well", "from which Jesus and the apostles had eaten at the Supper" and "to cover that completely", and the sentence on Brons and the fish, are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
+[^95-2]: The words "When a great famine struck them", "square in shape", "to drape it well", "from which Jesus and the apostles had eaten at the Supper" and "to cover that completely", and the sentence on Bron and the fish, are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
 
 [^98-1]: The Huth manuscript reads "the son of the one who's to fill it"; Paris and Ulrich print "who's to father him", and the English follows them: "learned he's to father such a child".
 

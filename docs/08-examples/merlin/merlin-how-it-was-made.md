@@ -244,7 +244,7 @@ The glossary of the people, places and words the book uses: each entry comes fro
 
 ## Modern names
 
-Each person and place goes by the name a modern English reader knows, the one a standard reference such as Wikipedia files them under, in the story and the glossary alike, with the source's own spellings listed under the glossary heading.
+Each person and place goes by the name a modern English reader knows, spelled as its Wikipedia article spells it: every name the book writes was looked up there, and the check refuses one never looked up or spelled otherwise, in the story and the glossary alike, with the source's own spellings listed under the glossary heading.
 
 [Open GLOSSARY.md](GLOSSARY.md)
 

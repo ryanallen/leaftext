@@ -156,6 +156,12 @@ To grow lighter.
 
 To go; of a person, to pass away.
 
+## Ambrosius Aurelianus
+
+Also: Aurelius Ambroisius
+
+Pendragon's baptismal name, which the English called him by.
+
 ## amentevoir
 
 Also: amenteues, ramentevés
@@ -246,12 +252,6 @@ Authority: the standing of a writing that may be cited as true, as the apostles'
 
 Charity, a good thing done for God's sake; Merlin tells Blaise that writing the book will be a great one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
-## Aurelius Ambrosius
-
-Also: Aurelius Ambroisius
-
-Pendragon's baptismal name, which the English called him by.
-
 ## avoutire
 
 Adultery.
@@ -300,7 +300,7 @@ Also: Bretiaus
 
 A knight of the Duke of Tintagel's who the duke trusts.
 
-## Brons
+## Bron
 
 A brother-in-law of Joseph of Arimathea, who catches the fish laid on Joseph's table beside the vessel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
@@ -626,7 +626,7 @@ Also: se gabe
 
 To mock, to make fun of: Ulfin tells Igraine she may be mocking him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
-## Gahariès
+## Gaheris
 
 A son of King Lot of Orkney, Gawain's brother.
 
@@ -649,6 +649,10 @@ A girl, a woman of low birth; Kay was nursed on the milk of one so that Arthur c
 Also: garchons
 
 A low fellow, a thug; the younger sister brings a crowd of them to her sister's house, and they beat her.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+## Gareth
+
+A son of King Lot of Orkney, Gawain's brother.
 
 ## garsoil
 
@@ -673,10 +677,6 @@ Young; a child.
 Also: guenchi
 
 To turn aside, to wheel about.
-
-## Guerrehès
-
-A son of King Lot of Orkney, Gawain's brother.
 
 ## harnas
 
@@ -928,7 +928,7 @@ A daughter of Igraine's who Uther sends to a house of religion to learn to read 
 
 ## Morgans
 
-A daughter born out of wedlock, the one King Neutres of Sorhaut marries. Paris and Ulrich's name index runs her and Morgue together, but the French text names them apart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A daughter born out of wedlock, the one King Nentres of Sorhaut marries. Paris and Ulrich's name index runs her and Morgue together, but the French text names them apart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## mostres
 
@@ -938,7 +938,7 @@ A portent, a sign shown in the sky: the red dragon is the one Merlin promised.<s
 
 A church; Pendragon is coming back from one when the next stranger comes to him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
-## Neutres
+## Nentres
 
 King of Sorhaut, who marries another of Igraine's daughters.
 
@@ -1198,7 +1198,7 @@ On relics, the remains of saints; Vortigern makes his messengers swear on them t
 
 ## Sorhaut
 
-King Neutres's kingdom in this story; the text gives no secure place for it on a modern map.
+King Nentres's kingdom in this story; the text gives no secure place for it on a modern map.
 
 ## sortir
 
