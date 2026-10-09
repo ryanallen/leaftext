@@ -649,6 +649,8 @@ The terminal button beside the **New document** plus above the tabs opens a cons
 
 On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does in Windows Terminal; with nothing highlighted, `Ctrl+C` goes to the program and interrupts it as usual. On a Mac, `Cmd+C` copies and `Ctrl+C` always interrupts.
 
+While a full-screen program such as Claude Code fills a console, the soft fade at the top of the page starts under the program's first row rather than over it, so a line the program holds at the top, such as the prompt it is working on, reads at full strength while its work dissolves underneath. At an ordinary shell prompt the fade sits where it does over a document.
+
 ## Layout
 
 | Behavior | Rule |

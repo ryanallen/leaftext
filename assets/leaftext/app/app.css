@@ -6746,6 +6746,8 @@ body.is-embedded .reader-toolbar {
 .library-shell {
   display: grid;
   
+  --console-inset-top: calc(var(--app-bar-height) + var(--lt-space-12));
+  
   
   grid-template-columns: var(--library-rail-width, 240px) minmax(0, 1fr) var(--reader-minimap-column) var(--reader-gutter);
   grid-template-rows: minmax(0, 1fr) var(--reader-gutter);
@@ -8177,10 +8179,6 @@ body.library-resizing button {
   font-size: var(--lt-text-12);
   color: var(--lt-muted-foreground);
   pointer-events: none;
-}
-
-.library-shell {
-  --console-inset-top: calc(var(--app-bar-height) + var(--lt-space-12));
 }
 .console-layer {
   grid-column: 2;
