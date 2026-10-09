@@ -40743,6 +40743,7 @@ function makeConsoleLayer(id) {
       write(data, done);
       if (place !== null) consoleBuffer(entry).scrollToLine(place);
     };
+    holdConsoleLinks(terminal);
     terminal.onData(data => send({ command: 'consoleInput', id, data }));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
@@ -40774,6 +40775,34 @@ function makeConsoleLayer(id) {
     }
   }).catch(error => leafToast(error.message));
   return entry;
+}
+
+
+function holdConsoleLinks(terminal) {
+  const detector = terminal.linkDetector;
+  for (const provider of detector.providers) {
+    const plain = Boolean(provider.constructor.URL_REGEX);
+    const provide = provider.provideLinks.bind(provider);
+    provider.provideLinks = (row, done) => provide(row, links => done(links?.map(link => ({
+      ...link,
+      plain,
+      activate: event => { if (event.ctrlKey || event.metaKey) openConsoleLink(link.text); },
+    }))));
+  }
+  
+  const cacheLink = detector.cacheLink.bind(detector);
+  detector.cacheLink = link => {
+    if (!link.plain) return cacheLink(link);
+    const { start, end } = link.range;
+    detector.linkCache.set(`r${start.y}:${start.x}-${end.x}`, link);
+  };
+}
+
+
+function openConsoleLink(address) {
+  let scheme;
+  try { scheme = new URL(address).protocol; } catch (_) { return; }
+  if (scheme === 'http:' || scheme === 'https:' || scheme === 'mailto:') send({ command: 'openExternal', url: address });
 }
 
 

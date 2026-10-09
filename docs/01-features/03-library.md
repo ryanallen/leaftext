@@ -651,6 +651,8 @@ The console draws with Ghostty's terminal core, the same code the Ghostty termin
 
 On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does in Windows Terminal; with nothing highlighted, `Ctrl+C` goes to the program and interrupts it as usual. On a Mac, `Cmd+C` copies and `Ctrl+C` always interrupts.
 
+A web or mail address a console prints — `https://`, `http://` or `mailto:` — opens in your own browser or mail program when you `Ctrl`-click it on Windows or `Cmd`-click it on a Mac. An address of any other kind opens nothing, so a program cannot get the app to open a file or start another program by printing a link to it.
+
 While a full-screen program such as Claude Code fills a console, the soft fade at the top of the page starts under the program's first row rather than over it, so a line the program holds at the top, such as the prompt it is working on, reads at full strength while its work dissolves underneath. At an ordinary shell prompt the fade sits where it does over a document.
 
 ## Layout
