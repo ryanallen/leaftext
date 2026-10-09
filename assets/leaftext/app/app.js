@@ -10767,6 +10767,7 @@ if (exportPdfButton) {
 }
 
 const PAGE_EXPORT_CONTROLS = '.code-copy, .image-lane-corner, .mermaid-tools, .mermaid-view-controls, .mermaid-zoom, .diagram-close, .comment-layer, .docs-pager';
+const PAGE_EXPORT_BLOCK_MARKS = ['data-block-id', 'data-block-kind', 'data-src-start', 'data-src-end', 'data-editable'];
 
 
 
@@ -10790,6 +10791,11 @@ function pageExportMarkup(asBook) {
   drawCodeFencesIn(copy);
   
   copy.querySelectorAll('img').forEach(restoreMissingImage);
+  for (const element of [copy, ...copy.querySelectorAll('*')]) {
+    for (const name of PAGE_EXPORT_BLOCK_MARKS) element.removeAttribute(name);
+    if (element.classList.contains('is-passed')) element.classList.remove('is-passed');
+    if (element.getAttribute('class') === '') element.removeAttribute('class');
+  }
   if (!asBook) return PAGE_EXPORT_WRAPPER_OPEN + copy.outerHTML + PAGE_EXPORT_WRAPPER_CLOSE;
   return PAGE_EXPORT_WRAPPER_OPEN + bookExportForm(copy) + PAGE_EXPORT_WRAPPER_CLOSE;
 }
@@ -11698,7 +11704,8 @@ function placeNameBox(anchored) {
 }
  
 function libraryRowFor(path) {
-  let row = null;
+  let row = showLibraryRowFor(path, false);
+  if (row) return row;
   libraryTree.querySelectorAll('[data-reveal-path]').forEach((el) => {
     if (el.getAttribute('data-reveal-path') === path) row = el;
   });
@@ -13400,10 +13407,9 @@ window.leafSetPager = (state) => {
   bindDocumentLinks();
   scheduleReaderLayoutUpdate();
 };
+
 function scrollSelectedLibraryRowIntoView() {
-  const row = libraryTree.querySelector('.library-file.is-selected');
-  
-  if (row) row.scrollIntoView({ block: 'center' });
+  showLibraryRowFor(librarySelectedPath, true);
 }
 
 function revealSelectedInLibrary() {
@@ -13438,12 +13444,10 @@ function upRowHtml(parent) {
   const label = `Back to ${parent.name}`;
   return `<button type="button" class="library-nav-folder library-nav-up" data-nav-into="${escapeAttr(parent.path)}" title="${escapeAttr(label)}" aria-label="${escapeAttr(label)}">${BACK_ARROW_SVG}<span class="library-file-label">${escapeText(parent.name)}</span></button>`;
 }
-function renderProject(entries) {
-  const rows = [];
+
+function renderProject() {
   const parent = libraryParentCrumb();
-  if (parent) rows.push(upRowHtml(parent));
-  rows.push(libraryBooksHeadHtml());
-  return `<div class="library-project">${rows.join('')}${libraryRowsHtml(entries)}</div>`;
+  return `<div class="library-project">${parent ? upRowHtml(parent) : ''}${libraryBooksHeadHtml()}<div class="library-project" data-row-window="1"></div></div>`;
 }
 
 function renderLibraryLists() {
@@ -13452,7 +13456,10 @@ function renderLibraryLists() {
   if (libraryCalendarDay) libraryCalendarDay.hidden = !day;
   libraryOutline.hidden = !outlining;
   libraryLinks.hidden = !outlining || !smartLinksHaveRows();
+  const wasHidden = libraryTree.hidden;
   libraryTree.hidden = day || outlining;
+  
+  if (wasHidden && !libraryTree.hidden) scheduleLibraryRowWindow();
 }
 
 function realFolderPath(browsePath) {
@@ -13478,10 +13485,13 @@ function setLibraryFolder(path) {
 window.leafRefreshLibraryFolder = () => {
   send({ command: 'getFolder', path: libraryProjectPath });
 };
-function bindLibraryRows() {
+
+function bindLibraryRows(scope) {
+  const rows = scope || libraryTree;
   markLibraryPicks();
-  libraryTree.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
-  libraryTree.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
+  rows.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
+  rows.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
+  if (scope) return;
   const intro = libraryTree.querySelector('.library-intro-action');
   if (intro) {
     intro.addEventListener('click', () => {
@@ -14280,11 +14290,16 @@ function renderLibrarySearchability() {
 
 let libraryTreeHtml = null;
 
-function setLibraryTreeHtml(html) {
-  if (html === libraryTreeHtml) return false;
+function setLibraryTreeHtml(html, rows) {
+  if (html === libraryTreeHtml && libraryRowListSame(rows || null)) return false;
   libraryTreeHtml = html;
   const focused = libraryFocusBeforeRedraw();
   libraryTree.innerHTML = html;
+  takeLibraryRowList(rows || null);
+  if (rows) {
+    bindLibraryRows();
+    drawLibraryRowWindow(true);
+  }
   libraryFocusAfterRedraw(focused);
   return true;
 }
@@ -14364,9 +14379,7 @@ function renderLibrary() {
   const empty = libraryEntries.length
     ? ''
     : `<p class="library-empty">${escapeText(libraryEmptyText())}</p>`;
-  if (!setLibraryTreeHtml(libraryIntroHtml() + renderProject(libraryEntries) + empty)) return false;
-  bindLibraryRows();
-  return true;
+  return setLibraryTreeHtml(libraryIntroHtml() + renderProject() + empty, libraryRowListOf(libraryEntries));
 }
 
 window.leafSetLibraryFolder = (payload) => {
@@ -15490,10 +15503,67 @@ function libraryRowByLetter(rows, index, letter) {
   }
   return null;
 }
+
+function libraryFolderWalkTarget(row, key) {
+  const items = libraryRowList.items;
+  const up = !!libraryTree.querySelector('.library-nav-up');
+  const here = row.classList.contains('library-nav-up') ? -1 : libraryRowList.index.get(libraryRowKey(row));
+  if (here === undefined) return null;
+  const walkable = (at) => at >= 0 && at < items.length && items[at].kind !== 'heading';
+  const step = (from, direction) => {
+    for (let at = from + direction; at >= 0 && at < items.length; at += direction) if (walkable(at)) return at;
+    return null;
+  };
+  const first = step(-1, 1);
+  const last = step(items.length, -1);
+  if (key === 'ArrowDown') return here < 0 ? first : step(here, 1);
+  if (key === 'ArrowUp') return here < 0 ? null : (step(here, -1) ?? (up ? -1 : null));
+  if (key === 'Home') return up ? -1 : first;
+  if (key === 'End') return last;
+  
+  if (key === 'PageUp' || key === 'PageDown') {
+    const direction = key === 'PageDown' ? 1 : -1;
+    if (here < 0) return direction > 0 ? first : null;
+    let target = libraryRowIndexAtOffset(libraryRowOffsets[here] + direction * libraryRowPaneHeight());
+    if (!walkable(target)) target = step(target, direction) ?? step(target, -direction);
+    if (target === null || target === here) target = step(here, direction);
+    return target ?? (direction < 0 && up ? -1 : null);
+  }
+  if (key && key.length === 1 && key.trim()) {
+    const letter = key.toLowerCase();
+    for (let turn = 1; turn <= items.length; turn += 1) {
+      const at = (here + turn + items.length) % items.length;
+      if (walkable(at) && libraryItemName(items[at]).startsWith(letter)) return at;
+    }
+  }
+  return null;
+}
+
+function libraryItemName(item) {
+  const node = item.node;
+  const name = item.kind === 'folder' ? node.name : (node.book || typeof node.preview !== 'string') && node.title ? node.title : documentNameParts(node.name || node.path || '').stem;
+  return String(name || '').trim().toLowerCase();
+}
+
+function walkLibraryFolderRows(row, event) {
+  const key = event.key;
+  if (key === 'ArrowRight' || key === 'ArrowLeft') return false;
+  const target = libraryFolderWalkTarget(row, key);
+  const known = ['ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(key) || (key && key.length === 1 && key.trim());
+  if (!known) return false;
+  if (target === null) {
+    if (key.length > 1) event.preventDefault();
+    return true;
+  }
+  event.preventDefault();
+  focusLibraryRow(target < 0 ? libraryTree.querySelector('.library-nav-up') : showLibraryRowItem(target, false));
+  return true;
+}
 function walkLibraryList(list, event) {
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
   const row = event.target && event.target.closest ? event.target.closest(LIBRARY_WALK_ROWS) : null;
   if (!row || !list.contains(row)) return;
+  if (list === libraryTree && libraryRowWindowBox() && walkLibraryFolderRows(row, event)) return;
   const rows = libraryWalkRows(list);
   const index = rows.indexOf(row);
   if (index < 0) return;
@@ -15537,8 +15607,18 @@ librarySearchResults.addEventListener('keydown', (event) => walkLibraryList(libr
 function libraryFocusBeforeRedraw() {
   const active = document.activeElement;
   if (!active || !libraryTree.contains(active)) return null;
-  const rows = libraryWalkRows(libraryTree);
-  return { key: libraryRowKey(active), index: rows.indexOf(active), folder: libraryDrawnFolder };
+  const key = libraryRowKey(active);
+  
+  const item = libraryRowWindowBox() && key !== 'up' ? libraryRowList.index.get(key) : undefined;
+  return { key, index: item === undefined ? libraryWalkRows(libraryTree).indexOf(active) : item, item: item !== undefined, folder: libraryDrawnFolder };
+}
+
+function libraryFolderRowNear(index) {
+  const items = libraryRowList.items;
+  for (let at = Math.min(Math.max(index, 0), items.length - 1); at >= 0 && at < items.length; at += 1) {
+    if (items[at].kind !== 'heading') return showLibraryRowItem(at, false);
+  }
+  return null;
 }
 
 function libraryFocusAfterRedraw(held) {
@@ -15548,6 +15628,19 @@ function libraryFocusAfterRedraw(held) {
   if (!held || !leafKeyboardDriving) return;
   const rows = libraryWalkRows(libraryTree);
   if (!rows.length) return;
+  const up = rows.find((row) => row.classList.contains('library-nav-up'));
+  
+  if (libraryRowWindowBox() && libraryRowList.items.length) {
+    const index = libraryRowList.index;
+    if (held.folder === libraryProjectPath && folder === held.folder) {
+      if (held.key === 'up' && up) return focusLibraryRow(up);
+      const same = index.get(held.key);
+      return focusLibraryRow(same !== undefined ? showLibraryRowItem(same, false) : libraryFolderRowNear(held.item ? held.index : 0));
+    }
+    const cameFrom = index.get(held.folder);
+    const there = cameFrom !== undefined && libraryRowList.items[cameFrom].kind === 'folder' ? showLibraryRowItem(cameFrom, false) : null;
+    return focusLibraryRow(there || libraryFolderRowNear(0) || up);
+  }
   if (held.folder === libraryProjectPath && folder === held.folder) {
     const same = rows.find((row) => libraryRowKey(row) === held.key);
     focusLibraryRow(same || rows[Math.min(Math.max(held.index, 0), rows.length - 1)]);
@@ -15758,7 +15851,7 @@ function libraryDateHeadings() {
     const group = libraryDateGroup(view.sort === 'created' ? node.created : node.modified, now);
     if (group === last) return '';
     last = group;
-    return libraryHeadingHtml(group);
+    return group;
   };
 }
 const LIBRARY_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -15842,27 +15935,262 @@ function folderRowHtml(node) {
   const hidden = node.hidden ? ' is-hidden' : '';
   return `<button type="button" class="library-nav-folder${hidden}" data-nav-into="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" data-folder-path="${escapeAttr(node.path)}" title="${escapeAttr(node.name)}">${FOLDER_ICON_SVG}<span class="library-file-label">${escapeText(node.name)}</span>${count}<span class="library-nav-chevron" aria-hidden="true">›</span></button>`;
 }
+
+let libraryRowList = null;
+let libraryRowOffsets = new Float64Array(1);
+
+let libraryRowKindHeights = null;
+let libraryRowKindMargins = null;
+let libraryRowMeasuredWidth = -1;
+const libraryRowLaidOut = new Map();
+let libraryRowWindowStart = -1;
+let libraryRowWindowEnd = -1;
+
+let libraryRowWindowBlind = false;
+let libraryRowFrame = 0;
+const libraryRowScroll = libraryTree.parentElement;
+
+const LIBRARY_BLIND_ROWS = 200;
+const LIBRARY_ROW_GUESS = { line: 28, full: 64 };
+const LIBRARY_ROW_SAMPLES = {
+  heading: () => libraryHeadingHtml('Measure'),
+  folder: () => folderRowHtml({ kind: 'folder', name: 'Measure', path: '', count: 1 }),
+  line: () => fileRowHtml({ name: 'Measure.md', path: '' }),
+  full: () => fileRowHtml({ name: 'Measure.md', path: '', preview: '' }),
+  'full-title': () => fileRowHtml({ name: 'Measure.md', path: '', preview: '', title: 'A title saying more' }),
+  'full-prose': () => fileRowHtml({ name: 'Measure.md', path: '', preview: 'Measure '.repeat(60) }),
+  'full-title-prose': () => fileRowHtml({ name: 'Measure.md', path: '', preview: 'Measure '.repeat(60), title: 'A title saying more' }),
+  book: () => fileRowHtml({ name: 'Measure.azw3', path: '', book: { badge: 'AZW3' } }),
+  'book-author': () => fileRowHtml({ name: 'Measure.azw3', path: '', book: { badge: 'AZW3', author: 'Measure' } }),
+};
 function libraryHeadingHtml(words) {
   return `<div class="library-group-heading">${escapeText(words)}</div>`;
 }
-function libraryRowHtml(node, headingFor) {
-  return node.kind === 'folder' ? folderRowHtml(node) : headingFor(node) + fileRowHtml(node);
+
+function libraryRowKindOf(node) {
+  if (node.kind === 'folder') return 'folder';
+  if (node.book) return node.book.author ? 'book-author' : 'book';
+  if (typeof node.preview !== 'string') return 'line';
+  const title = libraryTitleSaysMore(node.title, documentNameParts(node.name || node.path || '').stem) ? '-title' : '';
+  return `full${title}${node.preview ? '-prose' : ''}`;
 }
 
-function libraryRowsHtml(entries) {
-  const list = entries || [];
-  const favorites = list.filter((node) => isFavoritePath(node.path));
-  if (!favorites.length) {
+function libraryRowListOf(entries) {
+  const list = (entries || []).filter(Boolean);
+  const favorites = new Set(currentFavorites().map((favorite) => favorite.path));
+  const items = [];
+  const add = (node, headingFor) => {
+    const words = node.kind === 'folder' ? '' : headingFor(node);
+    if (words) items.push({ kind: 'heading', words });
+    items.push({ kind: libraryRowKindOf(node), node });
+  };
+  const loved = favorites.size ? list.filter((node) => favorites.has(node.path)) : [];
+  if (!loved.length) {
     const headingFor = libraryDateHeadings();
-    return list.map((node) => libraryRowHtml(node, headingFor)).join('');
+    for (const node of list) add(node, headingFor);
+  } else {
+    items.push({ kind: 'heading', words: 'Favorites' });
+    for (const node of loved) add(node, () => '');
+    const rest = list.filter((node) => !favorites.has(node.path));
+    if (rest.length) items.push({ kind: 'heading', words: 'Files' });
+    const headingFor = libraryDateHeadings();
+    for (const node of rest) add(node, headingFor);
   }
-  const noHeadings = () => '';
-  const headingFor = libraryDateHeadings();
-  const rest = list.filter((node) => !isFavoritePath(node.path));
-  return libraryHeadingHtml('Favorites')
-    + favorites.map((node) => libraryRowHtml(node, noHeadings)).join('')
-    + (rest.length ? libraryHeadingHtml('Files') + rest.map((node) => libraryRowHtml(node, headingFor)).join('') : '');
+  const index = new Map();
+  items.forEach((item, at) => {
+    if (item.node) index.set(item.node.path, at);
+  });
+  return { items, index, selected: librarySelectedPath || null, folder: libraryProjectPath };
 }
+
+function libraryRowListSame(next) {
+  const drawn = libraryRowList;
+  if (!next || !drawn) return next === drawn;
+  if (next.selected !== drawn.selected || next.folder !== drawn.folder || next.items.length !== drawn.items.length) return false;
+  for (let at = 0; at < next.items.length; at += 1) {
+    const one = next.items[at];
+    const was = drawn.items[at];
+    if (one.kind !== was.kind || one.words !== was.words || !libraryNodeDrawsSame(one.node, was.node)) return false;
+  }
+  return true;
+}
+function libraryNodeDrawsSame(one, was) {
+  if (one === was) return true;
+  if (!one || !was) return false;
+  const book = one.book || {};
+  const wasBook = was.book || {};
+  return one.path === was.path && one.name === was.name && one.title === was.title && one.preview === was.preview
+    && one.modified === was.modified && one.count === was.count && !!one.hidden === !!was.hidden
+    && book.shut === wasBook.shut && book.badge === wasBook.badge && book.author === wasBook.author;
+}
+
+function takeLibraryRowList(list) {
+  if (!list || !libraryRowList || list.folder !== libraryRowList.folder) libraryRowLaidOut.clear();
+  libraryRowList = list;
+  libraryRowWindowStart = -1;
+  libraryRowWindowEnd = -1;
+  libraryRowWindowBlind = false;
+  placeLibraryRows(0);
+}
+
+function libraryRowKindHeight(kind) {
+  const measured = libraryRowKindHeights && libraryRowKindHeights[kind];
+  if (measured) return measured;
+  return kind.startsWith('full') || kind === 'book-author' ? LIBRARY_ROW_GUESS.full : LIBRARY_ROW_GUESS.line;
+}
+
+function placeLibraryRows(from) {
+  const items = libraryRowList ? libraryRowList.items : [];
+  if (libraryRowOffsets.length !== items.length + 1) {
+    libraryRowOffsets = new Float64Array(items.length + 1);
+    from = 0;
+  }
+  const heights = {};
+  const laidOut = libraryRowLaidOut.size ? libraryRowLaidOut : null;
+  for (let at = from; at < items.length; at += 1) {
+    const item = items[at];
+    const laid = laidOut && item.node ? laidOut.get(item.node.path) : undefined;
+    const height = laid && laid.kind === item.kind ? laid.height : heights[item.kind] || (heights[item.kind] = libraryRowKindHeight(item.kind));
+    libraryRowOffsets[at + 1] = libraryRowOffsets[at] + height;
+  }
+}
+function libraryRowLaidHeight(row) {
+  const style = getComputedStyle(row);
+  return {
+    height: row.getBoundingClientRect().height,
+    margin: (Number.parseFloat(style.marginTop) || 0) + (Number.parseFloat(style.marginBottom) || 0),
+  };
+}
+
+function measureLibraryRows(box) {
+  const kinds = Object.keys(LIBRARY_ROW_SAMPLES);
+  box.innerHTML = kinds.map((kind) => LIBRARY_ROW_SAMPLES[kind]()).join('');
+  libraryRowKindHeights = {};
+  libraryRowKindMargins = {};
+  Array.from(box.children).forEach((row, at) => {
+    const laid = libraryRowLaidHeight(row);
+    libraryRowKindHeights[kinds[at]] = laid.height ? laid.height + laid.margin : 0;
+    libraryRowKindMargins[kinds[at]] = laid.margin;
+  });
+  libraryRowMeasuredWidth = libraryTree.clientWidth;
+  libraryRowLaidOut.clear();
+  box.innerHTML = '';
+}
+function libraryRowIndexAtOffset(offset) {
+  let low = 0;
+  let high = libraryRowOffsets.length - 1;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (libraryRowOffsets[middle] <= offset) low = middle + 1;
+    else high = middle;
+  }
+  return Math.max(0, low - 1);
+}
+function libraryItemHtml(item) {
+  if (item.kind === 'heading') return libraryHeadingHtml(item.words);
+  return item.kind === 'folder' ? folderRowHtml(item.node) : fileRowHtml(item.node);
+}
+function libraryRowWindowBox() {
+  return libraryRowList ? libraryTree.querySelector('[data-row-window]') : null;
+}
+function libraryRowPaneHeight() {
+  return libraryTree.hidden ? 0 : libraryRowScroll.clientHeight;
+}
+
+function drawLibraryRowWindow(force) {
+  const box = libraryRowWindowBox();
+  if (!box) return;
+  const items = libraryRowList.items;
+  const paneHeight = libraryRowPaneHeight();
+  if (!paneHeight) {
+    if (force || !libraryRowWindowBlind) paintLibraryRowWindow(box, 0, Math.min(items.length, LIBRARY_BLIND_ROWS));
+    libraryRowWindowBlind = true;
+    return;
+  }
+  const width = libraryTree.clientWidth;
+  if (width && width !== libraryRowMeasuredWidth) {
+    measureLibraryRows(box);
+    placeLibraryRows(0);
+    force = true;
+  }
+  if (libraryRowWindowBlind) force = true;
+  libraryRowWindowBlind = false;
+  const visibleTop = Math.max(0, libraryRowScroll.scrollTop - (box.offsetTop || 0));
+  const neededStart = libraryRowIndexAtOffset(Math.max(0, visibleTop - paneHeight));
+  const neededEnd = Math.min(items.length, libraryRowIndexAtOffset(visibleTop + paneHeight * 2) + 1);
+  if (!force && neededStart >= libraryRowWindowStart && neededEnd <= libraryRowWindowEnd) return;
+  const start = libraryRowIndexAtOffset(Math.max(0, visibleTop - paneHeight * 2));
+  const end = Math.min(items.length, libraryRowIndexAtOffset(visibleTop + paneHeight * 3) + 1);
+  paintLibraryRowWindow(box, start, end);
+  keepLibraryRowHeights(box);
+}
+function paintLibraryRowWindow(box, start, end) {
+  const items = libraryRowList.items;
+  libraryRowWindowStart = start;
+  libraryRowWindowEnd = end;
+  box.innerHTML = items.slice(start, end).map(libraryItemHtml).join('');
+  box.style.setProperty('padding-top', `${libraryRowOffsets[start]}px`);
+  box.style.setProperty('padding-bottom', `${libraryRowOffsets[items.length] - libraryRowOffsets[end]}px`);
+  bindLibraryRows(box);
+}
+
+function keepLibraryRowHeights(box) {
+  if (!libraryRowKindMargins) return;
+  const items = libraryRowList.items;
+  const rows = box.children;
+  let first = -1;
+  for (let at = libraryRowWindowStart; at < libraryRowWindowEnd; at += 1) {
+    const item = items[at];
+    const row = rows[at - libraryRowWindowStart];
+    if (!item.node || !row) continue;
+    const height = row.getBoundingClientRect().height;
+    if (!height) continue;
+    const laid = height + (libraryRowKindMargins[item.kind] || 0);
+    if (Math.abs(laid - (libraryRowOffsets[at + 1] - libraryRowOffsets[at])) < 0.5) continue;
+    libraryRowLaidOut.set(item.node.path, { kind: item.kind, height: laid });
+    if (first < 0) first = at;
+  }
+  if (first >= 0) placeLibraryRows(first);
+}
+
+function showLibraryRowItem(index, center) {
+  const box = libraryRowWindowBox();
+  if (!box || index < 0 || index >= libraryRowList.items.length) return null;
+  const paneHeight = libraryRowPaneHeight();
+  if (paneHeight) {
+    const top = (box.offsetTop || 0) + libraryRowOffsets[index];
+    const bottom = (box.offsetTop || 0) + libraryRowOffsets[index + 1];
+    const scroll = libraryRowScroll;
+    if (center) scroll.scrollTop = Math.max(0, (top + bottom - paneHeight) / 2);
+    else if (top < scroll.scrollTop) scroll.scrollTop = top;
+    else if (bottom > scroll.scrollTop + paneHeight) scroll.scrollTop = bottom - paneHeight;
+    drawLibraryRowWindow(false);
+  }
+  if (index < libraryRowWindowStart || index >= libraryRowWindowEnd) return null;
+  return box.children[index - libraryRowWindowStart] || null;
+}
+
+function showLibraryRowFor(path, center) {
+  const index = libraryRowList ? libraryRowList.index.get(path) : undefined;
+  return index === undefined ? null : showLibraryRowItem(index, center);
+}
+
+function libraryRowPaths() {
+  if (!libraryRowWindowBox()) return null;
+  return libraryRowList.items.filter((item) => item.node).map((item) => item.node.path);
+}
+function scheduleLibraryRowWindow() {
+  if (libraryRowFrame || !libraryRowList) return;
+  libraryRowFrame = window.requestAnimationFrame(() => {
+    libraryRowFrame = 0;
+    drawLibraryRowWindow(false);
+  });
+}
+libraryRowScroll.addEventListener('scroll', () => {
+  if (!libraryTree.hidden) scheduleLibraryRowWindow();
+}, { passive: true });
+
+if (typeof ResizeObserver === 'function') new ResizeObserver(() => scheduleLibraryRowWindow()).observe(libraryRowScroll);
 
 function libraryRowMenuShows(path, which, kind) {
   if (kind !== 'file' && kind !== 'folder') return false;
@@ -15935,7 +16263,8 @@ function nextLibraryPicks(rows, picked, anchor, path, keys) {
 function pickLibraryRow(button, event) {
   if (!libraryRowCarries(button)) return false;
   const path = button.dataset.revealPath;
-  const rows = libraryPickableRows().map((row) => row.dataset.revealPath);
+  
+  const rows = libraryRowPaths() || libraryPickableRows().map((row) => row.dataset.revealPath);
   const next = nextLibraryPicks(rows, libraryPicks, libraryPickAnchor, path, event);
   if (!next) return false;
   libraryPicks = next.picks;
@@ -19808,6 +20137,13 @@ window.leafSetWorkspace = (state) => {
   const path = activeDocumentPath();
   if (path !== librarySelectedPath) followFileInLibrary(path, false);
   else renderLibrary();
+};
+
+window.leafSetTabTitle = (change) => {
+  const tab = (currentState?.tabs || []).find((each) => each.webId === change?.id);
+  if (!tab) return;
+  tab.title = String(change.title || '');
+  renderTabs(currentState);
 };
 window.leafSetNavigation = (state) => {
   navigationState = state || { canGoBack: false, canGoForward: false };
@@ -39994,7 +40330,7 @@ function makeConsoleLayer(id) {
   host.className = 'console-terminal';
   layer.appendChild(host);
   consoleShell.appendChild(layer);
-  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0 };
+  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, sentSize: null };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -40014,7 +40350,7 @@ function makeConsoleLayer(id) {
     entry.observer = new ResizeObserver(() => {
       if (consoleFrontId !== id) return;
       fit.fit();
-      send({ command: 'consoleResize', id, columns: terminal.cols, rows: terminal.rows });
+      sendConsoleSize(id, entry);
     });
     entry.observer.observe(layer);
     let opening = '';
@@ -40027,13 +40363,21 @@ function makeConsoleLayer(id) {
     });
     if (consoleFrontId === id) {
       fit.fit();
-      send({ command: 'consoleResize', id, columns: terminal.cols, rows: terminal.rows });
+      sendConsoleSize(id, entry);
       terminal.focus();
       bindDocumentMinimap();
       scheduleMinimapPreviewUpdate();
     }
   }).catch(error => leafToast(error.message));
   return entry;
+}
+
+
+function sendConsoleSize(id, entry) {
+  const { cols: columns, rows } = entry.terminal;
+  if (entry.sentSize?.columns === columns && entry.sentSize.rows === rows) return;
+  entry.sentSize = { columns, rows };
+  send({ command: 'consoleResize', id, columns, rows });
 }
 
 function frontConsoleEntry() { return consoleLayers.get(consoleFrontId) || null; }
@@ -40095,7 +40439,7 @@ window.leafConsoleFront = id => {
   }
   if (entry.fit) {
     entry.fit.fit();
-    send({ command: 'consoleResize', id, columns: entry.terminal.cols, rows: entry.terminal.rows });
+    sendConsoleSize(id, entry);
     entry.terminal.focus();
     scheduleMinimapPreviewUpdate();
   }
