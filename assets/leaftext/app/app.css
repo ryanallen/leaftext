@@ -7100,12 +7100,6 @@ body.library-resizing button {
   padding: var(--lt-space-4) var(--lt-space-6);
 }
 
-.library-links-meaning {
-  flex: none;
-  margin-left: var(--lt-space-4);
-  padding: var(--lt-space-2) var(--lt-space-6);
-}
-
 .library-outline-row {
   display: flex;
   align-items: center;

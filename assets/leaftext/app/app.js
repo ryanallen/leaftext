@@ -18555,23 +18555,6 @@ const SMART_LINK_GROUPS = [
 
 let smartLinksAsked = null;
 
-const MEANING_OFFERED = !!window.__leafSettings && typeof window.__leafSettings === 'object' && Object.prototype.hasOwnProperty.call(window.__leafSettings, 'relatedByMeaning');
-let meaningOn = MEANING_OFFERED && window.__leafSettings.relatedByMeaning === true;
-let meaningPercent = null;
-window.leafMeaningState = (answer) => {
-  if (!answer) return;
-  meaningOn = answer.state !== 'off';
-  meaningPercent = answer.state === 'downloading' && Number.isFinite(answer.percent) ? answer.percent : null;
-  if (smartLinksAnswer) renderSmartLinks();
-};
-function meaningButtonHtml() {
-  const label = meaningOn && meaningPercent !== null ? `By meaning ${meaningPercent}%` : 'By meaning';
-  const title = meaningOn
-    ? 'Scored by what the notes say, with the model on this machine. Press to go back to shared words and delete the model.'
-    : 'Score these by what the notes say rather than the words they share. Downloads a 30 MB model from Hugging Face, deleted again when you turn this off; no note leaves this device.';
-  return `<button type="button" class="theme-mode-btn library-links-meaning${meaningOn ? ' is-active' : ''}" data-meaning-toggle="related" aria-pressed="${meaningOn}" title="${escapeAttr(title)}">${escapeText(label)}</button>`;
-}
-
 function sameNotePath(a, b) {
   return !!a && !!b && a.replace(/\\/g, '/').toLowerCase() === b.replace(/\\/g, '/').toLowerCase();
 }
@@ -18618,9 +18601,8 @@ function relativeNoteHref(from, to) {
   const encode = (segment) => segment.replace(/[ %()[\]<>#?]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
   return [...folder.slice(shared).map(() => '..'), ...target.slice(shared).map(encode)].join('/');
 }
-
 function smartLinksHaveRows() {
-  return !!smartLinksAnswer && (MEANING_OFFERED || SMART_LINK_GROUPS.some(([key]) => smartLinksAnswer[key] && smartLinksAnswer[key].rows.length > 0));
+  return !!smartLinksAnswer && SMART_LINK_GROUPS.some(([key]) => smartLinksAnswer[key] && smartLinksAnswer[key].rows.length > 0);
 }
 window.leafSmartLinks = (answer) => {
   if (!answer || !sameNotePath(answer.path, librarySelectedPath)) return;
@@ -18638,11 +18620,10 @@ function smartLinkRowHtml(row, at, linkable, folder) {
 }
 function smartLinkGroupHtml(key, label) {
   const group = smartLinksAnswer[key] || { total: 0, rows: [] };
-  const switchable = key === 'related' && MEANING_OFFERED;
-  if (!group.rows.length && !switchable) return '';
+  if (!group.rows.length) return '';
   const folders = documentFolderWords(group.rows.map((row) => row.path));
   const rows = group.rows.map((row, at) => smartLinkRowHtml(row, `${key}:${at}`, key === 'mentions', folders[at])).join('');
-  return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}${switchable ? meaningButtonHtml() : ''}</span></div>${rows}`;
+  return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}</span></div>${rows}`;
 }
 function smartLinkRow(address) {
   const [key, at] = String(address || '').split(':');
@@ -18668,15 +18649,6 @@ function renderSmartLinks() {
       if (!row || !smartLinksAnswer) return;
       pendingSearchJump = row.line ? { path: row.path, anchor: '', line: row.line } : null;
       send({ command: 'linkMention', path: row.path, target: smartLinksAnswer.path, start: row.start, end: row.end, words: row.words });
-    });
-  }
-  const meaning = libraryLinks.querySelector('[data-meaning-toggle]');
-  if (meaning) {
-    meaning.addEventListener('click', () => {
-      meaningOn = !meaningOn;
-      meaningPercent = null;
-      send({ command: 'setRelatedByMeaning', on: meaningOn });
-      renderSmartLinks();
     });
   }
   renderLibraryLists();

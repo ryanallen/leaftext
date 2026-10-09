@@ -280,7 +280,6 @@
 | Backlinks and mentions | [✅][l-links-here] | [✅][o-backlinks] | [❌][t-seen] | [❌][c-seen] |
 | One-press mention links | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
 | Related notes | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
-| Related by meaning | [✅][l-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
 
 ## Graph
 

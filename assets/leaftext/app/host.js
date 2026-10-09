@@ -422,7 +422,6 @@ export const COMMANDS = {
   codeLint: [ANSWERED],
   smartLinks: [ANSWERED], // Links here alone, from the links the listing publishes: the other two groups read every page's text, which a site does not fetch to draw a page.
   linkMention: [REFUSED, 'a site offers no mention to link, because finding one means reading every published page’s text'],
-  setRelatedByMeaning: [REFUSED, 'a published page holds no model to score by meaning, and the page draws no By meaning button where it was handed no setting'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   tableRows: [REFUSED, 'listing every row would fetch every page this site serves on the first keystroke'],
   toggleTask: [ANSWERED],
