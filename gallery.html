@@ -8221,6 +8221,15 @@ body.library-resizing button {
 .console-minimap-preview { position: relative; overflow: hidden; color: var(--lt-markdown-foreground); font-family: monospace; font-size: var(--lt-text-12); }
 .console-minimap-lines { position: absolute; left: 0; right: 0; }
 .console-minimap-line { white-space: pre; overflow: hidden; }
+/* The new-console button holds its hover face while its list of agents is open, so the list reads as coming from it. */
+.new-console-button[aria-expanded="true"] {
+  background: var(--lt-navigation-button-hover-background);
+  border-color: var(--lt-navigation-button-hover-background);
+  color: var(--lt-primary-foreground);
+}
+.new-console-menu { min-width: 200px; }
+/* The row the arrow keys and Enter act on, drawn whether or not the keyboard has focus in the menu. */
+.new-console-item.is-active { background: var(--lt-wash-hover); }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
@@ -18408,7 +18417,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 167 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 168 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -18440,7 +18449,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>167</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>168</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18868,7 +18877,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">167 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">168 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -18947,7 +18956,11 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>New-console button</h3><code class="built">.new-console-button</code><span class="built">app-shell.html and console.js, beside New document in the tab strip, named for the library folder it will start in</span></header>
-<div class="stage"><div class="tab-bar" style="height:44px"><button type="button" class="icon-button new-button" aria-label="New document"><span class="lt-icon lt-icon-new"></span></button><button type="button" class="icon-button new-console-button" aria-label="New console in C:\Notes" title="New console in C:\Notes"><span class="lt-icon lt-icon-terminal"></span></button></div></div>
+<div class="stage"><div class="tab-bar" style="height:44px"><button type="button" class="icon-button new-button" aria-label="New document"><span class="lt-icon lt-icon-new"></span></button><button type="button" class="icon-button new-console-button" aria-label="New console in C:\Notes" title="New console in C:\Notes"><span class="lt-icon lt-icon-terminal"></span></button> <button type="button" class="icon-button new-console-button" aria-haspopup="menu" aria-expanded="true" aria-label="New console in C:\Notes"><span class="lt-icon lt-icon-terminal"></span></button></div></div>
+</section>
+<section class="part">
+<header><h3>New-console menu</h3><code class="built">.new-console-menu</code><span class="built">console.js, under the new-console button once the host has found a coding agent on this computer: the agents it found in its own order, Command prompt last, the first one active each time it opens</span></header>
+<div class="stage"><div class="context-menu new-console-menu" role="menu" style="position:static"><button type="button" class="context-menu-item new-console-item is-active" role="menuitem">Claude Code</button><button type="button" class="context-menu-item new-console-item" role="menuitem">Codex</button><button type="button" class="context-menu-item new-console-item" role="menuitem">Command prompt</button></div></div>
 </section>
 <section class="part">
 <header><h3>Export button</h3><code class="built">.export-button</code><span class="built">app-shell.html</span></header>

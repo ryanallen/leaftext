@@ -40554,6 +40554,8 @@ if (calendarSheet) {
 }
 
 var newConsoleButton = document.getElementById('newConsoleButton');
+
+var newConsoleMenu = { agents: null, element: null, active: 0, folder: '' };
 function refreshConsoleLauncher() {
   if (!newConsoleButton) return;
   const folder = libraryFolderHere();
@@ -40561,12 +40563,103 @@ function refreshConsoleLauncher() {
   const label = folder ? `New console in ${folder}` : 'New console';
   newConsoleButton.title = label;
   newConsoleButton.setAttribute('aria-label', label);
+  
+  if (newConsoleMenu.agents && !newConsoleMenu.agents.length) newConsoleButton.removeAttribute('aria-haspopup');
+  else newConsoleButton.setAttribute('aria-haspopup', 'menu');
+  if (newConsoleButton.hidden || folder !== newConsoleMenu.folder) hideNewConsoleMenu();
+}
+window.leafConsoleAgents = (agents) => {
+  newConsoleMenu.agents = (Array.isArray(agents) ? agents : []).filter((agent) => agent && typeof agent.key === 'string' && typeof agent.name === 'string');
+  refreshConsoleLauncher();
+  if (newConsoleMenu.element && !newConsoleMenu.element.hidden) {
+    if (newConsoleMenu.agents.length) showNewConsoleMenu();
+    else hideNewConsoleMenu();
+  }
+};
+
+function startConsole(agent) {
+  const folder = libraryFolderHere();
+  hideNewConsoleMenu();
+  if (newConsoleButton.hidden || !folder) return;
+  send(agent ? { command: 'newConsole', path: folder, agent } : { command: 'newConsole', path: folder });
+}
+function newConsoleChoices() {
+  return [...(newConsoleMenu.agents || []), { key: null, name: 'Command prompt' }];
+}
+function hideNewConsoleMenu() {
+  const menu = newConsoleMenu.element;
+  if (!menu || menu.hidden) return;
+  const returnFocus = menu.contains(document.activeElement);
+  menu.hidden = true;
+  coverWebSurface(false, menu);
+  newConsoleButton.setAttribute('aria-expanded', 'false');
+  if (returnFocus) leafFocusForKeyboard(newConsoleButton);
+}
+function markNewConsoleRow(at) {
+  const rows = [...newConsoleMenu.element.children];
+  newConsoleMenu.active = (at + rows.length) % rows.length;
+  rows.forEach((row, index) => row.classList.toggle('is-active', index === newConsoleMenu.active));
+  leafFocusForKeyboard(rows[newConsoleMenu.active]);
+}
+function showNewConsoleMenu() {
+  if (newConsoleButton.hidden) return;
+  let menu = newConsoleMenu.element;
+  if (!menu) {
+    menu = document.createElement('div');
+    menu.className = 'context-menu new-console-menu';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', 'New console');
+    menu.hidden = true;
+    appSurface.appendChild(menu);
+    newConsoleMenu.element = menu;
+  }
+  menu.replaceChildren();
+  for (const choice of newConsoleChoices()) {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'context-menu-item new-console-item';
+    item.setAttribute('role', 'menuitem');
+    item.textContent = choice.name;
+    
+    item.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      event.preventDefault();
+      startConsole(choice.key);
+    });
+    item.addEventListener('pointerenter', () => markNewConsoleRow([...menu.children].indexOf(item)));
+    menu.appendChild(item);
+  }
+  newConsoleMenu.folder = libraryFolderHere();
+  newConsoleButton.setAttribute('aria-expanded', 'true');
+  const anchor = newConsoleButton.getBoundingClientRect();
+  leafPlaceFloating(menu, anchor.left, anchor.bottom);
+  markNewConsoleRow(0);
 }
 if (newConsoleButton) {
   newConsoleButton.addEventListener('click', () => {
-    const folder = libraryFolderHere();
-    if (!newConsoleButton.hidden && folder) send({ command: 'newConsole', path: folder });
+    if (newConsoleMenu.agents && !newConsoleMenu.agents.length) startConsole(null);
+    else if (newConsoleMenu.element && !newConsoleMenu.element.hidden) hideNewConsoleMenu();
+    else showNewConsoleMenu();
   });
+  
+  window.addEventListener('keydown', (event) => {
+    const menu = newConsoleMenu.element;
+    if (!menu || menu.hidden) return;
+    const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+    if (step) markNewConsoleRow(newConsoleMenu.active + step);
+    else if (event.key === 'Home' || event.key === 'End') markNewConsoleRow(event.key === 'Home' ? 0 : -1);
+    else if (event.key === 'Enter' || event.key === ' ') startConsole(newConsoleChoices()[newConsoleMenu.active]?.key ?? null);
+    else if (event.key === 'Escape') hideNewConsoleMenu();
+    else if (event.key === 'Tab') hideNewConsoleMenu();
+    else return;
+    if (event.key !== 'Tab') { event.preventDefault(); event.stopPropagation(); }
+  }, true);
+  window.addEventListener('pointerdown', (event) => {
+    const menu = newConsoleMenu.element;
+    if (menu && !menu.hidden && !menu.contains(event.target) && !newConsoleButton.contains(event.target)) hideNewConsoleMenu();
+  });
+  window.addEventListener('resize', hideNewConsoleMenu);
   refreshConsoleLauncher();
 }
 
@@ -42454,6 +42547,162 @@ const LEAF_MERMAID_ICONS = {
 
 
 
+const CATEGORICAL_SCALE_SEED = '--lt-primary';
+const CATEGORICAL_SCALE_STEPS = 12;
+const CATEGORICAL_SCALE_HUE_STEP = 150;
+
+const CATEGORICAL_SCALE_SHAPE = {
+  light: { luminance: 0.45, minSaturation: 0.42, maxSaturation: 0.85 },
+  dark: { luminance: 0.12, minSaturation: 0.38, maxSaturation: 0.85 },
+};
+
+
+const INK_CANDIDATES = [
+  '--lt-markdown-foreground',
+  '--lt-markdown-background',
+  '--lt-primary-foreground',
+  '--lt-accent-foreground',
+  '--lt-success-foreground',
+  '--lt-danger-foreground',
+];
+
+function themeTokenValue(style, token) {
+  return (style.getPropertyValue(token) || '').trim();
+}
+
+function colorRgb(color) {
+  const value = String(color || '').trim();
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex) {
+    const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
+    const channels = parseInt(digits, 16);
+    return [(channels >> 16) & 255, (channels >> 8) & 255, channels & 255, 1];
+  }
+  const rgb = /^rgb\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i.exec(value);
+  const rgba = /^rgba\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i.exec(value);
+  const matched = rgb || rgba;
+  if (!matched) return null;
+  const channels = matched.slice(1, 4).map(Number);
+  const alpha = rgba ? Number(matched[4]) : 1;
+  if (channels.some((channel) => channel < 0 || channel > 255) || alpha < 0 || alpha > 1) return null;
+  return [...channels, alpha];
+}
+
+
+function colorLuminance(color) {
+  const rgb = colorRgb(color);
+  if (!rgb) return null;
+  const channel = (byte) => {
+    const part = byte / 255;
+    return part <= 0.03928 ? part / 12.92 : Math.pow((part + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
+}
+
+function colorContrast(a, b) {
+  const first = colorLuminance(a);
+  const second = colorLuminance(b);
+  if (first == null || second == null) return null;
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+
+function inkOn(style, fills) {
+  if (!fills.length) return '';
+  let best = '';
+  let bestRatio = 0;
+  for (const token of INK_CANDIDATES) {
+    const ink = themeTokenValue(style, token);
+    if (!ink) continue;
+    let worst = Infinity;
+    for (const fill of fills) {
+      const ratio = colorContrast(fill, ink);
+      if (ratio == null) {
+        worst = 0;
+        break;
+      }
+      worst = Math.min(worst, ratio);
+    }
+    if (worst > bestRatio) {
+      best = ink;
+      bestRatio = worst;
+    }
+  }
+  return best;
+}
+
+function colorChannels(color) {
+  const rgb = colorRgb(color);
+  return rgb ? rgb.slice(0, 3) : null;
+}
+
+
+function colorHueSaturation(channels) {
+  const [r, g, b] = channels.map((byte) => byte / 255);
+  const high = Math.max(r, g, b);
+  const low = Math.min(r, g, b);
+  const span = high - low;
+  const lightness = (high + low) / 2;
+  if (!span) return [0, 0];
+  const saturation = span / (1 - Math.abs(2 * lightness - 1));
+  let hue;
+  if (high === r) hue = ((g - b) / span) % 6;
+  else if (high === g) hue = (b - r) / span + 2;
+  else hue = (r - g) / span + 4;
+  return [((hue * 60) + 360) % 360, Math.min(1, saturation)];
+}
+
+function hslColor(hue, saturation, lightness) {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const section = ((hue % 360) + 360) % 360 / 60;
+  const second = chroma * (1 - Math.abs((section % 2) - 1));
+  const base = [
+    [chroma, second, 0], [second, chroma, 0], [0, chroma, second],
+    [0, second, chroma], [second, 0, chroma], [chroma, 0, second],
+  ][Math.floor(section) % 6];
+  const offset = lightness - chroma / 2;
+  return '#' + base
+    .map((part) => Math.round((part + offset) * 255).toString(16).padStart(2, '0'))
+    .join('');
+}
+
+
+function colorAtLuminance(hue, saturation, luminance) {
+  let low = 0;
+  let high = 1;
+  let color = hslColor(hue, saturation, 0.5);
+  for (let pass = 0; pass < 12; pass += 1) {
+    const middle = (low + high) / 2;
+    color = hslColor(hue, saturation, middle);
+    if (colorLuminance(color) < luminance) low = middle;
+    else high = middle;
+  }
+  return color;
+}
+
+
+function categoricalScale(style, darkMode) {
+  const seed = colorChannels(themeTokenValue(style, CATEGORICAL_SCALE_SEED));
+  if (!seed) return [];
+  const shape = darkMode ? CATEGORICAL_SCALE_SHAPE.dark : CATEGORICAL_SCALE_SHAPE.light;
+  const [hue, saturation] = colorHueSaturation(seed);
+  const spread = Math.min(shape.maxSaturation, Math.max(shape.minSaturation, saturation));
+  const scale = [];
+  for (let step = 0; step < CATEGORICAL_SCALE_STEPS; step += 1) {
+    scale.push(colorAtLuminance(hue + step * CATEGORICAL_SCALE_HUE_STEP, spread, shape.luminance));
+  }
+  return scale;
+}
+
+
+window.leafCategoricalScale = (count) => {
+  const style = window.getComputedStyle(document.documentElement);
+  const tones = categoricalScale(style, document.documentElement.dataset.theme === 'dark');
+  return tones.slice(0, Math.max(0, Math.min(count, tones.length))).map((fill) => ({ fill, ink: inkOn(style, [fill]) }));
+};
+
+
+
 
 
 const MERMAID_COLOR_MAP = {
@@ -42564,18 +42813,6 @@ const MERMAID_COLOR_MAP = {
 
 
 
-const MERMAID_SCALE_SEED = '--lt-primary';
-const MERMAID_SCALE_STEPS = 12;
-const MERMAID_SCALE_HUE_STEP = 150;
-
-const MERMAID_SCALE_SHAPE = {
-  light: { luminance: 0.45, minSaturation: 0.42, maxSaturation: 0.85 },
-  dark: { luminance: 0.12, minSaturation: 0.38, maxSaturation: 0.85 },
-};
-
-
-
-
 
 
 const MERMAID_INK_MAP = {
@@ -42585,16 +42822,6 @@ const MERMAID_INK_MAP = {
   errorTextColor: ['--lt-editor-code-background'],
   quadrantPointTextFill: ['--lt-surface-muted', '--lt-surface-sunken'],
 };
-
-
-const MERMAID_INK_CANDIDATES = [
-  '--lt-markdown-foreground',
-  '--lt-markdown-background',
-  '--lt-primary-foreground',
-  '--lt-accent-foreground',
-  '--lt-success-foreground',
-  '--lt-danger-foreground',
-];
 
 
 const MERMAID_GANTT_STATE_INKS = [
@@ -42623,71 +42850,6 @@ const MERMAID_XYCHART_COLOR_MAP = {
 
 
 const MERMAID_PLOT_TOKENS = ['--lt-primary', '--lt-accent', '--lt-success', '--lt-warning', '--lt-danger', '--lt-done'];
-
-function themeTokenValue(style, token) {
-  return (style.getPropertyValue(token) || '').trim();
-}
-
-function colorRgb(color) {
-  const value = String(color || '').trim();
-  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
-  if (hex) {
-    const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
-    const channels = parseInt(digits, 16);
-    return [(channels >> 16) & 255, (channels >> 8) & 255, channels & 255, 1];
-  }
-  const rgb = /^rgb\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i.exec(value);
-  const rgba = /^rgba\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*\)$/i.exec(value);
-  const matched = rgb || rgba;
-  if (!matched) return null;
-  const channels = matched.slice(1, 4).map(Number);
-  const alpha = rgba ? Number(matched[4]) : 1;
-  if (channels.some((channel) => channel < 0 || channel > 255) || alpha < 0 || alpha > 1) return null;
-  return [...channels, alpha];
-}
-
-
-function colorLuminance(color) {
-  const rgb = colorRgb(color);
-  if (!rgb) return null;
-  const channel = (byte) => {
-    const part = byte / 255;
-    return part <= 0.03928 ? part / 12.92 : Math.pow((part + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
-}
-
-function colorContrast(a, b) {
-  const first = colorLuminance(a);
-  const second = colorLuminance(b);
-  if (first == null || second == null) return null;
-  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
-}
-
-
-function inkOn(style, fills) {
-  if (!fills.length) return '';
-  let best = '';
-  let bestRatio = 0;
-  for (const token of MERMAID_INK_CANDIDATES) {
-    const ink = themeTokenValue(style, token);
-    if (!ink) continue;
-    let worst = Infinity;
-    for (const fill of fills) {
-      const ratio = colorContrast(fill, ink);
-      if (ratio == null) {
-        worst = 0;
-        break;
-      }
-      worst = Math.min(worst, ratio);
-    }
-    if (worst > bestRatio) {
-      best = ink;
-      bestRatio = worst;
-    }
-  }
-  return best;
-}
 
 
 function paintChartValueLabels(root) {
@@ -42757,83 +42919,20 @@ function readableInk(style, fillTokens) {
   return inkOn(style, fillTokens.map((token) => themeTokenValue(style, token)).filter(Boolean));
 }
 
-function colorChannels(color) {
-  const rgb = colorRgb(color);
-  return rgb ? rgb.slice(0, 3) : null;
-}
-
-
-function colorHueSaturation(channels) {
-  const [r, g, b] = channels.map((byte) => byte / 255);
-  const high = Math.max(r, g, b);
-  const low = Math.min(r, g, b);
-  const span = high - low;
-  const lightness = (high + low) / 2;
-  if (!span) return [0, 0];
-  const saturation = span / (1 - Math.abs(2 * lightness - 1));
-  let hue;
-  if (high === r) hue = ((g - b) / span) % 6;
-  else if (high === g) hue = (b - r) / span + 2;
-  else hue = (r - g) / span + 4;
-  return [((hue * 60) + 360) % 360, Math.min(1, saturation)];
-}
-
-function hslColor(hue, saturation, lightness) {
-  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
-  const section = ((hue % 360) + 360) % 360 / 60;
-  const second = chroma * (1 - Math.abs((section % 2) - 1));
-  const base = [
-    [chroma, second, 0], [second, chroma, 0], [0, chroma, second],
-    [0, second, chroma], [second, 0, chroma], [chroma, 0, second],
-  ][Math.floor(section) % 6];
-  const offset = lightness - chroma / 2;
-  return '#' + base
-    .map((part) => Math.round((part + offset) * 255).toString(16).padStart(2, '0'))
-    .join('');
-}
-
-
-function colorAtLuminance(hue, saturation, luminance) {
-  let low = 0;
-  let high = 1;
-  let color = hslColor(hue, saturation, 0.5);
-  for (let pass = 0; pass < 12; pass += 1) {
-    const middle = (low + high) / 2;
-    color = hslColor(hue, saturation, middle);
-    if (colorLuminance(color) < luminance) low = middle;
-    else high = middle;
-  }
-  return color;
-}
-
-
-function mermaidCategoricalScale(style, darkMode) {
-  const seed = colorChannels(themeTokenValue(style, MERMAID_SCALE_SEED));
-  if (!seed) return [];
-  const shape = darkMode ? MERMAID_SCALE_SHAPE.dark : MERMAID_SCALE_SHAPE.light;
-  const [hue, saturation] = colorHueSaturation(seed);
-  const spread = Math.min(shape.maxSaturation, Math.max(shape.minSaturation, saturation));
-  const scale = [];
-  for (let step = 0; step < MERMAID_SCALE_STEPS; step += 1) {
-    scale.push(colorAtLuminance(hue + step * MERMAID_SCALE_HUE_STEP, spread, shape.luminance));
-  }
-  return scale;
-}
-
 
 function mermaidSeriesPalette(style) {
-  const seed = colorChannels(themeTokenValue(style, MERMAID_SCALE_SEED));
+  const seed = colorChannels(themeTokenValue(style, CATEGORICAL_SCALE_SEED));
   const background = themeTokenValue(style, '--lt-markdown-background');
   const backgroundLuminance = colorLuminance(background);
   if (!seed || backgroundLuminance == null) return [];
-  const shape = backgroundLuminance > 0.18 ? MERMAID_SCALE_SHAPE.light : MERMAID_SCALE_SHAPE.dark;
+  const shape = backgroundLuminance > 0.18 ? CATEGORICAL_SCALE_SHAPE.light : CATEGORICAL_SCALE_SHAPE.dark;
   const [hue, saturation] = colorHueSaturation(seed);
   const spread = Math.min(shape.maxSaturation, Math.max(shape.minSaturation, saturation));
   const luminance = backgroundLuminance > 0.18
     ? Math.max(0, (backgroundLuminance + 0.05) / 3.3 - 0.05)
     : Math.min(1, 3.3 * (backgroundLuminance + 0.05) - 0.05);
   return Array.from({ length: MERMAID_PLOT_TOKENS.length }, (_, step) => (
-    colorAtLuminance(hue + step * MERMAID_SCALE_HUE_STEP, spread, luminance)
+    colorAtLuminance(hue + step * CATEGORICAL_SCALE_HUE_STEP, spread, luminance)
   ));
 }
 
@@ -42892,7 +42991,7 @@ function mermaidThemeVariables() {
   if (Object.keys(xyChart).length) variables.xyChart = xyChart;
 
   
-  const scale = mermaidCategoricalScale(style, variables.darkMode);
+  const scale = categoricalScale(style, variables.darkMode);
   scale.forEach((color, index) => {
     variables['cScale' + index] = color;
     variables['cScaleLabel' + index] = inkOn(style, [color]);

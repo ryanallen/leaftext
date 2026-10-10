@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 
 import { dottedLeafMarkup } from './dotted-leaf.js';
-// The front page's composition. The README stays the one source of words and stays a plain document on GitHub; this lays its drawn HTML out as a marketing page — a hero with the downloads, the comparison chart, one picture of the app, four feature cards, one install line and the links at the foot — and leaves every other section to the documentation, where each one already has a page.
+// The front page's composition. The README stays the one source of words and stays a plain document on GitHub; this lays its drawn HTML out as a marketing page — a hero with the downloads, the comparison chart, one picture of the app, five feature cards, the first spanning the grid, one install line and the links at the foot — and leaves every other section to the documentation, where each one already has a page.
 //
 // Two callers, one layout: `bakeSite` in `scripts/site-assets.mjs` bakes it into the first response, and `web/preview/boot.js` hands it to the host, which lays the landing out when the app's page draws it into the reading column. The bake has no DOM, so everything here works on the renderer's HTML as text, the same way `compare-chart.js` does.
 // ---------------------------------------------------------------------------
@@ -19,8 +19,9 @@ export const INSTALL_ID = 'install-it';
 /** Where the recorded clips and their posters are published: `<clip>.webm` and `<clip>.jpg`, written by `scripts/record-site-demo.mjs`. */
 export const DEMO_DIR = 'imgs/demos';
 
-/** The four cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, and the documentation page that tells the rest. */
+/** The five cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, the documentation page that tells the rest, and whether it is the featured card that spans the grid with its clip beside its words. */
 export const FRONT_CARDS = [
+  { section: 'read-the-arthurian-books', clip: 'arthur', featured: true, shows: 'Leaftext opening Merlin, The History of the Britons and The Welsh Annals in turn, each translated for Leaftext', more: 'docs/README.md' },
   { section: 'read-your-files', clip: 'read', shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
   { section: 'write-where-you-read', clip: 'edit', shows: 'A sentence being typed straight into the rendered page of a note', more: 'docs/01-features/07-editing.md' },
   { section: 'keep-a-library', clip: 'library', shows: 'The documentation index opening into the graph of how its pages link', more: 'docs/01-features/03-library.md' },
@@ -128,7 +129,8 @@ function cardOf(card, section) {
   const heading = /^<h2\b[^>]*>[\s\S]*?<\/h2>/.exec(section);
   const lead = leadOf(section);
   if (!lead.length) throw new Error(`the README's "${card.section}" section has no lead paragraph for its card`);
-  return `<article class="front-card" data-clip-card="${card.clip}">${heading[0].replace(/^<h2\b/, '<h2 class="front-card-title"')}${lead.join('')}${clipBox(card.clip, card.shows, 'front-card-clip')}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
+  const featured = card.featured ? ' is-featured' : '';
+  return `<article class="front-card${featured}" data-clip-card="${card.clip}">${heading[0].replace(/^<h2\b/, '<h2 class="front-card-title"')}${lead.join('')}${clipBox(card.clip, card.shows, card.featured ? 'front-card-clip is-beside' : 'front-card-clip')}<p class="front-more"><a href="${card.more}">More →</a></p></article>`;
 }
 
 /**
@@ -160,7 +162,7 @@ export function holdLaidOutIds(html, held) {
 }
 
 /**
- * The README drawn as the front page: hero and downloads, the comparison, the app, the four cards, the install line and the foot, then the Previous and Next strip so Next walks on into the documentation.
+ * The README drawn as the front page: hero and downloads, the comparison, the app, the five cards, the install line and the foot, then the Previous and Next strip so Next walks on into the documentation.
  *
  * `html` is the README as the renderer drew it with the comparison chart already under its heading. What this leaves out — the outline's headings, the Mac warning and the long account of every feature — is each on its own documentation page, which the cards and the foot link to.
  */

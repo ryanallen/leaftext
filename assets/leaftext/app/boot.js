@@ -4,6 +4,7 @@
 
 import { landingPath, sayMissing, startLeaftext } from './host.js';
 import { fetchWatched } from './fetches.js';
+import { loadRenderer } from './renderer.js';
 
 /** One file, as a response the host can read, or an error naming it.
  *
@@ -67,6 +68,22 @@ async function frontPageFor(path) {
   return { path, layout, motion: modules.installFrontMotion, paragraphPlace: modules.paragraphPlace };
 }
 
+/**
+ * The layouts a listing may name for a document other than its front page, each its modules and the data beside its document, fetched the first time that document is drawn.
+ *
+ * The shelf is the Arthurian books laid out as a bookshelf over `shelf.md`, the list it is drawn from, with its spines' dates and reaches in `shelf-data.json` beside it.
+ */
+const SITE_LAYOUTS = {
+  shelf: (path, at) => async () => {
+    const [layout, moves, data] = await Promise.all([
+      import('./shelf-layout.js'),
+      import('./shelf.js'),
+      fetched(at(path.replace(/\.md$/, '-data.json'))).then((answer) => answer.json()),
+    ]);
+    return { layout: (html) => layout.layoutShelf(html, data), motion: (root) => moves.installShelf(root, data), rootClass: layout.SHELF_LAYOUT_CLASS };
+  },
+};
+
 try {
   // The listing carries the site's own name beside its documents: the pane draws it as the trail's first word, where the desktop draws the vault it is standing in. It also says where the documents are: under `source/` for a folder export, or at their own addresses for a site served in place, where every `.md` a crawler was promised has to keep answering.
   const listing = await (await fetched('documents.json')).json();
@@ -79,11 +96,17 @@ try {
   const documents = listing.documents || [];
   // Only leaftext.com's listing names one; every other site draws its landing as the app draws any document.
   const frontPage = typeof listing.frontPage === 'string' && listing.frontPage ? await frontPageFor(listing.frontPage) : null;
+  // A name no layout answers to is drawn plain, as an older listing's would be.
+  const layouts = Object.entries(listing.layouts && typeof listing.layouts === 'object' ? listing.layouts : {})
+    .filter(([path, kind]) => typeof path === 'string' && Object.hasOwn(SITE_LAYOUTS, kind))
+    .map(([path, kind]) => ({ path, load: SITE_LAYOUTS[kind](path, at) }));
   const leaf = await startLeaftext({
     documents,
     name: listing.name || '',
     imageSizes,
     frontPage,
+    layouts,
+    loadRenderer,
     fetch: fetched,
     // Documents keep their bytes; the host decodes only a glossary it reads for terms.
     read: async (path) => new Uint8Array(await (await fetched(at(path))).arrayBuffer()),
