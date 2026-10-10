@@ -13713,6 +13713,14 @@ function scrollSelectedLibraryRowIntoView() {
   showLibraryRowFor(librarySelectedPath, true);
 }
 
+let libraryCenteredOn = '';
+function centerSelectedLibraryRowOnce(folder) {
+  const pair = `${folder}\n${librarySelectedPath}`;
+  if (pair === libraryCenteredOn) return;
+  scrollSelectedLibraryRowIntoView();
+  libraryCenteredOn = libraryRowPaneHeight() && libraryRowList && libraryRowList.index.has(librarySelectedPath) ? pair : '';
+}
+
 function revealSelectedInLibrary() {
   if (!libraryRevealPending || !librarySelectedPath) return false;
   libraryRevealPending = false;
@@ -14594,12 +14602,14 @@ let libraryTreeHtml = null;
 function setLibraryTreeHtml(html, rows) {
   if (html === libraryTreeHtml && libraryRowListSame(rows || null)) return false;
   libraryTreeHtml = html;
+  
+  const kept = rows && libraryRowList && rows.folder === libraryRowList.folder ? libraryRowScroll.scrollTop : null;
   const focused = libraryFocusBeforeRedraw();
   libraryTree.innerHTML = html;
   takeLibraryRowList(rows || null);
   if (rows) {
     bindLibraryRows();
-    drawLibraryRowWindow(true);
+    drawLibraryRowWindow(true, kept);
   }
   libraryFocusAfterRedraw(focused);
   return true;
@@ -14707,7 +14717,8 @@ window.leafSetLibraryFolder = (payload) => {
     libraryOutlineOpen = false;
   }
   
-  if (renderLibrary() && librarySelectedPath) scrollSelectedLibraryRowIntoView();
+  renderLibrary();
+  if (librarySelectedPath) centerSelectedLibraryRowOnce(folder);
   refreshPaneFoot();
   
   if (librarySearchQuery) runLibrarySearch(librarySearchQuery);
@@ -16365,17 +16376,20 @@ function libraryRowLaidHeight(row) {
 
 function measureLibraryRows(box) {
   const kinds = Object.keys(LIBRARY_ROW_SAMPLES);
-  box.innerHTML = kinds.map((kind) => LIBRARY_ROW_SAMPLES[kind]()).join('');
+  const holder = document.createElement('div');
+  holder.innerHTML = kinds.map((kind) => LIBRARY_ROW_SAMPLES[kind]()).join('');
+  const samples = Array.from(holder.children);
+  for (const sample of samples) box.appendChild(sample);
   libraryRowKindHeights = {};
   libraryRowKindMargins = {};
-  Array.from(box.children).forEach((row, at) => {
+  samples.forEach((row, at) => {
     const laid = libraryRowLaidHeight(row);
     libraryRowKindHeights[kinds[at]] = laid.height ? laid.height + laid.margin : 0;
     libraryRowKindMargins[kinds[at]] = laid.margin;
   });
   libraryRowMeasuredWidth = libraryTree.clientWidth;
   libraryRowLaidOut.clear();
-  box.innerHTML = '';
+  for (const sample of samples) sample.remove();
 }
 function libraryRowIndexAtOffset(offset) {
   let low = 0;
@@ -16398,7 +16412,7 @@ function libraryRowPaneHeight() {
   return libraryTree.hidden ? 0 : libraryRowScroll.clientHeight;
 }
 
-function drawLibraryRowWindow(force) {
+function drawLibraryRowWindow(force, kept = null) {
   const box = libraryRowWindowBox();
   if (!box) return;
   const items = libraryRowList.items;
@@ -16416,7 +16430,7 @@ function drawLibraryRowWindow(force) {
   }
   if (libraryRowWindowBlind) force = true;
   libraryRowWindowBlind = false;
-  const visibleTop = Math.max(0, libraryRowScroll.scrollTop - (box.offsetTop || 0));
+  const visibleTop = Math.max(0, (kept === null ? libraryRowScroll.scrollTop : kept) - (box.offsetTop || 0));
   const neededStart = libraryRowIndexAtOffset(Math.max(0, visibleTop - paneHeight));
   const neededEnd = Math.min(items.length, libraryRowIndexAtOffset(visibleTop + paneHeight * 2) + 1);
   if (!force && neededStart >= libraryRowWindowStart && neededEnd <= libraryRowWindowEnd) return;
@@ -16424,6 +16438,7 @@ function drawLibraryRowWindow(force) {
   const end = Math.min(items.length, libraryRowIndexAtOffset(visibleTop + paneHeight * 3) + 1);
   paintLibraryRowWindow(box, start, end);
   keepLibraryRowHeights(box);
+  if (kept !== null) libraryRowScroll.scrollTop = kept;
 }
 function paintLibraryRowWindow(box, start, end) {
   const items = libraryRowList.items;
@@ -40802,10 +40817,17 @@ function makeConsoleLayer(id) {
     terminal.open(host);
     
     const render = terminal.renderer.render.bind(terminal.renderer);
-    terminal.renderer.render = (...args) => {
-      if (layer.hidden) entry.drawOwed = true;
-      else readConsoleScreenOnce(args[0], () => render(...args));
-    };
+    
+    Object.defineProperty(terminal.renderer, 'render', { writable: false, configurable: true, value: (...args) => {
+      if (layer.hidden) { entry.drawOwed = true; return; }
+      
+      try {
+        readConsoleScreenOnce(args[0], () => render(...args));
+      } catch (error) {
+        const tab = (currentState.tabs || []).find(tab => tab.kind === 'console' && tab.webId === id);
+        journalReport(`Console draw failed in ${tab?.title || 'console ' + id}: ${journalDescribe(error)}`);
+      }
+    } });
     
     const showScrollbar = terminal.showScrollbar;
     terminal.showScrollbar = function () { if (!minimapEnabled) showScrollbar.call(this); };
