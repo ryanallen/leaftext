@@ -14566,7 +14566,8 @@ p.shelf-line {
   max-width: 100%;
   min-height: 228px;
   padding: 0 var(--lt-space-8);
-  border-bottom: var(--lt-space-6) solid var(--lt-border);
+  --shelf-ledge: var(--lt-border);
+  border-bottom: var(--lt-space-6) solid var(--shelf-ledge);
 }
 
 .shelf-bay::before {
@@ -14585,7 +14586,7 @@ p.shelf-line {
 }
 
 .shelf-bay.is-reached {
-  border-bottom-color: var(--spine);
+  --shelf-ledge: var(--spine);
 }
 .shelf-bay.is-reached .shelf-plate {
   color: var(--lt-primary-ink);
@@ -14604,11 +14605,12 @@ p.shelf-line {
   text-transform: uppercase;
   font-weight: var(--lt-weight-600);
 }
+
 .shelf-books {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--lt-space-2);
+  gap: var(--lt-space-32) var(--lt-space-2);
 }
 .shelf-empty {
   padding-bottom: var(--lt-space-20);
@@ -14636,6 +14638,17 @@ p.shelf-line {
   border-top: var(--lt-space-8) solid var(--lt-tint-recess);
   border-bottom: var(--lt-space-6) solid var(--lt-tint-recess);
   transition: transform var(--lt-duration-260) var(--lt-ease-emphasized), background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease);
+}
+
+.shelf-spine::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: calc(-1 * var(--lt-space-2));
+  right: calc(-1 * var(--lt-space-2));
+  height: var(--lt-space-6);
+  background: var(--shelf-ledge);
+  transition: transform var(--lt-duration-260) var(--lt-ease-emphasized);
 }
 .shelf-spine-title {
   writing-mode: vertical-rl;
@@ -14693,6 +14706,10 @@ p.shelf-line {
   transform: translateY(calc(-1 * var(--lt-space-24)));
   outline: var(--lt-stroke-2) solid var(--lt-markdown-foreground);
   outline-offset: var(--lt-space-2);
+}
+
+.shelf-spine[aria-pressed="true"]::after {
+  transform: translateY(var(--lt-space-24));
 }
 
 .shelf-spine.is-planned {
@@ -14921,10 +14938,12 @@ h2.shelf-book-title {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .shelf-spine {
+  .shelf-spine,
+  .shelf-spine::after {
     transition: none;
   }
-  .shelf-spine[aria-pressed="true"] {
+  .shelf-spine[aria-pressed="true"],
+  .shelf-spine[aria-pressed="true"]::after {
     transform: none;
   }
 }
