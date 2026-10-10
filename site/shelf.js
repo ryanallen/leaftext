@@ -2,12 +2,23 @@
 // ---------------------------------------------------------------------------
 // What moves on the Arthurian shelf once `shelf-layout.js` has laid it out: picking a book off it by pointer or keyboard, the three orders it stands in, search and the three filters, the address that holds the order and the picked book so Back and Forward bring both back, and the six tones painted from the theme in force and painted again whenever the reader changes it.
 //
-// `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet moves a lifted spine, and does not under reduced motion.
+// `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet moves a lifted spine, and does not under reduced motion, and the page's own `openSheet`, `closeSheet` and `makeSheetDraggable` move the sheet the picked book opens in.
 // ---------------------------------------------------------------------------
 
 import { bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, reachedParts } from './shelf-layout.js';
 
 const ORDER_KEYS = SHELF_ORDERS.map((order) => order.key);
+// The app's own bottom sheet, as the glossary draws it: its shadow, its grip, its close cross and a body the open book is drawn into.
+const SHEET_FRAME = [
+  '<span class="sheet-shadow-face" aria-hidden="true"></span>',
+  '<span class="sheet-shadow-band sheet-shadow-band-top" aria-hidden="true"></span>',
+  '<span class="sheet-shadow-band sheet-shadow-band-bottom" aria-hidden="true"></span>',
+  '<span class="sheet-shadow-band sheet-shadow-band-left" aria-hidden="true"></span>',
+  '<span class="sheet-shadow-band sheet-shadow-band-right" aria-hidden="true"></span>',
+  '<div class="leaf-sheet-grip"></div>',
+  '<button type="button" class="leaf-sheet-close" aria-label="Close the book"><span class="lt-icon lt-icon-close"></span></button>',
+  '<div class="shelf-sheet-body document-body leaf-scroll"></div>',
+].join('');
 // The shelf's part of the address: `shelf=<order>` or `shelf=<order>/<book>`, written as the anchor of the document's own entry.
 const SHELF_ADDRESS = /(?:^|#)shelf=([a-z]+)(?:\/([a-z0-9-]+))?$/;
 
@@ -126,16 +137,63 @@ export function installShelf(root, data, env = globalThis) {
     sort.innerHTML = holder.querySelector('.shelf-sort').innerHTML;
     if (note) note.textContent = holder.querySelector('.shelf-sort-note').textContent;
   };
+  // The picked book opens in a bottom sheet where the reader is, laid on the window rather than in the page, because the rail draws a copy of the page and a fixed sheet inside it would be copied too.
+  const doc = view.document;
+  const backdrop = doc.createElement('div');
+  backdrop.className = 'lt-backdrop';
+  backdrop.hidden = true;
+  const sheet = doc.createElement('aside');
+  sheet.className = 'leaf-sheet shelf-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('aria-label', 'The book');
+  sheet.hidden = true;
+  sheet.innerHTML = SHEET_FRAME;
+  if (doc.body) {
+    doc.body.appendChild(backdrop);
+    doc.body.appendChild(sheet);
+  }
+  const sheetBody = sheet.querySelector('.shelf-sheet-body');
+  const sheetClose = sheet.querySelector('.leaf-sheet-close');
+  let handBack = null;
+  const focusOn = (element) => {
+    if (!element) return;
+    if (typeof view.leafFocusForKeyboard === 'function') view.leafFocusForKeyboard(element);
+    else if (typeof element.focus === 'function') element.focus();
+  };
+  const onSheetKey = (event) => {
+    if (event.key === 'Escape') putDown();
+  };
+  const openBook = () => {
+    if (typeof view.openSheet === 'function') view.openSheet(sheet, backdrop);
+    else {
+      backdrop.hidden = false;
+      sheet.hidden = false;
+      sheet.classList.add('open');
+    }
+    doc.addEventListener('keydown', onSheetKey);
+    focusOn(sheetClose);
+  };
+  const closeBook = (options) => {
+    doc.removeEventListener('keydown', onSheetKey);
+    if (sheet.hidden) return;
+    if (typeof view.closeSheet === 'function') view.closeSheet(sheet, backdrop, options);
+    else {
+      sheet.classList.remove('open');
+      sheet.hidden = true;
+      backdrop.hidden = true;
+    }
+  };
   const drawBook = () => {
-    const open = find('.shelf-book');
-    if (!open) return;
-    const holder = view.document.createElement('div');
-    holder.innerHTML = bookMarkup(data.books.find((book) => book.book === state.picked) || null, data);
-    const fresh = holder.querySelector('.shelf-book');
-    open.className = fresh.className;
-    if (fresh.getAttribute('data-tone')) open.setAttribute('data-tone', fresh.getAttribute('data-tone'));
-    else open.removeAttribute('data-tone');
-    open.innerHTML = fresh.innerHTML;
+    const book = data.books.find((one) => one.book === state.picked) || null;
+    if (!book) {
+      closeBook();
+      return;
+    }
+    handBack = book.book;
+    sheetBody.innerHTML = bookMarkup(book, data);
+    sheet.setAttribute('aria-label', book.title);
+    if (sheet.hidden || !sheet.classList.contains('open')) openBook();
   };
   const drawAll = (focus = '') => {
     drawSort();
@@ -157,6 +215,19 @@ export function installShelf(root, data, env = globalThis) {
     drawBook();
     writeAddress();
   };
+  // The cross, Escape, the backdrop and a drag down all put the book back: the pick goes, the address says so, and the keyboard is back on the spine it came from.
+  function putDown(options) {
+    if (!state.picked) return;
+    const was = state.picked;
+    state.picked = '';
+    drawShelf();
+    closeBook(options);
+    writeAddress();
+    focusOn(root.querySelector(`.shelf-spine[data-book="${handBack || was}"]`));
+  }
+  sheetClose.addEventListener('click', () => putDown());
+  backdrop.addEventListener('click', () => putDown());
+  if (typeof view.makeSheetDraggable === 'function') view.makeSheetDraggable(sheet, sheet.querySelector('.leaf-sheet-grip'), (options) => putDown(options));
   const sortBy = (order) => {
     if (!ORDER_KEYS.includes(order) || order === state.order) return;
     state.order = order;
@@ -214,14 +285,22 @@ export function installShelf(root, data, env = globalThis) {
     view.addEventListener('popstate', onAddress);
     view.addEventListener('hashchange', onAddress);
   }
-  const paint = () => paintTones(root, view.leafCategoricalScale);
+  // The sheet stands outside the shelf the tones are set on, so it is painted as well.
+  const paint = () => {
+    paintTones(root, view.leafCategoricalScale);
+    paintTones(sheet, view.leafCategoricalScale);
+  };
   const unsubscribe = view.leafTheme && typeof view.leafTheme.subscribe === 'function' ? view.leafTheme.subscribe(paint) : (paint(), null);
   drawAll();
 
   return {
     root,
     state,
+    sheet,
     stop() {
+      doc.removeEventListener('keydown', onSheetKey);
+      sheet.remove();
+      backdrop.remove();
       root.removeEventListener('click', onClick);
       root.removeEventListener('keydown', onKey);
       root.removeEventListener('input', onInput);

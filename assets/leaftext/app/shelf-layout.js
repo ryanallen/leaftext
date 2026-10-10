@@ -1,6 +1,6 @@
 // shelf-layout.js
 // ---------------------------------------------------------------------------
-// The Arthurian shelf's composition. `shelf.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between the three orders, the bays of palm-leaf bundles piled flat, the key, the open book, and the list itself kept under them.
+// The Arthurian shelf's composition. `shelf.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between the three orders, the bays of spines, the key, the open book, and the list itself kept under them.
 //
 // `shelf-data.json`, written beside `shelf.md` by the same tool, holds each book's reach, dates and editions in the list's own order, so every drawn line is paired with its record and a list that no longer matches its data is refused rather than drawn wrong. `web/preview/boot.js` hands this to the host, and `shelf.js` redraws the bays out of the same functions when the order or a filter changes. It works on the renderer's HTML as text, as the front page's layout does.
 // ---------------------------------------------------------------------------
@@ -15,7 +15,7 @@ export const SHELF_ORDERS = [
   { key: 'printed', label: 'When its edition was printed', note: 'Each book stands in the decade its edition was printed; one whose edition is not chosen stands last.' },
 ];
 
-/** The six tones, in the key's order: the tone key a bundle carries and what the key calls it. */
+/** The six tones, in the key's order: the tone key a spine carries and what the key calls it. */
 export const SHELF_TONES = [
   ['latin', 'Latin'],
   ['french', 'French'],
@@ -29,15 +29,13 @@ const CENTURY_WORDS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', '
 const UNDATED = 'Many periods or date unknown';
 const UNPRINTED = 'Edition not chosen yet';
 
-// A bundle's own geometry: as long as its title and date need, within a palm leaf's length, and as deep as the legend it reaches, a few leaves to a part.
-const BUNDLE_LENGTH = { base: 64, perLetter: 7, least: 150, most: 240 };
-// A date stands at the leaf's far end in the bundle's small type, so the bundle grows by its letters as well, at a smaller step than a title's.
-const BUNDLE_TAG = { gap: 8, perLetter: 6 };
-const BUNDLE_DEPTH_PER_PART = 3;
-// A title past this many letters is set on two lines, so the bundle stays within a leaf's length; it is never cut.
-const BUNDLE_ONE_LINE = 24;
-// How many bundles a pile holds before the next pile starts beside it.
-const PILE_HEIGHT = 10;
+// A spine's own geometry: wider the more parts of the legend the book reaches, taller the longer its title, and never shorter than a book.
+const SPINE_WIDTH = { base: 22, perPart: 4, most: 58 };
+const SPINE_HEIGHT = { base: 70, perLetter: 7.5, least: 150, most: 250 };
+// A date tag stands under the title in the spine's small type, so the spine grows by its letters as well, at a smaller step than a title's.
+const SPINE_TAG = { gap: 8, perLetter: 6 };
+// A title past this many letters is set on two lines, so the spine stands no taller than the rest.
+const SPINE_ONE_LINE = 24;
 
 const escaped = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -110,8 +108,8 @@ export function baysFor(data, order) {
   return data.bays.map((bay, at) => ({ name: bay.name, plate: bay.plate, beside: !!bay.beside, index: at, books: data.books.filter((book) => book.bay === at) }));
 }
 
-/** A date short enough to stand on a bundle: its years, with "c." kept on an approximate one and "by" or "after" on one known from one side, so the bundle claims no more than its record; the source's own words are the open book's. */
-export function bundleDate(date) {
+/** A date short enough to stand on a spine: its years, with "c." kept on an approximate one and "by" or "after" on one known from one side, so the spine claims no more than its record; the source's own words are the open book's. */
+export function spineDate(date) {
   if (!date || date.precision === 'unknown' || (date.from == null && date.to == null)) return '';
   if (date.from == null) return `by ${date.to}`;
   if (date.to == null) return `after ${date.from}`;
@@ -119,33 +117,22 @@ export function bundleDate(date) {
   return date.precision === 'approximate' ? `c. ${years}` : years;
 }
 
-/** One palm-leaf bundle lying flat: its top leaf with a cord hole at each end, the language, the title and the date between them, and under it as many leaves as the legend it reaches; its tone is its boards'. */
-export function bundleMarkup(book, { order = 'story', picked = '' } = {}) {
-  const long = book.title.length > BUNDLE_ONE_LINE;
+/** One spine: its tone, whether it is out yet, how far its story reaches and how long its title is. */
+export function spineMarkup(book, { order = 'story', picked = '' } = {}) {
+  const width = Math.min(SPINE_WIDTH.most, SPINE_WIDTH.base + SPINE_WIDTH.perPart * Math.max(1, partsReached(book)));
+  const long = book.title.length > SPINE_ONE_LINE;
   const letters = long ? Math.ceil(book.title.length / 2) : book.title.length;
-  const tag = order === 'written' ? bundleDate(book.written) : order === 'printed' && book.printed ? bundleDate({ ...book.printed, precision: 'exact' }) : '';
-  const width = Math.round(Math.min(BUNDLE_LENGTH.most, Math.max(BUNDLE_LENGTH.least, BUNDLE_LENGTH.base + BUNDLE_LENGTH.perLetter * letters + (tag ? BUNDLE_TAG.gap + BUNDLE_TAG.perLetter * tag.length : 0))));
-  const depth = BUNDLE_DEPTH_PER_PART * Math.max(1, partsReached(book));
-  const classes = ['shelf-bundle', book.status === 'planned' ? 'is-planned' : '', long ? 'is-long' : ''].filter(Boolean).join(' ');
+  const tag = order === 'written' ? spineDate(book.written) : order === 'printed' && book.printed ? spineDate({ ...book.printed, precision: 'exact' }) : '';
+  const height = Math.round(Math.min(SPINE_HEIGHT.most, Math.max(SPINE_HEIGHT.least, SPINE_HEIGHT.base + SPINE_HEIGHT.perLetter * letters)) + (tag ? SPINE_TAG.gap + SPINE_TAG.perLetter * tag.length : 0));
+  const classes = ['shelf-spine', book.status === 'planned' ? 'is-planned' : '', long ? 'is-long' : ''].filter(Boolean).join(' ');
   const said = `${book.title}, ${book.author}${book.status === 'planned' ? ', coming' : ''}${tag ? `, ${tag}` : ''}`;
   return [
-    `<button type="button" class="${classes}" data-book="${escaped(book.book)}" data-tone="${escaped(book.tone)}" aria-pressed="${book.book === picked ? 'true' : 'false'}" aria-label="${escaped(said)}" style="width:${width}px;padding-bottom:${depth}px">`,
-    '<span class="shelf-bundle-top">',
-    '<i class="shelf-bundle-hole"></i>',
-    `<span class="shelf-bundle-code">${escaped(book.code)}</span>`,
-    `<span class="shelf-bundle-title">${escaped(book.title)}</span>`,
-    tag ? `<span class="shelf-bundle-tag">${escaped(tag)}</span>` : '',
-    '<i class="shelf-bundle-hole"></i>',
-    '</span>',
+    `<button type="button" class="${classes}" data-book="${escaped(book.book)}" data-tone="${escaped(book.tone)}" aria-pressed="${book.book === picked ? 'true' : 'false'}" aria-label="${escaped(said)}" style="width:${long ? Math.max(width, 40) : width}px;height:${height}px">`,
+    `<span class="shelf-spine-title">${escaped(book.title)}</span>`,
+    tag ? `<span class="shelf-spine-tag">${escaped(tag)}</span>` : '',
+    `<span class="shelf-spine-lang">${escaped(book.code)}</span>`,
     '</button>',
   ].join('');
-}
-
-/** A bay's books as piles of at most ten, in the list's order: the first book is the top of the first pile, and the eleventh starts a second pile beside it. */
-export function pilesOf(books) {
-  const piles = [];
-  for (let at = 0; at < books.length; at += PILE_HEIGHT) piles.push(books.slice(at, at + PILE_HEIGHT));
-  return piles;
 }
 
 /** The shelf's bays for one order, with the bays a picked book's story reaches laid under a ledge in its tone. */
@@ -157,12 +144,9 @@ export function shelfMarkup(data, { order = 'story', picked = '', shown = null }
     const isReached = bay.index != null && reached.has(bay.index);
     const classes = ['shelf-bay', bay.beside ? 'is-beside' : '', isReached ? 'is-reached' : ''].filter(Boolean).join(' ');
     const tone = isReached ? ` data-tone="${escaped(book.tone)}"` : '';
-    const piles = pilesOf(books);
-    const inside = books.length
-      ? `<div class="shelf-piles">${piles.map((pile) => `<div class="shelf-pile">${pile.map((one) => bundleMarkup(one, { order, picked })).join('')}</div>`).join('')}</div>`
-      : '<span class="shelf-empty">No book yet</span>';
-    // The case's spare width follows the piles, so a bay of three piles takes three shares of it.
-    return `<div class="${classes}"${tone} style="flex-grow:${Math.max(1, piles.length)}"><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
+    const inside = books.length ? `<div class="shelf-books">${books.map((one) => spineMarkup(one, { order, picked })).join('')}</div>` : '<span class="shelf-empty">No book yet</span>';
+    // The case's spare width follows the books, so a bay of four spines takes four shares of it and a bay of one takes one.
+    return `<div class="${classes}"${tone} style="flex-grow:${Math.max(1, books.length)}"><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
   });
   return `<div class="shelf-row">${bays.join('')}</div>`;
 }
@@ -193,7 +177,7 @@ function editionWords(book) {
 
 /** The book opened off the shelf: its title, author, premise and the way to read it on the left page, and on the right where its story falls, its language, when it was written and the edition it is read from, each with its evidence. */
 export function bookMarkup(book, data) {
-  if (!book) return `<section class="shelf-book is-empty" aria-live="polite"><p class="shelf-book-hint">Pick a book off the shelf to open it here.</p></section>`;
+  if (!book) return '';
   const reached = reachedParts(book);
   const cells = data.bays.filter((bay) => !bay.beside).map((bay, at) => `<i class="${reached.has(at) ? 'is-on' : ''}" title="${escaped(bay.plate)}"></i>`).join('');
   const story = book.beside ? escaped(book.outsideReason || 'Beside the story’s time') : escaped(reachWords(book, data));
@@ -205,10 +189,15 @@ export function bookMarkup(book, data) {
     ? `<p><a class="leaf-md-button" href="${escaped(book.read)}">Read ${escaped(book.title)}</a></p>`
     : `<p class="shelf-book-coming">Not published yet. <a href="${escaped(book.read)}">See the story it belongs to</a>.</p>`;
   return [
-    `<section class="shelf-book" data-tone="${escaped(book.tone)}" data-book="${escaped(book.book)}" aria-live="polite">`,
-    '<div class="shelf-page">',
+    `<section class="shelf-book" data-tone="${escaped(book.tone)}" data-book="${escaped(book.book)}" >`,
+    // Its cover, in its tone: the language it was written in, its title and who wrote it.
+    '<header class="shelf-book-cover">',
+    `<span class="shelf-book-code">${escaped(book.code)}</span>`,
     `<h2 class="shelf-book-title">${escaped(book.title)}</h2>`,
     `<p class="shelf-book-by">${escaped(book.author)}</p>`,
+    '</header>',
+    '<div class="shelf-book-pages">',
+    '<div class="shelf-page">',
     `<p class="shelf-book-premise">${escaped(book.premise)}</p>`,
     read,
     '</div>',
@@ -219,6 +208,7 @@ export function bookMarkup(book, data) {
     `<dt>Written</dt><dd>${written}${writtenWhy ? `<span class="shelf-why">${escaped(writtenWhy)}</span>` : ''}</dd>`,
     `<dt>Edition</dt><dd>${escaped(edition.said)}${edition.cite ? `<span class="shelf-why">${escaped(edition.cite)}</span>` : ''}</dd>`,
     '</dl>',
+    '</div>',
     '</div>',
     '</section>',
   ].join('');
@@ -280,7 +270,6 @@ export function layoutShelf(html, data) {
     findMarkup(data),
     `<div class="shelf-case">${shelfMarkup(data)}</div>`,
     keyMarkup(),
-    bookMarkup(null, data),
     `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(1).join('')}${list.list}</details>`,
     list.pager,
     '</article>',

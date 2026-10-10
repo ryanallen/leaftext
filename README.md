@@ -52,6 +52,8 @@ Three books of the Arthur legend, newly translated for Leaftext from the Latin a
 
 **[*Merlin*](docs/08-examples/merlin/merlin.md) · [*The History of the Britons*](docs/08-examples/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](docs/08-examples/annales-cambriae/annales-cambriae.md)**
 
+**[Pick a book off the shelf →](docs/08-examples/arthurian-shelf/shelf.md)**
+
 **[How the three tell one story →](docs/08-examples/arthurian-shelf/story-map.md)**
 
 ## Read your files

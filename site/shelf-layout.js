@@ -145,7 +145,8 @@ export function shelfMarkup(data, { order = 'story', picked = '', shown = null }
     const classes = ['shelf-bay', bay.beside ? 'is-beside' : '', isReached ? 'is-reached' : ''].filter(Boolean).join(' ');
     const tone = isReached ? ` data-tone="${escaped(book.tone)}"` : '';
     const inside = books.length ? `<div class="shelf-books">${books.map((one) => spineMarkup(one, { order, picked })).join('')}</div>` : '<span class="shelf-empty">No book yet</span>';
-    return `<div class="${classes}"${tone}><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
+    // The case's spare width follows the books, so a bay of four spines takes four shares of it and a bay of one takes one.
+    return `<div class="${classes}"${tone} style="flex-grow:${Math.max(1, books.length)}"><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
   });
   return `<div class="shelf-row">${bays.join('')}</div>`;
 }
@@ -176,7 +177,7 @@ function editionWords(book) {
 
 /** The book opened off the shelf: its title, author, premise and the way to read it on the left page, and on the right where its story falls, its language, when it was written and the edition it is read from, each with its evidence. */
 export function bookMarkup(book, data) {
-  if (!book) return `<section class="shelf-book is-empty" aria-live="polite"><p class="shelf-book-hint">Pick a book off the shelf to open it here.</p></section>`;
+  if (!book) return '';
   const reached = reachedParts(book);
   const cells = data.bays.filter((bay) => !bay.beside).map((bay, at) => `<i class="${reached.has(at) ? 'is-on' : ''}" title="${escaped(bay.plate)}"></i>`).join('');
   const story = book.beside ? escaped(book.outsideReason || 'Beside the story’s time') : escaped(reachWords(book, data));
@@ -188,10 +189,15 @@ export function bookMarkup(book, data) {
     ? `<p><a class="leaf-md-button" href="${escaped(book.read)}">Read ${escaped(book.title)}</a></p>`
     : `<p class="shelf-book-coming">Not published yet. <a href="${escaped(book.read)}">See the story it belongs to</a>.</p>`;
   return [
-    `<section class="shelf-book" data-tone="${escaped(book.tone)}" data-book="${escaped(book.book)}" aria-live="polite">`,
-    '<div class="shelf-page">',
+    `<section class="shelf-book" data-tone="${escaped(book.tone)}" data-book="${escaped(book.book)}" >`,
+    // Its cover, in its tone: the language it was written in, its title and who wrote it.
+    '<header class="shelf-book-cover">',
+    `<span class="shelf-book-code">${escaped(book.code)}</span>`,
     `<h2 class="shelf-book-title">${escaped(book.title)}</h2>`,
     `<p class="shelf-book-by">${escaped(book.author)}</p>`,
+    '</header>',
+    '<div class="shelf-book-pages">',
+    '<div class="shelf-page">',
     `<p class="shelf-book-premise">${escaped(book.premise)}</p>`,
     read,
     '</div>',
@@ -202,6 +208,7 @@ export function bookMarkup(book, data) {
     `<dt>Written</dt><dd>${written}${writtenWhy ? `<span class="shelf-why">${escaped(writtenWhy)}</span>` : ''}</dd>`,
     `<dt>Edition</dt><dd>${escaped(edition.said)}${edition.cite ? `<span class="shelf-why">${escaped(edition.cite)}</span>` : ''}</dd>`,
     '</dl>',
+    '</div>',
     '</div>',
     '</section>',
   ].join('');
@@ -263,7 +270,6 @@ export function layoutShelf(html, data) {
     findMarkup(data),
     `<div class="shelf-case">${shelfMarkup(data)}</div>`,
     keyMarkup(),
-    bookMarkup(null, data),
     `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(1).join('')}${list.list}</details>`,
     list.pager,
     '</article>',

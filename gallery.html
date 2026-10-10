@@ -14512,7 +14512,7 @@ h1.shelf-title {
   letter-spacing: var(--lt-tracking-tight-01);
 }
 p.shelf-line {
-  margin: var(--lt-space-16) auto 0;
+  margin: var(--lt-space-16) auto var(--lt-space-32);
   max-width: 40ch;
   color: var(--lt-muted-foreground);
   font-size: var(--type-h5-size);
@@ -14564,17 +14564,16 @@ p.shelf-line {
   outline-offset: var(--lt-space-2);
 }
 .shelf-sort-note {
-  margin: calc(-1 * var(--lt-space-12)) 0 0;
+  margin: 0;
   text-align: center;
   color: var(--lt-muted-foreground);
   font-size: var(--type-caption-size);
 }
 
-/* The finder: a title search and the part, tradition and availability filters, in the app's own field. */
+/* The finder: a title search across the case's width, and under it the part, tradition and availability filters in three equal columns, in the app's own field. */
 .shelf-find {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--lt-space-8);
 }
 .shelf-search,
@@ -14590,7 +14589,7 @@ p.shelf-line {
   font-size: var(--lt-text-13);
 }
 .shelf-search {
-  min-width: 220px;
+  grid-column: 1 / -1;
 }
 .shelf-search:focus-visible,
 .shelf-filter:focus-visible {
@@ -14622,7 +14621,7 @@ p.shelf-line {
   max-width: 100%;
   min-height: 228px;
   padding: 0 var(--lt-space-8);
-  border-bottom: var(--lt-space-10) solid var(--lt-border-strong);
+  border-bottom: var(--lt-space-6) solid var(--lt-border);
 }
 /* The bookend before a bay: the strong rule standing up, dashed before the bay beside the story. */
 .shelf-bay::before {
@@ -14639,12 +14638,12 @@ p.shelf-line {
 .shelf-bay.is-beside::before {
   border-left-style: dashed;
 }
-/* A bay the picked book's story reaches: its ledge in the book's tone and its plate in the page's ink. */
+/* A bay the picked book's story reaches: its ledge in the book's tone and its plate in the primary's ink, so a pick still marks it. */
 .shelf-bay.is-reached {
   border-bottom-color: var(--spine);
 }
 .shelf-bay.is-reached .shelf-plate {
-  color: var(--lt-markdown-foreground);
+  color: var(--lt-primary-ink);
 }
 .shelf-plate {
   display: block;
@@ -14652,9 +14651,9 @@ p.shelf-line {
   min-height: calc(2 * var(--lt-leading-1-25) * 1em);
   margin-bottom: auto;
   padding: var(--lt-space-12) 0;
-  color: var(--lt-muted-foreground);
+  color: var(--lt-markdown-foreground);
   font-family: var(--app-font);
-  font-size: var(--lt-text-10);
+  font-size: var(--lt-text-11);
   line-height: var(--lt-leading-1-25);
   letter-spacing: var(--lt-tracking-060);
   text-transform: uppercase;
@@ -14717,17 +14716,13 @@ p.shelf-line {
   flex: none;
   white-space: nowrap;
   font-family: var(--app-font);
-  font-size: var(--lt-text-9);
+  font-size: var(--lt-text-10);
   letter-spacing: var(--lt-tracking-060);
   text-transform: uppercase;
   font-weight: var(--lt-weight-700);
 }
 .shelf-spine-tag {
-  opacity: var(--lt-opacity-75);
   text-transform: none;
-}
-.shelf-spine-lang {
-  opacity: var(--lt-opacity-75);
 }
 /* A hovered spine keeps its own tone and ink, the pair the scale chose for it, and says so with an outline. */
 @media (hover: hover) {
@@ -14754,13 +14749,13 @@ p.shelf-line {
   outline: var(--lt-stroke-2) solid var(--lt-markdown-foreground);
   outline-offset: var(--lt-space-2);
 }
-/* A book still to come: the same shape with no fill, a dashed outline in its tone and a band of it at the head. */
+/* A book still to come: the same shape with no fill, a neutral dashed outline, and its head band alone in its tone, the swatch the key shows. */
 .shelf-spine.is-planned {
   background: transparent;
   color: var(--lt-muted-foreground);
   border-top: var(--lt-space-4) solid var(--spine);
   border-bottom: 0;
-  outline: var(--lt-stroke-1) dashed var(--spine);
+  outline: var(--lt-stroke-1) dashed var(--lt-border-strong);
   outline-offset: calc(-1 * var(--lt-stroke-1));
 }
 .shelf-spine.is-planned[aria-pressed="true"] {
@@ -14798,27 +14793,79 @@ p.shelf-line {
   outline: var(--lt-stroke-1) dashed var(--lt-border-strong);
 }
 
-/* The book opened off the shelf: two pages on the page's own paper, a band of its tone along the top. */
+/* The bottom sheet a picked book opens in, laid on the window by `site/shelf.js`: the app's own sheet, which names its place, layer and paper as the glossary's does, as tall as the book and no taller than the shared ceiling. */
+.shelf-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  background-color: var(--lt-background);
+  color: var(--lt-foreground);
+}
+/* Wider than the app's ordinary sheet column, as the Grove's is, so the cover and its two pages have room side by side. */
+@media (min-width: 760px) {
+  .shelf-sheet {
+    width: min(980px, 92%);
+  }
+}
+/* Its cross pinned over the sheet's corner, as the glossary's is. */
+.shelf-sheet > .leaf-sheet-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 1;
+}
+/* A document body, so the book's Read button and its words are drawn as on every page, filling the sheet rather than keeping the reading measure. */
+.shelf-sheet-body {
+  width: auto;
+  margin: 0;
+  overflow-y: auto;
+  padding: var(--lt-space-8) var(--lt-space-24) var(--lt-space-24);
+}
+/* The book opened off the shelf: its cover in its own tone, the spine's pair the scale chose and the shelf made readable, with a darker spine edge down its left; and under it two pages on the page's own paper. */
 .shelf-book {
+  max-width: 920px;
+  margin: 0 auto;
+  color: var(--lt-markdown-foreground);
+}
+.shelf-book-cover {
+  padding: var(--lt-space-24) var(--lt-space-32) var(--lt-space-24);
+  border-left: var(--lt-space-12) solid var(--lt-tint-recess);
+  border-radius: var(--lt-radius-lg);
+  background: var(--spine);
+  color: var(--spine-ink);
+}
+.shelf-book-code {
+  display: inline-block;
+  margin-bottom: var(--lt-space-12);
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid currentColor;
+  border-radius: var(--lt-radius-pill);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-10);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
+  font-weight: var(--lt-weight-700);
+}
+h2.shelf-book-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font-size: var(--type-h2-size);
+  line-height: var(--lt-leading-1-2);
+}
+.shelf-book-by {
+  margin: var(--lt-space-8) 0 0;
+  color: inherit;
+  font-style: italic;
+}
+.shelf-book-pages {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  margin-top: var(--lt-space-16);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
   background: var(--lt-markdown-background);
   overflow: hidden;
-  border-top: var(--lt-space-4) solid var(--spine);
-}
-.shelf-book.is-empty {
-  display: block;
-  border-style: dashed;
-  border-top: var(--lt-stroke-1) dashed var(--lt-border);
-  text-align: center;
-}
-.shelf-book-hint {
-  margin: 0;
-  padding: var(--lt-space-24);
-  color: var(--lt-muted-foreground);
-  font-style: italic;
 }
 .shelf-page {
   padding: var(--lt-space-24) var(--lt-space-24) var(--lt-space-20);
@@ -14826,17 +14873,6 @@ p.shelf-line {
 .shelf-page-facts {
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   background: var(--lt-surface-muted);
-}
-h2.shelf-book-title {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  font-size: var(--type-h3-size);
-}
-.shelf-book-by {
-  margin: var(--lt-space-4) 0 var(--lt-space-12);
-  color: var(--lt-muted-foreground);
-  font-style: italic;
 }
 .shelf-book-premise {
   margin: 0 0 var(--lt-space-16);
@@ -14905,10 +14941,13 @@ h2.shelf-book-title {
 [data-tone="german"] { --spine: var(--shelf-tone-german, var(--lt-primary)); --spine-ink: var(--shelf-ink-german, var(--lt-primary-foreground)); }
 [data-tone="other"] { --spine: var(--shelf-tone-other, var(--lt-primary)); --spine-ink: var(--shelf-ink-other, var(--lt-primary-foreground)); }
 
-/* A narrow column: the open book's pages stack, and at phone width every bay is a shelf of its own. */
+/* A narrow column: the open book's pages stack; at phone width the switch and the finder are columns and every bay is a shelf of its own. */
 @media (max-width: 720px) {
-  .shelf-book {
+  .shelf-book-pages {
     grid-template-columns: 1fr;
+  }
+  .shelf-book-cover {
+    padding: var(--lt-space-20) var(--lt-space-20) var(--lt-space-20) var(--lt-space-24);
   }
   .shelf-page-facts {
     border-left: 0;
@@ -14916,6 +14955,18 @@ h2.shelf-book-title {
   }
 }
 @media (max-width: 560px) {
+  .shelf-sort {
+    flex-direction: column;
+    width: 100%;
+    border-radius: var(--lt-radius-lg);
+  }
+  .shelf-sort-button {
+    border-radius: var(--lt-radius-md);
+    text-align: center;
+  }
+  .shelf-find {
+    grid-template-columns: 1fr;
+  }
   .shelf-bay {
     flex-basis: 100%;
   }
@@ -19683,8 +19734,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body front-layout"><section class="front-hero"><span class="dotted-leaf" role="img" aria-label="Leaftext leaf" data-dotted-leaf="front"><svg class="dotted-leaf-still" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><circle cx="6.5" cy="9" r="0.82"/><circle cx="6.5" cy="11.5" r="0.82"/><circle cx="9" cy="11.5" r="0.82"/><circle cx="6.5" cy="14" r="0.82"/><circle cx="9" cy="14" r="0.82"/><circle cx="11.5" cy="14" r="0.82"/><circle cx="6.5" cy="16.5" r="0.82"/><circle cx="9" cy="16.5" r="0.82"/><circle cx="11.5" cy="16.5" r="0.82"/><circle cx="14" cy="16.5" r="0.82"/><circle cx="6.5" cy="19" r="0.82"/><circle cx="9" cy="19" r="0.82"/><circle cx="11.5" cy="19" r="0.82"/><circle cx="14" cy="19" r="0.82"/><circle cx="16.5" cy="19" r="0.82"/><circle cx="19" cy="19" r="0.82"/><circle cx="6.5" cy="21.5" r="0.82"/><circle cx="9" cy="21.5" r="0.82"/><circle cx="11.5" cy="21.5" r="0.82"/><circle cx="14" cy="21.5" r="0.82"/><circle cx="16.5" cy="21.5" r="0.82"/><circle cx="19" cy="21.5" r="0.82"/><circle cx="21.5" cy="21.5" r="0.82"/><circle cx="24" cy="21.5" r="0.82"/><circle cx="26.5" cy="21.5" r="0.82"/><circle cx="6.5" cy="24" r="0.82"/><circle cx="9" cy="24" r="0.82"/><circle cx="11.5" cy="24" r="0.82"/><circle cx="14" cy="24" r="0.82"/><circle cx="16.5" cy="24" r="0.82"/><circle cx="19" cy="24" r="0.82"/><circle cx="21.5" cy="24" r="0.82"/><circle cx="24" cy="24" r="0.82"/><circle cx="26.5" cy="24" r="0.82"/><circle cx="29" cy="24" r="0.82"/><circle cx="31.5" cy="24" r="0.82"/><circle cx="34" cy="24" r="0.82"/><circle cx="36.5" cy="24" r="0.82"/><circle cx="39" cy="24" r="0.82"/><circle cx="6.5" cy="26.5" r="0.82"/><circle cx="9" cy="26.5" r="0.82"/><circle cx="11.5" cy="26.5" r="0.82"/><circle cx="16.5" cy="26.5" r="0.82"/><circle cx="19" cy="26.5" r="0.82"/><circle cx="21.5" cy="26.5" r="0.82"/><circle cx="24" cy="26.5" r="0.82"/><circle cx="26.5" cy="26.5" r="0.82"/><circle cx="29" cy="26.5" r="0.82"/><circle cx="31.5" cy="26.5" r="0.82"/><circle cx="34" cy="26.5" r="0.82"/><circle cx="36.5" cy="26.5" r="0.82"/><circle cx="39" cy="26.5" r="0.82"/><circle cx="41.5" cy="26.5" r="0.82"/><circle cx="44" cy="26.5" r="0.82"/><circle cx="9" cy="29" r="0.82"/><circle cx="11.5" cy="29" r="0.82"/><circle cx="14" cy="29" r="0.82"/><circle cx="16.5" cy="29" r="0.82"/><circle cx="19" cy="29" r="0.82"/><circle cx="21.5" cy="29" r="0.82"/><circle cx="24" cy="29" r="0.82"/><circle cx="26.5" cy="29" r="0.82"/><circle cx="29" cy="29" r="0.82"/><circle cx="31.5" cy="29" r="0.82"/><circle cx="34" cy="29" r="0.82"/><circle cx="36.5" cy="29" r="0.82"/><circle cx="39" cy="29" r="0.82"/><circle cx="41.5" cy="29" r="0.82"/><circle cx="44" cy="29" r="0.82"/><circle cx="46.5" cy="29" r="0.82"/><circle cx="9" cy="31.5" r="0.82"/><circle cx="11.5" cy="31.5" r="0.82"/><circle cx="14" cy="31.5" r="0.82"/><circle cx="16.5" cy="31.5" r="0.82"/><circle cx="19" cy="31.5" r="0.82"/><circle cx="24" cy="31.5" r="0.82"/><circle cx="26.5" cy="31.5" r="0.82"/><circle cx="29" cy="31.5" r="0.82"/><circle cx="31.5" cy="31.5" r="0.82"/><circle cx="34" cy="31.5" r="0.82"/><circle cx="36.5" cy="31.5" r="0.82"/><circle cx="39" cy="31.5" r="0.82"/><circle cx="41.5" cy="31.5" r="0.82"/><circle cx="44" cy="31.5" r="0.82"/><circle cx="46.5" cy="31.5" r="0.82"/><circle cx="49" cy="31.5" r="0.82"/><circle cx="9" cy="34" r="0.82"/><circle cx="11.5" cy="34" r="0.82"/><circle cx="14" cy="34" r="0.82"/><circle cx="16.5" cy="34" r="0.82"/><circle cx="19" cy="34" r="0.82"/><circle cx="21.5" cy="34" r="0.82"/><circle cx="24" cy="34" r="0.82"/><circle cx="31.5" cy="34" r="0.82"/><circle cx="34" cy="34" r="0.82"/><circle cx="36.5" cy="34" r="0.82"/><circle cx="39" cy="34" r="0.82"/><circle cx="41.5" cy="34" r="0.82"/><circle cx="44" cy="34" r="0.82"/><circle cx="46.5" cy="34" r="0.82"/><circle cx="49" cy="34" r="0.82"/><circle cx="51.5" cy="34" r="0.82"/><circle cx="11.5" cy="36.5" r="0.82"/><circle cx="14" cy="36.5" r="0.82"/><circle cx="16.5" cy="36.5" r="0.82"/><circle cx="19" cy="36.5" r="0.82"/><circle cx="21.5" cy="36.5" r="0.82"/><circle cx="24" cy="36.5" r="0.82"/><circle cx="26.5" cy="36.5" r="0.82"/><circle cx="29" cy="36.5" r="0.82"/><circle cx="44" cy="36.5" r="0.82"/><circle cx="46.5" cy="36.5" r="0.82"/><circle cx="49" cy="36.5" r="0.82"/><circle cx="51.5" cy="36.5" r="0.82"/><circle cx="11.5" cy="39" r="0.82"/><circle cx="14" cy="39" r="0.82"/><circle cx="16.5" cy="39" r="0.82"/><circle cx="19" cy="39" r="0.82"/><circle cx="21.5" cy="39" r="0.82"/><circle cx="24" cy="39" r="0.82"/><circle cx="26.5" cy="39" r="0.82"/><circle cx="29" cy="39" r="0.82"/><circle cx="31.5" cy="39" r="0.82"/><circle cx="34" cy="39" r="0.82"/><circle cx="36.5" cy="39" r="0.82"/><circle cx="49" cy="39" r="0.82"/><circle cx="51.5" cy="39" r="0.82"/><circle cx="54" cy="39" r="0.82"/><circle cx="14" cy="41.5" r="0.82"/><circle cx="16.5" cy="41.5" r="0.82"/><circle cx="19" cy="41.5" r="0.82"/><circle cx="21.5" cy="41.5" r="0.82"/><circle cx="24" cy="41.5" r="0.82"/><circle cx="26.5" cy="41.5" r="0.82"/><circle cx="29" cy="41.5" r="0.82"/><circle cx="31.5" cy="41.5" r="0.82"/><circle cx="34" cy="41.5" r="0.82"/><circle cx="36.5" cy="41.5" r="0.82"/><circle cx="39" cy="41.5" r="0.82"/><circle cx="41.5" cy="41.5" r="0.82"/><circle cx="44" cy="41.5" r="0.82"/><circle cx="51.5" cy="41.5" r="0.82"/><circle cx="54" cy="41.5" r="0.82"/><circle cx="16.5" cy="44" r="0.82"/><circle cx="19" cy="44" r="0.82"/><circle cx="21.5" cy="44" r="0.82"/><circle cx="24" cy="44" r="0.82"/><circle cx="26.5" cy="44" r="0.82"/><circle cx="29" cy="44" r="0.82"/><circle cx="31.5" cy="44" r="0.82"/><circle cx="34" cy="44" r="0.82"/><circle cx="36.5" cy="44" r="0.82"/><circle cx="39" cy="44" r="0.82"/><circle cx="41.5" cy="44" r="0.82"/><circle cx="44" cy="44" r="0.82"/><circle cx="46.5" cy="44" r="0.82"/><circle cx="54" cy="44" r="0.82"/><circle cx="56.5" cy="44" r="0.82"/><circle cx="19" cy="46.5" r="0.82"/><circle cx="21.5" cy="46.5" r="0.82"/><circle cx="24" cy="46.5" r="0.82"/><circle cx="26.5" cy="46.5" r="0.82"/><circle cx="29" cy="46.5" r="0.82"/><circle cx="31.5" cy="46.5" r="0.82"/><circle cx="34" cy="46.5" r="0.82"/><circle cx="36.5" cy="46.5" r="0.82"/><circle cx="39" cy="46.5" r="0.82"/><circle cx="41.5" cy="46.5" r="0.82"/><circle cx="44" cy="46.5" r="0.82"/><circle cx="46.5" cy="46.5" r="0.82"/><circle cx="49" cy="46.5" r="0.82"/><circle cx="56.5" cy="46.5" r="0.82"/><circle cx="19" cy="49" r="0.82"/><circle cx="21.5" cy="49" r="0.82"/><circle cx="24" cy="49" r="0.82"/><circle cx="26.5" cy="49" r="0.82"/><circle cx="29" cy="49" r="0.82"/><circle cx="31.5" cy="49" r="0.82"/><circle cx="34" cy="49" r="0.82"/><circle cx="36.5" cy="49" r="0.82"/><circle cx="39" cy="49" r="0.82"/><circle cx="41.5" cy="49" r="0.82"/><circle cx="44" cy="49" r="0.82"/><circle cx="46.5" cy="49" r="0.82"/><circle cx="49" cy="49" r="0.82"/><circle cx="51.5" cy="49" r="0.82"/><circle cx="24" cy="51.5" r="0.82"/><circle cx="26.5" cy="51.5" r="0.82"/><circle cx="29" cy="51.5" r="0.82"/><circle cx="31.5" cy="51.5" r="0.82"/><circle cx="34" cy="51.5" r="0.82"/><circle cx="36.5" cy="51.5" r="0.82"/><circle cx="39" cy="51.5" r="0.82"/><circle cx="41.5" cy="51.5" r="0.82"/><circle cx="44" cy="51.5" r="0.82"/><circle cx="46.5" cy="51.5" r="0.82"/><circle cx="49" cy="51.5" r="0.82"/><circle cx="51.5" cy="51.5" r="0.82"/><circle cx="54" cy="51.5" r="0.82"/><circle cx="26.5" cy="54" r="0.82"/><circle cx="29" cy="54" r="0.82"/><circle cx="31.5" cy="54" r="0.82"/><circle cx="34" cy="54" r="0.82"/><circle cx="36.5" cy="54" r="0.82"/><circle cx="39" cy="54" r="0.82"/><circle cx="41.5" cy="54" r="0.82"/><circle cx="44" cy="54" r="0.82"/><circle cx="46.5" cy="54" r="0.82"/><circle cx="49" cy="54" r="0.82"/><circle cx="51.5" cy="54" r="0.82"/><circle cx="54" cy="54" r="0.82"/><circle cx="56.5" cy="54" r="0.82"/><circle cx="34" cy="56.5" r="0.82"/><circle cx="36.5" cy="56.5" r="0.82"/><circle cx="39" cy="56.5" r="0.82"/><circle cx="41.5" cy="56.5" r="0.82"/><circle cx="44" cy="56.5" r="0.82"/><circle cx="46.5" cy="56.5" r="0.82"/><circle cx="49" cy="56.5" r="0.82"/><circle cx="51.5" cy="56.5" r="0.82"/><circle cx="54" cy="56.5" r="0.82"/><circle cx="56.5" cy="56.5" r="0.82"/><circle cx="59" cy="59" r="0.82"/></g></svg><canvas class="dotted-leaf-canvas" aria-hidden="true"></canvas></span><h1 class="front-hero-title">Refine your mind.</h1><p class="front-hero-line">Read, understand and edit the files other readers leave closed.</p><p class="front-downloads"><a class="leaf-md-button" href="#">Download for Windows</a> <a class="leaf-md-button" href="#">Download for macOS</a></p><p class="front-small">Free · Windows 10+ and macOS Universal</p></section><section class="front-cards"><article class="front-card"><h2 class="front-card-title">Read your files</h2><p class="front-card-lead">A Markdown page, a sitemap, a saved email, each drawn as a page to read.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article><article class="front-card"><h2 class="front-card-title">Write where you read</h2><p class="front-card-lead">A sentence typed straight into the page.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article></section><section class="front-install"><p>Leaftext is free.</p></section><footer class="front-foot"><p><a href="#">Read the docs</a></p></footer></article></div></div>
 </section>
 <section class="part">
-<header><h3>Shelf</h3><code class="built">.shelf</code><span class="built">site/shelf-layout.js lays docs/08-examples/arthurian-shelf/shelf.md out as a bookshelf, site/shelf.js picks, re-sorts and filters it and paints its six tones from the page's categorical scale, and only leaftext.com draws it</span></header>
-<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine" data-tone="french" aria-pressed="true" style="width:34px;height:170px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:40px;height:200px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:170px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span></div><section class="shelf-book" data-tone="french"><div class="shelf-page"><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd></dl></div></section><section class="shelf-book is-empty"><p class="shelf-book-hint">Pick a book off the shelf to open it here.</p><p class="shelf-book-coming">Not published yet.</p></section><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
+<header><h3>Shelf</h3><code class="built">.shelf</code><span class="built">site/shelf-layout.js lays docs/08-examples/arthurian-shelf/shelf.md out as a bookshelf, site/shelf.js picks, re-sorts and filters it, opens a picked book in the app's own bottom sheet on the window, and paints its six tones from the page's categorical scale, and only leaftext.com draws it</span></header>
+<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine" data-tone="french" aria-pressed="true" style="width:34px;height:170px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:40px;height:200px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:170px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span></div><div class="leaf-sheet shelf-sheet open" style="position:static" role="dialog" aria-label="Merlin"><div class="leaf-sheet-grip"></div><div class="shelf-sheet-body document-body leaf-scroll"><section class="shelf-book" data-tone="french"><header class="shelf-book-cover"><span class="shelf-book-code">OFr</span><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p></header><div class="shelf-book-pages"><div class="shelf-page"><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd></dl></div></div></section></div></div><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
 </section>
 <section class="part">
 <header><h3>Dotted leaf</h3><code class="built">.dotted-leaf</code><span class="built">scripts/bundle-dotted-leaf.mjs makes this markup for the website and Home</span></header>

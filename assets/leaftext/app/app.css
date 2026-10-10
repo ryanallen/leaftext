@@ -14456,7 +14456,7 @@ h1.shelf-title {
   letter-spacing: var(--lt-tracking-tight-01);
 }
 p.shelf-line {
-  margin: var(--lt-space-16) auto 0;
+  margin: var(--lt-space-16) auto var(--lt-space-32);
   max-width: 40ch;
   color: var(--lt-muted-foreground);
   font-size: var(--type-h5-size);
@@ -14508,7 +14508,7 @@ p.shelf-line {
   outline-offset: var(--lt-space-2);
 }
 .shelf-sort-note {
-  margin: calc(-1 * var(--lt-space-12)) 0 0;
+  margin: 0;
   text-align: center;
   color: var(--lt-muted-foreground);
   font-size: var(--type-caption-size);
@@ -14516,9 +14516,8 @@ p.shelf-line {
 
 
 .shelf-find {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--lt-space-8);
 }
 .shelf-search,
@@ -14534,7 +14533,7 @@ p.shelf-line {
   font-size: var(--lt-text-13);
 }
 .shelf-search {
-  min-width: 220px;
+  grid-column: 1 / -1;
 }
 .shelf-search:focus-visible,
 .shelf-filter:focus-visible {
@@ -14566,7 +14565,7 @@ p.shelf-line {
   max-width: 100%;
   min-height: 228px;
   padding: 0 var(--lt-space-8);
-  border-bottom: var(--lt-space-10) solid var(--lt-border-strong);
+  border-bottom: var(--lt-space-6) solid var(--lt-border);
 }
 
 .shelf-bay::before {
@@ -14588,7 +14587,7 @@ p.shelf-line {
   border-bottom-color: var(--spine);
 }
 .shelf-bay.is-reached .shelf-plate {
-  color: var(--lt-markdown-foreground);
+  color: var(--lt-primary-ink);
 }
 .shelf-plate {
   display: block;
@@ -14596,9 +14595,9 @@ p.shelf-line {
   min-height: calc(2 * var(--lt-leading-1-25) * 1em);
   margin-bottom: auto;
   padding: var(--lt-space-12) 0;
-  color: var(--lt-muted-foreground);
+  color: var(--lt-markdown-foreground);
   font-family: var(--app-font);
-  font-size: var(--lt-text-10);
+  font-size: var(--lt-text-11);
   line-height: var(--lt-leading-1-25);
   letter-spacing: var(--lt-tracking-060);
   text-transform: uppercase;
@@ -14661,17 +14660,13 @@ p.shelf-line {
   flex: none;
   white-space: nowrap;
   font-family: var(--app-font);
-  font-size: var(--lt-text-9);
+  font-size: var(--lt-text-10);
   letter-spacing: var(--lt-tracking-060);
   text-transform: uppercase;
   font-weight: var(--lt-weight-700);
 }
 .shelf-spine-tag {
-  opacity: var(--lt-opacity-75);
   text-transform: none;
-}
-.shelf-spine-lang {
-  opacity: var(--lt-opacity-75);
 }
 
 @media (hover: hover) {
@@ -14704,7 +14699,7 @@ p.shelf-line {
   color: var(--lt-muted-foreground);
   border-top: var(--lt-space-4) solid var(--spine);
   border-bottom: 0;
-  outline: var(--lt-stroke-1) dashed var(--spine);
+  outline: var(--lt-stroke-1) dashed var(--lt-border-strong);
   outline-offset: calc(-1 * var(--lt-stroke-1));
 }
 .shelf-spine.is-planned[aria-pressed="true"] {
@@ -14743,26 +14738,78 @@ p.shelf-line {
 }
 
 
+.shelf-sheet {
+  position: fixed;
+  z-index: var(--lt-z-41);
+  background-color: var(--lt-background);
+  color: var(--lt-foreground);
+}
+
+@media (min-width: 760px) {
+  .leaf-sheet.shelf-sheet {
+    width: min(980px, 92%);
+  }
+}
+
+.shelf-sheet > .leaf-sheet-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  z-index: 1;
+}
+
+.shelf-sheet-body {
+  width: auto;
+  margin: 0;
+  overflow-y: auto;
+  padding: var(--lt-space-8) var(--lt-space-24) var(--lt-space-24);
+}
+
 .shelf-book {
+  max-width: 920px;
+  margin: 0 auto;
+  color: var(--lt-markdown-foreground);
+}
+.shelf-book-cover {
+  padding: var(--lt-space-24) var(--lt-space-32) var(--lt-space-24);
+  border-left: var(--lt-space-12) solid var(--lt-tint-recess);
+  border-radius: var(--lt-radius-lg);
+  background: var(--spine);
+  color: var(--spine-ink);
+}
+.shelf-book-code {
+  display: inline-block;
+  margin-bottom: var(--lt-space-12);
+  padding: var(--lt-space-2) var(--lt-space-8);
+  border: var(--lt-stroke-1) solid currentColor;
+  border-radius: var(--lt-radius-pill);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-10);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
+  font-weight: var(--lt-weight-700);
+}
+h2.shelf-book-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  font-size: var(--type-h2-size);
+  line-height: var(--lt-leading-1-2);
+}
+.shelf-book-by {
+  margin: var(--lt-space-8) 0 0;
+  color: inherit;
+  font-style: italic;
+}
+.shelf-book-pages {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  margin-top: var(--lt-space-16);
   border: var(--lt-stroke-1) solid var(--lt-border);
   border-radius: var(--lt-radius-lg);
   background: var(--lt-markdown-background);
   overflow: hidden;
-  border-top: var(--lt-space-4) solid var(--spine);
-}
-.shelf-book.is-empty {
-  display: block;
-  border-style: dashed;
-  border-top: var(--lt-stroke-1) dashed var(--lt-border);
-  text-align: center;
-}
-.shelf-book-hint {
-  margin: 0;
-  padding: var(--lt-space-24);
-  color: var(--lt-muted-foreground);
-  font-style: italic;
 }
 .shelf-page {
   padding: var(--lt-space-24) var(--lt-space-24) var(--lt-space-20);
@@ -14770,17 +14817,6 @@ p.shelf-line {
 .shelf-page-facts {
   border-left: var(--lt-stroke-1) solid var(--lt-border);
   background: var(--lt-surface-muted);
-}
-h2.shelf-book-title {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  font-size: var(--type-h3-size);
-}
-.shelf-book-by {
-  margin: var(--lt-space-4) 0 var(--lt-space-12);
-  color: var(--lt-muted-foreground);
-  font-style: italic;
 }
 .shelf-book-premise {
   margin: 0 0 var(--lt-space-16);
@@ -14851,8 +14887,11 @@ h2.shelf-book-title {
 
 
 @media (max-width: 720px) {
-  .shelf-book {
+  .shelf-book-pages {
     grid-template-columns: 1fr;
+  }
+  .shelf-book-cover {
+    padding: var(--lt-space-20) var(--lt-space-20) var(--lt-space-20) var(--lt-space-24);
   }
   .shelf-page-facts {
     border-left: 0;
@@ -14860,6 +14899,18 @@ h2.shelf-book-title {
   }
 }
 @media (max-width: 560px) {
+  .shelf-sort {
+    flex-direction: column;
+    width: 100%;
+    border-radius: var(--lt-radius-lg);
+  }
+  .shelf-sort-button {
+    border-radius: var(--lt-radius-md);
+    text-align: center;
+  }
+  .shelf-find {
+    grid-template-columns: 1fr;
+  }
   .shelf-bay {
     flex-basis: 100%;
   }

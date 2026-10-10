@@ -21,7 +21,7 @@ export const DEMO_DIR = 'imgs/demos';
 
 /** The five cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, the documentation page that tells the rest, and whether it is the featured card that spans the grid with its clip beside its words. */
 export const FRONT_CARDS = [
-  { section: 'read-the-arthurian-books', clip: 'arthur', featured: true, shows: 'Leaftext opening Merlin, The History of the Britons and The Welsh Annals in turn, each translated for Leaftext', more: 'docs/README.md' },
+  { section: 'read-the-arthurian-books', clip: 'arthur', featured: true, shows: 'Leaftext opening Merlin, The History of the Britons and The Welsh Annals in turn, each translated for Leaftext', more: 'docs/08-examples/arthurian-shelf/shelf.md' },
   { section: 'read-your-files', clip: 'read', shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
   { section: 'write-where-you-read', clip: 'edit', shows: 'A sentence being typed straight into the rendered page of a note', more: 'docs/01-features/07-editing.md' },
   { section: 'keep-a-library', clip: 'library', shows: 'The documentation index opening into the graph of how its pages link', more: 'docs/01-features/03-library.md' },
