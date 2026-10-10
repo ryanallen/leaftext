@@ -14549,7 +14549,10 @@ p.shelf-line {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  box-sizing: border-box;
   min-width: 64px;
+  
+  max-width: 100%;
   min-height: 228px;
   padding: 0 var(--lt-space-8);
   border-bottom: var(--lt-space-10) solid var(--lt-border-strong);
@@ -14613,6 +14616,7 @@ p.shelf-line {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
+  gap: var(--lt-space-6);
   box-sizing: border-box;
   padding: var(--lt-space-12) 0 var(--lt-space-8);
   border-radius: var(--lt-radius-xs) var(--lt-radius-xs) 0 0;
@@ -14642,6 +14646,9 @@ p.shelf-line {
 .shelf-spine-lang {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
+  
+  flex: none;
+  white-space: nowrap;
   font-family: var(--app-font);
   font-size: var(--lt-text-9);
   letter-spacing: var(--lt-tracking-060);

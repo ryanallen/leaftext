@@ -20,6 +20,8 @@ How it was made: built by [Ryan Allen](annales-cambriae-how-it-was-made.md#ryan-
 
 **The History of the Britons.** In Harley MS 3859 the annals come after the [*History of the Britons*](../historia-brittonum/historia-brittonum.md), the Latin history that lists Arthur's twelve battles, also translated on this shelf.
 
+**The Arthurian shelf.** This book stands on [the Arthurian shelf](../arthurian-shelf/shelf.md) with every other telling of the legend on Leaftext, published and still to come, in the order their stories happen; the shelf can also be sorted by when each was written or its edition printed.
+
 ## Why this book
 
 <!-- why -->

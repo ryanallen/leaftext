@@ -47,9 +47,10 @@ export const APP_BOOK_PATH = `${APP_DIR}/leaftext-book.wasm`;
 export const APP_SCRIPT_PATH = `${APP_DIR}/app.js`;
 export const APP_STYLES_PATH = `${APP_DIR}/app.css`;
 
-/** The host a browser answers the page through, its loader and its store, out of `web/preview/`; the deadline every fetch waits under; and the landing's layout, its chart and its motion, which the loader hands the host — the website's own files. */
+/** The host a browser answers the page through, the bytes it speaks to its modules, its loader and its store, out of `web/preview/`; the deadline every fetch waits under; and the landing's layout, its chart and its motion, and the shelf's layout and what moves on it, which the loader hands the host — the website's own files. */
 export const HOST_FILES = [
   [`${APP_DIR}/host.js`, 'web/preview/host.js'],
+  [`${APP_DIR}/renderer.js`, 'web/preview/renderer.js'],
   [`${APP_DIR}/boot.js`, 'web/preview/boot.js'],
   [`${APP_DIR}/settings.js`, 'web/preview/settings.js'],
   [`${APP_DIR}/fetches.js`, 'site/fetches.js'],
@@ -58,6 +59,8 @@ export const HOST_FILES = [
   [`${APP_DIR}/dotted-leaf.js`, 'site/dotted-leaf.js'],
   [`${APP_DIR}/compare-chart.js`, 'site/compare-chart.js'],
   [`${APP_DIR}/front-page.js`, 'site/front-page.js'],
+  [`${APP_DIR}/shelf-layout.js`, 'site/shelf-layout.js'],
+  [`${APP_DIR}/shelf.js`, 'site/shelf.js'],
   [`${APP_DIR}/leaf.svg`, 'src/assets/leaf.svg'],
 ];
 
@@ -100,6 +103,8 @@ export const BUILT_BOOK_MODULE = join(root, 'web', 'dist', 'leaftext-book.wasm')
 export const FRONT_PAGE = 'index.html';
 export const LISTING = 'documents.json';
 export const FRONT_DOCUMENT = 'README.md';
+/** The documents other than the landing that the site lays out, each by the name of its layout in the loader: the Arthurian books as a bookshelf over the list they are drawn from. */
+export const SITE_LAYOUTS = { 'docs/08-examples/arthurian-shelf/shelf.md': 'shelf' };
 
 /** What the site publishes as documents, and what its trail calls it. Everything else in the repository — the discovery files, the scripts, the themes — is served as it is and never offered as a page. */
 export const SITE_NAME = 'leaftext';
@@ -154,6 +159,7 @@ export async function bakeSite(leaf, project, from = root, { layout = frontLayou
   });
   // The host lays out only the document the listing names, so a site with no landing layout — Emptyguru — draws every page as the app does.
   listing.frontPage = FRONT_DOCUMENT;
+  listing.layouts = { ...SITE_LAYOUTS };
   if (listing.landing !== FRONT_DOCUMENT) throw new Error(`the site would open on ${listing.landing || 'nothing'} rather than ${FRONT_DOCUMENT}`);
   if (!/class="reader-layout baked-page"><article class="document-body[^"]*">\s*\S/.test(page)) throw new Error(`the renderer drew no ${FRONT_DOCUMENT} into ${FRONT_PAGE}`);
   // The front page is the one page whose job is to get somebody to press Download, so a publish that lost its layout stops rather than going out as the README drawn plain.

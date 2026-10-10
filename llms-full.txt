@@ -177,6 +177,11 @@
 - Markdown: https://leaftext.com/docs/08-examples/annales-cambriae/uk/annales-cambriae-uk.md
 - Summary: Annales Cambriae, translated by Ryan Allen
 
+## Pick a book off the shelf.
+- Page: https://leaftext.com/docs/08-examples/arthurian-shelf/shelf.html
+- Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/shelf.md
+- Summary: Every telling of the legend, standing where its story begins. Pull one out to read it.
+
 ## Sources of the Arthurian shelf
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.html
 - Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.md

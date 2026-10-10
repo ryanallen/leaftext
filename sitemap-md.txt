@@ -33,6 +33,7 @@ https://leaftext.com/docs/08-examples/annales-cambriae/annales-cambriae.md
 https://leaftext.com/docs/08-examples/annales-cambriae/made-with.md
 https://leaftext.com/docs/08-examples/annales-cambriae/uk/GLOSSARY.md
 https://leaftext.com/docs/08-examples/annales-cambriae/uk/annales-cambriae-uk.md
+https://leaftext.com/docs/08-examples/arthurian-shelf/shelf.md
 https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.md
 https://leaftext.com/docs/08-examples/arthurian-shelf/sources/annales-cambriae.md
 https://leaftext.com/docs/08-examples/arthurian-shelf/sources/historia-brittonum.md

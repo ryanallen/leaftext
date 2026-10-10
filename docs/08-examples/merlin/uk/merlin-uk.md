@@ -25,6 +25,8 @@ How it was made: built by [Ryan Allen](../merlin-how-it-was-made.md#ryan-allen),
 
 **Gaston Paris's introduction.** The 1886 edition opens on some eighty pages of French by Gaston Paris, left out here. He describes the Huth manuscript, once owned by the scholar Du Cange, and what it holds: prose versions of Robert's *Joseph* and *Merlin*, then the sequel, which is what makes the book so valuable. He argues that Robert took much of *Merlin* from [Geoffrey of Monmouth's history of Britain](https://archive.org/details/historiesoftheki037587mbp), which he knew only loosely, from a French version: Robert gives King Constant a son called Moine, makes Winchester a port and takes Logres for a city. Most of the introduction is about the sequel, the Grail quest after it, and the later books drawn from them, Malory's among them. It comes before page 1 in each of the scans the Sources name.
 
+**The Arthurian shelf.** This book stands on [the Arthurian shelf](../../arthurian-shelf/shelf.md) with every other telling of the legend on Leaftext, published and still to come, in the order their stories happen; the shelf can also be sorted by when each was written or its edition printed.
+
 ## Why this book
 
 <!-- why -->

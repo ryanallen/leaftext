@@ -16,6 +16,8 @@ How it was made: built by [Ryan Allen](historia-brittonum-how-it-was-made.md#rya
 
 **The Welsh Annals.** In Harley MS 3859 the history is followed by the [*Welsh Annals*](../annales-cambriae/annales-cambriae.md), a list of years that dates Arthur's battle at Badon and his last battle at Camlann, also translated on this shelf.
 
+**The Arthurian shelf.** This book stands on [the Arthurian shelf](../arthurian-shelf/shelf.md) with every other telling of the legend on Leaftext, published and still to come, in the order their stories happen; the shelf can also be sorted by when each was written or its edition printed.
+
 ## Why this book
 
 <!-- why -->

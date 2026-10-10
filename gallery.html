@@ -14387,16 +14387,32 @@ figure.front-clip {
   border-radius: 0;
 }
 
-/* The four cards: one above the next in a narrow column, two across where the column has room. */
+/* The five cards: one above the next in a narrow column, two across where the column has room, the featured first card across both. */
 .front-cards {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--lt-space-24);
   padding: var(--lt-space-32) 0;
 }
+.front-card.is-featured {
+  grid-column: 1 / -1;
+}
 @container (min-width: 600px) {
   .front-cards {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* Words down the first column and the clip beside them; the last row takes the clip's extra height so the words stay together. */
+  .front-card.is-featured {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: repeat(6, auto) 1fr;
+    column-gap: var(--lt-space-24);
+    align-items: start;
+  }
+  figure.front-card-clip.is-beside {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    margin-top: 0;
   }
 }
 .front-card {
@@ -14442,7 +14458,7 @@ p.front-card-lead {
   color: var(--lt-muted-foreground);
 }
 
-/* Every card's picture the same shape, so the four line up however each was recorded; the top of the window is where the app is. */
+/* Every card's picture the same shape, so the cards line up however each was recorded; the top of the window is where the app is. */
 figure.front-card-clip {
   margin-top: auto;
   aspect-ratio: 16 / 10;
@@ -14467,6 +14483,434 @@ p.front-more {
 .front-foot {
   padding: var(--lt-space-16) 0 var(--lt-space-32);
   color: var(--lt-muted-foreground);
+}
+/* The Arthurian shelf: `shelf.md` laid out by `site/shelf-layout.js` inside the reading column as a bookshelf — the hero, the switch between its three orders, the finder, the case of bays and spines, the key, the book opened off it and the list it was drawn from. The app's bar, pane and rail stand around it as around every page, and the desktop never draws it. Every color is the theme's; the six tradition tones are the page's own categorical scale, which `site/shelf.js` sets on the shelf as `--shelf-tone-*` and `--shelf-ink-*` and sets again on every theme change. A spine's width and height are its own geometry, written on it by the layout from its reach and its title. */
+
+.shelf-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-20);
+}
+
+/* The hero: what the page is, the title the document gives it, and one line. */
+.shelf-hero {
+  padding: var(--lt-space-32) 0 0;
+  text-align: center;
+}
+.shelf-eyebrow {
+  margin: 0 0 var(--lt-space-12);
+  color: var(--lt-primary-ink);
+  font-size: var(--type-caption-size);
+  letter-spacing: var(--lt-tracking-120);
+  text-transform: uppercase;
+  font-weight: var(--lt-weight-600);
+}
+h1.shelf-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  letter-spacing: var(--lt-tracking-tight-01);
+}
+p.shelf-line {
+  margin: var(--lt-space-16) auto 0;
+  max-width: 40ch;
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-h5-size);
+  line-height: var(--lt-leading-1-35);
+}
+
+/* The switch: one pill of three, the chosen order filled with the primary. */
+.shelf-sort {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--lt-space-4);
+  margin: 0 auto;
+  padding: var(--lt-space-4);
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-pill);
+  background: var(--lt-surface);
+}
+.shelf-sort-button {
+  all: unset;
+  cursor: pointer;
+  padding: var(--lt-space-6) var(--lt-space-16);
+  border-radius: var(--lt-radius-pill);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-500);
+}
+.shelf-sort-button[aria-pressed="true"] {
+  background: var(--lt-primary);
+  color: var(--lt-primary-foreground);
+}
+.shelf-sort-button:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+  outline-offset: var(--lt-space-2);
+}
+.shelf-sort-note {
+  margin: calc(-1 * var(--lt-space-12)) 0 0;
+  text-align: center;
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+}
+
+/* The finder: a title search and the part, tradition and availability filters, in the app's own field. */
+.shelf-find {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--lt-space-8);
+}
+.shelf-search,
+.shelf-filter {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: var(--lt-space-6) var(--lt-space-12);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-surface);
+  color: var(--lt-markdown-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+.shelf-search {
+  min-width: 220px;
+}
+.shelf-search:focus-visible,
+.shelf-filter:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+  outline-offset: var(--lt-space-2);
+}
+
+/* The case: the theme's sunken surface, bays side by side that wrap onto a new shelf when the column runs out, so a phone is a bookcase with a shelf to a bay. */
+.shelf-case {
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-surface-sunken);
+  padding: 0 var(--lt-space-16) var(--lt-space-16);
+}
+.shelf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.shelf-bay {
+  position: relative;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-width: 64px;
+  /* A bay holding more books than one shelf takes wraps them inside the case rather than running past its edge. */
+  max-width: 100%;
+  min-height: 228px;
+  padding: 0 var(--lt-space-8);
+  border-bottom: var(--lt-space-10) solid var(--lt-border-strong);
+}
+/* The bookend before a bay: the strong rule standing up, dashed before the bay beside the story. */
+.shelf-bay::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--lt-space-12);
+  bottom: 0;
+  border-left: var(--lt-stroke-2) solid var(--lt-border-strong);
+}
+.shelf-bay:first-child::before {
+  display: none;
+}
+.shelf-bay.is-beside::before {
+  border-left-style: dashed;
+}
+/* A bay the picked book's story reaches: its ledge in the book's tone and its plate in the page's ink. */
+.shelf-bay.is-reached {
+  border-bottom-color: var(--spine);
+}
+.shelf-bay.is-reached .shelf-plate {
+  color: var(--lt-markdown-foreground);
+}
+.shelf-plate {
+  display: block;
+  max-width: 14ch;
+  min-height: calc(2 * var(--lt-leading-1-25) * 1em);
+  margin-bottom: auto;
+  padding: var(--lt-space-12) 0;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-10);
+  line-height: var(--lt-leading-1-25);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+  font-weight: var(--lt-weight-600);
+}
+.shelf-books {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--lt-space-2);
+}
+.shelf-empty {
+  padding-bottom: var(--lt-space-20);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+  font-style: italic;
+  opacity: var(--lt-opacity-60);
+}
+
+/* A spine: a published book filled with its tone, its title running bottom to top in the heading face, a darker band at head and foot. */
+.shelf-spine {
+  all: unset;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--lt-space-6);
+  box-sizing: border-box;
+  padding: var(--lt-space-12) 0 var(--lt-space-8);
+  border-radius: var(--lt-radius-xs) var(--lt-radius-xs) 0 0;
+  background: var(--spine);
+  color: var(--spine-ink);
+  border-top: var(--lt-space-8) solid var(--lt-tint-recess);
+  border-bottom: var(--lt-space-6) solid var(--lt-tint-recess);
+  transition: transform var(--lt-duration-260) var(--lt-ease-emphasized);
+}
+.shelf-spine-title {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-top: var(--lt-space-8);
+  white-space: nowrap;
+  font-family: var(--heading-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+}
+/* A long title set on two lines, so its spine stands no taller than the rest. */
+.shelf-spine.is-long .shelf-spine-title {
+  white-space: normal;
+  max-height: calc(100% - var(--lt-space-32));
+  text-align: center;
+  line-height: var(--lt-leading-1-25);
+}
+.shelf-spine-tag,
+.shelf-spine-lang {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  /* One line each at full length; on a two-line spine the title is what gives way, never the date or the language. */
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--app-font);
+  font-size: var(--lt-text-9);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+  font-weight: var(--lt-weight-700);
+}
+.shelf-spine-tag {
+  opacity: var(--lt-opacity-75);
+  text-transform: none;
+}
+.shelf-spine-lang {
+  opacity: var(--lt-opacity-75);
+}
+@media (hover: hover) {
+  .shelf-spine:hover {
+    outline: var(--lt-stroke-1) solid var(--lt-markdown-foreground);
+    outline-offset: var(--lt-space-2);
+  }
+}
+.shelf-spine:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
+  outline-offset: var(--lt-space-2);
+}
+/* Picked: lifted out of the shelf and drawn round in the page's ink, a shape as well as a color. */
+.shelf-spine[aria-pressed="true"] {
+  transform: translateY(calc(-1 * var(--lt-space-24)));
+  outline: var(--lt-stroke-2) solid var(--lt-markdown-foreground);
+  outline-offset: var(--lt-space-2);
+}
+/* A book still to come: the same shape with no fill, a dashed outline in its tone and a band of it at the head. */
+.shelf-spine.is-planned {
+  background: transparent;
+  color: var(--lt-muted-foreground);
+  border-top: var(--lt-space-4) solid var(--spine);
+  border-bottom: 0;
+  outline: var(--lt-stroke-1) dashed var(--spine);
+  outline-offset: calc(-1 * var(--lt-stroke-1));
+}
+.shelf-spine.is-planned[aria-pressed="true"] {
+  outline: var(--lt-stroke-2) dashed var(--lt-markdown-foreground);
+  outline-offset: var(--lt-space-2);
+}
+.shelf-spine.is-planned .shelf-spine-title {
+  font-style: italic;
+  font-weight: var(--lt-weight-400);
+}
+
+/* The key: a swatch for each tradition and the outline a book to come stands as. */
+.shelf-key {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--lt-space-6) var(--lt-space-16);
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+}
+.shelf-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-6);
+}
+.shelf-key i {
+  display: inline-block;
+  width: 10px;
+  height: 14px;
+  border-radius: var(--lt-radius-xs);
+  background: var(--spine);
+}
+.shelf-key i.is-planned {
+  background: none;
+  outline: var(--lt-stroke-1) dashed var(--lt-border-strong);
+}
+
+/* The book opened off the shelf: two pages on the page's own paper, a band of its tone along the top. */
+.shelf-book {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: var(--lt-markdown-background);
+  overflow: hidden;
+  border-top: var(--lt-space-4) solid var(--spine);
+}
+.shelf-book.is-empty {
+  display: block;
+  border-style: dashed;
+  border-top: var(--lt-stroke-1) dashed var(--lt-border);
+  text-align: center;
+}
+.shelf-book-hint {
+  margin: 0;
+  padding: var(--lt-space-24);
+  color: var(--lt-muted-foreground);
+  font-style: italic;
+}
+.shelf-page {
+  padding: var(--lt-space-24) var(--lt-space-24) var(--lt-space-20);
+}
+.shelf-page-facts {
+  border-left: var(--lt-stroke-1) solid var(--lt-border);
+  background: var(--lt-surface-muted);
+}
+h2.shelf-book-title {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--type-h3-size);
+}
+.shelf-book-by {
+  margin: var(--lt-space-4) 0 var(--lt-space-12);
+  color: var(--lt-muted-foreground);
+  font-style: italic;
+}
+.shelf-book-premise {
+  margin: 0 0 var(--lt-space-16);
+}
+.shelf-book-coming {
+  color: var(--lt-muted-foreground);
+  font-style: italic;
+}
+.shelf-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--lt-space-8) var(--lt-space-16);
+  margin: 0;
+  font-size: var(--lt-text-14);
+}
+.shelf-facts dt {
+  padding-top: var(--lt-space-2);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-10);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
+  font-weight: var(--lt-weight-600);
+}
+.shelf-facts dd {
+  margin: 0;
+}
+.shelf-why {
+  display: block;
+  margin-top: var(--lt-space-4);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-11);
+}
+.shelf-parts {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: var(--lt-space-2);
+  margin-bottom: var(--lt-space-4);
+}
+.shelf-parts i {
+  height: var(--lt-space-6);
+  border-radius: var(--lt-radius-xs);
+  background: var(--lt-border);
+}
+.shelf-parts i.is-on {
+  background: var(--spine);
+}
+
+/* The list the shelf was drawn from, kept closed under it. */
+.shelf-list {
+  border-top: var(--lt-stroke-1) solid var(--lt-border);
+  padding-top: var(--lt-space-12);
+}
+.shelf-list summary {
+  cursor: pointer;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-13);
+}
+
+/* Each tradition's tone and the ink read on it, the primary standing in until the shelf's script has painted them. */
+[data-tone="latin"] { --spine: var(--shelf-tone-latin, var(--lt-primary)); --spine-ink: var(--shelf-ink-latin, var(--lt-primary-foreground)); }
+[data-tone="french"] { --spine: var(--shelf-tone-french, var(--lt-primary)); --spine-ink: var(--shelf-ink-french, var(--lt-primary-foreground)); }
+[data-tone="english"] { --spine: var(--shelf-tone-english, var(--lt-primary)); --spine-ink: var(--shelf-ink-english, var(--lt-primary-foreground)); }
+[data-tone="welsh"] { --spine: var(--shelf-tone-welsh, var(--lt-primary)); --spine-ink: var(--shelf-ink-welsh, var(--lt-primary-foreground)); }
+[data-tone="german"] { --spine: var(--shelf-tone-german, var(--lt-primary)); --spine-ink: var(--shelf-ink-german, var(--lt-primary-foreground)); }
+[data-tone="other"] { --spine: var(--shelf-tone-other, var(--lt-primary)); --spine-ink: var(--shelf-ink-other, var(--lt-primary-foreground)); }
+
+/* A narrow column: the open book's pages stack, and at phone width every bay is a shelf of its own. */
+@media (max-width: 720px) {
+  .shelf-book {
+    grid-template-columns: 1fr;
+  }
+  .shelf-page-facts {
+    border-left: 0;
+    border-top: var(--lt-stroke-1) solid var(--lt-border);
+  }
+}
+@media (max-width: 560px) {
+  .shelf-bay {
+    flex-basis: 100%;
+  }
+  .shelf-bay::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-spine {
+    transition: none;
+  }
+  .shelf-spine[aria-pressed="true"] {
+    transform: none;
+  }
 }
 /* ---- Glossary bottom sheet ---------------------------------------------
    A glossary link opens the term here, sliding up over the reading view; the document keeps its place underneath. The body reuses .document-body so the entry is styled like ordinary Markdown. See window.leafShowGlossary. */
@@ -18417,7 +18861,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 168 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 169 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -18449,7 +18893,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>168</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>169</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -18877,7 +19321,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">168 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">169 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -19217,6 +19661,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Front page</h3><code class="built">.front</code><span class="built">site/front-page-layout.js lays the README out, site/front-page.js swaps in the clips and raises the cards, and only leaftext.com draws it</span></header>
 <div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body front-layout"><section class="front-hero"><span class="dotted-leaf" role="img" aria-label="Leaftext leaf" data-dotted-leaf="front"><svg class="dotted-leaf-still" viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor"><circle cx="6.5" cy="9" r="0.82"/><circle cx="6.5" cy="11.5" r="0.82"/><circle cx="9" cy="11.5" r="0.82"/><circle cx="6.5" cy="14" r="0.82"/><circle cx="9" cy="14" r="0.82"/><circle cx="11.5" cy="14" r="0.82"/><circle cx="6.5" cy="16.5" r="0.82"/><circle cx="9" cy="16.5" r="0.82"/><circle cx="11.5" cy="16.5" r="0.82"/><circle cx="14" cy="16.5" r="0.82"/><circle cx="6.5" cy="19" r="0.82"/><circle cx="9" cy="19" r="0.82"/><circle cx="11.5" cy="19" r="0.82"/><circle cx="14" cy="19" r="0.82"/><circle cx="16.5" cy="19" r="0.82"/><circle cx="19" cy="19" r="0.82"/><circle cx="6.5" cy="21.5" r="0.82"/><circle cx="9" cy="21.5" r="0.82"/><circle cx="11.5" cy="21.5" r="0.82"/><circle cx="14" cy="21.5" r="0.82"/><circle cx="16.5" cy="21.5" r="0.82"/><circle cx="19" cy="21.5" r="0.82"/><circle cx="21.5" cy="21.5" r="0.82"/><circle cx="24" cy="21.5" r="0.82"/><circle cx="26.5" cy="21.5" r="0.82"/><circle cx="6.5" cy="24" r="0.82"/><circle cx="9" cy="24" r="0.82"/><circle cx="11.5" cy="24" r="0.82"/><circle cx="14" cy="24" r="0.82"/><circle cx="16.5" cy="24" r="0.82"/><circle cx="19" cy="24" r="0.82"/><circle cx="21.5" cy="24" r="0.82"/><circle cx="24" cy="24" r="0.82"/><circle cx="26.5" cy="24" r="0.82"/><circle cx="29" cy="24" r="0.82"/><circle cx="31.5" cy="24" r="0.82"/><circle cx="34" cy="24" r="0.82"/><circle cx="36.5" cy="24" r="0.82"/><circle cx="39" cy="24" r="0.82"/><circle cx="6.5" cy="26.5" r="0.82"/><circle cx="9" cy="26.5" r="0.82"/><circle cx="11.5" cy="26.5" r="0.82"/><circle cx="16.5" cy="26.5" r="0.82"/><circle cx="19" cy="26.5" r="0.82"/><circle cx="21.5" cy="26.5" r="0.82"/><circle cx="24" cy="26.5" r="0.82"/><circle cx="26.5" cy="26.5" r="0.82"/><circle cx="29" cy="26.5" r="0.82"/><circle cx="31.5" cy="26.5" r="0.82"/><circle cx="34" cy="26.5" r="0.82"/><circle cx="36.5" cy="26.5" r="0.82"/><circle cx="39" cy="26.5" r="0.82"/><circle cx="41.5" cy="26.5" r="0.82"/><circle cx="44" cy="26.5" r="0.82"/><circle cx="9" cy="29" r="0.82"/><circle cx="11.5" cy="29" r="0.82"/><circle cx="14" cy="29" r="0.82"/><circle cx="16.5" cy="29" r="0.82"/><circle cx="19" cy="29" r="0.82"/><circle cx="21.5" cy="29" r="0.82"/><circle cx="24" cy="29" r="0.82"/><circle cx="26.5" cy="29" r="0.82"/><circle cx="29" cy="29" r="0.82"/><circle cx="31.5" cy="29" r="0.82"/><circle cx="34" cy="29" r="0.82"/><circle cx="36.5" cy="29" r="0.82"/><circle cx="39" cy="29" r="0.82"/><circle cx="41.5" cy="29" r="0.82"/><circle cx="44" cy="29" r="0.82"/><circle cx="46.5" cy="29" r="0.82"/><circle cx="9" cy="31.5" r="0.82"/><circle cx="11.5" cy="31.5" r="0.82"/><circle cx="14" cy="31.5" r="0.82"/><circle cx="16.5" cy="31.5" r="0.82"/><circle cx="19" cy="31.5" r="0.82"/><circle cx="24" cy="31.5" r="0.82"/><circle cx="26.5" cy="31.5" r="0.82"/><circle cx="29" cy="31.5" r="0.82"/><circle cx="31.5" cy="31.5" r="0.82"/><circle cx="34" cy="31.5" r="0.82"/><circle cx="36.5" cy="31.5" r="0.82"/><circle cx="39" cy="31.5" r="0.82"/><circle cx="41.5" cy="31.5" r="0.82"/><circle cx="44" cy="31.5" r="0.82"/><circle cx="46.5" cy="31.5" r="0.82"/><circle cx="49" cy="31.5" r="0.82"/><circle cx="9" cy="34" r="0.82"/><circle cx="11.5" cy="34" r="0.82"/><circle cx="14" cy="34" r="0.82"/><circle cx="16.5" cy="34" r="0.82"/><circle cx="19" cy="34" r="0.82"/><circle cx="21.5" cy="34" r="0.82"/><circle cx="24" cy="34" r="0.82"/><circle cx="31.5" cy="34" r="0.82"/><circle cx="34" cy="34" r="0.82"/><circle cx="36.5" cy="34" r="0.82"/><circle cx="39" cy="34" r="0.82"/><circle cx="41.5" cy="34" r="0.82"/><circle cx="44" cy="34" r="0.82"/><circle cx="46.5" cy="34" r="0.82"/><circle cx="49" cy="34" r="0.82"/><circle cx="51.5" cy="34" r="0.82"/><circle cx="11.5" cy="36.5" r="0.82"/><circle cx="14" cy="36.5" r="0.82"/><circle cx="16.5" cy="36.5" r="0.82"/><circle cx="19" cy="36.5" r="0.82"/><circle cx="21.5" cy="36.5" r="0.82"/><circle cx="24" cy="36.5" r="0.82"/><circle cx="26.5" cy="36.5" r="0.82"/><circle cx="29" cy="36.5" r="0.82"/><circle cx="44" cy="36.5" r="0.82"/><circle cx="46.5" cy="36.5" r="0.82"/><circle cx="49" cy="36.5" r="0.82"/><circle cx="51.5" cy="36.5" r="0.82"/><circle cx="11.5" cy="39" r="0.82"/><circle cx="14" cy="39" r="0.82"/><circle cx="16.5" cy="39" r="0.82"/><circle cx="19" cy="39" r="0.82"/><circle cx="21.5" cy="39" r="0.82"/><circle cx="24" cy="39" r="0.82"/><circle cx="26.5" cy="39" r="0.82"/><circle cx="29" cy="39" r="0.82"/><circle cx="31.5" cy="39" r="0.82"/><circle cx="34" cy="39" r="0.82"/><circle cx="36.5" cy="39" r="0.82"/><circle cx="49" cy="39" r="0.82"/><circle cx="51.5" cy="39" r="0.82"/><circle cx="54" cy="39" r="0.82"/><circle cx="14" cy="41.5" r="0.82"/><circle cx="16.5" cy="41.5" r="0.82"/><circle cx="19" cy="41.5" r="0.82"/><circle cx="21.5" cy="41.5" r="0.82"/><circle cx="24" cy="41.5" r="0.82"/><circle cx="26.5" cy="41.5" r="0.82"/><circle cx="29" cy="41.5" r="0.82"/><circle cx="31.5" cy="41.5" r="0.82"/><circle cx="34" cy="41.5" r="0.82"/><circle cx="36.5" cy="41.5" r="0.82"/><circle cx="39" cy="41.5" r="0.82"/><circle cx="41.5" cy="41.5" r="0.82"/><circle cx="44" cy="41.5" r="0.82"/><circle cx="51.5" cy="41.5" r="0.82"/><circle cx="54" cy="41.5" r="0.82"/><circle cx="16.5" cy="44" r="0.82"/><circle cx="19" cy="44" r="0.82"/><circle cx="21.5" cy="44" r="0.82"/><circle cx="24" cy="44" r="0.82"/><circle cx="26.5" cy="44" r="0.82"/><circle cx="29" cy="44" r="0.82"/><circle cx="31.5" cy="44" r="0.82"/><circle cx="34" cy="44" r="0.82"/><circle cx="36.5" cy="44" r="0.82"/><circle cx="39" cy="44" r="0.82"/><circle cx="41.5" cy="44" r="0.82"/><circle cx="44" cy="44" r="0.82"/><circle cx="46.5" cy="44" r="0.82"/><circle cx="54" cy="44" r="0.82"/><circle cx="56.5" cy="44" r="0.82"/><circle cx="19" cy="46.5" r="0.82"/><circle cx="21.5" cy="46.5" r="0.82"/><circle cx="24" cy="46.5" r="0.82"/><circle cx="26.5" cy="46.5" r="0.82"/><circle cx="29" cy="46.5" r="0.82"/><circle cx="31.5" cy="46.5" r="0.82"/><circle cx="34" cy="46.5" r="0.82"/><circle cx="36.5" cy="46.5" r="0.82"/><circle cx="39" cy="46.5" r="0.82"/><circle cx="41.5" cy="46.5" r="0.82"/><circle cx="44" cy="46.5" r="0.82"/><circle cx="46.5" cy="46.5" r="0.82"/><circle cx="49" cy="46.5" r="0.82"/><circle cx="56.5" cy="46.5" r="0.82"/><circle cx="19" cy="49" r="0.82"/><circle cx="21.5" cy="49" r="0.82"/><circle cx="24" cy="49" r="0.82"/><circle cx="26.5" cy="49" r="0.82"/><circle cx="29" cy="49" r="0.82"/><circle cx="31.5" cy="49" r="0.82"/><circle cx="34" cy="49" r="0.82"/><circle cx="36.5" cy="49" r="0.82"/><circle cx="39" cy="49" r="0.82"/><circle cx="41.5" cy="49" r="0.82"/><circle cx="44" cy="49" r="0.82"/><circle cx="46.5" cy="49" r="0.82"/><circle cx="49" cy="49" r="0.82"/><circle cx="51.5" cy="49" r="0.82"/><circle cx="24" cy="51.5" r="0.82"/><circle cx="26.5" cy="51.5" r="0.82"/><circle cx="29" cy="51.5" r="0.82"/><circle cx="31.5" cy="51.5" r="0.82"/><circle cx="34" cy="51.5" r="0.82"/><circle cx="36.5" cy="51.5" r="0.82"/><circle cx="39" cy="51.5" r="0.82"/><circle cx="41.5" cy="51.5" r="0.82"/><circle cx="44" cy="51.5" r="0.82"/><circle cx="46.5" cy="51.5" r="0.82"/><circle cx="49" cy="51.5" r="0.82"/><circle cx="51.5" cy="51.5" r="0.82"/><circle cx="54" cy="51.5" r="0.82"/><circle cx="26.5" cy="54" r="0.82"/><circle cx="29" cy="54" r="0.82"/><circle cx="31.5" cy="54" r="0.82"/><circle cx="34" cy="54" r="0.82"/><circle cx="36.5" cy="54" r="0.82"/><circle cx="39" cy="54" r="0.82"/><circle cx="41.5" cy="54" r="0.82"/><circle cx="44" cy="54" r="0.82"/><circle cx="46.5" cy="54" r="0.82"/><circle cx="49" cy="54" r="0.82"/><circle cx="51.5" cy="54" r="0.82"/><circle cx="54" cy="54" r="0.82"/><circle cx="56.5" cy="54" r="0.82"/><circle cx="34" cy="56.5" r="0.82"/><circle cx="36.5" cy="56.5" r="0.82"/><circle cx="39" cy="56.5" r="0.82"/><circle cx="41.5" cy="56.5" r="0.82"/><circle cx="44" cy="56.5" r="0.82"/><circle cx="46.5" cy="56.5" r="0.82"/><circle cx="49" cy="56.5" r="0.82"/><circle cx="51.5" cy="56.5" r="0.82"/><circle cx="54" cy="56.5" r="0.82"/><circle cx="56.5" cy="56.5" r="0.82"/><circle cx="59" cy="59" r="0.82"/></g></svg><canvas class="dotted-leaf-canvas" aria-hidden="true"></canvas></span><h1 class="front-hero-title">Refine your mind.</h1><p class="front-hero-line">Read, understand and edit the files other readers leave closed.</p><p class="front-downloads"><a class="leaf-md-button" href="#">Download for Windows</a> <a class="leaf-md-button" href="#">Download for macOS</a></p><p class="front-small">Free · Windows 10+ and macOS Universal</p></section><section class="front-cards"><article class="front-card"><h2 class="front-card-title">Read your files</h2><p class="front-card-lead">A Markdown page, a sitemap, a saved email, each drawn as a page to read.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article><article class="front-card"><h2 class="front-card-title">Write where you read</h2><p class="front-card-lead">A sentence typed straight into the page.</p><figure class="front-card-clip front-clip"><img class="front-clip-media" src="" alt=""></figure><p class="front-more"><a href="#">More →</a></p></article></section><section class="front-install"><p>Leaftext is free.</p></section><footer class="front-foot"><p><a href="#">Read the docs</a></p></footer></article></div></div>
+</section>
+<section class="part">
+<header><h3>Shelf</h3><code class="built">.shelf</code><span class="built">site/shelf-layout.js lays docs/08-examples/arthurian-shelf/shelf.md out as a bookshelf, site/shelf.js picks, re-sorts and filters it and paints its six tones from the page's categorical scale, and only leaftext.com draws it</span></header>
+<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine" data-tone="french" aria-pressed="true" style="width:34px;height:170px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:40px;height:200px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:170px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span></div><section class="shelf-book" data-tone="french"><div class="shelf-page"><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd></dl></div></section><section class="shelf-book is-empty"><p class="shelf-book-hint">Pick a book off the shelf to open it here.</p><p class="shelf-book-coming">Not published yet.</p></section><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
 </section>
 <section class="part">
 <header><h3>Dotted leaf</h3><code class="built">.dotted-leaf</code><span class="built">scripts/bundle-dotted-leaf.mjs makes this markup for the website and Home</span></header>

@@ -31,6 +31,7 @@ Free, on macOS and Windows.
 | If you want to… | Go to |
 | --- | --- |
 | See it beside Obsidian, Typora and Calibre | [How Leaftext compares](#how-leaftext-compares) |
+| Read the Arthurian books translated for Leaftext | [Read the Arthurian books](#read-the-arthurian-books) |
 | See what it looks like | [Read your files](#read-your-files) |
 | Read a file without leaving the terminal | [Read it at your prompt too](#read-it-at-your-prompt-too) |
 | Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
@@ -45,13 +46,17 @@ Free, on macOS and Windows.
 | Learn the whole app | [Learn it](#learn-it) |
 | Build it from source | [Development](#development) |
 
+## Read the Arthurian books
+
+Three books of the Arthur legend, newly translated for Leaftext from the Latin and the Old French, each with its original and the scans of the printed page a press away.
+
+**[*Merlin*](docs/08-examples/merlin/merlin.md) · [*The History of the Britons*](docs/08-examples/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](docs/08-examples/annales-cambriae/annales-cambriae.md)**
+
+**[How the three tell one story →](docs/08-examples/arthurian-shelf/story-map.md)**
+
 ## Read your files
 
 Markdown, web pages, data, email, Word, Excel, PowerPoint and EPUB books each open as a page you want to read.
-
-**[Read *Le Morte d'Arthur* here, with its glossary →](docs/08-examples/le-morte-darthur/le-morte-darthur.epub)**
-
-**[Read Robert de Boron's *Merlin* here, newly translated from the Old French →](docs/08-examples/merlin/merlin.md)** In US or [UK English](docs/08-examples/merlin/uk/merlin-uk.md), with the [French it was translated from](docs/08-examples/merlin/merlin-old-french.md) and the [scans of the printed book](docs/08-examples/merlin/merlin-scans.md) a press away.
 
 ### Markdown, rendered the way GitHub renders it
 

@@ -2,6 +2,8 @@
 
 Every episode of the Arthurian legend the published books tell, in the story's own order, from Britain's founding to after Camlann. A note in each book links the episode its passage belongs to, and where Malory tells the episode too, his chapters are named here and linked to the map of his books.
 
+Every book that tells the story stands on [the Arthurian shelf](shelf.md), to pick by where its story happens, when it was written or when its edition was printed.
+
 ## Before Arthur: Britain founded and the Grail brought west
 
 <a id="the-ages-of-the-world-are-counted"></a>

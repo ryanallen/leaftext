@@ -39,6 +39,7 @@
 - [Made with](https://leaftext.com/docs/08-examples/annales-cambriae/made-with.md)
 - [Glossary for The Welsh Annals](https://leaftext.com/docs/08-examples/annales-cambriae/uk/GLOSSARY.md)
 - [The Welsh Annals](https://leaftext.com/docs/08-examples/annales-cambriae/uk/annales-cambriae-uk.md)
+- [Pick a book off the shelf.](https://leaftext.com/docs/08-examples/arthurian-shelf/shelf.md)
 - [Sources of the Arthurian shelf](https://leaftext.com/docs/08-examples/arthurian-shelf/sources/README.md)
 - [The Welsh Annals](https://leaftext.com/docs/08-examples/arthurian-shelf/sources/annales-cambriae.md)
 - [The History of the Britons](https://leaftext.com/docs/08-examples/arthurian-shelf/sources/historia-brittonum.md)

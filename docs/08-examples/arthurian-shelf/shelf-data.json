@@ -1,0 +1,2778 @@
+{
+ "bays": [
+  {
+   "name": "Before Arthur: Britain founded and the Grail brought west",
+   "plate": "Before Arthur"
+  },
+  {
+   "name": "Merlin, Uther and Arthur's birth",
+   "plate": "Merlin, Uther and Arthur's birth"
+  },
+  {
+   "name": "Arthur's early reign",
+   "plate": "Arthur's early reign"
+  },
+  {
+   "name": "The knights' adventures",
+   "plate": "The knights' adventures"
+  },
+  {
+   "name": "The Roman war",
+   "plate": "The Roman war"
+  },
+  {
+   "name": "The Lancelot and Tristan years",
+   "plate": "The Lancelot and Tristan years"
+  },
+  {
+   "name": "The Grail",
+   "plate": "The Grail"
+  },
+  {
+   "name": "Arthur's end",
+   "plate": "Arthur's end"
+  },
+  {
+   "name": "After Camlann",
+   "plate": "After Camlann"
+  },
+  {
+   "name": "Beside the story",
+   "plate": "Beside the story",
+   "beside": true
+  }
+ ],
+ "books": [
+  {
+   "book": "de-excidio-britanniae",
+   "title": "On the Ruin of Britain",
+   "author": "Gildas",
+   "premise": "A sixth-century sermon on Britain's sins that tells of the Romans leaving, the Saxons coming, Ambrosius Aurelianus and the siege of Mount Badon, and names no Arthur.",
+   "tradition": "Latin chronicles",
+   "language": "Latin",
+   "code": "Lat",
+   "tone": "latin",
+   "toneName": "Latin",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 2,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the Romans leaving\" and \"the Saxons coming\" to \"the siege of Mount Badon\""
+    }
+   ],
+   "written": {
+    "from": 540,
+    "to": 547,
+    "precision": "approximate",
+    "label": "c. 540–547",
+    "evidence": "sources.tsv mommsen-1898-gildas: Gildas writes in the forty-fourth year from Badon; Mommsen, introduction pages 8–9",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "mommsen-1898-gildas",
+     "editor": "Theodor Mommsen",
+     "published": "1898",
+     "cite": "Mommsen, Theodor, ed. *Chronica minora saec. IV. V. VI. VII.* Vol. 3. With indices by Johannes Lucas. Monumenta Germaniae Historica, Auctores antiquissimi 13. Berlin: Weidmann, 1898.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1898,
+    "to": 1898
+   }
+  },
+  {
+   "book": "historia-brittonum",
+   "title": "The History of the Britons",
+   "author": "Attributed to Nennius",
+   "premise": "Britain from its first settlers through Vortigern and the coming of the Saxons to Arthur's twelve battles, the last at Mount Badon.",
+   "tradition": "Latin chronicles",
+   "language": "Latin",
+   "code": "Lat",
+   "tone": "latin",
+   "toneName": "Latin",
+   "status": "published",
+   "read": "../historia-brittonum/historia-brittonum.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 2,
+     "start_episode": "the-ages-of-the-world-are-counted",
+     "end_episode": "britains-strange-sights",
+     "from_episode": 0,
+     "to_episode": 38,
+     "basis": "text",
+     "evidence": "Published headings: from Part 1, \"The ages of the world are counted from Adam to the time of writing\", to Part 11, \"Strange things of Britain and Ireland are listed, among them Arthur's dog's footprint\", by way of Part 8, \"Arthur leads the Britons' kings in twelve battles against the Saxons\""
+    },
+    {
+     "from_part": 8,
+     "to_part": 8,
+     "start_episode": "the-english-kings-families-are-traced",
+     "end_episode": "the-britons-fight-the-english-kings",
+     "from_episode": 149,
+     "to_episode": 150,
+     "basis": "text",
+     "evidence": "Published headings: Part 9, from \"The English kings' families are traced\" to \"Urien fights Ida's heirs\""
+    }
+   ],
+   "written": {
+    "from": 829,
+    "to": 830,
+    "precision": "exact",
+    "label": "829–830",
+    "evidence": "sources.tsv mommsen-1898: chapter 16 counts its year as the fourth of King Merfyn, who began to reign in 825",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "mommsen-1898",
+     "editor": "Theodor Mommsen",
+     "published": "1898",
+     "cite": "Mommsen, Theodor, ed. *Chronica minora saec. IV. V. VI. VII.* Vol. 3. With indices by Johannes Lucas. Monumenta Germaniae Historica, Auctores antiquissimi 13. Berlin: Weidmann, 1898.",
+     "base": true
+    },
+    {
+     "edition": "stevenson-1838",
+     "editor": "Joseph Stevenson",
+     "published": "1838",
+     "cite": "Stevenson, Joseph, ed. *Nennii Historia Britonum ad fidem codicum manuscriptorum recensuit Josephus Stevenson*. London: English Historical Society, 1838.",
+     "base": false
+    }
+   ],
+   "printed": {
+    "from": 1898,
+    "to": 1898
+   }
+  },
+  {
+   "book": "geoffrey-of-monmouths-history-of-the-kings",
+   "title": "The History of the Kings of Britain",
+   "author": "Geoffrey of Monmouth",
+   "premise": "The Latin history that first tells Arthur's birth at Tintagel, his wars, his march on Rome and his last battle, from Brutus to the last British king.",
+   "tradition": "Latin chronicles",
+   "language": "Latin",
+   "code": "Lat",
+   "tone": "latin",
+   "toneName": "Latin",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Title row and ticket opening: \"from Brutus to the last British king\", through \"his last battle\""
+    }
+   ],
+   "written": {
+    "from": 1136,
+    "to": 1136,
+    "precision": "approximate",
+    "label": "about 1136",
+    "evidence": "Ticket, \"Why\": \"written about 1136\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "robert-de-borons-joseph",
+   "title": "Joseph of Arimathea",
+   "author": "Robert de Boron",
+   "premise": "Joseph keeps the cup of the Last Supper, is fed by it in prison and sends it west, followed by what survives of Robert's verse Merlin.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 0,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Joseph keeping \"the cup of the Last Supper\" to sending it west, and the 504 lines of the verse Merlin, which stop in the devils' council"
+    }
+   ],
+   "written": {
+    "from": 1190,
+    "to": 1200,
+    "precision": "approximate",
+    "label": "about 1190–1200",
+    "evidence": "Ticket, \"Why\": \"written about 1190–1200\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "merlin",
+   "title": "Merlin",
+   "author": "Robert de Boron",
+   "premise": "The devils plan a prophet of their own; Merlin is born, outwits Vortigern, serves Uther, and sets Arthur on the throne by the sword in the stone.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "published",
+   "read": "../merlin/merlin.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 1,
+     "start_episode": "the-devils-plan-a-prophet",
+     "end_episode": "arthur-is-crowned",
+     "from_episode": 4,
+     "to_episode": 36,
+     "basis": "text",
+     "evidence": "Published headings: from Part 1, \"Christ empties hell, and the devils meet to plan\", to Part 7, \"Arthur lifts the sword once more and is crowned king\""
+    }
+   ],
+   "written": {
+    "from": 1200,
+    "to": 1210,
+    "precision": "approximate",
+    "label": "c. 1200–1210",
+    "evidence": "sources.tsv paris-ulrich-1886: Robert's Joseph names his lord Gautier de Montbéliard, who left on the Fourth Crusade in 1202",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "paris-ulrich-1886",
+     "editor": "Gaston Paris and Jacob Ulrich",
+     "published": "1886",
+     "cite": "Paris, Gaston, and Jacob Ulrich, eds. *Merlin, roman en prose du XIIIe siècle, publié avec la mise en prose du poème de Merlin de Robert de Boron d'après le manuscrit appartenant à M. Alfred H. Huth*. 2 vols. Société des anciens textes français. Paris: Firmin Didot, 1886.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1886,
+    "to": 1886
+   }
+  },
+  {
+   "book": "the-estoire-del-saint-graal",
+   "title": "The History of the Holy Grail",
+   "author": "Anonymous, the Vulgate cycle",
+   "premise": "The grail passes from Joseph of Arimathea to his son Josephus and is carried to Britain, the first book of the Vulgate cycle.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 0,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from the grail passing \"from Joseph of Arimathea to his son Josephus\" to its being \"carried to Britain\""
+    }
+   ],
+   "written": {
+    "from": 1220,
+    "to": 1235,
+    "precision": "approximate",
+    "label": "about 1220–1235",
+    "evidence": "Ticket, \"Why\": \"written about 1220–1235\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "lovelichs-history-of-the-holy-grail",
+   "title": "The History of the Holy Grail",
+   "author": "Henry Lovelich",
+   "premise": "A London skinner's English verse telling of the Vulgate grail history, the grail carried from Jerusalem to Britain.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 0,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: Lovelich's verse of the Vulgate Estoire, the grail from Jerusalem to Britain"
+    }
+   ],
+   "written": {
+    "from": 1430,
+    "to": 1450,
+    "precision": "approximate",
+    "label": "about 1430–1450",
+    "evidence": "Ticket, \"Why\": \"written about 1430–1450\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-english-prose-merlin",
+   "title": "The Prose Merlin",
+   "author": "Anonymous",
+   "premise": "The fifteenth-century English prose telling of the Vulgate Merlin, from Merlin's begetting to Arthur's early wars.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 2,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"from Merlin's begetting to Arthur's early wars\""
+    }
+   ],
+   "written": {
+    "from": 1450,
+    "to": 1450,
+    "precision": "approximate",
+    "label": "about 1450",
+    "evidence": "Ticket, \"Why\": \"written about 1450\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-whole-arthurian-story",
+   "title": "The Whole Arthurian Story",
+   "author": "Ryan Allen, from every book on the shelf",
+   "premise": "Every telling on the shelf put in the story's order as one book, from Britain's founding to after Camlann, with every other telling kept.",
+   "tradition": "The whole story",
+   "language": "English",
+   "code": "En",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 0,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 0,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Title row: \"from Britain's founding to after Camlann\", every telling on the shelf in the story's order"
+    }
+   ],
+   "written": {
+    "from": null,
+    "to": null,
+    "precision": "unknown",
+    "label": "",
+    "evidence": "",
+    "unknownReason": "Assembled from every book on the shelf, written across many centuries, so it has no single date; it stands in the \"Many periods or date unknown\" lane"
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "annales-cambriae",
+   "title": "The Welsh Annals",
+   "author": "Kept in Wales, anonymous",
+   "premise": "A year-by-year record that sets down Badon, where Arthur carried the cross, and the battle of Camlann, where Arthur and Mordred fell.",
+   "tradition": "Latin chronicles",
+   "language": "Latin",
+   "code": "Lat",
+   "tone": "latin",
+   "toneName": "Latin",
+   "status": "published",
+   "read": "../annales-cambriae/annales-cambriae.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 2,
+     "start_episode": "pope-leo-changes-easter",
+     "end_episode": "arthurs-twelve-battles",
+     "from_episode": 22,
+     "to_episode": 37,
+     "basis": "text",
+     "evidence": "Published headings: from Part 1, \"Pope Leo changes the date of Easter\", to the 516 entry under Part 2, \"Arthur carries Christ's cross at Badon\""
+    },
+    {
+     "from_part": 7,
+     "to_part": 8,
+     "start_episode": "the-last-battle",
+     "end_episode": "vikings-raid-wales",
+     "from_episode": 145,
+     "to_episode": 153,
+     "basis": "text",
+     "evidence": "Published headings: from the 537 entry under Part 2, \"Arthur and Mordred fight at Camlann\", to Part 5, \"Vikings raid Wales, and the annals run on to Hywel's son Rhodri\""
+    }
+   ],
+   "written": {
+    "from": 950,
+    "to": 999,
+    "precision": "approximate",
+    "label": "second half of the tenth century",
+    "evidence": "sources.tsv phillimore-1888: Phillimore, page 144, the years written down to 977, the last event the death of Rhodri ab Hywel Dda in 954",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "phillimore-1888",
+     "editor": "Egerton Phillimore",
+     "published": "1888",
+     "cite": "Phillimore, Egerton. \"The *Annales Cambriae* and Old-Welsh Genealogies from *Harleian MS.* 3859.\" *Y Cymmrodor* 9 (1888): 141–183.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1888,
+    "to": 1888
+   }
+  },
+  {
+   "book": "waces-roman-de-brut",
+   "title": "Roman de Brut",
+   "author": "Wace",
+   "premise": "Geoffrey's history retold in French verse, the first telling to name the Round Table, made so no baron could sit above another.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 7,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket, \"What /design decides\": the Arthurian part, \"from Vortigern's coming to Arthur's passing\""
+    }
+   ],
+   "written": {
+    "from": 1155,
+    "to": 1155,
+    "precision": "exact",
+    "label": "1155",
+    "evidence": "Ticket, \"Why\": \"written 1155\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "layamons-brut",
+   "title": "Brut",
+   "author": "Layamon",
+   "premise": "The first Arthur story written in English, where elf-women bless Arthur at birth and Argante carries him to Avalon.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 7,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket, \"What /design decides\": the Arthurian part, \"for the reason Wace's ticket gives\", Vortigern's coming to Arthur carried to Avalon"
+    }
+   ],
+   "written": {
+    "from": 1190,
+    "to": 1215,
+    "precision": "approximate",
+    "label": "about 1190–1215",
+    "evidence": "Ticket, \"Why\": \"written about 1190–1215\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "of-arthour-and-of-merlin",
+   "title": "Of Arthour and of Merlin",
+   "author": "Anonymous",
+   "premise": "The English verse romance of Vortigern's tower, Merlin's birth and Arthur's first wars.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 2,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Vortigern's tower, Merlin's birth\" to \"Arthur's first wars\""
+    }
+   ],
+   "written": {
+    "from": 1250,
+    "to": 1300,
+    "precision": "approximate",
+    "label": "about 1250–1300",
+    "evidence": "Ticket, \"Why\": \"written about 1250–1300\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "lovelichs-merlin",
+   "title": "Merlin",
+   "author": "Henry Lovelich",
+   "premise": "The longest Middle English Arthurian poem, Lovelich's verse telling of the Vulgate Merlin from Merlin's birth into Arthur's wars.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 2,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Title row: from \"Merlin's birth\" into \"Arthur's wars\""
+    }
+   ],
+   "written": {
+    "from": 1430,
+    "to": 1450,
+    "precision": "approximate",
+    "label": "about 1430–1450",
+    "evidence": "Ticket, \"Why\": \"written about 1430–1450\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "hardyngs-chronicle",
+   "title": "Chronicle",
+   "author": "John Hardyng",
+   "premise": "The English verse chronicle whose Arthur chapters Malory read, telling the reign as history in rhyme royal.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 7,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"Arthur chapters\", \"telling the reign as history\", from Arthur's begetting to his fall"
+    }
+   ],
+   "written": {
+    "from": 1457,
+    "to": 1469,
+    "precision": "approximate",
+    "label": "1457, revised in the 1460s",
+    "evidence": "Ticket, \"Why\": \"written 1457, revised in the 1460s\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "malory",
+   "title": "Le Morte Darthur",
+   "author": "Thomas Malory",
+   "premise": "Malory's whole book of Arthur, resting every word on the Winchester manuscript, Caxton's 1485 printing and Wynkyn de Worde's reprints.",
+   "tradition": "Malory",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Title row: Malory's whole book, from Uther and Igraine in Book I to the deaths of Guinevere and Lancelot in Book XXI"
+    }
+   ],
+   "written": {
+    "from": 1469,
+    "to": 1470,
+    "precision": "exact",
+    "label": "1469–1470",
+    "evidence": "sources.tsv standard-ebooks-le-morte-darthur: Malory's closing words, the ninth year of Edward IV, March 1469 to March 1470",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "standard-ebooks-le-morte-darthur",
+     "editor": "Standard Ebooks",
+     "published": "",
+     "cite": "Malory, Thomas. *Le Morte d'Arthur*. Standard Ebooks. https://standardebooks.org/ebooks/thomas-malory/le-morte-darthur.",
+     "base": true
+    }
+   ],
+   "printed": null
+  },
+  {
+   "book": "the-romance-of-palamedes",
+   "title": "The Romance of Palamedes",
+   "author": "Eilert Löseth, retelling",
+   "premise": "The fathers of Tristan's generation: Guiron le Courtois, Meliadus and the knight without fear.",
+   "tradition": "French prose cycles",
+   "language": "French",
+   "code": "Fr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 1,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 1,
+     "to_part": 1,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"the fathers of Tristan's generation\", Guiron and Meliadus, whose story PLAN.md's note sets \"in Uther's time\""
+    }
+   ],
+   "written": {
+    "from": null,
+    "to": 1891,
+    "precision": "bounded",
+    "label": "by 1891",
+    "evidence": "sources.tsv loseth-1891: Löseth's retelling, first printed in 1891; the Roman de Palamède it retells, about 1235–1240 by its ticket",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "loseth-1891",
+     "editor": "Eilert Löseth",
+     "published": "1891",
+     "cite": "Löseth, E. *Le Roman en prose de Tristan, le Roman de Palamède et la compilation de Rusticien de Pise: Analyse critique d'après les manuscrits de Paris*. Bibliothèque de l'École des hautes études 82. Paris: Émile Bouillon, 1891.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1891,
+    "to": 1891
+   }
+  },
+  {
+   "book": "vita-gildae",
+   "title": "The Life of Gildas",
+   "author": "Caradoc of Llancarfan",
+   "premise": "Gildas's life as Caradoc told it six hundred years later, where Arthur kills Gildas's brother Hueil and besieges Glastonbury to win back the abducted Guinevere.",
+   "tradition": "Latin chronicles",
+   "language": "Latin",
+   "code": "Lat",
+   "tone": "latin",
+   "toneName": "Latin",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 2,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 2,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Arthur kills Gildas's brother\" to Arthur besieging \"Glastonbury for Guinevere\", abducted when she is already queen"
+    }
+   ],
+   "written": {
+    "from": 1100,
+    "to": 1165,
+    "precision": "approximate",
+    "label": "twelfth century, before 1166",
+    "evidence": "sources.tsv mommsen-1898-vita-gildae: Mommsen, introduction pages 3–4, dates it to the twelfth century",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "mommsen-1898-vita-gildae",
+     "editor": "Theodor Mommsen",
+     "published": "1898",
+     "cite": "Mommsen, Theodor, ed. *Chronica minora saec. IV. V. VI. VII.* Vol. 3. With indices by Johannes Lucas. Monumenta Germaniae Historica, Auctores antiquissimi 13. Berlin: Weidmann, 1898.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1898,
+    "to": 1898
+   }
+  },
+  {
+   "book": "the-prose-lancelot",
+   "title": "The Prose Lancelot",
+   "author": "Anonymous, the Vulgate cycle",
+   "premise": "Lancelot's youth, his love for the queen, Elaine and his madness.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 2,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 2,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Lancelot's youth\", taken by the Lady of the Lake when his father Ban dies, to \"Elaine and his madness\""
+    }
+   ],
+   "written": {
+    "from": 1215,
+    "to": 1230,
+    "precision": "approximate",
+    "label": "c. 1215–1230",
+    "evidence": "sources.tsv sommer-1910-lancelot-1: its place in the Vulgate cycle before the Queste and the Mort Artu",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "sommer-1910-lancelot-1",
+     "editor": "H. Oskar Sommer",
+     "published": "1910",
+     "cite": "Sommer, H. Oskar, ed. *The Vulgate Version of the Arthurian Romances*. Vol. 3, *Le Livre de Lancelot del Lac, Part I*. Carnegie Institution of Washington Publication 74. Washington, DC: Carnegie Institution of Washington, 1910.",
+     "base": true
+    },
+    {
+     "edition": "sommer-1911-lancelot-2",
+     "editor": "H. Oskar Sommer",
+     "published": "1911",
+     "cite": "Sommer, H. Oskar, ed. *The Vulgate Version of the Arthurian Romances*. Vol. 4, *Le Livre de Lancelot del Lac, Part II*. Carnegie Institution of Washington Publication 74. Washington, DC: Carnegie Institution of Washington, 1911.",
+     "base": true
+    },
+    {
+     "edition": "sommer-1912-lancelot-3",
+     "editor": "H. Oskar Sommer",
+     "published": "1912",
+     "cite": "Sommer, H. Oskar, ed. *The Vulgate Version of the Arthurian Romances*. Vol. 5, *Le Livre de Lancelot del Lac, Part III*. Carnegie Institution of Washington Publication 74. Washington, DC: Carnegie Institution of Washington, 1912.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1910,
+    "to": 1912
+   }
+  },
+  {
+   "book": "the-vulgate-suite-du-merlin",
+   "title": "The Vulgate Suite du Merlin",
+   "author": "Anonymous, the Vulgate cycle",
+   "premise": "Arthur fights the rebel kings and the Saxons, and Merlin loves Viviane.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 2,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 2,
+     "to_part": 2,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Arthur fights the rebel kings and the Saxons\" to \"Merlin loves Viviane\""
+    }
+   ],
+   "written": {
+    "from": 1230,
+    "to": 1235,
+    "precision": "approximate",
+    "label": "about 1230–1235",
+    "evidence": "Ticket, \"Why\": \"written about 1230–1235\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-suite-du-merlin",
+   "title": "The Suite du Merlin",
+   "author": "Anonymous",
+   "premise": "After Arthur is crowned: Balin and the Dolorous Stroke, the Lady of the Lake, and the end of Merlin.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 2,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 2,
+     "to_part": 2,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Arthur's coronation into \"Arthur's early reign, Balin, the Lady of the Lake and the end of Merlin\""
+    }
+   ],
+   "written": {
+    "from": null,
+    "to": null,
+    "precision": "unknown",
+    "label": "",
+    "evidence": "",
+    "unknownReason": "Its ticket gives no composition date; its build dates it from a scholarly account when it adds its own source row for Paris and Ulrich's volumes, as each Gildas book has its own row of one Mommsen volume"
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "culhwch-and-olwen",
+   "title": "Culhwch and Olwen",
+   "author": "Anonymous",
+   "premise": "Culhwch asks Arthur's help to win the giant's daughter Olwen, and Arthur's men hunt the boar Twrch Trwyth across Wales and Cornwall.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Culhwch asking \"Arthur's help to win Olwen\" to the hunt of \"the boar Twrch Trwyth across Wales and Cornwall\", a quest from Arthur's court"
+    }
+   ],
+   "written": {
+    "from": 1100,
+    "to": 1100,
+    "precision": "approximate",
+    "label": "about 1100",
+    "evidence": "Ticket, \"Why\": \"written about 1100\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "geraint",
+   "title": "Geraint son of Erbin",
+   "author": "Anonymous",
+   "premise": "The Welsh telling of Geraint and Enid, the story Chrétien tells as Erec and Enide.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: the Welsh telling of Geraint and Enid, \"the story Chrétien tells as Erec and Enide\""
+    }
+   ],
+   "written": {
+    "from": 1100,
+    "to": 1299,
+    "precision": "approximate",
+    "label": "1100s–1200s",
+    "evidence": "Ticket, \"Why\": \"written 1100s–1200s\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "owain",
+   "title": "Owain, or the Lady of the Fountain",
+   "author": "Anonymous",
+   "premise": "The Welsh telling of the fountain, the widow and the lion that Chrétien tells as Yvain.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: the Welsh telling \"of the fountain, the widow and the lion\""
+    }
+   ],
+   "written": {
+    "from": 1100,
+    "to": 1299,
+    "precision": "approximate",
+    "label": "1100s–1200s",
+    "evidence": "Ticket, \"Why\": \"written 1100s–1200s\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "renaut-de-beaujeus-le-bel-inconnu",
+   "title": "The Fair Unknown",
+   "author": "Renaut de Beaujeu",
+   "premise": "Gawain's unknown son rides out from Arthur's court, breaks the enchantment of the Fearful Kiss and learns his name, Guinglain.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from riding \"out from Arthur's court\" to breaking \"the Fearful Kiss\" and learning \"his name, Guinglain\""
+    }
+   ],
+   "written": {
+    "from": 1150,
+    "to": 1199,
+    "precision": "approximate",
+    "label": "late twelfth century",
+    "evidence": "Ticket, \"What was measured\": \"Late twelfth century\", from the owner's table and the CNRS work record",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "marie-de-frances-arthurian-lays",
+   "title": "Lanval and Chevrefoil",
+   "author": "Marie de France",
+   "premise": "Two short verse tales: Lanval, the knight Guinevere slanders and his fairy lady saves, and Tristan's message to Iseult on a hazel branch.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: Lanval, from \"the knight Guinevere slanders\" to \"his fairy lady saves\""
+    },
+    {
+     "from_part": 5,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: Chevrefoil, \"Tristan's message to Iseult on a hazel branch\""
+    }
+   ],
+   "written": {
+    "from": 1160,
+    "to": 1180,
+    "precision": "approximate",
+    "label": "about 1160–1180",
+    "evidence": "Ticket, \"Why\": \"written about 1160–1180\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "chretiens-erec-and-enide",
+   "title": "Erec and Enide",
+   "author": "Chrétien de Troyes",
+   "premise": "The first Arthurian romance: Erec wins Enide at the sparrowhawk contest, loses himself in married ease and wins back his name on the road with her.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Erec winning Enide \"at the sparrowhawk contest\" to winning \"back his name on the road with her\""
+    }
+   ],
+   "written": {
+    "from": 1170,
+    "to": 1170,
+    "precision": "approximate",
+    "label": "about 1170",
+    "evidence": "Ticket, \"Why\": \"written about 1170\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "chretiens-cliges",
+   "title": "Cligès",
+   "author": "Chrétien de Troyes",
+   "premise": "Alexander and Soredamors at Arthur's court, then their son Cligès and Fenice, who feigns death to escape a marriage.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Alexander and Soredamors at Arthur's court\" to \"Cligès and Fenice, who feigns death\""
+    }
+   ],
+   "written": {
+    "from": 1176,
+    "to": 1176,
+    "precision": "approximate",
+    "label": "about 1176",
+    "evidence": "Ticket, \"Why\": \"written about 1176\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "chretiens-yvain",
+   "title": "Yvain, the Knight of the Lion",
+   "author": "Chrétien de Troyes",
+   "premise": "The storm-making fountain, the widow Yvain marries, the year he forgets, and the lion that follows him.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the storm-making fountain\" to \"the lion that follows him\""
+    }
+   ],
+   "written": {
+    "from": 1177,
+    "to": 1181,
+    "precision": "approximate",
+    "label": "about 1177–1181",
+    "evidence": "Ticket, \"Why\": \"written about 1177–1181\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "hartmanns-erec",
+   "title": "Erec",
+   "author": "Hartmann von Aue",
+   "premise": "The first Arthurian romance in German, Hartmann's telling of Erec and Enide.",
+   "tradition": "German",
+   "language": "Middle High German",
+   "code": "MHG",
+   "tone": "german",
+   "toneName": "German",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: the German telling of Erec and Enide, the same story from the sparrowhawk to the road"
+    }
+   ],
+   "written": {
+    "from": 1180,
+    "to": 1190,
+    "precision": "approximate",
+    "label": "about 1180–1190",
+    "evidence": "Ticket, \"Why\": \"written about 1180–1190\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "ulrichs-lanzelet",
+   "title": "Lanzelet",
+   "author": "Ulrich von Zatzikhoven",
+   "premise": "The German Lancelot, raised by a water fairy, who wins wife after wife and never loves Guinevere.",
+   "tradition": "German",
+   "language": "Middle High German",
+   "code": "MHG",
+   "tone": "german",
+   "toneName": "German",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Lanzelet \"raised by a water fairy\" to winning \"wife after wife\""
+    }
+   ],
+   "written": {
+    "from": 1194,
+    "to": null,
+    "precision": "bounded",
+    "label": "soon after 1194",
+    "evidence": "Ticket, \"Why\": \"written soon after 1194\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "hartmanns-iwein",
+   "title": "Iwein",
+   "author": "Hartmann von Aue",
+   "premise": "The German telling of Yvain, the fountain and the lion.",
+   "tradition": "German",
+   "language": "Middle High German",
+   "code": "MHG",
+   "tone": "german",
+   "toneName": "German",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: the German Yvain, from the fountain to the lion"
+    }
+   ],
+   "written": {
+    "from": 1200,
+    "to": 1200,
+    "precision": "approximate",
+    "label": "about 1200",
+    "evidence": "Ticket, \"Why\": \"written about 1200\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "heinrichs-diu-crone",
+   "title": "The Crown",
+   "author": "Heinrich von dem Türlin",
+   "premise": "The long German romance in which Gawain, not Perceval, wins the grail.",
+   "tradition": "German",
+   "language": "Middle High German",
+   "code": "MHG",
+   "tone": "german",
+   "toneName": "German",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"the long German romance\" of Gawain's adventures, ending where \"Gawain, not Perceval, wins the Grail\""
+    }
+   ],
+   "written": {
+    "from": 1230,
+    "to": 1230,
+    "precision": "approximate",
+    "label": "about 1230",
+    "evidence": "Ticket, \"Why\": \"written about 1230\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-prophecies-of-merlin",
+   "title": "The Prophecies of Merlin",
+   "author": "Anonymous",
+   "premise": "Merlin's prophecies spoken from his tomb, with tales of Arthur's court between them.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: prophecies \"spoken from his tomb\", so after Merlin is shut away, \"with tales of Arthur's court between them\""
+    }
+   ],
+   "written": {
+    "from": 1272,
+    "to": 1279,
+    "precision": "approximate",
+    "label": "about 1272–1279",
+    "evidence": "Ticket, \"Why\": \"written about 1272–1279\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "ywain-and-gawain",
+   "title": "Ywain and Gawain",
+   "author": "Anonymous",
+   "premise": "The only English romance made straight from one of Chrétien's, his Yvain told in English verse.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: the English telling of Chrétien's Yvain, from the fountain to the lion"
+    }
+   ],
+   "written": {
+    "from": 1325,
+    "to": 1350,
+    "precision": "approximate",
+    "label": "about 1325–1350",
+    "evidence": "Ticket, \"Why\": \"written about 1325–1350\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "sir-launfal",
+   "title": "Sir Launfal",
+   "author": "Thomas Chestre",
+   "premise": "The poor knight Launfal and the fairy lady who rides into court to clear him.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the poor knight\" to \"the fairy lady who rides into court to clear him\""
+    }
+   ],
+   "written": {
+    "from": 1350,
+    "to": 1399,
+    "precision": "approximate",
+    "label": "late 1300s",
+    "evidence": "Ticket, \"Why\": \"written late 1300s\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "sir-gawain-and-the-green-knight",
+   "title": "Sir Gawain and the Green Knight",
+   "author": "Anonymous",
+   "premise": "The Green Knight's beheading game at Christmas, the year's wait and the three temptations at Hautdesert.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the Green Knight's beheading game\" to \"the three temptations at Hautdesert\""
+    }
+   ],
+   "written": {
+    "from": 1375,
+    "to": 1400,
+    "precision": "approximate",
+    "label": "about 1375–1400",
+    "evidence": "Ticket, \"Why\": \"written about 1375–1400\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-avowing-of-arthur",
+   "title": "The Avowing of Arthur",
+   "author": "Anonymous",
+   "premise": "Arthur, Gawain, Kay and Baldwin each make a vow on a night of hunting, and Arthur vows to kill a boar alone.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from the four vows \"on a night of hunting\" to Arthur's boar"
+    }
+   ],
+   "written": {
+    "from": 1400,
+    "to": 1400,
+    "precision": "approximate",
+    "label": "about 1400",
+    "evidence": "Ticket, \"Why\": \"written about 1400\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-awntyrs-off-arthure",
+   "title": "The Awntyrs off Arthure",
+   "author": "Anonymous",
+   "premise": "The ghost of Guinevere's mother rises from the Tarn Wadling to warn her, and Gawain fights Galeron.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from the ghost rising \"from the Tarn Wadling\" to \"Gawain fights Galeron\""
+    }
+   ],
+   "written": {
+    "from": 1400,
+    "to": 1430,
+    "precision": "approximate",
+    "label": "about 1400–1430",
+    "evidence": "Ticket, \"Why\": \"written about 1400–1430\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-wedding-of-sir-gawain-and-dame-ragnelle",
+   "title": "The Wedding of Sir Gawain and Dame Ragnelle",
+   "author": "Anonymous",
+   "premise": "Arthur must learn what women most desire, and Gawain marries the loathly lady who knows.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Arthur needing to learn \"what women most desire\" to Gawain marrying \"the loathly lady\""
+    }
+   ],
+   "written": {
+    "from": 1450,
+    "to": 1450,
+    "precision": "approximate",
+    "label": "about 1450",
+    "evidence": "Ticket, \"Why\": \"written about 1450\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "golagros-and-gawane",
+   "title": "Golagros and Gawane",
+   "author": "Anonymous",
+   "premise": "Arthur's journey and Gawain's single combat with Golagros, who will not do homage.",
+   "tradition": "English",
+   "language": "Middle Scots",
+   "code": "MSc",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 3,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 3,
+     "to_part": 3,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Arthur's journey\" to \"Gawain's single combat with Golagros\""
+    }
+   ],
+   "written": {
+    "from": 1475,
+    "to": 1500,
+    "precision": "approximate",
+    "label": "about 1475–1500",
+    "evidence": "Ticket, \"Why\": \"written about 1475–1500, printed 1508\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-alliterative-morte-arthure",
+   "title": "The Alliterative Morte Arthure",
+   "author": "Anonymous",
+   "premise": "Arthur defies Rome and conquers his way toward it, then turns home to meet Mordred and his fall.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 4,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 4,
+     "to_part": 7,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"Arthur's war against Rome and his fall\", the poem of Malory's Book V"
+    }
+   ],
+   "written": {
+    "from": 1400,
+    "to": 1400,
+    "precision": "approximate",
+    "label": "c. 1400",
+    "evidence": "sources.tsv brock-1871: the poem's language and its echoes of the wars of the later fourteenth century",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "brock-1871",
+     "editor": "Edmund Brock",
+     "published": "1871",
+     "cite": "Brock, Edmund, ed. *Morte Arthure, or The Death of Arthur*. New ed. Early English Text Society, Original Series 8. London: Trübner, 1871.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1871,
+    "to": 1871
+   }
+  },
+  {
+   "book": "peredur",
+   "title": "Peredur son of Efrog",
+   "author": "Anonymous",
+   "premise": "The Welsh telling of the forest boy who comes to Arthur's court, where a head on a platter is carried in place of the grail.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the forest boy who comes to Arthur's court\" to \"a head on a platter\" where the grail is"
+    }
+   ],
+   "written": {
+    "from": 1100,
+    "to": 1299,
+    "precision": "approximate",
+    "label": "1100s–1200s",
+    "evidence": "Ticket, \"Why\": \"written 1100s–1200s\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "thomass-tristan",
+   "title": "Tristan",
+   "author": "Thomas of Britain",
+   "premise": "The courtly verse Tristan that survives in fragments, ending with the white and the black sail and the lovers' deaths.",
+   "tradition": "The Tristan poems",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: the fragments, ending on \"the white and the black sail and the lovers' deaths\""
+    }
+   ],
+   "written": {
+    "from": 1160,
+    "to": 1175,
+    "precision": "approximate",
+    "label": "about 1160–1175",
+    "evidence": "Ticket, \"Why\": \"written about 1160–1175\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "berouls-tristan",
+   "title": "Tristan",
+   "author": "Béroul",
+   "premise": "The rougher verse Tristan, with Mark hidden in the tree over the lovers' meeting and their years in the forest of Morrois.",
+   "tradition": "The Tristan poems",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Mark hidden in the tree over the lovers' meeting\" to \"their years in the forest of Morrois\""
+    }
+   ],
+   "written": {
+    "from": 1170,
+    "to": 1190,
+    "precision": "approximate",
+    "label": "about 1170–1190",
+    "evidence": "Ticket, \"Why\": \"written about 1170–1190\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "chretiens-perceval",
+   "title": "Perceval, the Story of the Grail",
+   "author": "Chrétien de Troyes",
+   "premise": "The first grail story: a boy raised in the forest comes to Arthur's court, sees the grail at the Fisher King's castle and fails to ask about it.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"a boy raised in the forest comes to Arthur's court\", the story map's percival-is-knighted, to the grail at \"the Fisher King's castle\""
+    }
+   ],
+   "written": {
+    "from": 1181,
+    "to": 1190,
+    "precision": "approximate",
+    "label": "about 1181–1190",
+    "evidence": "Ticket, \"Why\": \"written about 1181–1190\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "wolframs-parzival",
+   "title": "Parzival",
+   "author": "Wolfram von Eschenbach",
+   "premise": "The German grail romance, where the grail is a stone and Parzival fails to ask at Munsalvaesche.",
+   "tradition": "German",
+   "language": "Middle High German",
+   "code": "MHG",
+   "tone": "german",
+   "toneName": "German",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Parzival coming to court to failing \"to ask at Munsalvaesche\" and the grail won"
+    }
+   ],
+   "written": {
+    "from": 1200,
+    "to": 1210,
+    "precision": "approximate",
+    "label": "about 1200–1210",
+    "evidence": "Ticket, \"Why\": \"written about 1200–1210\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "gottfrieds-tristan",
+   "title": "Tristan",
+   "author": "Gottfried von Strassburg",
+   "premise": "The German Tristan, following Thomas, unfinished at the lovers' parting.",
+   "tradition": "The Tristan poems",
+   "language": "Middle High German",
+   "code": "MHG",
+   "tone": "german",
+   "toneName": "German",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: Tristan following Thomas, \"unfinished at the lovers' parting\""
+    }
+   ],
+   "written": {
+    "from": 1210,
+    "to": 1210,
+    "precision": "approximate",
+    "label": "about 1210",
+    "evidence": "Ticket, \"Why\": \"written about 1210\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-medieval-prose-tristan",
+   "title": "The Prose Tristan",
+   "author": "Anonymous",
+   "premise": "The thirteenth-century romance behind Malory's Tristram books, from the manuscript itself.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"section by section along Löseth's numbering\", the same reach as Löseth's sections 1 to 619"
+    }
+   ],
+   "written": {
+    "from": 1215,
+    "to": 1235,
+    "precision": "approximate",
+    "label": "about 1215–1235",
+    "evidence": "Ticket, \"Why\": \"written about 1215–1235\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "sir-percyvell-of-gales",
+   "title": "Sir Percyvell of Gales",
+   "author": "Anonymous",
+   "premise": "The English Perceval with no grail at all: the boy from the woods rides to court on a mare and wins a kingdom.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the boy from the woods riding to court on a mare\" to \"winning a kingdom\", with \"no grail at all\""
+    }
+   ],
+   "written": {
+    "from": 1300,
+    "to": 1340,
+    "precision": "approximate",
+    "label": "about 1300–1340",
+    "evidence": "Ticket, \"Why\": \"written about 1300–1340\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "sir-tristrem",
+   "title": "Sir Tristrem",
+   "author": "Anonymous",
+   "premise": "The English Tristan in short eleven-line stanzas: the love potion drunk at sea and the lovers' exile.",
+   "tradition": "The Tristan poems",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 5,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the love potion drunk at sea\" to \"the lovers' exile\""
+    }
+   ],
+   "written": {
+    "from": 1300,
+    "to": 1300,
+    "precision": "approximate",
+    "label": "about 1300",
+    "evidence": "Ticket, \"Why\": \"written about 1300\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "loseths-prose-tristan",
+   "title": "The Prose Tristan, as Löseth Tells It",
+   "author": "Eilert Löseth",
+   "premise": "The prose Tristan as the Paris manuscripts tell it, section by numbered section, in Löseth's retelling.",
+   "tradition": "French prose cycles",
+   "language": "French",
+   "code": "Fr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 5,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 5,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening and measured table: Löseth's \"sections 1 to 619\", from Tristan's ancestors and birth to his death in the time of the Grail quest"
+    }
+   ],
+   "written": {
+    "from": null,
+    "to": 1891,
+    "precision": "bounded",
+    "label": "by 1891",
+    "evidence": "sources.tsv loseth-1891: the analysis is Löseth's own, first printed in 1891; the prose Tristan it retells was composed about 1230–1240",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "loseth-1891",
+     "editor": "Eilert Löseth",
+     "published": "1891",
+     "cite": "Löseth, E. *Le Roman en prose de Tristan, le Roman de Palamède et la compilation de Rusticien de Pise: Analyse critique d'après les manuscrits de Paris*. Bibliothèque de l'École des hautes études 82. Paris: Émile Bouillon, 1891.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1891,
+    "to": 1891
+   }
+  },
+  {
+   "book": "the-first-perceval-continuation",
+   "title": "The First Continuation",
+   "author": "Anonymous",
+   "premise": "The first sequel to Chrétien's Perceval, following Gawain to the grail castle, with the tale of Caradoc and the serpent.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Gawain riding \"to the grail castle\" to \"the tale of Caradoc and the serpent\""
+    }
+   ],
+   "written": {
+    "from": 1190,
+    "to": 1200,
+    "precision": "approximate",
+    "label": "about 1190–1200",
+    "evidence": "Ticket, \"Why\": \"written about 1190–1200\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "perlesvaus",
+   "title": "Perlesvaus, the High Book of the Grail",
+   "author": "Anonymous",
+   "premise": "The darker grail quest of Perlesvaus, Gawain and Lancelot, with the Waste City and its beheading game.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"the darker grail quest of Perlesvaus, Gawain and Lancelot\", from the quest to \"the Waste City and its beheading game\""
+    }
+   ],
+   "written": {
+    "from": 1200,
+    "to": 1210,
+    "precision": "approximate",
+    "label": "about 1200–1210",
+    "evidence": "Ticket, \"Why\": \"written about 1200–1210\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-didot-perceval",
+   "title": "The Didot Perceval",
+   "author": "Anonymous",
+   "premise": "The end of Robert de Boron's trilogy: Perceval sits in the Perilous Seat, heals the Fisher King, and Arthur goes to his end.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 7,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Perceval sitting \"in the Perilous Seat\" and healing \"the Fisher King\" to \"Arthur goes to his end\""
+    }
+   ],
+   "written": {
+    "from": 1200,
+    "to": 1240,
+    "precision": "approximate",
+    "label": "early thirteenth century",
+    "evidence": "Ticket, \"What was measured\": \"Early thirteenth century\", from the owner's table",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-second-perceval-continuation",
+   "title": "The Second Continuation",
+   "author": "Anonymous",
+   "premise": "The second sequel, which brings Perceval back to the grail castle and the broken sword.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: Perceval brought \"back to the grail castle and the broken sword\""
+    }
+   ],
+   "written": {
+    "from": 1200,
+    "to": 1210,
+    "precision": "approximate",
+    "label": "about 1200–1210",
+    "evidence": "Ticket, \"Why\": \"written about 1200–1210\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "manessiers-perceval-continuation",
+   "title": "Manessier's Continuation",
+   "author": "Manessier",
+   "premise": "The sequel that finishes the grail quest: Perceval mends the sword, avenges the Fisher King and takes his throne.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Perceval mending the sword\" to \"avenging the Fisher King and taking his throne\""
+    }
+   ],
+   "written": {
+    "from": 1214,
+    "to": 1227,
+    "precision": "approximate",
+    "label": "about 1214–1227",
+    "evidence": "Ticket, \"Why\": \"written about 1214–1227\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-queste-del-saint-graal",
+   "title": "The Quest of the Holy Grail",
+   "author": "Anonymous, the Vulgate cycle",
+   "premise": "Galahad, the Siege Perilous and the quest for the grail.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"Galahad, the Siege Perilous\" to the end of \"the quest for the Grail\", Sommer volume six, pages 1 to 199"
+    }
+   ],
+   "written": {
+    "from": 1225,
+    "to": 1230,
+    "precision": "approximate",
+    "label": "c. 1225–1230",
+    "evidence": "sources.tsv sommer-1913-queste: it follows the prose Lancelot and is followed by the Mort Artu, which opens by naming it",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "sommer-1913-queste",
+     "editor": "H. Oskar Sommer",
+     "published": "1913",
+     "cite": "Sommer, H. Oskar, ed. *The Vulgate Version of the Arthurian Romances*. Vol. 6, *Les Aventures ou la Queste del Saint Graal; La Mort le Roi Artus*. Carnegie Institution of Washington Publication 74. Washington, DC: Carnegie Institution of Washington, 1913.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1913,
+    "to": 1913
+   }
+  },
+  {
+   "book": "gerberts-perceval-continuation",
+   "title": "Gerbert's Continuation",
+   "author": "Gerbert de Montreuil",
+   "premise": "The sequel set between the second and Manessier's, with Perceval's marriage to Blancheflor and a Tristan episode.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 6,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: \"between the second and Manessier's\", from \"Perceval's marriage to Blancheflor\" to \"a Tristan episode\""
+    }
+   ],
+   "written": {
+    "from": 1226,
+    "to": 1230,
+    "precision": "approximate",
+    "label": "about 1226–1230",
+    "evidence": "Ticket, \"Why\": \"written about 1226–1230\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-demanda-do-santo-graal",
+   "title": "The Quest of the Holy Grail, the Later Cycle",
+   "author": "Anonymous",
+   "premise": "The ending of the later French grail cycle, kept only in Portuguese and Spanish, with Mark's attack on Camelot after Arthur's death.",
+   "tradition": "Iberian",
+   "language": "Old Portuguese",
+   "code": "OPt",
+   "tone": "other",
+   "toneName": "Iberian and Norse",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 6,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 6,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from the grail quest of the later cycle to \"Mark's attack on Camelot after Arthur's death\""
+    }
+   ],
+   "written": {
+    "from": 1230,
+    "to": 1240,
+    "precision": "approximate",
+    "label": "about 1230–1240",
+    "evidence": "Ticket, \"Why\": \"written about 1230–1240\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "geoffrey-of-monmouths-life-of-merlin",
+   "title": "The Life of Merlin",
+   "author": "Geoffrey of Monmouth",
+   "premise": "Merlin goes mad after a battle and lives wild in the forest, and Taliesin tells how the wounded Arthur was taken to Morgen on the Isle of Apples.",
+   "tradition": "Latin chronicles",
+   "language": "Latin",
+   "code": "Lat",
+   "tone": "latin",
+   "toneName": "Latin",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 7,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 7,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Taliesin telling how \"the wounded Arthur was taken after Camlann to Morgen\" to Merlin gone mad \"after a battle\", the story map's Arfderydd"
+    }
+   ],
+   "written": {
+    "from": 1150,
+    "to": 1150,
+    "precision": "approximate",
+    "label": "about 1150",
+    "evidence": "Ticket, \"Why\": \"this Life (about 1150)\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "chretiens-lancelot",
+   "title": "Lancelot, the Knight of the Cart",
+   "author": "Chrétien de Troyes",
+   "premise": "The first telling of Lancelot and Guinevere's love: Lancelot climbs into the cart of shame and crosses the sword bridge to free her.",
+   "tradition": "French verse",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 7,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 7,
+     "to_part": 7,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from Lancelot climbing \"into the cart of shame\" to crossing \"the sword bridge to free her\", the story map's the-knight-of-the-cart"
+    }
+   ],
+   "written": {
+    "from": 1177,
+    "to": 1181,
+    "precision": "approximate",
+    "label": "about 1177–1181",
+    "evidence": "Ticket, \"Why\": \"written about 1177–1181\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "la-mort-artu",
+   "title": "The Death of King Arthur",
+   "author": "Anonymous, the Vulgate cycle",
+   "premise": "The fall of the Round Table, the war with Lancelot and the last battle at Salisbury.",
+   "tradition": "French prose cycles",
+   "language": "Old French",
+   "code": "OFr",
+   "tone": "french",
+   "toneName": "French",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 7,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 7,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: Sommer volume six, pages 201 to 391, from \"the fall of the Round Table\" through \"the last battle at Salisbury\" to Lancelot's death after it"
+    }
+   ],
+   "written": {
+    "from": 1230,
+    "to": 1235,
+    "precision": "approximate",
+    "label": "c. 1230–1235",
+    "evidence": "sources.tsv sommer-1913-mort-artu: it opens by naming the Queste as Walter Map's; the latest of the cycle's three romances",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "sommer-1913-mort-artu",
+     "editor": "H. Oskar Sommer",
+     "published": "1913",
+     "cite": "Sommer, H. Oskar, ed. *The Vulgate Version of the Arthurian Romances*. Vol. 6, *Les Aventures ou la Queste del Saint Graal; La Mort le Roi Artus*. Carnegie Institution of Washington Publication 74. Washington, DC: Carnegie Institution of Washington, 1913.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1913,
+    "to": 1913
+   }
+  },
+  {
+   "book": "the-stanzaic-morte-arthur",
+   "title": "The Stanzaic Morte Arthur",
+   "author": "Anonymous",
+   "premise": "The Maid of Astolat, the war with Gawain and the last battle, the English poem Malory set beside the French.",
+   "tradition": "English",
+   "language": "Middle English",
+   "code": "ME",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 7,
+   "beside": false,
+   "outsideReason": "",
+   "segments": [
+    {
+     "from_part": 7,
+     "to_part": 8,
+     "start_episode": null,
+     "end_episode": null,
+     "from_episode": null,
+     "to_episode": null,
+     "basis": "outline",
+     "evidence": "Ticket opening: from \"the Maid of Astolat\" through \"the last battle\" to the lovers' deaths that end Malory's Book XXI"
+    }
+   ],
+   "written": {
+    "from": 1350,
+    "to": 1400,
+    "precision": "approximate",
+    "label": "c. 1350–1400",
+    "evidence": "sources.tsv furnivall-1864: the poem's dialect and eight-line stanza, which scholars place in the later fourteenth century",
+    "unknownReason": ""
+   },
+   "editions": [
+    {
+     "edition": "furnivall-1864",
+     "editor": "F. J. Furnivall",
+     "published": "1864",
+     "cite": "Furnivall, F. J., ed. *Le Morte Arthur: Edited from the Harleian MS. 2252, in the British Museum*. With a prefatory essay on Arthur by Herbert Coleridge. London: Macmillan, 1864.",
+     "base": true
+    }
+   ],
+   "printed": {
+    "from": 1864,
+    "to": 1864
+   }
+  },
+  {
+   "book": "the-oldest-welsh-arthur-poems",
+   "title": "The Oldest Welsh Arthur Poems",
+   "author": "Anonymous",
+   "premise": "The Gododdin warrior who \"was no Arthur\", and The Spoils of Annwn, where Arthur sails to the otherworld for a cauldron and seven come back.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 9,
+   "beside": true,
+   "outsideReason": "Two poems with no place in the story's time: a stanza praising a warrior \"though he was no Arthur\", and Arthur's voyage to the otherworld for a cauldron, as the ticket's opening says",
+   "segments": [],
+   "written": {
+    "from": 600,
+    "to": 1199,
+    "precision": "approximate",
+    "label": "perhaps 600s for Y Gododdin, and the 800s to the 1100s for The Spoils of Annwn",
+    "evidence": "Ticket, \"Why\": \"written perhaps 600s for Y Gododdin, and the 800s to the 1100s for The Spoils of Annwn\"",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-welsh-triads",
+   "title": "The Welsh Triads",
+   "author": "Anonymous",
+   "premise": "The lists of three in which the Welsh kept the names of Arthur's world: three great queens, three faithless war-bands, three unrestrained ravagers.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 9,
+   "beside": true,
+   "outsideReason": "Lists of three that name the people of Arthur's world without telling a story in time, as the ticket's opening says",
+   "segments": [],
+   "written": {
+    "from": null,
+    "to": 1299,
+    "precision": "bounded",
+    "label": "copied in the 1200s, from older matter",
+    "evidence": "Ticket, \"Why\": \"copied in the 1200s, from older matter\", so written by then",
+    "unknownReason": ""
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "arthur-returns",
+   "title": "Merlin in the Machine",
+   "author": "Ryan Allen",
+   "premise": "A new novel: the owners copy Merlin into the intelligence inside everything, and the real Merlin helps Perceval and Blanchefleur free his copy.",
+   "tradition": "New writing",
+   "language": "English",
+   "code": "En",
+   "tone": "english",
+   "toneName": "English and Scots",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 9,
+   "beside": true,
+   "outsideReason": "A new novel set in a future long after the legend, where \"Arthur remains the remembered king Merlin once advised\", as the ticket's opening says; it tells no part of the story's own time",
+   "segments": [],
+   "written": {
+    "from": null,
+    "to": null,
+    "precision": "unknown",
+    "label": "",
+    "evidence": "",
+    "unknownReason": "A new novel not yet written; it is dated when it is finished"
+   },
+   "editions": [],
+   "printed": null
+  },
+  {
+   "book": "the-dream-of-rhonabwy",
+   "title": "The Dream of Rhonabwy",
+   "author": "Anonymous",
+   "premise": "A twelfth-century Welshman dreams of Arthur playing gwyddbwyll with Owain while their armies fight.",
+   "tradition": "Welsh",
+   "language": "Middle Welsh",
+   "code": "MW",
+   "tone": "welsh",
+   "toneName": "Welsh",
+   "status": "planned",
+   "read": "story-map.md",
+   "bay": 9,
+   "beside": true,
+   "outsideReason": "A twelfth-century Welshman's dream: its frame is Madog's Powys, centuries after Arthur, and its notes say \"where it touches the story\", as the ticket's opening says",
+   "segments": [],
+   "written": {
+    "from": null,
+    "to": null,
+    "precision": "unknown",
+    "label": "",
+    "evidence": "",
+    "unknownReason": "Its ticket dates the dreamer, a twelfth-century Welshman, and not the writing; its build dates the tale from a scholarly account"
+   },
+   "editions": [],
+   "printed": null
+  }
+ ]
+}
