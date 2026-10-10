@@ -8828,7 +8828,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   margin-top: var(--source-pair-gap);
 }
 .library-shell.library-closed .reader-shell,
-.library-shell.library-closed .reader-loading {
+.library-shell.library-closed .reader-loading,
+.library-shell.library-closed .console-layer {
   /* No rail to sit against, so the card is held off the left frame too. */
   margin-left: var(--reader-gutter);
 }
@@ -19622,7 +19623,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="library-foot" style="position:relative;height:66px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Themes"><span class="lt-icon lt-icon-theme"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Scheduled tasks"><span class="lt-icon lt-icon-check-circle"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Favorites"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, and the terminal's own scroll bar held down while the minimap is shown; while a full-screen program is in front it sets --reader-edge-fade-top on the left column's fade, so the top fade starts one row below that inset and the program's held first row reads at full strength</span></header>
+<header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, held off the left frame by --reader-gutter while the library is shut as the page is, and the terminal's own scroll bar held down while the minimap is shown; while a full-screen program is in front it sets --reader-edge-fade-top on the left column's fade, so the top fade starts one row below that inset and the program's held first row reads at full strength</span></header>
 <div class="stage"><div class="console-layer"><div class="console-terminal"></div></div></div>
 </section>
 <section class="part">
