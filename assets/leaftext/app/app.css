@@ -8272,7 +8272,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--lt-space-2);
+  gap: var(--lt-space-4);
 }
 .reader-tool-chip {
   position: absolute;

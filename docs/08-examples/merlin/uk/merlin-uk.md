@@ -7,7 +7,7 @@
 
 ## About this translation
 
-Robert de Boron's *Merlin* tells how devils plan their own prophet, how Merlin was born into Christianity, and moves that agenda forward through the church and crown. Robert wrote it in French verse early in the thirteenth century, between his *Joseph* and a *Perceval*. Only 504 lines of the poem are left, but the whole story comes down in prose. This is that prose in English, translated from the [Old French text](../merlin-old-french.md) of Paris and Ulrich's 1886 edition. The Huth manuscript goes on into a sequel, left out here.
+Robert de Boron's *Merlin* tells how devils plan their own prophet, how Merlin was born into Christianity, and moves that agenda forward through the church and crown. Robert wrote it in French verse in the early thirteenth century, between his *Joseph* and a *Perceval*. Only 504 lines of the poem are left, but the whole story comes down in a prose version of the same century. This is that prose in English, translated from the [Old French text](../merlin-old-french.md) of Paris and Ulrich's 1886 edition, which prints the Huth manuscript, copied at the end of the thirteenth century or the start of the fourteenth. The Huth manuscript goes on into a sequel, left out here.
 
 <!-- made-with -->
 Translated with machine assistance by [Ryan Allen](../merlin-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 10 million new tokens so far on this book; a working translation, not a scholarly edition.

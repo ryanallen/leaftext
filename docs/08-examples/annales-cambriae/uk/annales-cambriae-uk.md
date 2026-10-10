@@ -7,7 +7,7 @@
 
 ## About this translation
 
-The *Welsh Annals* are a list of years from 444 to 977 CE, each with what a Welsh scribe thought worth keeping, and they're the first record to give a year to Arthur's battles: Badon in 516 and Camlann in 537. Every year in this translation is CE. They were put together in the second half of the tenth century and survive in one copy, London, British Library, Harley MS 3859, among the appendices of the *History of the Britons*. This translation follows Egerton Phillimore's letter-for-letter printing of that copy in 1888.
+The *Welsh Annals* are a Latin chronicle of Wales, put together in the second half of the tenth century, more than a hundred years after the *History of the Britons*, and they're the first record to give a year to Arthur's battles. Their years run from 444 to 977 CE, each with what a Welsh scribe thought worth keeping, Badon in 516 and Camlann in 537 among them. Every year in this translation is CE. They survive in one copy, London, British Library, Harley MS 3859, copied about 1100, at the end of the eleventh century or the start of the twelfth, among the appendices of the *History of the Britons*. This translation follows Egerton Phillimore's letter-for-letter printing of that copy in 1888.
 
 <!-- made-with -->
 Translated with machine assistance by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 6 million new tokens so far on this book; a working translation, not a scholarly edition.
