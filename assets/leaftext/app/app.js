@@ -45269,6 +45269,127 @@ window.leafDiagramVerdict = async (start) => {
     ? { drawn: true }
     : { drawn: false, sentence: 'The diagram did not finish drawing.' };
 };
+
+
+
+
+
+
+
+const DOCUMENT_CHECK_BUDGET_MS = 6500;
+
+
+function documentCheckRange(element) {
+  const block = element && element.closest ? element.closest('[data-src-start]') : null;
+  if (!block || !hasRangeOf(block, 'block')) return null;
+  const range = rangeOf(block, 'block');
+  return Number.isFinite(range.start) && Number.isFinite(range.end) ? range : null;
+}
+
+function documentCheckPause(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+
+function documentCheckWithin(promise, deadline) {
+  return Promise.race([
+    Promise.resolve(promise).catch(() => {}),
+    documentCheckPause(Math.max(0, deadline - Date.now())),
+  ]);
+}
+
+function documentCheckDiagramDrawn(diagram) {
+  return diagram.dataset.mermaidRender !== 'failed'
+    && !diagram.dataset.diagramWait
+    && !!diagram.querySelector('svg:not([aria-roledescription="error"])');
+}
+
+
+async function documentCheckDiagrams(body, deadline) {
+  const diagrams = [...body.querySelectorAll('pre.mermaid')];
+  const settled = (diagram) => diagram.dataset.mermaidRender === 'failed' || documentCheckDiagramDrawn(diagram);
+  const waiting = diagrams.filter((diagram) => !settled(diagram) && diagram.dataset.processed !== 'true');
+  if (waiting.length) await documentCheckWithin(drawMermaidDiagrams(waiting), deadline);
+  while (diagrams.some((diagram) => !settled(diagram)) && Date.now() < deadline) await documentCheckPause(20);
+  const findings = [];
+  for (const diagram of diagrams) {
+    if (documentCheckDiagramDrawn(diagram)) continue;
+    const range = documentCheckRange(diagram);
+    if (!range) continue;
+    const failure = diagram.dataset.mermaidRender === 'failed' ? diagram.__mermaidFailure || {} : null;
+    const finding = { kind: 'diagram', start: range.start, end: range.end, sentence: failure ? failure.sentence || failure.message || 'The diagram will not draw.' : 'The diagram did not finish drawing.' };
+    if (failure && Number.isFinite(failure.line)) finding.line = failure.line;
+    findings.push(finding);
+  }
+  return findings;
+}
+
+
+function documentCheckTableModel(table, ordinal, deadline) {
+  return documentCheckWithin(new Promise((resolve) => askTableLensModel(table, ordinal, resolve)), deadline)
+    .then((answer) => (answer && answer.table) || null);
+}
+
+
+async function documentCheckRelations(body, deadline) {
+  const all = [...app.querySelectorAll('.table-lane table')];
+  const tables = [...body.querySelectorAll('.table-lane table')].filter((table) => table.querySelector('tbody a'));
+  const findings = [];
+  for (const table of tables) {
+    const range = documentCheckRange(table);
+    if (!range) continue;
+    const model = await documentCheckTableModel(table, Math.max(0, all.indexOf(table)), deadline);
+    if (!model) continue;
+    const rows = tableLensRows(table);
+    model.columns.forEach((column, at) => {
+      if (column.kind !== 'relation') return;
+      model.rows.forEach((row, rowAt) => {
+        const relations = ((row.cells || [])[at] || {}).relations || [];
+        const cell = rows[rowAt] ? Array.from(rows[rowAt].children)[at] : null;
+        const links = cell ? Array.from(cell.querySelectorAll('a')) : [];
+        relations.forEach((relation, linkAt) => {
+          if (!relation || relation.state !== 'missing') return;
+          const href = links[linkAt] ? links[linkAt].getAttribute('href') || '' : '';
+          findings.push({ kind: 'relation', start: range.start, end: range.end, href, sentence: 'Nothing here points at a row of that name' });
+        });
+      });
+    });
+  }
+  return findings;
+}
+
+
+function documentCheckDataErrors(body) {
+  return [...body.querySelectorAll('p.data-error')]
+    .filter((error) => error.querySelector('strong'))
+    .map((error) => ({ kind: 'data', start: 0, end: documentSourceLength(), sentence: (error.textContent || '').trim() }));
+}
+
+
+function documentCheckLinks(body) {
+  const links = [];
+  for (const link of body.querySelectorAll('a[href]')) {
+    if (link.closest && link.closest('.docs-pager')) continue;
+    const range = documentCheckRange(link);
+    if (!range) continue;
+    links.push({ href: link.getAttribute('href') || '', start: range.start, end: range.end });
+  }
+  return links;
+}
+
+
+window.leafDocumentCheck = async (budget = DOCUMENT_CHECK_BUDGET_MS) => {
+  const deadline = Date.now() + budget;
+  while (readerLoading && !readerLoading.hidden && Date.now() < deadline) await documentCheckPause(20);
+  const body = app.querySelector('.document-body');
+  if (!body) return { findings: [], links: [] };
+  const findings = [
+    ...(await documentCheckDiagrams(body, deadline)),
+    ...(await documentCheckRelations(body, deadline)),
+    ...documentCheckDataErrors(body),
+  ];
+  return { findings, links: documentCheckLinks(body) };
+};
 const TABLE_COLUMN_FLOOR = 32;
 let sizedTableShapes = new Map();
 let sizedTableDocument = null;

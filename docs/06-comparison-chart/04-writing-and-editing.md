@@ -635,6 +635,7 @@
 | Splice with fingerprint | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tick tasks by place | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Save through page | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
+| Check a document | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Export to named path | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Play pointer gestures | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Quit like closing | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
