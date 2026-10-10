@@ -41053,8 +41053,16 @@ function writeConsoleOutput(id, entry, text) {
 }
 
 
-window.leafConsoleReplay = (id, encoded) => {
-  const bytes = consoleBytes(encoded);
+window.leafConsoleReplay = (id, encoded) => replayConsoleBytes(id, consoleBytes(encoded));
+
+
+window.leafConsoleStopped = (id, folder, sentence) => {
+  const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  entry.layer.classList.add('console-stopped');
+  replayConsoleBytes(id, new TextEncoder().encode(`\x1b[2m${folder}\x1b[0m\r\n${sentence}\r\n`));
+};
+
+function replayConsoleBytes(id, bytes) {
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   if (entry.frame) cancelAnimationFrame(entry.frame);
   entry.frame = 0;
@@ -41071,7 +41079,7 @@ window.leafConsoleReplay = (id, encoded) => {
     consoleWritten(id, entry);
     if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
-};
+}
 
 window.leafConsolePrune = tabs => {
   for (const [id, entry] of consoleLayers) {

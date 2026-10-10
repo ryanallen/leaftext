@@ -190,17 +190,17 @@
 ## The Welsh Annals
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/annales-cambriae.html
 - Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/annales-cambriae.md
-- Summary: Written in Latin, second half of the tenth century. Phillimore, page 144: the years are written down to 977, though the last event recorded is the death of Rhodri ab Hywel Dda in 954; the annals ar...
+- Summary: Written in Latin, second half of the tenth century. Phillimore, page 144: the annals and genealogies "show marks of having been composed in the last half of the tenth century"; the years are writte...
 
 ## The History of the Britons
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/historia-brittonum.html
 - Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/historia-brittonum.md
-- Summary: Written in Latin, 829–830. Chapter 16 counts its own year as the fourth of King Merfyn of Gwynedd, "annus Mermini regis quartus", and Merfyn began to reign in 825; Mommsen dates Harley MS 3859, the...
+- Summary: Written in Latin, 829–830. 829–830 is the modern date, not Mommsen's: chapter 16 counts its own year as the fourth of King Merfyn, "annus Mermini regis quartus" (Mommsen page 158), and Wikipedia, "...
 
 ## Merlin
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/robert-de-boron-merlin.html
 - Markdown: https://leaftext.com/docs/08-examples/arthurian-shelf/sources/robert-de-boron-merlin.md
-- Summary: Written in Old French, c. 1200–1210. Robert de Boron's Joseph, which the Merlin follows on from, names his lord Gautier de Montbéliard, who left on the Fourth Crusade in 1202 and died in the East i...
+- Summary: Written in Old French, early thirteenth century. Paris and Ulrich, introduction page ix, date Robert de Boron's poems "au début du xiiie siècle"; its note 1 has Gautier de Montbéliard, the lord Rob...
 
 ## The whole story
 - Page: https://leaftext.com/docs/08-examples/arthurian-shelf/story-map.html

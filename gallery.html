@@ -14548,6 +14548,17 @@ p.shelf-line {
   background: var(--lt-primary);
   color: var(--lt-primary-foreground);
 }
+/* Both kinds name their own hover pair, so the app-wide button fill never lands under the quiet label. */
+@media (hover: hover) {
+  .shelf-sort-button:hover {
+    background: var(--lt-wash-hover);
+    color: var(--lt-foreground);
+  }
+  .shelf-sort-button[aria-pressed="true"]:hover {
+    background: var(--lt-primary);
+    color: var(--lt-primary-foreground);
+  }
+}
 .shelf-sort-button:focus-visible {
   outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
   outline-offset: var(--lt-space-2);
@@ -14680,7 +14691,7 @@ p.shelf-line {
   color: var(--spine-ink);
   border-top: var(--lt-space-8) solid var(--lt-tint-recess);
   border-bottom: var(--lt-space-6) solid var(--lt-tint-recess);
-  transition: transform var(--lt-duration-260) var(--lt-ease-emphasized);
+  transition: transform var(--lt-duration-260) var(--lt-ease-emphasized), background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease);
 }
 .shelf-spine-title {
   writing-mode: vertical-rl;
@@ -14718,10 +14729,19 @@ p.shelf-line {
 .shelf-spine-lang {
   opacity: var(--lt-opacity-75);
 }
+/* A hovered spine keeps its own tone and ink, the pair the scale chose for it, and says so with an outline. */
 @media (hover: hover) {
   .shelf-spine:hover {
+    background: var(--spine);
+    color: var(--spine-ink);
+    border-color: var(--lt-tint-recess);
     outline: var(--lt-stroke-1) solid var(--lt-markdown-foreground);
     outline-offset: var(--lt-space-2);
+  }
+  .shelf-spine.is-planned:hover {
+    background: transparent;
+    color: var(--lt-markdown-foreground);
+    border-color: var(--spine);
   }
 }
 .shelf-spine:focus-visible {

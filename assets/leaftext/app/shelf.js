@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // What moves on the Arthurian shelf once `shelf-layout.js` has laid it out: picking a book off it by pointer or keyboard, the three orders it stands in, search and the three filters, the address that holds the order and the picked book so Back and Forward bring both back, and the six tones painted from the theme in force and painted again whenever the reader changes it.
 //
-// `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet moves a lifted spine, and does not under reduced motion.
+// `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet slides a hovered top leaf and pulls a picked bundle out of its pile, and does neither under reduced motion.
 // ---------------------------------------------------------------------------
 
 import { bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, reachedParts } from './shelf-layout.js';
@@ -44,14 +44,13 @@ export function shownBooks(data, { search = '', part = '', tone = '', status = '
     .map((book) => book.book));
 }
 
-/** The six tones of the theme in force, each with its ink, set on the shelf as the values its stylesheet paints with. */
+/** The six tones of the theme in force, set on the shelf as the paint its boards, swatches and ledges take. No word is printed on a tone, so no ink is chosen against one. */
 export function paintTones(root, scale) {
   const tones = typeof scale === 'function' ? scale(SHELF_TONES.length) : [];
   SHELF_TONES.forEach(([key], at) => {
     const tone = tones[at];
     if (!tone) return;
     root.style.setProperty(`--shelf-tone-${key}`, tone.fill);
-    root.style.setProperty(`--shelf-ink-${key}`, tone.ink);
   });
   return tones.length;
 }
@@ -72,8 +71,8 @@ export function installShelf(root, data, env = globalThis) {
     box().innerHTML = shelfMarkup(data, { order: state.order, picked: state.picked, shown });
     root.setAttribute('data-shelf-order', state.order);
     if (focus) {
-      const spine = root.querySelector(`.shelf-spine[data-book="${focus}"]`);
-      if (spine && typeof spine.focus === 'function') spine.focus();
+      const bundle = root.querySelector(`.shelf-bundle[data-book="${focus}"]`);
+      if (bundle && typeof bundle.focus === 'function') bundle.focus();
     }
   };
   const drawSort = () => {
@@ -126,10 +125,10 @@ export function installShelf(root, data, env = globalThis) {
   const onClick = (event) => {
     const target = event.target && typeof event.target.closest === 'function' ? event.target : null;
     if (!target) return;
-    const spine = target.closest('.shelf-spine');
-    if (spine) {
+    const bundle = target.closest('.shelf-bundle');
+    if (bundle) {
       event.preventDefault();
-      pick(spine.getAttribute('data-book'));
+      pick(bundle.getAttribute('data-book'));
       return;
     }
     const sort = target.closest('.shelf-sort-button');
@@ -138,16 +137,16 @@ export function installShelf(root, data, env = globalThis) {
       sortBy(sort.getAttribute('data-shelf-order'));
     }
   };
-  // Left and Right walk the spines, Home and End go to either end, so the shelf is read along with the keys as it is with the pointer.
+  // Down and Right walk on through the bundles, Up and Left walk back, Home and End go to either end, so the piles are read along with the keys as they are with the pointer.
   const onKey = (event) => {
     const target = event.target;
-    if (!target || typeof target.closest !== 'function' || !target.closest('.shelf-spine')) return;
-    const spines = [...root.querySelectorAll('.shelf-spine')];
-    const at = spines.indexOf(target.closest('.shelf-spine'));
-    const next = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: spines.length - 1 }[event.key];
-    if (next == null || !spines[next]) return;
+    if (!target || typeof target.closest !== 'function' || !target.closest('.shelf-bundle')) return;
+    const bundles = [...root.querySelectorAll('.shelf-bundle')];
+    const at = bundles.indexOf(target.closest('.shelf-bundle'));
+    const next = { ArrowDown: at + 1, ArrowRight: at + 1, ArrowUp: at - 1, ArrowLeft: at - 1, Home: 0, End: bundles.length - 1 }[event.key];
+    if (next == null || !bundles[next]) return;
     event.preventDefault();
-    spines[next].focus();
+    bundles[next].focus();
   };
   const onInput = (event) => {
     const target = event.target;

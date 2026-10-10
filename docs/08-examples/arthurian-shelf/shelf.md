@@ -10,7 +10,7 @@ A book whose text is published reaches from the first episode it tells to the la
 - [The History of the Britons](../historia-brittonum/historia-brittonum.md). Attributed to Nennius. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 829–830. Edition: Theodor Mommsen, 1898.
 - [The History of the Kings of Britain](story-map.md). Geoffrey of Monmouth. Latin. Coming; not published yet. Story: Before Arthur to After Camlann, broad. Written: about 1136. Edition not chosen yet.
 - [Joseph of Arimathea](story-map.md). Robert de Boron. Old French. Coming; not published yet. Story: Before Arthur, broad. Written: about 1190–1200. Edition not chosen yet.
-- [Merlin](../merlin/merlin.md). Robert de Boron. Old French. On the shelf. Story: Before Arthur to Merlin, Uther and Arthur's birth. Written: c. 1200–1210. Edition: Gaston Paris and Jacob Ulrich, 1886.
+- [Merlin](../merlin/merlin.md). Robert de Boron. Old French. On the shelf. Story: Before Arthur to Merlin, Uther and Arthur's birth. Written: early thirteenth century. Edition: Gaston Paris and Jacob Ulrich, 1886.
 - [The History of the Holy Grail](story-map.md). Anonymous, the Vulgate cycle. Old French. Coming; not published yet. Story: Before Arthur, broad. Written: about 1220–1235. Edition not chosen yet.
 - [The History of the Holy Grail](story-map.md). Henry Lovelich. Middle English. Coming; not published yet. Story: Before Arthur, broad. Written: about 1430–1450. Edition not chosen yet.
 - [The Prose Merlin](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: Before Arthur to Arthur's early reign, broad. Written: about 1450. Edition not chosen yet.

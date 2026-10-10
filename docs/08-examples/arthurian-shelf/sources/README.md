@@ -4,7 +4,7 @@ Every published book on the shelf, by where it sits in the story. Each work's pa
 
 ## Merlin, Uther and Arthur's birth
 
-- [Merlin](robert-de-boron-merlin.md), Old French, c. 1200–1210
+- [Merlin](robert-de-boron-merlin.md), Old French, early thirteenth century
 - [The History of the Britons](historia-brittonum.md), Latin, 829–830
 
 ## After Camlann

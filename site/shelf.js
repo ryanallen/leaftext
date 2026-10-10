@@ -50,10 +50,51 @@ export function paintTones(root, scale) {
   SHELF_TONES.forEach(([key], at) => {
     const tone = tones[at];
     if (!tone) return;
-    root.style.setProperty(`--shelf-tone-${key}`, tone.fill);
+    root.style.setProperty(`--shelf-tone-${key}`, readableFill(tone.fill, tone.ink));
     root.style.setProperty(`--shelf-ink-${key}`, tone.ink);
   });
   return tones.length;
+}
+
+// A spine's title is small text, so it needs 4.5:1. The dark scale sits at a weight where the best theme ink can fall just short, so the shelf moves its own tone away from the ink, a step at a time, until the title reads; the hue stays.
+const READABLE = 4.5;
+
+function channelsOf(color) {
+  const value = String(color || '').trim();
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (hex) {
+    const digits = hex[1].length === 3 ? hex[1].replace(/./g, '$&$&') : hex[1];
+    const whole = parseInt(digits, 16);
+    return [(whole >> 16) & 255, (whole >> 8) & 255, whole & 255];
+  }
+  const rgb = /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*(?:,\s*1\s*)?\)$/i.exec(value);
+  return rgb ? rgb.slice(1, 4).map(Number) : null;
+}
+
+function luminanceOf(channels) {
+  const part = (byte) => {
+    const share = byte / 255;
+    return share <= 0.03928 ? share / 12.92 : Math.pow((share + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * part(channels[0]) + 0.7152 * part(channels[1]) + 0.0722 * part(channels[2]);
+}
+
+function contrastOf(a, b) {
+  const [x, y] = [luminanceOf(a), luminanceOf(b)];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/** The tone, or the nearest shade of it toward black or white that its ink reads on at 4.5:1. A color the shelf cannot measure is left as the scale gave it. */
+export function readableFill(fill, ink) {
+  const tone = channelsOf(fill);
+  const print = channelsOf(ink);
+  if (!tone || !print || contrastOf(tone, print) >= READABLE) return fill;
+  const toward = luminanceOf(print) > luminanceOf(tone) ? 0 : 255;
+  let shade = tone;
+  for (let step = 1; step <= 20 && contrastOf(shade, print) < READABLE; step += 1) {
+    shade = tone.map((byte) => Math.round(byte + (toward - byte) * step * 0.05));
+  }
+  return '#' + shade.map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 /**
