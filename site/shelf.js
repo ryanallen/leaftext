@@ -228,6 +228,14 @@ export function installShelf(root, data, env = globalThis) {
   sheetClose.addEventListener('click', () => putDown());
   backdrop.addEventListener('click', () => putDown());
   if (typeof view.makeSheetDraggable === 'function') view.makeSheetDraggable(sheet, sheet.querySelector('.leaf-sheet-grip'), (options) => putDown(options));
+  // The sheet stands outside the reading column, whose listener hands a link to the app, so the sheet hands its own over; left to the browser, a book opens as its raw file. The address keeps the pick, so Back returns to the book in its sheet.
+  sheetBody.addEventListener('click', (event) => {
+    const link = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+    if (!link || event.defaultPrevented || event.button !== 0 || typeof view.sendDocumentLink !== 'function') return;
+    event.preventDefault();
+    closeBook();
+    view.sendDocumentLink(link, typeof view.newPageModifierHeld === 'function' && view.newPageModifierHeld(event));
+  });
   const sortBy = (order) => {
     if (!ORDER_KEYS.includes(order) || order === state.order) return;
     state.order = order;

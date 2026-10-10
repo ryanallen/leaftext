@@ -8810,7 +8810,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
   margin-top: var(--source-pair-gap);
 }
 .library-shell.library-closed .reader-shell,
-.library-shell.library-closed .reader-loading {
+.library-shell.library-closed .reader-loading,
+.library-shell.library-closed .console-layer {
   
   margin-left: var(--reader-gutter);
 }
