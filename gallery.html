@@ -4006,6 +4006,7 @@
   --lt-duration-1100: 1100ms;
   --lt-duration-1250: 1250ms;
   --lt-duration-1600: 1600ms;
+  --lt-duration-2000: 2000ms;
   --lt-duration-2400: 2400ms;
   /* Easing */
   --lt-ease: ease;
@@ -10653,7 +10654,7 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   margin-right: 0;
   margin-left: calc(-0.762em - var(--lt-space-6) - var(--drop-cap-letter, 0em) / 2);
 }
-/* The letter stands on its own accent tile with the leaf blended into its corner. A floated first letter ignores width, so the tile hugs each letter by padding. */
+/* The letter stands on a plain accent tile; a leaf only falls past one now and then. A floated first letter ignores width, so the tile hugs each letter by padding. */
 .document-body.has-illuminated-headings h1:not(.is-drop-cap)::first-letter,
 .document-body.has-illuminated-headings h2:not(.is-drop-cap)::first-letter,
 .document-body.has-illuminated-headings h3:not(.is-drop-cap)::first-letter,
@@ -10661,11 +10662,43 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body.has-illuminated-headings h5:not(.is-drop-cap)::first-letter,
 .document-body.has-illuminated-headings h6:not(.is-drop-cap)::first-letter {
   color: var(--lt-primary-foreground);
-  background: var(--lt-icon-leaf) right 0.04em bottom 0.04em / 0.55em no-repeat, var(--lt-primary);
-  background-blend-mode: soft-light;
+  background: var(--lt-primary);
   padding: 0 0.14em;
   margin-right: 0.06em;
   border-radius: var(--lt-radius-sm);
+}
+/* Now and then one leaf drifts down past a tile. It lives in .reader-layout beside the article, so it scrolls with the heading and is never part of the document; the page script places and sizes it from the letter it falls past. Painted in the ink rather than the tile's own ground, which would vanish as it crosses the tile. */
+.illuminated-leaf {
+  position: absolute;
+  width: var(--illuminated-leaf-size);
+  height: var(--illuminated-leaf-size);
+  pointer-events: none;
+  color: var(--lt-primary-ink);
+  background-color: currentColor;
+  -webkit-mask: var(--lt-icon-leaf) center / contain no-repeat;
+  mask: var(--lt-icon-leaf) center / contain no-repeat;
+  opacity: 0;
+  animation: illuminated-leaf-fall var(--lt-duration-2000) var(--lt-ease-in-out) both;
+}
+@keyframes illuminated-leaf-fall {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-24deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  40% {
+    transform: translate(calc(var(--illuminated-leaf-size) * -0.5), calc(var(--illuminated-leaf-drop) * 0.4)) rotate(12deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(calc(var(--illuminated-leaf-size) * 0.4), calc(var(--illuminated-leaf-drop) * 0.7)) rotate(-12deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, var(--illuminated-leaf-drop)) rotate(20deg);
+  }
 }
 /* The cap's own color outranks the one above, so a heading wearing both says so again. */
 .document-body.has-drop-cap.has-illuminated-headings h1.is-drop-cap::first-letter,
@@ -18943,7 +18976,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 187 values that do not change with the theme, all 87 icons, and all 168 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 188 values that do not change with the theme, all 87 icons, and all 169 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -18973,9 +19006,9 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>187</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>188</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>168</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>169</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19080,7 +19113,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">187 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">188 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -19222,6 +19255,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-duration-1100</code><code>1100ms</code></div>
 <div class="value"><code>lt-duration-1250</code><code>1250ms</code></div>
 <div class="value"><code>lt-duration-1600</code><code>1600ms</code></div>
+<div class="value"><code>lt-duration-2000</code><code>2000ms</code></div>
 <div class="value"><code>lt-duration-2400</code><code>2400ms</code></div>
 </div>
 <h3>Easing</h3><div class="wall wide">
@@ -19403,7 +19437,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">168 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">169 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -19695,6 +19729,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Claim celebration</h3><code class="built">.grove-celebration</code><span class="built">profile.js, laid over the Grove sheet once the host has taken the held Grove level, and removed when it ends</span></header>
 <div class="stage"><div class="leaf-sheet grove-sheet open" style="position:relative;max-width:520px;height:220px"><div class="grove-sheet-head"><span class="grove-sheet-title">Your Grove</span><span class="grove-sheet-seeds">4 seeds</span></div><div class="grove-sheet-body"><p class="grove-level-total">Grove 2</p><div class="grove-head-meter"><button type="button" class="grove-head-claim grove-claim-press"><span class="grove-claim-fill is-holding" aria-hidden="true"></span><span class="grove-head-claim-words">Hold to grow to Grove 3</span></button></div></div><div class="grove-celebration" aria-hidden="true"><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(-60px,-50px) rotate(40deg);--grove-confetti-color:var(--lt-accent)"></span><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(50px,-60px) rotate(120deg);--grove-confetti-color:var(--lt-link)"></span><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(70px,20px) rotate(200deg);--grove-confetti-color:var(--lt-primary-ink)"></span><span class="grove-confetti" style="left:120px;top:120px;animation:none;opacity:1;transform:translate(-40px,40px) rotate(300deg);--grove-confetti-color:var(--lt-foreground)"></span><span class="grove-celebration-count" style="left:120px;top:120px;animation:none"><span class="grove-celebration-roll"><span class="grove-celebration-from" style="animation:none;opacity:0">Grove 2</span><span class="grove-celebration-to" style="animation:none">Grove 3</span></span><span class="grove-celebration-name">+4 seeds</span></span></div></div></div>
+</section>
+<section class="part">
+<header><h3>Falling leaf</h3><code class="built">.illuminated-leaf</code><span class="built">page-ornaments.js, now and then while Illuminated headings is on: one leaf in .reader-layout drifting down past one heading's tile, removed when its fall ends</span></header>
+<div class="stage"><div style="position:relative;height:96px;padding:24px"><div class="document-body has-illuminated-headings"><h2>Behind the hedge</h2></div><span class="illuminated-leaf" aria-hidden="true" style="left:44px;top:28px;--illuminated-leaf-size:14px;--illuminated-leaf-drop:48px;animation:none;opacity:1;transform:translate(-4px,20px) rotate(12deg)"></span></div></div>
 </section>
 <section class="part">
 <header><h3>Rising receipt</h3><code class="built">.grove-receipts</code><span class="built">profile.js, over the open Grove overview for two seconds each: what the reader just did, popping in at the sheet's bottom edge and rising, up to three standing</span></header>

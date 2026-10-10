@@ -36797,7 +36797,73 @@ function applyPageOrnaments() {
     
     if (showing.has('leaf-bullets')) for (const box of body.querySelectorAll('li > input[type="checkbox"]')) box.parentElement.classList.add('is-task');
   }
+  if (showing.has('illuminated-headings')) scheduleIlluminatedLeaf();
+  else stopIlluminatedLeaf();
   drawReadingRibbon();
+}
+
+var ILLUMINATED_LEAF_GAP_MIN = 40000;
+var ILLUMINATED_LEAF_GAP_MAX = 120000;
+var illuminatedLeafTimer = null;
+
+var illuminatedLeafArming = false;
+function scheduleIlluminatedLeaf() {
+  if (illuminatedLeafTimer !== null || illuminatedLeafArming) return;
+  const gap = ILLUMINATED_LEAF_GAP_MIN + Math.random() * (ILLUMINATED_LEAF_GAP_MAX - ILLUMINATED_LEAF_GAP_MIN);
+  illuminatedLeafArming = true;
+  illuminatedLeafTimer = setTimeout(tickIlluminatedLeaf, gap);
+  illuminatedLeafArming = false;
+}
+function tickIlluminatedLeaf() {
+  illuminatedLeafTimer = null;
+  dropIlluminatedLeaf();
+  scheduleIlluminatedLeaf();
+}
+function stopIlluminatedLeaf() {
+  clearTimeout(illuminatedLeafTimer);
+  illuminatedLeafTimer = null;
+  for (const leaf of app.querySelectorAll('.illuminated-leaf')) leaf.remove();
+}
+
+function firstLetterRange(block) {
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+  let text = walker.nextNode();
+  while (text && !text.nodeValue.trim()) text = walker.nextNode();
+  const letter = text ? /^(\s*)(\p{P}*[\p{L}\p{N}])/u.exec(text.nodeValue) : null;
+  if (!letter) return null;
+  const range = document.createRange();
+  range.setStart(text, letter[1].length);
+  range.setEnd(text, letter[0].length);
+  return range;
+}
+
+function dropIlluminatedLeaf() {
+  if (app.querySelector('.illuminated-leaf')) return;
+  if (groveMotionReduced() || document.body.classList.contains('is-window-inactive') || document.hidden) return;
+  const body = readingDocumentBody();
+  const layout = body && body.closest('.reader-layout');
+  if (!layout || !body.classList.contains('has-illuminated-headings')) return;
+  const view = app.getBoundingClientRect();
+  const tiles = [];
+  for (const heading of body.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
+    if (heading.classList.contains('is-drop-cap')) continue;
+    const range = firstLetterRange(heading);
+    const at = range && range.getBoundingClientRect();
+    if (at && at.height > 0 && at.top >= view.top && at.bottom <= view.bottom) tiles.push(at);
+  }
+  if (!tiles.length) return;
+  const tile = tiles[Math.floor(Math.random() * tiles.length)];
+  const box = layout.getBoundingClientRect();
+  const size = Math.round(tile.height * 0.45);
+  const leaf = document.createElement('span');
+  leaf.className = 'illuminated-leaf';
+  leaf.setAttribute('aria-hidden', 'true');
+  leaf.style.left = `${Math.round(tile.right - box.left - size * 0.6)}px`;
+  leaf.style.top = `${Math.round(tile.top - box.top - size)}px`;
+  leaf.style.setProperty('--illuminated-leaf-size', `${size}px`);
+  leaf.style.setProperty('--illuminated-leaf-drop', `${Math.round(tile.height + size * 1.5)}px`);
+  leaf.addEventListener('animationend', () => leaf.remove(), { once: true });
+  layout.appendChild(leaf);
 }
 
 function markDropCap(body) {
@@ -36841,15 +36907,8 @@ function markDropCap(body) {
 
 function measureDropCap(body) {
   const block = body.isConnected === false ? null : body.querySelector('.is-drop-cap');
-  if (!block) return;
-  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
-  let text = walker.nextNode();
-  while (text && !text.nodeValue.trim()) text = walker.nextNode();
-  const letter = text ? /^(\s*)(\p{P}*[\p{L}\p{N}])/u.exec(text.nodeValue) : null;
-  if (!letter) return;
-  const range = document.createRange();
-  range.setStart(text, letter[1].length);
-  range.setEnd(text, letter[0].length);
+  const range = block && firstLetterRange(block);
+  if (!range) return;
   const width = range.getBoundingClientRect().width;
   const size = parseFloat(getComputedStyle(block, '::first-letter').fontSize);
   if (!(width > 0) || !(size > 0)) return;
@@ -40693,6 +40752,26 @@ function holdConsoleMarkers(entry) {
 }
 
 
+function readConsoleScreenOnce(engine, read) {
+  if (!engine || Object.prototype.hasOwnProperty.call(engine, 'getLine')) return read();
+  let screen = null;
+  engine.getLine = function (row) {
+    if (row < 0 || row >= this._rows) return null;
+    if (!screen) {
+      this.update();
+      screen = this.getViewport().map(cell => ({ ...cell }));
+    }
+    const start = row * this._cols;
+    return screen.slice(start, start + this._cols);
+  };
+  try {
+    return read();
+  } finally {
+    delete engine.getLine;
+  }
+}
+
+
 function consoleWritten(id, entry) {
   const type = entry.terminal.buffer.active.type;
   if (type !== entry.bufferType) {
@@ -40725,7 +40804,7 @@ function makeConsoleLayer(id) {
     const render = terminal.renderer.render.bind(terminal.renderer);
     terminal.renderer.render = (...args) => {
       if (layer.hidden) entry.drawOwed = true;
-      else render(...args);
+      else readConsoleScreenOnce(args[0], () => render(...args));
     };
     
     const showScrollbar = terminal.showScrollbar;
@@ -48770,6 +48849,10 @@ function measureDocumentMinimap(track) {
 function updateConsoleMinimapPreview(track, content, minimap) {
   const entry = frontConsoleEntry();
   if (!entry?.terminal) return;
+  readConsoleScreenOnce(entry.terminal.wasmTerm, () => drawConsoleMinimapPreview(entry, track, content, minimap));
+}
+
+function drawConsoleMinimapPreview(entry, track, content, minimap) {
   const buffer = consoleBuffer(entry);
   const metrics = measureDocumentMinimap(track);
   const length = buffer.length;
