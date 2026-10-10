@@ -8204,15 +8204,6 @@ body.library-resizing button {
 .console-minimap-lines { position: absolute; left: 0; right: 0; }
 .console-minimap-line { white-space: pre; overflow: hidden; }
 
-.new-console-button[aria-expanded="true"] {
-  background: var(--lt-navigation-button-hover-background);
-  border-color: var(--lt-navigation-button-hover-background);
-  color: var(--lt-primary-foreground);
-}
-.new-console-menu { min-width: 200px; }
-
-.new-console-item.is-active { background: var(--lt-wash-hover); }
-
 
 :root {
   --reader-toolbar-space: 0px;

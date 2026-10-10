@@ -40554,8 +40554,6 @@ if (calendarSheet) {
 }
 
 var newConsoleButton = document.getElementById('newConsoleButton');
-
-var newConsoleMenu = { agents: null, element: null, active: 0, folder: '' };
 function refreshConsoleLauncher() {
   if (!newConsoleButton) return;
   const folder = libraryFolderHere();
@@ -40563,103 +40561,12 @@ function refreshConsoleLauncher() {
   const label = folder ? `New console in ${folder}` : 'New console';
   newConsoleButton.title = label;
   newConsoleButton.setAttribute('aria-label', label);
-  
-  if (newConsoleMenu.agents && !newConsoleMenu.agents.length) newConsoleButton.removeAttribute('aria-haspopup');
-  else newConsoleButton.setAttribute('aria-haspopup', 'menu');
-  if (newConsoleButton.hidden || folder !== newConsoleMenu.folder) hideNewConsoleMenu();
-}
-window.leafConsoleAgents = (agents) => {
-  newConsoleMenu.agents = (Array.isArray(agents) ? agents : []).filter((agent) => agent && typeof agent.key === 'string' && typeof agent.name === 'string');
-  refreshConsoleLauncher();
-  if (newConsoleMenu.element && !newConsoleMenu.element.hidden) {
-    if (newConsoleMenu.agents.length) showNewConsoleMenu();
-    else hideNewConsoleMenu();
-  }
-};
-
-function startConsole(agent) {
-  const folder = libraryFolderHere();
-  hideNewConsoleMenu();
-  if (newConsoleButton.hidden || !folder) return;
-  send(agent ? { command: 'newConsole', path: folder, agent } : { command: 'newConsole', path: folder });
-}
-function newConsoleChoices() {
-  return [...(newConsoleMenu.agents || []), { key: null, name: 'Command prompt' }];
-}
-function hideNewConsoleMenu() {
-  const menu = newConsoleMenu.element;
-  if (!menu || menu.hidden) return;
-  const returnFocus = menu.contains(document.activeElement);
-  menu.hidden = true;
-  coverWebSurface(false, menu);
-  newConsoleButton.setAttribute('aria-expanded', 'false');
-  if (returnFocus) leafFocusForKeyboard(newConsoleButton);
-}
-function markNewConsoleRow(at) {
-  const rows = [...newConsoleMenu.element.children];
-  newConsoleMenu.active = (at + rows.length) % rows.length;
-  rows.forEach((row, index) => row.classList.toggle('is-active', index === newConsoleMenu.active));
-  leafFocusForKeyboard(rows[newConsoleMenu.active]);
-}
-function showNewConsoleMenu() {
-  if (newConsoleButton.hidden) return;
-  let menu = newConsoleMenu.element;
-  if (!menu) {
-    menu = document.createElement('div');
-    menu.className = 'context-menu new-console-menu';
-    menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', 'New console');
-    menu.hidden = true;
-    appSurface.appendChild(menu);
-    newConsoleMenu.element = menu;
-  }
-  menu.replaceChildren();
-  for (const choice of newConsoleChoices()) {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'context-menu-item new-console-item';
-    item.setAttribute('role', 'menuitem');
-    item.textContent = choice.name;
-    
-    item.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0) return;
-      event.stopPropagation();
-      event.preventDefault();
-      startConsole(choice.key);
-    });
-    item.addEventListener('pointerenter', () => markNewConsoleRow([...menu.children].indexOf(item)));
-    menu.appendChild(item);
-  }
-  newConsoleMenu.folder = libraryFolderHere();
-  newConsoleButton.setAttribute('aria-expanded', 'true');
-  const anchor = newConsoleButton.getBoundingClientRect();
-  leafPlaceFloating(menu, anchor.left, anchor.bottom);
-  markNewConsoleRow(0);
 }
 if (newConsoleButton) {
   newConsoleButton.addEventListener('click', () => {
-    if (newConsoleMenu.agents && !newConsoleMenu.agents.length) startConsole(null);
-    else if (newConsoleMenu.element && !newConsoleMenu.element.hidden) hideNewConsoleMenu();
-    else showNewConsoleMenu();
+    const folder = libraryFolderHere();
+    if (!newConsoleButton.hidden && folder) send({ command: 'newConsole', path: folder });
   });
-  
-  window.addEventListener('keydown', (event) => {
-    const menu = newConsoleMenu.element;
-    if (!menu || menu.hidden) return;
-    const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
-    if (step) markNewConsoleRow(newConsoleMenu.active + step);
-    else if (event.key === 'Home' || event.key === 'End') markNewConsoleRow(event.key === 'Home' ? 0 : -1);
-    else if (event.key === 'Enter' || event.key === ' ') startConsole(newConsoleChoices()[newConsoleMenu.active]?.key ?? null);
-    else if (event.key === 'Escape') hideNewConsoleMenu();
-    else if (event.key === 'Tab') hideNewConsoleMenu();
-    else return;
-    if (event.key !== 'Tab') { event.preventDefault(); event.stopPropagation(); }
-  }, true);
-  window.addEventListener('pointerdown', (event) => {
-    const menu = newConsoleMenu.element;
-    if (menu && !menu.hidden && !menu.contains(event.target) && !newConsoleButton.contains(event.target)) hideNewConsoleMenu();
-  });
-  window.addEventListener('resize', hideNewConsoleMenu);
   refreshConsoleLauncher();
 }
 
@@ -41053,16 +40960,8 @@ function writeConsoleOutput(id, entry, text) {
 }
 
 
-window.leafConsoleReplay = (id, encoded) => replayConsoleBytes(id, consoleBytes(encoded));
-
-
-window.leafConsoleStopped = (id, folder, sentence) => {
-  const entry = consoleLayers.get(id) || makeConsoleLayer(id);
-  entry.layer.classList.add('console-stopped');
-  replayConsoleBytes(id, new TextEncoder().encode(`\x1b[2m${folder}\x1b[0m\r\n${sentence}\r\n`));
-};
-
-function replayConsoleBytes(id, bytes) {
+window.leafConsoleReplay = (id, encoded) => {
+  const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   if (entry.frame) cancelAnimationFrame(entry.frame);
   entry.frame = 0;
@@ -41079,7 +40978,7 @@ function replayConsoleBytes(id, bytes) {
     consoleWritten(id, entry);
     if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
   });
-}
+};
 
 window.leafConsolePrune = tabs => {
   for (const [id, entry] of consoleLayers) {

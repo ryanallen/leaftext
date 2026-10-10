@@ -385,8 +385,6 @@
 | --- | --- | --- | --- | --- |
 | Folder console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console torn out | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Agent starts in console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
-| Agent resumes after restart | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
 | Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
