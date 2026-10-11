@@ -13061,17 +13061,32 @@ if (window.__leafScrollbarsAlways === true) {
 }
 
 const narrowWindowQuery = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
-let minimapEnabled = !(narrowWindowQuery && narrowWindowQuery.matches);
+let minimapWindowWide = !(narrowWindowQuery && narrowWindowQuery.matches);
+let minimapShut = false;
+let minimapEnabled = minimapWindowWide && !minimapShut;
 const minimapListeners = new Set();
+function answerMinimapSwitch() {
+  const nextEnabled = minimapWindowWide && !minimapShut;
+  const moved = nextEnabled !== minimapEnabled;
+  minimapEnabled = nextEnabled;
+  document.documentElement.dataset.minimapEnabled = String(minimapEnabled);
+  document.documentElement.dataset.minimapShut = String(minimapShut);
+  
+  if (!moved) return;
+  minimapListeners.forEach((listener) => listener(minimapEnabled));
+}
 window.leafMinimap = {
   getEnabled: () => minimapEnabled,
+  
   setEnabled(nextEnabled) {
-    const moved = Boolean(nextEnabled) !== minimapEnabled;
-    minimapEnabled = Boolean(nextEnabled);
-    document.documentElement.dataset.minimapEnabled = String(minimapEnabled);
-    
-    if (!moved) return;
-    minimapListeners.forEach((listener) => listener(minimapEnabled));
+    minimapWindowWide = Boolean(nextEnabled);
+    answerMinimapSwitch();
+  },
+  getShut: () => minimapShut,
+  
+  setShut(nextShut) {
+    minimapShut = Boolean(nextShut);
+    answerMinimapSwitch();
   },
   subscribe(listener) {
     minimapListeners.add(listener);
@@ -13079,7 +13094,7 @@ window.leafMinimap = {
     return () => minimapListeners.delete(listener);
   },
 };
-window.leafMinimap.setEnabled(minimapEnabled);
+answerMinimapSwitch();
 if (narrowWindowQuery && narrowWindowQuery.addEventListener) {
   narrowWindowQuery.addEventListener('change', (event) => window.leafMinimap.setEnabled(!event.matches));
 }
@@ -42344,8 +42359,14 @@ function makeConsoleLayer(id) {
     
     const pressScrollbar = terminal.handleMouseDown;
     host.removeEventListener('mousedown', pressScrollbar, { capture: true });
-    terminal.handleMouseDown = event => { if (!minimapEnabled) pressScrollbar(event); };
+    terminal.handleMouseDown = event => { if (!consoleMousePress(id, entry, event) && !minimapEnabled) pressScrollbar(event); };
     host.addEventListener('mousedown', terminal.handleMouseDown, { capture: true });
+    
+    host.addEventListener('mousemove', event => consoleMouseMove(id, entry, event), { capture: true });
+    host.addEventListener('dblclick', event => { if (consoleMouseWanted(terminal, event)) event.stopPropagation(); }, { capture: true });
+    host.addEventListener('click', event => { if (entry.mouseClicked) { entry.mouseClicked = false; event.stopPropagation(); } }, { capture: true });
+    entry.mouseRelease = event => consoleMouseRelease(id, entry, event);
+    document.addEventListener('mouseup', entry.mouseRelease);
     terminal.registerMarker = offset => registerConsoleMarker(entry, offset);
     
     const write = terminal.write.bind(terminal);
@@ -42463,6 +42484,56 @@ function consoleMouseReport(terminal, button, column, row, event) {
   const code = button + (event.shiftKey ? 4 : 0) + (event.altKey ? 8 : 0) + (event.ctrlKey ? 16 : 0);
   if (terminal.getMode(1006)) return `\x1b[<${code};${column};${row}M`;
   return '\x1b[M' + String.fromCharCode(32 + code, 32 + Math.min(column, 223), 32 + Math.min(row, 223));
+}
+
+
+function consoleMouseWanted(terminal, event) {
+  return !event.shiftKey && terminal.hasMouseTracking();
+}
+
+
+function sendConsoleMouse(id, terminal, button, event, release) {
+  const cell = consoleCellAt(terminal, event);
+  const extended = terminal.getMode(1006);
+  if (!extended && (cell.column > 223 || cell.row > 223)) return cell;
+  let report = consoleMouseReport(terminal, release && !extended ? 3 : button, cell.column, cell.row, event);
+  if (release && extended) report = report.slice(0, -1) + 'm';
+  send({ command: 'consoleInput', id, data: report });
+  return cell;
+}
+
+function consoleMousePress(id, entry, event) {
+  const terminal = entry.terminal;
+  entry.mouseClicked = false;
+  if ((event.button !== 0 && event.button !== 1) || !consoleMouseWanted(terminal, event)) return false;
+  event.preventDefault();
+  event.stopPropagation();
+  terminal.focus();
+  
+  const pressesOnly = terminal.getMode(9) && !terminal.getMode(1000) && !terminal.getMode(1002) && !terminal.getMode(1003);
+  entry.mouseHeld = pressesOnly ? null : event.button;
+  entry.mouseClicked = event.button === 0;
+  entry.mouseCell = sendConsoleMouse(id, terminal, event.button, event, false);
+  return true;
+}
+
+function consoleMouseRelease(id, entry, event) {
+  const button = entry.mouseHeld;
+  if (button === null || button === undefined || event.button !== button) return;
+  entry.mouseHeld = null;
+  if (entry.terminal?.hasMouseTracking()) entry.mouseCell = sendConsoleMouse(id, entry.terminal, button, event, true);
+}
+
+
+function consoleMouseMove(id, entry, event) {
+  const terminal = entry.terminal;
+  if (!terminal?.hasMouseTracking()) return;
+  const held = entry.mouseHeld ?? null;
+  const every = terminal.getMode(1003);
+  if (held === null ? event.shiftKey || !every : !every && !terminal.getMode(1002)) return;
+  const cell = consoleCellAt(terminal, event);
+  if (entry.mouseCell && entry.mouseCell.column === cell.column && entry.mouseCell.row === cell.row) return;
+  entry.mouseCell = sendConsoleMouse(id, terminal, 32 + (held === null ? 3 : held), event, false);
 }
 
 
@@ -42684,6 +42755,7 @@ window.leafConsolePrune = tabs => {
     if (entry.quietTimer) clearTimeout(entry.quietTimer);
     if (entry.observer) entry.observer.disconnect();
     teardownConsolePin(entry);
+    if (entry.mouseRelease) document.removeEventListener('mouseup', entry.mouseRelease);
     if (entry.terminal) entry.terminal.dispose();
     entry.layer.remove();
     consoleLayers.delete(id);

@@ -6,7 +6,7 @@ The number in the last column is the total of the token ledger, one row for each
 
 | id | Line | New tokens |
 | --- | --- | --- |
-| made-with | Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), {tokens}; a working translation, not a scholarly edition. | 44,113,240 |
+| made-with | Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), {tokens}; a working translation, not a scholarly edition. | 46,634,509 |
 | made-how | How it was made: built by Ryan Allen[^ryan-allen], who designed the system that made it, all checks passed, readable first, plain speech, shaped for English, every link said, nothing said twice, the right word each time, no word worn out, modern idiom, US English, localized from US, English word order, natural tenses, contractions, neutral tone, gender neutral, no false echoes, prose and verse read aloud; source lines and stanzas kept, scenes read for movement, checked against the scan, sources named, honest where unsure, no borrowed wording, source over Malory, translated by manifest, every choice logged, changes carried everywhere, story headings, matching outlines, laid out for screens, pages linked to scans, endnotes, Malory cross-referenced, additions marked, sourced glossary, modern names, places located from sources, no guessed identities, no common words glossed, free with credit. | |
 
 ## Notes
@@ -89,7 +89,7 @@ New tokens is each book's own count, on the owner's word of 5 October 2026, 8:31
 | annales-cambriae | historia-brittonum-and-the-welsh-annals-in-english | 6,347,422 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
 | de-excidio-britanniae | gildas-on-the-ruin-of-britain-in-english | 3,727,901 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
 | vita-gildae | gildas-on-the-ruin-of-britain-in-english | 3,727,901 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
-| the-whole-arthurian-story | the-whole-arthurian-story-in-one-book | 44,113,240 | all |
+| the-whole-arthurian-story | the-whole-arthurian-story-in-one-book | 46,634,509 | all |
 
 ## How it was made
 
@@ -121,6 +121,14 @@ The second line every book carries, under the first, says how the book was made:
 | translate-middle-welsh: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
 | translate-middle-high-german: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
 | translate-old-portuguese-and-spanish: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-old-norse: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-middle-dutch: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-old-italian: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-old-occitan-and-catalan: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-early-modern-irish: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-old-yiddish: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-middle-cornish: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
+| translate-german: Read the grammar | shaped for English | read: the grammar is read in the source by someone who knows the language; what the English makes of it is held by "English shape"'s checks | — |
 | translate: Say how acts connect | every link said | writing/arthurian/tools/workshop/check.py#unlinked_problems; read: whether two acts joined by "and" are a cause and its effect is what the story means, beyond the one shape the check names | — |
 | translate: Say it once | nothing said twice | writing/arthurian/tools/workshop/check.py#echo_problems; read: narration that tells in other words what the speech then says | — |
 | translate: Each fact about the text is said once | nothing said twice | writing/arthurian/tools/workshop/check.py#source_block_problems; read: a fact the note says twice in the owner's own words is heard only by reading the note | — |
@@ -132,6 +140,14 @@ The second line every book carries, under the first, says how the book was made:
 | translate-middle-welsh: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
 | translate-middle-high-german: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
 | translate-old-portuguese-and-spanish: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-old-norse: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-middle-dutch: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-old-italian: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-old-occitan-and-catalan: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-early-modern-irish: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-old-yiddish: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-middle-cornish: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
+| translate-german: Read the words | the right word each time | writing/arthurian/tools/workshop/shelf.py#sources_problems; read: that a reading rests on the entry it cites, and a word read in its own century's sense, is judged by opening the entry | — |
 | translate: No word twice in quick succession | no word worn out | writing/arthurian/tools/workshop/check.py#repeat_problems; read: a named thing renamed a line later is two different words, so only a reader knowing they name one thing finds it | — |
 | translate: Today's idiom | modern idiom | writing/arthurian/tools/workshop/check.py#old_turn_problems, writing/arthurian/tools/workshop/check.py#before_problems, writing/arthurian/tools/workshop/check.py#unjudged_problems; read: an old turn made of common words is on no list until a reader hears it | — |
 | translate: A death is said as a death | modern idiom | writing/arthurian/old-words.tsv, writing/arthurian/tools/workshop/check.py#old_turn_problems, writing/arthurian/tools/workshop/check.py#heading_style_problems; read: a sleep or a rest that means a death is said in the same words as a real one, and an age in "his seventeenth year" in the same words as a reign's, so only the sentence tells them apart | — |
@@ -159,6 +175,14 @@ The second line every book carries, under the first, says how the book was made:
 | translate-middle-welsh: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: the meter is heard, and the read-aloud record says a stanza was read, not how it scans | — |
 | translate-middle-high-german: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: the meter is heard, and the read-aloud record says a stanza was read, not how it scans | — |
 | translate-old-portuguese-and-spanish: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-old-norse: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-middle-dutch: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-old-italian: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-old-occitan-and-catalan: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-early-modern-irish: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-old-yiddish: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-middle-cornish: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
+| translate-german: Read the verse | prose and verse read aloud; source lines and stanzas kept | writing/arthurian/tools/workshop/check.py#verse_problems, writing/arthurian/tools/workshop/check.py#verse_match_problems, writing/arthurian/tools/workshop/check.py#aloud_problems; read: which passages of the prose an edition sets as verse is read off its page | — |
 | translate: Literary read | scenes read for movement | writing/arthurian/tools/check-arthurian.mjs#literaryPassProblems; read: what a speaker wants and where a scene turns are the story's meaning | — |
 | review: A scene or chapter that reads flat | scenes read for movement | read: flatness is a reader's judgment of the scene against its source | — |
 | translate: Establish the range against its scan | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image, since the scan is the authority the machine reading is checked against | {source} |
@@ -173,6 +197,14 @@ The second line every book carries, under the first, says how the book was made:
 | translate-middle-welsh: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image, and the scribe's spelling is the text, not a misread, which only the page shows | — |
 | translate-middle-high-german: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
 | translate-old-portuguese-and-spanish: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-old-norse: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-middle-dutch: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-old-italian: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-old-occitan-and-catalan: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-early-modern-irish: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-old-yiddish: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-middle-cornish: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
+| translate-german: Read the scan's letters | checked against the scan | writing/arthurian/tools/workshop/check.py#french_problems; read: every flagged line is read against the page image | — |
 | translate: Name who did it | sources named | writing/arthurian/tools/workshop/check.py#vague_name_problems | — |
 | translate: Name the witness behind every reading | sources named | writing/arthurian/tools/workshop/check.py#edition_problems; read: in a box comparing witnesses, which witness a reading came from is read off the witnesses | — |
 | translate: A downloaded copy joins the shelf's lists | sources named | writing/arthurian/tools/workshop/shelf.py#sources_problems, writing/arthurian/tools/check-arthurian.mjs#waitProblems | — |
@@ -245,6 +277,14 @@ The second line every book carries, under the first, says how the book was made:
 | translate-middle-welsh: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
 | translate-middle-high-german: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
 | translate-old-portuguese-and-spanish: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-old-norse: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-middle-dutch: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-old-italian: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-old-occitan-and-catalan: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-early-modern-irish: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-old-yiddish: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-middle-cornish: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
+| translate-german: Read the names | modern names | writing/arthurian/tools/workshop/check.py#name_problems, writing/arthurian/tools/workshop/check.py#old_turn_problems; read: which person a form names is read from the passage and a standard reference | — |
 | glossary: A place says where it is | places located from sources | writing/arthurian/tools/workshop/check.py#place_problems; read: whether an identification is secure is judged on its geographic source | GLOSSARY.md |
 | glossary: Never guess which person in another book a figure is | no guessed identities | read: a guess and a sourced identity read alike in a line, and only the cited reference tells them apart | — |
 | glossary: No heading or Also: form may be an ordinary word in any book the glossary reaches | no common words glossed | writing/arthurian/tools/workshop/check.py#collision_problems, writing/arthurian/tools/workshop/check.py#name_as_word_problems | — |
@@ -264,12 +304,14 @@ The second line every book carries, under the first, says how the book was made:
 | ticket: Write the ticket | — | — | — |
 | ticket: Phases run top to bottom | — | — | — |
 | ticket: A ticket that publishes a book | — | — | — |
+| ticket: A ticket that changes anything leaftext.com serves goes live before it is done | — | — | — |
 | dev: No Designed line means /design first | — | — | — |
 | dev: Work the phases in order | — | — | — |
 | dev: Box after box, in order, without stopping | — | — | — |
 | AGENTS: No subagents or workflows | — | — | — |
 | AGENTS: Temp files go in the session scratchpad, never in the tree | — | — | — |
 | AGENTS: Skills live in writing/.agents/skills/ only | — | — | — |
+| AGENTS: Finished work is committed, and what leaftext.com serves is published | — | — | — |
 | translate: Read the ticket and its tools folder's README | — | — | — |
 | translate: The source's language goes to its own skill | — | — | — |
 | translate-old-french: Every rule of the English is /translate's | — | — | — |
@@ -283,7 +325,23 @@ The second line every book carries, under the first, says how the book was made:
 | translate-middle-high-german: Every rule of the English is /translate's | — | — | — |
 | translate-middle-high-german: A dictionary the ticket names wins where it differs from this skill | — | — | — |
 | translate-old-portuguese-and-spanish: Every rule of the English is /translate's | — | — | — |
+| translate-old-norse: Every rule of the English is /translate's | — | — | — |
+| translate-middle-dutch: Every rule of the English is /translate's | — | — | — |
+| translate-old-italian: Every rule of the English is /translate's | — | — | — |
+| translate-old-occitan-and-catalan: Every rule of the English is /translate's | — | — | — |
+| translate-early-modern-irish: Every rule of the English is /translate's | — | — | — |
+| translate-old-yiddish: Every rule of the English is /translate's | — | — | — |
+| translate-middle-cornish: Every rule of the English is /translate's | — | — | — |
+| translate-german: Every rule of the English is /translate's | — | — | — |
 | translate-old-portuguese-and-spanish: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-old-norse: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-middle-dutch: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-old-italian: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-old-occitan-and-catalan: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-early-modern-irish: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-old-yiddish: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-middle-cornish: A dictionary the ticket names wins where it differs from this skill | — | — | — |
+| translate-german: A dictionary the ticket names wins where it differs from this skill | — | — | — |
 | translate: The established source file opens on <!-- source text --> | — | writing/arthurian/tools/check-arthurian.mjs#englishProblems | — |
 | translate: The story note | — | writing/arthurian/tools/workshop/check.py#story_note_problems, writing/arthurian/tools/workshop/check.py#published_story_problems, writing/arthurian/tools/workshop/shelf.py#story_problems | — |
 | translate: The credits | — | writing/arthurian/tools/arthurian-made-with.mjs#madeWithProblems, writing/arthurian/tools/arthurian-made-with.mjs#creditsPlaceProblems, writing/arthurian/tools/arthurian-made-with.mjs#whyProblems, writing/arthurian/tools/workshop/check.py#credit_problems | — |
@@ -364,4 +422,5 @@ The second line every book carries, under the first, says how the book was made:
 | done: Update the indexes | — | — | — |
 | done: Hand back | — | — | — |
 | done: One line per paragraph | — | — | — |
+| done: Several tickets at once go through retire.py | — | — | — |
 | done: Anything the owner raises | — | — | — |
