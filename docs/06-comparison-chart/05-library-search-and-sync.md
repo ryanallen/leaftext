@@ -385,6 +385,8 @@
 | --- | --- | --- | --- | --- |
 | Folder console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console torn out | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Console tab names program | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Screenshot pasted into console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
 | Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |

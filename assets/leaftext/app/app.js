@@ -14584,11 +14584,21 @@ function refitCrumbsForFont() {
   forgetCrumbWidths();
   scheduleCrumbFit();
 }
-if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+
+if (document.fonts) {
   let crumbFontsReady = false;
-  document.fonts.ready.then(() => {
-    crumbFontsReady = true;
-    refitCrumbsForFont();
+  onSettle({
+    read: () => {
+      const ready = document.fonts.ready;
+      return ready && typeof ready.then === 'function' ? ready : null;
+    },
+    apply: (ready) => {
+      if (!ready) return;
+      ready.then(() => {
+        crumbFontsReady = true;
+        refitCrumbsForFont();
+      });
+    },
   });
   if (typeof document.fonts.addEventListener === 'function') {
     document.fonts.addEventListener('loadingdone', () => {
@@ -41008,13 +41018,22 @@ function writeConsoleFade() {
 }
 
 
+function consolePasteChord(event) {
+  if (event.key?.toLowerCase() !== 'v' && !(event.altKey && event.code === 'KeyV')) return false;
+  if (event.shiftKey) return false;
+  const held = [event.ctrlKey, event.altKey, event.metaKey].filter(Boolean).length;
+  if (held !== 1) return false;
+  return isMacPlatform || !event.metaKey;
+}
+
+
 function consoleShortcutKey(event) {
   const key = event.key.toLowerCase();
-  if (isMacPlatform || (key !== 'v' && key !== 'c') || !event.ctrlKey || event.metaKey || event.altKey) return;
-  if (key === 'v' && event.shiftKey) return;
+  const paste = consolePasteChord(event);
+  if (!paste && (isMacPlatform || key !== 'c' || !event.ctrlKey || event.metaKey || event.altKey)) return;
   const entry = frontConsoleEntry();
   if (!entry?.terminal || entry.layer.hidden || (event.target !== entry.terminal.element && event.target !== entry.terminal.textarea)) return;
-  if (key === 'c') {
+  if (!paste) {
     const selected = entry.terminal.hasSelection();
     if (!selected && !event.shiftKey) return;
     event.preventDefault();
