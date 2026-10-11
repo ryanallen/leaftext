@@ -37,6 +37,8 @@ export const COMMANDS = {
   consolePaste: [REFUSED, 'a published page has no console process to receive pasted text'],
   consoleCopy: [REFUSED, 'a published page has no console to copy from'],
   consoleResize: [REFUSED, 'a published page has no console process to resize'],
+  consoleAgentState: [REFUSED, 'a published page has no console, so no agent runs in one'],
+  focusConsole: [REFUSED, 'a published page has no console to bring forward'],
   pasteFile: [REFUSED, 'nothing here writes to a disk'],
   revealFile: [REFUSED, 'there is no file manager to show it in'],
   copyFile: [REFUSED, 'nothing here writes to a disk'],

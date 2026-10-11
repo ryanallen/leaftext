@@ -3918,6 +3918,8 @@ const GANTT_AFTER_RE = /^after\s+([\w-]+(?:\s+[\w-]+)*)$/;
 const GANTT_UNTIL_RE = /^until\s+([\w-]+(?:\s+[\w-]+)*)$/;
 const GANTT_REF_RE = /^(after|until)(\s+)(.*)$/;
 
+const GANTT_CLICK_RE = /^([ \t]*click[ \t]+)(\S+)(.*)$/i;
+
 function isGanttChart(chart) {
   return !!chart && chart.kind === 'gantt';
 }
@@ -3929,7 +3931,7 @@ function ganttRefused(lines, why) {
 
 function readGantt(lines, at) {
   if (!GANTT_HEADER_RE.test(lines[at].replace(/\r$/, ''))) return null;
-  const chart = { kind: 'gantt', refusal: '', header: at, lines, rows: [], slots: [], series: [], axis: null, slices: [] };
+  const chart = { kind: 'gantt', refusal: '', header: at, lines, rows: [], slots: [], clicks: [], series: [], axis: null, slices: [] };
   let inAcc = false;
   for (let i = at + 1; i < lines.length; i += 1) {
     const cr = lines[i].endsWith('\r') ? '\r' : '';
@@ -3946,6 +3948,11 @@ function readGantt(lines, at) {
     const format = GANTT_DATE_FORMAT_RE.exec(body);
     if (format && format[1] !== 'YYYY-MM-DD') {
       return ganttRefused(lines, 'This chart writes its dates as “' + format[1] + '”; the rows read only YYYY-MM-DD, so change it in the text.');
+    }
+    const click = GANTT_CLICK_RE.exec(body);
+    if (click) {
+      const read = click[2].split(',');
+      chart.clicks.push({ line: i, cr, lead: click[1], read, ids: read.slice(), rest: click[3] });
     }
     if (GANTT_KEPT_RE.test(body)) continue;
     const section = GANTT_SECTION_RE.exec(body);
@@ -4115,6 +4122,8 @@ function ganttStartsAfter(startDeps, index, other, seen) {
 
 function ganttCarryIds(chart, rows) {
   const carried = [];
+  const clicks = chart.clicks || [];
+  for (const click of clicks) click.ids = click.read.slice();
   const taken = (id, except) => rows.some((row, i) => i !== except && !row.section && String(row.values[0]).trim() === id);
   rows.forEach((row, index) => {
     if (row.section) return;
@@ -4134,6 +4143,7 @@ function ganttCarryIds(chart, rows) {
         carried.push({ index: at, column, value: next });
       }
     });
+    for (const click of clicks) click.ids = click.ids.map((id) => (id === was ? now : id));
   });
   return carried;
 }
@@ -4180,6 +4190,9 @@ function writeGantt(chart) {
     if (i < slots.length) swap.set(slots[i].line, text + slots[i].cr);
   });
   for (let i = texts.length; i < slots.length; i += 1) swap.set(slots[i].line, null);
+  for (const click of chart.clicks || []) {
+    if (click.ids.join(',') !== click.read.join(',')) swap.set(click.line, click.lead + click.ids.join(',') + click.rest + click.cr);
+  }
   const tail = slots.length ? slots[slots.length - 1].line : chartLastLine(lines);
   const extra = texts.slice(slots.length).map((text) => text + (slots.length ? slots[slots.length - 1].cr : end));
   const out = [];
@@ -41296,7 +41309,6 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     app.innerHTML = '';
     writeReaderClasses([]);
     
-    if (consoleFrontId !== consoleTab.webId) setMinimapMarkup('');
     updateEditingChrome();
     refreshPaneFoot();
     return;
@@ -42004,11 +42016,105 @@ function setConsoleActivity(id, entry, activity) {
   for (const tab of tabBar.querySelectorAll('.console-tab')) {
     if (tab.dataset.consoleId === String(id)) tab.classList.toggle('console-done', activity === 'done');
   }
+  reportConsoleAgent(id, entry);
+}
+
+
+function consoleAgentOf(title) {
+  const text = String(title || '');
+  const mark = Array.from(text)[0];
+  if (mark && '✳◐◓◑◒'.includes(mark)) return 'claude';
+  const command = /(?:^|[\s"\\/])(claude|codex)(?:\.js|\.cmd|\.exe)?(?:["\s]|$)/i.exec(text);
+  return command ? command[1].toLowerCase() : null;
+}
+
+
+const consoleAgentAsks = {
+  claude: { lines: 4, asks: line => line.includes('Esc to cancel') },
+  codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) },
+};
+
+
+function consoleBottomLines(entry, count) {
+  const terminal = entry.terminal;
+  const active = terminal?.buffer?.active;
+  if (!active) return [];
+  return readConsoleScreenOnce(terminal.wasmTerm, () => {
+    const lines = [];
+    const top = Math.max(0, active.length - (terminal.rows || active.length));
+    for (let index = active.length - 1; index >= top && lines.length < count; index -= 1) {
+      const text = consoleLineText(entry, index);
+      if (text && text.trim()) lines.push(text);
+    }
+    return lines;
+  });
+}
+
+function consoleAgentState(entry) {
+  const rule = consoleAgentAsks[entry.agent];
+  if (!rule) return null;
+  if (consoleBottomLines(entry, rule.lines).some(rule.asks)) return 'needs';
+  return entry.activity === 'working' || entry.activity === 'done' ? entry.activity : 'rest';
+}
+
+
+function reportConsoleAgent(id, entry) {
+  const state = consoleAgentState(entry);
+  const said = `${entry.agent || ''} ${state || ''}`;
+  if (said === (entry.agentSaid ?? ' ')) return;
+  entry.agentSaid = said;
+  send({ command: 'consoleAgentState', id, agent: entry.agent || null, state });
+}
+
+
+var consoleAgentsBand = document.getElementById('consoleAgents');
+let consoleAgentRows = [];
+const consoleAgentOrder = { needs: 0, done: 1, working: 2, rest: 3 };
+const consoleAgentWords = { needs: 'Needs you', done: 'Done', working: 'Working', rest: 'At rest' };
+
+function sortedConsoleAgents(rows) {
+  const rank = row => consoleAgentOrder[row.state] ?? 4;
+  return rows.map((row, index) => ({ row, index })).sort((a, b) => rank(a.row) - rank(b.row) || a.index - b.index).map(({ row }) => row);
+}
+
+function drawConsoleAgents() {
+  if (!consoleAgentsBand) return;
+  const rows = sortedConsoleAgents(consoleAgentRows);
+  consoleAgentsBand.hidden = !rows.length;
+  libraryPane?.classList.toggle('has-agents', rows.length > 0);
+  libraryPane?.style.setProperty('--console-agent-rows', String(rows.length));
+  consoleAgentsBand.innerHTML = rows.length ? '<div class="console-agents-heading">Agents</div>' + rows.map(row => {
+    const front = row.id === consoleFrontId ? ' console-agent-front' : '';
+    const needs = row.state === 'needs' ? ' console-agent-needs' : '';
+    return `<button type="button" class="console-agent${front}" role="listitem" data-console-id="${Number(row.id)}" title="${escapeAttr(row.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span><span class="console-agent-name">${escapeText(row.title)}</span><span class="console-agent-state${needs}">${consoleAgentWords[row.state] || ''}</span></button>`;
+  }).join('') : '';
+}
+
+window.leafConsoleAgents = rows => {
+  consoleAgentRows = Array.isArray(rows) ? rows : [];
+  drawConsoleAgents();
+};
+
+
+window.leafPressConsoleTab = id => {
+  const label = tabBar.querySelector(`.console-tab[data-console-id="${Number(id)}"] [data-tab-index]`);
+  if (label) label.click();
+  return !!label;
+};
+
+if (consoleAgentsBand) {
+  consoleAgentsBand.addEventListener('click', event => {
+    const row = event.target.closest?.('.console-agent');
+    if (!row) return;
+    const id = Number(row.dataset.consoleId);
+    if (!window.leafPressConsoleTab(id)) send({ command: 'focusConsole', id });
+  });
 }
 
 function consoleTitleSaid(id, title) {
   const entry = consoleLayers.get(id);
   if (!entry) return;
+  entry.agent = consoleAgentOf(title);
   const mark = Array.from(title)[0];
   entry.titleMark = mark === '✳' ? 'done' : '◐◓◑◒'.includes(mark) && mark ? 'working' : null;
   if (entry.titleMark) {
@@ -42016,6 +42122,7 @@ function consoleTitleSaid(id, title) {
     entry.quietTimer = 0;
     if (entry.titleMark === 'working' || entry.worked) setConsoleActivity(id, entry, entry.titleMark);
   }
+  reportConsoleAgent(id, entry);
 }
 
 function consoleOutputArrived(id) {
@@ -42193,6 +42300,7 @@ function consoleWritten(id, entry) {
     if (consoleFrontId === id) writeConsoleFade();
   }
   holdConsoleMarkers(entry);
+  if (entry.agent) reportConsoleAgent(id, entry);
 }
 
 
@@ -42572,6 +42680,7 @@ window.leafConsoleFront = id => {
   const changed = consoleFrontId !== id;
   consoleFrontId = id;
   document.body.classList.toggle('console-front', id !== null);
+  if (changed && consoleAgentRows.length) drawConsoleAgents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   if (id === null) {
     writeConsoleFade();
@@ -42617,6 +42726,16 @@ window.leafConsoleOutput = (id, encoded) => {
     entry.pending.push(bytes);
     entry.pendingBytes += bytes.length;
     while (entry.pendingBytes > 1_048_576 && entry.pending.length > 1) entry.pendingBytes -= entry.pending.shift().length;
+    return;
+  }
+  
+  if (document.hidden) {
+    if (entry.frame) cancelAnimationFrame(entry.frame);
+    entry.frame = 0;
+    let text = '';
+    for (const chunk of entry.pending) text += entry.decoder.decode(chunk, { stream: true });
+    entry.pending = [];
+    writeConsoleOutput(id, entry, text + entry.decoder.decode(bytes, { stream: true }));
     return;
   }
   
@@ -50720,13 +50839,18 @@ function drawConsoleMinimapPreview(entry, track, content, minimap) {
   
   const head = () => Array.from({ length: Math.min(8, buffer.baseY) }, (_, index) => lineText(index));
   let held = entry.map;
-  const canKeep = held && held.frame.isConnected && held.first <= viewportLine && held.last >= viewportLine + entry.terminal.rows && held.width === metrics.sourceWidth;
+  const heldSpan = 2 * visibleLines + entry.terminal.rows;
+  
+  const grows = held && length > held.length && held.last === held.length;
+  const plannedLast = grows ? length : held?.last;
+  const plannedFirst = held && Math.max(held.first, plannedLast - heldSpan);
+  const canKeep = held && held.frame.isConnected && held.width === metrics.sourceWidth && !(grows && length - held.last > heldSpan) && plannedFirst <= viewportLine && plannedLast >= viewportLine + entry.terminal.rows;
   if (canKeep) {
     held.frame.style.height = `${metrics.scrollHeight}px`;
-    if (length > held.length && held.last === held.length) {
+    if (grows) {
       for (let index = held.last; index < length; index++) held.lines.appendChild(lineNode(index));
       held.last = length;
-      while (held.last - held.first > 2 * visibleLines + entry.terminal.rows) {
+      while (held.last - held.first > heldSpan) {
         held.lines.firstElementChild?.remove();
         held.first++;
       }

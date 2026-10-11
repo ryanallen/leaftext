@@ -663,6 +663,10 @@ A web or mail address a console prints â€” `https://`, `http://` or `mailto:` â€
 
 When a program in a console finishes its work, the console's tab icon turns the theme's main color and a soft glow breathes behind it, so with several agents running you can see which one is ready for you without opening each. Claude Code says it is working and when it has finished in its title, and the tab reads that; any other program counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into that console clears the mark; looking at the tab alone does not. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
 
+### Every agent in one list
+
+While Claude Code or Codex runs in any console, in any Leaftext window, an **Agents** list stands in the library pane directly above the launchers, one row per agent with its tab's name and what it is doing: **Needs you** while it is asking a question or waiting for permission, then **Done**, **Working** and **At rest**. An agent asking for you sorts to the top in the theme's main color, and the row of the console in front is lit the way its tab is. Press a row and that console comes to the front, bringing its window forward if another window holds it. A long folder list scrolls above the list rather than pushing it out of sight, and the list goes away once no agent is running. Leaftext recognizes Claude Code by the title it gives itself and Codex by the command the console is running, and reads whether either is asking off the last lines of its screen.
+
 While a full-screen program such as Claude Code fills a console, the soft fade at the top of the page starts under the program's first row rather than over it, so a line the program holds at the top, such as the prompt it is working on, reads at full strength while its work dissolves underneath. At an ordinary shell prompt the fade sits where it does over a document.
 
 ## Layout

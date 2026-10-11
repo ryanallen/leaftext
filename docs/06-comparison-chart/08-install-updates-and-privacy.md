@@ -169,6 +169,7 @@
 | Two small files | [✅][l-journal] | ? | ? | ? |
 | Journal never sent | [✅][l-journal] | [✅][o-seen] | ? | ? |
 | Failed syncs logged | [✅][l-journal] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Journal lines timed | [✅][l-journal] | ? | ? | ? |
 | Unexpected close noticed | [✅][l-journal] | ? | ? | ? |
 | Launch notices queued | [✅][l-journal] | ? | ? | ? |
 | Press clears notices | [✅][l-journal] | ? | ? | ? |

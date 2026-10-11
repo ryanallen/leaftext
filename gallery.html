@@ -7210,12 +7210,12 @@ body.library-resizing button {
   overflow-x: hidden;
   box-sizing: border-box;
   padding-top: var(--library-chrome-height);
-  padding-bottom: var(--library-foot-height);
+  padding-bottom: calc(var(--library-foot-height) + var(--console-agents-height, 0px));
 }
 /* The pane wears the app's bar (see .leaf-scroll); only where it starts and ends is its own — clear of the app bar and the band under it, and of the launcher row at the foot. */
 .library-scroll::-webkit-scrollbar-track {
   margin-top: var(--library-chrome-height);
-  margin-bottom: var(--library-foot-height);
+  margin-bottom: calc(var(--library-foot-height) + var(--console-agents-height, 0px));
 }
 .library-tree {
   padding: 0 var(--lt-space-6) var(--lt-space-12);
@@ -8363,6 +8363,19 @@ body.library-resizing button {
 .console-minimap-preview { position: relative; overflow: hidden; color: var(--lt-markdown-foreground); font-family: monospace; font-size: var(--lt-text-12); }
 .console-minimap-lines { position: absolute; left: 0; right: 0; }
 .console-minimap-line { white-space: pre; overflow: hidden; }
+/* The agents list: a heading 20px tall and a 26px row per agent, inside 6px above and 4px below, standing on the launchers' band so the folder list scrolls above it. */
+.library-pane.has-agents { --console-agents-height: calc(var(--console-agent-rows, 0) * 26px + 30px); }
+.console-agents { position: absolute; left: 0; right: 0; bottom: var(--library-foot-height); z-index: 2; box-sizing: border-box; height: var(--console-agents-height); padding: var(--lt-space-6) var(--lt-space-8) var(--lt-space-4); overflow: hidden; background-color: var(--lt-surface); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-attachment: fixed; }
+.library-shell .console-agents[hidden] { display: none; }
+.library-shell.library-closed .console-agents { display: none; }
+.console-agents-heading { height: 20px; padding: 0 var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-10); font-weight: var(--lt-weight-600); letter-spacing: var(--lt-tracking-060); line-height: 20px; text-transform: uppercase; }
+.console-agent { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
+@media (hover: hover) { .console-agent:hover { background: var(--lt-navigation-button-hover-background); color: var(--lt-primary-foreground); } }
+.console-agent-front { border-color: var(--lt-border); background: var(--lt-background); }
+.console-agent > .lt-icon { flex: none; width: 14px; height: 14px; color: var(--lt-muted-foreground); }
+.console-agent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.console-agent-state { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
+.console-agent-needs { color: var(--lt-primary); font-weight: var(--lt-weight-600); }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
@@ -19307,7 +19320,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 172 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 173 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19339,7 +19352,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>192</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>109</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>172</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>173</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19794,7 +19807,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">172 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">173 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -20038,6 +20051,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Console tab</h3><code class="built">.console-tab</code><span class="built">render-state.js</span></header>
 <div class="stage"><span class="tab console-tab console-done" data-console-id="7"><button type="button" class="tab-label"><span class="lt-icon lt-icon-terminal"></span>notes — console</button></span></div>
+</section>
+<section class="part">
+<header><h3>Console agents list</h3><code class="built">.console-agent</code><span class="built">console.js, from the host's list of every console agent in every window, directly above the pane's launchers and outside the folder list's scroll; a row per agent with its tab's name and what it is doing, asking ones first in --lt-primary (console-agent-needs), then done, working and at rest, the console in front lit the way the active tab is (console-agent-front); a press brings that console forward in whichever window holds it, and the list is drawn only while an agent runs</span></header>
+<div class="stage"><div class="library-pane has-agents" style="position:relative;height:120px;--console-agent-rows:3"><div class="console-agents" role="list" aria-label="Console agents"><div class="console-agents-heading">Agents</div><button type="button" class="console-agent" role="listitem"><span class="lt-icon lt-icon-terminal"></span><span class="console-agent-name">app — console 2</span><span class="console-agent-state console-agent-needs">Needs you</span></button><button type="button" class="console-agent console-agent-front" role="listitem"><span class="lt-icon lt-icon-terminal"></span><span class="console-agent-name">scratchpad — console</span><span class="console-agent-state">Working</span></button><button type="button" class="console-agent" role="listitem"><span class="lt-icon lt-icon-terminal"></span><span class="console-agent-name">site — console</span><span class="console-agent-state">At rest</span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>Profile pill</h3><code class="built">.library-profile</code><span class="built">app-shell.html, drawn by profile.js under the library foot's launchers</span></header>
