@@ -54,6 +54,15 @@ export function projectFrom(url) {
 
 /** The `public-repository` line under `[package.metadata.leaftext]`. The section header is matched as a whole line, so a key of the same name under another table cannot answer for it. */
 export function publicRepositoryIn(manifest) {
+  return metadataIn(manifest, 'public-repository', 'the app, the installer, the site and the release path all read it from there');
+}
+
+/** The `plugin-repository` line beside it: where the agent plugin is handed across to. */
+export function pluginRepositoryIn(manifest) {
+  return metadataIn(manifest, 'plugin-repository', 'the plugin hand-over reads it from there');
+}
+
+function metadataIn(manifest, key, readers) {
   let inside = false;
   for (const raw of manifest.split('\n')) {
     const line = raw.trim();
@@ -61,12 +70,12 @@ export function publicRepositoryIn(manifest) {
       inside = line === '[package.metadata.leaftext]';
       continue;
     }
-    if (!inside || !line.startsWith('public-repository')) continue;
-    const found = /^public-repository\s*=\s*"([^"]*)"/.exec(line);
-    if (!found) throw new Error(`public-repository is not a quoted string: ${line}`);
+    if (!inside || !new RegExp(`^${key}\\s*=`).test(line)) continue;
+    const found = new RegExp(`^${key}\\s*=\\s*"([^"]*)"`).exec(line);
+    if (!found) throw new Error(`${key} is not a quoted string: ${line}`);
     return found[1];
   }
-  throw new Error('Cargo.toml names no public-repository under [package.metadata.leaftext], and the app, the installer, the site and the release path all read it from there');
+  throw new Error(`Cargo.toml names no ${key} under [package.metadata.leaftext], and ${readers}`);
 }
 
 /**
@@ -80,6 +89,11 @@ export function project(handed = null) {
     return projectFrom(handed.repository);
   }
   return projectFrom(publicRepositoryIn(readFileSync(join(root, 'Cargo.toml'), 'utf8')));
+}
+
+/** The agent plugin's own public repository, read out of the same table as the project's. */
+export function pluginProject() {
+  return projectFrom(pluginRepositoryIn(readFileSync(join(root, 'Cargo.toml'), 'utf8')));
 }
 
 // `node scripts/project.mjs --slug` and friends, for a caller that is not JavaScript. Nothing in this tree needs it yet, and it is here because the alternative to one line of shell asking the reader is a second spelling of the address in whatever asked.
