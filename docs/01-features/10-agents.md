@@ -12,11 +12,20 @@ Open a [console in the library](03-library.md#console) and type the installed ag
 
 The mouse wheel scrolls the agent's conversation the way it does in the agent's own terminal: a program that asks for the mouse is sent the wheel itself, one step a notch, so the prompt box keeps what you were typing.
 
+Once it is [connected](#connect-on-windows), the agent is told it is running inside Leaftext, and `leaftext_open` lets it open a web address in a new [web tab](02-navigation.md#web-tabs) beside your documents rather than in an outside browser; `leaftext_eval` and `leaftext_gesture` then work that page.
+
 For a company gateway, follow the agent's own instructions: [Claude Code's gateway setup](https://code.claude.com/docs/en/llm-gateway) or [Codex's model provider configuration](https://developers.openai.com/codex/config-reference). The gateway must support the request format and authentication that the chosen agent sends. Connecting Leaftext as a tool server is a separate step below.
 
 ## Connect on Windows
 
-Replace `YOUR_NAME` with your Windows account folder name and add this server to your agent's MCP settings:
+Run these once in a Leaftext console, and every Claude Code or Codex session you start afterwards, in any folder, has Leaftext's tools and is told it is running inside Leaftext:
+
+```
+claude mcp add --scope user leaftext -- "%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe" --mcp
+codex mcp add leaftext -- "%LOCALAPPDATA%\Programs\leaftext\bin\leaftext.exe" --mcp
+```
+
+For another agent, replace `YOUR_NAME` with your Windows account folder name and add this server to its MCP settings:
 
 ```json
 {
@@ -31,7 +40,14 @@ Replace `YOUR_NAME` with your Windows account folder name and add this server to
 
 ## Connect on a Mac
 
-Add this server to your agent's MCP settings:
+Run these once in a Leaftext console, and every Claude Code or Codex session you start afterwards, in any folder, has Leaftext's tools:
+
+```
+claude mcp add --scope user leaftext -- /Applications/leaftext.app/Contents/MacOS/leaftext --mcp
+codex mcp add leaftext -- /Applications/leaftext.app/Contents/MacOS/leaftext --mcp
+```
+
+For another agent, add this server to its MCP settings:
 
 ```json
 {

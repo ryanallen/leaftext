@@ -11,7 +11,7 @@ export const ASSETS = 'assets/';
 
 // The front end sends its first command while it boots, before a module script can have run. Keeping them is what stops the first paint being lost.
 const IPC_QUEUE =
-  '<script>window.__leafPending=[];window.ipc={postMessage:(m)=>window.__leafPending.push(m)};</script>';
+  '<script>window.__leafPending=[];window.__leafIpc={postMessage:(m)=>window.__leafPending.push(m)};</script>';
 
 /** Marks the words a publish drew into the page, so the front end keeps them until its first document replaces them. */
 export const BAKED = 'baked-page';

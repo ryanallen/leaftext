@@ -651,6 +651,8 @@ Type an installed agent's command into the console and it uses that agent's own 
 
 The console draws with Ghostty's terminal core, the same code the Ghostty terminal runs, built for the page on Windows and the Mac alike. Scrolled back through a console's output, you keep your place while the program goes on printing. A console behind another tab keeps everything it prints but draws none of it until you come back to it, so a long build printing away costs the document you are reading nothing.
 
+Alt chords reach the program the way a terminal sends them: on Windows, `Alt+B`, `Alt+F` and every other Alt letter arrive as an escape followed by the letter, so a shell or editor that moves by word with them does; on a Mac, Option types the character it composes, as it does in Terminal. A console also tells the programs it starts that the terminal is Leaftext, the way a terminal names itself, so an agent run there knows where it is.
+
 On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does in Windows Terminal; with nothing highlighted, `Ctrl+C` goes to the program and interrupts it as usual. On a Mac, `Cmd+C` copies and `Ctrl+C` always interrupts.
 
 A screenshot on the clipboard pastes into a console as a picture file: `Ctrl+V` or `Alt+V` on Windows, and `Cmd+V`, `Ctrl+V` or `Option+V` on a Mac, write it to a PNG in the system's temporary folder and paste that file's path, which Claude Code and Codex attach to the message you are writing. Text on the clipboard pastes as text. The folder keeps only the twenty newest pictures.
