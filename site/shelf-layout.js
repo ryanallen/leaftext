@@ -22,7 +22,7 @@ export const SHELF_TONES = [
   ['english', 'English and Scots'],
   ['welsh', 'Welsh'],
   ['german', 'German'],
-  ['other', 'Iberian and Norse'],
+  ['other', 'Other languages'],
 ];
 
 const CENTURY_WORDS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth', 'Twenty-first'];

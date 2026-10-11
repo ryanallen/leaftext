@@ -3179,7 +3179,7 @@ function readChart(text) {
   if (at < 0 || at >= lines.length) return null;
   const header = lines[at].replace(/\r$/, '');
   const kind = CHART_PIE_HEADER_RE.test(header) ? 'pie' : CHART_XY_HEADER_RE.test(header) ? 'xy' : '';
-  if (!kind) return readStructuredChart(lines, at);
+  if (!kind) return readStructuredChart(lines, at) || readGantt(lines, at);
   const chart = { kind, refusal: '', header: at, lines, slices: [], series: [], axis: null, rows: [] };
   let inAcc = false;
   for (let i = at + 1; i < lines.length; i += 1) {
@@ -3239,6 +3239,7 @@ function readChart(text) {
 function chartColumns(chart) {
   if (!chart) return [];
   if (isStructuredChart(chart)) return structuredColumns(chart);
+  if (isGanttChart(chart)) return ganttColumns();
   if (chart.kind === 'pie') return ['Label', 'Value'];
   const first = chart.axis && chart.axis.list ? 'Category' : 'Point';
   const counts = { bar: 0, line: 0 };
@@ -3254,8 +3255,9 @@ function chartColumns(chart) {
 }
 
 
-function chartFieldProblem(chart, column, value) {
+function chartFieldProblem(chart, column, value, section) {
   if (isStructuredChart(chart)) return structuredFieldProblem(chart, column, value);
+  if (isGanttChart(chart)) return ganttFieldProblem(column, value, section);
   const typed = String(value);
   if (column === 0) {
     if (!typed.trim()) return 'A label needs at least one character.';
@@ -3289,6 +3291,7 @@ function chartCategoryCore(chart, row) {
 
 function writeChart(chart) {
   if (isStructuredChart(chart)) return writeStructuredChart(chart);
+  if (isGanttChart(chart)) return writeGantt(chart);
   if (!chart || chart.refusal) return chart ? chart.lines.join('\n') : '';
   const lines = chart.lines.slice();
   if (chart.kind === 'xy') {
@@ -3337,6 +3340,7 @@ function chartLastLine(lines) {
 
 function chartNewRow(chart) {
   if (isStructuredChart(chart)) return structuredNewRow(chart);
+  if (isGanttChart(chart)) return ganttNewTask();
   const n = chart.rows.length + 1;
   if (chart.kind === 'pie') return { label: 'Slice ' + n, values: ['0'], from: null };
   return { label: chart.axis && chart.axis.list ? 'Item ' + n : null, values: chart.series.map(() => '0'), from: null };
@@ -3894,6 +3898,338 @@ function structuredSettingProblem(chart, name, value) {
   if ((name === 'X high' || name === 'Y high') && typed && !structuredSetting(chart, name.replace('high', 'low')).value.trim()) return 'A high end needs a low end beside it.';
   if (/-->/.test(typed)) return 'A setting can’t hold an arrow.';
   return '';
+}
+
+
+const GANTT_HEADER_RE = /^[ \t]*gantt[ \t]*$/i;
+const GANTT_SECTION_RE = /^([ \t]*)section([ \t]+)(.*?\S)([ \t]*)$/i;
+const GANTT_TASK_RE = /^([ \t]*)([^:]*?\S)([ \t]*:[ \t]*)(.*?)([ \t]*)$/;
+
+const GANTT_KEPT_RE = /^[ \t]*(?:title[ \t]|dateFormat[ \t]|axisFormat[ \t]|tickInterval[ \t]|includes[ \t]|excludes[ \t]|todayMarker[ \t]|weekday[ \t]|weekend[ \t]|inclusiveEndDates\b|topAxis\b|displayMode\b|click[ \t]|accTitle[ \t]*:|accDescr[ \t]*:|accDescription[ \t])/i;
+const GANTT_DATE_FORMAT_RE = /^[ \t]*dateFormat[ \t]+(.*?)[ \t]*$/i;
+
+const GANTT_NAME_KEYWORD_RE = /^(?:gantt\b|dateFormat\s|inclusiveEndDates\b|topAxis\b|axisFormat\s|tickInterval\s|includes\s|excludes\s|todayMarker\s|weekday\s|weekend\s|title\s|accTitle\s*:|accDescr|section\s|click\s|call\s|href\s|%|\d{4}-\d\d-\d\d\b)/i;
+const GANTT_TAGS = ['active', 'done', 'crit', 'milestone', 'vert'];
+const GANTT_ID_RE = /^[\w-]+$/;
+const GANTT_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const GANTT_LENGTH_RE = /^\d+[hmdwMy]$/;
+const GANTT_AFTER_RE = /^after\s+([\w-]+(?:\s+[\w-]+)*)$/;
+const GANTT_UNTIL_RE = /^until\s+([\w-]+(?:\s+[\w-]+)*)$/;
+const GANTT_REF_RE = /^(after|until)(\s+)(.*)$/;
+
+function isGanttChart(chart) {
+  return !!chart && chart.kind === 'gantt';
+}
+
+function ganttRefused(lines, why) {
+  return Object.assign(chartRefused('gantt', why), { lines, slots: [] });
+}
+
+
+function readGantt(lines, at) {
+  if (!GANTT_HEADER_RE.test(lines[at].replace(/\r$/, ''))) return null;
+  const chart = { kind: 'gantt', refusal: '', header: at, lines, rows: [], slots: [], series: [], axis: null, slices: [] };
+  let inAcc = false;
+  for (let i = at + 1; i < lines.length; i += 1) {
+    const cr = lines[i].endsWith('\r') ? '\r' : '';
+    const body = cr ? lines[i].slice(0, -1) : lines[i];
+    if (inAcc) {
+      if (body.includes('}')) inAcc = false;
+      continue;
+    }
+    if (!body.trim() || FLOW_COMMENT_RE.test(body)) continue;
+    if (CHART_ACC_BLOCK_RE.test(body)) {
+      inAcc = !body.includes('}');
+      continue;
+    }
+    const format = GANTT_DATE_FORMAT_RE.exec(body);
+    if (format && format[1] !== 'YYYY-MM-DD') {
+      return ganttRefused(lines, 'This chart writes its dates as “' + format[1] + '”; the rows read only YYYY-MM-DD, so change it in the text.');
+    }
+    if (GANTT_KEPT_RE.test(body)) continue;
+    const section = GANTT_SECTION_RE.exec(body);
+    if (section) {
+      ganttSlot(chart, i, cr, body, { indent: section[1], gap: section[2], trail: section[4] }, { label: section[3], values: [], section: true });
+      continue;
+    }
+    const task = ganttReadTask(body);
+    if (!task) return ganttRefused(lines, 'Line ' + (i + 1) + ' isn’t a task the rows can read.');
+    ganttSlot(chart, i, cr, body, task.shape, task.row);
+  }
+  return chart;
+}
+
+function ganttSlot(chart, line, cr, raw, shape, row) {
+  row.from = chart.rows.length;
+  chart.slots.push({ line, cr, raw, shape, read: { label: row.label, values: row.values.slice(), section: !!row.section } });
+  chart.rows.push(row);
+}
+
+
+function ganttReadTask(body) {
+  const match = GANTT_TASK_RE.exec(body);
+  if (!match || /[#;]/.test(match[4]) || GANTT_NAME_KEYWORD_RE.test(match[2])) return null;
+  const pieces = match[4].split(',');
+  let tags = 0;
+  while (tags < pieces.length - 1 && GANTT_TAGS.includes(pieces[tags].trim())) tags += 1;
+  const fields = pieces.slice(tags);
+  if (fields.length > 3 || fields.some((one) => !one.trim())) return null;
+  const lead = /^\s*/.exec(fields[0])[0];
+  const tagsRaw = pieces.slice(0, tags).map((one) => one + ',').join('') + lead;
+  const sep = fields.length > 1 ? ',' + /^\s*/.exec(fields[1])[0] : ', ';
+  const parts = fields.map((one) => one.trim());
+  const values = parts.length === 3 ? parts : parts.length === 2 ? ['', parts[0], parts[1]] : ['', '', parts[0]];
+  return { shape: { indent: match[1], colon: match[3], tagsRaw, sep, trail: match[5] }, row: { label: match[2], values } };
+}
+
+function ganttColumns() {
+  return ['Task', 'Id', 'Starts', 'Length'];
+}
+
+function ganttDay(text) {
+  const date = GANTT_DATE_RE.exec(text);
+  if (!date) return false;
+  const [year, month, day] = [Number(date[1]), Number(date[2]), Number(date[3])];
+  const real = new Date(Date.UTC(year, month - 1, day));
+  return real.getUTCFullYear() === year && real.getUTCMonth() === month - 1 && real.getUTCDate() === day;
+}
+
+
+function ganttFieldProblem(column, value, section) {
+  const typed = String(value);
+  const trimmed = typed.trim();
+  if (column === 0) {
+    if (!trimmed) return 'A name needs at least one character.';
+    if (section) return '';
+    if (typed.includes(':')) return 'A task’s name can’t hold a colon.';
+    if (GANTT_NAME_KEYWORD_RE.test(trimmed)) return 'The chart would read a name starting this way as a setting, not a task.';
+    return '';
+  }
+  if (column === 1) {
+    if (!trimmed) return '';
+    if (!GANTT_ID_RE.test(trimmed)) return 'An id is letters, digits, - and _, with no spaces.';
+    return GANTT_TAGS.includes(trimmed) ? 'The chart reads “' + trimmed + '” as a tag, so it can’t be an id.' : '';
+  }
+  if (column === 2) {
+    if (!trimmed || GANTT_AFTER_RE.test(trimmed)) return '';
+    if (GANTT_DATE_RE.test(trimmed)) return ganttDay(trimmed) ? '' : 'There is no such day.';
+    return 'A start is a date like 2026-10-05, “after” and an id, or empty to follow the task above.';
+  }
+  if (GANTT_LENGTH_RE.test(trimmed) || GANTT_UNTIL_RE.test(trimmed)) return '';
+  if (GANTT_DATE_RE.test(trimmed)) return ganttDay(trimmed) ? '' : 'There is no such day.';
+  return 'A length is a whole number with h, m, d, w, M or y, like 3d; an end date; or “until” and an id.';
+}
+
+
+function ganttRefs(value) {
+  const ref = GANTT_REF_RE.exec(String(value).trim());
+  return ref ? ref[3].split(/\s+/).filter(Boolean) : [];
+}
+
+
+function ganttRowsProblem(rows) {
+  const found = [];
+  const ids = new Map();
+  const tasks = [];
+  rows.forEach((row, index) => {
+    if (row.section) return;
+    tasks.push(index);
+    const id = String(row.values[0]).trim();
+    if (!id) return;
+    if (ids.has(id)) found.push({ index, column: 1, problem: 'Another task already has this id.' });
+    else ids.set(id, index);
+  });
+  const nameOf = (index) => '“' + String(rows[index].label).trim() + '”';
+  const namedBy = new Map();
+  for (const index of tasks) {
+    const row = rows[index];
+    for (const column of [2, 3]) {
+      for (const id of ganttRefs(row.values[column - 1])) {
+        if (ids.has(id)) {
+          if (!namedBy.has(id)) namedBy.set(id, index);
+          continue;
+        }
+        found.push({ index, column, problem: 'No task here has the id “' + id + '”.' });
+      }
+    }
+  }
+  
+  for (const index of tasks) {
+    const id = String(rows[index].values[0]).trim();
+    if (!id || String(rows[index].values[1]).trim()) continue;
+    if (namedBy.has(id)) found.push({ index, column: 2, problem: nameOf(namedBy.get(id)) + ' names this task by its id, so it needs a start to keep one.' });
+  }
+  if (found.length) return found;
+  
+  const startDeps = new Map();
+  tasks.forEach((index, n) => {
+    const start = String(rows[index].values[1]).trim();
+    if (!start) startDeps.set(index, n ? [tasks[n - 1]] : []);
+    else startDeps.set(index, ganttRefs(start).map((id) => ids.get(id)));
+  });
+  
+  const deps = (index) => startDeps.get(index).map((to) => [to, 2]).concat(ganttRefs(rows[index].values[2]).map((id) => [ids.get(id), 3]));
+  const state = new Map();
+  const loops = (index) => {
+    state.set(index, 1);
+    for (const [to, column] of deps(index)) {
+      if (state.get(to) === 1) return { index, column };
+      const closed = state.get(to) === 2 ? null : loops(to);
+      if (closed) return closed;
+    }
+    state.set(index, 2);
+    return null;
+  };
+  for (const index of tasks) {
+    if (state.get(index) === 2) continue;
+    const closed = loops(index);
+    if (closed) {
+      found.push({ index: closed.index, column: closed.column, problem: 'This makes a loop: the task ends up waiting on itself.' });
+      return found;
+    }
+  }
+  for (const index of tasks) {
+    const start = String(rows[index].values[1]).trim();
+    const end = String(rows[index].values[2]).trim();
+    if (GANTT_DATE_RE.test(start) && GANTT_DATE_RE.test(end) && end < start) {
+      found.push({ index, column: 3, problem: 'This ends before it starts.' });
+      continue;
+    }
+    for (const id of ganttRefs(GANTT_UNTIL_RE.test(end) ? end : '')) {
+      if (ganttStartsAfter(startDeps, index, ids.get(id), new Set())) {
+        found.push({ index, column: 3, problem: 'This task starts after ' + nameOf(ids.get(id)) + ', so it can’t end where that one starts.' });
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+function ganttStartsAfter(startDeps, index, other, seen) {
+  if (seen.has(index)) return false;
+  seen.add(index);
+  return startDeps.get(index).some((dep) => dep === other || ganttStartsAfter(startDeps, dep, other, seen));
+}
+
+
+function ganttCarryIds(chart, rows) {
+  const carried = [];
+  const taken = (id, except) => rows.some((row, i) => i !== except && !row.section && String(row.values[0]).trim() === id);
+  rows.forEach((row, index) => {
+    if (row.section) return;
+    const slot = row.from !== null && row.from !== undefined ? chart.slots[row.from] : null;
+    if (!slot || slot.read.section) return;
+    const was = slot.read.values[0];
+    const now = String(row.values[0]).trim();
+    if (!was || !now || was === now || ganttFieldProblem(1, now) || taken(now, index) || taken(was, -1)) return;
+    rows.forEach((other, at) => {
+      if (other.section) return;
+      for (const column of [2, 3]) {
+        const value = String(other.values[column - 1]);
+        const ref = GANTT_REF_RE.exec(value.trim());
+        if (!ref || !ref[3].split(/\s+/).includes(was)) continue;
+        const next = ref[1] + ref[2] + ref[3].split(/(\s+)/).map((one) => (one === was ? now : one)).join('');
+        other.values[column - 1] = next;
+        carried.push({ index: at, column, value: next });
+      }
+    });
+  });
+  return carried;
+}
+
+
+function ganttRowText(chart, rows, index) {
+  const row = rows[index];
+  const known = row.from !== null && row.from !== undefined && row.from < chart.slots.length ? chart.slots[row.from] : null;
+  const slot = known && known.read.section === !!row.section ? known : null;
+  const values = row.section ? [] : row.values.map((one) => String(one).trim());
+  if (slot && slot.read.label === row.label && slot.read.values.join('\n') === values.join('\n')) return slot.raw;
+  if (row.section) {
+    const shape = slot ? slot.shape : { indent: ganttSectionIndent(chart), gap: ' ', trail: '' };
+    return shape.indent + 'section' + shape.gap + row.label.trim() + shape.trail;
+  }
+  const shape = slot ? slot.shape : { indent: ganttTaskIndent(chart, rows, index), colon: ' :', tagsRaw: '', sep: ', ', trail: '' };
+  const [id, start, length] = values;
+  const parts = !start ? [length] : !id ? [start, length] : [id, start, length];
+  return shape.indent + row.label.trim() + shape.colon + shape.tagsRaw + parts.join(shape.sep) + shape.trail;
+}
+
+function ganttSectionIndent(chart) {
+  const section = chart.slots.find((slot) => slot.read.section);
+  return section ? section.shape.indent : '    ';
+}
+
+
+function ganttTaskIndent(chart, rows, index) {
+  const shaped = (row) => !row.section && row.from !== null && row.from !== undefined && chart.slots[row.from] && !chart.slots[row.from].read.section;
+  for (let i = index - 1; i >= 0; i -= 1) if (shaped(rows[i])) return chart.slots[rows[i].from].shape.indent;
+  for (let i = index + 1; i < rows.length; i += 1) if (shaped(rows[i])) return chart.slots[rows[i].from].shape.indent;
+  return ganttSectionIndent(chart) + '    ';
+}
+
+
+function writeGantt(chart) {
+  if (!chart || chart.refusal) return chart ? chart.lines.join('\n') : '';
+  const lines = chart.lines;
+  const end = chartLineEnd(lines);
+  const texts = chart.rows.map((row, i) => ganttRowText(chart, chart.rows, i));
+  const slots = chart.slots;
+  const swap = new Map();
+  texts.forEach((text, i) => {
+    if (i < slots.length) swap.set(slots[i].line, text + slots[i].cr);
+  });
+  for (let i = texts.length; i < slots.length; i += 1) swap.set(slots[i].line, null);
+  const tail = slots.length ? slots[slots.length - 1].line : chartLastLine(lines);
+  const extra = texts.slice(slots.length).map((text) => text + (slots.length ? slots[slots.length - 1].cr : end));
+  const out = [];
+  lines.forEach((line, i) => {
+    const now = swap.has(i) ? swap.get(i) : line;
+    if (now !== null) out.push(now);
+    if (i === tail) out.push(...extra);
+  });
+  return out.join('\n');
+}
+
+function ganttNewTask() {
+  return { label: 'New task', values: ['', '', '1d'], from: null };
+}
+
+function ganttNewSection() {
+  return { label: 'New section', values: [], section: true, from: null };
+}
+
+
+function ganttMoveSpan(rows, at) {
+  if (!rows[at].section) return [at, at + 1];
+  let stop = at + 1;
+  while (stop < rows.length && !rows[stop].section) stop += 1;
+  return [at, stop];
+}
+
+
+function ganttMoveRow(rows, at, way) {
+  const [from, to] = ganttMoveSpan(rows, at);
+  if (!rows[at].section) {
+    const there = at + way;
+    if (there < 0 || there >= rows.length) return -1;
+    [rows[at], rows[there]] = [rows[there], rows[at]];
+    return there;
+  }
+  const block = rows.slice(from, to);
+  if (way < 0) {
+    let start = from - 1;
+    while (start >= 0 && !rows[start].section) start -= 1;
+    if (start < 0) return -1;
+    rows.splice(from, block.length);
+    rows.splice(start, 0, ...block);
+    return start;
+  }
+  if (to >= rows.length) return -1;
+  const [, after] = ganttMoveSpan(rows, to);
+  const next = rows.slice(to, after);
+  rows.splice(from, after - from, ...next, ...block);
+  return from + next.length;
 }
 
 const STATE_LIMIT = 1_000_000;
@@ -4929,6 +5265,519 @@ const GITGRAPH_GRAMMAR = {
   partsIn: gitGraphPartsIn,
 };
 
+const REQUIREMENT_TYPES = ['contains', 'copies', 'derives', 'satisfies', 'verifies', 'refines', 'traces'];
+const REQUIREMENT_BLOCK_RE = /^(requirement|functionalRequirement|interfaceRequirement|performanceRequirement|physicalRequirement|designConstraint|element)\s+([A-Za-z0-9_]+)\s*\{$/i;
+const REQUIREMENT_FIELD_RE = /^(?:id|text|risk|verifymethod|type|docref)\s*:/i;
+
+const REQUIREMENT_LINK_RE = /^([ \t]*)([A-Za-z0-9_]+)(\s*(?:<-\s*(\w+)\s*-|-\s*(\w+)\s*->)\s*)([A-Za-z0-9_]+)/;
+
+function isRequirementSource(text) {
+  return /(?:^|\n)[ \t]*requirementDiagram[ \t]*(?:\r?\n|$)/.test(text);
+}
+
+function requirementWalk(text) {
+  const read = conceptLines(text, 'requirement diagram', /^requirementDiagram$/);
+  if (read.refusal) return { graph: null, refusal: read.refusal };
+  const nodes = [];
+  const edges = [];
+  let refusal = '';
+  const refuse = (value, why) => {
+    refusal = refusal || 'The line “' + value + '” ' + why;
+  };
+  let open = null;
+  for (const statement of read.open) {
+    const value = statement.value;
+    if (open) {
+      if (value === '}') {
+        open.end = statement.index;
+        open = null;
+      } else if (!REQUIREMENT_FIELD_RE.test(value)) refuse(value, 'is not a field the canvas can read inside a block.');
+      continue;
+    }
+    const block = REQUIREMENT_BLOCK_RE.exec(value);
+    if (block) {
+      if (nodes.some((node) => node.id === block[2])) refuse(value, 'repeats the name “' + block[2] + '”.');
+      statement.kind = 'part';
+      open = { id: block[2], text: block[2], line: statement.index, end: statement.index };
+      nodes.push(open);
+      continue;
+    }
+    const link = REQUIREMENT_LINK_RE.exec(value);
+    if (link && link[0].length === value.length) {
+      const back = link[4] !== undefined;
+      const type = (back ? link[4] : link[5]).toLowerCase();
+      if (!REQUIREMENT_TYPES.includes(type)) {
+        refuse(value, 'names a relationship the diagram does not have.');
+        continue;
+      }
+      statement.kind = 'link';
+      edges.push({ id: 'r' + edges.length, from: back ? link[6] : link[2], to: back ? link[2] : link[6], label: type, line: statement.index });
+      continue;
+    }
+    if (/^(?:classDef|class|style|direction)\s/.test(value)) continue;
+    refuse(value, 'is not one the canvas can read.');
+  }
+  if (open) refusal = refusal || 'The block “' + open.id + '” has no closing brace.';
+  
+  const known = new Set(nodes.map((node) => node.id));
+  const stray = edges.find((edge) => !known.has(edge.from) || !known.has(edge.to));
+  if (stray) refuse(read.statements[stray.line].value, 'names “' + (known.has(stray.from) ? stray.to : stray.from) + '”, which no block defines.');
+  if (refusal) return { graph: null, refusal };
+  return { graph: { text, statements: read.statements, nodes, edges, groups: [], direction: 'TD', concept: 'requirement', newline: read.newline }, refusal: '' };
+}
+
+function requirementRenameRefusal(graph, kind, id, name) {
+  const next = String(name).trim();
+  if (kind === 'edge') return REQUIREMENT_TYPES.includes(next.toLowerCase()) ? '' : 'A relationship is one of ' + REQUIREMENT_TYPES.slice(0, -1).join(', ') + ' or ' + REQUIREMENT_TYPES[REQUIREMENT_TYPES.length - 1] + '.';
+  if (next === id) return '';
+  if (!/^[A-Za-z0-9_]+$/.test(next)) return 'A name here is letters, digits and underscores, with no spaces.';
+  if (graph.nodes.some((node) => node.id === next)) return 'Another part is already named “' + next + '”.';
+  return '';
+}
+
+
+function requirementRename(graph, kind, id, name) {
+  if (requirementRenameRefusal(graph, kind, id, name)) return false;
+  const next = name.trim();
+  if (kind === 'edge') {
+    const edge = flowFindEdge(graph, id);
+    if (!edge) return false;
+    const statement = graph.statements[edge.line];
+    statement.replacement = conceptLine(statement).replace(/^([ \t]*[A-Za-z0-9_]+\s*(?:<-|-)\s*)\w+/, '$1' + next.toLowerCase());
+    return id;
+  }
+  const node = kind === 'node' && flowFindNode(graph, id);
+  if (!node) return false;
+  if (next === id) return id;
+  const swap = (word) => (word === id ? next : word);
+  graph.statements.forEach((statement, index) => {
+    const raw = conceptLine(statement);
+    let written = raw;
+    if (index === node.line) written = raw.replace(/^([ \t]*\w+\s+)[A-Za-z0-9_]+/, '$1' + next);
+    else if (statement.kind === 'link') written = raw.replace(REQUIREMENT_LINK_RE, (whole, lead, left, middle, backType, type, right) => lead + swap(left) + middle + swap(right));
+    else if (/^style\s/.test(statement.value)) written = raw.replace(/^([ \t]*style\s+)([A-Za-z0-9_]+)/, (whole, lead, word) => lead + swap(word));
+    else if (/^class\s/.test(statement.value)) written = raw.replace(/^([ \t]*class\s+)(\S+)/, (whole, lead, list) => lead + list.split(',').map(swap).join(','));
+    if (written !== raw) statement.replacement = written;
+  });
+  return next;
+}
+
+
+function requirementConnect(graph, from, to) {
+  if (from === to || !flowFindNode(graph, from) || !flowFindNode(graph, to)) return false;
+  let last = graph.statements.length - 1;
+  while (last > 0 && !graph.statements[last].value) last -= 1;
+  const model = graph.edges.length ? graph.edges[graph.edges.length - 1].line : graph.nodes[0].line;
+  conceptAfter(graph, last, /^[ \t]*/.exec(graph.statements[model].raw)[0] + from + ' - traces -> ' + to);
+  return 'r' + graph.edges.length;
+}
+
+function requirementRemove(graph, kind, id) {
+  if (kind === 'edge') {
+    const edge = flowFindEdge(graph, id);
+    if (!edge) return false;
+    conceptDrop(graph, edge.line);
+    return true;
+  }
+  const node = kind === 'node' && flowFindNode(graph, id);
+  if (!node) return false;
+  for (const edge of graph.edges) if (edge.from === id || edge.to === id) conceptDrop(graph, edge.line);
+  for (let index = node.line; index <= node.end; index += 1) conceptDrop(graph, index);
+  return true;
+}
+
+
+function requirementPartsIn(svg, graph) {
+  const known = new Set(graph.nodes.map((node) => node.id));
+  const paths = new Map(Array.from(svg.querySelectorAll('path')).map((path) => [path.id, path]));
+  const drawn = new Map();
+  for (const edge of graph.edges) drawn.set(edge.from + '-' + edge.to + '-0', edge.id);
+  const edges = [];
+  for (const [name, id] of drawn) if (paths.has(name)) edges.push([id, paths.get(name)]);
+  return { nodes: Array.from(svg.querySelectorAll('g.node')).filter((element) => known.has(element.id)).map((element) => [element.id, element]), groups: [], edges };
+}
+
+const REQUIREMENT_GRAMMAR = {
+  name: 'requirement',
+  is: isRequirementSource,
+  walk: requirementWalk,
+  idle: 'Double-click a part or a line to rename it · drag its + onto another to connect them · Delete removes it.',
+  budOn: () => true,
+  budTitle: 'Drag onto another part to connect them',
+  budMoving: 'Let go on another part to connect them.',
+  budSide: 'right',
+  removable: (graph, item) => item.kind === 'node' || item.kind === 'edge',
+  renameRefusal: requirementRenameRefusal,
+  rename: requirementRename,
+  add: () => null,
+  remove: requirementRemove,
+  connect: requirementConnect,
+  partsIn: requirementPartsIn,
+};
+
+const C4_ELEMENTS = new Set(['Person', 'System', 'SystemDb', 'SystemQueue', 'Container', 'ContainerDb', 'ContainerQueue', 'Component', 'ComponentDb', 'ComponentQueue'].flatMap((name) => [name, name + '_Ext']));
+const C4_BOUNDARIES = new Set(['Boundary', 'Enterprise_Boundary', 'System_Boundary', 'Container_Boundary', 'Deployment_Node', 'Node', 'Node_L', 'Node_R']);
+const C4_RELATIONSHIPS = new Set(['Rel', 'BiRel', 'Rel_Up', 'Rel_U', 'Rel_Down', 'Rel_D', 'Rel_Left', 'Rel_L', 'Rel_Right', 'Rel_R', 'Rel_Back', 'RelIndex']);
+const C4_MISALIGNED = 'This diagram’s drawing did not line up with its text, so edit it as text below; the picture follows what you type.';
+
+function isC4Source(text) {
+  return /(?:^|\n)[ \t]*C4(?:Context|Container|Component|Dynamic|Deployment)[ \t]*(?:\r?\n|$)/.test(text);
+}
+
+
+function c4Call(raw) {
+  const line = raw.replace(/\r?\n$/, '');
+  const head = /^[ \t]*(\w+)\s*\(/.exec(line);
+  if (!head) return null;
+  const args = [];
+  let start = head[0].length;
+  let quoted = false;
+  let at = start;
+  for (; at < line.length; at += 1) {
+    const char = line[at];
+    if (char === '"') quoted = !quoted;
+    else if (!quoted && (char === ',' || char === ')')) {
+      const slice = line.slice(start, at);
+      const from = start + slice.length - slice.trimStart().length;
+      const value = slice.trim();
+      const isQuoted = value.length > 1 && value[0] === '"' && value[value.length - 1] === '"';
+      args.push({ from, to: from + value.length, value: isQuoted ? value.slice(1, -1) : value });
+      start = at + 1;
+      if (char === ')') break;
+    }
+  }
+  if (at >= line.length) return null;
+  const rest = line.slice(at + 1).trim();
+  if (rest && rest !== '{') return null;
+  return { name: head[1], args, close: at, open: rest === '{' };
+}
+
+function c4Walk(text) {
+  const read = conceptLines(text, 'C4 diagram', /^C4(?:Context|Container|Component|Dynamic|Deployment)$/);
+  if (read.refusal) return { graph: null, refusal: read.refusal };
+  const nodes = [];
+  const groups = [];
+  const edges = [];
+  let refusal = '';
+  const refuse = (value, why) => {
+    refusal = refusal || 'The line “' + value + '” ' + why;
+  };
+  
+  const inside = [];
+  const ids = new Set();
+  for (const statement of read.open) {
+    const value = statement.value;
+    if (value === '}') {
+      if (!inside.length) refuse(value, 'closes a boundary that was never opened.');
+      else inside.pop();
+      continue;
+    }
+    if (/^title(?:\s|$)/.test(value) || /^(?:UpdateElementStyle|UpdateRelStyle|UpdateLayoutConfig|UpdateBoundaryStyle|AddElementTag|AddRelTag|AddBoundaryTag)\s*\(/.test(value)) continue;
+    const call = c4Call(statement.raw);
+    if (!call) {
+      refuse(value, 'is not one the canvas can read.');
+      continue;
+    }
+    const holder = inside.length ? inside[inside.length - 1] : '';
+    if (C4_RELATIONSHIPS.has(call.name)) {
+      const shift = call.name === 'RelIndex' ? 1 : 0;
+      if (call.open || call.args.length < shift + 2) {
+        refuse(value, 'is a relationship the canvas cannot read.');
+        continue;
+      }
+      statement.kind = 'relationship';
+      edges.push({ id: 'r' + edges.length, from: call.args[shift].value, to: call.args[shift + 1].value, label: call.args[shift + 2] ? call.args[shift + 2].value : '', line: statement.index, at: shift + 2 });
+      continue;
+    }
+    const boundary = C4_BOUNDARIES.has(call.name);
+    if (!boundary && !C4_ELEMENTS.has(call.name)) {
+      refuse(value, 'is not one the canvas can read.');
+      continue;
+    }
+    if (boundary !== call.open) {
+      refuse(value, boundary ? 'opens a boundary with no brace after it.' : 'opens a brace after something that is not a boundary.');
+      continue;
+    }
+    const id = call.args[0] ? call.args[0].value : '';
+    if (!/^\w+$/.test(id) || ids.has(id)) {
+      refuse(value, ids.has(id) ? 'repeats the name “' + id + '”.' : 'has no name the canvas can read.');
+      continue;
+    }
+    ids.add(id);
+    statement.kind = boundary ? 'boundary' : 'element';
+    const part = { id, text: call.args[1] ? call.args[1].value : '', line: statement.index, inside: holder };
+    if (boundary) {
+      groups.push(part);
+      inside.push(id);
+    } else nodes.push(part);
+  }
+  if (inside.length) refusal = refusal || 'The boundary “' + inside[inside.length - 1] + '” has no closing brace.';
+  if (refusal) return { graph: null, refusal };
+  return { graph: { text, statements: read.statements, nodes, edges, groups, direction: 'TD', concept: 'c4', newline: read.newline }, refusal: '' };
+}
+
+
+function c4DrawnOrder(graph) {
+  const order = [];
+  const visit = (holder) => {
+    for (const node of graph.nodes) if (node.inside === holder) order.push({ kind: 'node', id: node.id, text: node.text });
+    for (const group of graph.groups) {
+      if (group.inside !== holder) continue;
+      visit(group.id);
+      order.push({ kind: 'group', id: group.id, text: group.text });
+    }
+  };
+  visit('');
+  return order;
+}
+
+function c4RenameRefusal(graph, kind, id, name) {
+  return String(name).includes('"') ? 'A C4 name cannot hold a double quote, because C4 has no way to write one.' : '';
+}
+
+
+function c4Rename(graph, kind, id, name) {
+  if (c4RenameRefusal(graph, kind, id, name) || !conceptNameOk(name)) return false;
+  const subject = kind === 'edge' ? flowFindEdge(graph, id) : kind === 'group' ? flowFindGroup(graph, id) : kind === 'node' ? flowFindNode(graph, id) : null;
+  if (!subject) return false;
+  const statement = graph.statements[subject.line];
+  const raw = conceptLine(statement);
+  const call = c4Call(raw);
+  const at = kind === 'edge' ? subject.at : 1;
+  if (!call) return false;
+  const words = '"' + name.trim() + '"';
+  const arg = call.args[at];
+  if (arg) statement.replacement = raw.slice(0, arg.from) + words + raw.slice(arg.to);
+  else statement.replacement = raw.slice(0, call.close) + ', ""'.repeat(at - call.args.length) + ', ' + words + raw.slice(call.close);
+  return id;
+}
+
+
+function c4Connect(graph, from, to) {
+  if (from === to || !flowFindNode(graph, from) || !flowFindNode(graph, to)) return false;
+  let after = graph.edges.length ? graph.edges[graph.edges.length - 1].line : graph.statements.length - 1;
+  while (after > 0 && !graph.statements[after].value) after -= 1;
+  const model = graph.edges.length ? graph.edges[graph.edges.length - 1] : graph.nodes.find((node) => !node.inside) || graph.nodes[0];
+  conceptAfter(graph, after, /^[ \t]*/.exec(graph.statements[model.line].raw)[0] + 'Rel(' + from + ', ' + to + ', "Uses")');
+  return 'r' + graph.edges.length;
+}
+
+function c4Remove(graph, kind, id) {
+  if (kind === 'edge') {
+    const edge = flowFindEdge(graph, id);
+    if (!edge) return false;
+    conceptDrop(graph, edge.line);
+    return true;
+  }
+  const node = kind === 'node' && flowFindNode(graph, id);
+  if (!node) return false;
+  for (const edge of graph.edges) if (edge.from === id || edge.to === id) conceptDrop(graph, edge.line);
+  conceptDrop(graph, node.line);
+  return true;
+}
+
+function c4Words(element) {
+  const spans = Array.from(element.children || []).filter((child) => String(child.tagName).toLowerCase() === 'tspan');
+  return (spans.length ? spans.map((span) => span.textContent).join(' ') : String(element.textContent || '')).replace(/\s+/g, ' ').trim();
+}
+
+
+function c4PartsIn(svg, graph) {
+  const order = c4DrawnOrder(graph);
+  const top = Array.from(svg.children || []).filter((child) => String(child.tagName).toLowerCase() === 'g');
+  const kids = (element, tag) => Array.from(element.children || []).filter((child) => String(child.tagName).toLowerCase() === tag);
+  const shapes = top.filter((element) => element.classList.contains('person-man') || (!element.getAttribute('class') && kids(element, 'rect').length));
+  const lines = top.filter((element) => !element.getAttribute('class') && !kids(element, 'rect').length && (kids(element, 'line').length || kids(element, 'path').length));
+  const drawnLines = lines.length ? Array.from(lines[0].children).filter((child) => /^(?:line|path)$/i.test(String(child.tagName))) : [];
+  const lined = shapes.length === order.length && drawnLines.length === graph.edges.length && order.every((part, index) => {
+    const element = shapes[index];
+    if (element.classList.contains('person-man') !== (part.kind === 'node')) return false;
+    
+    const label = kids(element, 'text')[part.kind === 'node' ? 1 : 0];
+    return !!label && c4Words(label) === part.text.replace(/\s+/g, ' ').trim();
+  });
+  if (!lined) return { nodes: [], groups: [], edges: [], problem: C4_MISALIGNED };
+  const nodes = [];
+  const groups = [];
+  order.forEach((part, index) => (part.kind === 'node' ? nodes : groups).push([part.id, shapes[index]]));
+  return { nodes, groups, edges: graph.edges.map((edge, index) => [edge.id, drawnLines[index]]) };
+}
+
+const C4_GRAMMAR = {
+  name: 'c4',
+  is: isC4Source,
+  walk: c4Walk,
+  idle: 'Double-click a part or a line to rename it · drag its + onto another to connect them · Delete removes it.',
+  budOn: () => true,
+  budTitle: 'Drag onto another part to connect them',
+  budMoving: 'Let go on another part to connect them.',
+  budSide: 'right',
+  
+  removable: (graph, item) => item.kind === 'node' || item.kind === 'edge',
+  renameRefusal: c4RenameRefusal,
+  rename: c4Rename,
+  add: () => null,
+  remove: c4Remove,
+  connect: c4Connect,
+  partsIn: c4PartsIn,
+};
+
+const ARCHITECTURE_PART_RE = /^(group|service)\s+(\w+)(\([^)]*\))?(?:\[([^\]]*)\])?(?:\s+in\s+(\w+))?$/;
+const ARCHITECTURE_JUNCTION_RE = /^junction\s+(\w+)(?:\s+in\s+(\w+))?$/;
+const ARCHITECTURE_EDGE_RE = /^(\w+)(?:\{group\})?\s*:\s*[LRTB]\s*(?:<-->|-->|<--|--)\s*[LRTB]\s*:\s*(\w+)(?:\{group\})?$/;
+
+function isArchitectureSource(text) {
+  return /(?:^|\n)[ \t]*architecture-beta[ \t]*(?:\r?\n|$)/.test(text);
+}
+
+function architectureWalk(text) {
+  const read = conceptLines(text, 'architecture diagram', /^architecture-beta$/);
+  if (read.refusal) return { graph: null, refusal: read.refusal };
+  const nodes = [];
+  const groups = [];
+  const edges = [];
+  let refusal = '';
+  const refuse = (value, why) => {
+    refusal = refusal || 'The line “' + value + '” ' + why;
+  };
+  const ids = new Set();
+  const name = (value, id) => {
+    if (ids.has(id)) refuse(value, 'repeats the name “' + id + '”.');
+    ids.add(id);
+  };
+  for (const statement of read.open) {
+    const value = statement.value;
+    if (/^title(?:\s|$)/.test(value)) continue;
+    const part = ARCHITECTURE_PART_RE.exec(value);
+    if (part) {
+      name(value, part[2]);
+      statement.kind = part[1];
+      (part[1] === 'group' ? groups : nodes).push({ id: part[2], text: part[4] || '', kind: part[1], line: statement.index });
+      continue;
+    }
+    const junction = ARCHITECTURE_JUNCTION_RE.exec(value);
+    if (junction) {
+      name(value, junction[1]);
+      statement.kind = 'junction';
+      nodes.push({ id: junction[1], text: '', kind: 'junction', line: statement.index });
+      continue;
+    }
+    const edge = ARCHITECTURE_EDGE_RE.exec(value);
+    if (edge) {
+      statement.kind = 'edge';
+      edges.push({ id: 'e' + edges.length, from: edge[1], to: edge[2], label: '', line: statement.index });
+      continue;
+    }
+    refuse(value, 'is not one the canvas can read.');
+  }
+  const stray = edges.find((edge) => !ids.has(edge.from) || !ids.has(edge.to));
+  if (stray) refuse(read.statements[stray.line].value, 'names “' + (ids.has(stray.from) ? stray.to : stray.from) + '”, which no line defines.');
+  if (refusal) return { graph: null, refusal };
+  return { graph: { text, statements: read.statements, nodes, edges, groups, direction: 'TD', concept: 'architecture', newline: read.newline }, refusal: '' };
+}
+
+function architectureJoined(graph, from, to) {
+  return graph.edges.some((edge) => (edge.from === from && edge.to === to) || (edge.from === to && edge.to === from));
+}
+
+
+function architectureRenamable(graph, item) {
+  if (item.kind === 'group') return true;
+  const node = item.kind === 'node' && flowFindNode(graph, item.id);
+  return !!node && node.kind === 'service';
+}
+
+function architectureRenameRefusal(graph, kind, id, name) {
+  return /[[\]]/.test(String(name)) ? 'A name here cannot hold a square bracket, because the brackets are what end it.' : '';
+}
+
+function architectureRename(graph, kind, id, name) {
+  if (!architectureRenamable(graph, { kind, id }) || architectureRenameRefusal(graph, kind, id, name) || !conceptNameOk(name)) return false;
+  const subject = kind === 'group' ? flowFindGroup(graph, id) : flowFindNode(graph, id);
+  const statement = graph.statements[subject.line];
+  const raw = conceptLine(statement);
+  const words = '[' + name.trim() + ']';
+  const head = /^[ \t]*(?:group|service)\s+\w+(?:\([^)]*\))?/.exec(raw)[0];
+  const rest = raw.slice(head.length);
+  statement.replacement = head + (/^\[[^\]]*\]/.test(rest) ? rest.replace(/^\[[^\]]*\]/, words) : words + rest);
+  return id;
+}
+
+function architectureConnectRefusal(graph, from, to) {
+  return from !== to && architectureJoined(graph, from, to) ? 'These two are already joined, and a second line between them stops the diagram drawing.' : '';
+}
+
+
+function architectureConnect(graph, from, to, placed) {
+  const start = flowFindNode(graph, from);
+  const end = flowFindNode(graph, to);
+  if (from === to || !start || !end || start.kind !== 'service' || end.kind !== 'service' || architectureJoined(graph, from, to)) return false;
+  const box = (id) => (placed && placed.nodes ? placed.nodes.find((entry) => entry.id === id) : null);
+  const a = box(from);
+  const b = box(to);
+  const dx = a && b ? b.x + b.width / 2 - (a.x + a.width / 2) : 1;
+  const dy = a && b ? b.y + b.height / 2 - (a.y + a.height / 2) : 0;
+  const sides = Math.abs(dx) > Math.abs(dy) ? (dx >= 0 ? ['R', 'L'] : ['L', 'R']) : dy >= 0 ? ['B', 'T'] : ['T', 'B'];
+  let after = graph.edges.length ? graph.edges[graph.edges.length - 1].line : graph.statements.length - 1;
+  while (after > 0 && !graph.statements[after].value) after -= 1;
+  const model = graph.edges.length ? graph.edges[graph.edges.length - 1] : start;
+  conceptAfter(graph, after, /^[ \t]*/.exec(graph.statements[model.line].raw)[0] + from + ':' + sides[0] + ' -- ' + sides[1] + ':' + to);
+  return true;
+}
+
+function architectureRemove(graph, kind, id) {
+  if (kind === 'edge') {
+    const edge = flowFindEdge(graph, id);
+    if (!edge) return false;
+    conceptDrop(graph, edge.line);
+    return true;
+  }
+  const node = kind === 'node' && flowFindNode(graph, id);
+  if (!node) return false;
+  for (const edge of graph.edges) if (edge.from === id || edge.to === id) conceptDrop(graph, edge.line);
+  conceptDrop(graph, node.line);
+  return true;
+}
+
+
+function architecturePartsIn(svg, graph) {
+  const named = new Map(Array.from(svg.querySelectorAll('[id]')).map((element) => [element.id, element]));
+  const nodes = [];
+  for (const node of graph.nodes) {
+    const element = named.get((node.kind === 'service' ? 'service-' : 'node-') + node.id);
+    if (element) nodes.push([node.id, element]);
+  }
+  const groups = graph.groups.filter((group) => named.has('group-' + group.id)).map((group) => [group.id, named.get('group-' + group.id)]);
+  const edges = [];
+  const all = Array.from(named.values());
+  for (const edge of graph.edges) {
+    const path = all.find((element) => new RegExp('^L_' + edge.from + '_' + edge.to + '_\\d+$').test(element.id));
+    if (path) edges.push([edge.id, path]);
+  }
+  return { nodes, groups, edges };
+}
+
+const ARCHITECTURE_GRAMMAR = {
+  name: 'architecture',
+  is: isArchitectureSource,
+  walk: architectureWalk,
+  idle: 'Double-click a service or group to rename it · drag its + onto another to connect them · Delete removes it.',
+  budOn: (graph, id) => (flowFindNode(graph, id) || {}).kind === 'service',
+  budTitle: 'Drag onto another service to connect them',
+  budMoving: 'Let go on another service to connect them.',
+  budSide: 'right',
+  
+  removable: (graph, item) => item.kind === 'node' || item.kind === 'edge',
+  renamable: architectureRenamable,
+  renameRefusal: architectureRenameRefusal,
+  rename: architectureRename,
+  add: () => null,
+  remove: architectureRemove,
+  connectRefusal: architectureConnectRefusal,
+  connect: architectureConnect,
+  partsIn: architecturePartsIn,
+};
+
 const SEQUENCE_LIMIT = 1_000_000;
 const SEQUENCE_LINES_LIMIT = 10_000;
 const SEQUENCE_DEPTH_LIMIT = 32;
@@ -5305,6 +6154,7 @@ function setFlowText(text, from) {
   flowSession.grammar = concept ? concept.name : isStateSource(text) ? 'state' : 'flow';
   flowSession.graph = flowSession.sequence ? null : concept ? concept.walk(text).graph : flowSession.grammar === 'state' ? parseState(text) : parseFlow(text);
   if (flowSession.renameWhenPlaced && (!flowSession.graph || !flowFindNode(flowSession.graph, flowSession.renameWhenPlaced))) flowSession.renameWhenPlaced = null;
+  if (flowSession.renameEdgeWhenPlaced && (!flowSession.graph || !flowFindEdge(flowSession.graph, flowSession.renameEdgeWhenPlaced))) flowSession.renameEdgeWhenPlaced = null;
   if (flowSession.sequence) flowSession.sequenceSelection = null;
   if (flowSelection && !flowSelectionStillThere()) flowSelection = null;
   if (from !== 'code' && flowCode) flowCode.value = text;
@@ -5463,7 +6313,7 @@ function restoreFlowHint() {
   
   if (!graph) {
     const chart = flowSession && flowSession.chart;
-    setFlowHint(chart && !chart.refusal ? FLOW_TIP_ROWS : FLOW_TIP_PREVIEW);
+    setFlowHint(chart && !chart.refusal ? (isGanttChart(chart) ? FLOW_TIP_GANTT : FLOW_TIP_ROWS) : FLOW_TIP_PREVIEW);
     return;
   }
   
@@ -5553,7 +6403,7 @@ function buildFlowControls() {
 }
 
 
-const CONCEPT_GRAMMARS = [MINDMAP_GRAMMAR, TIMELINE_GRAMMAR, KANBAN_GRAMMAR, BLOCK_GRAMMAR, GITGRAPH_GRAMMAR];
+const CONCEPT_GRAMMARS = [MINDMAP_GRAMMAR, TIMELINE_GRAMMAR, KANBAN_GRAMMAR, BLOCK_GRAMMAR, GITGRAPH_GRAMMAR, REQUIREMENT_GRAMMAR, C4_GRAMMAR, ARCHITECTURE_GRAMMAR];
 
 function conceptGrammarFor(text) {
   return typeof text === 'string' ? CONCEPT_GRAMMARS.find((grammar) => grammar.is(text)) || null : null;
@@ -5871,6 +6721,12 @@ function paintFlowDrawing(svg, text, themeVersion) {
     flowSession.renameWhenPlaced = null;
     openFlowLabelBox('node', id);
   }
+  
+  if (flowSession && flowSession.renameEdgeWhenPlaced && flowPlaced && flowPlaced.edges.some((edge) => edge.id === flowSession.renameEdgeWhenPlaced)) {
+    const id = flowSession.renameEdgeWhenPlaced;
+    flowSession.renameEdgeWhenPlaced = null;
+    openFlowLabelBox('edge', id);
+  }
   if (flowSession && flowSession.sequence) mapSequenceDrawing();
   flowCanvas.scrollLeft = left;
   flowCanvas.scrollTop = top;
@@ -5900,7 +6756,7 @@ function drawFlowNotice() {
   const sequence = flowSession && flowSession.sequence;
   const chart = flowSession && flowSession.chart;
   
-  const problem = flowDrawError || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '') || (sequence && flowSession.sequenceMapProblem) || '';
+  const problem = flowDrawError || (graph && flowNatural && flowNatural.problem) || (graph && flowLostBoxes ? FLOW_LOST_BOXES : '') || (sequence && flowSession.sequenceMapProblem) || '';
   
   const message = sequence ? problem : chart ? problem || (chart.refusal ? chart.refusal + FLOW_AS_TEXT : '') : !graph
     ? problem || ((conceptGrammar() ? conceptGrammar().walk(flowSession.text).refusal : flowSession && flowSession.grammar === 'state' ? stateRefusal(flowSession.text) : flowRefusal(flowSession ? flowSession.text : '')) || FLOW_UNMODELED) + FLOW_AS_TEXT
@@ -6078,7 +6934,8 @@ function measureFlowDiagram() {
   }
   
   for (const edge of edges) flowDrawEdgeTarget(edge.path, edge.id);
-  flowNatural = { nodes, edges, groups };
+  
+  flowNatural = { nodes, edges, groups, problem: (parts && parts.problem) || '' };
   flowLostBoxes = graph.nodes.length && !nodes.length;
   placeFlowDiagram();
 }
@@ -6793,8 +7650,19 @@ if (flowCanvas) {
     
     if (concept && drag.kind === 'bud') {
       if (drag.moved && over && concept.connect) {
-        if (concept.connect(graph, drag.from, over)) flowGraphChanged();
-        else drawFlowOverlay();
+        const refused = concept.connectRefusal ? concept.connectRefusal(graph, drag.from, over) : '';
+        if (refused) leafToast(refused, 'error');
+        
+        const made = !refused && concept.connect(graph, drag.from, over, flowPlaced);
+        if (!made) {
+          drawFlowOverlay();
+          return;
+        }
+        if (typeof made === 'string') {
+          flowSelection = { kind: 'edge', id: made };
+          flowSession.renameEdgeWhenPlaced = made;
+        }
+        flowGraphChanged();
         return;
       }
       if (concept.connect) drawFlowOverlay();
@@ -6962,7 +7830,7 @@ function flowMenuItems(spot) {
   const graph = flowSession.graph;
   const concept = conceptGrammar();
   if (concept) {
-    const items = [{ label: 'Rename', run: () => openFlowLabelBox(spot.kind, spot.id) }];
+    const items = !concept.renamable || concept.renamable(graph, spot) ? [{ label: 'Rename', run: () => openFlowLabelBox(spot.kind, spot.id) }] : [];
     if (spot.kind === 'group' && concept.name === 'kanban') items.push({ label: 'Add a card', run: () => addConceptPart('group', spot.id) });
     if (spot.kind === 'node' && !concept.connect && concept.budOn(graph, spot.id)) items.push({ label: concept.budTitle, run: () => addConceptPart('node', spot.id) });
     if (concept.removable(graph, spot)) items.push({ label: 'Delete', run: deleteFlowSelection });
@@ -7259,6 +8127,8 @@ const FLOW_LABEL_BOX_ASKS = {
 function openFlowLabelBox(kind, id) {
   const graph = flowSession && flowSession.graph;
   if (!graph || !flowPlaced) return;
+  const concept = conceptGrammar();
+  if (concept && concept.renamable && !concept.renamable(graph, { kind, id })) return;
   closeFlowLabelBox(true);
   const stage = flowCanvas.querySelector('.flow-stage');
   if (!stage) return;
@@ -7337,7 +8207,16 @@ function closeFlowLabelBox(keep) {
   if (!graph) return;
   const concept = conceptGrammar();
   if (concept) {
-    if (concept.rename(graph, box.kind, box.id, value)) flowGraphChanged();
+    const refused = concept.renameRefusal ? concept.renameRefusal(graph, box.kind, box.id, value) : '';
+    if (refused) {
+      leafToast(refused, 'error');
+      return;
+    }
+    const renamed = concept.rename(graph, box.kind, box.id, value);
+    if (!renamed) return;
+    
+    if (box.kind === 'node' && typeof renamed === 'string') flowSelection = { kind: 'node', id: renamed };
+    flowGraphChanged();
     return;
   }
   if (flowSession.grammar === 'state') {
@@ -8621,7 +9500,12 @@ const chartRowsHost = document.getElementById('chartRows');
 const FLOW_TIP_ROWS =
   'Change a label or number in the rows beside the text · Add row puts one at the end · Alt+Up and Alt+Down move the row you are in; a pie draws by size, so only its legend moves.';
 const CHART_SECTION_SIZED = 'A section is sized by what it holds.';
+const FLOW_TIP_GANTT = 'Change a task beside the picture · a task that starts after another moves with it · Alt+Up or Alt+Down moves a row';
+const GANTT_START_PLACEHOLDER = 'after the task above';
+const GANTT_REMOVE = 'Remove this row';
 let chartRowsTimer = 0;
+
+let chartRowsLastField = null;
 
 
 function drawChartRows(rebuild) {
@@ -8658,8 +9542,8 @@ function buildChartRows(chart) {
   chart.rows.forEach((row, index) => chartRowsHost.appendChild(chartRowElement(chart, row, index)));
   const actions = document.createElement('div');
   actions.className = 'chart-rows-actions';
-  actions.appendChild(chartRowsButton('chart-rows-add', 'Add row', addChartRow));
-  if (chart.kind === 'journey') actions.appendChild(chartRowsButton('chart-rows-add-section', 'Add section', addChartSection));
+  actions.appendChild(chartRowsButton('chart-rows-add', chart.kind === 'gantt' ? 'Add task' : 'Add row', chart.kind === 'gantt' ? addGanttTask : addChartRow));
+  if (chart.kind === 'journey' || chart.kind === 'gantt') actions.appendChild(chartRowsButton('chart-rows-add-section', 'Add section', addChartSection));
   if (chart.kind === 'radar') actions.appendChild(chartRowsButton('chart-rows-add-axis', 'Add axis', addChartAxisColumn));
   chartRowsHost.appendChild(actions);
   refreshChartRows(chart);
@@ -8721,11 +9605,12 @@ function chartRowElement(chart, row, index) {
     line.appendChild(label);
   }
   if (!row.section) row.values.forEach((value, i) => line.appendChild(chartField(value, i + 1, names[i + 1])));
+  if (chart.kind === 'gantt' && !row.section) line.querySelectorAll('.flow-field')[2].placeholder = GANTT_START_PLACEHOLDER;
   const remove = document.createElement('button');
   remove.type = 'button';
   remove.className = 'chart-row-remove';
   remove.setAttribute('aria-label', 'Remove this row');
-  remove.title = 'Remove this row';
+  remove.title = GANTT_REMOVE;
   remove.disabled = chart.rows.length <= 1;
   const icon = document.createElement('span');
   icon.className = 'lt-icon lt-icon-close';
@@ -8737,6 +9622,10 @@ function chartRowElement(chart, row, index) {
 
 
 function refreshChartRows(chart) {
+  if (chart.kind === 'gantt') {
+    refreshGanttRows();
+    return;
+  }
   if (chart.kind !== 'packet' && chart.kind !== 'treemap') return;
   const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
   const rows = lines.map((line) => ({ values: Array.from(line.querySelectorAll('.flow-field')).filter((one) => one.chartColumn > 0).map((one) => one.value.trim()) }));
@@ -8770,6 +9659,10 @@ function chartField(value, column, name) {
   field.addEventListener('input', () => {
     window.clearTimeout(chartRowsTimer);
     chartRowsTimer = window.setTimeout(writeChartRows, 180);
+    if (isGanttChart(flowSession && flowSession.chart)) refreshGanttRows();
+  });
+  field.addEventListener('focus', () => {
+    chartRowsLastField = field;
   });
   field.addEventListener('blur', flushChartRows);
   field.addEventListener('keydown', onChartRowKey);
@@ -8792,7 +9685,7 @@ function chartRowsFromGrid(chart) {
     const row = { label: null, values: [], from: Number.isInteger(line.chartFrom) ? line.chartFrom : null };
     if (line.chartSection) row.section = true;
     for (const field of fields) {
-      const problem = chartFieldProblem(chart, field.chartColumn, field.value);
+      const problem = chartFieldProblem(chart, field.chartColumn, field.value, !!line.chartSection);
       markChartField(field, problem);
       if (problem) bad = true;
       if (field.chartColumn === 0) row.label = field.value;
@@ -8801,7 +9694,13 @@ function chartRowsFromGrid(chart) {
     if (!labeled) row.label = null;
     rows.push(row);
   }
-  for (const found of chartRowsProblem(chart, rows)) {
+  if (isGanttChart(chart)) {
+    for (const carried of ganttCarryIds(chart, rows)) {
+      const field = Array.from(lines[carried.index].querySelectorAll('.flow-field')).find((one) => one.chartColumn === carried.column);
+      if (field) field.value = carried.value;
+    }
+  }
+  for (const found of isGanttChart(chart) ? ganttRowsProblem(rows) : chartRowsProblem(chart, rows)) {
     const field = Array.from(lines[found.index].querySelectorAll('.flow-field')).find((one) => one.chartColumn === found.column);
     if (field && !field.disabled) {
       markChartField(field, found.problem);
@@ -8869,7 +9768,7 @@ function addChartRow() {
 }
 
 function addChartSection() {
-  changeChartShape((chart) => chart.rows.push(chartNewSection(chart)), 0);
+  changeChartShape((chart) => chart.rows.push(isGanttChart(chart) ? ganttNewSection() : chartNewSection(chart)), 0);
 }
 
 function addChartAxisColumn() {
@@ -8902,11 +9801,57 @@ function onChartRowKey(event) {
   if (at < 0 || to < 0 || to >= lines.length) return;
   if (!writeChartRows()) return;
   const chart = flowSession.chart;
-  const [moved] = chart.rows.splice(at, 1);
-  chart.rows.splice(to, 0, moved);
+  let landed = to;
+  if (isGanttChart(chart)) {
+    landed = ganttMoveRow(chart.rows, at, to - at);
+    if (landed < 0) return;
+  } else {
+    const [moved] = chart.rows.splice(at, 1);
+    chart.rows.splice(to, 0, moved);
+  }
   setFlowText(writeChart(chart), 'rows');
   buildChartRows(flowSession.chart);
-  focusChartRow(to, field.chartColumn);
+  focusChartRow(landed, field.chartColumn);
+}
+
+
+function addGanttTask() {
+  if (!flowSession || !flowSession.chart) return;
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  const under = chartRowsLastField && chartRowsLastField.closest ? lines.indexOf(chartRowsLastField.closest('.chart-row')) : -1;
+  if (!writeChartRows()) return;
+  const chart = flowSession.chart;
+  const at = under < 0 ? chart.rows.length : under + 1;
+  chart.rows.splice(at, 0, ganttNewTask());
+  setFlowText(writeChart(chart), 'rows');
+  buildChartRows(flowSession.chart);
+  focusChartRow(at, 0);
+}
+
+
+function refreshGanttRows() {
+  const lines = Array.from(chartRowsHost.querySelectorAll('.chart-row'));
+  const fieldsOf = (line) => Array.from(line.querySelectorAll('.flow-field'));
+  const namedBy = new Map();
+  for (const line of lines) {
+    if (line.chartSection) continue;
+    const fields = fieldsOf(line);
+    for (const column of [2, 3]) {
+      for (const id of ganttRefs(fields[column].value)) if (!namedBy.has(id)) namedBy.set(id, fields[0].value.trim());
+    }
+  }
+  for (const line of lines) {
+    const remove = line.querySelector('.chart-row-remove');
+    let naming = '';
+    if (!line.chartSection) {
+      const fields = fieldsOf(line);
+      fields[1].disabled = !fields[2].value.trim();
+      naming = namedBy.get(fields[1].value.trim()) || '';
+    }
+    if (!remove) continue;
+    remove.disabled = lines.length <= 1 || !!naming;
+    remove.title = naming ? '“' + naming + '” names this task, so it can’t be removed.' : GANTT_REMOVE;
+  }
 }
 
 if (window.__leafSite) {
@@ -11028,71 +11973,71 @@ let contextMenuTabIndex = null;
 let contextMenuPicture = null;
 let contextMenuPictureFullWindow = false;
 const CONTEXT_MENU_ITEMS = [
-  { action: 'open', label: 'Open', command: 'openRecent' },
-  { action: 'favorite', label: 'Favorite', command: 'toggleFavorite' },
+  { action: 'open', icon: 'document', label: 'Open', command: 'openRecent' },
+  { action: 'favorite', icon: 'favorite-off', label: 'Favorite', command: 'toggleFavorite' },
   
-  { action: 'openBeside', label: 'Open beside', command: 'openBeside', opensBeside: true },
-  { action: 'closeBeside', label: 'Close beside', command: 'closeBeside', tabOnly: true, whileSplit: true },
-  { action: 'openSourceBeside', label: 'Open source beside', command: 'openSourceBeside', tabOnly: true },
+  { action: 'openBeside', icon: 'split', label: 'Open beside', command: 'openBeside', opensBeside: true },
+  { action: 'closeBeside', icon: 'close', label: 'Close beside', command: 'closeBeside', tabOnly: true, whileSplit: true },
+  { action: 'openSourceBeside', icon: 'code-view', label: 'Open source beside', command: 'openSourceBeside', tabOnly: true },
   'separator',
-  { action: 'cut', label: 'Cut', command: 'copyFile' },
-  { action: 'copy', label: 'Copy', command: 'copyFile' },
-  { action: 'copyPath', label: 'Copy path', command: 'copyPath' },
+  { action: 'cut', icon: 'cut', label: 'Cut', command: 'copyFile' },
+  { action: 'copy', icon: 'copy', label: 'Copy', command: 'copyFile' },
+  { action: 'copyPath', icon: 'copy-path', label: 'Copy path', command: 'copyPath' },
   'separator',
-  { action: 'rename', label: 'Rename', command: 'renameFile' },
-  { action: 'duplicate', label: 'Duplicate', command: 'duplicateFile' },
+  { action: 'rename', icon: 'rename', label: 'Rename', command: 'renameFile' },
+  { action: 'duplicate', icon: 'duplicate', label: 'Duplicate', command: 'duplicateFile' },
   
-  { action: 'hideRow', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide' },
-  { action: 'showRow', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show' },
+  { action: 'hideRow', icon: 'hide', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide' },
+  { action: 'showRow', icon: 'show', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show' },
   'separator',
-  { action: 'reveal', label: 'Reveal file', command: 'revealFile' },
-  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
+  { action: 'reveal', icon: 'reveal', label: 'Reveal file', command: 'revealFile' },
+  { action: 'properties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
   'separator',
-  { action: 'delete', label: 'Delete', command: 'deleteFile', danger: true },
+  { action: 'delete', icon: 'trash', label: 'Delete', command: 'deleteFile', danger: true },
 ];
 
 const FOLDER_MENU_ITEMS = [
-  { action: 'openFolder', label: 'Open folder', folderOnly: true },
-  { action: 'favorite', label: 'Favorite', command: 'toggleFavorite', folderOnly: true },
+  { action: 'openFolder', icon: 'open', label: 'Open folder', folderOnly: true },
+  { action: 'favorite', icon: 'favorite-off', label: 'Favorite', command: 'toggleFavorite', folderOnly: true },
   'separator',
   
-  { action: 'newFile', label: 'New file', command: 'newFile' },
-  { action: 'newFolder', label: 'New folder', command: 'newFolder' },
+  { action: 'newFile', icon: 'new', label: 'New file', command: 'newFile' },
+  { action: 'newFolder', icon: 'new-folder', label: 'New folder', command: 'newFolder' },
   'separator',
-  { action: 'hideRow', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide', folderOnly: true },
-  { action: 'showRow', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show', folderOnly: true },
-  { action: 'paste', label: 'Paste', command: 'pasteFile' },
-  { action: 'exportSite', label: 'Export as site…', command: 'exportSite' },
+  { action: 'hideRow', icon: 'hide', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide', folderOnly: true },
+  { action: 'showRow', icon: 'show', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show', folderOnly: true },
+  { action: 'paste', icon: 'paste', label: 'Paste', command: 'pasteFile' },
+  { action: 'exportSite', icon: 'export', label: 'Export as site…', command: 'exportSite' },
   'separator',
   
-  { action: 'reveal', label: 'Reveal folder', command: 'revealFile' },
-  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
+  { action: 'reveal', icon: 'reveal', label: 'Reveal folder', command: 'revealFile' },
+  { action: 'properties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
 ];
 
 const LINK_MENU_ITEMS = [
-  { action: 'openLink', label: 'Open', command: 'openLink' },
-  { action: 'openLinkInNewPage', label: 'Open in new page', command: 'openLink', pageOnly: true },
+  { action: 'openLink', icon: 'document', label: 'Open', command: 'openLink' },
+  { action: 'openLinkInNewPage', icon: 'new', label: 'Open in new page', command: 'openLink', pageOnly: true },
   
-  { action: 'openLinkInBrowser', label: 'Open in browser', command: 'openLinkInBrowser', savedPage: true },
+  { action: 'openLinkInBrowser', icon: 'open-outside', label: 'Open in browser', command: 'openLinkInBrowser', savedPage: true },
   'separator',
-  { action: 'copyLink', label: 'Copy link' },
-  { action: 'copyLinkText', label: 'Copy link text' },
+  { action: 'copyLink', icon: 'link', label: 'Copy link' },
+  { action: 'copyLinkText', icon: 'text', label: 'Copy link text' },
   'separator',
   
-  { action: 'revealLink', label: 'Reveal file', command: 'revealLink', fileBehind: true },
-  { action: 'copyLinkPath', label: 'Copy path', command: 'copyLinkPath', fileBehind: true },
+  { action: 'revealLink', icon: 'reveal', label: 'Reveal file', command: 'revealLink', fileBehind: true },
+  { action: 'copyLinkPath', icon: 'copy-path', label: 'Copy path', command: 'copyLinkPath', fileBehind: true },
 ];
 
 const PICTURE_MENU_ITEMS = [
-  { action: 'openPicture', label: 'Open picture', inThePage: true },
+  { action: 'openPicture', icon: 'expand', label: 'Open picture', inThePage: true },
   'separator',
-  { action: 'copyPicture', label: 'Copy picture', command: 'copyImage' },
-  { action: 'copyImagePath', label: 'Copy path', command: 'copyImagePath' },
+  { action: 'copyPicture', icon: 'image', label: 'Copy picture', command: 'copyImage' },
+  { action: 'copyImagePath', icon: 'copy-path', label: 'Copy path', command: 'copyImagePath' },
   'separator',
-  { action: 'revealImage', label: 'Reveal file', command: 'revealImage' },
-  { action: 'showImageProperties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showImageProperties' },
+  { action: 'revealImage', icon: 'reveal', label: 'Reveal file', command: 'revealImage' },
+  { action: 'showImageProperties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showImageProperties' },
   'separator',
-  { action: 'deletePicture', label: 'Delete picture', danger: true, unlockedLane: true },
+  { action: 'deletePicture', icon: 'trash', label: 'Delete picture', danger: true, unlockedLane: true },
 ];
 
 function contextMenuPictureLane() {
@@ -11132,23 +12077,23 @@ function selectionTextInReadingView() {
 }
 
 const TABLE_MENU_ITEMS = [
-  { action: 'tableRowAbove', label: 'Add row above' },
-  { action: 'tableRowBelow', label: 'Add row below' },
-  { action: 'tableRowRemove', label: 'Delete row' },
+  { action: 'tableRowAbove', icon: 'row-above', label: 'Add row above' },
+  { action: 'tableRowBelow', icon: 'row-below', label: 'Add row below' },
+  { action: 'tableRowRemove', icon: 'trash', label: 'Delete row' },
   'separator',
-  { action: 'tableColumnLeft', label: 'Add column left' },
-  { action: 'tableColumnRight', label: 'Add column right' },
-  { action: 'tableColumnRemove', label: 'Delete column' },
+  { action: 'tableColumnLeft', icon: 'column-left', label: 'Add column left' },
+  { action: 'tableColumnRight', icon: 'column-right', label: 'Add column right' },
+  { action: 'tableColumnRemove', icon: 'trash', label: 'Delete column' },
   'separator',
-  { action: 'tableAlignLeft', label: 'Align left' },
-  { action: 'tableAlignCenter', label: 'Align center' },
-  { action: 'tableAlignRight', label: 'Align right' },
+  { action: 'tableAlignLeft', icon: 'align-left', label: 'Align left' },
+  { action: 'tableAlignCenter', icon: 'align-center', label: 'Align center' },
+  { action: 'tableAlignRight', icon: 'align-right', label: 'Align right' },
   'separator',
   
-  { action: 'tableSortAscending', label: 'Sort A to Z (writes the file)' },
-  { action: 'tableSortDescending', label: 'Sort Z to A (writes the file)' },
+  { action: 'tableSortAscending', icon: 'sort-ascending', label: 'Sort A to Z (writes the file)' },
+  { action: 'tableSortDescending', icon: 'sort-descending', label: 'Sort Z to A (writes the file)' },
   'separator',
-  { label: 'Math', children: [
+  { icon: 'math', label: 'Math', children: [
     { label: 'Rows above', children: [
       { action: 'tableTotalSum', label: 'Sum', canTotal: true },
       { action: 'tableTotalAverage', label: 'Average', canTotal: true },
@@ -11163,7 +12108,7 @@ const TABLE_MENU_ITEMS = [
       { action: 'tableLeftMin', label: 'Smallest', canLeft: true },
       { action: 'tableLeftMax', label: 'Largest', canLeft: true },
     ] },
-    { action: 'tableCalculateCells', label: 'Calculate with cells…', bodyCell: true },
+    { action: 'tableCalculateCells', icon: 'math', label: 'Calculate with cells…', bodyCell: true },
     { action: 'tableChooseRange', label: 'Choose a range…', bodyCell: true },
   ] },
 ];
@@ -11203,19 +12148,19 @@ function returnKeyboardToConsole() {
 
 const PAGE_MENU_ITEMS = [
   
-  { action: 'copySelection', label: 'Copy', selectionOnly: true },
+  { action: 'copySelection', icon: 'copy', label: 'Copy', selectionOnly: true },
   'separator',
-  { action: 'favorite', label: 'Favorite', command: 'toggleFavorite' },
+  { action: 'favorite', icon: 'favorite-off', label: 'Favorite', command: 'toggleFavorite' },
   
-  { action: 'removeBookmark', label: 'Remove bookmark', ribbonKept: true },
+  { action: 'removeBookmark', icon: 'bookmark-remove', label: 'Remove bookmark', ribbonKept: true },
   'separator',
   
-  { action: 'openPageInBrowser', label: 'Open in browser', command: 'openPageInBrowser', savedPageOpen: true },
-  { action: 'copyPath', label: 'Copy path', command: 'copyPath' },
-  { action: 'reveal', label: 'Reveal file', command: 'revealFile' },
-  { action: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
+  { action: 'openPageInBrowser', icon: 'open-outside', label: 'Open in browser', command: 'openPageInBrowser', savedPageOpen: true },
+  { action: 'copyPath', icon: 'copy-path', label: 'Copy path', command: 'copyPath' },
+  { action: 'reveal', icon: 'reveal', label: 'Reveal file', command: 'revealFile' },
+  { action: 'properties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
   'separator',
-  { action: 'delete', label: 'Delete', command: 'deleteFile', danger: true },
+  { action: 'delete', icon: 'trash', label: 'Delete', command: 'deleteFile', danger: true },
 ];
 function hideContextMenu() {
   for (const child of contextMenuChildren.splice(0)) child.menu.remove();
@@ -11359,16 +12304,16 @@ function contextMenuEntries() {
   if (contextMenuTargetKind === 'paneTag') {
     const hidden = libraryTagIsHidden(contextMenuPath);
     return [
-      { action: 'searchTag', label: 'Search for this tag' },
+      { action: 'searchTag', icon: 'search', label: 'Search for this tag' },
       'separator',
-      hidden ? { action: 'showTag', label: 'Show in the pane' } : { action: 'hideTag', label: 'Hide from the pane' },
+      hidden ? { action: 'showTag', icon: 'show', label: 'Show in the pane' } : { action: 'hideTag', icon: 'hide', label: 'Hide from the pane' },
     ].filter((entry) => entry === 'separator' || entry.action === 'searchTag' || libraryTagView);
   }
   if (contextMenuTargetKind === 'tag') {
     if (!vaultSearchAvailable()) return [];
-    const entries = [{ action: 'searchTag', label: 'Search for this tag' }];
+    const entries = [{ action: 'searchTag', icon: 'search', label: 'Search for this tag' }];
     if (hostAnswers('prepareTagRename')) {
-      entries.push({ action: 'renameTag', label: 'Rename everywhere…' });
+      entries.push({ action: 'renameTag', icon: 'rename', label: 'Rename everywhere…' });
     }
     return entries;
   }
@@ -11401,7 +12346,7 @@ function contextMenuEntries() {
     }).filter(Boolean));
     return filter(TABLE_MENU_ITEMS);
   }
-  if (contextMenuTargetKind === 'ribbon') return [{ action: 'removeBookmark', label: 'Remove bookmark' }];
+  if (contextMenuTargetKind === 'ribbon') return [{ action: 'removeBookmark', icon: 'bookmark-remove', label: 'Remove bookmark' }];
   if (contextMenuTargetKind === 'picture') {
     return tidySeparators(
       PICTURE_MENU_ITEMS.filter((entry) => {
@@ -11453,16 +12398,18 @@ function contextMenuHostAnswers(entry) {
 function labelForFavoriteEntry(entry) {
   if (entry === 'separator' || entry.action !== 'favorite') return entry;
   if (!isFavoritePath(contextMenuPath)) return entry;
-  return { action: entry.action, label: 'Unfavorite' };
+  return { action: entry.action, icon: 'favorite-on', label: 'Unfavorite' };
 }
 
 const LINK_OPEN_LABELS = { 'External site': 'Open in browser', 'Opens in another app': 'Open in another app', 'Email link': 'Open in your mail app' };
+
+const LINK_OPEN_ICONS = { 'Open in browser': 'open-outside', 'Open in another app': 'open-outside', 'Open in your mail app': 'mail' };
 
 function labelForLinkEntry(entry, kind) {
   if (entry === 'separator' || entry.action !== 'openLink') return entry;
   const label = LINK_OPEN_LABELS[linkHoverKind(contextMenuPath, kind)];
   if (!label) return entry;
-  return { action: entry.action, label };
+  return { action: entry.action, icon: LINK_OPEN_ICONS[label] || entry.icon, label };
 }
 
 function tidySeparators(entries) {
@@ -11515,6 +12462,22 @@ function openContextMenuChild(button, entries, level, focusFirst = false) {
   contextMenuChildren.push({ menu, button });
   if (focusFirst) leafFocusForKeyboard(menu.querySelector('.context-menu-item'));
 }
+
+function contextMenuRow(entry) {
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '') + (entry.children ? ' context-menu-parent' : '');
+  item.setAttribute('role', 'menuitem');
+  const icon = document.createElement('span');
+  icon.className = entry.icon ? `lt-icon lt-icon-${entry.icon} context-menu-icon` : 'context-menu-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  item.appendChild(icon);
+  const label = document.createElement('span');
+  label.className = 'context-menu-label';
+  label.textContent = entry.label;
+  item.appendChild(label);
+  return item;
+}
 function fillContextMenu(menu, entries, level) {
   for (const entry of entries) {
     if (entry === 'separator') {
@@ -11524,11 +12487,7 @@ function fillContextMenu(menu, entries, level) {
       menu.appendChild(sep);
       continue;
     }
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '') + (entry.children ? ' context-menu-parent' : '');
-    item.setAttribute('role', 'menuitem');
-    item.textContent = entry.label;
+    const item = contextMenuRow(entry);
     if (entry.children) {
       const arrow = document.createElement('span');
       arrow.className = 'lt-icon lt-icon-chevron-down context-menu-arrow';
@@ -12282,6 +13241,7 @@ let readAloudSpeed = READ_ALOUD_SPEEDS.includes(Number(LEAF_SETTINGS.readAloudSp
 const readAloudBar = document.getElementById('readAloudBar');
 const readAloudVoiceChoice = document.getElementById('readAloudVoice');
 const readAloudSpeedChoice = document.getElementById('readAloudSpeed');
+const readAloudPause = document.getElementById('readAloudPause');
 const elevenLabsSheet = document.getElementById('elevenLabsSheet');
 const elevenLabsBackdrop = document.getElementById('elevenLabsBackdrop');
 const elevenLabsKey = document.getElementById('elevenLabsKey');
@@ -12500,7 +13460,7 @@ function startReadAloud() {
   
   closeFlashReader();
   const start = flashReaderStartPoint(blocks);
-  const session = { blocks, index: start.index, nodes: [], sentences: [], at: 0, utterance: null, follow: true, paid };
+  const session = { blocks, index: start.index, nodes: [], sentences: [], at: 0, word: 0, from: 0, paused: false, utterance: null, follow: true, paid };
   readAloudLoad(session, start.mark);
   if (!readAloudSettle(session)) return;
   readAloud = session;
@@ -12564,6 +13524,13 @@ window.leafElevenLabsPassage = (token, sequence, passage, error) => {
     session.prefetched = { sequence, passage };
     return;
   }
+  
+  if (session.paused) {
+    session.held = { sequence, passage };
+    return;
+  }
+  
+  if (session.audio && session.audioSequence === sequence) return;
   const sentence = session.sentences[session.at];
   const alignment = passage.alignment;
   if (!sentence || !Array.isArray(alignment.characters) || alignment.characters.join('') !== sentence.text ||
@@ -12576,6 +13543,7 @@ window.leafElevenLabsPassage = (token, sequence, passage, error) => {
   for (const character of alignment.characters) offsets.push(offsets[offsets.length - 1] + character.length);
   const audio = new Audio(passage.url);
   session.audio = audio;
+  session.audioSequence = sequence;
   audio.playbackRate = readAloudSpeed / 100;
   audio.onplay = () => {
     if (readAloud !== session || session.audio !== audio) return;
@@ -12588,6 +13556,7 @@ window.leafElevenLabsPassage = (token, sequence, passage, error) => {
     if (readAloud !== session || session.audio !== audio) return;
     session.audio = null;
     session.at += 1;
+    session.word = 0;
     session.passageIndex += 1;
     if (readAloudSettle(session)) {
       if (session.prefetched && session.prefetched.sequence === session.passageIndex) {
@@ -12625,6 +13594,7 @@ function paidAudioFrame(session, audio, alignment, offsets) {
     while (from > 0 && word(alignment.characters[from - 1])) from -= 1;
     while (to < alignment.characters.length && word(alignment.characters[to])) to += 1;
     const sentence = session.sentences[session.at];
+    session.word = offsets[from];
     const range = readAloudRange(session, sentence.start + offsets[from], sentence.start + offsets[to]);
     paintReadAloud(READ_ALOUD_WORD, range);
     followReadAloud(session, range);
@@ -12633,14 +13603,16 @@ function paidAudioFrame(session, audio, alignment, offsets) {
 }
 
 
-function speakReadAloudSentence(session) {
+function speakReadAloudSentence(session, from = 0) {
   const engine = readAloudEngine();
   const block = session.blocks[session.index];
   if (readAloud !== session || !engine || !block || block.isConnected === false) {
     stopReadAloud();
     return;
   }
-  const utterance = new window.SpeechSynthesisUtterance(session.sentences[session.at].text);
+  session.from = from;
+  session.word = from;
+  const utterance = new window.SpeechSynthesisUtterance(session.sentences[session.at].text.slice(from));
   const voice = readAloudChosenVoice();
   if (voice) {
     utterance.voice = voice;
@@ -12671,6 +13643,116 @@ function readAloudSentenceDone(session, utterance) {
     return;
   }
   speakReadAloudSentence(session);
+}
+
+
+function pauseReadAloud() {
+  const session = readAloud;
+  if (!session || session.paused) return;
+  session.paused = true;
+  if (session.paid) {
+    if (session.audioFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(session.audioFrame);
+    session.audioFrame = null;
+    if (session.audio) session.audio.pause();
+  } else {
+    session.utterance = null;
+    const engine = readAloudEngine();
+    if (engine) engine.cancel();
+  }
+  renderReadAloudPause();
+}
+function playReadAloud() {
+  const session = readAloud;
+  if (!session || !session.paused) return;
+  session.paused = false;
+  renderReadAloudPause();
+  if (!session.paid) {
+    speakReadAloudSentence(session, session.word);
+    return;
+  }
+  if (session.held) {
+    const held = session.held;
+    session.held = null;
+    window.leafElevenLabsPassage(session.token, held.sequence, held.passage, null);
+  } else if (session.audio) {
+    const audio = session.audio;
+    const started = audio.play();
+    if (started && typeof started.catch === 'function') started.catch(() => audio.onerror && audio.onerror());
+  }
+}
+
+
+function skipReadAloud(step) {
+  const session = readAloud;
+  if (!session) return;
+  if (step > 0) {
+    session.at += 1;
+    if (session.paid) session.passageIndex += 1;
+    if (!readAloudSettle(session)) {
+      stopReadAloud();
+      return;
+    }
+  } else if (readAloudPastFirstWord(session) || (session.paid && session.passageIndex === 0)) {
+    
+  } else if (session.at > 0) {
+    session.at -= 1;
+    if (session.paid) session.passageIndex -= 1;
+  } else if (readAloudSettleBack(session) && session.paid) {
+    session.passageIndex -= 1;
+  }
+  readAloudGo(session);
+}
+function readAloudPastFirstWord(session) {
+  const sentence = session.sentences[session.at];
+  const first = sentence ? sentence.text.search(/[\p{L}\p{N}]/u) : 0;
+  return session.word > Math.max(0, first);
+}
+
+function readAloudSettleBack(session) {
+  const kept = { index: session.index, nodes: session.nodes, sentences: session.sentences, at: session.at };
+  for (let index = session.index - 1; index >= 0; index -= 1) {
+    session.index = index;
+    readAloudLoad(session);
+    if (session.sentences.length) {
+      session.at = session.sentences.length - 1;
+      return true;
+    }
+  }
+  Object.assign(session, kept);
+  return false;
+}
+
+function readAloudGo(session) {
+  session.word = 0;
+  session.from = 0;
+  if (!session.paid) {
+    session.utterance = null;
+    const engine = readAloudEngine();
+    if (engine) engine.cancel();
+    if (session.paused) lightReadAloudSentence(session);
+    else speakReadAloudSentence(session);
+    return;
+  }
+  const audio = session.audio;
+  if (audio && session.audioSequence === session.passageIndex) {
+    audio.currentTime = 0;
+    if (session.paused) lightReadAloudSentence(session);
+    return;
+  }
+  if (session.audioFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(session.audioFrame);
+  session.audioFrame = null;
+  if (audio) {
+    session.audio = null;
+    audio.pause();
+    audio.removeAttribute('src');
+  }
+  session.held = null;
+  const ready = session.prefetched && session.prefetched.sequence === session.passageIndex ? session.prefetched : null;
+  session.prefetched = null;
+  session.prefetching = null;
+  lightReadAloudSentence(session);
+  if (ready) window.leafElevenLabsPassage(session.token, ready.sequence, ready.passage, null);
+  else requestPaidSentence(session);
 }
 
 function stopReadAloud() {
@@ -12734,10 +13816,11 @@ function lightReadAloudSentence(session) {
 
 function lightReadAloudWord(session, event) {
   const sentence = session.sentences[session.at];
-  const at = Math.max(0, Number(event.charIndex) || 0);
+  const at = (session.from || 0) + Math.max(0, Number(event.charIndex) || 0);
   const named = Number(event.charLength);
   const length = named > 0 ? named : ((/^[\p{L}\p{N}'’-]+/u.exec(sentence.text.slice(at)) || [''])[0].length);
   if (!length) return;
+  session.word = at;
   const range = readAloudRange(session, sentence.start + at, sentence.start + at + length);
   paintReadAloud(READ_ALOUD_WORD, range);
   followReadAloud(session, range);
@@ -12777,6 +13860,18 @@ function renderReadAloudBar() {
   const showing = Boolean(readAloud) && !findOpen;
   if (showing && readAloudBar.hidden) renderReadAloudVoices();
   readAloudBar.hidden = !showing;
+  renderReadAloudPause();
+}
+
+function renderReadAloudPause() {
+  if (!readAloudPause) return;
+  const paused = Boolean(readAloud && readAloud.paused);
+  setSubtoolState(readAloudPause, paused, paused ? 'Carry on reading aloud' : 'Pause reading aloud');
+  const glyph = readAloudPause.querySelector('.lt-icon');
+  if (glyph) {
+    glyph.classList.toggle('lt-icon-pause', !paused);
+    glyph.classList.toggle('lt-icon-play', paused);
+  }
 }
 
 
@@ -12808,9 +13903,11 @@ function renderReadAloudVoices() {
 
 
 function setReadAloudChoice(voice, speed) {
-  if (readAloud && (readAloud.paid || String(voice).startsWith('elevenlabs:'))) stopReadAloud();
-  readAloudVoice = String(voice || '');
+  const chosen = String(voice || '');
+  if (readAloud && chosen !== readAloudVoice && (readAloud.paid || chosen.startsWith('elevenlabs:'))) stopReadAloud();
+  readAloudVoice = chosen;
   if (READ_ALOUD_SPEEDS.includes(Number(speed))) readAloudSpeed = Number(speed);
+  if (readAloud && readAloud.audio) readAloud.audio.playbackRate = readAloudSpeed / 100;
   send({ command: 'setReadAloud', voice: readAloudVoice, speed: readAloudSpeed });
 }
 
@@ -12824,6 +13921,11 @@ if (readAloudBar) {
   if (readAloudSpeedChoice) readAloudSpeedChoice.addEventListener('change', () => setReadAloudChoice(readAloudVoice, readAloudSpeedChoice.value));
   const stop = document.getElementById('readAloudStop');
   if (stop) stop.addEventListener('click', stopReadAloud);
+  if (readAloudPause) readAloudPause.addEventListener('click', () => (readAloud && readAloud.paused ? playReadAloud() : pauseReadAloud()));
+  const back = document.getElementById('readAloudBack');
+  if (back) back.addEventListener('click', () => skipReadAloud(-1));
+  const forward = document.getElementById('readAloudForward');
+  if (forward) forward.addEventListener('click', () => skipReadAloud(1));
 }
 
 if (readAloudEngine() && readAloudEngine().addEventListener) {
@@ -19491,19 +20593,170 @@ const READER_CONTENT_TOP_GAP = 88;
 const READER_ANCHOR_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, table, details, figure, hr';
 
 function themeFamilyName(family) {
-  const item = themeSheetGrid.querySelector('.theme-item[data-family="' + family + '"]');
+  const item = themeSheetGrid.querySelector('.theme-item[data-family="' + family + '"] .theme-item-name');
   return item ? item.textContent.trim() : family;
 }
 
 const THEME_MODE_NAMES = { system: 'System', light: 'Light', dark: 'Dark', daylight: 'Daylight' };
+
+const themeSpectrum = document.getElementById('themeSpectrum');
+const themeSpectrumThumb = document.getElementById('themeSpectrumThumb');
+
+const THEME_SPECTRUM_REST_MS = 150;
+let themeSpectrumCards = [];
+let themeSpectrumSlot = -1;
+
+let themeSpectrumEnd = '';
+let themeSpectrumLastFamily = '';
+let themeSpectrumRest = 0;
+let themeSpectrumDrag = null;
+let themeSpectrumAppearance = '';
+function themeSpectrumCenter(slot) {
+  return ((slot + 0.5) / (themeSpectrumCards.length + 2)) * 100;
+}
+
+function drawThemeSpectrum() {
+  if (!themeSpectrum || !themeSheet || themeSheet.hidden) return;
+  themeSpectrumCards = themeFamilyCards();
+  const slots = themeSpectrumCards.length + 2;
+  const dark = document.documentElement.dataset.leafAppearance === 'dark';
+  themeSpectrumAppearance = dark ? 'dark' : 'light';
+  themeSpectrum.querySelectorAll('.theme-spectrum-tick').forEach((tick) => tick.remove());
+  const stops = ['var(--lt-spectrum-white) 0%', `var(--lt-spectrum-white) ${100 / slots}%`];
+  themeSpectrumCards.forEach((card, at) => {
+    const where = themeSpectrumCenter(at + 1);
+    const tick = document.createElement('span');
+    tick.className = 'theme-spectrum-tick';
+    tick.style.top = where + '%';
+    themeSpectrum.insertBefore(tick, themeSpectrumThumb);
+    stops.push(`${card.style.getPropertyValue(dark ? '--card-primary-dark' : '--card-primary-light')} ${where}%`);
+  });
+  stops.push(`var(--lt-spectrum-black) ${((slots - 1) / slots) * 100}%`, 'var(--lt-spectrum-black) 100%');
+  themeSpectrum.style.setProperty('--theme-spectrum-fill', `linear-gradient(${stops.join(', ')})`);
+  themeSpectrum.setAttribute('aria-valuemax', String(slots - 1));
+  syncThemeSpectrum();
+}
+
+function pointThemeSpectrum(slot) {
+  const count = themeSpectrumCards.length;
+  themeSpectrumSlot = slot;
+  themeSpectrumEnd = slot === 0 ? 'light' : slot === count + 1 ? 'dark' : '';
+  const card = slot >= 1 && slot <= count ? themeSpectrumCards[slot - 1] : null;
+  if (card) themeSpectrumLastFamily = card.dataset.family;
+  themeSheetGrid.querySelectorAll('.theme-item.is-pointed').forEach((one) => {
+    if (one !== card) one.classList.remove('is-pointed');
+  });
+  if (card) card.classList.add('is-pointed');
+  if (themeSpectrumThumb) {
+    themeSpectrumThumb.hidden = slot < 0;
+    if (slot >= 0) themeSpectrumThumb.style.top = themeSpectrumCenter(slot) + '%';
+  }
+  themeSpectrum.setAttribute('aria-valuenow', String(Math.max(0, slot)));
+  themeSpectrum.setAttribute('aria-valuetext', slot === 0 ? 'Light' : slot === count + 1 ? 'Dark' : card ? themeFamilyName(card.dataset.family) : '');
+}
+
+function syncThemeSpectrum() {
+  if (!themeSpectrum || themeSpectrumDrag) return;
+  if (themeSpectrumEnd && window.leafTheme.getMode() === themeSpectrumEnd) {
+    pointThemeSpectrum(themeSpectrumEnd === 'light' ? 0 : themeSpectrumCards.length + 1);
+    return;
+  }
+  const worn = window.leafTheme.getWornFamily();
+  pointThemeSpectrum(themeSpectrumCards.findIndex((card) => card.dataset.family === worn) + 1 || -1);
+}
+function setThemeSpectrumMode(mode) {
+  if (window.leafTheme.getMode() === mode) return;
+  window.leafTheme.setMode(mode);
+  send({ command: 'setThemeMode', mode });
+}
+function wearThemeSpectrumFamily(family) {
+  if (family && window.leafTheme.getFamily() !== family) window.leafTheme.setFamily(family);
+}
+
+function moveThemeSpectrum(slot, now) {
+  const count = themeSpectrumCards.length;
+  if (!count || (slot === themeSpectrumSlot && !now)) return;
+  pointThemeSpectrum(slot);
+  const card = themeSpectrumCards[slot - 1];
+  if (card) card.scrollIntoView({ block: 'nearest' });
+  clearTimeout(themeSpectrumRest);
+  if (slot === 0 || slot === count + 1) {
+    setThemeSpectrumMode(slot === 0 ? 'light' : 'dark');
+    return;
+  }
+  const family = themeSpectrumLastFamily;
+  if (now) {
+    const before = window.leafTheme.getFamily();
+    wearThemeSpectrumFamily(family);
+    if (before !== family) send({ command: 'setThemeFamily', family });
+  } else {
+    themeSpectrumRest = setTimeout(() => wearThemeSpectrumFamily(family), THEME_SPECTRUM_REST_MS);
+  }
+}
+function themeSpectrumSlotAt(clientY) {
+  const box = themeSpectrum.getBoundingClientRect();
+  const slots = themeSpectrumCards.length + 2;
+  const along = box.height > 0 ? (clientY - box.top) / box.height : 0;
+  return Math.max(0, Math.min(slots - 1, Math.floor(along * slots)));
+}
+
+function releaseThemeSpectrum() {
+  if (!themeSpectrumDrag) return;
+  const { from } = themeSpectrumDrag;
+  themeSpectrumDrag = null;
+  clearTimeout(themeSpectrumRest);
+  const family = themeSpectrumLastFamily;
+  wearThemeSpectrumFamily(family);
+  if (family && family !== from) send({ command: 'setThemeFamily', family });
+}
+if (themeSpectrum) {
+  themeSpectrum.addEventListener('pointerdown', (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.preventDefault();
+    themeSpectrum.focus({ preventScroll: true });
+    themeSpectrum.setPointerCapture(event.pointerId);
+    themeSpectrumDrag = { from: window.leafTheme.getFamily() };
+    moveThemeSpectrum(themeSpectrumSlotAt(event.clientY), false);
+  });
+  themeSpectrum.addEventListener('pointermove', (event) => {
+    if (themeSpectrumDrag) moveThemeSpectrum(themeSpectrumSlotAt(event.clientY), false);
+  });
+  themeSpectrum.addEventListener('pointerup', releaseThemeSpectrum);
+  themeSpectrum.addEventListener('pointercancel', releaseThemeSpectrum);
+  themeSpectrum.addEventListener('keydown', (event) => {
+    const last = themeSpectrumCards.length + 1;
+    const at = Math.max(0, themeSpectrumSlot);
+    const to = { ArrowUp: at - 1, ArrowDown: at + 1, Home: 0, End: last }[event.key];
+    if (to === undefined) return;
+    event.preventDefault();
+    moveThemeSpectrum(Math.max(0, Math.min(last, to)), true);
+  });
+}
+function themeRandomChosen() {
+  return window.leafTheme.getFamily() === 'random';
+}
 function updateThemeSelection() {
   const mode = window.leafTheme.getMode();
   const family = window.leafTheme.getFamily();
+  const worn = window.leafTheme.getWornFamily();
+  const random = family === 'random';
   
   if (themeSheetOpen) {
-    themeSheetOpen.title =
-      'Themes — ' + themeFamilyName(family) + ' · ' + (THEME_MODE_NAMES[mode] || mode);
+    const named = random ? 'Random: ' + themeFamilyName(worn) : themeFamilyName(family);
+    themeSheetOpen.title = 'Themes — ' + named + ' · ' + (THEME_MODE_NAMES[mode] || mode);
   }
+  
+  const randomCard = themeSheetGrid.querySelector('.theme-item-random');
+  const wornLine = randomCard && randomCard.querySelector('.theme-item-random-worn');
+  if (wornLine) wornLine.textContent = random ? 'Wearing ' + themeFamilyName(worn) : '';
+  if (random) {
+    stopThemeRandomCycle();
+    paintThemeRandomFrom(themeSheetGrid.querySelector('.theme-item[data-family="' + worn + '"]'));
+  } else if (!themeRandomTimer && themeSheet && !themeSheet.hidden && themeSheet.classList.contains('open')) {
+    startThemeRandomCycle();
+  }
+  if (themeSpectrum && (document.documentElement.dataset.leafAppearance === 'dark' ? 'dark' : 'light') !== themeSpectrumAppearance) drawThemeSpectrum();
+  else syncThemeSpectrum();
   themeSheetModes.querySelectorAll('.theme-mode-btn').forEach((btn) => {
     const active = btn.dataset.mode === mode;
     btn.classList.toggle('is-active', active);
@@ -19518,6 +20771,7 @@ function updateThemeSelection() {
 function openThemeSheet() {
   openSheet(themeSheet, themeBackdrop);
   loadThemeCardFonts();
+  drawThemeSpectrum();
 }
 function closeThemeSheet(options) {
   unloadThemeCardFonts();
@@ -19534,6 +20788,8 @@ function firstFontName(stack) {
 function themeCardFontReady(card) {
   card.classList.remove('is-loading');
   card.classList.add('font-ready');
+  
+  if (themeRandomChosen() && card.dataset.family === window.leafTheme.getWornFamily()) paintThemeRandomFrom(card);
 }
 function ensureThemeCardFont(card) {
   const name = firstFontName(card.style.getPropertyValue('--card-font'));
@@ -19604,6 +20860,7 @@ function revealEarnedThemeCards(profile) {
     }
     price.textContent = node ? `${formatCountLabel(Number(node.price) || 0, 'seed', 'seeds')} in the Grove` : 'In the Grove';
   });
+  drawThemeSpectrum();
 }
 revealEarnedThemeCards(window.__leafProfile);
 function loadThemeCardFonts() {
@@ -19639,7 +20896,7 @@ function paintThemeRandomFrom(card) {
 }
 function startThemeRandomCycle() {
   stopThemeRandomCycle();
-  if (document.body.classList.contains('is-window-inactive')) return;
+  if (themeRandomChosen() || document.body.classList.contains('is-window-inactive')) return;
   const cards = themeFamilyCards();
   if (cards.length === 0) return;
   themeRandomIndex = 0;
@@ -23158,6 +24415,12 @@ function documentBlocks(body) {
   return blocks;
 }
 
+function documentRuns(body) {
+  if (!body) return [];
+  const runs = Array.from(body.children).filter(isDocumentRun);
+  return runs.length ? runs : [body];
+}
+
 function isDocumentBlock(el) {
   let parent = el && el.parentElement;
   if (isDocumentRun(parent)) parent = parent.parentElement;
@@ -26161,7 +27424,7 @@ function dataBlockKindOf(el) {
 }
 
 
-const DATA_RENDERER_FORMATS = ['json', 'yaml', 'ini'];
+const DATA_RENDERER_FORMATS = ['json', 'yaml', 'ini', 'css'];
 
 
 const DATA_SHAPE_FORMATS = [...DATA_RENDERER_FORMATS, 'xml'];
@@ -36915,11 +38178,16 @@ function dropIlluminatedLeaf() {
   if (!layout || !body.classList.contains('has-illuminated-headings')) return;
   const view = app.getBoundingClientRect();
   const tiles = [];
-  for (const heading of body.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
-    if (heading.classList.contains('is-drop-cap')) continue;
-    const range = firstLetterRange(heading);
-    const at = range && range.getBoundingClientRect();
-    if (at && at.height > 0 && at.top >= view.top && at.bottom <= view.bottom) tiles.push(at);
+  
+  for (const run of documentRuns(body)) {
+    const span = run.getBoundingClientRect();
+    if (span.bottom < view.top || span.top > view.bottom) continue;
+    for (const heading of run.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
+      if (heading.classList.contains('is-drop-cap')) continue;
+      const range = firstLetterRange(heading);
+      const at = range && range.getBoundingClientRect();
+      if (at && at.height > 0 && at.top >= view.top && at.bottom <= view.bottom) tiles.push(at);
+    }
   }
   if (!tiles.length) return;
   const tile = tiles[Math.floor(Math.random() * tiles.length)];
@@ -39291,7 +40559,11 @@ if (homeSheet) {
 }
 
 function homeScreenIsShowing() {
-  return !!currentState && !currentState.document && !codeViewActive;
+  return !!currentState && !currentState.document && !codeViewActive && !activeConsoleTab(currentState);
+}
+function activeConsoleTab(state) {
+  const tab = state && state.tabs && state.tabs[state.active];
+  return tab && tab.kind === 'console' ? tab : null;
 }
 
 let readingHeldCursor = null;
@@ -40005,10 +41277,21 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   lastRenderedDocumentPath = null;
   clearSizedTables();
   document.title = 'Leaftext';
-  writeReaderClasses(['empty']);
   libraryShell.classList.remove('has-contained-document');
   
   findHomeArrived();
+  
+  const consoleTab = activeConsoleTab(state);
+  if (consoleTab) {
+    app.innerHTML = '';
+    writeReaderClasses([]);
+    
+    if (consoleFrontId !== consoleTab.webId) setMinimapMarkup('');
+    updateEditingChrome();
+    refreshPaneFoot();
+    return;
+  }
+  writeReaderClasses(['empty']);
   
   setMinimapMarkup('');
   updateEditingChrome();
@@ -40902,6 +42185,111 @@ function consoleWritten(id, entry) {
   holdConsoleMarkers(entry);
 }
 
+
+function consoleLetterGap(renderer, font) {
+  let held = renderer.consoleLetterGaps;
+  if (!held || held.size !== renderer.fontSize || held.family !== renderer.fontFamily) {
+    held = renderer.consoleLetterGaps = { size: renderer.fontSize, family: renderer.fontFamily, gaps: new Map() };
+  }
+  let gap = held.gaps.get(font);
+  if (gap === undefined) {
+    renderer.ctx.font = font;
+    
+    if ('letterSpacing' in renderer.ctx) renderer.ctx.letterSpacing = '0px';
+    gap =renderer.metrics.width - renderer.ctx.measureText('M').width;
+    held.gaps.set(font, gap);
+  }
+  return gap;
+}
+
+function consoleCellUnderLink(renderer, column, row) {
+  const range = renderer.hoveredLinkRange;
+  return Boolean(range) && (row === range.startY && column >= range.startX && (row < range.endY || column <= range.endX) || row > range.startY && row < range.endY || row === range.endY && column <= range.endX && (row > range.startY || column >= range.startX));
+}
+
+
+function drawConsoleRow(line, row, cols) {
+  const ctx = this.ctx;
+  const engineRow = Object.getPrototypeOf(this).renderLine;
+  const { width, height, baseline } = this.metrics;
+  const spacing = 'letterSpacing' in ctx;
+  const plainFont = `${this.fontSize}px ${this.fontFamily}`;
+  if (!spacing && consoleLetterGap(this, plainFont) !== 0) return engineRow.call(this, line, row, cols);
+  const flags = window.GhosttyWeb.CellFlags;
+  const top = row * height;
+  ctx.fillStyle = this.theme.background;
+  ctx.fillRect(0, top, cols * width, height);
+
+  let runKey = null;
+  let runStart = 0;
+  let runEnd = 0;
+  const fillBackground = () => {
+    if (runKey === null || runKey === -1) return;
+    ctx.fillStyle = runKey === 'selected' ? this.theme.selectionBackground : this.rgbToCSS(runKey >> 16, (runKey >> 8) & 255, runKey & 255);
+    ctx.fillRect(runStart * width, top, (runEnd - runStart) * width, height);
+  };
+  for (let column = 0; column < line.length; column += 1) {
+    const cell = line[column];
+    if (cell.width === 0) continue;
+    let key = 'selected';
+    if (!this.isInSelection(column, row)) {
+      const inverse = cell.flags & flags.INVERSE;
+      key = inverse ? (cell.fg_r << 16) | (cell.fg_g << 8) | cell.fg_b : (cell.bg_r << 16) | (cell.bg_g << 8) | cell.bg_b;
+      if (key === 0) key = -1;
+    }
+    if (key !== runKey || column !== runEnd) {
+      fillBackground();
+      runKey = key;
+      runStart = column;
+    }
+    runEnd = column + cell.width;
+  }
+  fillBackground();
+
+  const odd = flags.UNDERLINE | flags.STRIKETHROUGH | flags.FAINT | flags.INVISIBLE;
+  let text = '';
+  let textFont = '';
+  let textColor = -1;
+  let textStart = 0;
+  const fillText = () => {
+    if (text && text.trim()) {
+      ctx.font = textFont;
+      if (spacing) ctx.letterSpacing = `${consoleLetterGap(this, textFont)}px`;
+      ctx.fillStyle = this.rgbToCSS(textColor >> 16, (textColor >> 8) & 255, textColor & 255);
+      ctx.fillText(text, textStart * width, top + baseline);
+    }
+    text = '';
+  };
+  for (let column = 0; column < line.length; column += 1) {
+    const cell = line[column];
+    if (cell.width === 0) continue;
+    const linked = cell.hyperlink_id > 0 && cell.hyperlink_id === this.hoveredHyperlinkId;
+    if (cell.width !== 1 || cell.grapheme_len > 0 || cell.flags & odd || linked || consoleCellUnderLink(this, column, row) || this.isInSelection(column, row)) {
+      fillText();
+      if (spacing) ctx.letterSpacing = '0px';
+      this.renderCellText(cell, column, row);
+      continue;
+    }
+    const font = `${cell.flags & flags.ITALIC ? 'italic ' : ''}${cell.flags & flags.BOLD ? 'bold ' : ''}${plainFont}`;
+    const inverse = cell.flags & flags.INVERSE;
+    const color = inverse ? (cell.bg_r << 16) | (cell.bg_g << 8) | cell.bg_b : (cell.fg_r << 16) | (cell.fg_g << 8) | cell.fg_b;
+    if (!spacing && font !== plainFont && consoleLetterGap(this, font) !== 0) {
+      fillText();
+      this.renderCellText(cell, column, row);
+      continue;
+    }
+    if (!text || font !== textFont || color !== textColor) {
+      fillText();
+      textFont = font;
+      textColor = color;
+      textStart = column;
+    }
+    text += String.fromCodePoint(cell.codepoint || 32);
+  }
+  fillText();
+  if (spacing) ctx.letterSpacing = '0px';
+}
+
 function makeConsoleLayer(id) {
   const layer = document.createElement('div');
   layer.className = 'console-layer';
@@ -40921,6 +42309,7 @@ function makeConsoleLayer(id) {
     const fit = new window.GhosttyWeb.FitAddon();
     terminal.loadAddon(fit);
     terminal.open(host);
+    terminal.renderer.renderLine = drawConsoleRow;
     
     if (!isMacPlatform) terminal.inputHandler.encoder.setOption(window.GhosttyWeb.KeyEncoderOption.ALT_ESC_PREFIX, true);
     terminal.attachCustomKeyEventHandler(event => consoleAltKey(id, event));
@@ -42675,6 +44064,10 @@ const LEAF_MERMAID_ICONS = {
     'flash-reader': { body: "<path d=\"M13 2 4 14h7l-1 8 9-12h-7l1-8z\"/>", width: 24, height: 24 },
     'read-aloud-on': { body: "<path d=\"M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z\"/><path d=\"M16 9a5 5 0 0 1 0 6\"/><path d=\"M19.364 18.364a9 9 0 0 0 0-12.728\"/>", width: 24, height: 24 },
     'read-aloud-off': { body: "<path transform=\"translate(5.5 0)\" d=\"M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z\"/>", width: 24, height: 24 },
+    'pause': { body: "<rect x=\"14\" y=\"3\" width=\"5\" height=\"18\" rx=\"1\"/><rect x=\"5\" y=\"3\" width=\"5\" height=\"18\" rx=\"1\"/>", width: 24, height: 24 },
+    'play': { body: "<path d=\"M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z\"/>", width: 24, height: 24 },
+    'skip-back': { body: "<path d=\"M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432z\"/><path d=\"M3 20V4\"/>", width: 24, height: 24 },
+    'skip-forward': { body: "<path d=\"M21 4v16\"/><path d=\"M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z\"/>", width: 24, height: 24 },
     'wand': { body: "<path d=\"M15 4V2\"/><path d=\"M15 16v-2\"/><path d=\"M8 9h2\"/><path d=\"M20 9h2\"/><path d=\"M17.8 11.8 19 13\"/><path d=\"M15 9h.01\"/><path d=\"M17.8 6.2 19 5\"/><path d=\"m3 21 9-9\"/><path d=\"M12.2 6.2 11 5\"/>", width: 24, height: 24 },
     'cloud': { body: "<path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"/>", width: 24, height: 24 },
     'export': { body: "<path d=\"M12 13v8l-4-4\"/><path d=\"m12 21 4-4\"/><path d=\"M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284\"/>", width: 24, height: 24 },
@@ -42735,6 +44128,24 @@ const LEAF_MERMAID_ICONS = {
     'sort-descending': { body: "<path d=\"M4 7h15\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M4 12h11\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M4 17h7\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'trash': { body: "<path d=\"m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'copy': { body: "<path d=\"M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
+    'cut': { body: "<circle cx=\"6\" cy=\"6\" r=\"3\" /><path d=\"M8.12 8.12 12 12\" /><path d=\"M20 4 8.12 15.88\" /><circle cx=\"6\" cy=\"18\" r=\"3\" /><path d=\"M14.8 14.8 20 20\" />", width: 24, height: 24 },
+    'paste': { body: "<path d=\"M11 14h10\" /><path d=\"M16 4h2a2 2 0 0 1 2 2v1.344\" /><path d=\"m17 18 4-4-4-4\" /><path d=\"M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113\" /><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\" />", width: 24, height: 24 },
+    'rename': { body: "<path d=\"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z\" /><path d=\"m15 5 4 4\" />", width: 24, height: 24 },
+    'duplicate': { body: "<line x1=\"15\" x2=\"15\" y1=\"12\" y2=\"18\" /><line x1=\"12\" x2=\"18\" y1=\"15\" y2=\"15\" /><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" /><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" />", width: 24, height: 24 },
+    'show': { body: "<path d=\"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0\" /><circle cx=\"12\" cy=\"12\" r=\"3\" />", width: 24, height: 24 },
+    'hide': { body: "<path d=\"M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49\" /><path d=\"M14.084 14.158a3 3 0 0 1-4.242-4.242\" /><path d=\"M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143\" /><path d=\"m2 2 20 20\" />", width: 24, height: 24 },
+    'reveal': { body: "<path d=\"M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1\" /><path d=\"m21 21-1.9-1.9\" /><circle cx=\"17\" cy=\"17\" r=\"3\" />", width: 24, height: 24 },
+    'properties': { body: "<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 16v-4\" /><path d=\"M12 8h.01\" />", width: 24, height: 24 },
+    'open-outside': { body: "<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />", width: 24, height: 24 },
+    'mail': { body: "<path d=\"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7\" /><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" />", width: 24, height: 24 },
+    'bookmark-remove': { body: "<path d=\"M15 10H9\" /><path d=\"M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z\" />", width: 24, height: 24 },
+    'new-folder': { body: "<path d=\"M12 10v6\" /><path d=\"M9 13h6\" /><path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\" />", width: 24, height: 24 },
+    'row-above': { body: "<rect width=\"13\" height=\"7\" x=\"8\" y=\"3\" rx=\"1\" /><path d=\"m2 9 3 3-3 3\" /><rect width=\"13\" height=\"7\" x=\"8\" y=\"14\" rx=\"1\" />", width: 24, height: 24 },
+    'row-below': { body: "<rect width=\"13\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\" /><path d=\"m22 15-3-3 3-3\" /><rect width=\"13\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\" />", width: 24, height: 24 },
+    'column-left': { body: "<rect width=\"7\" height=\"13\" x=\"3\" y=\"8\" rx=\"1\" /><path d=\"m15 2-3 3-3-3\" /><rect width=\"7\" height=\"13\" x=\"14\" y=\"8\" rx=\"1\" />", width: 24, height: 24 },
+    'column-right': { body: "<rect width=\"7\" height=\"13\" x=\"3\" y=\"3\" rx=\"1\" /><path d=\"m9 22 3-3 3 3\" /><rect width=\"7\" height=\"13\" x=\"14\" y=\"3\" rx=\"1\" />", width: 24, height: 24 },
+    'math': { body: "<path d=\"M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2\" />", width: 24, height: 24 },
+    'copy-path': { body: "<rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\" /><path d=\"M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2\" /><path d=\"M16 4h2a2 2 0 0 1 2 2v4\" /><path d=\"M21 14H11\" /><path d=\"m15 10-4 4 4 4\" />", width: 24, height: 24 },
     'highlighter': { body: "<path d=\"m9 11-6 6v3h9l3-3\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'footnote': { body: "<path d=\"M12 6v12\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"M17.196 9 6.804 15\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/><path d=\"m6.804 9 10.392 6\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\"/>", width: 24, height: 24 },
     'leaf': { body: "<path d=\"M59.7,60.1c-7.9-20.9-22.3-20.7-32.6-24.8-10.3-4.1-15.9-11.9-15.9-11.9,0,0,7.1,6.9,15.9,9.7,8.9,2.7,23,1.1,31.4,18.6-2.4-10.1-5.7-28.3-27-29.9C10.3,20.2,4.4,3.9,4.4,3.9c0,0-1.5,23.4,7.6,36.5,9,13.1,17,19,41.1,17.3,0,0,5.5-.4,6.7,2.5h0Z\" fill=\"currentColor\"/>", width: 64, height: 64 },
@@ -49195,13 +50606,27 @@ function drawConsoleMinimapPreview(entry, track, content, minimap) {
   const viewportLine = buffer.viewportY;
   const first = Math.max(0, viewportLine - visibleLines);
   const last = Math.min(length, viewportLine + entry.terminal.rows + visibleLines);
+  const lineText = index => buffer.getLine(index)?.translateToString(true) || '';
+  const type = entry.terminal.buffer.active.type;
+  const cols = entry.terminal.cols;
   const lineNode = index => {
     const line = document.createElement('div');
     line.className = 'console-minimap-line';
     line.style.height = `${lineHeight}px`;
-    line.textContent = buffer.getLine(index)?.translateToString(true) || '';
+    line.textContent = lineText(index);
     return line;
   };
+  
+  const refresh = (from, to) => {
+    for (let index = Math.max(from, held.first); index < Math.min(to, held.last); index++) {
+      const line = held.lines.children[index - held.first];
+      if (!line) continue;
+      const text = lineText(index);
+      if (line.textContent !== text) line.textContent = text;
+    }
+  };
+  
+  const head = () => Array.from({ length: Math.min(8, buffer.baseY) }, (_, index) => lineText(index));
   let held = entry.map;
   const canKeep = held && held.frame.isConnected && held.first <= viewportLine && held.last >= viewportLine + entry.terminal.rows && held.width === metrics.sourceWidth;
   if (canKeep) {
@@ -49215,21 +50640,17 @@ function drawConsoleMinimapPreview(entry, track, content, minimap) {
       }
       held.lines.style.top = `${held.first * lineHeight}px`;
     }
-    if (entry.mapOutputPending) {
-      for (let index = held.first; index < held.last; index++) {
-        const line = held.lines.children[index - held.first];
-        if (line) line.textContent = buffer.getLine(index)?.translateToString(true) || '';
-      }
-    } else if (length === held.length && held.lines.lastElementChild) {
-      held.lines.lastElementChild.textContent = buffer.getLine(held.last - 1)?.translateToString(true) || '';
-    }
-    const screenFirst = Math.max(held.first, buffer.baseY);
-    const screenLast = Math.min(held.last, buffer.baseY + entry.terminal.rows);
-    for (let index = screenFirst; index < screenLast; index++) {
-      const line = held.lines.children[index - held.first];
-      if (line) line.textContent = buffer.getLine(index)?.translateToString(true) || '';
-    }
+    const renumbered = type !== held.type || cols !== held.cols || length < held.length || buffer.baseY < held.baseY || held.head.some((text, index) => lineText(index) !== text);
+    if (renumbered) refresh(held.first, held.last);
+    
+    else if (entry.mapOutputPending) refresh(held.baseY, buffer.baseY + entry.terminal.rows);
+    else if (length === held.length) refresh(held.last - 1, held.last);
+    refresh(buffer.baseY, buffer.baseY + entry.terminal.rows);
     held.length = length;
+    held.baseY = buffer.baseY;
+    held.cols = cols;
+    held.type = type;
+    held.head = renumbered || held.head.length < Math.min(8, buffer.baseY) ? head() : held.head;
     entry.mapOutputPending = false;
     updateMinimapViewport();
     return;
@@ -49250,7 +50671,7 @@ function drawConsoleMinimapPreview(entry, track, content, minimap) {
   preview.appendChild(lines);
   frame.appendChild(preview);
   content.replaceChildren(frame);
-  entry.map = { frame, lines, first, last, length, width: metrics.sourceWidth };
+  entry.map = { frame, lines, first, last, length, width: metrics.sourceWidth, baseY: buffer.baseY, cols, type, head: head() };
   entry.mapOutputPending = false;
   minimap.classList.remove('is-loading');
   placeMinimapViewport(minimap, metrics, null);

@@ -22,7 +22,7 @@ export const SHELF_TONES = [
   ['english', 'English and Scots'],
   ['welsh', 'Welsh'],
   ['german', 'German'],
-  ['other', 'Iberian and Norse'],
+  ['other', 'Other languages'],
 ];
 
 const CENTURY_WORDS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth', 'Twenty-first'];
@@ -146,6 +146,11 @@ export function spineMarkup(book, { order = 'story', picked = '' } = {}) {
     `<span class="shelf-spine-lang">${escaped(book.code)}</span>`,
     '</button>',
   ].join('');
+}
+
+/** The cover a picked spine turns to, laid on it only for the length of its turn: its title and its author. */
+export function spineCoverMarkup(book) {
+  return `<span class="shelf-spine-cover" aria-hidden="true"><span class="shelf-spine-cover-title">${escaped(book.title)}</span><span class="shelf-spine-cover-by">${escaped(book.author)}</span></span>`;
 }
 
 /** The shelf's bays for one order, with the bays a picked book's story reaches laid under a ledge in its tone. */

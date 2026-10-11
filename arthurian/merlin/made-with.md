@@ -6,7 +6,7 @@ The number in the last column is the total of the token ledger, one row for each
 
 | id | Line | New tokens |
 | --- | --- | --- |
-| made-with | Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), {tokens}; a working translation, not a scholarly edition. | 42,160,793 |
+| made-with | Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), {tokens}; a working translation, not a scholarly edition. | 44,113,240 |
 | made-how | How it was made: built by Ryan Allen[^ryan-allen], who designed the system that made it, all checks passed, readable first, plain speech, shaped for English, every link said, nothing said twice, the right word each time, no word worn out, modern idiom, US English, localized from US, English word order, natural tenses, contractions, neutral tone, gender neutral, no false echoes, prose and verse read aloud; source lines and stanzas kept, scenes read for movement, checked against the scan, sources named, honest where unsure, no borrowed wording, source over Malory, translated by manifest, every choice logged, changes carried everywhere, story headings, matching outlines, laid out for screens, pages linked to scans, endnotes, Malory cross-referenced, additions marked, sourced glossary, modern names, places located from sources, no guessed identities, no common words glossed, free with credit. | |
 
 ## Notes
@@ -89,7 +89,7 @@ New tokens is each book's own count, on the owner's word of 5 October 2026, 8:31
 | annales-cambriae | historia-brittonum-and-the-welsh-annals-in-english | 6,347,422 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
 | de-excidio-britanniae | gildas-on-the-ruin-of-britain-in-english | 3,727,901 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
 | vita-gildae | gildas-on-the-ruin-of-britain-in-english | 3,727,901 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
-| the-whole-arthurian-story | the-whole-arthurian-story-in-one-book | 42,160,793 | all |
+| the-whole-arthurian-story | the-whole-arthurian-story-in-one-book | 44,113,240 | all |
 
 ## How it was made
 
@@ -178,6 +178,7 @@ The second line every book carries, under the first, says how the book was made:
 | translate: A downloaded copy joins the shelf's lists | sources named | writing/arthurian/tools/workshop/shelf.py#sources_problems, writing/arthurian/tools/check-arthurian.mjs#waitProblems | — |
 | translate: Never fluent where unsure | honest where unsure | read: where the dictionaries leave a passage open is judged in the source | — |
 | translate: Never translate from Malory's wording or a modern edition's | no borrowed wording | writing/arthurian/tools/workshop/check.py#borrowed_problems; read: a modern edition not kept on disk is matched by a reader who knows it | — |
+| translate: A copyrighted modern edition serves the endnotes only | — | — | — |
 | translate: Apply the combined book's rules | source over Malory | writing/arthurian/tools/workshop/check.py#source_line_problems; read: which telling is the story and which an endnote turns on what each source says | — |
 | translate: The source wins | source over Malory | read: where Malory differs from the source is found by reading both | — |
 | translate: What Malory adds stays in the story | source over Malory | read: what is Malory's own is found by reading him against his sources | — |
@@ -259,6 +260,7 @@ The second line every book carries, under the first, says how the book was made:
 | design: Order the phases | — | — | — |
 | design: Record what was wrong | — | — | — |
 | ticket: Research | — | — | — |
+| ticket: What the shelf takes | — | — | — |
 | ticket: Write the ticket | — | — | — |
 | ticket: Phases run top to bottom | — | — | — |
 | ticket: A ticket that publishes a book | — | — | — |
