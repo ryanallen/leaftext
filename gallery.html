@@ -14332,7 +14332,9 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 /* leaftext.com's landing: the README laid out by `site/front-page-layout.js` inside the reading column — the promise over both downloads, the comparison, the app recorded moving, four cards, the install line and the foot. The app's own bar, pane and rail stand around it as they do around every page, and the desktop never draws it. Each element the layout styles wears a class of its own, and a rule that has to outrank the document's own names the tag beside it. */
 
-.front-layout {
+/* On the article for the baked page, and on the run the reading page moves its blocks into once it draws it. */
+.front-layout,
+.front-layout > .document-run {
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-16);
@@ -14515,7 +14517,9 @@ p.front-more {
 }
 /* The Arthurian shelf: `shelf.md` laid out by `site/shelf-layout.js` inside the reading column as a bookshelf — the hero, the switch between its three orders, the finder, the case of bays and spines, the key, the book opened off it and the list it was drawn from. The app's bar, pane and rail stand around it as around every page, and the desktop never draws it. Every color is the theme's; the six tradition tones are the page's own categorical scale, which `site/shelf.js` sets on the shelf as `--shelf-tone-*` and `--shelf-ink-*` and sets again on every theme change. A spine's width and height are its own geometry, written on it by the layout from its reach and its title. */
 
-.shelf-layout {
+/* On the article for the baked page, and on the run the reading page moves its blocks into once it draws it. */
+.shelf-layout,
+.shelf-layout > .document-run {
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-20);

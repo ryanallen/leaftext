@@ -8,11 +8,11 @@
 /** The class the laid-out page carries, which is how a reader tells it from the list drawn plain. */
 export const SHELF_LAYOUT_CLASS = 'shelf-layout';
 
-/** The three ways the shelf stands, each with the line said under the switch while it is chosen. */
+/** The three ways the shelf stands, each with the line said under the switch while it is chosen, and the dated two with the line said under the title — story order's is the document's own. */
 export const SHELF_ORDERS = [
   { key: 'story', label: 'Where the story happens', note: 'Story order places a book in the legend, not in history.' },
-  { key: 'written', label: 'When it was written', note: 'Each book stands in the century it was written, dated as its source words it.' },
-  { key: 'printed', label: 'When its edition was printed', note: 'Each book stands in the decade its edition was printed; one whose edition is not chosen stands last.' },
+  { key: 'written', label: 'When it was written', note: 'Each book stands in the century it was written, dated as its source words it.', line: 'Every telling of the legend, standing in the century it was written. Pull one out to read it.' },
+  { key: 'printed', label: 'When its edition was printed', note: 'Each book stands in the decade its edition was printed; one whose edition is not chosen stands last.', line: 'Every telling of the legend, standing in the decade its edition was printed. Pull one out to read it.' },
 ];
 
 /** The six tones, in the key's order: the tone key a spine carries and what the key calls it. */

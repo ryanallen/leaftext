@@ -5,7 +5,7 @@
 // `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet moves a lifted spine, and does not under reduced motion, and the page's own `openSheet`, `closeSheet` and `makeSheetDraggable` move the sheet the picked book opens in.
 // ---------------------------------------------------------------------------
 
-import { bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, reachedParts } from './shelf-layout.js';
+import { baysFor, bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, reachedParts } from './shelf-layout.js';
 
 const ORDER_KEYS = SHELF_ORDERS.map((order) => order.key);
 // The app's own bottom sheet, as the glossary draws it: its shadow, its grip, its close cross and a body the open book is drawn into.
@@ -128,6 +128,26 @@ export function installShelf(root, data, env = globalThis) {
       if (spine && typeof spine.focus === 'function') spine.focus();
     }
   };
+  // A pick changes only which spine is pressed and which bays its story reaches, so it is marked on the case already drawn: rewriting the whole case dropped Safari's reading column to the shelf's top on an iPhone.
+  const markPick = (focus = '') => {
+    const book = data.books.find((one) => one.book === state.picked);
+    const reached = book && state.order === 'story' ? reachedParts(book) : new Set();
+    for (const spine of root.querySelectorAll('.shelf-spine')) spine.setAttribute('aria-pressed', spine.getAttribute('data-book') === state.picked ? 'true' : 'false');
+    const bays = baysFor(data, state.order);
+    root.querySelectorAll('.shelf-bay').forEach((bay, at) => {
+      const index = bays[at] ? bays[at].index : null;
+      const isReached = index != null && reached.has(index);
+      bay.classList.toggle('is-reached', isReached);
+      if (isReached) bay.setAttribute('data-tone', book.tone);
+      else bay.removeAttribute('data-tone');
+    });
+    if (focus) {
+      const spine = root.querySelector(`.shelf-spine[data-book="${focus}"]`);
+      if (spine && typeof spine.focus === 'function') spine.focus();
+    }
+  };
+  // The line under the title as the document draws it, which is story order's.
+  const storyLine = find('.shelf-line') ? find('.shelf-line').textContent : '';
   const drawSort = () => {
     const sort = find('.shelf-sort');
     const note = find('.shelf-sort-note');
@@ -136,6 +156,8 @@ export function installShelf(root, data, env = globalThis) {
     holder.innerHTML = sortMarkup(state.order);
     sort.innerHTML = holder.querySelector('.shelf-sort').innerHTML;
     if (note) note.textContent = holder.querySelector('.shelf-sort-note').textContent;
+    const line = find('.shelf-line');
+    if (line) line.textContent = (SHELF_ORDERS.find((one) => one.key === state.order) || {}).line || storyLine;
   };
   // The picked book opens in a bottom sheet where the reader is, laid on the window rather than in the page, because the rail draws a copy of the page and a fixed sheet inside it would be copied too.
   const doc = view.document;
@@ -211,7 +233,7 @@ export function installShelf(root, data, env = globalThis) {
 
   const pick = (book) => {
     state.picked = state.picked === book ? '' : book;
-    drawShelf(book);
+    markPick(book);
     drawBook();
     writeAddress();
   };
@@ -220,7 +242,7 @@ export function installShelf(root, data, env = globalThis) {
     if (!state.picked) return;
     const was = state.picked;
     state.picked = '';
-    drawShelf();
+    markPick();
     closeBook(options);
     writeAddress();
     focusOn(root.querySelector(`.shelf-spine[data-book="${handBack || was}"]`));

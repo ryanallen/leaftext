@@ -14276,7 +14276,9 @@ body.is-home-row-dragging .home-list-scroll li {
 }
 
 
-.front-layout {
+
+.front-layout,
+.front-layout > .document-run {
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-16);
@@ -14459,7 +14461,9 @@ p.front-more {
 }
 
 
-.shelf-layout {
+
+.shelf-layout,
+.shelf-layout > .document-run {
   display: flex;
   flex-direction: column;
   gap: var(--lt-space-20);
