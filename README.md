@@ -50,11 +50,11 @@ Free, on macOS and Windows.
 
 Three books of the Arthur legend, newly translated for Leaftext from the Latin and the Old French, each with its original and the scans of the printed page a press away.
 
-**[*Merlin*](docs/08-examples/merlin/merlin.md) · [*The History of the Britons*](docs/08-examples/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](docs/08-examples/annales-cambriae/annales-cambriae.md)**
+**[*Merlin*](arthurian/merlin/merlin.md) · [*The History of the Britons*](arthurian/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](arthurian/annales-cambriae/annales-cambriae.md)**
 
-**[Pick a book off the shelf →](docs/08-examples/arthurian-shelf/shelf.md)**
+**[Pick a book off the shelf →](arthurian/index.md)**
 
-**[How the three tell one story →](docs/08-examples/arthurian-shelf/story-map.md)**
+**[How the three tell one story →](arthurian/story-map.md)**
 
 ## Read your files
 

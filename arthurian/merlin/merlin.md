@@ -2,7 +2,7 @@
 
 *Merlin*, after Robert de Boron, translated by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen)
 
-**Read in:** [UK English](uk/merlin-uk.md)
+[All the Arthurian books](../index.md) · **Read in:** [UK English](uk/merlin-uk.md)
 
 ## About this translation
 
@@ -26,7 +26,6 @@ How it was made: built by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen), [w
 
 **Gaston Paris's introduction.** The 1886 edition opens on some eighty pages of French by Gaston Paris, left out here. He describes the Huth manuscript, once owned by the scholar Du Cange, and what it holds: prose versions of Robert's *Joseph* and *Merlin*, then the sequel, which is what makes the book so valuable. He argues that Robert took much of *Merlin* from [Geoffrey of Monmouth's history of Britain](https://archive.org/details/historiesoftheki037587mbp), which he knew only loosely, from a French version: Robert gives King Constant a son called Moine, makes Winchester a port and takes Logres for a city. Most of the introduction is about the sequel, the Grail quest after it, and the later books drawn from them, Malory's among them. It comes before page 1 in each of the scans the Sources name.
 
-**The Arthurian shelf.** This book stands on [the Arthurian shelf](../arthurian-shelf/shelf.md) with every other telling of the legend on Leaftext, published and still to come, in the order their stories happen; the shelf can also be sorted by when each was written or its edition printed.
 
 ## Why this book
 
@@ -2530,27 +2529,27 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^1-2]: The French is *nostre sires*: God, here Christ, who, as this opening tells it, had gone down into hell and taken Adam and Eve out of it. The French uses it as his name, so the English capitalizes it; a lower-case "lord" would mean a master of land and people.<sup>[\*](#new-in-this-translation)</sup>
 
-[^1-3]: In the whole story: [Christ empties hell, and the devils plan a prophet of their own](../arthurian-shelf/story-map.md#the-devils-plan-a-prophet).<sup>[\*](#new-in-this-translation)</sup>
+[^1-3]: In the whole story: [Christ empties hell, and the devils plan a prophet of their own](../story-map.md#the-devils-plan-a-prophet).<sup>[\*](#new-in-this-translation)</sup>
 
 [^1-4]: The words "the very thing we thought would serve us best" are Paris and Ulrich's addition, in square brackets in their French text; the Huth manuscript doesn't have them.
 
 [^3-1]: The Huth manuscript reads *ces oevres*, "these acts"; Paris and Ulrich print *ses oevres*, "his acts", and the English follows them: "his work". Whose work is meant, the man's or the Lord's, the French leaves open.
 
-[^4-1]: In the whole story: [A devil ruins a rich man's family and leads two daughters astray](../arthurian-shelf/story-map.md#a-devil-ruins-a-rich-mans-family).<sup>[\*](#new-in-this-translation)</sup>
+[^4-1]: In the whole story: [A devil ruins a rich man's family and leads two daughters astray](../story-map.md#a-devil-ruins-a-rich-mans-family).<sup>[\*](#new-in-this-translation)</sup>
 
 [^6-1]: The words "and so they did" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^11-1]: In the whole story: [A devil fathers a child on the eldest daughter as she sleeps](../arthurian-shelf/story-map.md#a-devil-fathers-a-child-on-the-eldest-daughter).<sup>[\*](#new-in-this-translation)</sup>
+[^11-1]: In the whole story: [A devil fathers a child on the eldest daughter as she sleeps](../story-map.md#a-devil-fathers-a-child-on-the-eldest-daughter).<sup>[\*](#new-in-this-translation)</sup>
 
 [^12-1]: The Huth manuscript's words here are out of order (*porroit oublier de f. engingnier chou*); the English follows the order Paris and Ulrich give them: "he could never make her forget what the holy man had told her".
 
-[^14-1]: In the whole story: [The mother confesses to Blaise, and the judges lock her in a tower](../arthurian-shelf/story-map.md#the-mother-confesses-and-is-held-in-a-tower).<sup>[\*](#new-in-this-translation)</sup>
+[^14-1]: In the whole story: [The mother confesses to Blaise, and the judges lock her in a tower](../story-map.md#the-mother-confesses-and-is-held-in-a-tower).<sup>[\*](#new-in-this-translation)</sup>
 
 [^15-1]: The words "to God" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^16-1]: Paris and Ulrich take a letter out of each of the Huth manuscript's words here, *seuur* and *venue*, to read *seuu*, "knowledge", and *veue*, "sight", and the English follows them: "to my knowledge or in my sight".
 
-[^19-1]: In the whole story: [Merlin is born and speaks for his mother at her trial](../arthurian-shelf/story-map.md#merlin-is-born).<sup>[\*](#new-in-this-translation)</sup>
+[^19-1]: In the whole story: [Merlin is born and speaks for his mother at her trial](../story-map.md#merlin-is-born).<sup>[\*](#new-in-this-translation)</sup>
 
 [^19-2]: The words "and pardoned the sin" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
@@ -2564,15 +2563,15 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^30-1]: The Huth manuscript reads "my skill and my cunning"; Paris and Ulrich print "their", and the English follows them.
 
-[^31-1]: In the whole story: [Blaise agrees to write Merlin's book of Joseph and the Grail](../arthurian-shelf/story-map.md#blaise-writes-merlins-book).<sup>[\*](#new-in-this-translation)</sup>
+[^31-1]: In the whole story: [Blaise agrees to write Merlin's book of Joseph and the Grail](../story-map.md#blaise-writes-merlins-book).<sup>[\*](#new-in-this-translation)</sup>
 
 [^33-1]: The words "and the one about the lineages I've mentioned" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^33-2]: In the whole story: [Vortigern has King Moine killed and takes the throne](../arthurian-shelf/story-map.md#vortigern-takes-the-throne).<sup>[\*](#new-in-this-translation)</sup>
+[^33-2]: In the whole story: [Vortigern has King Moine killed and takes the throne](../story-map.md#vortigern-takes-the-throne).<sup>[\*](#new-in-this-translation)</sup>
 
 [^33-3]: So Paris and Ulrich print it: those who held "the law of Rome", which elsewhere in the French is the Church's own faith, come to fight the Christians. Who they are, the sentence doesn't say, and the English keeps its words rather than guess.<sup>[\*](#new-in-this-translation)</sup>
 
-[^36-1]: In the whole story: [Vortigern's tower keeps falling, and his clerks blame a fatherless child](../arthurian-shelf/story-map.md#vortigerns-tower-keeps-falling).<sup>[\*](#new-in-this-translation)</sup>
+[^36-1]: In the whole story: [Vortigern's tower keeps falling, and his clerks blame a fatherless child](../story-map.md#vortigerns-tower-keeps-falling).<sup>[\*](#new-in-this-translation)</sup>
 
 [^38-1]: The words from "she was the first" to "his affairs now" are Paris and Ulrich's addition; the Huth manuscript goes straight from "Let everyone who hears this story know" to the Christians' grief.
 
@@ -2586,7 +2585,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^41-1]: The word "conceived" is Paris and Ulrich's addition here; the Huth manuscript has it only when the wisest clerk says the same thing back to the others.
 
-[^43-1]: In the whole story: [Vortigern's messengers find Merlin and bring him to the king](../arthurian-shelf/story-map.md#the-messengers-bring-merlin-to-vortigern).<sup>[\*](#new-in-this-translation)</sup>
+[^43-1]: In the whole story: [Vortigern's messengers find Merlin and bring him to the king](../story-map.md#the-messengers-bring-merlin-to-vortigern).<sup>[\*](#new-in-this-translation)</sup>
 
 [^44-1]: The question "Who told you that?", and the words that bring in Merlin's answer, are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
@@ -2604,7 +2603,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^51-1]: The word "from" is Paris and Ulrich's addition, for "near"; the Huth manuscript has them come to a day's journey "where Vortigern was".
 
-[^53-1]: In the whole story: [Merlin shows Vortigern the two dragons under his tower](../arthurian-shelf/story-map.md#merlin-shows-vortigern-the-dragons).<sup>[\*](#new-in-this-translation)</sup>
+[^53-1]: In the whole story: [Merlin shows Vortigern the two dragons under his tower](../story-map.md#merlin-shows-vortigern-the-dragons).<sup>[\*](#new-in-this-translation)</sup>
 
 [^54-1]: The earth, the weight of the building, and the words "down hard on them" and "with such force that all the water churns" are Paris and Ulrich's additions. In the Huth manuscript, when the dragons feel the pool weigh on them, they simply turn over and make such a din that everything above has to come down.
 
@@ -2614,11 +2613,11 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^58-1]: The French is *par la forche de l'autre art*, "by the power of the other art", and doesn't name it. From what Merlin says next, it seems to be the clerks' astronomy, reading the future in the stars and the elements, set against the knowledge he has from God.<sup>[\*](#new-in-this-translation)</sup>
 
-[^61-1]: In the whole story: [Constans's sons land, and Pendragon is made king](../arthurian-shelf/story-map.md#pendragon-is-made-king).<sup>[\*](#new-in-this-translation)</sup>
+[^61-1]: In the whole story: [Constans's sons land, and Pendragon is made king](../story-map.md#pendragon-is-made-king).<sup>[\*](#new-in-this-translation)</sup>
 
 [^61-2]: The words "the ones Hengist the Saxon had sent him" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^63-1]: In the whole story: [Merlin comes to Pendragon's men in one disguise after another](../arthurian-shelf/story-map.md#merlin-comes-to-pendragon-in-disguise).<sup>[\*](#new-in-this-translation)</sup>
+[^63-1]: In the whole story: [Merlin comes to Pendragon's men in one disguise after another](../story-map.md#merlin-comes-to-pendragon-in-disguise).<sup>[\*](#new-in-this-translation)</sup>
 
 [^64-1]: The Huth manuscript reads "of those who told you that you should look for Merlin"; Paris and Ulrich print "who claimed they knew Merlin", and the English follows them.
 
@@ -2632,7 +2631,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^71-1]: The Huth manuscript reads "after you speak to me"; Paris and Ulrich print "to him", and the English follows them: "after you've talked with him".
 
-[^71-2]: In the whole story: [Merlin tricks Uther, and the brothers beg him to stay](../arthurian-shelf/story-map.md#merlin-agrees-to-serve-the-brothers).<sup>[\*](#new-in-this-translation)</sup>
+[^71-2]: In the whole story: [Merlin tricks Uther, and the brothers beg him to stay](../story-map.md#merlin-agrees-to-serve-the-brothers).<sup>[\*](#new-in-this-translation)</sup>
 
 [^71-3]: The Huth manuscript gives these words to the king and reads "your army" and "your tent"; Paris and Ulrich take out "the king" and print "our army" and "my tent", so the words stay Uther's.
 
@@ -2642,7 +2641,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^75-1]: The words "You understand very little of what the man can do" are Paris and Ulrich's addition. In their place, the Huth manuscript says of Uther, or of the king, that he "knew well what Merlin could do", words Paris and Ulrich take out.
 
-[^78-1]: In the whole story: [Merlin makes peace with the Saxons, and a jealous baron tests him](../arthurian-shelf/story-map.md#a-jealous-baron-tests-merlin).<sup>[\*](#new-in-this-translation)</sup>
+[^78-1]: In the whole story: [Merlin makes peace with the Saxons, and a jealous baron tests him](../story-map.md#a-jealous-baron-tests-merlin).<sup>[\*](#new-in-this-translation)</sup>
 
 [^80-1]: The words "the king's advisers" are Paris and Ulrich's addition; in the Huth manuscript Merlin comes to rule over the king himself.
 
@@ -2656,7 +2655,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^85-3]: The words "who the English called by his true baptismal name, Ambrosius Aurelianus" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^86-1]: In the whole story: [The brothers fight the Saxons at Salisbury](../arthurian-shelf/story-map.md#the-battle-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
+[^86-1]: In the whole story: [The brothers fight the Saxons at Salisbury](../story-map.md#the-battle-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
 
 [^87-1]: The Huth manuscript names the month *jung*, June, here, and *jungnet*, July, for the last week the army gathers in; Paris and Ulrich add and take out *net*, so the Saxons come on the eleventh of July, after the army has gathered in the last week of June, and the English follows them: "the eleventh day of July".
 
@@ -2668,7 +2667,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^90-3]: The words from "Then they said goodbye" to "in this battle" are Paris and Ulrich's addition; the Huth manuscript goes straight from Merlin's advice to the king to his leaving for Blaise.
 
-[^92-1]: In the whole story: [Merlin brings stones from Ireland and raises them at Salisbury](../arthurian-shelf/story-map.md#the-stones-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
+[^92-1]: In the whole story: [Merlin brings stones from Ireland and raises them at Salisbury](../story-map.md#the-stones-of-salisbury).<sup>[\*](#new-in-this-translation)</sup>
 
 [^92-2]: The Huth manuscript reads *a son frere*, "to his brother"; Paris and Ulrich print *a seurenon*, "as a surname", and the English follows them.
 
@@ -2678,13 +2677,13 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^94-1]: The Huth manuscript reads "something that can never be known"; Paris and Ulrich print "never be finished" and add "by any other mortal man", and the English follows them: "no other mortal man could ever finish".
 
-[^95-1]: In the whole story: [Merlin makes Uther the Round Table, with one empty seat](../arthurian-shelf/story-map.md#the-round-table).<sup>[\*](#new-in-this-translation)</sup>
+[^95-1]: In the whole story: [Merlin makes Uther the Round Table, with one empty seat](../story-map.md#the-round-table).<sup>[\*](#new-in-this-translation)</sup>
 
 [^95-2]: The words "When a great famine struck them", "square in shape", "to drape it well", "from which Jesus and the apostles had eaten at the Supper" and "to cover that completely", and the sentence on Bron and the fish, are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
 
 [^98-1]: The Huth manuscript reads "the son of the one who's to fill it"; Paris and Ulrich print "who's to father him", and the English follows them: "learned he's to father such a child".
 
-[^98-2]: In the whole story: [Uther falls in love with Igraine and makes war on her husband](../arthurian-shelf/story-map.md#uther-falls-in-love-with-igraine).<sup>[\*](#new-in-this-translation)</sup>
+[^98-2]: In the whole story: [Uther falls in love with Igraine and makes war on her husband](../story-map.md#uther-falls-in-love-with-igraine).<sup>[\*](#new-in-this-translation)</sup>
 
 [^99-1]: Malory tells this in [Book I, chapter 1](../malory-sources/malory-map.tsv). There, Uther has long been at war with the duke, sends for him and his wife, and makes peace with him; Igraine refuses the king and tells her husband, and the two ride home by night from that first court, with no Christmas feast, no gold cup and no go-between.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -2692,7 +2691,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^101-1]: The 1886 edition prints *dens*, where the sense and the same phrase elsewhere want *dons*, "gifts"; Paris and Ulrich's errata don't correct it, and the English says "fine gifts".<sup>[\*](#new-in-this-translation)</sup>
 
-[^106-1]: In the whole story: [Merlin brings Uther to Igraine in her husband's shape](../arthurian-shelf/story-map.md#merlin-brings-uther-to-igraine).<sup>[\*](#new-in-this-translation)</sup>
+[^106-1]: In the whole story: [Merlin brings Uther to Igraine in her husband's shape](../story-map.md#merlin-brings-uther-to-igraine).<sup>[\*](#new-in-this-translation)</sup>
 
 [^107-1]: Paris and Ulrich add *vuis*, "empty". Nothing in this story has told of anyone trying that seat; the English gives Uther's fear as the French does.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -2724,7 +2723,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^120-3]: The name Agravain is Paris and Ulrich's addition; the Huth manuscript doesn't have it.
 
-[^120-4]: In the whole story: [Arthur is born and given to Ector to raise](../arthurian-shelf/story-map.md#arthur-is-born-and-given-to-ector).<sup>[\*](#new-in-this-translation)</sup>
+[^120-4]: In the whole story: [Arthur is born and given to Ector to raise](../story-map.md#arthur-is-born-and-given-to-ector).<sup>[\*](#new-in-this-translation)</sup>
 
 [^121-1]: The words "who looked like the duke" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
@@ -2742,7 +2741,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^126-2]: The words "great good is to come to you" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^126-3]: In the whole story: [Uther, sick, is carried into a last battle with the Saxons](../arthurian-shelf/story-map.md#uther-is-carried-into-his-last-battle).<sup>[\*](#new-in-this-translation)</sup>
+[^126-3]: In the whole story: [Uther, sick, is carried into a last battle with the Saxons](../story-map.md#uther-is-carried-into-his-last-battle).<sup>[\*](#new-in-this-translation)</sup>
 
 [^127-1]: The words "complaining bitterly" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
@@ -2756,7 +2755,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^131-1]: Malory tells this in [Book I, chapter 4](../malory-sources/malory-map.tsv). There Merlin asks the dying king aloud, before all his barons, whether his son Arthur will be king after him, and Uther answers so that everyone hears, giving Arthur God's blessing and his own and telling him to claim the crown. Here Merlin whispers in the king's ear, and no one learns what Uther said to him.<sup>[\*](#new-in-this-translation)</sup>
 
-[^131-2]: In the whole story: [A sword appears in a stone, and Arthur draws it for Kay](../arthurian-shelf/story-map.md#the-sword-in-the-stone).<sup>[\*](#new-in-this-translation)</sup>
+[^131-2]: In the whole story: [A sword appears in a stone, and Arthur draws it for Kay](../story-map.md#the-sword-in-the-stone).<sup>[\*](#new-in-this-translation)</sup>
 
 [^131-3]: The Huth manuscript reads *fu*, "was"; Paris and Ulrich print *fina*, "died", and the English follows them.
 
@@ -2790,7 +2789,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^138-1]: Malory tells this in [Book I, chapter 5](../malory-sources/malory-map.tsv). There Arthur finds the lodging locked, since everyone has gone out to watch the jousting, and he goes straight to the sword in the stone.<sup>[\*](#new-in-this-translation)</sup>
 
-[^138-2]: In the whole story: [The barons put off choosing Arthur from feast to feast](../arthurian-shelf/story-map.md#the-barons-put-off-arthur).<sup>[\*](#new-in-this-translation)</sup>
+[^138-2]: In the whole story: [The barons put off choosing Arthur from feast to feast](../story-map.md#the-barons-put-off-arthur).<sup>[\*](#new-in-this-translation)</sup>
 
 [^139-1]: The words "its lord" and "my" are Paris and Ulrich's additions; the Huth manuscript doesn't have them.
 
@@ -2800,6 +2799,6 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^143-2]: The words "we find him fit" stand for Paris and Ulrich's addition, *nous le trouvons tel*, and they take out the "not" the Huth manuscript gives, which would ask for the delay only if he shouldn't be king; the English follows them.
 
-[^144-1]: In the whole story: [Arthur is knighted and crowned at Pentecost](../arthurian-shelf/story-map.md#arthur-is-crowned).<sup>[\*](#new-in-this-translation)</sup>
+[^144-1]: In the whole story: [Arthur is knighted and crowned at Pentecost](../story-map.md#arthur-is-crowned).<sup>[\*](#new-in-this-translation)</sup>
 
 [^145-1]: Malory tells this in [Book I, chapter 7](../malory-sources/malory-map.tsv). There the lords put off the choice until the common people cry out at Pentecost that they'll have Arthur king; he's made a knight by the best man there, crowned, and swears to rule justly, and then gives back the lands taken since Uther died.<sup>[\*](#new-in-this-translation)</sup>

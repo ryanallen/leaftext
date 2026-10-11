@@ -7,10 +7,10 @@ A book whose text is published reaches from the first episode it tells to the la
 ## Before Arthur: Britain founded and the Grail brought west
 
 - [On the Ruin of Britain](story-map.md). Gildas. Latin. Coming; not published yet. Story: Before Arthur to Arthur's early reign, broad. Written: 540–547 CE. Edition: Theodor Mommsen, 1898.
-- [The History of the Britons](../historia-brittonum/historia-brittonum.md). Attributed to Nennius. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 829–830 CE. Edition: Theodor Mommsen, 1898.
+- [The History of the Britons](historia-brittonum/historia-brittonum.md). Attributed to Nennius. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 829–830 CE. Edition: Theodor Mommsen, 1898.
 - [The History of the Kings of Britain](story-map.md). Geoffrey of Monmouth. Latin. Coming; not published yet. Story: Before Arthur to After Camlann, broad. Written: 1136 CE. Edition not chosen yet.
 - [Joseph of Arimathea](story-map.md). Robert de Boron. Old French. Coming; not published yet. Story: Before Arthur, broad. Written: 1190–1200 CE. Edition not chosen yet.
-- [Merlin](../merlin/merlin.md). Robert de Boron. Old French. On the shelf. Story: Before Arthur to Merlin, Uther and Arthur's birth. Written: 1200–1240 CE. Edition: Gaston Paris and Jacob Ulrich, 1886.
+- [Merlin](merlin/merlin.md). Robert de Boron. Old French. On the shelf. Story: Before Arthur to Merlin, Uther and Arthur's birth. Written: 1200–1240 CE. Edition: Gaston Paris and Jacob Ulrich, 1886.
 - [The History of the Holy Grail](story-map.md). Anonymous, the Vulgate cycle. Old French. Coming; not published yet. Story: Before Arthur, broad. Written: 1220–1235 CE. Edition not chosen yet.
 - [The History of the Holy Grail](story-map.md). Henry Lovelich. Middle English. Coming; not published yet. Story: Before Arthur, broad. Written: 1430–1450 CE. Edition not chosen yet.
 - [The Prose Merlin](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: Before Arthur to Arthur's early reign, broad. Written: 1450 CE. Edition not chosen yet.
@@ -18,7 +18,7 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Merlin, Uther and Arthur's birth
 
-- [The Welsh Annals](../annales-cambriae/annales-cambriae.md). Kept in Wales, anonymous. Latin. On the shelf. Story: Merlin, Uther and Arthur's birth to Arthur's early reign; then Arthur's end to After Camlann. Written: 950–999 CE. Edition: Egerton Phillimore, 1888.
+- [The Welsh Annals](annales-cambriae/annales-cambriae.md). Kept in Wales, anonymous. Latin. On the shelf. Story: Merlin, Uther and Arthur's birth to Arthur's early reign; then Arthur's end to After Camlann. Written: 950–999 CE. Edition: Egerton Phillimore, 1888.
 - [Roman de Brut](story-map.md). Wace. Old French. Coming; not published yet. Story: Merlin, Uther and Arthur's birth to Arthur's end, broad. Written: 1155 CE. Edition not chosen yet.
 - [Brut](story-map.md). Layamon. Middle English. Coming; not published yet. Story: Merlin, Uther and Arthur's birth to Arthur's end, broad. Written: 1190–1215 CE. Edition not chosen yet.
 - [The Romance of Palamedes](story-map.md). Eilert Löseth, retelling. French. Coming; not published yet. Story: Merlin, Uther and Arthur's birth, broad. Written: after 1215 CE. Edition: Eilert Löseth, 1891.

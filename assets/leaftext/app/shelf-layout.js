@@ -2,7 +2,7 @@
 // ---------------------------------------------------------------------------
 // The Arthurian shelf's composition. `shelf.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between the three orders, the bays of spines, the key, the open book, and the list itself kept under them.
 //
-// `shelf-data.json`, written beside `shelf.md` by the same tool, holds each book's reach, dates and editions in the list's own order, so every drawn line is paired with its record and a list that no longer matches its data is refused rather than drawn wrong. `web/preview/boot.js` hands this to the host, and `shelf.js` redraws the bays out of the same functions when the order or a filter changes. It works on the renderer's HTML as text, as the front page's layout does.
+// `shelf-data.json`, written beside the shelf's `index.md` by the same tool, holds each book's reach, dates and editions in the list's own order, so every drawn line is paired with its record and a list that no longer matches its data is refused rather than drawn wrong. `web/preview/boot.js` hands this to the host, and `shelf.js` redraws the bays out of the same functions when the order or a filter changes. It works on the renderer's HTML as text, as the front page's layout does.
 // ---------------------------------------------------------------------------
 
 /** The class the laid-out page carries, which is how a reader tells it from the list drawn plain. */

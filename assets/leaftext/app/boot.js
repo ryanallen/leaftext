@@ -71,14 +71,14 @@ async function frontPageFor(path) {
 /**
  * The layouts a listing may name for a document other than its front page, each its modules and the data beside its document, fetched the first time that document is drawn.
  *
- * The shelf is the Arthurian books laid out as a bookshelf over `shelf.md`, the list it is drawn from, with its spines' dates and reaches in `shelf-data.json` beside it.
+ * The shelf is the Arthurian books laid out as a bookshelf over `index.md`, the list it is drawn from, with its spines' dates and reaches in `shelf-data.json` beside it.
  */
 const SITE_LAYOUTS = {
   shelf: (path, at) => async () => {
     const [layout, moves, data] = await Promise.all([
       import('./shelf-layout.js'),
       import('./shelf.js'),
-      fetched(at(path.replace(/\.md$/, '-data.json'))).then((answer) => answer.json()),
+      fetched(at(path.replace(/[^/]*$/, 'shelf-data.json'))).then((answer) => answer.json()),
     ]);
     return { layout: (html) => layout.layoutShelf(html, data), motion: (root) => moves.installShelf(root, data), rootClass: layout.SHELF_LAYOUT_CLASS };
   },

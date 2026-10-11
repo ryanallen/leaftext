@@ -6,9 +6,9 @@ The text is the work itself.
 
 ## Read it
 
-- [The English](../../annales-cambriae/annales-cambriae.md), from [its first page](../../annales-cambriae/annales-cambriae.md#page-152)
-- [The Latin text](../../annales-cambriae/annales-cambriae-latin.md), from [its first page](../../annales-cambriae/annales-cambriae-latin.md#page-152)
-- [The scans](../../annales-cambriae/annales-cambriae-scans.md), from [its first page](../../annales-cambriae/annales-cambriae-scans.md#page-152)
+- [The English](../annales-cambriae/annales-cambriae.md), from [its first page](../annales-cambriae/annales-cambriae.md#page-152)
+- [The Latin text](../annales-cambriae/annales-cambriae-latin.md), from [its first page](../annales-cambriae/annales-cambriae-latin.md#page-152)
+- [The scans](../annales-cambriae/annales-cambriae-scans.md), from [its first page](../annales-cambriae/annales-cambriae-scans.md#page-152)
 
 ## Editions
 

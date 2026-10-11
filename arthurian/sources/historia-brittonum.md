@@ -6,9 +6,9 @@ The text is the work itself.
 
 ## Read it
 
-- [The English](../../historia-brittonum/historia-brittonum.md), from [its first page](../../historia-brittonum/historia-brittonum.md#page-145)
-- [The Latin text](../../historia-brittonum/historia-brittonum-latin.md), from [its first page](../../historia-brittonum/historia-brittonum-latin.md#page-145)
-- [The scans](../../historia-brittonum/historia-brittonum-scans.md), from [its first page](../../historia-brittonum/historia-brittonum-scans.md#page-145)
+- [The English](../historia-brittonum/historia-brittonum.md), from [its first page](../historia-brittonum/historia-brittonum.md#page-145)
+- [The Latin text](../historia-brittonum/historia-brittonum-latin.md), from [its first page](../historia-brittonum/historia-brittonum-latin.md#page-145)
+- [The scans](../historia-brittonum/historia-brittonum-scans.md), from [its first page](../historia-brittonum/historia-brittonum-scans.md#page-145)
 
 ## Editions
 

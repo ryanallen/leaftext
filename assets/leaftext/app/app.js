@@ -19,7 +19,7 @@ const journalReport = (text) => {
     const count = (journalCounts.get(text) || 0) + 1;
     journalCounts.set(text, count);
     if (!journalIsWorthSending(count)) return;
-    window.ipc.postMessage(JSON.stringify({ command: 'logError', message: text, count }));
+    (window.__leafIpc || window.ipc).postMessage(JSON.stringify({ command: 'logError', message: text, count }));
   } catch (_ignored) {
     
   }
@@ -9682,7 +9682,8 @@ const send = (message) => {
     flushSourceUpdate();
   }
   if (message && READER_LOADING_COMMANDS.has(message.command)) beginReaderLoading();
-  window.ipc.postMessage(JSON.stringify(message));
+  
+  (window.__leafIpc || window.ipc).postMessage(JSON.stringify(message));
 };
 
 function hostAnswers(command) {
@@ -11170,6 +11171,36 @@ const TABLE_MENU_ITEMS = [
 let contextMenuTableCell = null;
 const contextMenuChildren = [];
 
+let contextMenuPressConsoleId;
+let contextMenuConsoleId = null;
+let contextMenuPressFocus = null;
+
+function consoleHoldingKeyboard() {
+  const entry = frontConsoleEntry();
+  const active = document.activeElement;
+  if (!entry?.terminal || entry.layer.hidden || !active) return null;
+  return active === entry.terminal.textarea || entry.terminal.element?.contains(active) ? consoleFrontId : null;
+}
+document.addEventListener('pointerdown', (event) => {
+  
+  if (event.button === 2 || (isMacPlatform && event.button === 0 && event.ctrlKey)) contextMenuPressConsoleId = consoleHoldingKeyboard() ?? (contextMenu.hidden ? null : contextMenuConsoleId);
+}, true);
+
+
+function returnKeyboardToConsole() {
+  const id = contextMenuConsoleId;
+  const pressed = contextMenuPressFocus;
+  contextMenuConsoleId = null;
+  contextMenuPressFocus = null;
+  if (id === null || id !== consoleFrontId) return;
+  const entry = frontConsoleEntry();
+  if (!entry?.terminal || entry.layer.hidden) return;
+  if (typeof document.hasFocus === 'function' && !document.hasFocus()) return;
+  const active = document.activeElement;
+  const loose = !active || active === document.body || active === document.documentElement || active === pressed || !!active.closest?.('.context-menu');
+  if (loose) entry.terminal.focus();
+}
+
 const PAGE_MENU_ITEMS = [
   
   { action: 'copySelection', label: 'Copy', selectionOnly: true },
@@ -11189,6 +11220,8 @@ const PAGE_MENU_ITEMS = [
 function hideContextMenu() {
   for (const child of contextMenuChildren.splice(0)) child.menu.remove();
   if (contextMenu.hidden) {
+    contextMenuConsoleId = null;
+    contextMenuPressFocus = null;
     return;
   }
   contextMenu.hidden = true;
@@ -11199,6 +11232,7 @@ function hideContextMenu() {
   contextMenuPicture = null;
   contextMenuPictureFullWindow = false;
   contextMenuTableCell = null;
+  returnKeyboardToConsole();
 }
 
 function runTableContextAction(action, cell) {
@@ -11563,6 +11597,9 @@ function clampContextMenu(x, y) {
 }
 function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   
+  const holdingConsole = contextMenuPressConsoleId === undefined ? consoleHoldingKeyboard() : contextMenuPressConsoleId;
+  contextMenuPressConsoleId = undefined;
+  
   if (!path) {
     return;
   }
@@ -11583,6 +11620,8 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   dismissLinkHoverTip();
   buildContextMenu(entries);
   clampContextMenu(x, y);
+  contextMenuConsoleId = holdingConsole;
+  contextMenuPressFocus = document.activeElement;
   leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
 }
 document.addEventListener('contextmenu', (event) => {
@@ -11650,6 +11689,7 @@ document.addEventListener('contextmenu', (event) => {
     showContextMenu(event.clientX, event.clientY, libraryFolderHere(), 'here');
     return;
   }
+  contextMenuPressConsoleId = undefined;
   hideContextMenu();
 });
 
@@ -40023,7 +40063,8 @@ function renderNavigation() {
   }
   backButton.disabled = !navigationState.canGoBack;
   const path = activeDocumentPath();
-  refreshButton.disabled = !path;
+  
+  refreshButton.disabled = !path && !activeWebTab();
   forwardButton.disabled = !navigationState.canGoForward;
 }
 function sameDocumentFragmentHref(rawHref) {
@@ -40831,6 +40872,9 @@ function makeConsoleLayer(id) {
     terminal.loadAddon(fit);
     terminal.open(host);
     
+    if (!isMacPlatform) terminal.inputHandler.encoder.setOption(window.GhosttyWeb.KeyEncoderOption.ALT_ESC_PREFIX, true);
+    terminal.attachCustomKeyEventHandler(event => consoleAltKey(id, event));
+    
     const render = terminal.renderer.render.bind(terminal.renderer);
     
     Object.defineProperty(terminal.renderer, 'render', { writable: false, configurable: true, value: (...args) => {
@@ -41024,6 +41068,14 @@ function consolePasteChord(event) {
   const held = [event.ctrlKey, event.altKey, event.metaKey].filter(Boolean).length;
   if (held !== 1) return false;
   return isMacPlatform || !event.metaKey;
+}
+
+
+function consoleAltKey(id, event) {
+  if (!event.altKey || event.ctrlKey || event.metaKey || Array.from(event.key || '').length !== 1) return false;
+  if (!isMacPlatform && !event.shiftKey) return false;
+  send({ command: 'consoleInput', id, data: isMacPlatform ? event.key : '' + event.key });
+  return true;
 }
 
 

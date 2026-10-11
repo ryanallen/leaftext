@@ -508,7 +508,8 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
     return corpusLoading;
   }
   const pageByPath = new Map(documents.filter((entry) => entry.page).map((entry) => [entry.path, entry.page]));
-  const pathByPage = new Map(documents.filter((entry) => entry.page).map((entry) => [entry.page, entry.path]));
+  // A folder's page answers at the folder and at its `index.html` both.
+  const pathByPage = new Map(documents.filter((entry) => entry.page).flatMap((entry) => entry.page.endsWith('/') ? [[entry.page, entry.path], [`${entry.page}index.html`, entry.path]] : [[entry.page, entry.path]]));
   let open = null;
   // Keep the drawn bytes for the source view and return without another fetch.
   let held = null;
@@ -1589,7 +1590,8 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
   };
   // A refresh, a closed tab and a walk off the site all raise it.
   addEventListener('pagehide', keepWords);
-  window.ipc = { postMessage: handle };
+  // Its own name rather than `window.ipc`, which a Leaftext web page tab has already defined read-only for itself: assigning that throws here and nothing answers the page.
+  window.__leafIpc = { postMessage: handle };
   // Whatever the front end sent while this was still loading.
   for (const message of window.__leafPending || []) handle(message);
   window.__leafPending = [];

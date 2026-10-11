@@ -6,9 +6,9 @@ The text is the work itself.
 
 ## Read it
 
-- [The English](../../merlin/merlin.md), from [its first page](../../merlin/merlin.md#page-1)
-- [The Old French text](../../merlin/merlin-old-french.md), from [its first page](../../merlin/merlin-old-french.md#page-1)
-- [The scans](../../merlin/merlin-scans.md), from [its first page](../../merlin/merlin-scans.md#vol-1-page-1)
+- [The English](../merlin/merlin.md), from [its first page](../merlin/merlin.md#page-1)
+- [The Old French text](../merlin/merlin-old-french.md), from [its first page](../merlin/merlin-old-french.md#page-1)
+- [The scans](../merlin/merlin-scans.md), from [its first page](../merlin/merlin-scans.md#vol-1-page-1)
 
 ## Editions
 

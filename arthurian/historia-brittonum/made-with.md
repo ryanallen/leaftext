@@ -6,7 +6,7 @@ The number in the last column is the total of the token ledger, one row for each
 
 | id | Line | New tokens |
 | --- | --- | --- |
-| made-with | Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), {tokens}; a working translation, not a scholarly edition. | 40,723,179 |
+| made-with | Translated with machine assistance by Ryan Allen[^ryan-allen] for [Leaftext](https://leaftext.com), {tokens}; a working translation, not a scholarly edition. | 42,160,793 |
 | made-how | How it was made: built by Ryan Allen[^ryan-allen], who designed the system that made it, all checks passed, readable first, plain speech, shaped for English, every link said, nothing said twice, the right word each time, no word worn out, modern idiom, US English, localized from US, English word order, natural tenses, contractions, neutral tone, gender neutral, no false echoes, prose and verse read aloud; source lines and stanzas kept, scenes read for movement, checked against the scan, sources named, honest where unsure, no borrowed wording, source over Malory, translated by manifest, every choice logged, changes carried everywhere, story headings, matching outlines, laid out for screens, pages linked to scans, endnotes, Malory cross-referenced, additions marked, sourced glossary, modern names, places located from sources, no guessed identities, no common words glossed, free with credit. | |
 
 ## Notes
@@ -89,7 +89,7 @@ New tokens is each book's own count, on the owner's word of 5 October 2026, 8:31
 | annales-cambriae | historia-brittonum-and-the-welsh-annals-in-english | 6,347,422 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
 | de-excidio-britanniae | gildas-on-the-ruin-of-britain-in-english | 3,727,901 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
 | vita-gildae | gildas-on-the-ruin-of-britain-in-english | 3,727,901 | designed-the-system, all-checks-passed, readable-first, plain-speech, shaped-for-english, every-link-said, nothing-said-twice, the-right-word-each-time, no-word-worn-out, modern-idiom, us-english, english-word-order, natural-tenses, contractions, neutral-tone, gender-neutral, no-false-echoes, read-aloud, scenes-read-for-movement, checked-against-the-scan, sources-named, honest-where-unsure, no-borrowed-wording, source-over-malory, translated-by-manifest, every-choice-logged, changes-carried-everywhere, story-headings, matching-outlines, laid-out-for-screens, pages-linked-to-scans, endnotes, malory-cross-referenced, additions-marked, sourced-glossary, modern-names, places-located-from-sources, no-guessed-identities, no-common-words-glossed, free-with-credit |
-| the-whole-arthurian-story | the-whole-arthurian-story-in-one-book | 40,723,179 | all |
+| the-whole-arthurian-story | the-whole-arthurian-story-in-one-book | 42,160,793 | all |
 
 ## How it was made
 
@@ -248,7 +248,7 @@ The second line every book carries, under the first, says how the book was made:
 | glossary: Never guess which person in another book a figure is | no guessed identities | read: a guess and a sourced identity read alike in a line, and only the cited reference tells them apart | — |
 | glossary: No heading or Also: form may be an ordinary word in any book the glossary reaches | no common words glossed | writing/arthurian/tools/workshop/check.py#collision_problems, writing/arthurian/tools/workshop/check.py#name_as_word_problems | — |
 | translate: The license | free with credit | writing/arthurian/tools/arthurian-made-with.mjs#creditsPlaceProblems | — |
-| design: A ticket that cites or plans any app file other than a book in leaftext/app/docs/08-examples/ loads /leaftext-app before the first one is opened | — | — | — |
+| design: A ticket that cites or plans any app file other than a book in leaftext/app/arthurian/ loads /leaftext-app before the first one is opened | — | — | — |
 | regen: The owner's words go in first | — | — | — |
 | regen: Find how far each book has got | — | — | — |
 | regen: Read the system as it stands | — | — | — |
@@ -314,6 +314,12 @@ The second line every book carries, under the first, says how the book was made:
 | ticket: Every date carries its time | — | — | — |
 | ticket: Never run git | — | — | — |
 | ticket: Anything found that is not this ticket's work is a ticket of its own | — | — | — |
+| ticket: Written first | — | — | — |
+| ticket: Every message, verbatim | — | — | — |
+| ticket: Every picture | — | — | — |
+| ticket: A ticket found in other work | — | — | — |
+| ticket: Nothing is written in the owner's name | — | — | — |
+| ticket: The owner's prompts and pictures are saved verbatim in every ticket | — | — | — |
 | dev: The owner's words go in first | — | — | — |
 | dev: Read the ticket, its row and the running order | — | — | — |
 | dev: A > Blocked … line means no build | — | — | — |
@@ -327,7 +333,7 @@ The second line every book carries, under the first, says how the book was made:
 | dev: File what turned up | — | — | — |
 | dev: Date it ready to test | — | — | — |
 | dev: Hand back | — | — | — |
-| dev: Publishing a book copies it into leaftext/app/docs/08-examples/ | — | — | — |
+| dev: Publishing a book copies it into leaftext/app/arthurian/ | — | — | — |
 | dev: One line per paragraph | — | — | — |
 | test: The owner's words go in first | — | — | — |
 | test: Gather the tickets | — | — | — |

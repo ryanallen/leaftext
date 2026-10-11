@@ -11,6 +11,29 @@ import { sitePage } from './web-page.mjs';
 
 export const pageOf = (path) => /\.md$/i.test(path) ? path.replace(/\.md$/i, '.html') : '';
 
+/** The folders whose documents each get a page of their own: the documentation, and the Arthurian books at the short address they are advertised by. */
+export const PAGE_FOLDERS = ['docs/', 'arthurian/'];
+export const hasPage = (path) => PAGE_FOLDERS.some((folder) => path.startsWith(folder)) && Boolean(pageOf(path));
+
+/** The address a page is served and shared at: a folder's `index.html` answers at the folder itself. */
+export const addressOf = (page) => page.replace(/(^|\/)index\.html$/, '$1');
+
+/** The origin the site's own lines name in their canonical. */
+export function originOf(fragment) {
+  const canonical = /<link\b[^>]*rel="canonical"[^>]*href="([^"]+)"/.exec(fragment);
+  if (!canonical) throw new Error(`${SITE_FRAGMENT} lost canonical`);
+  return new URL(canonical[1]).origin;
+}
+
+/** The page left at a moved document's old address: an instant refresh Google reads as a permanent move, a canonical on the new address, and the reader's `#fragment` carried across, which a refresh drops. */
+export function forwardingPage(origin, page) {
+  const to = `/${addressOf(page)}`;
+  return `<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>Moved - Leaftext</title>\n<link rel="canonical" href="${escaped(origin + to)}">\n<meta http-equiv="refresh" content="0; url=${escaped(to)}">\n<script>location.replace(${JSON.stringify(to)} + location.hash)</script>\n</head>\n<body>\n<p>This page has moved to <a href="${escaped(to)}">${escaped(origin + to)}</a>.</p>\n</body>\n</html>\n`;
+}
+
+/** The Markdown left at a moved document's old address, for a reader or an agent that fetches the source. */
+export const forwardingMarkdown = (origin, path) => `This document has moved to [${origin}/${path}](${origin}/${path}).\n`;
+
 /** The photograph a documentation page unfurls with where somebody shares it, taken at the publish by `site-thumbnails.mjs`. */
 export const CARD_DIR = 'cards';
 export const cardOf = (path) => /\.md$/i.test(path) ? `${CARD_DIR}/${path.replace(/\.md$/i, '.png')}` : '';
@@ -94,11 +117,11 @@ export function pageHead(fragment, path, source) {
   if (!/<title>[\s\S]*?<\/title>/i.test(head)) throw new Error(`${SITE_FRAGMENT} lost title`);
   head = head.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escaped(title)}</title>`);
   head = replaceTag(head, 'meta', 'name', 'description', 'content', summary);
-  head = replaceTag(head, 'link', 'rel', 'canonical', 'href', `${origin}/${page}`);
+  head = replaceTag(head, 'link', 'rel', 'canonical', 'href', `${origin}/${addressOf(page)}`);
   head = replaceTag(head, 'link', 'type', 'text/markdown', 'href', `/${path}`);
   for (const key of ['og:title', 'twitter:title']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', title);
   for (const key of ['og:description', 'twitter:description']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', summary);
-  head = replaceTag(head, 'meta', 'property', 'og:url', 'content', `${origin}/${page}`);
+  head = replaceTag(head, 'meta', 'property', 'og:url', 'content', `${origin}/${addressOf(page)}`);
   // The page's own photograph, which `site-thumbnails.mjs` takes after the bake, so a shared link shows what it opens rather than the front page's window.
   for (const key of ['og:image', 'twitter:image']) head = replaceTag(head, 'meta', key.startsWith('og:') ? 'property' : 'name', key, 'content', `${origin}/${cardOf(path)}`);
   head = replaceTag(head, 'meta', 'property', 'og:image:width', 'content', CARD_SIZE.width);
@@ -117,7 +140,7 @@ function pageLinks(html, path, pages) {
       const url = new URL(href.replace(/&amp;/g, '&'), `https://leaftext.com/${path}`);
       const target = decodeURIComponent(url.pathname.slice(1));
       const page = pages.get(target);
-      return page ? `href="/${page}${url.hash}"` : whole;
+      return page ? `href="/${addressOf(page)}${url.hash}"` : whole;
     } catch {
       return whole;
     }
@@ -203,7 +226,7 @@ export function landingOf(documents) {
  */
 export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment = '', imageSizes = '', layout = null, pages = false, siteRoot = '' }) {
   const found = await listDocuments(leaf, folder, paths);
-  const pagePaths = new Map(pages ? found.filter((entry) => entry.path.startsWith('docs/') && pageOf(entry.path)).map((entry) => [entry.path, pageOf(entry.path)]) : []);
+  const pagePaths = new Map(pages ? found.filter((entry) => hasPage(entry.path)).map((entry) => [entry.path, pageOf(entry.path)]) : []);
   const written = new Set(['index.html', 'documents.json', 'docs/index.html', ...pagePaths.values()]);
   const documents = pages ? found.filter((entry) => !written.has(entry.path)) : found;
   const landing = landingOf(documents);
@@ -213,7 +236,7 @@ export async function inPlaceSite(leaf, folder, paths, { name, assets, fragment 
   const words = layout && drawn ? layout(drawn) : drawn;
   const { head, foot } = splitFragment(fragment);
   const page = sitePage(leaf.page(), leaf.boot(), { assets, head, foot, words: pages ? pageLinks(words, landing, pagePaths) : words, siteRoot });
-  const listing = { name, documentBase: '', landing, documents: documents.map(({ depth, ...entry }) => ({ ...entry, ...(pages && entry.path === landing ? { page: '/' } : {}), ...(pagePaths.has(entry.path) ? { page: `/${pagePaths.get(entry.path)}` } : {}) })) };
+  const listing = { name, documentBase: '', landing, documents: documents.map(({ depth, ...entry }) => ({ ...entry, ...(pages && entry.path === landing ? { page: '/' } : {}), ...(pagePaths.has(entry.path) ? { page: `/${addressOf(pagePaths.get(entry.path))}` } : {}) })) };
   if (imageSizes) listing.imageSizes = imageSizes;
   const writtenPages = new Map();
   if (pages) {

@@ -3,7 +3,7 @@
 //
 //   node scripts/site-thumbnails.mjs --write                 the publish's run: the baked workspace as it stands, through the front end the hand-over committed
 //   node scripts/site-thumbnails.mjs --preview --write       the same run on this machine, through the module just built, as `serve-site.mjs` serves it
-//   node scripts/site-thumbnails.mjs --preview --write --only docs/08-examples/merlin/merlin.md   just the pages named
+//   node scripts/site-thumbnails.mjs --preview --write --only arthurian/merlin/merlin.md   just the pages named
 //   node scripts/site-thumbnails.mjs --check                 the rules, offline and with no browser (`just verify`)
 //
 // **Taken in the public deploy, after the bake.** The runner already has every page and the front end on disk, its minutes cost nothing, and the picture is always of the page going up. Each page's head already names its picture through `cardOf` in `site-page.mjs`, so a page this could not photograph would go out naming a file that is not there — which is why a run with one stops the deploy, by the page's name.
@@ -216,7 +216,7 @@ async function check() {
   const listing = { documents: [{ path: 'README.md', page: '/' }, { path: 'docs/a.md', page: '/docs/a.html' }, { path: 'docs/b.md', page: '/docs/b.html' }, { path: 'docs/c.md', page: '/docs/c.html' }, { path: 'site.yml' }] };
   const pages = pagesOf(listing);
   if (pages.map((page) => page.path).join() !== 'docs/a.md,docs/b.md,docs/c.md') fail(`the pages read off the listing were ${pages.map((page) => page.path).join(', ')}`);
-  if (cardOf('docs/08-examples/merlin/merlin.md') !== 'cards/docs/08-examples/merlin/merlin.png') fail(`the Merlin page's card is ${cardOf('docs/08-examples/merlin/merlin.md')}`);
+  if (cardOf('arthurian/merlin/merlin.md') !== 'cards/arthurian/merlin/merlin.png') fail(`the Merlin page's card is ${cardOf('arthurian/merlin/merlin.md')}`);
 
   const bytes = { 'docs/a.md': 'a', 'docs/b.md': 'b', 'docs/c.md': 'c' };
   const front = frontEndKey([['assets/leaftext/app/app.js', 'one']]);

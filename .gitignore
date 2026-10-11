@@ -9,6 +9,13 @@
 /documents.json
 /docs/**/*.html
 !/docs/index.html
+/arthurian/**/*.html
+# What the deploy leaves at the old address of a document that moved, written from `MOVED` in `scripts/site-assets.mjs`. Never committed: the document lives at its new address.
+/docs/08-examples/arthurian-shelf/
+/docs/08-examples/merlin/
+/docs/08-examples/historia-brittonum/
+/docs/08-examples/annales-cambriae/
+/docs/08-examples/malory-sources/
 .release-tag
 /.tmp
 .agents/settings.local.json

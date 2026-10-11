@@ -2,7 +2,7 @@
 
 Every episode of the Arthurian legend the published books tell, in the story's own order, from Britain's founding to after Camlann. A note in each book links the episode its passage belongs to, and where Malory tells the episode too, his chapters are named here and linked to the map of his books.
 
-Every book that tells the story stands on [the Arthurian shelf](shelf.md), to pick by where its story happens, when it was written or when its edition was printed.
+Every book that tells the story stands on [the Arthurian shelf](index.md), to pick by where its story happens, when it was written or when its edition was printed.
 
 ## Before Arthur: Britain founded and the Grail brought west
 
@@ -194,7 +194,7 @@ Merlin tells Uther of the table of the Last Supper and Joseph's table, makes a t
 
 At a Christmas court Uther falls in love with Igraine, the duke of Tintagel's wife; she tells her husband, they leave by night, and Uther makes war on the duke and lays his land waste.
 
-Malory tells this in [Book I, chapter 1](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 1](malory-sources/malory-map.tsv).
 
 <a id="merlin-brings-uther-to-igraine"></a>
 
@@ -202,7 +202,7 @@ Malory tells this in [Book I, chapter 1](../malory-sources/malory-map.tsv).
 
 Merlin gives Uther the duke's likeness for a night at Tintagel on a promise of the child, the duke is killed, peace is made through the barons, Uther marries Igraine, and King Lot marries her daughter.
 
-Malory tells this in [Book I, chapter 2](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 2](malory-sources/malory-map.tsv).
 
 <a id="arthur-is-born-and-given-to-ector"></a>
 
@@ -210,7 +210,7 @@ Malory tells this in [Book I, chapter 2](../malory-sources/malory-map.tsv).
 
 Igraine tells Uther of the night she can't explain, he asks her to give up the child, and Merlin carries the newborn to Ector, who raises him as his own beside his son Kay.
 
-Malory tells this in [Book I, chapter 3](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 3](malory-sources/malory-map.tsv).
 
 <a id="uther-is-carried-into-his-last-battle"></a>
 
@@ -218,7 +218,7 @@ Malory tells this in [Book I, chapter 3](../malory-sources/malory-map.tsv).
 
 The Saxons beat Uther's army while he lies sick, Merlin has him carried into battle on a stretcher, and Uther gives away his treasure and speaks with Merlin as he dies.
 
-Malory tells this in [Book I, chapter 4](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 4](malory-sources/malory-map.tsv).
 
 <a id="the-sword-in-the-stone"></a>
 
@@ -226,7 +226,7 @@ Malory tells this in [Book I, chapter 4](../malory-sources/malory-map.tsv).
 
 Uther is buried with no heir named, a sword appears in a stone before the church at Christmas, the barons fail to move it, and the boy Arthur pulls it out to bring Kay a sword.
 
-Malory tells this in [Book I, chapter 5](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 5](malory-sources/malory-map.tsv).
 
 <a id="the-barons-put-off-arthur"></a>
 
@@ -234,7 +234,7 @@ Malory tells this in [Book I, chapter 5](../malory-sources/malory-map.tsv).
 
 Ector learns the truth and asks that Kay be made steward, and the barons, unwilling to take a boy king, make Arthur draw the sword again at Candlemas, Easter and Pentecost.
 
-Malory tells this in [Book I, chapter 6](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 6](malory-sources/malory-map.tsv).
 
 <a id="arthur-is-crowned"></a>
 
@@ -242,7 +242,7 @@ Malory tells this in [Book I, chapter 6](../malory-sources/malory-map.tsv).
 
 Arthur gives away every gift the barons offer to test him, is knighted by the archbishop, lifts the sword once more and is crowned king.
 
-Malory tells this in [Book I, chapter 7](../malory-sources/malory-map.tsv).
+Malory tells this in [Book I, chapter 7](malory-sources/malory-map.tsv).
 
 ## Arthur's early reign
 
@@ -266,7 +266,7 @@ The history lists Britain's and Ireland's strange sights, from Loch Lomond's six
 
 Gawain's ghost warns Arthur in a dream, an adder at the parley starts the battle, Arthur and Mordred strike each other down, Excalibur goes back to the water, and three queens take Arthur away.
 
-Malory tells this in [Book XXI, chapters 3–5](../malory-sources/malory-map.tsv).
+Malory tells this in [Book XXI, chapters 3–5](malory-sources/malory-map.tsv).
 
 ## After Camlann
 

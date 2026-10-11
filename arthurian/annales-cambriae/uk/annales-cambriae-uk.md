@@ -3,7 +3,7 @@
 
 *Annales Cambriae*, translated by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ryan-allen)
 
-**Read in:** [US English](../annales-cambriae.md)
+[All the Arthurian books](../../index.md) · **Read in:** [US English](../annales-cambriae.md)
 
 ## About this translation
 
@@ -23,7 +23,6 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **The History of the Britons.** In Harley MS 3859 the annals come after the [*History of the Britons*](../../historia-brittonum/historia-brittonum.md), the Latin history that lists Arthur's twelve battles, also translated on this shelf.
 
-**The Arthurian shelf.** This book stands on [the Arthurian shelf](../../arthurian-shelf/shelf.md) with every other telling of the legend on Leaftext, published and still to come, in the order their stories happen; the shelf can also be sorted by when each was written or its edition printed.
 
 ## Why this book
 
@@ -441,7 +440,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 <a id="new-in-this-translation"></a>*\* New in this translation: written for it, not taken from Phillimore's notes of 1888.*
 
-[^153-1]: In the whole story: [Pope Leo changes the date of Easter, and Brigid is born](../../arthurian-shelf/story-map.md#pope-leo-changes-easter).<sup>[\*](#new-in-this-translation)</sup>
+[^153-1]: In the whole story: [Pope Leo changes the date of Easter, and Brigid is born](../../story-map.md#pope-leo-changes-easter).<sup>[\*](#new-in-this-translation)</sup>
 
 [^153-2]: The Latin says Easter was moved *cum papa leone*, "with Pope Leo." Phillimore takes *cum* for a slip in putting the Old Welsh *cant*, "by" or "with," into Latin, and the English follows him: "Pope Leo, bishop of Rome, makes the change."
 
@@ -451,17 +450,17 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^153-5]: The Latin says Ebur *pausat in Christo*, literally pauses in Christ, the annals' way of telling a churchman's or a king's death. Three hundred fifty years is the age Harley MS 3859 gives, and the annals don't explain it.<sup>[\*](#new-in-this-translation)</sup>
 
-[^154-1]: In the whole story: [Arthur leads the Britons' kings in twelve battles against the Saxons](../../arthurian-shelf/story-map.md#arthurs-twelve-battles).<sup>[\*](#new-in-this-translation)</sup>
+[^154-1]: In the whole story: [Arthur leads the Britons' kings in twelve battles against the Saxons](../../story-map.md#arthurs-twelve-battles).<sup>[\*](#new-in-this-translation)</sup>
 
 [^154-2]: The annals mean an actual cross, carried into battle as a standard, not the saying "carry your cross." Some readers think it was painted on Arthur's shield, since Welsh *ysgwyd*, "shield," is close to *ysgwydd*, "shoulder." The *History of the Britons* makes Badon the last of Arthur's twelve battles and has him carry an image of Mary on his shoulders at another, Fort Guinnion, which may be the same shield. *Domini nostri*, "our Lord," is the Church's name for Christ, which English still uses.<sup>[\*](#new-in-this-translation)</sup>
 
 [^154-3]: Harley MS 3859 writes *Qui es*, which Phillimore reads as *quies*, "rest," the annals' word for a churchman's death, and the English follows him: "Saint Brigid dies."
 
-[^154-4]: In the whole story: [Arthur fights Mordred's host and is carried to Avalon](../../arthurian-shelf/story-map.md#the-last-battle). Malory tells this in [Book XXI, chapter 4](../../malory-sources/malory-map.tsv). There, Arthur and Mordred lead two hosts against each other, and each gives the other his death wound; the annals say only that both fell, not which side each was on or who struck the blow. *Gueith Camlann* is Old Welsh for "the battle of Camlann."<sup>[\*](#new-in-this-translation)</sup>
+[^154-4]: In the whole story: [Arthur fights Mordred's host and is carried to Avalon](../../story-map.md#the-last-battle). Malory tells this in [Book XXI, chapter 4](../../malory-sources/malory-map.tsv). There, Arthur and Mordred lead two hosts against each other, and each gives the other his death wound; the annals say only that both fell, not which side each was on or who struck the blow. *Gueith Camlann* is Old Welsh for "the battle of Camlann."<sup>[\*](#new-in-this-translation)</sup>
 
 [^154-5]: Phillimore notes that the end of this entry, from *inbrittannia*, "in Britain," on, is written in Harley MS 3859 over letters scraped out, some of which still show.
 
-[^154-6]: In the whole story: [A great plague comes, and the northern Britons fight at Arfderydd](../../arthurian-shelf/story-map.md#a-great-plague-and-the-battle-of-arfderydd).<sup>[\*](#new-in-this-translation)</sup>
+[^154-6]: In the whole story: [A great plague comes, and the northern Britons fight at Arfderydd](../../story-map.md#a-great-plague-and-the-battle-of-arfderydd).<sup>[\*](#new-in-this-translation)</sup>
 
 [^154-7]: The Latin is *dormitatio*, a falling asleep, the annals' word for a saint's death, as the Church spoke of the dead sleeping until the Resurrection.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -487,7 +486,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^156-6]: Harley MS 3859 writes *filii*, "of the son," for *filius*, "son," before both fathers' names, and Phillimore reads *filius*. At Chester the Northumbrian king Aethelfrith beat the Britons.<sup>[\*](#new-in-this-translation)</sup>
 
-[^157-1]: In the whole story: [Cadwallon and Penda fight the Northumbrians, and the Britons fight the Mercians](../../arthurian-shelf/story-map.md#the-britons-fight-the-northumbrians-and-the-mercians).<sup>[\*](#new-in-this-translation)</sup>
+[^157-1]: In the whole story: [Cadwallon and Penda fight the Northumbrians, and the Britons fight the Mercians](../../story-map.md#the-britons-fight-the-northumbrians-and-the-mercians).<sup>[\*](#new-in-this-translation)</sup>
 
 [^157-2]: Harley MS 3859 writes *Et guin*, as if "and Guin," which Phillimore reads as *Etguin*, Edwin, and the English follows him: "Edwin begins to reign."
 
@@ -525,7 +524,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^162-4]: The heathens are the Vikings. The Latin runs the two places together, "to the southern Britons, to Ireland," with no "and."<sup>[\*](#new-in-this-translation)</sup>
 
-[^163-1]: In the whole story: [Vikings raid Wales, and the annals run on to Hywel's son Rhodri](../../arthurian-shelf/story-map.md#vikings-raid-wales).<sup>[\*](#new-in-this-translation)</sup>
+[^163-1]: In the whole story: [Vikings raid Wales, and the annals run on to Hywel's son Rhodri](../../story-map.md#vikings-raid-wales).<sup>[\*](#new-in-this-translation)</sup>
 
 [^163-2]: Harley MS 3859 writes *De cantorum* and *comburit*, which Phillimore reads as *Decantorum arx*, "the fortress of the Decanti," and *comburitur*, "is burned," and the English follows him: "Lightning strikes Deganwy and burns it."
 

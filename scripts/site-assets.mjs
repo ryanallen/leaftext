@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
 import { instantiateCore } from './web-module.mjs';
 import { imageSizes } from './site-images.mjs';
 import { project } from './project.mjs';
-import { CARD_DIR, SITE_FRAGMENT, cardOf, inPlaceSite, pageOf, writeDocsList } from './site-page.mjs';
+import { CARD_DIR, PAGE_FOLDERS, SITE_FRAGMENT, cardOf, forwardingMarkdown, forwardingPage, hasPage, inPlaceSite, originOf, pageOf, writeDocsList } from './site-page.mjs';
 import { COMPARE_INDEX, chartPagePaths, frontWithChart } from '../site/compare-chart.js';
 import { FRONT_LAYOUT_CLASS, layoutFrontPage } from '../site/front-page-layout.js';
 
@@ -104,11 +104,56 @@ export const FRONT_PAGE = 'index.html';
 export const LISTING = 'documents.json';
 export const FRONT_DOCUMENT = 'README.md';
 /** The documents other than the landing that the site lays out, each by the name of its layout in the loader: the Arthurian books as a bookshelf over the list they are drawn from. */
-export const SITE_LAYOUTS = { 'docs/08-examples/arthurian-shelf/shelf.md': 'shelf' };
+export const SITE_LAYOUTS = { 'arthurian/index.md': 'shelf' };
 
 /** What the site publishes as documents, and what its trail calls it. Everything else in the repository — the discovery files, the scripts, the themes — is served as it is and never offered as a page. */
 export const SITE_NAME = 'leaftext';
-export const SITE_PATHS = [FRONT_DOCUMENT, 'docs'];
+export const SITE_PATHS = [FRONT_DOCUMENT, 'docs', 'arthurian'];
+
+/**
+ * Documents that moved, old address to new, so every link already shared and every search result still lands: a path ending `/` moves its whole folder. The bake leaves a forwarding page at each old page address and a forwarding line at each old Markdown address, and neither is ever committed.
+ *
+ * The Arthurian books moved to `arthurian/` on the owner's word of 10 October 2026, 5:34pm, so the shelf could be advertised as leaftext.com/arthurian.
+ */
+export const MOVED = [
+  ['docs/08-examples/arthurian-shelf/shelf.md', 'arthurian/index.md'],
+  ['docs/08-examples/arthurian-shelf/story-map.md', 'arthurian/story-map.md'],
+  ['docs/08-examples/arthurian-shelf/sources/', 'arthurian/sources/'],
+  ['docs/08-examples/merlin/', 'arthurian/merlin/'],
+  ['docs/08-examples/historia-brittonum/', 'arthurian/historia-brittonum/'],
+  ['docs/08-examples/annales-cambriae/', 'arthurian/annales-cambriae/'],
+  ['docs/08-examples/malory-sources/', 'arthurian/malory-sources/'],
+];
+
+/** The old address a document now at `path` was published at, or '' for one that never moved. */
+export function movedFrom(path) {
+  for (const [from, to] of MOVED) {
+    if (to.endsWith('/') ? path.startsWith(to) : path === to) return to.endsWith('/') ? from + path.slice(to.length) : from;
+  }
+  return '';
+}
+
+/** Every forwarder the bake writes, old address to its bytes: a page for each moved document's old page, a line for its old Markdown. */
+export function forwards(origin, from = root) {
+  const found = new Map();
+  for (const path of sitePaths(from).filter((path) => hasPage(path) && movedFrom(path))) {
+    const old = movedFrom(path);
+    found.set(pageOf(old), forwardingPage(origin, pageOf(path)));
+    found.set(old, forwardingMarkdown(origin, path));
+  }
+  return found;
+}
+
+/** The file list the documentation address sends an old `#/route` on by: every file the folder holds, and every document moved out of it, whose old page forwards. */
+export function docsRoutes() {
+  const moved = [...forwards('').keys()].filter((path) => path.startsWith(`${DOCS_DIR}/`) && path.endsWith('.md')).map((path) => path.slice(DOCS_DIR.length + 1));
+  return [...new Set([...docsPaths(), ...moved])].sort();
+}
+
+/** Every file under the folders whose documents get pages, relative to the repository and in one order. */
+export function sitePaths(from = root) {
+  return PAGE_FOLDERS.flatMap((folder) => existsSync(join(from, folder)) ? docsPaths(join(from, folder)).map((path) => `${folder}${path}`) : []).sort();
+}
 
 /**
  * The two addresses the front page's structured data carries, written as marks the bake fills rather than as URLs.
@@ -168,12 +213,13 @@ export async function bakeSite(leaf, project, from = root, { layout = frontLayou
     [FRONT_PAGE, fillMarks(page, project)],
     [LISTING, `${JSON.stringify(listing, null, 2)}\n`],
     ...[...pages].map(([path, html]) => [path, fillMarks(html, project)]),
+    ...forwards(originOf(readFileSync(fragmentFile, 'utf8')), from),
   ]);
 }
 
 /** Every picture a documentation page unfurls with, which `site-thumbnails.mjs` writes after the bake — one per page the bake writes, and the keys that say when each was taken. */
 export function cardPaths() {
-  return [...docsPaths().filter((path) => pageOf(path)).map((path) => cardOf(`docs/${path}`)), CARD_KEYS];
+  return [...sitePaths().filter(hasPage).map((path) => cardOf(path)), CARD_KEYS];
 }
 export const CARD_KEYS = `${CARD_DIR}/keys.json`;
 
@@ -259,7 +305,7 @@ export async function previewAnswers(app, plainBytes, colorsBytes, bookBytes, { 
   const answers = new Map(publishedAssets(app, plainBytes, colorsBytes, bookBytes));
   if (baked) {
     for (const [path, bytes] of await bakeSite(app, siteProject())) answers.set(path, bytes);
-    answers.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsPaths()));
+    answers.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsRoutes()));
   }
   return answers;
 }
@@ -270,7 +316,7 @@ export async function previewAnswers(app, plainBytes, colorsBytes, bookBytes, { 
  * `--write` writes the built files and leaves the pages alone. It still bakes them, as its check that the module can draw the README before a byte crosses; nothing reads the result. Only `--bake` writes them, into the workspace the deploy uploads.
  */
 export function writtenPaths({ bakeOnly = false } = {}) {
-  return bakeOnly ? [FRONT_PAGE, LISTING, ...docsPaths().filter((path) => pageOf(path)).map((path) => `docs/${pageOf(path)}`), DOCS_PAGE] : [...PUBLISHED];
+  return bakeOnly ? [FRONT_PAGE, LISTING, ...sitePaths().filter(hasPage).map(pageOf), ...forwards('').keys(), DOCS_PAGE] : [...PUBLISHED];
 }
 
 /** The token the licenses document carries where the running version goes; the desktop fills it when it opens the document. */
@@ -331,7 +377,7 @@ async function main() {
   let baked = null;
   try {
     baked = await bakeSite(app, siteProject({ bakeOnly }));
-    baked.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsPaths()));
+    baked.set(DOCS_PAGE, bakeDocsPage(readFileSync(join(root, DOCS_PAGE), 'utf8'), docsRoutes()));
   } catch (error) {
     fail(error.message);
   }
