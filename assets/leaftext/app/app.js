@@ -1551,6 +1551,11 @@ function escapeAttr(value) {
 
 function formatCount(value) {
   const number = Number(value);
+  if (Number.isInteger(number) && Math.abs(number) < 1e21) {
+    if (Object.is(number, -0)) return '-0';
+    const digits = String(Math.abs(number)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return number < 0 ? `-${digits}` : digits;
+  }
   return Number.isFinite(number) ? number.toLocaleString('en-US') : String(value);
 }
 
@@ -20742,7 +20747,7 @@ function renderTabs(state) {
   });
   const markup = tabs.map((tab, index) => {
     if (tab.kind === 'console') {
-      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>${escapeText(tab.title)}</button>${tabCloseMarkup(index)}</span>`;
+      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>${escapeText(tab.title)}</button>${tabCloseMarkup(index)}</span>`;
     }
     
     if (tab.kind === 'web' && !tab.site) {
@@ -40845,6 +40850,7 @@ function makeConsoleLayer(id) {
       if (place !== null) consoleBuffer(entry).scrollToLine(place);
     };
     holdConsoleLinks(terminal);
+    terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
     terminal.onData(data => send({ command: 'consoleInput', id, data }));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
@@ -40904,6 +40910,60 @@ function openConsoleLink(address) {
   let scheme;
   try { scheme = new URL(address).protocol; } catch (_) { return; }
   if (scheme === 'http:' || scheme === 'https:' || scheme === 'mailto:') send({ command: 'openExternal', url: address });
+}
+
+
+function consoleWheel(id, entry, event) {
+  const terminal = entry.terminal;
+  const reports = terminal.hasMouseTracking();
+  if (!reports && terminal.buffer.active.type !== 'alternate') return false;
+  const steps = consoleWheelSteps(entry, event);
+  if (!steps) return true;
+  let step;
+  if (reports) {
+    const cell = consoleCellAt(terminal, event);
+    step = consoleMouseReport(terminal, steps < 0 ? 64 : 65, cell.column, cell.row, event);
+  } else {
+    step = (terminal.getMode(1) ? '\x1bO' : '\x1b[') + (steps < 0 ? 'A' : 'B');
+  }
+  send({ command: 'consoleInput', id, data: step.repeat(Math.abs(steps)) });
+  return true;
+}
+
+
+function consoleWheelSteps(entry, event) {
+  const height = consoleCellSize(entry.terminal).height;
+  const distance = event.deltaMode === 1 ? event.deltaY * height : event.deltaMode === 2 ? event.deltaY * entry.terminal.rows * height : event.deltaY;
+  if (!distance) return 0;
+  if (Math.abs(distance) >= height) {
+    entry.wheelTotal = 0;
+    return Math.sign(distance);
+  }
+  if (Math.sign(entry.wheelTotal || 0) === -Math.sign(distance)) entry.wheelTotal = 0;
+  entry.wheelTotal = (entry.wheelTotal || 0) + distance;
+  const steps = Math.trunc(entry.wheelTotal / height);
+  entry.wheelTotal -= steps * height;
+  return steps;
+}
+
+function consoleCellSize(terminal) {
+  const metrics = terminal.renderer.getMetrics?.() || {};
+  return { width: Math.max(1, metrics.width || 1), height: Math.max(1, metrics.height || 1) };
+}
+
+
+function consoleCellAt(terminal, event) {
+  const box = consoleScreen(terminal).getBoundingClientRect();
+  const size = consoleCellSize(terminal);
+  const within = (offset, length, count) => Math.min(count, Math.max(1, Math.floor(offset / length) + 1));
+  return { column: within(event.clientX - box.left, size.width, terminal.cols), row: within(event.clientY - box.top, size.height, terminal.rows) };
+}
+
+
+function consoleMouseReport(terminal, button, column, row, event) {
+  const code = button + (event.shiftKey ? 4 : 0) + (event.altKey ? 8 : 0) + (event.ctrlKey ? 16 : 0);
+  if (terminal.getMode(1006)) return `\x1b[<${code};${column};${row}M`;
+  return '\x1b[M' + String.fromCharCode(32 + code, 32 + Math.min(column, 223), 32 + Math.min(row, 223));
 }
 
 

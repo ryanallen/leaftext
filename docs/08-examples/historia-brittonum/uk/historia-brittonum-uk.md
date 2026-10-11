@@ -7,6 +7,8 @@
 
 ## About this translation
 
+**Written:** 829–830 CE
+
 The *History of the Britons* tells Britain's story from its first settlers to the wars with the Saxons, and it's the first book to name Arthur, as the leader of the Britons in twelve battles. A Welsh writer put it together in Latin in 829–830 CE, which the book itself counts as the fourth year of King Merfyn of Gwynedd, more than a hundred years before the *Welsh Annals* that follow it in its oldest copy. Later copies credit it to a monk named Nennius, but scholars doubt it, so the writer's name is uncertain. Historians don't read it as fact: much of the book is legend, a founding story made up to give the Britons a glorious ancestry, tracing them back to Troy the way Rome traced itself to Aeneas. This translation follows that copy, London, British Library, Harley MS 3859, made about 1100, at the end of the eleventh century or the start of the twelfth, as Theodor Mommsen printed it in 1898, and leaves out the prologue naming Nennius and the Irish version Mommsen prints beside the text, which belong to later copies.
 
 <!-- made-with -->
@@ -117,7 +119,7 @@ If anyone wants to know when Ireland lay empty, with no one living there, this i
 
 <a id="page-157"></a>[\[Mommsen 157\]](../historia-brittonum-latin.md#page-157) A noble from Scythia was living among the Egyptians with a large household, driven out of his own kingdom, and he was there when they went down in the sea. But he didn't go out to hunt God's people. The ones who'd survived met and decided to drive him out, so he wouldn't besiege their land and take it, since their strongest men had gone under in the Red Sea. So he was driven out.
 
-He wandered through Africa for forty-two years. His people came to the altars of the Philistines by the Lake of Salt, passed between Rusicada and the mountains of Azaria, followed the river Malva, crossed Mauretania to the Pillars of Hercules, sailed the Tyrrhenian Sea and reached Spain. There they lived for many years, grew and multiplied into a great people. A thousand and two years after the Egyptians were lost in the Red Sea, they came to Ireland, and to the lands of Dál Riata, in the time of Brutus at Rome.
+He wandered through Africa for forty-two years. His people came to the altars of the Philistines by the Lake of Salt, and passed between Rusicada and the mountains of Azaria. They followed the river Malva and crossed Mauretania to the Pillars of Hercules. Then they sailed the Tyrrhenian Sea and reached Spain. There they lived for many years, grew and multiplied into a great people. A thousand and two years after the Egyptians were lost in the Red Sea, they came to Ireland, and to the lands of Dál Riata, in the time of Brutus at Rome.
 
 <a id="page-158"></a>[\[Mommsen 158\]](../historia-brittonum-latin.md#page-158) Rome's consuls began with this Brutus, and later the tribunes of the people and the dictators.[^158-1] Then for four hundred forty-seven years the Republic was governed that way again, after the rule of kings had done it harm.
 
@@ -127,13 +129,13 @@ The Britons came to Britain in the third age, and the Irish took Ireland in the 
 
 From the Saxons' first year in Britain to King Merfyn's fourth, four hundred twenty-nine years are counted.[^158-3] From the Lord's birth to Patrick's coming to the Irish is four hundred five years.
 
-<a id="page-159"></a>[\[Mommsen 159\]](../historia-brittonum-latin.md#page-159) From Patrick's death to Saint Brigid's is sixty years, and Columba was born four years before Brigid died. The count begins: from the Incarnation to Patrick's arrival in Ireland were twenty-three of the nineteen-year cycles, four hundred thirty-eight years in all; from then to the current one are twenty-two more, four hundred twenty-one years, and we're now two years into its ogdoad.[^159-1]
+<a id="page-159"></a>[\[Mommsen 159\]](../historia-brittonum-latin.md#page-159) From Patrick's death to Saint Brigid's is sixty years, and Columba was born four years before Brigid died. The count begins. From the Incarnation to Patrick's arrival in Ireland were twenty-three of the nineteen-year cycles, four hundred thirty-eight years in all. From then to the current one are twenty-two more, four hundred twenty-one years, and we're now two years into its ogdoad.[^159-1]
 
 ### A second account traces Brutus back through Alanus to Adam
 
 I found another account of this Brutus in the old books of our ancestors. After the Flood Noah's three sons divided the world into three parts: Shem spread his borders in Asia, Ham in Africa and Japheth in Europe.
 
-<a id="page-160"></a>[\[Mommsen 160\]](../historia-brittonum-latin.md#page-160) The first man of Japheth's line to come to Europe was Alanus, and his three children came with him, Hessitio, Armenon and Negue. Hessitio had four, Francus, Romanus, Brutus and Albanus. Armenon had five, Gothus, Valagothus, Gebidus, Burgundus and Longobardus. Negue had three, Vandalus, Saxo and Boguarus.[^160-1] From Hessitio descended four peoples, the Franks, the Latins, the Albans and the Britons; from Armenon five, the Goths, the Walagoths, the Gepids, the Burgundians and the Lombards; and from Negue four, the Bavarians, the Vandals, the Saxons and the Thuringians. These peoples spread out over all of Europe.
+<a id="page-160"></a>[\[Mommsen 160\]](../historia-brittonum-latin.md#page-160) The first man of Japheth's line to come to Europe was Alanus, and his three children came with him, Hessitio, Armenon and Negue. Hessitio had four, Francus, Romanus, Brutus and Albanus. Armenon had five, Gothus, Valagothus, Gebidus, Burgundus and Longobardus. Negue had three, Vandalus, Saxo and Boguarus.[^160-1] From Hessitio descended four peoples: the Franks, the Latins, the Albans and the Britons. From Armenon came five, the Goths, the Walagoths, the Gepids, the Burgundians and the Lombards. From Negue there were four, the Bavarians, the Vandals, the Saxons and the Thuringians. These peoples spread out over all of Europe.
 
 <a id="page-161"></a>[\[Mommsen 161\]](../historia-brittonum-latin.md#page-161) Alanus, they say, was born to Fetebir, and his line runs back, father to father, through Ougomun, Thoi, Boib, Simeon, Mair, Ethach, Aurthach, Ecthet, Oth, Abir, Ra, Ezra, Izrau, Baath, Iobaath, Iovan, Japheth, Noah, Lamech, Methuselah, Enoch, Jared, Mahalalel, Cainan, Enos and Seth to Adam, son of the living God. I learned this from what the old men handed down.
 
@@ -171,11 +173,11 @@ A hundred sixty-seven years after Christ's coming, Lucius, who ruled the Britons
 
 ### Severus builds a wall across Britain against the Picts and the Irish
 
-<a id="page-165"></a>[\[Mommsen 165\]](../historia-brittonum-latin.md#page-165) The third was Severus, who crossed over to the Britons. To make the lands he'd won back safer from the raids of barbarians, he built a wall and an earthwork across Britain from one sea to the other, a hundred thirty-two miles,[^165-1] and in the Britons' language it's called Guaul. He set it between the Britons and the Picts and Irish, because the Irish from the west and the Picts from the north fought the Britons together, as one, since they were at peace with each other. Not long after, Severus died in Britain.
+<a id="page-165"></a>[\[Mommsen 165\]](../historia-brittonum-latin.md#page-165) The third was Severus, who crossed over to the Britons. He built a wall and an earthwork across Britain from one sea to the other, a hundred thirty-two miles,[^165-1] to make the lands he'd won back safer from the raids of barbarians. In the Britons' language it's called Guaul. He set it between the Britons and the Picts and Irish, because the Irish from the west and the Picts from the north fought the Britons together, as one, since they were at peace with each other. Not long after, Severus died in Britain.
 
 ### Carausius makes himself emperor in Britain to avenge Severus
 
-The fourth was the emperor Carausius, a usurper, who came to Britain and ruled it by force.[^165-2] He rose up over the killing of Severus: with all the leaders of the Roman people who were with him in Britain, he cut down all the lesser kings of the Britons, took harsh revenge on them for Severus, and made himself emperor in Britain.
+The fourth was the emperor Carausius, a usurper, who came to Britain and ruled it by force.[^165-2] He rose up over the killing of Severus. With all the leaders of the Roman people who were with him in Britain, he cut down all the lesser kings of the Britons and took harsh revenge on them for Severus. Then he made himself emperor in Britain.
 
 ### Constantine is buried at Cair Segeint, where he sowed three seeds
 
@@ -435,9 +437,9 @@ So Saint Patrick preached the gospel of Christ to foreign peoples for forty year
 
 <a id="page-197"></a>[\[Mommsen 197\]](../historia-brittonum-latin.md#page-197) Up to three thousand priests received orders from Patrick. In one region, Connacht, he turned twelve thousand people to the faith of Christ and baptised them, and in a single day he did the same for seven kings, the sons of Amolgith.[^197-1]
 
-He fasted forty days and forty nights on the top of the hill of Eile, that is, Cruachan Eile, and there, high in the air, he humbly made three requests for the Irish who had taken up the faith.[^197-2] The first, as the Irish say, was that everyone might do penance, even at the very end of their life; the second, that the barbarians would never destroy them; the third, that none of the Irish would still be alive when the Judgement comes, since they'll be wiped out seven years before it, in Patrick's honour.
+He fasted forty days and forty nights on the top of the hill of Eile, that is, Cruachan Eile, and there, high in the air, he humbly made three requests for the Irish who had taken up the faith.[^197-2] The first, as the Irish say, was that everyone might do penance, even at the very end of their life. The second was that the barbarians would never destroy them. The third was that none of the Irish would still be alive when the Judgement comes, since they'll be wiped out seven years before it, in Patrick's honour.
 
-On that hill he blessed the peoples of Ireland; he'd climbed it to pray for them and to see the fruit of his work. Countless birds of many colours came to him for his blessing, which means that all the holy men and women of Ireland will come to him on Judgement Day, as to their father and teacher, to follow him to the Judgement.
+On that hill he blessed the peoples of Ireland; he'd climbed it to pray for them and to see the fruit of his work. Countless birds of many colours came to him for his blessing. That means all the holy men and women of Ireland will come to him on Judgement Day, as to their father and teacher, to follow him to the Judgement.
 
 <a id="page-198"></a>[\[Mommsen 198\]](../historia-brittonum-latin.md#page-198) Later, at a great age, he died. Now he rejoices forever and ever. Amen.[^198-1]
 
@@ -513,11 +515,11 @@ Ida, Eoppa's son, held the regions in the north of Britain, beyond the Humber, a
 
 At that time Dutigirn fought bravely against the English.[^205-3] Then Talhaearn Tataguen won fame for his poems, and Aneirin, Taliesin, Bluchbard and Cian, who's called Gueinth Guaut, all won theirs at the same time for verse in British.[^205-4]
 
-<a id="page-206"></a>[\[Mommsen 206\]](../historia-brittonum-latin.md#page-206) Maelgwn, a great king, ruled among the Britons, in Gwynedd, because his ancestor Cunedda had come there earlier with his sons, eight of them, from the north, from the land called Manaw Gododdin, a hundred forty-six years before Maelgwn came to the throne. They drove the Irish out of that country with enormous slaughter, and the Irish never returned to live there again.[^206-1]
+<a id="page-206"></a>[\[Mommsen 206\]](../historia-brittonum-latin.md#page-206) Maelgwn, a great king, ruled among the Britons, in Gwynedd. His ancestor Cunedda had come there earlier with his eight sons from the north, from the land called Manaw Gododdin, a hundred forty-six years before Maelgwn came to the throne. They drove the Irish out of that country with enormous slaughter, and the Irish never returned to live there again.[^206-1]
 
 ### Urien and three other British kings fight Ida's heirs
 
-Adda, Ida's son, reigned eight years; Aethelric, born to Adda, four; Theodric, Adda's brother, seven; and Frithuwald, six. In Frithuwald's time the kingdom of Kent received baptism, when Gregory sent it the faith.[^206-2] Hussa ruled seven years, and four kings fought against him: Urien, Rhydderch Hen, Gwallog and Morcant.[^206-3] Theodric battled hard against that Urien and his sons. In those days the enemy were beaten one time, our own people the next. Urien shut them up on the island of Lindisfarne for three days and nights, and while he was on that campaign he was murdered, on Morcant's orders, out of envy, since of all the kings he had the greatest courage in waging war.
+Adda, Ida's son, reigned eight years; Aethelric, born to Adda, four; Theodric, Adda's brother, seven; and Frithuwald, six. In Frithuwald's time the kingdom of Kent received baptism, when Gregory sent it the faith.[^206-2] Hussa ruled seven years, and four kings fought against him: Urien, Rhydderch Hen, Gwallog and Morcant.[^206-3] Theodric battled hard against that Urien and his sons. In those days the enemy were beaten one time, our own people the next. Urien shut them up on the island of Lindisfarne for three days and nights. While he was on that campaign he was murdered, on Morcant's orders, out of envy, since of all the kings he had the greatest courage in waging war.
 
 Aethelfrith Flesaur ruled twelve years in Bernicia and twelve more in Deira, twenty-four in all over the two kingdoms. He gave Din Guoaroy to his wife, Bebbab, and it was named Bebbanburth after her.[^206-4] Edwin, Aella's son, reigned seventeen years. He took Elmet and drove out Ceretic, its king.[^206-5]
 
@@ -543,7 +545,7 @@ From the two Gemini, Rufus and Rubellius, to Stilicho is three hundred seventy-t
 
 From Stilicho to Valentinian, Placidia's son, and the reign of Vortigern is twenty-eight.
 
-From the start of Vortigern's rule to the quarrel of Guitolin and Ambrosius is twelve, that is, Guoloppum, the battle of Guoloph.[^209-3] Vortigern held power in Britain when Theodosius and Valentinian were consuls, and in the fourth year of his reign the Saxons came to Britain, in the consulship of Felix and Taurus, four hundred years after the Incarnation of our Lord Jesus Christ.[^209-4]
+From the start of Vortigern's rule to the quarrel of Guitolin and Ambrosius is twelve, that is, Guoloppum, the battle of Guoloph.[^209-3] Vortigern held power in Britain when Theodosius and Valentinian were consuls. In the fourth year of his reign the Saxons came to Britain, in the consulship of Felix and Taurus, four hundred years after the Incarnation of our Lord Jesus Christ.[^209-4]
 
 From when the Saxons arrived in Britain and Vortigern took them in, to Decius and Valerian, is sixty-nine.[^209-5]
 

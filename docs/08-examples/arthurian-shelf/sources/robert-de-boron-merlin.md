@@ -1,6 +1,6 @@
 # Merlin
 
-Written in Old French, early thirteenth century. Paris and Ulrich, introduction page ix, date Robert de Boron's poems "au début du xiiie siècle"; its note 1 has Gautier de Montbéliard, the lord Robert's Joseph names, leave for the East in 1201, and the one version of the poem left written after his death in 1212; the edition's title calls the prose Merlin "roman en prose du XIIIe siècle", and page i dates the Huth manuscript "à la fin du xiiie ou au commencement du xive siècle".
+Written in Old French, 1200–1240 CE. Paris and Ulrich, introduction page ix, date Robert de Boron's poems "au début du xiiie siècle"; its note 1 has Gautier de Montbéliard, the lord Robert's Joseph names, leave for the East in 1201, and the one version of the poem left written after his death in 1212; the edition's title calls the prose Merlin "roman en prose du XIIIe siècle", and page i dates the Huth manuscript "à la fin du xiiie ou au commencement du xive siècle".
 
 The text is the work itself.
 

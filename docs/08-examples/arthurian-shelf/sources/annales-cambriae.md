@@ -1,6 +1,6 @@
 # The Welsh Annals
 
-Written in Latin, second half of the tenth century. Phillimore, page 144: the annals and genealogies "show marks of having been composed in the last half of the tenth century"; the years are written down to 977, though the last event recorded is the death of Rhodri ab Hywel Dda in 954, so they were finished, as Phillimore says, "in the year 954 or 955"; page 146: Harley MS 3859, which copies them among the appendices of the Historia Brittonum, is in "an English hand of the early twelfth century", by the British Museum's Keeper of Manuscripts.
+Written in Latin, 950–999 CE. Phillimore, page 144: the annals and genealogies "show marks of having been composed in the last half of the tenth century"; the years are written down to 977, though the last event recorded is the death of Rhodri ab Hywel Dda in 954, so they were finished, as Phillimore says, "in the year 954 or 955"; page 146: Harley MS 3859, which copies them among the appendices of the Historia Brittonum, is in "an English hand of the early twelfth century", by the British Museum's Keeper of Manuscripts.
 
 The text is the work itself.
 
