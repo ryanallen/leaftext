@@ -643,10 +643,11 @@
 | Close ends reliably | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents edit documents | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Agents tick tasks | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Seventeen document tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Twenty-four agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Written agent workflow | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Untitled saves refused | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawings described to agents | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agents message each other | [✅][l-agent-tell] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-new]: ../01-features/07-editing.md#new-document
 [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view
@@ -717,4 +718,5 @@
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora
 [l-agent]: ../01-features/10-agents.md
+[l-agent-tell]: ../01-features/10-agents.md#agents-in-different-consoles-talk-to-each-other
 [o-cli]: https://obsidian.md/help/cli

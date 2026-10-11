@@ -252,9 +252,9 @@ function findMarkup(data) {
   return [
     '<div class="shelf-find" role="search">',
     '<input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title">',
-    `<select class="shelf-filter" data-shelf-filter="part" aria-label="Part of the story"><option value="">Every part of the story</option>${parts}</select>`,
-    `<select class="shelf-filter" data-shelf-filter="tone" aria-label="Tradition"><option value="">Every tradition</option>${tones}</select>`,
-    '<select class="shelf-filter" data-shelf-filter="status" aria-label="Out yet"><option value="">On the shelf and coming</option><option value="published">On the shelf</option><option value="planned">Coming</option></select>',
+    `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="part" aria-label="Part of the story"><option value="">Every part of the story</option>${parts}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`,
+    `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="tone" aria-label="Tradition"><option value="">Every tradition</option>${tones}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`,
+    '<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="status" aria-label="Out yet"><option value="">On the shelf and coming</option><option value="published">On the shelf</option><option value="planned">Coming</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>',
     '</div>',
   ].join('');
 }

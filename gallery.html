@@ -8218,7 +8218,11 @@ body.library-resizing button {
 .console-layer[hidden] { display: none; }
 .console-terminal { width: 100%; height: 100%; }
 .console-front #app, .console-front .reader-toolbar { visibility: hidden; }
-.console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); }
+.console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
+.console-done .tab-label > .lt-icon-terminal { color: var(--lt-primary-ink); }
+.console-done .tab-label::before { content: ''; position: absolute; left: 0; width: 16px; height: 16px; pointer-events: none; background: radial-gradient(circle, var(--lt-primary), transparent 70%); opacity: var(--lt-opacity-55); animation: console-done-breathe var(--lt-duration-1250) var(--lt-ease-in-out) infinite alternate; }
+@keyframes console-done-breathe { from { opacity: var(--lt-opacity-38); } to { opacity: var(--lt-opacity-78); } }
+@media (prefers-reduced-motion: reduce) { .console-done .tab-label::before { animation: none; opacity: var(--lt-opacity-55); } }
 .console-minimap-preview { position: relative; overflow: hidden; color: var(--lt-markdown-foreground); font-family: monospace; font-size: var(--lt-text-12); }
 .console-minimap-lines { position: absolute; left: 0; right: 0; }
 .console-minimap-line { white-space: pre; overflow: hidden; }
@@ -14615,6 +14619,25 @@ p.shelf-line {
 }
 .shelf-search {
   grid-column: 1 / -1;
+  appearance: none;
+}
+/* Each filter wears the app's own dropdown, so both engines draw the one chevron rather than the system's arrows. */
+.shelf-filter-field {
+  display: block;
+  min-width: 0;
+}
+.leaf-select select.shelf-filter {
+  width: 100%;
+  padding: var(--lt-space-6) var(--lt-space-24) var(--lt-space-6) var(--lt-space-12);
+  background: var(--lt-surface);
+  color: var(--lt-markdown-foreground);
+}
+/* Safari on a phone zooms the page into a field under 16 pixels when a finger taps it. */
+@media (pointer: coarse) {
+  .shelf-search,
+  .leaf-select select.shelf-filter {
+    font-size: var(--lt-text-16);
+  }
 }
 .shelf-search:focus-visible,
 .shelf-filter:focus-visible {
@@ -14716,14 +14739,16 @@ p.shelf-line {
   background: var(--spine);
   color: var(--spine-ink);
   border-top: var(--lt-space-8) solid var(--lt-tint-recess);
-  border-bottom: var(--lt-space-6) solid var(--lt-tint-recess);
+  /* The foot band, read again by the ledge piece below, which measures from inside it. */
+  --spine-foot: var(--lt-space-6);
+  border-bottom: var(--spine-foot) solid var(--lt-tint-recess);
   transition: transform var(--lt-duration-260) var(--lt-ease-emphasized), background-color var(--lt-duration-120) var(--lt-ease), color var(--lt-duration-120) var(--lt-ease), border-color var(--lt-duration-120) var(--lt-ease);
 }
 /* Each spine's piece of the ledge under its line, reaching across the gap beside it so a line's pieces join; on the last line it lies over the bay's own ledge. */
 .shelf-spine::after {
   content: "";
   position: absolute;
-  top: 100%;
+  top: calc(100% + var(--spine-foot));
   left: calc(-1 * var(--lt-space-2));
   right: calc(-1 * var(--lt-space-2));
   height: var(--lt-space-6);
@@ -14738,6 +14763,8 @@ p.shelf-line {
   font-family: var(--heading-font);
   font-size: var(--lt-text-13);
   font-weight: var(--lt-weight-600);
+  /* A heading face with no heavy weight draws its regular one, never a thickened fake. */
+  font-synthesis: none;
 }
 /* A long title on a spine thick enough to hold it, set on two lines. */
 .shelf-spine.is-long .shelf-spine-title {
@@ -14796,7 +14823,7 @@ p.shelf-line {
   background: transparent;
   color: var(--lt-muted-foreground);
   border-top: var(--lt-space-4) solid var(--spine);
-  border-bottom: 0;
+  --spine-foot: 0px;
   outline: var(--lt-stroke-1) dashed var(--lt-border-strong);
   outline-offset: calc(-1 * var(--lt-stroke-1));
 }
@@ -19672,7 +19699,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Console tab</h3><code class="built">.console-tab</code><span class="built">render-state.js</span></header>
-<div class="stage"><button type="button" class="console-tab"><span class="lt-icon lt-icon-terminal"></span><span>notes — console</span><span class="lt-icon lt-icon-tab-close"></span></button></div>
+<div class="stage"><span class="tab console-tab console-done" data-console-id="7"><button type="button" class="tab-label"><span class="lt-icon lt-icon-terminal"></span>notes — console</button></span></div>
 </section>
 <section class="part">
 <header><h3>Profile pill</h3><code class="built">.library-profile</code><span class="built">app-shell.html, drawn by profile.js under the library foot's launchers</span></header>
@@ -19780,7 +19807,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Shelf</h3><code class="built">.shelf</code><span class="built">site/shelf-layout.js lays arthurian/index.md out as a bookshelf, site/shelf.js picks, re-sorts and filters it, opens a picked book in the app's own bottom sheet on the window, and paints its six tones from the page's categorical scale, and only leaftext.com draws it</span></header>
-<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine" data-tone="french" aria-pressed="true" style="width:45px;height:150px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:45px;height:273px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:28px;height:190px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:288px"><span class="shelf-spine-title">The Oldest Welsh Arthur Poems</span><span class="shelf-spine-lang">OW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div><div class="leaf-sheet shelf-sheet open" style="position:static" role="dialog" aria-label="Merlin"><div class="leaf-sheet-grip"></div><div class="shelf-sheet-body document-body leaf-scroll"><section class="shelf-book" data-tone="french"><header class="shelf-book-cover"><span class="shelf-book-code">OFr</span><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p></header><div class="shelf-book-pages"><div class="shelf-page"><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd><dt>Length</dt><dd>51,807 words of Old French<span class="shelf-why">Its established Old French text.</span></dd></dl></div></div></section></div></div><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
+<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><label class="leaf-select shelf-filter-field"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine" data-tone="french" aria-pressed="true" style="width:45px;height:150px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:45px;height:273px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:28px;height:190px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:288px"><span class="shelf-spine-title">The Oldest Welsh Arthur Poems</span><span class="shelf-spine-lang">OW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div><div class="leaf-sheet shelf-sheet open" style="position:static" role="dialog" aria-label="Merlin"><div class="leaf-sheet-grip"></div><div class="shelf-sheet-body document-body leaf-scroll"><section class="shelf-book" data-tone="french"><header class="shelf-book-cover"><span class="shelf-book-code">OFr</span><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p></header><div class="shelf-book-pages"><div class="shelf-page"><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd><dt>Length</dt><dd>51,807 words of Old French<span class="shelf-why">Its established Old French text.</span></dd></dl></div></div></section></div></div><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
 </section>
 <section class="part">
 <header><h3>Dotted leaf</h3><code class="built">.dotted-leaf</code><span class="built">scripts/bundle-dotted-leaf.mjs makes this markup for the website and Home</span></header>

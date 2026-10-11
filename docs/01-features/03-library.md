@@ -649,7 +649,7 @@ The terminal button beside the **New document** plus above the tabs opens a cons
 
 Type an installed agent's command into the console and it uses that agent's own model and gateway settings. [Connect the agent to Leaftext](10-agents.md) in the agent's settings if you want it to work with the open document.
 
-The console draws with Ghostty's terminal core, the same code the Ghostty terminal runs, built for the page on Windows and the Mac alike. Scrolled back through a console's output, you keep your place while the program goes on printing. A console behind another tab keeps everything it prints but draws none of it until you come back to it, so a long build printing away costs the document you are reading nothing.
+The console draws with Ghostty's terminal core, the same code the Ghostty terminal runs, built for the page on Windows and the Mac alike. Scrolled back through a console's output, you keep your place while the program goes on printing. A console behind another tab keeps everything it prints but draws none of it until you come back to it, so a long build printing away costs the document you are reading nothing. When a console finishes work, its tab icon turns the theme's main color and breathes until you type in that console. The mark stays visible while you read another tab or bring the finished console forward.
 
 Alt chords reach the program the way a terminal sends them: on Windows, `Alt+B`, `Alt+F` and every other Alt letter arrive as an escape followed by the letter, so a shell or editor that moves by word with them does; on a Mac, Option types the character it composes, as it does in Terminal. A console also tells the programs it starts that the terminal is Leaftext, the way a terminal names itself, so an agent run there knows where it is.
 
@@ -658,6 +658,10 @@ On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does 
 A screenshot on the clipboard pastes into a console as a picture file: `Ctrl+V` or `Alt+V` on Windows, and `Cmd+V`, `Ctrl+V` or `Option+V` on a Mac, write it to a PNG in the system's temporary folder and paste that file's path, which Claude Code and Codex attach to the message you are writing. Text on the clipboard pastes as text. The folder keeps only the twenty newest pictures.
 
 A web or mail address a console prints — `https://`, `http://` or `mailto:` — opens in your own browser or mail program when you `Ctrl`-click it on Windows or `Cmd`-click it on a Mac. An address of any other kind opens nothing, so a program cannot get the app to open a file or start another program by printing a link to it.
+
+### A finished console says so
+
+When a program in a console finishes its work, the console's tab icon turns the theme's main color and a soft glow breathes behind it, so with several agents running you can see which one is ready for you without opening each. Claude Code says it is working and when it has finished in its title, and the tab reads that; any other program counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into that console clears the mark; looking at the tab alone does not. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
 
 While a full-screen program such as Claude Code fills a console, the soft fade at the top of the page starts under the program's first row rather than over it, so a line the program holds at the top, such as the prompt it is working on, reads at full strength while its work dissolves underneath. At an ordinary shell prompt the fade sits where it does over a document.
 

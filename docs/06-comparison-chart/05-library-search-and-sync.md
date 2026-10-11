@@ -387,6 +387,7 @@
 | Console torn out | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console tab names program | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Screenshot pasted into console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Finished console marked | [✅][l-console-done] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
 | Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
@@ -465,6 +466,7 @@
 [l-live]: ../01-features/03-library.md#live-updates
 [l-launchers]: ../01-features/03-library.md#launchers-at-the-foot
 [l-console]: ../01-features/03-library.md#console
+[l-console-done]: ../01-features/03-library.md#a-finished-console-says-so
 [l-layout]: ../01-features/03-library.md#layout
 [l-narrow]: ../01-features/03-library.md#narrow-windows
 [l-facts]: ../01-features/03-library.md#facts
