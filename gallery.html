@@ -3999,6 +3999,7 @@
   --lt-duration-280: 280ms;
   --lt-duration-300: 300ms;
   --lt-duration-400: 400ms;
+  --lt-duration-560: 560ms;
   --lt-duration-600: 600ms;
   --lt-duration-700: 700ms;
   --lt-duration-900: 900ms;
@@ -4068,11 +4069,14 @@
   /* Fixed colors */
   --lt-mask-opaque: #000;
   --lt-white: #ffffff;
+  --lt-spectrum-white: #ffffff;
+  --lt-spectrum-black: #000000;
   --lt-window-close: #e81123;
   --lt-window-close-foreground: #ffffff;
   --lt-checkbox-accent: #6e7681;
   /* Fixed tints */
   --lt-tint-recess: rgba(0, 0, 0, 0.16);
+  --lt-tint-sheen: rgba(255, 255, 255, 0.22);
   --lt-tint-backdrop: rgba(0, 0, 0, 0.45);
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   /* The hover wash */
@@ -4123,6 +4127,10 @@
   --lt-icon-flash-reader: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'%3E%3Cpath d='M13 2 4 14h7l-1 8 9-12h-7l1-8z'/%3E%3C/svg%3E");
   --lt-icon-read-aloud-on: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z'/%3E%3Cpath d='M16 9a5 5 0 0 1 0 6'/%3E%3Cpath d='M19.364 18.364a9 9 0 0 0 0-12.728'/%3E%3C/svg%3E");
   --lt-icon-read-aloud-off: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath transform='translate(5.5 0)' d='M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z'/%3E%3C/svg%3E");
+  --lt-icon-pause: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='14' y='3' width='5' height='18' rx='1'/%3E%3Crect x='5' y='3' width='5' height='18' rx='1'/%3E%3C/svg%3E");
+  --lt-icon-play: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z'/%3E%3C/svg%3E");
+  --lt-icon-skip-back: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.971 4.285A2 2 0 0 1 21 6v12a2 2 0 0 1-3.029 1.715l-9.997-5.998a2 2 0 0 1-.003-3.432z'/%3E%3Cpath d='M3 20V4'/%3E%3C/svg%3E");
+  --lt-icon-skip-forward: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 4v16'/%3E%3Cpath d='M6.029 4.285A2 2 0 0 0 3 6v12a2 2 0 0 0 3.029 1.715l9.997-5.998a2 2 0 0 0 .003-3.432z'/%3E%3C/svg%3E");
   --lt-icon-wand: url("data:image/svg+xml,%3Csvg class='reader-tool-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4V2'/%3E%3Cpath d='M15 16v-2'/%3E%3Cpath d='M8 9h2'/%3E%3Cpath d='M20 9h2'/%3E%3Cpath d='M17.8 11.8 19 13'/%3E%3Cpath d='M15 9h.01'/%3E%3Cpath d='M17.8 6.2 19 5'/%3E%3Cpath d='m3 21 9-9'/%3E%3Cpath d='M12.2 6.2 11 5'/%3E%3C/svg%3E");
   --lt-icon-cloud: url("data:image/svg+xml,%3Csvg class='library-folder-icon' aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'/%3E%3C/svg%3E");
   --lt-icon-export: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 13v8l-4-4'/%3E%3Cpath d='m12 21 4-4'/%3E%3Cpath d='M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284'/%3E%3C/svg%3E");
@@ -4183,6 +4191,24 @@
   --lt-icon-sort-descending: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h15' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 12h11' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M4 17h7' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-trash: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-copy: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+  --lt-icon-cut: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-scissors' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='6' cy='6' r='3' /%3E%3Cpath d='M8.12 8.12 12 12' /%3E%3Cpath d='M20 4 8.12 15.88' /%3E%3Ccircle cx='6' cy='18' r='3' /%3E%3Cpath d='M14.8 14.8 20 20' /%3E%3C/svg%3E");
+  --lt-icon-paste: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-clipboard-paste' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M11 14h10' /%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v1.344' /%3E%3Cpath d='m17 18 4-4-4-4' /%3E%3Cpath d='M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113' /%3E%3Crect x='8' y='2' width='8' height='4' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-rename: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-pencil' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z' /%3E%3Cpath d='m15 5 4 4' /%3E%3C/svg%3E");
+  --lt-icon-duplicate: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-copy-plus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cline x1='15' x2='15' y1='12' y2='18' /%3E%3Cline x1='12' x2='18' y1='15' y2='15' /%3E%3Crect width='14' height='14' x='8' y='8' rx='2' ry='2' /%3E%3Cpath d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' /%3E%3C/svg%3E");
+  --lt-icon-show: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-eye' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0' /%3E%3Ccircle cx='12' cy='12' r='3' /%3E%3C/svg%3E");
+  --lt-icon-hide: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-eye-off' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49' /%3E%3Cpath d='M14.084 14.158a3 3 0 0 1-4.242-4.242' /%3E%3Cpath d='M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143' /%3E%3Cpath d='m2 2 20 20' /%3E%3C/svg%3E");
+  --lt-icon-reveal: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-folder-search' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1' /%3E%3Cpath d='m21 21-1.9-1.9' /%3E%3Ccircle cx='17' cy='17' r='3' /%3E%3C/svg%3E");
+  --lt-icon-properties: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-info' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='12' cy='12' r='10' /%3E%3Cpath d='M12 16v-4' /%3E%3Cpath d='M12 8h.01' /%3E%3C/svg%3E");
+  --lt-icon-open-outside: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-external-link' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 3h6v6' /%3E%3Cpath d='M10 14 21 3' /%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' /%3E%3C/svg%3E");
+  --lt-icon-mail: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-mail' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7' /%3E%3Crect x='2' y='4' width='20' height='16' rx='2' /%3E%3C/svg%3E");
+  --lt-icon-bookmark-remove: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-bookmark-minus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 10H9' /%3E%3Cpath d='M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z' /%3E%3C/svg%3E");
+  --lt-icon-new-folder: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-folder-plus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 10v6' /%3E%3Cpath d='M9 13h6' /%3E%3Cpath d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' /%3E%3C/svg%3E");
+  --lt-icon-row-above: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-horizontal-start' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='13' height='7' x='8' y='3' rx='1' /%3E%3Cpath d='m2 9 3 3-3 3' /%3E%3Crect width='13' height='7' x='8' y='14' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-row-below: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-horizontal-end' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='13' height='7' x='3' y='3' rx='1' /%3E%3Cpath d='m22 15-3-3 3-3' /%3E%3Crect width='13' height='7' x='3' y='14' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-column-left: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-vertical-start' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='7' height='13' x='3' y='8' rx='1' /%3E%3Cpath d='m15 2-3 3-3-3' /%3E%3Crect width='7' height='13' x='14' y='8' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-column-right: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-vertical-end' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='7' height='13' x='3' y='3' rx='1' /%3E%3Cpath d='m9 22 3-3 3 3' /%3E%3Crect width='7' height='13' x='14' y='3' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-math: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-sigma' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2' /%3E%3C/svg%3E");
+  --lt-icon-copy-path: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-clipboard-copy' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='8' height='4' x='8' y='2' rx='1' ry='1' /%3E%3Cpath d='M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2' /%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v4' /%3E%3Cpath d='M21 14H11' /%3E%3Cpath d='m15 10-4 4 4 4' /%3E%3C/svg%3E");
   --lt-icon-highlighter: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m9 11-6 6v3h9l3-3' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-footnote: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 6v12' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='M17.196 9 6.804 15' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3Cpath d='m6.804 9 10.392 6' fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
   --lt-icon-leaf: url("data:image/svg+xml,%3Csvg aria-hidden='true' focusable='false' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M59.7,60.1c-7.9-20.9-22.3-20.7-32.6-24.8-10.3-4.1-15.9-11.9-15.9-11.9,0,0,7.1,6.9,15.9,9.7,8.9,2.7,23,1.1,31.4,18.6-2.4-10.1-5.7-28.3-27-29.9C10.3,20.2,4.4,3.9,4.4,3.9c0,0-1.5,23.4,7.6,36.5,9,13.1,17,19,41.1,17.3,0,0,5.5-.4,6.7,2.5h0Z' fill='%23000'/%3E%3C/svg%3E");
@@ -4355,6 +4381,24 @@
   --lt-icon-sort-descending: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-list-sort-descending' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 12H3' /%3E%3Cpath d='M3 5h18' /%3E%3Cpath d='M9 19H3' /%3E%3C/svg%3E");
   --lt-icon-trash: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-trash-2' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M10 11v6' /%3E%3Cpath d='M14 11v6' /%3E%3Cpath d='M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6' /%3E%3Cpath d='M3 6h18' /%3E%3Cpath d='M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2' /%3E%3C/svg%3E");
   --lt-icon-copy: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-copy' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='14' height='14' x='8' y='8' rx='2' ry='2' /%3E%3Cpath d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' /%3E%3C/svg%3E");
+  --lt-icon-cut: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-scissors' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='6' cy='6' r='3' /%3E%3Cpath d='M8.12 8.12 12 12' /%3E%3Cpath d='M20 4 8.12 15.88' /%3E%3Ccircle cx='6' cy='18' r='3' /%3E%3Cpath d='M14.8 14.8 20 20' /%3E%3C/svg%3E");
+  --lt-icon-paste: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-clipboard-paste' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M11 14h10' /%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v1.344' /%3E%3Cpath d='m17 18 4-4-4-4' /%3E%3Cpath d='M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113' /%3E%3Crect x='8' y='2' width='8' height='4' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-rename: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-pencil' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z' /%3E%3Cpath d='m15 5 4 4' /%3E%3C/svg%3E");
+  --lt-icon-duplicate: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-copy-plus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cline x1='15' x2='15' y1='12' y2='18' /%3E%3Cline x1='12' x2='18' y1='15' y2='15' /%3E%3Crect width='14' height='14' x='8' y='8' rx='2' ry='2' /%3E%3Cpath d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' /%3E%3C/svg%3E");
+  --lt-icon-show: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-eye' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0' /%3E%3Ccircle cx='12' cy='12' r='3' /%3E%3C/svg%3E");
+  --lt-icon-hide: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-eye-off' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49' /%3E%3Cpath d='M14.084 14.158a3 3 0 0 1-4.242-4.242' /%3E%3Cpath d='M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143' /%3E%3Cpath d='m2 2 20 20' /%3E%3C/svg%3E");
+  --lt-icon-reveal: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-folder-search' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1' /%3E%3Cpath d='m21 21-1.9-1.9' /%3E%3Ccircle cx='17' cy='17' r='3' /%3E%3C/svg%3E");
+  --lt-icon-properties: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-info' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='12' cy='12' r='10' /%3E%3Cpath d='M12 16v-4' /%3E%3Cpath d='M12 8h.01' /%3E%3C/svg%3E");
+  --lt-icon-open-outside: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-external-link' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 3h6v6' /%3E%3Cpath d='M10 14 21 3' /%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' /%3E%3C/svg%3E");
+  --lt-icon-mail: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-mail' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7' /%3E%3Crect x='2' y='4' width='20' height='16' rx='2' /%3E%3C/svg%3E");
+  --lt-icon-bookmark-remove: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-bookmark-minus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 10H9' /%3E%3Cpath d='M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z' /%3E%3C/svg%3E");
+  --lt-icon-new-folder: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-folder-plus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 10v6' /%3E%3Cpath d='M9 13h6' /%3E%3Cpath d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' /%3E%3C/svg%3E");
+  --lt-icon-row-above: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-horizontal-start' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='13' height='7' x='8' y='3' rx='1' /%3E%3Cpath d='m2 9 3 3-3 3' /%3E%3Crect width='13' height='7' x='8' y='14' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-row-below: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-horizontal-end' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='13' height='7' x='3' y='3' rx='1' /%3E%3Cpath d='m22 15-3-3 3-3' /%3E%3Crect width='13' height='7' x='3' y='14' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-column-left: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-vertical-start' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='7' height='13' x='3' y='8' rx='1' /%3E%3Cpath d='m15 2-3 3-3-3' /%3E%3Crect width='7' height='13' x='14' y='8' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-column-right: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-vertical-end' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='7' height='13' x='3' y='3' rx='1' /%3E%3Cpath d='m9 22 3-3 3 3' /%3E%3Crect width='7' height='13' x='14' y='3' rx='1' /%3E%3C/svg%3E");
+  --lt-icon-math: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-sigma' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M18 7V5a1 1 0 0 0-1-1H6.5a.5.5 0 0 0-.4.8l4.5 6a2 2 0 0 1 0 2.4l-4.5 6a.5.5 0 0 0 .4.8H17a1 1 0 0 0 1-1v-2' /%3E%3C/svg%3E");
+  --lt-icon-copy-path: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-clipboard-copy' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='8' height='4' x='8' y='2' rx='1' ry='1' /%3E%3Cpath d='M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2' /%3E%3Cpath d='M16 4h2a2 2 0 0 1 2 2v4' /%3E%3Cpath d='M21 14H11' /%3E%3Cpath d='m15 10-4 4 4 4' /%3E%3C/svg%3E");
   --lt-icon-highlighter: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-highlighter' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='m9 11-6 6v3h9l3-3' /%3E%3Cpath d='m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4' /%3E%3C/svg%3E");
   --lt-icon-footnote: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-asterisk' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 5v14' /%3E%3Cpath d='m18.065 8.496-12.125 7' /%3E%3Cpath d='m5.94 8.504 12.125 7' /%3E%3C/svg%3E");
 }
@@ -4742,6 +4786,22 @@
   -webkit-mask-image: var(--lt-icon-read-aloud-off);
   mask-image: var(--lt-icon-read-aloud-off);
 }
+.lt-icon-pause {
+  -webkit-mask-image: var(--lt-icon-pause);
+  mask-image: var(--lt-icon-pause);
+}
+.lt-icon-play {
+  -webkit-mask-image: var(--lt-icon-play);
+  mask-image: var(--lt-icon-play);
+}
+.lt-icon-skip-back {
+  -webkit-mask-image: var(--lt-icon-skip-back);
+  mask-image: var(--lt-icon-skip-back);
+}
+.lt-icon-skip-forward {
+  -webkit-mask-image: var(--lt-icon-skip-forward);
+  mask-image: var(--lt-icon-skip-forward);
+}
 .lt-icon-wand {
   -webkit-mask-image: var(--lt-icon-wand);
   mask-image: var(--lt-icon-wand);
@@ -4981,6 +5041,78 @@
 .lt-icon-copy {
   -webkit-mask-image: var(--lt-icon-copy);
   mask-image: var(--lt-icon-copy);
+}
+.lt-icon-cut {
+  -webkit-mask-image: var(--lt-icon-cut);
+  mask-image: var(--lt-icon-cut);
+}
+.lt-icon-paste {
+  -webkit-mask-image: var(--lt-icon-paste);
+  mask-image: var(--lt-icon-paste);
+}
+.lt-icon-rename {
+  -webkit-mask-image: var(--lt-icon-rename);
+  mask-image: var(--lt-icon-rename);
+}
+.lt-icon-duplicate {
+  -webkit-mask-image: var(--lt-icon-duplicate);
+  mask-image: var(--lt-icon-duplicate);
+}
+.lt-icon-show {
+  -webkit-mask-image: var(--lt-icon-show);
+  mask-image: var(--lt-icon-show);
+}
+.lt-icon-hide {
+  -webkit-mask-image: var(--lt-icon-hide);
+  mask-image: var(--lt-icon-hide);
+}
+.lt-icon-reveal {
+  -webkit-mask-image: var(--lt-icon-reveal);
+  mask-image: var(--lt-icon-reveal);
+}
+.lt-icon-properties {
+  -webkit-mask-image: var(--lt-icon-properties);
+  mask-image: var(--lt-icon-properties);
+}
+.lt-icon-open-outside {
+  -webkit-mask-image: var(--lt-icon-open-outside);
+  mask-image: var(--lt-icon-open-outside);
+}
+.lt-icon-mail {
+  -webkit-mask-image: var(--lt-icon-mail);
+  mask-image: var(--lt-icon-mail);
+}
+.lt-icon-bookmark-remove {
+  -webkit-mask-image: var(--lt-icon-bookmark-remove);
+  mask-image: var(--lt-icon-bookmark-remove);
+}
+.lt-icon-new-folder {
+  -webkit-mask-image: var(--lt-icon-new-folder);
+  mask-image: var(--lt-icon-new-folder);
+}
+.lt-icon-row-above {
+  -webkit-mask-image: var(--lt-icon-row-above);
+  mask-image: var(--lt-icon-row-above);
+}
+.lt-icon-row-below {
+  -webkit-mask-image: var(--lt-icon-row-below);
+  mask-image: var(--lt-icon-row-below);
+}
+.lt-icon-column-left {
+  -webkit-mask-image: var(--lt-icon-column-left);
+  mask-image: var(--lt-icon-column-left);
+}
+.lt-icon-column-right {
+  -webkit-mask-image: var(--lt-icon-column-right);
+  mask-image: var(--lt-icon-column-right);
+}
+.lt-icon-math {
+  -webkit-mask-image: var(--lt-icon-math);
+  mask-image: var(--lt-icon-math);
+}
+.lt-icon-copy-path {
+  -webkit-mask-image: var(--lt-icon-copy-path);
+  mask-image: var(--lt-icon-copy-path);
 }
 .lt-icon-highlighter {
   -webkit-mask-image: var(--lt-icon-highlighter);
@@ -6194,19 +6326,17 @@ body.is-maximized #winMaximize .wc-restore {
 .context-menu-submenu {
   max-width: 100vw;
 }
-.context-menu-parent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--lt-space-12);
-}
 .context-menu-arrow {
+  margin-left: auto;
+  padding-left: var(--lt-space-12);
   transform: rotate(-90deg);
 }
 .context-menu-item {
   /* A menu row acts here without going anywhere, so the pointer stays an arrow. */
   cursor: default;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
   width: 100%;
   padding: var(--lt-space-8) var(--lt-space-12);
   border: 0;
@@ -6228,6 +6358,13 @@ body.is-maximized #winMaximize .wc-restore {
     background: var(--lt-wash-hover);
     outline: none;
   }
+}
+/* The breadcrumb menu's size and tone, so the two menus read as one component. An empty slot keeps the label in line with the drawn rows. */
+.context-menu-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--lt-muted-foreground);
 }
 /* A dangerous row is plain until it is pointed at. Its drawing says what it does, and red on every open menu spends the one color that means stop. */
 .context-menu-item.is-danger:focus-visible {
@@ -6251,8 +6388,8 @@ body.is-maximized #winMaximize .wc-restore {
 }
 /* A row that writes a date says at its right which day that is, so Next Monday is read before it is pressed. */
 .task-date-when {
-  float: right;
-  margin-left: var(--lt-space-12);
+  margin-left: auto;
+  padding-left: var(--lt-space-12);
   color: var(--lt-muted-foreground);
 }
 .context-menu-separator {
@@ -10021,6 +10158,24 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
 .document-body .data-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+/* A stylesheet's specimen board: sample elements the file's own rules paint, in a bordered box so where the file stops painting is plain. The rules come in under `@scope (.css-specimen)` from css-specimen.js, and anything they do not set keeps the page's own style. */
+.document-body .css-specimen {
+  margin: var(--type-spacing) 0;
+  padding: var(--lt-space-12) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+}
+/* A stylesheet's color value carries a square of that color. The color is the file's rather than the theme's, like a picture, so it does not change with the appearance; the hairline keeps a white or a black square visible on either. */
+.document-body .color-swatch {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.4em;
+  vertical-align: -0.05em;
+  background: var(--swatch);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-xs);
 }
 /* An element's attributes sit tighter under its heading than its content does. */
 .document-body .data-attributes {
@@ -13825,6 +13980,24 @@ body.mac-frame .document-minimap-frame {
   margin: 0 auto;
   padding: 4vh 0;
 }
+/* The dotted leaf, here because the start screen draws it and leaftext.com's landing draws the same one: its still picture, the canvas stacked over it until it animates, and the button it becomes once started. Each page sizes and places it under these. */
+.dotted-leaf {
+  display: block;
+  position: relative;
+  width: 180px;
+  height: 180px;
+  color: var(--lt-primary-ink);
+}
+.dotted-leaf[role="button"] { cursor: pointer; }
+.dotted-leaf[role="button"]:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); }
+.dotted-leaf-still,
+.dotted-leaf-canvas { display: block; width: 100%; height: 100%; }
+.dotted-leaf-still { opacity: var(--lt-opacity-75); }
+.dotted-leaf-canvas { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .dotted-leaf-canvas { display: none; }
+  .dotted-leaf-still { visibility: visible !important; }
+}
 .empty-state .dotted-leaf {
   width: 180px;
   height: 180px;
@@ -14330,7 +14503,7 @@ body.is-home-row-dragging .home-list-scroll li {
     --type-h6-size: calc(var(--type-base) * 1.1);
   }
 }
-/* leaftext.com's landing: the README laid out by `site/front-page-layout.js` inside the reading column — the promise over both downloads, the comparison, the app recorded moving, four cards, the install line and the foot. The app's own bar, pane and rail stand around it as they do around every page, and the desktop never draws it. Each element the layout styles wears a class of its own, and a rule that has to outrank the document's own names the tag beside it. */
+/* leaftext.com's landing: the README laid out by `site/front-page-layout.js` inside the reading column — the promise over both downloads, the comparison, the app recorded moving, four cards, the install line and the foot. The app's own bar, pane and rail stand around it as they do around every page, and the desktop never draws this layout; the dotted leaf the hero shows is the start screen's too, so its own rules are in `home.css`. Each element the layout styles wears a class of its own, and a rule that has to outrank the document's own names the tag beside it. */
 
 /* On the article for the baked page, and on the run the reading page moves its blocks into once it draws it. */
 .front-layout,
@@ -14345,26 +14518,9 @@ body.is-home-row-dragging .home-list-scroll li {
   padding: var(--lt-space-48) 0 var(--lt-space-32);
   text-align: center;
 }
-.dotted-leaf {
-  display: block;
-  position: relative;
-  width: 180px;
-  height: 180px;
-  color: var(--lt-primary-ink);
-}
 .front-hero > .dotted-leaf { margin: 0 auto var(--lt-space-24); }
-.dotted-leaf[role="button"] { cursor: pointer; }
-.dotted-leaf[role="button"]:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); }
-.dotted-leaf-still,
-.dotted-leaf-canvas { display: block; width: 100%; height: 100%; }
-.dotted-leaf-still { opacity: var(--lt-opacity-75); }
-.dotted-leaf-canvas { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
 @media (max-width: 720px) {
   .front-hero > .dotted-leaf { width: 160px; height: 160px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dotted-leaf-canvas { display: none; }
-  .dotted-leaf-still { visibility: visible !important; }
 }
 .document-minimap-preview .dotted-leaf-canvas { display: none; }
 .document-minimap-preview .dotted-leaf-still { visibility: visible !important; }
@@ -14674,7 +14830,9 @@ p.shelf-line {
   min-height: 228px;
   padding: 0 var(--lt-space-8);
   --shelf-ledge: var(--lt-border);
-  border-bottom: var(--lt-space-6) solid var(--shelf-ledge);
+  /* The ledge: a painted band with a lit lip along its top, never a cast shadow. */
+  padding-bottom: var(--lt-space-6);
+  background: linear-gradient(var(--lt-tint-sheen), var(--lt-tint-sheen)) left bottom calc(var(--lt-space-6) - var(--lt-stroke-1)) / 100% var(--lt-stroke-1) no-repeat, linear-gradient(var(--shelf-ledge), var(--shelf-ledge)) left bottom / 100% var(--lt-space-6) no-repeat;
 }
 /* The bookend before a bay: the strong rule standing up, dashed before the bay beside the story. */
 .shelf-bay::before {
@@ -14727,7 +14885,7 @@ p.shelf-line {
   opacity: var(--lt-opacity-60);
 }
 
-/* A spine: a published book filled with its tone, its title running bottom to top in the heading face, a darker band at head and foot. */
+/* A spine: a published book filled with its tone and painted round — shade at both edges, a sheen a third of the way in — its title running bottom to top in the heading face, a darker band at head and foot. */
 .shelf-spine {
   all: unset;
   cursor: pointer;
@@ -14740,7 +14898,8 @@ p.shelf-line {
   box-sizing: border-box;
   padding: var(--lt-space-12) 0 var(--lt-space-8);
   border-radius: var(--lt-radius-xs) var(--lt-radius-xs) 0 0;
-  background: var(--spine);
+  --spine-round: linear-gradient(90deg, var(--lt-tint-recess) 0, transparent 22%, var(--lt-tint-sheen) 38%, transparent 62%, var(--lt-tint-recess) 100%);
+  background: var(--spine-round), var(--spine);
   color: var(--spine-ink);
   border-top: var(--lt-space-8) solid var(--lt-tint-recess);
   /* The foot band, read again by the ledge piece below, which measures from inside it. */
@@ -14756,7 +14915,7 @@ p.shelf-line {
   left: calc(-1 * var(--lt-space-2));
   right: calc(-1 * var(--lt-space-2));
   height: var(--lt-space-6);
-  background: var(--shelf-ledge);
+  background: linear-gradient(var(--lt-tint-sheen), var(--lt-tint-sheen)) top / 100% var(--lt-stroke-1) no-repeat, var(--shelf-ledge);
   transition: transform var(--lt-duration-260) var(--lt-ease-emphasized);
 }
 .shelf-spine-title {
@@ -14793,19 +14952,26 @@ p.shelf-line {
 .shelf-spine-tag {
   text-transform: none;
 }
-/* A hovered spine keeps its own tone and ink, the pair the scale chose for it, and says so with an outline. */
+/* A hovered spine keeps its own tone, ink and paint, the pair the scale chose for it, and says so with an outline. */
 @media (hover: hover) {
   .shelf-spine:hover {
-    background: var(--spine);
     color: var(--spine-ink);
     border-color: var(--lt-tint-recess);
     outline: var(--lt-stroke-1) solid var(--lt-markdown-foreground);
     outline-offset: var(--lt-space-2);
   }
   .shelf-spine.is-planned:hover {
-    background: transparent;
     color: var(--lt-markdown-foreground);
     border-color: var(--spine);
+  }
+}
+/* The resting paint named again under the pointer, because the app-wide button:hover outranks the spine's own and would paint it purple. */
+@media (hover: hover) {
+  .shelf-spine:hover {
+    background: var(--spine-round), var(--spine);
+  }
+  .shelf-spine.is-planned:hover {
+    background: var(--spine-round);
   }
 }
 .shelf-spine:focus-visible {
@@ -14822,9 +14988,9 @@ p.shelf-line {
 .shelf-spine[aria-pressed="true"]::after {
   transform: translateY(var(--lt-space-24));
 }
-/* A book still to come: the same shape with no fill, a neutral dashed outline, and its head band alone in its tone, the swatch the key shows. */
+/* A book still to come: the same shape with no fill, glass painted round, a neutral dashed outline, and its head band alone in its tone, the swatch the key shows. */
 .shelf-spine.is-planned {
-  background: transparent;
+  background: var(--spine-round);
   color: var(--lt-muted-foreground);
   border-top: var(--lt-space-4) solid var(--spine);
   --spine-foot: 0px;
@@ -14838,6 +15004,66 @@ p.shelf-line {
 .shelf-spine.is-planned .shelf-spine-title {
   font-style: italic;
   font-weight: var(--lt-weight-400);
+}
+/* A picked book's turn: pulled out of the case and swung about its right edge until its cover, hinged there and standing back into the shelf, faces the reader. Only the turning book is drawn in 3D, and only while it turns; the perspective is its own, since the case's would stop at the bay between them. */
+.shelf-spine.is-turning {
+  z-index: 1;
+  transform-style: preserve-3d;
+  transform-origin: right center;
+  animation: shelf-spine-turn var(--lt-duration-560) var(--lt-ease-emphasized) both;
+}
+.shelf-spine.is-turning::after {
+  visibility: hidden;
+}
+@keyframes shelf-spine-turn {
+  from {
+    transform: perspective(800px) translateY(calc(-1 * var(--lt-space-24))) translateZ(0) rotateY(0deg);
+  }
+  to {
+    transform: perspective(800px) translateY(calc(-1 * var(--lt-space-24))) translateZ(48px) rotateY(-90deg);
+  }
+}
+.shelf-spine-cover {
+  display: none;
+}
+.shelf-spine.is-turning .shelf-spine-cover {
+  position: absolute;
+  top: calc(-1 * var(--lt-space-8));
+  bottom: calc(-1 * var(--spine-foot));
+  left: 100%;
+  aspect-ratio: 2 / 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--lt-space-8);
+  box-sizing: border-box;
+  padding: var(--lt-space-12);
+  border-radius: 0 var(--lt-radius-xs) var(--lt-radius-xs) 0;
+  background: var(--spine-round), var(--spine);
+  color: var(--spine-ink);
+  text-align: center;
+  transform-origin: left center;
+  transform: rotateY(90deg);
+}
+.shelf-spine.is-planned .shelf-spine-cover {
+  background: var(--spine-round), var(--lt-surface);
+  color: var(--lt-markdown-foreground);
+  border-top: var(--lt-space-4) solid var(--spine);
+  outline: var(--lt-stroke-1) dashed var(--lt-border-strong);
+  outline-offset: calc(-1 * var(--lt-stroke-1));
+}
+.shelf-spine-cover-title {
+  font-family: var(--heading-font);
+  font-size: var(--lt-text-13);
+  font-weight: var(--lt-weight-600);
+  line-height: var(--lt-leading-1-25);
+  font-synthesis: none;
+}
+.shelf-spine-cover-by {
+  font-family: var(--app-font);
+  font-size: var(--lt-text-10);
+  letter-spacing: var(--lt-tracking-060);
+  text-transform: uppercase;
 }
 
 /* The key: a swatch for each tradition and the outline a book to come stands as. */
@@ -15056,6 +15282,9 @@ h2.shelf-book-title {
   .shelf-spine[aria-pressed="true"],
   .shelf-spine[aria-pressed="true"]::after {
     transform: none;
+  }
+  .shelf-spine.is-turning {
+    animation: none;
   }
 }
 /* ---- Glossary bottom sheet ---------------------------------------------
@@ -15711,9 +15940,57 @@ h2.shelf-book-title {
   padding: var(--lt-space-2);
   /* Equal-column grid so every card is the same width. auto-fit (not auto-fill) collapses empty tracks, so the cards grow to fill the row instead of sitting at their min width with big gaps. */
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--lt-space-8);
   overflow-y: auto;
+  /* Beside the color bar, taking the rest of the row. */
+  flex: 1;
+  min-width: 0;
+}
+/* The color bar beside the cards, standing as tall as the grid shows. */
+.theme-spectrum-row {
+  display: flex;
+  gap: var(--lt-space-14);
+  min-height: 0;
+}
+.theme-spectrum {
+  position: relative;
+  flex: none;
+  width: 38px;
+  margin: var(--lt-space-2) 0;
+  border-radius: var(--lt-radius-lg);
+  /* theme.js writes the families' own colors into this between the two ends. */
+  background: var(--theme-spectrum-fill, linear-gradient(var(--lt-spectrum-white), var(--lt-spectrum-black)));
+  box-shadow: var(--lt-shadow-hairline);
+  cursor: pointer;
+  touch-action: none;
+}
+.theme-spectrum:focus-visible {
+  outline: none;
+  box-shadow: var(--lt-shadow-focus);
+}
+.theme-spectrum-tick {
+  position: absolute;
+  right: 0;
+  width: 6px;
+  height: var(--lt-stroke-1);
+  background: color-mix(in srgb, var(--lt-foreground) 45%, transparent);
+  pointer-events: none;
+}
+.theme-spectrum-thumb {
+  position: absolute;
+  left: -4px;
+  right: -4px;
+  height: 14px;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  border: var(--lt-stroke-3) solid var(--lt-surface-elevated);
+  border-radius: var(--lt-radius-pill);
+  box-shadow: var(--lt-shadow-edge-strong);
+  pointer-events: none;
+}
+.theme-item.is-pointed::after {
+  box-shadow: var(--lt-shadow-hairline-strong);
 }
 .theme-item {
   position: relative;
@@ -15831,6 +16108,18 @@ h2.shelf-book-title {
   font-size: var(--lt-text-12);
   font-weight: var(--lt-weight-500);
   white-space: nowrap;
+}
+/* What Random drew, under its name, set there the way the price is. Empty while Random is not chosen. */
+.theme-item-random-worn {
+  order: -1;
+  margin-top: calc(var(--lt-space-8) * -1);
+  padding: 0 var(--lt-space-14) var(--lt-space-12);
+  font-size: var(--lt-text-12);
+  font-weight: var(--lt-weight-500);
+  white-space: nowrap;
+}
+.theme-item-random-worn:empty {
+  display: none;
 }
 .theme-sheet-footer {
   display: flex;
@@ -17844,6 +18133,13 @@ h2.shelf-book-title {
     outline: none;
   }
 }
+/* The context menu's drawing, at its size and tone, so the two menus read as one. */
+.flow-menu-item .context-menu-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--lt-muted-foreground);
+}
 .flow-menu-item .flow-chip {
   flex: none;
   width: 34px;
@@ -18078,7 +18374,11 @@ h2.shelf-book-title {
 .chart-row-placed {
   grid-template-columns: 64px minmax(0, 1.4fr) repeat(var(--chart-series, 1), minmax(0, 1fr)) 28px;
 }
-/* A journey section is a row of its own, its name across the value columns. */
+/* A gantt row gives its start the room a date or an “after” takes, and its id and length less. */
+.chart-row-dated {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.5fr) minmax(0, 0.7fr) 28px;
+}
+/* A journey or gantt section is a row of its own, its name across the value columns. */
 .chart-row-section {
   grid-column: 1 / -2;
   font-weight: var(--lt-weight-600);
@@ -18677,7 +18977,7 @@ h2.shelf-book-title {
     max-width: none;
     margin-left: var(--lt-space-8);
   }
-  /* Read aloud has no field to give the width to, so its three controls stay in the corner. */
+  /* Read aloud has no field to give the width to, so its controls stay in the corner. */
   .read-aloud-bar {
     justify-self: end;
     margin-left: 0;
@@ -19007,7 +19307,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 188 values that do not change with the theme, all 87 icons, and all 169 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 172 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19037,9 +19337,9 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>188</b></button>
-<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>87</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>169</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>192</b></button>
+<button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>109</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>172</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19144,7 +19444,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">188 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">192 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -19279,6 +19579,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="value"><code>lt-duration-280</code><code>280ms</code></div>
 <div class="value"><code>lt-duration-300</code><code>300ms</code></div>
 <div class="value"><code>lt-duration-400</code><code>400ms</code></div>
+<div class="value"><code>lt-duration-560</code><code>560ms</code></div>
 <div class="value"><code>lt-duration-600</code><code>600ms</code></div>
 <div class="value"><code>lt-duration-700</code><code>700ms</code></div>
 <div class="value"><code>lt-duration-900</code><code>900ms</code></div>
@@ -19356,12 +19657,15 @@ body.leaf-paper .leaf-top-sheet-close {
 <h3>Fixed colors</h3><div class="wall wide">
 <div class="value"><code>lt-mask-opaque</code><code>#000</code></div>
 <div class="value"><code>lt-white</code><code>#ffffff</code></div>
+<div class="value"><code>lt-spectrum-white</code><code>#ffffff</code></div>
+<div class="value"><code>lt-spectrum-black</code><code>#000000</code></div>
 <div class="value"><code>lt-window-close</code><code>#e81123</code></div>
 <div class="value"><code>lt-window-close-foreground</code><code>#ffffff</code></div>
 <div class="value"><code>lt-checkbox-accent</code><code>#6e7681</code></div>
 </div>
 <h3>Fixed tints</h3><div class="wall wide">
 <div class="value"><code>lt-tint-recess</code><code>rgba(0, 0, 0, 0.16)</code></div>
+<div class="value"><code>lt-tint-sheen</code><code>rgba(255, 255, 255, 0.22)</code></div>
 <div class="value"><code>lt-tint-backdrop</code><code>rgba(0, 0, 0, 0.45)</code></div>
 <div class="value"><code>lt-grain-dot-strong</code><code>rgba(0, 0, 0, 0.55)</code></div>
 </div>
@@ -19377,7 +19681,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="icons" role="tabpanel" hidden>
-<p class="lead">87 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
+<p class="lead">109 icons, each under all 7 packs. A drawing takes the color of whatever it sits in, which is why they follow the theme; which drawing it is comes from the pack the family wears, and a pack with nothing for that job keeps the one on the left.</p>
 <div class="wall packs"><div class="glyph packs-head"><code>&nbsp;</code></div><div class="glyph packs-head"><code>leaftext</code></div><div class="glyph packs-head"><code>feather</code></div><div class="glyph packs-head"><code>lucide</code></div><div class="glyph packs-head"><code>tabler</code></div><div class="glyph packs-head"><code>remix</code></div><div class="glyph packs-head"><code>phosphor</code></div><div class="glyph packs-head"><code>heroicons</code></div></div>
 <div class="wall packs"><div class="glyph"><code>back-long</code></div><div class="glyph"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-back-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-back-long"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>forward-long</code></div><div class="glyph"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-forward-long"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-forward-long"></span></div></div>
@@ -19400,6 +19704,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>flash-reader</code></div><div class="glyph"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-flash-reader"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-flash-reader"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>read-aloud-on</code></div><div class="glyph"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-read-aloud-on"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-read-aloud-on"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>read-aloud-off</code></div><div class="glyph"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-read-aloud-off"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-read-aloud-off"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>pause</code></div><div class="glyph"><span class="lt-icon lt-icon-pause"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-pause"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-pause"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-pause"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-pause"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-pause"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-pause"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>play</code></div><div class="glyph"><span class="lt-icon lt-icon-play"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-play"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-play"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-play"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-play"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-play"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-play"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>skip-back</code></div><div class="glyph"><span class="lt-icon lt-icon-skip-back"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-skip-back"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-skip-back"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-skip-back"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-skip-back"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-skip-back"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-skip-back"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>skip-forward</code></div><div class="glyph"><span class="lt-icon lt-icon-skip-forward"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-skip-forward"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-skip-forward"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-skip-forward"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-skip-forward"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-skip-forward"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-skip-forward"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>wand</code></div><div class="glyph"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-wand"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-wand"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>cloud</code></div><div class="glyph"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-cloud"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-cloud"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>export</code></div><div class="glyph"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-export"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-export"></span></div></div>
@@ -19460,6 +19768,24 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>sort-descending</code></div><div class="glyph"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-sort-descending"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-sort-descending"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>trash</code></div><div class="glyph"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-trash"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-trash"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>copy</code></div><div class="glyph"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-copy"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-copy"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>cut</code></div><div class="glyph"><span class="lt-icon lt-icon-cut"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-cut"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-cut"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-cut"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-cut"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-cut"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-cut"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>paste</code></div><div class="glyph"><span class="lt-icon lt-icon-paste"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-paste"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-paste"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-paste"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-paste"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-paste"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-paste"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>rename</code></div><div class="glyph"><span class="lt-icon lt-icon-rename"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-rename"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-rename"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-rename"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-rename"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-rename"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-rename"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>duplicate</code></div><div class="glyph"><span class="lt-icon lt-icon-duplicate"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-duplicate"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-duplicate"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-duplicate"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-duplicate"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-duplicate"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-duplicate"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>show</code></div><div class="glyph"><span class="lt-icon lt-icon-show"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-show"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-show"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-show"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-show"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-show"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-show"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>hide</code></div><div class="glyph"><span class="lt-icon lt-icon-hide"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-hide"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-hide"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-hide"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-hide"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-hide"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-hide"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>reveal</code></div><div class="glyph"><span class="lt-icon lt-icon-reveal"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-reveal"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-reveal"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-reveal"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-reveal"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-reveal"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-reveal"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>properties</code></div><div class="glyph"><span class="lt-icon lt-icon-properties"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-properties"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-properties"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-properties"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-properties"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-properties"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-properties"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>open-outside</code></div><div class="glyph"><span class="lt-icon lt-icon-open-outside"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-open-outside"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-open-outside"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-open-outside"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-open-outside"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-open-outside"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-open-outside"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>mail</code></div><div class="glyph"><span class="lt-icon lt-icon-mail"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-mail"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-mail"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-mail"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-mail"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-mail"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-mail"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>bookmark-remove</code></div><div class="glyph"><span class="lt-icon lt-icon-bookmark-remove"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-bookmark-remove"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-bookmark-remove"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-bookmark-remove"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-bookmark-remove"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-bookmark-remove"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-bookmark-remove"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>new-folder</code></div><div class="glyph"><span class="lt-icon lt-icon-new-folder"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-new-folder"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-new-folder"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-new-folder"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-new-folder"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-new-folder"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-new-folder"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>row-above</code></div><div class="glyph"><span class="lt-icon lt-icon-row-above"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-row-above"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-row-above"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-row-above"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-row-above"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-row-above"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-row-above"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>row-below</code></div><div class="glyph"><span class="lt-icon lt-icon-row-below"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-row-below"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-row-below"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-row-below"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-row-below"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-row-below"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-row-below"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>column-left</code></div><div class="glyph"><span class="lt-icon lt-icon-column-left"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-column-left"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-column-left"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-column-left"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-column-left"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-column-left"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-column-left"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>column-right</code></div><div class="glyph"><span class="lt-icon lt-icon-column-right"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-column-right"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-column-right"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-column-right"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-column-right"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-column-right"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-column-right"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>math</code></div><div class="glyph"><span class="lt-icon lt-icon-math"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-math"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-math"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-math"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-math"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-math"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-math"></span></div></div>
+<div class="wall packs"><div class="glyph"><code>copy-path</code></div><div class="glyph"><span class="lt-icon lt-icon-copy-path"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-copy-path"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-copy-path"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-copy-path"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-copy-path"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-copy-path"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-copy-path"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>highlighter</code></div><div class="glyph"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-highlighter"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-highlighter"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>footnote</code></div><div class="glyph"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-footnote"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-footnote"></span></div></div>
 <div class="wall packs"><div class="glyph"><code>leaf</code></div><div class="glyph"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-leaf"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-leaf"></span></div></div>
@@ -19468,7 +19794,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">169 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">172 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -19586,6 +19912,14 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="document-body"><div class="note-card-grid note-card-grid-compact"><div class="note-card is-swatch-card" style="--note-card-swatch:#14b8a6"><h3>Teal</h3><p><code>#14b8a6</code></p></div><div class="note-card is-swatch-card" style="--note-card-swatch:#b45309"><h3>Amber</h3><p><code>#b45309 brand</code></p></div><div class="note-card is-swatch-card" style="--note-card-swatch:#f0a"><h3>Pink</h3><p><code>#f0a</code></p></div><div class="note-card"><h3>Not a swatch</h3><p>A color like <code>#3b82f6</code> inside a sentence stays words.</p></div></div></div></div>
 </section>
 <section class="part">
+<header><h3>Stylesheet color swatch</h3><code class="built">.color-swatch</code><span class="built">css_color.rs, before a stylesheet value that is one color and nothing else — the recognizer's own #rrggbbaa, never the file's bytes, and one literal color that does not swap with the appearance, unlike the theme card's</span></header>
+<div class="stage"><div class="document-body"><dl class="data-fields"><dt>--brand</dt><dd><span class="color-swatch" style="--swatch:#ff8800ff" aria-hidden="true"></span>#ff8800</dd><dt>color</dt><dd><span class="color-swatch" style="--swatch:#ffffffff" aria-hidden="true"></span>white</dd></dl></div></div>
+</section>
+<section class="part">
+<header><h3>Stylesheet specimen board</h3><code class="built">.css-specimen</code><span class="built">css.rs draws it over a stylesheet's rules and css-specimen.js paints it with them, scoped to the board</span></header>
+<div class="stage"><div class="document-body"><section class="css-specimen" aria-label="Specimen board"><h2>A heading, in the file’s own type</h2><p>A paragraph, at the size, color and leading this stylesheet asks for, with <a href="#">a link</a> in it.</p><p><button type="button" class="button btn">A button</button> <span class="tag badge">A tag</span></p><div class="card"><h3>A card</h3><p>Words on a card, inside its own box.</p></div></section></div></div>
+</section>
+<section class="part">
 <header><h3>Document card media</h3><code class="built">.note-card-media</code><span class="built">The note's own author, from a note-card-media wrapper around one Markdown picture in a picture card; decorate.js marks a picture that arrived with image-lane so it fills a 16:10 area cut from its top left and wears the picture corner, and a missing one keeps its own glyph</span></header>
 <div class="stage"><div class="document-body"><div class="note-card-grid note-card-grid-pictures"><div class="note-card"><h2>A title</h2><p>Words.</p><div class="note-card-media"><p class="image-lane"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='640' height='400'%3E%3Crect width='640' height='400' fill='%23b7c4b0'/%3E%3C/svg%3E" alt="A document open in Leaftext"><span class="image-lane-corner" style="opacity:1"><button type="button" class="image-sheet-open"><span class="lt-icon lt-icon-expand"></span></button><button type="button" class="image-export-open"><span class="lt-icon lt-icon-export"></span></button></span></p></div><div class="note-card-more"><p><a href="#">More →</a></p></div></div></div></div></div>
 </section>
@@ -19607,11 +19941,11 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Context menu</h3><code class="built">.context-menu</code><span class="built">context-menu.js</span></header>
-<div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item">Open</button><button type="button" class="context-menu-item is-danger">Delete</button></div></div>
+<div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item"><span class="lt-icon lt-icon-document context-menu-icon" aria-hidden="true"></span><span class="context-menu-label">Open</span></button><button type="button" class="context-menu-item"><span class="lt-icon lt-icon-favorite-off context-menu-icon" aria-hidden="true"></span><span class="context-menu-label">Favorite</span></button><button type="button" class="context-menu-item"><span class="lt-icon lt-icon-copy context-menu-icon" aria-hidden="true"></span><span class="context-menu-label">Copy</span></button><div class="context-menu-separator"></div><button type="button" class="context-menu-item is-danger"><span class="lt-icon lt-icon-trash context-menu-icon" aria-hidden="true"></span><span class="context-menu-label">Delete</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Context submenu</h3><code class="built">.context-menu-submenu</code><span class="built">context-menu.js</span></header>
-<div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item context-menu-parent" aria-haspopup="menu" aria-expanded="true">Math<span class="lt-icon lt-icon-chevron-down context-menu-arrow" aria-hidden="true"></span></button></div><div class="context-menu context-menu-submenu" style="position:static"><button type="button" class="context-menu-item">Sum</button></div></div>
+<div class="stage"><div class="context-menu" style="position:static"><button type="button" class="context-menu-item context-menu-parent" aria-haspopup="menu" aria-expanded="true"><span class="context-menu-icon" aria-hidden="true"></span><span class="context-menu-label">Math</span><span class="lt-icon lt-icon-chevron-down context-menu-arrow" aria-hidden="true"></span></button></div><div class="context-menu context-menu-submenu" style="position:static"><button type="button" class="context-menu-item"><span class="context-menu-icon" aria-hidden="true"></span><span class="context-menu-label">Sum</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Table formula picker</h3><code class="built">.table-formula-picker</code><span class="built">table-formula-picker.js</span></header>
@@ -19811,7 +20145,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </section>
 <section class="part">
 <header><h3>Shelf</h3><code class="built">.shelf</code><span class="built">site/shelf-layout.js lays arthurian/index.md out as a bookshelf, site/shelf.js picks, re-sorts and filters it, opens a picked book in the app's own bottom sheet on the window, and paints its six tones from the page's categorical scale, and only leaftext.com draws it</span></header>
-<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><label class="leaf-select shelf-filter-field"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine" data-tone="french" aria-pressed="true" style="width:45px;height:150px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:45px;height:273px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:28px;height:190px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:288px"><span class="shelf-spine-title">The Oldest Welsh Arthur Poems</span><span class="shelf-spine-lang">OW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div><div class="leaf-sheet shelf-sheet open" style="position:static" role="dialog" aria-label="Merlin"><div class="leaf-sheet-grip"></div><div class="shelf-sheet-body document-body leaf-scroll"><section class="shelf-book" data-tone="french"><header class="shelf-book-cover"><span class="shelf-book-code">OFr</span><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p></header><div class="shelf-book-pages"><div class="shelf-page"><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd><dt>Length</dt><dd>51,807 words of Old French<span class="shelf-why">Its established Old French text.</span></dd></dl></div></div></section></div></div><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
+<div class="stage"><div class="reader-layout" style="display:block;padding:16px"><article class="document-body shelf-layout" data-shelf-order="story"><section class="shelf-hero"><p class="shelf-eyebrow">The Arthurian shelf</p><h1 class="shelf-title">Pick a book off the shelf.</h1><p class="shelf-line">Every telling of the legend, standing where its story begins.</p></section><div class="shelf-sort" role="group" aria-label="Sort the shelf"><button type="button" class="shelf-sort-button" aria-pressed="true">Where the story happens</button><button type="button" class="shelf-sort-button" aria-pressed="false">When it was written</button></div><p class="shelf-sort-note">Story order places a book in the legend, not in history.</p><div class="shelf-find" role="search"><input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title"><label class="leaf-select shelf-filter-field"><select class="shelf-filter" aria-label="Tradition"><option>Every tradition</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label></div><div class="shelf-case"><div class="shelf-row"><div class="shelf-bay is-reached" data-tone="french"><span class="shelf-plate">Before Arthur</span><div class="shelf-books"><button type="button" class="shelf-spine is-turning" data-tone="french" aria-pressed="true" style="width:45px;height:150px"><span class="shelf-spine-title">Merlin</span><span class="shelf-spine-lang">OFr</span><span class="shelf-spine-cover" aria-hidden="true"><span class="shelf-spine-cover-title">Merlin</span><span class="shelf-spine-cover-by">Robert de Boron</span></span></button><button type="button" class="shelf-spine is-planned is-long" data-tone="latin" aria-pressed="false" style="width:45px;height:273px"><span class="shelf-spine-title">The History of the Kings of Britain</span><span class="shelf-spine-tag">about 1136</span><span class="shelf-spine-lang">Lat</span></button></div></div><div class="shelf-bay"><span class="shelf-plate">The Roman war</span><span class="shelf-empty">No book yet</span></div><div class="shelf-bay is-beside"><span class="shelf-plate">Beside the story</span><div class="shelf-books"><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:28px;height:190px"><span class="shelf-spine-title">The Welsh Triads</span><span class="shelf-spine-lang">MW</span></button><button type="button" class="shelf-spine is-planned" data-tone="welsh" aria-pressed="false" style="width:26px;height:288px"><span class="shelf-spine-title">The Oldest Welsh Arthur Poems</span><span class="shelf-spine-lang">OW</span></button></div></div></div></div><div class="shelf-key"><span data-tone="latin"><i></i>Latin</span><span data-tone="french"><i></i>French</span><span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div><div class="leaf-sheet shelf-sheet open" style="position:static" role="dialog" aria-label="Merlin"><div class="leaf-sheet-grip"></div><div class="shelf-sheet-body document-body leaf-scroll"><section class="shelf-book" data-tone="french"><header class="shelf-book-cover"><span class="shelf-book-code">OFr</span><h2 class="shelf-book-title">Merlin</h2><p class="shelf-book-by">Robert de Boron</p></header><div class="shelf-book-pages"><div class="shelf-page"><p class="shelf-book-premise">The devils plan a prophet of their own.</p><p><a class="leaf-md-button" href="#">Read Merlin</a></p></div><div class="shelf-page shelf-page-facts"><dl class="shelf-facts"><dt>Story</dt><dd><div class="shelf-parts"><i class="is-on"></i><i class="is-on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>Before Arthur to Merlin, Uther and Arthur&#39;s birth<span class="shelf-why">Its published headings.</span></dd><dt>Written</dt><dd>c. 1200–1210</dd><dt>Length</dt><dd>51,807 words of Old French<span class="shelf-why">Its established Old French text.</span></dd></dl></div></div></section></div></div><details class="shelf-list"><summary>Every book as a list</summary></details></article></div></div>
 </section>
 <section class="part">
 <header><h3>Dotted leaf</h3><code class="built">.dotted-leaf</code><span class="built">scripts/bundle-dotted-leaf.mjs makes this markup for the website and Home</span></header>
@@ -19858,8 +20192,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="find-bar" style="position:static"><div class="find-row"><span class="find-field"><button type="button" class="find-scope"><span class="find-scope-label">This file</span><span class="find-scope-caret" aria-hidden="true">▾</span></button><input class="find-input" type="text" placeholder="Find" value="stage"><span class="find-count">3 of 41</span></span><span class="find-flags"><button type="button" class="find-flag icon-button" aria-pressed="true">Aa</button><button type="button" class="find-flag icon-button">ab&#124;</button><button type="button" class="find-flag icon-button">.*</button><button type="button" class="find-flag icon-button"><span class="lt-icon lt-icon-text"></span></button></span><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down find-step-back"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-chevron-down"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-select-all"></span></button><button type="button" class="find-step icon-button" aria-pressed="true"><span class="lt-icon lt-icon-replace"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div><div class="find-row"><span class="find-field"><input class="find-input" type="text" placeholder="Replace with"></span><button type="button" class="find-action icon-button">Replace</button><button type="button" class="find-action icon-button">All</button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Read aloud bar</h3><code class="built">.read-aloud-bar</code><span class="built">app-shell.html, driven by read-aloud.js while the page is read, in the find bar's place and wearing its classes</span></header>
-<div class="stage"><div class="find-bar read-aloud-bar" style="position:static"><div class="find-row"><label class="reader-subselect leaf-select"><select aria-label="Voice"><option>System</option><option selected>David</option><option>Zira</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><label class="reader-subselect leaf-select"><select aria-label="Speed"><option>0.75×</option><option selected>1×</option><option>1.25×</option><option>1.5×</option><option>2×</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div></div></div>
+<header><h3>Read aloud bar</h3><code class="built">.read-aloud-bar</code><span class="built">app-shell.html, driven by read-aloud.js while the page is read — back a sentence, a pause that turns into a play while the reading is held, forward a sentence, then the voice, the speed and the cross — in the find bar's place and wearing its classes</span></header>
+<div class="stage"><div class="find-bar read-aloud-bar" style="position:static"><div class="find-row"><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-skip-back"></span></button><button type="button" class="find-step icon-button" aria-pressed="false"><span class="lt-icon lt-icon-pause"></span></button><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-skip-forward"></span></button><label class="reader-subselect leaf-select"><select aria-label="Voice"><option>System</option><option selected>David</option><option>Zira</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><label class="reader-subselect leaf-select"><select aria-label="Speed"><option>0.75×</option><option selected>1×</option><option>1.25×</option><option>1.5×</option><option>2×</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label><button type="button" class="find-step icon-button"><span class="lt-icon lt-icon-close"></span></button></div></div></div>
 </section>
 <section class="part">
 <header><h3>ElevenLabs sheet</h3><code class="built">.elevenlabs-sheet</code><span class="built">app-shell.html, opened from the read aloud voice list</span></header>
@@ -19890,8 +20224,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="reader-graph" style="height:120px"><p class="reader-graph-legend"><span class="graph-key graph-key-document"></span>your documents<span class="graph-key graph-key-external"></span>web addresses</p></div></div>
 </section>
 <section class="part">
-<header><h3>Flow canvas</h3><code class="built">.flow</code><span class="built">flow-canvas.js</span></header>
-<div class="stage"><div class="flow-canvas" style="height:88px"><p class="flow-hint">Double-click to add a box</p></div></div>
+<header><h3>Flow canvas</h3><code class="built">.flow</code><span class="built">flow-canvas.js, with flow-menu.js drawing its right-click menu</span></header>
+<div class="stage"><div class="flow-canvas" style="height:88px"><p class="flow-hint">Double-click to add a box</p></div><div class="flow-menu" role="menu" style="position:static"><button type="button" class="flow-menu-item" role="menuitem"><span class="lt-icon lt-icon-rename context-menu-icon" aria-hidden="true"></span><span>Rename</span></button><button type="button" class="flow-menu-item" role="menuitem"><span class="context-menu-icon" aria-hidden="true"></span><span>Move it into Billing</span></button><button type="button" class="flow-menu-item" role="menuitem"><span class="lt-icon lt-icon-trash context-menu-icon" aria-hidden="true"></span><span>Delete box</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>Sequence timeline selection</h3><code class="built">.sequence-hit</code><span class="built">sequence-diagram-timeline.js, on a Mermaid part mapped to one source statement</span></header>
@@ -19902,7 +20236,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="flow-picker-head" style="max-width:520px"><div class="flow-form"><label class="flow-form-row"><span class="flow-form-label">Name</span><input class="flow-field" type="text" value="Read the file"></label><label class="flow-form-row"><span class="flow-form-label">Link</span><input class="flow-field" type="text" placeholder="Where clicking this box goes"></label><label class="flow-form-row"><span class="flow-form-label">Icon</span><input class="flow-field" type="text" placeholder="leaf:back"></label><label class="flow-form-row"><span class="flow-form-label">Picture</span><input class="flow-field" type="text" placeholder="A picture beside this document, or its address"></label></div></div></div>
 </section>
 <section class="part">
-<header><h3>Chart rows</h3><code class="built">.chart</code><span class="built">data-chart-rows.js, in the diagram sheet's text pane while a pie, xy, sankey, journey, quadrant, packet, radar or treemap chart reads as rows: the chart's setting lines as chart-setting fields above, a label column, one column per value, a remove button per row, and Add row with Add section for a journey and Add axis for a radar; a numeric axis shows each point's place instead of a label field, chart-row-placed gives a packet field the range it covers before its label, chart-row-section is a journey section's name across the value columns, chart-row-nested indents a treemap name by its level, a treemap section's value is disabled, and is-invalid marks a field the chart cannot take</span></header>
+<header><h3>Chart rows</h3><code class="built">.chart</code><span class="built">data-chart-rows.js, in the diagram sheet's text pane while a pie, xy, sankey, journey, quadrant, packet, radar, treemap or gantt chart reads as rows: the chart's setting lines as chart-setting fields above, a label column, one column per value, a remove button per row, and Add row — Add task for a gantt, under the row last typed in — with Add section for a journey or a gantt and Add axis for a radar; a numeric axis shows each point's place instead of a label field, chart-row-placed gives a packet field the range it covers before its label, chart-row-section is a journey or gantt section's name across the value columns, chart-row-dated gives a gantt's start the room a date takes, a gantt's Id is disabled until its task has a start and its × while another task names it, chart-row-nested indents a treemap name by its level, a treemap section's value is disabled, and is-invalid marks a field the chart cannot take</span></header>
 <div class="stage"><div class="chart-rows" style="max-width:340px;--chart-series:2"><div class="chart-rows-settings"><label class="chart-setting"><span>Title</span><input class="flow-field" type="text" value="My working day"></label></div><div class="chart-rows-head"><span>Step</span><span>Score</span><span>Who</span></div><div class="chart-row"><input class="flow-field chart-row-section" type="text" value="Go to work"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row"><input class="flow-field chart-row-nested" style="--chart-level:2" type="text" value="Make tea"><input class="flow-field" type="text" value="5"><input class="flow-field" type="text" value="Me"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row"><input class="flow-field" type="text" value="Pears"><input class="flow-field is-invalid" type="text" value="-3"><input class="flow-field" type="text" value="" disabled><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-row chart-row-placed" style="--chart-series:1"><span class="chart-row-place">0–15</span><input class="flow-field" type="text" value="Source Port"><input class="flow-field" type="text" value="16"><button type="button" class="chart-row-remove" aria-label="Remove this row"><span class="lt-icon lt-icon-close"></span></button></div><div class="chart-rows-actions"><button type="button" class="chart-rows-add">Add row</button><button type="button" class="chart-rows-add-section">Add section</button><button type="button" class="chart-rows-add-axis">Add axis</button></div></div></div>
 </section>
 <section class="part">
@@ -19914,8 +20248,12 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="flow-picker-body" style="max-width:520px;position:relative"><div class="flow-chosen-count">3 chosen</div><button type="button" class="flow-action">Group them</button><div class="flow-marquee" style="position:static;width:120px;height:40px"></div></div></div>
 </section>
 <section class="part">
+<header><h3>Theme color bar</h3><code class="built">.theme-spectrum</code><span class="built">app-shell.html, ticks and gradient drawn by theme.js from the cards showing — white sets Light, black sets Dark, each family at its own main color between</span></header>
+<div class="stage"><div class="theme-spectrum-row" style="height:220px"><div class="theme-spectrum" role="slider" style="--theme-spectrum-fill:linear-gradient(var(--lt-spectrum-white) 0%, var(--lt-spectrum-white) 20%, #d81e28 30%, #f0b400 50%, #086ddd 70%, var(--lt-spectrum-black) 80%, var(--lt-spectrum-black) 100%)"><span class="theme-spectrum-tick" style="top:30%"></span><span class="theme-spectrum-tick" style="top:50%"></span><span class="theme-spectrum-tick" style="top:70%"></span><span class="theme-spectrum-thumb" style="top:50%"></span></div></div></div>
+</section>
+<section class="part">
 <header><h3>Theme card</h3><code class="built">.theme-item</code><span class="built">theme.js, lib.rs</span></header>
-<div class="stage"><ul class="theme-sheet-grid" style="max-width:320px"><li><button type="button" class="theme-item" aria-pressed="true"><span class="theme-item-name">Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span></button></li><li><button type="button" class="theme-item is-locked" aria-pressed="false"><span class="theme-item-name">Woad</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span><span class="theme-item-price">8 seeds in the Grove</span></button></li></ul></div>
+<div class="stage"><ul class="theme-sheet-grid" style="max-width:320px"><li><button type="button" class="theme-item" aria-pressed="true"><span class="theme-item-name">Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span></button></li><li><button type="button" class="theme-item is-locked" aria-pressed="false"><span class="theme-item-name">Woad</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span><span class="theme-item-price">8 seeds in the Grove</span></button></li><li><button type="button" class="theme-item theme-item-random is-active" aria-pressed="true"><span class="theme-item-name">Random</span><span class="theme-item-random-worn">Wearing Fern</span><span class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="--sw-light:var(--lt-primary);--sw-dark:var(--lt-primary)"></span><span class="theme-swatch" style="--sw-light:var(--lt-accent);--sw-dark:var(--lt-accent)"></span><span class="theme-swatch" style="--sw-light:var(--lt-markdown-background);--sw-dark:var(--lt-markdown-background)"></span></span></button></li></ul></div>
 </section>
 <section class="part">
 <header><h3>Update bell</h3><code class="built">.update</code><span class="built">updater.js, app-shell.html</span></header>

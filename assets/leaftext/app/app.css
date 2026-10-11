@@ -10126,6 +10126,13 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   overflow-wrap: anywhere;
 }
 
+.document-body .css-specimen {
+  margin: var(--type-spacing) 0;
+  padding: var(--lt-space-12) var(--lt-space-14);
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+}
+
 .document-body .color-swatch {
   display: inline-block;
   width: 0.8em;
@@ -14902,6 +14909,15 @@ p.shelf-line {
     border-color: var(--spine);
   }
 }
+
+@media (hover: hover) {
+  .shelf-spine:hover {
+    background: var(--spine-round), var(--spine);
+  }
+  .shelf-spine.is-planned:hover {
+    background: var(--spine-round);
+  }
+}
 .shelf-spine:focus-visible {
   outline: var(--lt-stroke-2) solid var(--lt-focus-ring);
   outline-offset: var(--lt-space-2);
@@ -18056,6 +18072,13 @@ h2.shelf-book-title {
     outline: none;
   }
 }
+
+.flow-menu-item .context-menu-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  color: var(--lt-muted-foreground);
+}
 .flow-menu-item .flow-chip {
   flex: none;
   width: 34px;
@@ -18281,6 +18304,10 @@ h2.shelf-book-title {
 
 .chart-row-placed {
   grid-template-columns: 64px minmax(0, 1.4fr) repeat(var(--chart-series, 1), minmax(0, 1fr)) 28px;
+}
+
+.chart-row-dated {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1.5fr) minmax(0, 0.7fr) 28px;
 }
 
 .chart-row-section {

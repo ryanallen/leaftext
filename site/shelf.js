@@ -2,10 +2,10 @@
 // ---------------------------------------------------------------------------
 // What moves on the Arthurian shelf once `shelf-layout.js` has laid it out: picking a book off it by pointer or keyboard, the three orders it stands in, search and the three filters, the address that holds the order and the picked book so Back and Forward bring both back, and the six tones painted from the theme in force and painted again whenever the reader changes it.
 //
-// `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet moves a lifted spine, and does not under reduced motion, and the page's own `openSheet`, `closeSheet` and `makeSheetDraggable` move the sheet the picked book opens in.
+// `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet lifts a picked spine and turns it to its cover, and does neither under reduced motion; the shelf only waits on the turn before it opens the book, and the page's own `openSheet`, `closeSheet` and `makeSheetDraggable` move the sheet the picked book opens in.
 // ---------------------------------------------------------------------------
 
-import { baysFor, bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, reachedParts } from './shelf-layout.js';
+import { baysFor, bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, spineCoverMarkup, reachedParts } from './shelf-layout.js';
 
 const ORDER_KEYS = SHELF_ORDERS.map((order) => order.key);
 // The app's own bottom sheet, as the glossary draws it: its shadow, its grip, its close cross and a body the open book is drawn into.
@@ -217,7 +217,10 @@ export function installShelf(root, data, env = globalThis) {
     sheet.setAttribute('aria-label', book.title);
     if (sheet.hidden || !sheet.classList.contains('open')) openBook();
   };
+  // The wait of a book still turning, dropped by anything that draws the shelf or the book again.
+  let settleTurn = null;
   const drawAll = (focus = '') => {
+    if (settleTurn) settleTurn(false);
     drawSort();
     drawShelf(focus);
     drawBook();
@@ -231,10 +234,44 @@ export function installShelf(root, data, env = globalThis) {
     history.pushState(entry, '', `${view.location.pathname || ''}${view.location.search || ''}${hash}`);
   };
 
+  // A book picked off the shelf turns to its cover before its sheet opens. How long it turns is read off the spine, so reduced motion, which stops the animation, opens the book at once; a turn the browser never finishes still opens it once that length has passed.
+  const turn = (book) => {
+    if (settleTurn) settleTurn(false);
+    const spine = root.querySelector(`.shelf-spine[data-book="${book}"]`);
+    const shown = data.books.find((one) => one.book === book);
+    if (!spine || !shown || typeof view.getComputedStyle !== 'function') return drawBook();
+    const holder = doc.createElement('div');
+    holder.innerHTML = spineCoverMarkup(shown);
+    const cover = holder.firstElementChild || holder.children[0];
+    spine.appendChild(cover);
+    spine.classList.add('is-turning');
+    const seconds = parseFloat(view.getComputedStyle(spine).animationDuration) || 0;
+    let timer = null;
+    const settle = (open = true) => {
+      if (settleTurn !== settle) return;
+      settleTurn = null;
+      spine.removeEventListener('animationend', onEnd);
+      if (timer != null) (view.clearTimeout || clearTimeout)(timer);
+      spine.classList.remove('is-turning');
+      cover.remove();
+      if (open) drawBook();
+    };
+    const onEnd = (event) => {
+      if (!event || event.target === spine) settle();
+    };
+    settleTurn = settle;
+    if (seconds <= 0) return settle();
+    spine.addEventListener('animationend', onEnd);
+    timer = (view.setTimeout || setTimeout)(() => settle(), seconds * 1000);
+  };
   const pick = (book) => {
     state.picked = state.picked === book ? '' : book;
     markPick(book);
-    drawBook();
+    if (state.picked) turn(state.picked);
+    else {
+      if (settleTurn) settleTurn(false);
+      drawBook();
+    }
     writeAddress();
   };
   // The cross, Escape, the backdrop and a drag down all put the book back: the pick goes, the address says so, and the keyboard is back on the spine it came from.
@@ -328,6 +365,7 @@ export function installShelf(root, data, env = globalThis) {
     state,
     sheet,
     stop() {
+      if (settleTurn) settleTurn(false);
       doc.removeEventListener('keydown', onSheetKey);
       sheet.remove();
       backdrop.remove();

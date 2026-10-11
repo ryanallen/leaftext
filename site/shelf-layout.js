@@ -148,6 +148,11 @@ export function spineMarkup(book, { order = 'story', picked = '' } = {}) {
   ].join('');
 }
 
+/** The cover a picked spine turns to, laid on it only for the length of its turn: its title and its author. */
+export function spineCoverMarkup(book) {
+  return `<span class="shelf-spine-cover" aria-hidden="true"><span class="shelf-spine-cover-title">${escaped(book.title)}</span><span class="shelf-spine-cover-by">${escaped(book.author)}</span></span>`;
+}
+
 /** The shelf's bays for one order, with the bays a picked book's story reaches laid under a ledge in its tone. */
 export function shelfMarkup(data, { order = 'story', picked = '', shown = null } = {}) {
   const book = data.books.find((one) => one.book === picked);

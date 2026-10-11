@@ -7805,13 +7805,13 @@ if (flowCanvas) {
     if (spot.kind === 'canvas') {
       if (conceptGrammar()) return;
       if (flowSession.grammar === 'state') {
-        openFlowMenuWith(event.clientX, event.clientY, [{ label: 'Add a state here', run: () => addFlowNode('rect', {}) }]);
+        openFlowMenuWith(event.clientX, event.clientY, [{ icon: 'new', label: 'Add a state here', run: () => addFlowNode('rect', {}) }]);
         return;
       }
       const where = flowSlotAt(flowPointIn(event));
       openFlowMenuWith(event.clientX, event.clientY, [
-        { label: 'Add a box here', run: () => openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named })) },
-        { label: 'Diagram settings', hint: 'Its title, curve, look and what a screen reader says', run: () => selectFlow('chart', null) },
+        { icon: 'new', label: 'Add a box here', run: () => openFlowAddPicker((shape, named) => addFlowNode(shape, { before: where, text: named })) },
+        { icon: 'settings', label: 'Diagram settings', hint: 'Its title, curve, look and what a screen reader says', run: () => selectFlow('chart', null) },
       ]);
       return;
     }
@@ -7830,38 +7830,41 @@ function flowMenuItems(spot) {
   const graph = flowSession.graph;
   const concept = conceptGrammar();
   if (concept) {
-    const items = !concept.renamable || concept.renamable(graph, spot) ? [{ label: 'Rename', run: () => openFlowLabelBox(spot.kind, spot.id) }] : [];
-    if (spot.kind === 'group' && concept.name === 'kanban') items.push({ label: 'Add a card', run: () => addConceptPart('group', spot.id) });
-    if (spot.kind === 'node' && !concept.connect && concept.budOn(graph, spot.id)) items.push({ label: concept.budTitle, run: () => addConceptPart('node', spot.id) });
-    if (concept.removable(graph, spot)) items.push({ label: 'Delete', run: deleteFlowSelection });
+    const items = !concept.renamable || concept.renamable(graph, spot) ? [{ icon: 'rename', label: 'Rename', run: () => openFlowLabelBox(spot.kind, spot.id) }] : [];
+    if (spot.kind === 'group' && concept.name === 'kanban') items.push({ icon: 'new', label: 'Add a card', run: () => addConceptPart('group', spot.id) });
+    if (spot.kind === 'node' && !concept.connect && concept.budOn(graph, spot.id)) items.push({ icon: 'new', label: concept.budTitle, run: () => addConceptPart('node', spot.id) });
+    if (concept.removable(graph, spot)) items.push({ icon: 'trash', label: 'Delete', run: deleteFlowSelection });
     return items;
   }
   if (flowSession.grammar === 'state') {
     if (spot.kind === 'node') return [
-      { label: 'Rename state', run: () => openFlowLabelBox('node', spot.id) },
-      { label: 'Add state after this', run: () => addFlowNode('rect', { connectFrom: spot.id }) },
-      { label: 'Delete state', run: deleteFlowSelection },
+      { icon: 'rename', label: 'Rename state', run: () => openFlowLabelBox('node', spot.id) },
+      { icon: 'new', label: 'Add state after this', run: () => addFlowNode('rect', { connectFrom: spot.id }) },
+      { icon: 'trash', label: 'Delete state', run: deleteFlowSelection },
     ];
-    if (spot.kind === 'group') return [{ label: 'Rename composite state', run: () => openFlowLabelBox('group', spot.id) }];
+    if (spot.kind === 'group') return [{ icon: 'rename', label: 'Rename composite state', run: () => openFlowLabelBox('group', spot.id) }];
     if (spot.kind === 'edge') return [
-      { label: 'Label transition', run: () => openFlowLabelBox('edge', spot.id) },
-      { label: 'Delete transition', run: deleteFlowSelection },
+      { icon: 'rename', label: 'Label transition', run: () => openFlowLabelBox('edge', spot.id) },
+      { icon: 'trash', label: 'Delete transition', run: deleteFlowSelection },
     ];
     return [];
   }
   if (spot.kind === 'node') {
     return [
-      { label: 'Rename', run: () => openFlowLabelBox('node', spot.id) },
+      { icon: 'rename', label: 'Rename', run: () => openFlowLabelBox('node', spot.id) },
       { label: 'Change its id', hint: 'The name every arrow in the text uses for it', run: () => openFlowLabelBox('id', spot.id) },
       {
+        icon: 'new',
         label: 'Add box after this',
         run: () => addFlowNode(flowNewNodeShape(graph, spot.id), { connectFrom: spot.id }),
       },
       {
+        icon: 'new',
         label: 'Add box before this',
         run: () => addFlowNode(flowNewNodeShape(graph, spot.id), { connectTo: spot.id }),
       },
       {
+        icon: 'duplicate',
         label: 'Duplicate',
         run: () => {
           const copy = flowDuplicateNode(graph, spot.id);
@@ -7877,13 +7880,14 @@ function flowMenuItems(spot) {
         },
       },
       ...flowGroupItems(graph, spot.id),
-      { label: 'Delete box', run: deleteFlowSelection },
+      { icon: 'trash', label: 'Delete box', run: deleteFlowSelection },
     ];
   }
   if (spot.kind === 'group') {
     return [
-      { label: 'Rename the group', run: () => openFlowLabelBox('group', spot.id) },
+      { icon: 'rename', label: 'Rename the group', run: () => openFlowLabelBox('group', spot.id) },
       {
+        icon: 'new',
         label: 'Add a box in it',
         run: () => openFlowAddPicker((shape, named) => addFlowNode(shape, { group: spot.id, text: named })),
       },
@@ -7892,8 +7896,9 @@ function flowMenuItems(spot) {
   }
   if (spot.kind === 'edge') {
     return [
-      { label: 'Label this line', run: () => openFlowLabelBox('edge', spot.id) },
+      { icon: 'rename', label: 'Label this line', run: () => openFlowLabelBox('edge', spot.id) },
       {
+        icon: 'new',
         label: 'Add another line',
         hint: 'A second line between the same two boxes',
         run: () => {
@@ -7909,7 +7914,7 @@ function flowMenuItems(spot) {
           flowGraphChanged();
         },
       },
-      { label: 'Delete line', run: deleteFlowSelection },
+      { icon: 'trash', label: 'Delete line', run: deleteFlowSelection },
     ];
   }
   return [];
@@ -7952,7 +7957,7 @@ function flowGroupItems(graph, id) {
         flowGraphChanged();
       },
     });
-    items.push({ label: 'Rename the group', run: () => openFlowLabelBox('group', node.group) });
+    items.push({ icon: 'rename', label: 'Rename the group', run: () => openFlowLabelBox('group', node.group) });
     items.push({
       label: 'Remove the group, keep the boxes',
       run: () => {
@@ -7971,6 +7976,8 @@ function openFlowMenu(x, y, spot) {
 
 function openFlowMenuWith(x, y, items, host) {
   closeFlowMenu();
+  
+  const drawn = items.some((item) => item.icon);
   const menu = document.createElement('div');
   menu.className = 'flow-menu';
   menu.setAttribute('role', 'menu');
@@ -7988,6 +7995,12 @@ function openFlowMenuWith(x, y, items, host) {
     button.className = 'flow-menu-item';
     button.setAttribute('role', 'menuitem');
     if (item.hint) button.title = item.hint;
+    if (drawn) {
+      const icon = document.createElement('span');
+      icon.className = item.icon ? `lt-icon lt-icon-${item.icon} context-menu-icon` : 'context-menu-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      button.appendChild(icon);
+    }
     const text = document.createElement('span');
     text.textContent = item.label;
     button.appendChild(text);
@@ -9531,7 +9544,7 @@ function buildChartRows(chart) {
   if (chart.settings && chart.settings.length) chartRowsHost.appendChild(chartSettingsElement(chart));
   const placed = chart.kind === 'packet';
   const head = document.createElement('div');
-  head.className = placed ? 'chart-rows-head chart-row-placed' : 'chart-rows-head';
+  head.className = placed ? 'chart-rows-head chart-row-placed' : chart.kind === 'gantt' ? 'chart-rows-head chart-row-dated' : 'chart-rows-head';
   for (const name of placed ? ['Bits', ...columns] : columns) {
     const cell = document.createElement('span');
     cell.textContent = name;
@@ -9578,7 +9591,7 @@ function chartSettingsElement(chart) {
 
 function chartRowElement(chart, row, index) {
   const line = document.createElement('div');
-  line.className = 'chart-row';
+  line.className = chart.kind === 'gantt' && !row.section ? 'chart-row chart-row-dated' : 'chart-row';
   
   line.chartFrom = index;
   const names = chartColumns(chart);
@@ -20714,7 +20727,7 @@ if (themeSpectrum) {
     if (event.button !== undefined && event.button !== 0) return;
     event.preventDefault();
     themeSpectrum.focus({ preventScroll: true });
-    themeSpectrum.setPointerCapture(event.pointerId);
+    leafHoldPointer(themeSpectrum, event.pointerId);
     themeSpectrumDrag = { from: window.leafTheme.getFamily() };
     moveThemeSpectrum(themeSpectrumSlotAt(event.clientY), false);
   });
@@ -31010,8 +31023,8 @@ document.addEventListener('pointercancel', () => endSlideBoxDrag(false));
 
 
 const SLIDE_MENU_ITEMS = [
-  { action: 'duplicate', label: 'Duplicate slide' },
-  { action: 'delete', label: 'Delete slide', danger: true },
+  { action: 'duplicate', icon: 'duplicate', label: 'Duplicate slide' },
+  { action: 'delete', icon: 'trash', label: 'Delete slide', danger: true },
 ];
 const slideMenu = document.createElement('div');
 slideMenu.className = 'context-menu';
@@ -31032,11 +31045,7 @@ function openSlideMenu(stage, x, y) {
   if (slide < 0) return;
   slideMenu.textContent = '';
   for (const entry of SLIDE_MENU_ITEMS) {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'context-menu-item' + (entry.danger ? ' is-danger' : '');
-    item.setAttribute('role', 'menuitem');
-    item.textContent = entry.label;
+    const item = contextMenuRow(entry);
     item.addEventListener('click', (event) => {
       event.stopPropagation();
       hideSlideMenu();
@@ -41201,6 +41210,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
     bindImageSheet();
     decorateBlockquoteLines();
     decorateNoteCards();
+    paintCssSpecimens();
     markLinksThatGoNowhere();
     publishDocumentOutline();
     decorateCodeBlocks();
@@ -46465,6 +46475,92 @@ function applyFrontmatterAsks(root) {
   if (unread && window.leafShowNotice) window.leafShowNotice(`Some of this note's fields were not read: ${unread}`);
 }
 
+
+
+
+let cssSpecimenSheet = null;
+
+
+const CSS_SPECIMEN_FETCHES = /url\(|image-set\(|image\(|src\(|\\/i;
+
+
+const CSS_SPECIMEN_GROUPS = new Set(['CSSMediaRule', 'CSSSupportsRule', 'CSSContainerRule']);
+
+
+const CSS_SPECIMEN_PAGE_ROOTS = /^\s*(?::root|html|body)\s*(?:,\s*(?::root|html|body)\s*)*$/i;
+
+
+const CSS_SPECIMEN_BOARD = '@scope (.css-specimen) { :scope:scope:scope:scope {} }';
+
+function cssSpecimenKind(rule) {
+  return rule && rule.constructor ? rule.constructor.name : '';
+}
+
+
+function cssSpecimenClean(rule) {
+  const kind = cssSpecimenKind(rule);
+  if (kind === 'CSSStyleRule') {
+    const style = rule.style;
+    for (let i = style.length - 1; i >= 0; i -= 1) {
+      const name = style[i];
+      if (CSS_SPECIMEN_FETCHES.test(name) || CSS_SPECIMEN_FETCHES.test(style.getPropertyValue(name))) style.removeProperty(name);
+    }
+  } else if (!CSS_SPECIMEN_GROUPS.has(kind)) {
+    return false;
+  }
+  const nested = rule.cssRules;
+  if (nested) {
+    for (let i = nested.length - 1; i >= 0; i -= 1) {
+      if (!cssSpecimenClean(nested[i])) rule.deleteRule(i);
+    }
+  }
+  return true;
+}
+
+
+function buildCssSpecimenSheet(source) {
+  const read = new CSSStyleSheet();
+  
+  read.replaceSync(source);
+  const sheet = new CSSStyleSheet();
+  sheet.insertRule(CSS_SPECIMEN_BOARD);
+  const board = sheet.cssRules[0].cssRules[0];
+  for (const rule of Array.from(read.cssRules)) {
+    if (!cssSpecimenClean(rule)) continue;
+    try {
+      if (cssSpecimenKind(rule) === 'CSSStyleRule' && CSS_SPECIMEN_PAGE_ROOTS.test(rule.selectorText)) {
+        for (const name of Array.from(rule.style)) {
+          board.style.setProperty(name, rule.style.getPropertyValue(name), rule.style.getPropertyPriority(name));
+        }
+        for (const inner of Array.from(rule.cssRules || [])) board.insertRule(inner.cssText, board.cssRules.length);
+      } else {
+        board.insertRule(rule.cssText, board.cssRules.length);
+      }
+    } catch (_) {
+      
+    }
+  }
+  return sheet;
+}
+
+
+function paintCssSpecimens(root = app) {
+  const board = root.querySelector('.document-body .css-specimen');
+  const source = board && board.querySelector('template.css-specimen-source');
+  let sheet = null;
+  if (source && typeof CSSStyleSheet === 'function' && typeof CSSScopeRule === 'function' && document.adoptedStyleSheets) {
+    try {
+      sheet = buildCssSpecimenSheet(source.content.textContent);
+    } catch (_) {
+      sheet = null;
+    }
+  }
+  if (!sheet && !cssSpecimenSheet) return;
+  const kept = Array.from(document.adoptedStyleSheets || []).filter((one) => one !== cssSpecimenSheet);
+  cssSpecimenSheet = sheet;
+  document.adoptedStyleSheets = sheet ? [...kept, sheet] : kept;
+}
+
 window.documentTabPlaces ||= new Map();
 window.documentTabLayouts ||= new WeakMap();
 window.pendingDocumentTabRename ||= new Map();
@@ -46581,12 +46677,8 @@ function showDocumentTabMenu(at, x, y, tabs = window.drawnDocumentTabs) {
     window.documentTabMenu = menu;
   }
   menu.replaceChildren();
-  for (const [label, action] of [['Rename tab', () => renameDocumentTab(at, tabs)], ['Remove tab', () => removeDocumentTab(at, tabs)]]) {
-    const item = document.createElement('button');
-    item.type = 'button';
-    item.className = 'context-menu-item';
-    item.setAttribute('role', 'menuitem');
-    item.textContent = label;
+  for (const [entry, action] of [[{ icon: 'rename', label: 'Rename tab' }, () => renameDocumentTab(at, tabs)], [{ icon: 'trash', label: 'Remove tab' }, () => removeDocumentTab(at, tabs)]]) {
+    const item = contextMenuRow(entry);
     item.addEventListener('click', () => { menu.hidden = true; action(); });
     menu.appendChild(item);
   }

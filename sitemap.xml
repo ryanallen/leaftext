@@ -2,15 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://leaftext.com/</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/01-rendering.html</loc>
-    <lastmod>2026-10-09</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/02-navigation.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/03-library.html</loc>
@@ -22,15 +22,15 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/05-settings.html</loc>
-    <lastmod>2026-10-09</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/06-themes.html</loc>
-    <lastmod>2026-10-05</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/07-editing.html</loc>
-    <lastmod>2026-10-07</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/01-features/08-relational-tables.html</loc>
@@ -50,11 +50,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/02-installation.html</loc>
-    <lastmod>2026-10-09</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/03-quickstart.html</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/04-help.html</loc>
@@ -78,11 +78,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/05-library-search-and-sync.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/06-comparison-chart/06-look-and-feel.html</loc>
@@ -114,11 +114,11 @@
   </url>
   <url>
     <loc>https://leaftext.com/docs/GLOSSARY.html</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/docs/README.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/annales-cambriae/GLOSSARY.html</loc>
@@ -142,7 +142,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/annales-cambriae/made-with.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/annales-cambriae/uk/GLOSSARY.html</loc>
@@ -174,7 +174,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/historia-brittonum/made-with.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/historia-brittonum/uk/GLOSSARY.html</loc>
@@ -194,7 +194,7 @@
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/merlin/made-with.html</loc>
-    <lastmod>2026-10-10</lastmod>
+    <lastmod>2026-10-11</lastmod>
   </url>
   <url>
     <loc>https://leaftext.com/arthurian/merlin/merlin-how-it-was-made.html</loc>

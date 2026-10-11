@@ -23,6 +23,7 @@
 | No repeats before all | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Rotation survives restarts | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Random card morphs | [✅][l-random] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Theme color bar | [✅][l-families] | ? | ? | ? |
 | System appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
 | Light appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
 | Dark appearance | [✅][l-appearance] | [✅][o-appearance] | [✅][t-dark] | [✅][c-seen] |
@@ -48,6 +49,7 @@
 | Reading and interface fonts | [✅][l-fonts] | [✅][o-seen] | [❌][t-seen] | [✅][c-seen] |
 | Seven icon sets | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Seven named icon packs | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drawings in every menu | [✅][l-icons] | ? | ? | ? |
 | Icons shipped inside | [✅][l-icons] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Missing icons fall back | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Diagram icons shared | [✅][l-icons] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

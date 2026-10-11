@@ -8,7 +8,6 @@
 | --- | --- | --- | --- | --- |
 | Declared book covers | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-gui] |
 | Every picture-book picture | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [✅][c-seen] |
-| Stylesheets as pages | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Deck speaker notes | [❌][l-roadmap] | ? | [❌][t-seen] | [❌][c-seen] |
 | Slide pictures and charts | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Deck export per slide | [❌][l-roadmap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

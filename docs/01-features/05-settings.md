@@ -47,7 +47,8 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{data_dir}/spoken-audio` | Completed ElevenLabs passages and their word timing, kept until you forget that account in the speaker's voice list |
 | `{data_dir}/remote/<vault id>` | Local files for a [storage service vault](03-library.md#storage-services), including edits waiting to be sent |
 | `{data_dir}/models` | Nothing Leaftext writes now: a model an earlier version downloaded here is deleted when the app starts, and uninstalling deletes the folder too |
-| `{data_dir}/webview2` | WebView2 data |
+| `{data_dir}/webview2` | The window's own WebView2 data; each new version drops the last one's compiled scripts the first time it starts |
+| `{data_dir}/web` | The web page tabs' own browser data, sign-ins included |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
 | `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
 | `{data_dir}/journal.prev.log` | The previous journal, kept when the live one fills up |
@@ -183,7 +184,9 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - The first press with an ElevenLabs voice shows how many uncached characters may be sent, names the Flash v2.5 or Multilingual v2 model, and waits for Continue; Cancel sends no passage. A completed passage replays from kept audio without another paid request
 - **Forget account and audio** removes the credential and that account's stored passages. A failed request stops with a message and never silently switches to a computer voice
 - The sentence being spoken is washed lightly and the word being spoken more strongly, and the page scrolls to keep them on screen until you scroll it yourself
-- While it reads, a small bar stands where the find bar does, holding the voice, the speed (0.75× to 2×) and a cross that stops it; a change is heard from the next sentence. The bar steps aside while find is open, and the voice reads on
+- While it reads, a small bar stands where the find bar does, holding back a sentence, a pause, forward a sentence, the voice, the speed (0.75× to 2×) and a cross that stops it; a change is heard from the next sentence. The bar steps aside while find is open, and the voice reads on
+- The pause holds your place with the sentence and word still lit, and turns into a play that carries on from that word. Back starts the sentence over once a word after its first has been spoken, and goes to the sentence before otherwise; both skips keep a paused reading paused
+- A speed change keeps an ElevenLabs reading going, at the new speed; a new voice ends it, because its audio was agreed for the voice it was asked in
 - Code, math, diagrams and controls are skipped, the same as Flash words
 - Stops on a view change, another document, or opening Flash words, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
 - Saved as `read_aloud_voice` (a computer voice's full name, a provider-prefixed ElevenLabs voice ID, or empty for System), `read_aloud_speed` (75, 100, 125, 150 or 200 percent, 100 by default), and `elevenlabs_model` (Flash v2.5 by default)

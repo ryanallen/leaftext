@@ -26,7 +26,8 @@
 | TypeScript files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | JavaScript files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | JSON with comments | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
-| CSS stylesheets | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
+| CSS stylesheets | [✅][l-css] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
+| Stylesheets as pages | [✅][l-css] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Shell scripts | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | TOML config files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
 | Rust source files | [✅][l-source] | [❌][o-formats] | [❌][t-seen] | [❌][c-seen] |
@@ -328,6 +329,7 @@
 [l-epub]: ../01-features/01-rendering.md#epub-books
 [l-kindle]: ../01-features/01-rendering.md#kindle-books
 [l-source]: ../01-features/01-rendering.md#source-files
+[l-css]: ../01-features/01-rendering.md#css-files
 [l-enc]: ../01-features/01-rendering.md#file-encodings
 [l-tables]: ../01-features/01-rendering.md#tables
 [l-bars]: ../01-features/01-rendering.md#bars-leaf-extension

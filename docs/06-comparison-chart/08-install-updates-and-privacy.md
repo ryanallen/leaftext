@@ -137,6 +137,7 @@
 | Flash from clicked word | [✅][l-flash-words] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Read aloud | [✅][l-read-aloud] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | ElevenLabs voices | [✅][l-read-aloud] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Read-aloud sentence skips | [✅][l-read-aloud] | ? | ? | ? |
 | Typing help default | [✅][l-typing-help] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Pager, minimap always | [✅][l-pager] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Small launch window | [✅][l-window] | ? | ? | ? |

@@ -227,6 +227,10 @@
 | Point-to-edit sequence diagrams | [✅][l-sequence-editor] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Point-to-edit state diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
 | Point-to-edit concept diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
+| Point-to-edit requirement diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
+| Point-to-edit C4 diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
+| Point-to-edit architecture diagrams | [✅][l-flowchart-editor] | ? | ? | ? |
+| Point-to-edit Gantt charts | [✅][l-flowchart-editor] | ? | ? | ? |
 | Chart values as rows | [✅][l-flowchart-editor] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Boxes as links | [✅][l-mermaid] | [✅][o-adv] | ? | [❌][c-seen] |
 | App icons in boxes | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

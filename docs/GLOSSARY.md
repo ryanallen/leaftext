@@ -352,7 +352,7 @@ The anchor id made from a heading — `Bottom Sheet` becomes `#bottom-sheet`. He
 
 ## Source file
 
-A script or configuration file — TypeScript, JavaScript, CSS, shell, TOML, Rust, Python, SQL, GraphQL, a diff, a dotenv file, a Dockerfile and the rest. Leaftext draws one as its file name over a single [highlighted](GLOSSARY.md#syntax-highlighting) block. It opens when you choose it or follow a link to it, and stays out of the [library pane](GLOSSARY.md#library-pane), [vault search](GLOSSARY.md#vault-search), the [graph](GLOSSARY.md#graph-view) and the [pager](GLOSSARY.md#pager), so a folder of code does not become a library of it. See [Rendering](01-features/01-rendering.md#source-files).
+A script or configuration file — TypeScript, JavaScript, SCSS, shell, TOML, Rust, Python, SQL, GraphQL, a diff, a dotenv file, a Dockerfile and the rest. Leaftext draws one as its file name over a single [highlighted](GLOSSARY.md#syntax-highlighting) block. It opens when you choose it or follow a link to it, and stays out of the [library pane](GLOSSARY.md#library-pane), [vault search](GLOSSARY.md#vault-search), the [graph](GLOSSARY.md#graph-view) and the [pager](GLOSSARY.md#pager), so a folder of code does not become a library of it. See [Rendering](01-features/01-rendering.md#source-files).
 
 ## Speed Reader
 
