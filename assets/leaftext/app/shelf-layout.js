@@ -29,13 +29,15 @@ const CENTURY_WORDS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', '
 const UNDATED = 'Many periods or date unknown';
 const UNPRINTED = 'Edition not chosen yet';
 
-// A spine's own geometry: wider the more parts of the legend the book reaches, taller the longer its title, and never shorter than a book.
-const SPINE_WIDTH = { base: 22, perPart: 4, most: 58 };
+// A spine is thicker the more words its source holds: the least at `at` words or fewer, `perDoubling` more for every doubling, never past the most.
+const SPINE_WIDTH = { least: 26, at: 2000, perDoubling: 4, most: 64 };
+// Taller the longer its title, never shorter than a book; the most holds a two-line title only, so a one-line title is never cut.
 const SPINE_HEIGHT = { base: 70, perLetter: 7.5, least: 150, most: 250 };
 // A date tag stands under the title in the spine's small type, so the spine grows by its letters as well, at a smaller step than a title's.
 const SPINE_TAG = { gap: 8, perLetter: 6 };
-// A title past this many letters is set on two lines, so the spine stands no taller than the rest.
+// A title past this many letters goes on two lines, but only on a spine at least `SPINE_TWO_LINES` thick; a thinner spine stands taller instead.
 const SPINE_ONE_LINE = 24;
+const SPINE_TWO_LINES = 40;
 
 const escaped = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -73,8 +75,11 @@ function readList(html) {
   return { title: title[1], paragraphs: intro.match(/<p\b[^>]*>[\s\S]*?<\/p>/g) || [], bays, list: body.slice(starts[0].index), pager: pager ? pager[0] : '' };
 }
 
-/** How many parts of the legend a book's segments reach. */
-const partsReached = (book) => book.segments.reduce((sum, segment) => sum + segment.to_part - segment.from_part + 1, 0);
+/** A spine's thickness from its book's words, on a scale where twice the words is the same step wherever it falls. */
+export function spineWidth(words) {
+  const steps = words > SPINE_WIDTH.at ? Math.log2(words / SPINE_WIDTH.at) : 0;
+  return Math.min(SPINE_WIDTH.most, Math.round(SPINE_WIDTH.least + SPINE_WIDTH.perDoubling * steps));
+}
 
 /** Every part a book's story touches, as indexes into the story's parts. */
 export function reachedParts(book) {
@@ -117,17 +122,25 @@ export function spineDate(date) {
   return date.precision === 'approximate' ? `c. ${years}` : years;
 }
 
-/** One spine: its tone, whether it is out yet, how far its story reaches and how long its title is. */
+/** The letters of the longer line when a title breaks at the space that evens its two lines, so the spine is tall enough that no face wraps it onto a third. */
+function longerLine(title) {
+  let best = title.length;
+  for (let at = title.indexOf(' '); at !== -1; at = title.indexOf(' ', at + 1)) best = Math.min(best, Math.max(at, title.length - at - 1));
+  return best;
+}
+
+/** One spine: its tone, whether it is out yet, how long the book is and how long its title is. */
 export function spineMarkup(book, { order = 'story', picked = '' } = {}) {
-  const width = Math.min(SPINE_WIDTH.most, SPINE_WIDTH.base + SPINE_WIDTH.perPart * Math.max(1, partsReached(book)));
-  const long = book.title.length > SPINE_ONE_LINE;
-  const letters = long ? Math.ceil(book.title.length / 2) : book.title.length;
+  const width = spineWidth(book.words || 0);
+  const long = book.title.length > SPINE_ONE_LINE && width >= SPINE_TWO_LINES;
+  const letters = long ? longerLine(book.title) : book.title.length;
   const tag = order === 'written' ? spineDate(book.written) : order === 'printed' && book.printed ? spineDate({ ...book.printed, precision: 'exact' }) : '';
-  const height = Math.round(Math.min(SPINE_HEIGHT.most, Math.max(SPINE_HEIGHT.least, SPINE_HEIGHT.base + SPINE_HEIGHT.perLetter * letters)) + (tag ? SPINE_TAG.gap + SPINE_TAG.perLetter * tag.length : 0));
+  const title = Math.max(SPINE_HEIGHT.least, SPINE_HEIGHT.base + SPINE_HEIGHT.perLetter * letters);
+  const height = Math.round((long ? Math.min(SPINE_HEIGHT.most, title) : title) + (tag ? SPINE_TAG.gap + SPINE_TAG.perLetter * tag.length : 0));
   const classes = ['shelf-spine', book.status === 'planned' ? 'is-planned' : '', long ? 'is-long' : ''].filter(Boolean).join(' ');
   const said = `${book.title}, ${book.author}${book.status === 'planned' ? ', coming' : ''}${tag ? `, ${tag}` : ''}`;
   return [
-    `<button type="button" class="${classes}" data-book="${escaped(book.book)}" data-tone="${escaped(book.tone)}" aria-pressed="${book.book === picked ? 'true' : 'false'}" aria-label="${escaped(said)}" style="width:${long ? Math.max(width, 40) : width}px;height:${height}px">`,
+    `<button type="button" class="${classes}" data-book="${escaped(book.book)}" data-tone="${escaped(book.tone)}" aria-pressed="${book.book === picked ? 'true' : 'false'}" aria-label="${escaped(said)}" style="width:${width}px;height:${height}px">`,
     `<span class="shelf-spine-title">${escaped(book.title)}</span>`,
     tag ? `<span class="shelf-spine-tag">${escaped(tag)}</span>` : '',
     `<span class="shelf-spine-lang">${escaped(book.code)}</span>`,
@@ -175,7 +188,17 @@ function editionWords(book) {
   return { said, cite: base.map((edition) => edition.cite).filter((cite, at, all) => cite && all.indexOf(cite) === at).join(' ') };
 }
 
-/** The book opened off the shelf: its title, author, premise and the way to read it on the left page, and on the right where its story falls, its language, when it was written and the edition it is read from, each with its evidence. */
+/** How long a book is, as the shelf says it: its counted words, or about its figure in its unit and about its words. */
+function lengthWords(book) {
+  if (!book.words) return 'Not measured yet';
+  const count = (n) => n.toLocaleString('en-US');
+  const words = `${count(book.words)} words of ${book.language}`;
+  if (book.basis === 'counted') return words;
+  const length = book.length || {};
+  return length.unit && length.unit !== 'words' ? `about ${count(length.count)} ${length.unit}, about ${words}` : `about ${words}`;
+}
+
+/** The book opened off the shelf: its title, author, premise and the way to read it on the left page, and on the right where its story falls, its language, when it was written, the edition it is read from and how long it is, each with its evidence. */
 export function bookMarkup(book, data) {
   if (!book) return '';
   const reached = reachedParts(book);
@@ -207,6 +230,7 @@ export function bookMarkup(book, data) {
     `<dt>Language</dt><dd>${escaped(book.language)}, ${escaped(book.tradition)}</dd>`,
     `<dt>Written</dt><dd>${written}${writtenWhy ? `<span class="shelf-why">${escaped(writtenWhy)}</span>` : ''}</dd>`,
     `<dt>Edition</dt><dd>${escaped(edition.said)}${edition.cite ? `<span class="shelf-why">${escaped(edition.cite)}</span>` : ''}</dd>`,
+    `<dt>Length</dt><dd>${escaped(lengthWords(book))}${book.length && book.length.evidence ? `<span class="shelf-why">${escaped(book.length.evidence)}</span>` : ''}</dd>`,
     '</dl>',
     '</div>',
     '</div>',
@@ -228,17 +252,17 @@ function findMarkup(data) {
   return [
     '<div class="shelf-find" role="search">',
     '<input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title">',
-    `<select class="shelf-filter" data-shelf-filter="part" aria-label="Part of the story"><option value="">Every part of the story</option>${parts}</select>`,
-    `<select class="shelf-filter" data-shelf-filter="tone" aria-label="Tradition"><option value="">Every tradition</option>${tones}</select>`,
-    '<select class="shelf-filter" data-shelf-filter="status" aria-label="Out yet"><option value="">On the shelf and coming</option><option value="published">On the shelf</option><option value="planned">Coming</option></select>',
+    `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="part" aria-label="Part of the story"><option value="">Every part of the story</option>${parts}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`,
+    `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="tone" aria-label="Tradition"><option value="">Every tradition</option>${tones}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`,
+    '<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="status" aria-label="Out yet"><option value="">On the shelf and coming</option><option value="published">On the shelf</option><option value="planned">Coming</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>',
     '</div>',
   ].join('');
 }
 
-/** The key under the shelf: a swatch for each tone and the outline a book still to come stands as. */
+/** The key under the shelf: a swatch for each tone, the outline a book still to come stands as, and what a spine's thickness says. */
 function keyMarkup() {
   const tones = SHELF_TONES.map(([key, name]) => `<span data-tone="${key}"><i></i>${escaped(name)}</span>`).join('');
-  return `<div class="shelf-key">${tones}<span><i class="is-planned"></i>Coming</span></div>`;
+  return `<div class="shelf-key">${tones}<span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div>`;
 }
 
 /**

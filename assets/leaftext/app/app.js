@@ -20797,7 +20797,7 @@ function renderTabs(state) {
   });
   const markup = tabs.map((tab, index) => {
     if (tab.kind === 'console') {
-      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}" data-tab-pos="${index}" data-tab-path=""><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>${escapeText(tab.title)}</button>${tabCloseMarkup(index)}</span>`;
+      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${consoleLayers.get(tab.webId)?.activity === 'done' ? ' console-done' : ''}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>${escapeText(tab.title)}</button>${tabCloseMarkup(index)}</span>`;
     }
     
     if (tab.kind === 'web' && !tab.site) {
@@ -40704,6 +40704,56 @@ const consoleLayers = new Map();
 let consoleRuntime = null;
 var consoleShell = document.getElementById('libraryShell');
 
+function setConsoleActivity(id, entry, activity) {
+  if (entry.activity === activity) return;
+  entry.activity = activity;
+  if (activity === 'working') entry.worked = true;
+  for (const tab of tabBar.querySelectorAll('.console-tab')) {
+    if (tab.dataset.consoleId === String(id)) tab.classList.toggle('console-done', activity === 'done');
+  }
+}
+
+function consoleTitleSaid(id, title) {
+  const entry = consoleLayers.get(id);
+  if (!entry) return;
+  const mark = Array.from(title)[0];
+  entry.titleMark = mark === '✳' ? 'done' : '◐◓◑◒'.includes(mark) && mark ? 'working' : null;
+  if (entry.titleMark) {
+    clearTimeout(entry.quietTimer);
+    entry.quietTimer = 0;
+    if (entry.titleMark === 'working' || entry.worked) setConsoleActivity(id, entry, entry.titleMark);
+  }
+}
+
+function consoleOutputArrived(id) {
+  const entry = consoleLayers.get(id);
+  if (!entry || entry.titleMark || Date.now() - entry.lastKey < 1000) return;
+  setConsoleActivity(id, entry, 'working');
+  clearTimeout(entry.quietTimer);
+  entry.quietTimer = setTimeout(() => {
+    entry.quietTimer = 0;
+    if (consoleLayers.get(id) === entry && !entry.titleMark) setConsoleActivity(id, entry, 'done');
+  }, 5000);
+}
+
+function consoleKeyTyped(id) {
+  const entry = consoleLayers.get(id);
+  if (!entry) return;
+  entry.lastKey = Date.now();
+  clearTimeout(entry.quietTimer);
+  entry.quietTimer = 0;
+  setConsoleActivity(id, entry, 'quiet');
+}
+
+function consoleBellRang(id) {
+  const entry = consoleLayers.get(id);
+  if (entry?.worked && entry.activity === 'working') {
+    clearTimeout(entry.quietTimer);
+    entry.quietTimer = 0;
+    setConsoleActivity(id, entry, 'done');
+  }
+}
+
 function consoleColorNumber(color) {
   const [red = 0, green = 0, blue = 0] = (String(color).match(/\d+/g) || []).map(Number);
   return (red << 16) | (green << 8) | blue;
@@ -40860,7 +40910,7 @@ function makeConsoleLayer(id) {
   host.className = 'console-terminal';
   layer.appendChild(host);
   consoleShell.appendChild(layer);
-  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set() };
+  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -40905,7 +40955,9 @@ function makeConsoleLayer(id) {
     };
     holdConsoleLinks(terminal);
     terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
-    terminal.onData(data => send({ command: 'consoleInput', id, data }));
+    terminal.onData(data => { consoleKeyTyped(id); send({ command: 'consoleInput', id, data }); });
+    terminal.onTitleChange(title => consoleTitleSaid(id, title));
+    terminal.onBell(() => consoleBellRang(id));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
     paintConsoleTheme(entry);
@@ -41161,6 +41213,7 @@ function consoleBytes(encoded) {
 window.leafConsoleOutput = (id, encoded) => {
   const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  if (!entry.frame) consoleOutputArrived(id);
   if (!entry.terminal) {
     entry.pending.push(bytes);
     entry.pendingBytes += bytes.length;
@@ -41195,6 +41248,12 @@ function writeConsoleOutput(id, entry, text) {
 window.leafConsoleReplay = (id, encoded) => {
   const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  clearTimeout(entry.quietTimer);
+  entry.quietTimer = 0;
+  entry.titleMark = null;
+  entry.worked = false;
+  entry.lastKey = Date.now();
+  setConsoleActivity(id, entry, 'quiet');
   if (entry.frame) cancelAnimationFrame(entry.frame);
   entry.frame = 0;
   entry.decoder = new TextDecoder();
@@ -41217,6 +41276,7 @@ window.leafConsolePrune = tabs => {
     if (tabs.some(tab => tab.kind === 'console' && tab.webId === id)) continue;
     if (entry.frame) cancelAnimationFrame(entry.frame);
     if (entry.scrollFrame) cancelAnimationFrame(entry.scrollFrame);
+    if (entry.quietTimer) clearTimeout(entry.quietTimer);
     if (entry.observer) entry.observer.disconnect();
     if (entry.terminal) entry.terminal.dispose();
     entry.layer.remove();
