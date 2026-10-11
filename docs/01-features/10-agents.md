@@ -18,6 +18,10 @@ Once it is [connected](#connect-on-windows), the agent is told it is running ins
 
 With agents running in several consoles, in one window or several, one agent can hand a finding, a request or an answer straight to another. `leaftext_consoles` lists every console, which ones have an agent running in them and which one is the asker's own; `leaftext_tell` types a message into another console's agent as its next prompt, headed with the sender's console title and the console to reply to. Leaftext tells which console an agent is in by itself, so nothing needs setting up, and it never types into a console whose program is not waiting for a message.
 
+### An agent going round in circles is told
+
+When an agent in a console calls the same Leaftext document tool on the same file and it fails the same way three times in a row, Leaftext types one message into that agent's own console, headed `From Leaftext`, naming the tool, the file and the kind of failure, and asking it to try something else. It says so once per run of failures; a success, another file, another tool or another kind of failure starts the count again. `leaftext_attempts` lists the agent's last sixteen document calls as Leaftext saw them — the tool, the file, whether it worked and the kind of failure — and keeps none of the document, the answer or the refusal's words. Leaftext sees only its own document tools: the agent's shell commands, its other tools, its model calls and its approval prompts are its own, so a failure there is never counted, and a call you turned down never reaches Leaftext at all. The count lives in the agent's own Leaftext connection, so it is separate for every agent and gone when the agent or its console closes.
+
 For a company gateway, follow the agent's own instructions: [Claude Code's gateway setup](https://code.claude.com/docs/en/llm-gateway) or [Codex's model provider configuration](https://developers.openai.com/codex/config-reference). The gateway must support the request format and authentication that the chosen agent sends. Connecting Leaftext as a tool server is a separate step below.
 
 ## Connect on Windows

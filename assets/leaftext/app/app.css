@@ -8359,6 +8359,13 @@ body.library-resizing button {
 .console-agent-state { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
 .console-agent-needs { color: var(--lt-primary); font-weight: var(--lt-weight-600); }
 
+.console-pin { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); z-index: 5; height: 0; }
+.console-pin[hidden] { display: none; }
+.console-pin-row { position: absolute; inset: 0; overflow: hidden; white-space: pre; text-overflow: ellipsis; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
+@media (hover: hover) { .console-pin-row:hover { background: var(--lt-navigation-button-hover-background); } }
+
+.console-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 18px; --lt-grain-dot: var(--lt-markdown-background); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-repeat: repeat; background-attachment: fixed; -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); pointer-events: none; }
+
 
 :root {
   --reader-toolbar-space: 0px;

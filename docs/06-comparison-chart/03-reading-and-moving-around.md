@@ -75,6 +75,7 @@
 | Front tab keeps place | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Tabs load when selected | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Unsaved edits survive closing | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Crashed page comes back | [✅][l-page-stops] | ? | ? | ? |
 | Disk changes win | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Missing file becomes note | [✅][l-tabs] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Per-tab history | [✅][l-tabs] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -442,6 +443,7 @@
 [l-appbar]: ../01-features/02-navigation.md#the-app-bar
 [l-toolbar]: ../01-features/02-navigation.md#the-floating-toolbar
 [l-tabs]: ../01-features/02-navigation.md#tabs
+[l-page-stops]: ../01-features/02-navigation.md#when-the-page-stops
 [l-doc-tabs]: ../01-features/02-navigation.md#tabs-inside-a-document
 [l-web-tabs]: ../01-features/02-navigation.md#web-tabs
 [l-split]: ../01-features/02-navigation.md#two-documents-side-by-side

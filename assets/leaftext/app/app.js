@@ -41315,8 +41315,6 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   }
   writeReaderClasses(['empty']);
   
-  setMinimapMarkup('');
-  updateEditingChrome();
   const invite = homeInvitesAVault();
   app.innerHTML = `
     <section class="empty-state">
@@ -41336,6 +41334,9 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
            home render, so an element found once at load is gone by the second. -->
       <p class="empty-version">${LEAF_VERSION ? `v${escapeText(LEAF_VERSION)}` : ''}<button type="button" class="empty-licenses">Licenses</button>${LEAF_HELP_URL ? '<button type="button" class="empty-ask">Get help ↗</button>' : ''}</p>
     </section>`;
+  
+  setMinimapMarkup('');
+  updateEditingChrome();
   startDottedLeaf(app.querySelector('.dotted-leaf'));
   
   app.querySelector('.empty-licenses').addEventListener('click', () => send({ command: 'openNotices' }));
@@ -42300,6 +42301,7 @@ function consoleWritten(id, entry) {
     if (consoleFrontId === id) writeConsoleFade();
   }
   holdConsoleMarkers(entry);
+  renderConsolePin(entry);
   if (entry.agent) reportConsoleAgent(id, entry);
 }
 
@@ -42335,6 +42337,7 @@ function drawConsoleRow(line, row, cols) {
   if (!spacing && consoleLetterGap(this, plainFont) !== 0) return engineRow.call(this, line, row, cols);
   const flags = window.GhosttyWeb.CellFlags;
   const top = row * height;
+  ctx.clearRect(0, top, cols * width, height);
   ctx.fillStyle = this.theme.background;
   ctx.fillRect(0, top, cols * width, height);
 
@@ -42462,11 +42465,12 @@ function makeConsoleLayer(id) {
     };
     holdConsoleLinks(terminal);
     terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
-    terminal.onData(data => { consoleKeyTyped(id); send({ command: 'consoleInput', id, data }); });
+    terminal.onData(data => { consoleKeyTyped(id); consolePinInput(entry, data); send({ command: 'consoleInput', id, data }); });
     terminal.onTitleChange(title => consoleTitleSaid(id, title));
     terminal.onBell(() => consoleBellRang(id));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
+    setupConsolePin(entry);
     paintConsoleTheme(entry);
     entry.fit = fit;
     entry.observer = new ResizeObserver(() => {
@@ -42474,6 +42478,7 @@ function makeConsoleLayer(id) {
       fit.fit();
       sendConsoleSize(id, entry);
       writeConsoleFade();
+      renderConsolePin(entry);
     });
     entry.observer.observe(layer);
     let opening = '';
@@ -42499,23 +42504,13 @@ function makeConsoleLayer(id) {
 
 
 function holdConsoleLinks(terminal) {
-  const detector = terminal.linkDetector;
-  for (const provider of detector.providers) {
-    const plain = Boolean(provider.constructor.URL_REGEX);
+  for (const provider of terminal.linkDetector.providers) {
     const provide = provider.provideLinks.bind(provider);
     provider.provideLinks = (row, done) => provide(row, links => done(links?.map(link => ({
       ...link,
-      plain,
       activate: event => { if (event.ctrlKey || event.metaKey) openConsoleLink(link.text); },
     }))));
   }
-  
-  const cacheLink = detector.cacheLink.bind(detector);
-  detector.cacheLink = link => {
-    if (!link.plain) return cacheLink(link);
-    const { start, end } = link.range;
-    detector.linkCache.set(`r${start.y}:${start.x}-${end.x}`, link);
-  };
 }
 
 
@@ -42706,6 +42701,7 @@ window.leafConsoleFront = id => {
     }
     entry.terminal.focus();
     scheduleMinimapPreviewUpdate();
+    renderConsolePin(entry);
   }
   writeConsoleFade();
 };
@@ -42796,11 +42792,176 @@ window.leafConsolePrune = tabs => {
     if (entry.scrollFrame) cancelAnimationFrame(entry.scrollFrame);
     if (entry.quietTimer) clearTimeout(entry.quietTimer);
     if (entry.observer) entry.observer.disconnect();
+    teardownConsolePin(entry);
     if (entry.terminal) entry.terminal.dispose();
     entry.layer.remove();
     consoleLayers.delete(id);
   }
 };
+
+
+
+
+const CONSOLE_PIN_MARK = /\x1b\]133;([AB])[^\x07\x1b]*(?:\x07|\x1b\\)/g;
+
+const CONSOLE_PIN_PARTIAL = /\x1b\](?:1(?:3(?:3(?:;[^\x07\x1b]*)?)?)?)?$/;
+
+
+function setupConsolePin(entry) {
+  const box = document.createElement('div');
+  box.className = 'console-pin';
+  box.hidden = true;
+  box.setAttribute('aria-hidden', 'true');
+  const row = document.createElement('div');
+  row.className = 'console-pin-row';
+  box.appendChild(row);
+  entry.layer.appendChild(box);
+  box.addEventListener('mousedown', event => onConsolePinMouseDown(entry, event));
+  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '' };
+  const write = entry.terminal.write;
+  entry.terminal.write = (data, done) => writeConsolePinned(entry, data, write, done);
+  entry.terminal.onScroll(() => renderConsolePin(entry));
+}
+
+function teardownConsolePin(entry) {
+  if (!entry.pin) return;
+  for (const marker of [entry.pin.marker, entry.pin.pending, entry.pin.end]) marker?.dispose();
+  entry.pin.box.remove();
+  entry.pin = null;
+}
+
+
+function consolePinCursorOffset(entry) {
+  const active = entry.terminal.buffer.active;
+  const row = consoleBuffer(entry).baseY + active.cursorY;
+  let offset = 0;
+  while (row + offset > 0 && active.getLine(row + offset)?.isWrapped) offset -= 1;
+  return { row, offset };
+}
+
+function placeConsolePin(entry, marker) {
+  if (!marker) return;
+  entry.pin.marker?.dispose();
+  entry.pin.marker = marker;
+  entry.pin.end?.dispose();
+  entry.pin.end = null;
+}
+
+
+function consolePinInput(entry, data) {
+  const pin = entry.pin;
+  if (!pin || !String(data).includes('\r') || entry.terminal.buffer.active.type !== 'normal') return;
+  const { row, offset } = consolePinCursorOffset(entry);
+  const announced = pin.pending && !pin.pending.isDisposed ? pin.pending : null;
+  pin.pending = null;
+  const continued = !announced && pin.announcing && pin.marker && !pin.marker.isDisposed && row - pin.lastRow <= 1;
+  pin.lastRow = row;
+  if (announced) placeConsolePin(entry, announced);
+  else if (!continued) placeConsolePin(entry, entry.terminal.registerMarker(offset));
+}
+
+
+function writeConsolePinned(entry, data, write, done) {
+  const pin = entry.pin;
+  if (!pin || typeof data !== 'string') return write(data, done);
+  let text = pin.carry + data;
+  pin.carry = '';
+  const partial = CONSOLE_PIN_PARTIAL.exec(text);
+  if (partial) {
+    pin.carry = partial[0];
+    text = text.slice(0, partial.index);
+  }
+  if (!text.includes('\x1b]133;')) return write(text, done);
+  let from = 0;
+  for (const mark of text.matchAll(CONSOLE_PIN_MARK)) {
+    const to = mark.index + mark[0].length;
+    write(text.slice(from, to));
+    from = to;
+    consolePinMark(entry, mark[1]);
+  }
+  write(text.slice(from), done);
+}
+
+function consolePinMark(entry, kind) {
+  const pin = entry.pin;
+  if (entry.terminal.buffer.active.type !== 'normal') return;
+  
+  if (kind === 'A') {
+    if (!pin.marker || pin.marker.isDisposed) return;
+    const end = entry.terminal.registerMarker(0);
+    if (!end) return;
+    pin.end?.dispose();
+    pin.end = end;
+    return;
+  }
+  
+  const pending = entry.terminal.registerMarker(consolePinCursorOffset(entry).offset);
+  if (!pending) return;
+  pin.pending?.dispose();
+  pin.pending = pending;
+  pin.announcing = true;
+}
+
+
+function consolePinNow(entry) {
+  const pin = entry.pin;
+  const terminal = entry.terminal;
+  if (!pin || !terminal || entry.layer.hidden || terminal.buffer.active.type !== 'normal') return null;
+  const marker = pin.marker;
+  if (!marker || marker.isDisposed || marker.line < 0) return null;
+  const top = consoleBuffer(entry).viewportY;
+  if (marker.line >= top) return null;
+  if (pin.end && !pin.end.isDisposed && pin.end.line > marker.line && pin.end.line < top + terminal.rows) return null;
+  return marker.line;
+}
+
+function hideConsolePin(entry) {
+  const pin = entry.pin;
+  if (!pin || pin.box.hidden) return;
+  pin.box.hidden = true;
+  pin.row.textContent = '';
+  pin.drawn = '';
+}
+
+function renderConsolePin(entry) {
+  const line = consolePinNow(entry);
+  if (line === null) {
+    hideConsolePin(entry);
+    return;
+  }
+  const pin = entry.pin;
+  const terminal = entry.terminal;
+  
+  if (pin.read?.marker !== pin.marker || pin.read.line !== line) {
+    const text = consoleBuffer(entry).getLine(line)?.translateToString(true) ?? '';
+    pin.read = { marker: pin.marker, line, text, wrapped: Boolean(terminal.buffer.active.getLine(line + 1)?.isWrapped) };
+  }
+  const { text, wrapped } = pin.read;
+  const height = consoleRowHeight(terminal);
+  const renderer = terminal.renderer || {};
+  const width = consoleScreen(terminal)?.clientWidth || 0;
+  const key = [line, text, wrapped, height, width, renderer.fontFamily, renderer.fontSize].join('|');
+  if (key === pin.drawn) return;
+  pin.drawn = key;
+  pin.box.hidden = false;
+  pin.box.style.height = `${height}px`;
+  if (width) pin.box.style.width = `${width}px`;
+  if (renderer.fontFamily) pin.box.style.fontFamily = renderer.fontFamily;
+  if (renderer.fontSize) pin.box.style.fontSize = `${renderer.fontSize}px`;
+  pin.row.style.lineHeight = `${height}px`;
+  pin.row.dataset.consoleLine = String(line);
+  pin.row.textContent = wrapped ? `${text}…` : text;
+}
+
+
+function onConsolePinMouseDown(entry, event) {
+  const line = consolePinNow(entry);
+  if (line === null) return;
+  event.preventDefault();
+  consoleBuffer(entry).scrollToLine(line);
+  renderConsolePin(entry);
+  entry.terminal.focus();
+}
 
 
 const glossarySheet = document.getElementById('glossarySheet');

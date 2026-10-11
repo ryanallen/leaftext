@@ -657,7 +657,7 @@ On Windows, highlight text in a console and `Ctrl+C` copies it, the way it does 
 
 A screenshot on the clipboard pastes into a console as a picture file: `Ctrl+V` or `Alt+V` on Windows, and `Cmd+V`, `Ctrl+V` or `Option+V` on a Mac, write it to a PNG in the system's temporary folder and paste that file's path, which Claude Code and Codex attach to the message you are writing. Text on the clipboard pastes as text. The folder keeps only the twenty newest pictures.
 
-A web or mail address a console prints — `https://`, `http://` or `mailto:` — opens in your own browser or mail program when you `Ctrl`-click it on Windows or `Cmd`-click it on a Mac. An address of any other kind opens nothing, so a program cannot get the app to open a file or start another program by printing a link to it.
+A web or mail address a console prints — `https://`, `http://` or `mailto:` — opens in your own browser or mail program when you `Ctrl`-click it on Windows or `Cmd`-click it on a Mac, whether the address is written out or sits behind words the program printed as a link. An address of any other kind opens nothing, so a program cannot get the app to open a file or start another program by printing a link to it.
 
 ### A finished console says so
 
@@ -668,6 +668,10 @@ When a program in a console finishes its work, the console's tab icon turns the 
 While Claude Code or Codex runs in any console, in any Leaftext window, an **Agents** list stands in the library pane directly above the launchers, one row per agent with its tab's name and what it is doing: **Needs you** while it is asking a question or waiting for permission, then **Done**, **Working** and **At rest**. An agent asking for you sorts to the top in the theme's main color, and the row of the console in front is lit the way its tab is. Press a row and that console comes to the front, bringing its window forward if another window holds it. A long folder list scrolls above the list rather than pushing it out of sight, and the list goes away once no agent is running. Leaftext recognizes Claude Code by the title it gives itself and Codex by the command the console is running, and reads whether either is asking off the last lines of its screen.
 
 While a full-screen program such as Claude Code fills a console, the soft fade at the top of the page starts under the program's first row rather than over it, so a line the program holds at the top, such as the prompt it is working on, reads at full strength while its work dissolves underneath. At an ordinary shell prompt the fade sits where it does over a document.
+
+### The command you ran stays at the top
+
+Run something long at a console's shell prompt and, once the line you typed has scrolled off the top, that line stays held at the console's top edge while the output scrolls under it, so a long build or test run still says what it is. It is one row, in the console's own colors, with the output dissolving beneath it; a command too long for one row shows its first row and an ellipsis. Press the row and the console scrolls back to the command. The row goes away once the command is back on screen, once the next prompt comes into view, and while a full-screen program such as an editor or Claude Code fills the console. The console asks the shell where each command starts — Windows' own command prompt keeps whatever prompt you set and gains two invisible marks around it, and zsh on a Mac reads all of your own startup files first and then adds them — and in a shell that says nothing, such as one started from inside the console, the line you pressed Enter on is held instead.
 
 ## Layout
 

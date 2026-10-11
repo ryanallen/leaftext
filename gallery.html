@@ -8376,6 +8376,13 @@ body.library-resizing button {
 .console-agent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-agent-state { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
 .console-agent-needs { color: var(--lt-primary); font-weight: var(--lt-weight-600); }
+/* The pinned command: one row over the terminal's top edge, at layer 5 so it paints above the edge fade (4), as the source view's held headings do. Its height, width and face are the terminal's, written by console-sticky.js. */
+.console-pin { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); z-index: 5; height: 0; }
+.console-pin[hidden] { display: none; }
+.console-pin-row { position: absolute; inset: 0; overflow: hidden; white-space: pre; text-overflow: ellipsis; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
+@media (hover: hover) { .console-pin-row:hover { background: var(--lt-navigation-button-hover-background); } }
+/* The dissolve for what scrolls under it: the source view's dot screen in the console's own color, at falling alpha. */
+.console-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 18px; --lt-grain-dot: var(--lt-markdown-background); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-repeat: repeat; background-attachment: fixed; -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); pointer-events: none; }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
@@ -19320,7 +19327,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 173 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 174 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19352,7 +19359,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>192</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>109</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>173</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>174</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19807,7 +19814,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">173 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">174 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -20231,6 +20238,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Pinned headings</h3><code class="built">.code-sticky</code><span class="built">code-sticky.js</span></header>
 <div class="stage"><div class="code-sticky"><div class="code-sticky-row">A pinned heading</div></div></div>
+</section>
+<section class="part">
+<header><h3>Pinned command</h3><code class="built">.console-pin</code><span class="built">console-sticky.js</span></header>
+<div class="stage"><div class="console-pin"><div class="console-pin-row">C:\vault&gt; cargo test --all</div></div></div>
 </section>
 <section class="part">
 <header><h3>Copy button</h3><code class="built">.code-copy</code><span class="built">decorate.js</span></header>

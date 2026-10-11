@@ -643,11 +643,12 @@
 | Close ends reliably | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents edit documents | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Agents tick tasks | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Twenty-four agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Twenty-six agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Written agent workflow | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Untitled saves refused | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawings described to agents | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents message each other | [✅][l-agent-tell] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Circling agent warned | [✅][l-agent-circle] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-new]: ../01-features/07-editing.md#new-document
 [l-inline]: ../01-features/07-editing.md#inline-editing-the-reading-view
@@ -719,4 +720,5 @@
 [t-seen]: ../05-compare.md#typora
 [l-agent]: ../01-features/10-agents.md
 [l-agent-tell]: ../01-features/10-agents.md#agents-in-different-consoles-talk-to-each-other
+[l-agent-circle]: ../01-features/10-agents.md#an-agent-going-round-in-circles-is-told
 [o-cli]: https://obsidian.md/help/cli

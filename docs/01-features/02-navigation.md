@@ -23,6 +23,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 | [Recent files](#recent-files) | Reopen a recently opened file from the home screen, showing the vault you are standing in |
 | [Favorites](#favorites) | Favorite a file or folder so it is never lost off the end of Recent, in its own column beside it |
 | [Loading](#loading) | The reader holds the shape of the page that is coming — a heading bar and the paragraph bars under it — while a slow document or view renders |
+| [When the page stops](#when-the-page-stops) | A window whose page process crashes or is ended is drawn a new page with its tabs and unsaved edits, and a web tab whose page dies reloads |
 | [Export the page](#export-the-page) | Save the page you are reading as one continuous PDF, as a picture of the whole document, as a web page with its stylesheet, its pictures and its [minimap](04-minimap.md#on-an-exported-page) in a folder beside it — every one of them in the theme on screen — as the Markdown note itself with its pictures in a folder beside it, or as an EPUB book with its pictures inside, for a phone or an e-reader |
 | [Glossary sheet](#glossary) | Open a glossary term over the page without leaving it |
 | [Link hints](#link-hints) | Hover a link to see what kind it is, where it points, the opening of a linked note, and a glossary term's whole entry |
@@ -298,6 +299,10 @@ Opening a document hands it to the Rust side to parse and render before the view
 - Re-clicking the tab you are already on does nothing on the host side, so no waiting page appears there. Reading-view edits, such as ticking a checkbox, re-render in place without one.
 - The [minimap](04-minimap.md#how-it-works) rail carries a spinner of its own. Its thumbnail is a scaled clone of the finished page, so it can only be built once the document has been laid out — it arrives just after the page rather than with it.
 - A safety timeout lowers it even if a response never comes, so it can never get stuck on screen.
+
+### When the page stops
+
+If the browser engine's process behind a window's page crashes or is ended, Leaftext draws that window a new page in place from what it already holds — every tab, the document in front, and edits you have not saved — so you carry on rather than relaunching. A [web tab](#web-tabs) whose own page process dies reloads its address. A page that stops answering without ending is left alone, and a window whose page ends twice within 30 seconds is not rebuilt a second time, so a page that keeps dying cannot hold the window in a loop.
 
 ## Moving within a document
 
