@@ -7240,21 +7240,6 @@ body.library-resizing button {
 .library-outline-count {
   flex: none;
 }
-/* A note that names the open one without linking it: the row a press opens, and at its right the press that writes the link. */
-.library-links-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--lt-space-4);
-}
-.library-links-hit {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.library-links-link {
-  flex: none;
-  margin-top: var(--lt-space-4);
-  padding: var(--lt-space-4) var(--lt-space-6);
-}
 /* A heading, drawn as the file rows beside it are drawn — one full-width target, stepped in by how deep the section sits. */
 .library-outline-row {
   display: flex;
@@ -11362,12 +11347,6 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .reading-link-popup[hidden] {
   display: none;
-}
-/* Near this note, and Every note under it: the quiet line the pane heads its own lists with. */
-.reading-link-popup-heading {
-  padding: var(--lt-space-4) var(--lt-space-6) var(--lt-space-2);
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-10);
 }
 .reading-link-popup-row {
   cursor: default;
@@ -19327,7 +19306,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 174 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 173 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19359,7 +19338,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>192</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>109</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>174</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>173</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19814,7 +19793,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">174 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">173 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -20020,12 +19999,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="library-results find-results" style="max-height:none"><p class="library-results-count"><span class="lt-spinner library-results-spinner"></span>Searching…</p><p class="library-results-count">14 results</p><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Note links</h3><code class="built">.library-links</code><span class="built">library-links.js, under the open note's headings in the pane: what links here, what names it without linking it — each such row carrying **Link**, the small button that writes the link — and what else is about the same thing — each group headed the way **On this page** is; two rows of one file name each carry their folder beside the name</span></header>
-<div class="stage"><div class="library-pane" style="position:static;width:240px;height:400px"><div class="library-outline library-links"><div class="library-outline-note"><span class="library-outline-note-label">Links here</span><span class="library-outline-count">3 notes</span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Weir crest</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">See [[Station handbook]] for the boundary rule.</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">Vault</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">README<span class="library-hit-alias">docs</span></span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">Start with the [[Station handbook]].</span></button><div class="library-outline-note"><span class="library-outline-note-label">Names it without linking it</span><span class="library-outline-count">1 note</span></div><div class="library-links-row"><button type="button" class="library-hit library-links-hit"><span class="library-hit-title"><span class="file-name-stem">Frost calendar</span><span class="file-type-badge">MD</span></span><span class="library-hit-snippet">The station handbook sets the first frost date.</span></button><button type="button" class="theme-mode-btn library-links-link">Link</button></div><div class="library-outline-note"><span class="library-outline-note-label">Related notes</span><span class="library-outline-count">1 note</span></div><button type="button" class="library-hit"><span class="library-hit-title"><span class="file-name-stem">Winter heating</span><span class="file-type-badge">MD</span></span></button></div></div></div>
-</section>
-<section class="part">
-<header><h3>Link list at the caret</h3><code class="built">.reading-link-popup</code><span class="built">reading-link-popup.js, under the [[ typed in a paragraph being edited: this note's neighbors under **Near this note**, then every note under **Every note**, each a name with its folder at the right and the picked one washed</span></header>
-<div class="stage"><div class="reading-link-popup" style="position:static"><div class="reading-link-popup-heading">Near this note</div><button type="button" class="reading-link-popup-row is-selected"><span class="reading-link-popup-name">Winter readings</span></button><button type="button" class="reading-link-popup-row"><span class="reading-link-popup-name">Weir crest</span></button><div class="reading-link-popup-heading">Every note</div><button type="button" class="reading-link-popup-row"><span class="reading-link-popup-name">Boundary map</span><span class="reading-link-popup-detail">maps</span></button></div></div>
+<header><h3>Link list at the caret</h3><code class="built">.reading-link-popup</code><span class="built">reading-link-popup.js, under the [[ typed in a paragraph being edited: every note in the order the host sends them, each a name with its folder at the right and the picked one washed</span></header>
+<div class="stage"><div class="reading-link-popup" style="position:static"><button type="button" class="reading-link-popup-row is-selected"><span class="reading-link-popup-name">Winter readings</span></button><button type="button" class="reading-link-popup-row"><span class="reading-link-popup-name">Weir crest</span></button><button type="button" class="reading-link-popup-row"><span class="reading-link-popup-name">Boundary map</span><span class="reading-link-popup-detail">maps</span></button></div></div>
 </section>
 <section class="part">
 <header><h3>File type badge</h3><code class="built">.file-type-badge</code><span class="built">render-state.js</span></header>

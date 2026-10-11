@@ -50,7 +50,6 @@
 | --- | --- | --- | --- | --- |
 | Sites use app renderer | [✅][l-site] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Search site pages | [✅][l-site] | ? | ? | ? |
-| Site backlinks | [✅][l-site-links-here] | ? | [❌][t-seen] | [❌][c-seen] |
 | Edit site source | [✅][l-site] | ? | ? | ? |
 | Published pictures kept | [✅][l-site] | [✅][o-publish] | [❌][t-seen] | [❌][c-seen] |
 | Office links on sites | [✅][l-site] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -110,7 +109,6 @@
 [l-pictures]: ../01-features/07-editing.md#images
 [l-see-all]: ../01-features/06-themes.md#see-them-all
 [l-site]: ../README.md#how-this-folder-ships
-[l-site-links-here]: ../01-features/03-library.md#what-links-here
 [t-export]: https://support.typora.io/Export/
 [c-seen]: ../05-compare.md#calibre
 [c-faq]: https://manual.calibre-ebook.com/faq.html

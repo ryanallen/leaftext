@@ -184,8 +184,6 @@ export const COMMANDS = {
   codeCompleteHeadings: [ANSWERED],
   codeHoverNote: [ANSWERED],
   codeLint: [ANSWERED],
-  smartLinks: [ANSWERED], // Links here alone, from the links the listing publishes: the other two groups read every page's text, which a site does not fetch to draw a page.
-  linkMention: [REFUSED, 'a site offers no mention to link, because finding one means reading every published page’s text'],
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   tableRows: [REFUSED, 'listing every row would fetch every page this site serves on the first keystroke'],
   toggleTask: [ANSWERED],
@@ -1258,12 +1256,6 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
         answer = { error: { message: (error && error.message) || 'The map could not be read.' } };
       }
       run(`window.leafSetGraph(${JSON.stringify(answer)});`);
-    },
-    // Where the listing was not held, the module answers the note with no groups.
-    smartLinks: ({ path }) => {
-      holdListing();
-      const script = core.smartLinks(String(path || ''));
-      if (script) run(script);
     },
     openRecent: (command) => {
       stampPlace(command);

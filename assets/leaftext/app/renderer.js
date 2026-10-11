@@ -96,7 +96,6 @@ export async function loadRenderer(url, fetchWith = fetch) {
     },
     graph: (seed, scope) => typeof api.leaf_hold_listing === 'function'
       ? JSON.parse(withStrings(api.leaf_graph, seed, scope) || 'null') : null,
-    smartLinks: (path) => typeof api.leaf_smart_links === 'function' ? withStrings(api.leaf_smart_links, path) : null,
     corpusAdd: (path, bytes) => {
       if (typeof api.leaf_corpus_add !== 'function') return false;
       const name = write(path);

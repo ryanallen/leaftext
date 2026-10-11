@@ -7225,21 +7225,6 @@ body.library-resizing button {
   flex: none;
 }
 
-.library-links-row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--lt-space-4);
-}
-.library-links-hit {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.library-links-link {
-  flex: none;
-  margin-top: var(--lt-space-4);
-  padding: var(--lt-space-4) var(--lt-space-6);
-}
-
 .library-outline-row {
   display: flex;
   align-items: center;
@@ -11322,12 +11307,6 @@ body.is-block-dragging .document-body [data-src-start] {
 }
 .reading-link-popup[hidden] {
   display: none;
-}
-
-.reading-link-popup-heading {
-  padding: var(--lt-space-4) var(--lt-space-6) var(--lt-space-2);
-  color: var(--lt-muted-foreground);
-  font-size: var(--lt-text-10);
 }
 .reading-link-popup-row {
   cursor: default;

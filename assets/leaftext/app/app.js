@@ -364,8 +364,6 @@ function releaseShellWidth() {
 
 let libraryOutlineOpen = false;
 
-let smartLinksAnswer = null;
-
 let changeRepoRevealed = false;
 
 const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
@@ -9962,7 +9960,6 @@ const librarySyncProgressFill = document.getElementById('librarySyncProgressFill
 const librarySyncProgressLabel = document.getElementById('librarySyncProgressLabel');
 const librarySearchResults = document.getElementById('librarySearchResults');
 const libraryOutline = document.getElementById('libraryOutline');
-const libraryLinks = document.getElementById('libraryLinks');
 const filterMenu = document.getElementById('filterMenu');
 
 const updateMenu = document.getElementById('updateMenu');
@@ -14907,7 +14904,6 @@ function followFileInLibrary(path, focus, forceRefresh) {
   librarySelectedPath = path || null;
   
   libraryOutlineOpen = !!path || !!activeWebTab();
-  askSmartLinks(path);
   libraryRevealPending = !!path && !activeDocumentIsUntitled();
   
   if (libraryRevealPending) revealSelectedInLibrary();
@@ -14937,7 +14933,6 @@ function renderLibraryLists() {
   const outlining = !day && libraryOutlineShowing();
   if (libraryCalendarDay) libraryCalendarDay.hidden = !day;
   libraryOutline.hidden = !outlining;
-  libraryLinks.hidden = !outlining || !smartLinksHaveRows();
   const wasHidden = libraryTree.hidden;
   libraryTree.hidden = day || outlining;
   
@@ -16770,7 +16765,7 @@ let libraryOutlineWindowStart = -1;
 let libraryOutlineWindowEnd = -1;
 
 function libraryOutlineShowing() {
-  return libraryOutlineOpen && (readDocumentOutlineRows().length > 0 || smartLinksHaveRows());
+  return libraryOutlineOpen && readDocumentOutlineRows().length > 0;
 }
 
 function scheduleLibraryOutline() {
@@ -20023,116 +20018,6 @@ onSettle({
 });
 send({ command: 'getFolder', path: libraryProjectPath });
 const LEAF_VERSION = typeof window.__leafVersion === 'string' ? window.__leafVersion : null;
-
-
-
-
-const SMART_LINK_GROUPS = [
-  ['links', 'Links here'],
-  ['mentions', 'Names it without linking it'],
-  ['related', 'Related notes'],
-];
-
-let smartLinksAsked = null;
-
-function sameNotePath(a, b) {
-  return !!a && !!b && a.replace(/\\/g, '/').toLowerCase() === b.replace(/\\/g, '/').toLowerCase();
-}
-
-function askSmartLinks(path) {
-  if (sameNotePath(path, smartLinksAsked)) return;
-  smartLinksAsked = path || null;
-  if (smartLinksAnswer) {
-    smartLinksAnswer = null;
-    renderSmartLinks();
-  }
-  if (path && hostAnswers('smartLinks')) send({ command: 'smartLinks', path });
-}
-
-function nearThisNotePaths() {
-  const paths = [];
-  for (const key of ['links', 'related']) {
-    const group = smartLinksAnswer && smartLinksAnswer[key];
-    for (const row of (group && group.rows) || []) {
-      if (!paths.some((path) => sameNotePath(path, row.path))) paths.push(row.path);
-    }
-  }
-  return paths;
-}
-
-function nearThisNoteFirst(notes) {
-  const near = nearThisNotePaths();
-  return notes
-    .map((note, at) => {
-      const rank = near.findIndex((path) => sameNotePath(path, note.path));
-      return { note, at, rank: rank < 0 ? near.length : rank };
-    })
-    .sort((a, b) => a.rank - b.rank || a.at - b.at)
-    .map(({ note, rank }) => ({ ...note, near: rank < near.length }));
-}
-
-function relativeNoteHref(from, to) {
-  const parts = (path) => String(path || '').split(/[\\/]+/).filter(Boolean);
-  const folder = parts(from).slice(0, -1);
-  const target = parts(to);
-  let shared = 0;
-  while (shared < folder.length && shared < target.length && folder[shared].toLowerCase() === target[shared].toLowerCase()) shared += 1;
-  if (shared === 0 || shared === target.length) return '';
-  const encode = (segment) => segment.replace(/[ %()[\]<>#?]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
-  return [...folder.slice(shared).map(() => '..'), ...target.slice(shared).map(encode)].join('/');
-}
-function smartLinksHaveRows() {
-  return !!smartLinksAnswer && SMART_LINK_GROUPS.some(([key]) => smartLinksAnswer[key] && smartLinksAnswer[key].rows.length > 0);
-}
-window.leafSmartLinks = (answer) => {
-  if (!answer || !sameNotePath(answer.path, librarySelectedPath)) return;
-  smartLinksAnswer = answer;
-  
-  renderLibraryOutline();
-  renderSmartLinks();
-};
-function smartLinkRowHtml(row, at, linkable, folder) {
-  const line = row.snippet ? `<span class="library-hit-snippet">${escapeText(row.snippet)}</span>` : '';
-  const also = folder ? `<span class="library-hit-alias">${escapeText(folder)}</span>` : '';
-  const hit = `<button type="button" class="library-hit${linkable ? ' library-links-hit' : ''}" data-smart-row="${at}" title="${escapeAttr(row.path)}"><span class="library-hit-title">${documentNameMarkup(row.path, also)}</span>${line}</button>`;
-  if (!linkable) return hit;
-  return `<div class="library-links-row">${hit}<button type="button" class="theme-mode-btn library-links-link" data-smart-link="${at}" title="${escapeAttr(`Link these words to ${documentNameParts(smartLinksAnswer.path).stem}`)}">Link</button></div>`;
-}
-function smartLinkGroupHtml(key, label) {
-  const group = smartLinksAnswer[key] || { total: 0, rows: [] };
-  if (!group.rows.length) return '';
-  const folders = documentFolderWords(group.rows.map((row) => row.path));
-  const rows = group.rows.map((row, at) => smartLinkRowHtml(row, `${key}:${at}`, key === 'mentions', folders[at])).join('');
-  return `<div class="library-outline-note"><span class="library-outline-note-label">${escapeText(label)}</span><span class="library-outline-count">${formatCountLabel(group.total, 'note', 'notes')}</span></div>${rows}`;
-}
-function smartLinkRow(address) {
-  const [key, at] = String(address || '').split(':');
-  const group = smartLinksAnswer && smartLinksAnswer[key];
-  return group ? group.rows[Number(at)] : null;
-}
-
-function renderSmartLinks() {
-  libraryLinks.innerHTML = smartLinksHaveRows() ? SMART_LINK_GROUPS.map(([key, label]) => smartLinkGroupHtml(key, label)).join('') : '';
-  for (const button of libraryLinks.querySelectorAll('[data-smart-row]')) {
-    
-    bindLibraryRowPress(button, () => {
-      const row = smartLinkRow(button.dataset.smartRow);
-      if (!row) return;
-      pendingSearchJump = row.line ? { path: row.path, anchor: '', line: row.line } : null;
-      graphExitPending = true;
-      send({ command: 'openRecent', path: row.path });
-    });
-  }
-  for (const button of libraryLinks.querySelectorAll('[data-smart-link]')) {
-    button.addEventListener('click', () => {
-      const row = smartLinkRow(button.dataset.smartLink);
-      if (!row || !smartLinksAnswer) return;
-      pendingSearchJump = row.line ? { path: row.path, anchor: '', line: row.line } : null;
-      send({ command: 'linkMention', path: row.path, target: smartLinksAnswer.path, start: row.start, end: row.end, words: row.words });
-    });
-  }
-  renderLibraryLists();
-}
 
 function searchForTag(name) {
   if (!vaultSearchAvailable() || !name) return;
@@ -23741,7 +23626,7 @@ function noteSuggestions(monaco, model, position, query) {
     const close = closingSuffix(model, position, ']]');
     
     return {
-      suggestions: nearThisNoteFirst(answer.notes).map((note, at) => ({
+      suggestions: answer.notes.map((note, at) => ({
         label: note.detail ? { label: note.label, description: note.detail } : note.label,
         kind: monaco.languages.CompletionItemKind.File,
         insertText: note.label + close,
@@ -34630,7 +34515,7 @@ function readingLinkRows(notes, query) {
   const wanted = query.trim().toLowerCase();
   const seen = new Set();
   const rows = [];
-  for (const note of nearThisNoteFirst(notes)) {
+  for (const note of notes) {
     if (wanted && !note.label.toLowerCase().includes(wanted)) continue;
     const key = `${note.label.toLowerCase()}\n${note.path}`;
     if (seen.has(key)) continue;
@@ -34639,6 +34524,18 @@ function readingLinkRows(notes, query) {
     if (rows.length >= READING_LINK_ROWS) break;
   }
   return rows;
+}
+
+
+function relativeNoteHref(from, to) {
+  const parts = (path) => String(path || '').split(/[\\/]+/).filter(Boolean);
+  const folder = parts(from).slice(0, -1);
+  const target = parts(to);
+  let shared = 0;
+  while (shared < folder.length && shared < target.length && folder[shared].toLowerCase() === target[shared].toLowerCase()) shared += 1;
+  if (shared === 0 || shared === target.length) return '';
+  const encode = (segment) => segment.replace(/[ %()[\]<>#?]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
+  return [...folder.slice(shared).map(() => '..'), ...target.slice(shared).map(encode)].join('/');
 }
 
 
@@ -34653,13 +34550,7 @@ function readingLinkAnchor(row) {
 
 function readingLinkPopupHtml(popup) {
   let html = '';
-  let heading = null;
   popup.rows.forEach((row, at) => {
-    const group = row.near ? 'Near this note' : 'Every note';
-    if (group !== heading) {
-      heading = group;
-      html += `<div class="reading-link-popup-heading">${group}</div>`;
-    }
     const picked = at === popup.index ? ' is-selected' : '';
     const detail = row.detail ? `<span class="reading-link-popup-detail">${escapeText(row.detail)}</span>` : '';
     html += `<button type="button" class="reading-link-popup-row${picked}" data-link-row="${at}" tabindex="-1"><span class="reading-link-popup-name">${escapeText(row.label)}</span>${detail}</button>`;
