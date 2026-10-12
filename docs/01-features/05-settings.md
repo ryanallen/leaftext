@@ -19,7 +19,7 @@ Other preferences are saved here but set where they apply: the [Speed Reader](#s
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
-Two things stopped being choices: the [minimap](#minimap) and the [pager](#pager) are always on.
+The [pager](#pager) stopped being a choice and is always on; the [minimap](#minimap) is put away and brought back by dragging the page's right edge, and that is saved here.
 
 One preference is not saved here at all, because it is your system's: [Reduce Motion](#reduce-motion).
 
@@ -148,9 +148,10 @@ Leaftext removes broken entries from the recent list automatically and collapses
 
 ### Minimap
 
-- **Always on.** It is not a choice any more, and there is nothing to switch
-- The rail still comes and goes with the document, and a window 720 pixels wide or narrower [wears the self-hiding scrollbar instead](04-minimap.md#responsive-behavior)
-- Nothing is saved: a `minimap_enabled` left in an older `settings.json` is ignored and dropped on the next save
+- **Yours to shut.** [Drag the page's right edge](04-minimap.md#always-there) to put the rail away and back; there is no checkbox
+- Saved as `minimap_shut`, open until you drag it shut, so the window opens the way you left it
+- The rail still comes and goes with the document, and a window 720 pixels wide or narrower [wears the self-hiding scrollbar instead](04-minimap.md#responsive-behavior) whichever way it was left
+- A `minimap_enabled` left in an older `settings.json` from when the minimap had a checkbox is still ignored and dropped on the next save
 
 ### Speed Reader
 

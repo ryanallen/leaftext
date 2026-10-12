@@ -6,7 +6,7 @@ A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page.
 
 ## Consoles
 
-A [console tab](03-library.md#console) keeps the rail beside its output. The rail shows lines from the console's scrollback, including lines above the visible screen; its position box follows the terminal viewport, and dragging it scrolls through that output. At a window width of 720 pixels or less, the console uses its own scrollbar.
+A [console tab](03-library.md#console) keeps the rail beside its output. The rail shows lines from the console's scrollback, including lines above the visible screen; its position box follows the terminal viewport, and dragging it scrolls through that output. At a window width of 720 pixels or less, or with the rail [dragged shut](#always-there), the console uses its own scrollbar.
 
 > Take in the whole page at once. A tiny version of your document runs down the side — real text, not abstract bars — with a marker showing where you are. Click to jump to any section; drag the marker to scroll; turn the wheel over the rail and the page scrolls just as it does under the pointer.
 
@@ -24,7 +24,7 @@ A [console tab](03-library.md#console) keeps the rail beside its output. The rai
 | [The code view's rail](#the-code-views-minimap) | The editor's own map of the source, always present there |
 | [Console scrollback](#consoles) | The terminal's earlier output and its current viewport in the same rail |
 | [Responsive widths](#responsive-behavior) | The lane narrows with the window, and gives way to the self-hiding scrollbar at 720 pixels and under |
-| [Always there](#always-there) | The rail is the primary scroll indicator, present for every non-empty document in any window wider than 720 pixels |
+| [Always there](#always-there) | The rail is the primary scroll indicator, present for every non-empty document in any window wider than 720 pixels until you drag the page's right edge to shut it |
 | [On an exported page](#on-an-exported-page) | A page [exported as a web page](02-navigation.md#export-the-page) carries the rail too, so whoever you send it to can see the shape of the whole document |
 
 ## What it is
@@ -82,12 +82,12 @@ The Rust side sends the page one flag, `has_visible_content`: an empty document 
 
 ![The code view with the editor's own minimap rail at the right, drawing the source rather than a cloned page, standing on the window's textured chrome with the page's border between the two](../../imgs/minimap-code.png)
 
-The [code view](07-editing.md#code-view) has a rail of its own — the editor's, not this one. It draws the source rather than cloning a page, which is what lets it stay honest on a file far too large to lay out twice, and it is always present there: with no scrollbar in the source view, the rail is how you see where you are. The reader's rail and the editor's are two implementations of one idea, so they are dressed alike — the same viewport box, the same border and rounding, the same width and standing-off from the page.
+The [code view](07-editing.md#code-view) has a rail of its own — the editor's, not this one. It draws the source rather than cloning a page, which is what lets it stay honest on a file far too large to lay out twice, and it is present there whenever the reader's rail would be: with the rail up the source view draws no scrollbar, so the rail is how you see where you are, and with the rail [dragged shut](#always-there) the map goes and the editor's own thin bar fades in while the source scrolls. The reader's rail and the editor's are two implementations of one idea, so they are dressed alike — the same viewport box, the same border and rounding, the same width and standing-off from the page.
 
 Both rails are **chrome, not page**: they stand on the window's textured surface beside the card, and the page's own right border is the line between the two. In the code view that means the editor paints no background out there, the map's own drawing surface is transparent, and the editor casts no scroll shadow across the rail's top — so the chrome's dot grain shows through between the lines of the map, and the map reads as text on the window rather than as a second, differently-colored page.
 
 > [!NOTE]
-> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose. The code view's is present whenever that view is open; the reading view's in any window wider than 720 pixels.
+> The reading view's rail is a real clone of the page; the code view's is the editor's drawing of the source. They look and behave alike on purpose. Both are present in any window wider than 720 pixels until the rail is dragged shut, and both go together.
 
 ## On an exported page
 
@@ -111,7 +111,7 @@ At 720 pixels and under — a phone, or a window dragged narrow — the rail giv
 
 ## Always there
 
-The minimap is not a choice. There is nothing to switch and nothing saved: in any window wider than 720 pixels it is the reader's scroll indicator, so turning it off left a page with no answer to "where am I in this". The window's width is the one thing that takes it away, and the scrollbar answers the same question there — see [Responsive behavior](#responsive-behavior).
+In any window wider than 720 pixels the minimap is the reader's scroll indicator, and it is there until you put it away. Drag the narrow gap between the page's right border and the rail to the right, and once the pointer has traveled half the rail's width the rail snaps shut: the page takes its width, and the view's own thin scrollbar takes over as the answer to "where am I in this" — the reading page's, the [code view](#the-code-views-minimap)'s editor bar, or a [console](#consoles)'s. Drag the window's right edge back to the left the same distance and the rail snaps open again, and the scrollbar goes. A drag let go short of that point leaves the rail as it was. The choice is remembered, so the window opens the way you left it, and a window 720 pixels wide or less reads with the scrollbar whichever way it was left — see [Responsive behavior](#responsive-behavior).
 
 Inside another product's frame, the document scrolls within that frame and the minimap stands beside it while the frame is wider than 720 pixels; a narrower frame reads with the scrollbar, the way a narrow window does. A wheel over either the document or the minimap moves the same page; pressing the minimap jumps through it.
 
@@ -119,7 +119,7 @@ With [two documents side by side](02-navigation.md#two-documents-side-by-side) t
 
 With [source beside the page](07-editing.md#source-beside-the-page), the rendered page's rail is the one picture for the pair. Dragging it moves both the page and its source; the source editor does not draw a second minimap.
 
-The rail still comes and goes with the document — there is none on the home screen, none while the [graph](03-library.md#graph) is up, and none in a window 720 pixels wide or less. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's own thin [scrollbar](02-navigation.md#scrollbars) comes back — drawn while the page is being scrolled and gone a moment after it stops. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
+The rail still comes and goes with the document — there is none on the home screen, none while the [graph](03-library.md#graph) is up, none in a window 720 pixels wide or less, and none while it is dragged shut. With no rail its column collapses to zero and the page widens back out to the window gutter, so no empty band remains, and the reader's own thin [scrollbar](02-navigation.md#scrollbars) comes back — drawn while the page is being scrolled and gone a moment after it stops. While the rail is present the scrollbar stays hidden, because the rail is that indicator.
 
 > [!TIP]
 > Use the minimap to quickly gauge document length and find dense sections at a glance. Because it is a real rendering of the page, headings, code blocks, verse, and dense paragraphs each keep their own shape — so you can pick out section breaks and dense passages in the rail from the layout itself, without reading a word.

@@ -6886,6 +6886,8 @@ body.is-embedded {
 body.is-embedded .app-bar,
 body.is-embedded .library-pane,
 body.is-embedded .library-divider,
+body.is-embedded .rail-divider,
+body.has-split .rail-divider,
 body.is-embedded .reader-toolbar {
   display: none;
 }
@@ -7133,6 +7135,28 @@ body.is-library-settling .app-bar::after {
   left: var(--lt-stroke-1);
   right: auto;
   width: calc(var(--reader-gutter) - var(--lt-stroke-1));
+}
+/* The rail's grip: an invisible strip over the gap between the page's right border and the rail, overhanging the page by the few pixels the library divider overhangs the reader. Hung on the rail's column and the gutter beyond it and measured from the window's side, so it lands on the gap whether the rail stands in its own column or the source view draws its map inside the card. rail-width.js writes the thumbnail's width on it. */
+.rail-divider {
+  grid-column: 3 / 5;
+  grid-row: 1;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: calc(var(--reader-gutter) + var(--rail-grip-thumb, 0px));
+  width: calc(var(--reader-minimap-gap) + 3px);
+  z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+}
+:root[data-code-view="true"] .rail-divider {
+  right: calc(var(--reader-gutter) + var(--rail-grip-thumb, 0px) + var(--cv-minimap-standoff));
+}
+/* Shut, the rail has no gap, so the grip is the window's own right gutter. */
+.rail-divider.is-rail-shut,
+:root[data-code-view="true"] .rail-divider.is-rail-shut {
+  right: 0;
+  width: var(--reader-gutter);
 }
 .library-shell.library-closed .library-crumbs,
 .library-shell.library-closed .library-foot {
@@ -8338,8 +8362,12 @@ body.library-resizing button {
   padding: var(--console-inset-top) var(--lt-space-8) var(--lt-space-8);
 }
 .console-layer[hidden] { display: none; }
+/* A console standing in the right-hand card, in that card's track. */
+.console-layer.is-right-card { grid-column: 5; }
+/* Two cards are two whole cards, the same as a page's. */
+.console-layer.is-split { border-top: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
 .console-terminal { width: 100%; height: 100%; }
-.console-front #app, .console-front .reader-toolbar { visibility: hidden; }
+.reader-column.is-under-console, .console-front .reader-toolbar { visibility: hidden; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
 .console-done .tab-label > .lt-icon-terminal { color: var(--lt-primary-ink); }
 .console-done .tab-label::before { content: ''; position: absolute; left: 0; width: 16px; height: 16px; pointer-events: none; background: radial-gradient(circle, var(--lt-primary), transparent 70%); opacity: var(--lt-opacity-55); animation: console-done-breathe var(--lt-duration-1250) var(--lt-ease-in-out) infinite alternate; }
@@ -12099,6 +12127,12 @@ body.is-block-dragging .document-body [data-src-start] {
   cursor: text;
 }
 /* The minimap's floating viewport box (the draggable "where am I" window), styled to echo the reader rail's viewport box: our minimap-viewport colors, a border, and rounded corners. Nothing else about the minimap is touched. */
+/* The editor's own bar, shown only while the rail is shut, drawn as the page's is: the thumb held off each side of its 14-pixel gutter and rounded. !important because Monaco writes the slider's place and width inline, and an option changed after the editor is made does not reach them. */
+.code-view-monaco .monaco-editor .scrollbar.vertical .slider {
+  left: var(--lt-stroke-4) !important;
+  width: calc(100% - (2 * var(--lt-stroke-4))) !important;
+  border-radius: var(--lt-radius-md);
+}
 .code-view-monaco .monaco-editor .minimap-slider {
   background: var(--lt-minimap-viewport-background) !important;
   border: var(--lt-stroke-1) solid var(--lt-minimap-viewport-border);
@@ -19306,7 +19340,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 173 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 192 values that do not change with the theme, all 109 icons, and all 174 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19338,7 +19372,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>192</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>109</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>173</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>174</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -19793,7 +19827,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>apple</code></div><div class="glyph"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-apple"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-apple"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">173 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">174 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>
@@ -20125,6 +20159,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Minimap rail</h3><code class="built">.document-minimap</code><span class="built">minimap.js</span></header>
 <div class="stage"><aside class="document-minimap" style="height:120px"><div class="document-minimap-track"><div class="document-minimap-content"></div><div class="document-minimap-fade" data-edge="top"></div><div class="document-minimap-fade" data-edge="bottom"></div><div class="document-minimap-slides"><div class="document-minimap-slide" style="top:0;height:30px"><span class="document-minimap-slide-number">1</span></div><div class="document-minimap-slide is-divided" style="top:30px;height:44px"><span class="document-minimap-slide-number">2</span></div><div class="document-minimap-slide is-divided" style="top:74px;height:46px"><span class="document-minimap-slide-number">3</span></div></div><div class="document-minimap-viewport"></div><div class="document-minimap-ribbon" style="--ribbon-at:0.4"></div></div></aside></div>
+</section>
+<section class="part">
+<header><h3>Rail grip</h3><code class="built">.rail-divider</code><span class="built">rail-width.js, over the gap between the page's right border and the rail, or the window's right gutter once the rail is shut</span></header>
+<div class="stage"><div class="rail-divider" style="position:static;height:64px;width:7px;background:var(--lt-primary);opacity:var(--lt-opacity-46)"></div></div>
 </section>
 <section class="part">
 <header><h3>Outline</h3><code class="built">.document-outline</code><span class="built">site/outline.js, on the published sites</span></header>

@@ -366,7 +366,7 @@ let libraryOutlineOpen = false;
 
 let changeRepoRevealed = false;
 
-const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', booted: false,
+const webAddressState = { covers: new Set(), watched: new WeakSet(), frame: 0, lastBounds: '', lastBesideBounds: '', booted: false,
   bar: null, closeTimer: 0, overApp: false, overAddress: false, editing: false, motionUntil: 0, coverStanding: false,
   metrics: null, image: '', held: null, railTab: null, palettes: new Map(), paletteGenerations: new Map(), liveScroll: 0 };
 function pruneWebTabPalettes(state) {
@@ -400,6 +400,40 @@ window.leafWebPalette = payload => {
 function activeWebTab() {
   const tab = currentState && currentState.tabs && currentState.tabs[currentState.active];
   return tab && tab.kind === 'web' ? tab : null;
+}
+
+function besideWebTab() {
+  const index = besideTabIndex();
+  if (index === null || index === currentState.active) return null;
+  const tab = currentState.tabs && currentState.tabs[index];
+  return tab && tab.kind === 'web' && !tab.site ? tab : null;
+}
+
+function sendBesideWebBounds(ratio, barBottom) {
+  const card = besideWebTab() ? besideColumn() : null;
+  if (!card) {
+    webAddressState.lastBesideBounds = '';
+    return;
+  }
+  const cell = card.reader.getBoundingClientRect();
+  const style = getComputedStyle(card.reader);
+  const left = cell.left + parseFloat(style.borderLeftWidth || 0);
+  const top = Math.max(cell.top + parseFloat(style.borderTopWidth || 0), barBottom);
+  const bottom = cell.bottom - parseFloat(style.borderBottomWidth || 0);
+  const cardRight = cell.right - parseFloat(style.borderRightWidth || 0);
+  const rail = card.rail && !card.rail.hidden ? card.rail.getBoundingClientRect() : null;
+  const right = rail && rail.width > 0 ? Math.min(cardRight, rail.left) : cardRight;
+  const radius = Math.round(Math.max(0, parseFloat(style.borderBottomLeftRadius || 0)) * ratio);
+  const bounds = {
+    command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
+    y: Math.max(0, Math.round(top * ratio)), width: Math.max(0, Math.round(right * ratio) - Math.round(left * ratio)),
+    height: Math.max(0, Math.round(bottom * ratio) - Math.round(top * ratio)),
+    radius, topRadius: radius, visible: true, holes: [], beside: true,
+  };
+  const spelling = JSON.stringify(bounds);
+  if (spelling === webAddressState.lastBesideBounds) return;
+  webAddressState.lastBesideBounds = spelling;
+  send(bounds);
 }
 
 function activeLocalSiteTab() {
@@ -491,7 +525,7 @@ function followWebSurfaceMotion() {
   scheduleWebSurfaceBounds();
 }
 function scheduleWebSurfaceBounds() {
-  if (!activeWebTab() && !webAddressState.lastBounds) return;
+  if (!activeWebTab() && !webAddressState.lastBounds && !besideWebTab() && !webAddressState.lastBesideBounds) return;
   if (webAddressState.frame || !webAddressState.booted) return;
   webAddressState.frame = window.requestAnimationFrame(() => {
     webAddressState.frame = 0;
@@ -520,6 +554,7 @@ function scheduleWebSurfaceBounds() {
     const radius = Math.max(0, parseFloat(cardStyle.borderBottomLeftRadius || 0));
     
     const topRadius = Math.max(0, parseFloat(cardStyle.getPropertyValue('--lt-radius-md')) || 0);
+    sendBesideWebBounds(ratio, bar.bottom);
     const holes = tab ? webSurfaceHoles({ left, top, right, bottom }, ratio) : null;
     const bounds = {
       command: 'webSurfaceBounds', x: Math.max(0, Math.round(left * ratio)),
@@ -1151,6 +1186,8 @@ function writeReaderClasses(extra) {
   if (keyedColumn === rightColumn) own.push('reader-column-right');
   if (app.classList.contains('is-keyed')) own.push('is-keyed');
   
+  if (app.classList.contains('is-under-console')) own.push('is-under-console');
+  
   if (splitOpen()) own.push('is-split');
   app.className = own.concat(extra).join(' ');
 }
@@ -1283,7 +1320,7 @@ function besideWaitingForPage() {
 }
 
 
-function applySplit(beside) {
+function applySplit(beside, state) {
   if (!rightColumn || !rightColumn.reader) return;
   
   if (!!beside !== besideInLastPayload) besideAwaitingPage = !!beside;
@@ -1310,8 +1347,21 @@ function applySplit(beside) {
     splitDrawnOpen = open;
     scheduleLibraryOutline();
   }
+  settleBesideTab(state || currentState);
   
   writeStripShares();
+}
+
+
+function settleBesideTab(state) {
+  const beside = state && state.beside;
+  const tab = beside && beside.tab !== state.active && state.tabs ? state.tabs[beside.tab] : null;
+  if (tab && (tab.kind === 'console' || tab.kind === 'web') && besideAwaitingPage) {
+    besideAwaitingPage = false;
+    if (splitColumnsOpen) writeSplitColumns(true);
+  }
+  placeConsoleLayers(state);
+  scheduleWebSurfaceBounds();
 }
 
 
@@ -1388,6 +1438,8 @@ function writeStripShares() {
   if (!tabBar) return;
   
   document.body.classList.toggle('beside-on-the-left', splitColumnsOpen && keyedColumn === rightColumn);
+  
+  scheduleWebSurfaceBounds();
   if (!splitColumnsOpen || !leftColumn || !rightColumn) {
     tabBar.style.removeProperty('--strip-part-left');
     return;
@@ -9930,6 +9982,7 @@ const graphScopeTool = document.getElementById('graphScopeTool');
 const libraryShell = document.getElementById('libraryShell');
 const libraryPane = document.getElementById('libraryPane');
 const libraryDivider = document.getElementById('libraryDivider');
+const railDivider = document.getElementById('railDivider');
 const libraryOpen = document.getElementById('libraryOpen');
 const libraryTree = document.getElementById('libraryTree');
 const readerGraph = document.getElementById('readerGraph');
@@ -13062,7 +13115,7 @@ if (window.__leafScrollbarsAlways === true) {
 
 const narrowWindowQuery = window.matchMedia ? window.matchMedia('(max-width: 720px)') : null;
 let minimapWindowWide = !(narrowWindowQuery && narrowWindowQuery.matches);
-let minimapShut = false;
+let minimapShut = LEAF_SETTINGS.minimapShut === true;
 let minimapEnabled = minimapWindowWide && !minimapShut;
 const minimapListeners = new Set();
 function answerMinimapSwitch() {
@@ -13082,6 +13135,7 @@ window.leafMinimap = {
     minimapWindowWide = Boolean(nextEnabled);
     answerMinimapSwitch();
   },
+  windowIsWide: () => minimapWindowWide,
   getShut: () => minimapShut,
   
   setShut(nextShut) {
@@ -21009,7 +21063,8 @@ themeListenerArmed = true;
 let minimapListenerArmed = false;
 window.leafMinimap.subscribe(() => {
   if (!minimapListenerArmed) return;
-  renderState();
+  
+  if (!codeViewActive) renderState();
   
   drawPaneWidths(paneDrawingState(), libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth));
 });
@@ -21158,7 +21213,8 @@ function deliverWorkspacePayload(state, action, detail) {
 
 function takePayloadSplit(state) {
   if (state && Array.isArray(state.tabs)) discardClosedSizedTables(state.tabs);
-  applySplit((state && state.beside) || null);
+  
+  applySplit((state && state.beside) || null, state);
 }
 function failWorkspacePayload(error) {
   console.error('reading view: the document payload would not load', error);
@@ -22928,6 +22984,38 @@ function leafThemeToken(name) {
   return raw ? leafResolveColor(raw) : null;
 }
 
+function codeViewScrollThumbColors() {
+  
+  const muted = leafThemeToken('--lt-muted-foreground');
+  if (!muted || muted.length !== 6) return {};
+  const thumb = muted + '59';
+  return { 'scrollbarSlider.background': '#' + thumb, 'scrollbarSlider.hoverBackground': '#' + thumb, 'scrollbarSlider.activeBackground': '#' + thumb };
+}
+
+
+const CODE_VIEW_SCROLLBAR_SIZE = 14;
+function codeViewRailOptions() {
+  const railOpen = window.leafMinimap.getEnabled();
+  return {
+    minimap: { enabled: railOpen && !besideIsTheSameTab(), showSlider: 'always' },
+    scrollbar: {
+      vertical: railOpen ? 'hidden' : 'auto',
+      horizontal: 'hidden',
+      verticalScrollbarSize: railOpen ? 0 : CODE_VIEW_SCROLLBAR_SIZE,
+      horizontalScrollbarSize: 0,
+      handleMouseWheel: true,
+    },
+  };
+}
+
+
+window.leafMinimap.subscribe(() => {
+  if (!monacoEditor || typeof monacoEditor.updateOptions !== 'function') return;
+  monacoEditor.updateOptions(codeViewRailOptions());
+  codeViewWrapColumn = 0;
+  applyCodeViewWrapColumn();
+});
+
 
 function defineLeafMonacoTheme(monaco) {
   const dark = currentAppearance() === 'dark';
@@ -22970,6 +23058,8 @@ function defineLeafMonacoTheme(monaco) {
     'minimap.background': '#00000000',
     
     'scrollbar.shadow': '#00000000',
+    
+    ...codeViewScrollThumbColors(),
     'widget.shadow': '#00000000',
     
     focusBorder: '#00000000',
@@ -23174,7 +23264,7 @@ function createMonacoEditor(monaco, container, state, text) {
     
     readOnly: codeViewIsLocked(),
     
-    minimap: { enabled: !besideIsTheSameTab(), showSlider: 'always' },
+    ...codeViewRailOptions(),
     automaticLayout: true,
     lineNumbers: 'on',
     scrollBeyondLastLine: false,
@@ -23193,13 +23283,6 @@ function createMonacoEditor(monaco, container, state, text) {
     
     renderLineHighlight: 'none',
     
-    scrollbar: {
-      vertical: 'hidden',
-      horizontal: 'hidden',
-      verticalScrollbarSize: 0,
-      horizontalScrollbarSize: 0,
-      handleMouseWheel: true,
-    },
     overviewRulerLanes: 0,
     overviewRulerBorder: false,
   });
@@ -41069,6 +41152,7 @@ function siteLaidOutState(state) {
 }
 
 function keepMinimapForRedraw() {
+  settleRailGrip();
   const minimap = currentMinimap();
   if (!minimap) return;
   minimap.classList.add('is-kept');
@@ -42325,6 +42409,10 @@ function makeConsoleLayer(id) {
   host.className = 'console-terminal';
   layer.appendChild(host);
   consoleShell.appendChild(layer);
+  
+  layer.addEventListener('pointerdown', () => {
+    if (id === besideConsoleId()) pressIntoColumn(besideColumn());
+  }, true);
   const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
@@ -42362,6 +42450,11 @@ function makeConsoleLayer(id) {
     terminal.handleMouseDown = event => { if (!consoleMousePress(id, entry, event) && !minimapEnabled) pressScrollbar(event); };
     host.addEventListener('mousedown', terminal.handleMouseDown, { capture: true });
     
+    const input = terminal.inputHandler;
+    for (const [type, listener] of [['mousedown', input.mousedownListener], ['mouseup', input.mouseupListener], ['mousemove', input.mousemoveListener]]) {
+      if (listener) host.removeEventListener(type, listener);
+    }
+    
     host.addEventListener('mousemove', event => consoleMouseMove(id, entry, event), { capture: true });
     host.addEventListener('dblclick', event => { if (consoleMouseWanted(terminal, event)) event.stopPropagation(); }, { capture: true });
     host.addEventListener('click', event => { if (entry.mouseClicked) { entry.mouseClicked = false; event.stopPropagation(); } }, { capture: true });
@@ -42386,9 +42479,10 @@ function makeConsoleLayer(id) {
     paintConsoleTheme(entry);
     entry.fit = fit;
     entry.observer = new ResizeObserver(() => {
-      if (consoleFrontId !== id) return;
+      if (layer.hidden) return;
       fit.fit();
       sendConsoleSize(id, entry);
+      if (consoleFrontId !== id) return;
       writeConsoleFade();
       renderConsolePin(entry);
     });
@@ -42633,26 +42727,75 @@ function consoleScrollElement() {
   return entry.scroll;
 }
 
+
+function besideConsoleId(state = currentState) {
+  const beside = state && state.beside;
+  if (!beside || beside.tab === state.active) return null;
+  const tab = state.tabs && state.tabs[beside.tab];
+  return tab && tab.kind === 'console' ? tab.webId : null;
+}
+
+
+function placeConsoleLayers(state = currentState) {
+  if (!leftColumn) return;
+  const besideId = besideConsoleId(state);
+  const besideCard = besideColumn();
+  const split = splitOpen();
+  if (besideId !== null && !consoleLayers.has(besideId)) makeConsoleLayer(besideId);
+  for (const [id, entry] of consoleLayers) {
+    const card = id === consoleFrontId ? keyedColumn : id === besideId ? besideCard : null;
+    const shown = !!card;
+    const wasHidden = entry.layer.hidden;
+    entry.layer.hidden = !shown;
+    entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
+    entry.layer.classList.toggle('is-split', shown && split);
+    if (shown && wasHidden && entry.fit) {
+      entry.fit.fit();
+      sendConsoleSize(id, entry);
+    }
+  }
+  const besideTab = besideCard && state && state.beside && state.tabs ? state.tabs[state.beside.tab] : null;
+  const besideCovered = !!besideTab && (besideTab.kind === 'console' || besideTab.kind === 'web');
+  for (const column of [leftColumn, rightColumn]) {
+    if (!column || !column.reader) continue;
+    const covered = column === keyedColumn ? consoleFrontId !== null : column === besideCard && besideCovered;
+    column.reader.classList.toggle('is-under-console', covered);
+  }
+}
+
+function drawConsoleRail(entry) {
+  setMinimapMarkup(renderDocumentMinimap(true));
+  const minimap = currentMinimap();
+  if (minimap) minimap.setAttribute('aria-label', 'Console minimap');
+  if (entry.terminal) bindDocumentMinimap();
+}
+
+window.leafMinimap.subscribe(() => {
+  if (consoleFrontId === null) return;
+  const entry = consoleLayers.get(consoleFrontId);
+  if (!entry) return;
+  drawConsoleRail(entry);
+  if (minimapEnabled && entry.terminal && typeof entry.terminal.hideScrollbar === 'function') entry.terminal.hideScrollbar();
+  scheduleMinimapPreviewUpdate();
+});
+
 window.leafConsoleFront = id => {
   const changed = consoleFrontId !== id;
   consoleFrontId = id;
   document.body.classList.toggle('console-front', id !== null);
   if (changed && consoleAgentRows.length) drawConsoleAgents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
+  placeConsoleLayers();
   if (id === null) {
     writeConsoleFade();
     return;
   }
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   entry.layer.hidden = false;
+  placeConsoleLayers();
   
   sayStartupDrawn(true);
-  if (changed || !currentMinimap()) {
-    setMinimapMarkup(renderDocumentMinimap(true));
-    const minimap = currentMinimap();
-    if (minimap) minimap.setAttribute('aria-label', 'Console minimap');
-    if (entry.terminal) bindDocumentMinimap();
-  }
+  if (changed || !currentMinimap()) drawConsoleRail(entry);
   if (entry.fit) {
     entry.fit.fit();
     sendConsoleSize(id, entry);
@@ -42769,6 +42912,11 @@ const CONSOLE_PIN_MARK = /\x1b\]133;([AB])[^\x07\x1b]*(?:\x07|\x1b\\)/g;
 
 const CONSOLE_PIN_PARTIAL = /\x1b\](?:1(?:3(?:3(?:;[^\x07\x1b]*)?)?)?)?$/;
 
+const CONSOLE_PROMPT_MARK = /^\s*[❯›>](?:\s|$)/;
+const CONSOLE_PROMPT_RULE = /^\s*─/;
+
+const CONSOLE_PROMPT_ECHO_WRITES = 30;
+
 
 function setupConsolePin(entry) {
   const box = document.createElement('div');
@@ -42780,7 +42928,7 @@ function setupConsolePin(entry) {
   box.appendChild(row);
   entry.layer.appendChild(box);
   box.addEventListener('mousedown', event => onConsolePinMouseDown(entry, event));
-  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '' };
+  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh() };
   const write = entry.terminal.write;
   entry.terminal.write = (data, done) => writeConsolePinned(entry, data, write, done);
   entry.terminal.onScroll(() => renderConsolePin(entry));
@@ -42813,6 +42961,7 @@ function placeConsolePin(entry, marker) {
 
 function consolePinInput(entry, data) {
   const pin = entry.pin;
+  if (pin && data === '\r' && entry.terminal.buffer.active.type === 'alternate') consolePromptSent(entry);
   if (!pin || !String(data).includes('\r') || entry.terminal.buffer.active.type !== 'normal') return;
   const { row, offset } = consolePinCursorOffset(entry);
   const announced = pin.pending && !pin.pending.isDisposed ? pin.pending : null;
@@ -42887,19 +43036,37 @@ function hideConsolePin(entry) {
 }
 
 function renderConsolePin(entry) {
+  const pin = entry.pin;
+  if (!pin || !entry.terminal) return;
+  const type = entry.terminal.buffer.active.type;
+  if (type !== pin.screen) {
+    pin.screen = type;
+    pin.full = consolePromptFresh();
+  }
+  if (type === 'alternate') {
+    const text = consolePromptNow(entry);
+    if (text === null || entry.layer.hidden) hideConsolePin(entry);
+    else drawConsolePin(entry, null, text, false);
+    return;
+  }
   const line = consolePinNow(entry);
   if (line === null) {
     hideConsolePin(entry);
     return;
   }
-  const pin = entry.pin;
   const terminal = entry.terminal;
   
   if (pin.read?.marker !== pin.marker || pin.read.line !== line) {
     const text = consoleBuffer(entry).getLine(line)?.translateToString(true) ?? '';
     pin.read = { marker: pin.marker, line, text, wrapped: Boolean(terminal.buffer.active.getLine(line + 1)?.isWrapped) };
   }
-  const { text, wrapped } = pin.read;
+  drawConsolePin(entry, line, pin.read.text, pin.read.wrapped);
+}
+
+
+function drawConsolePin(entry, line, text, wrapped) {
+  const pin = entry.pin;
+  const terminal = entry.terminal;
   const height = consoleRowHeight(terminal);
   const renderer = terminal.renderer || {};
   const width = consoleScreen(terminal)?.clientWidth || 0;
@@ -42912,7 +43079,9 @@ function renderConsolePin(entry) {
   if (renderer.fontFamily) pin.box.style.fontFamily = renderer.fontFamily;
   if (renderer.fontSize) pin.box.style.fontSize = `${renderer.fontSize}px`;
   pin.row.style.lineHeight = `${height}px`;
-  pin.row.dataset.consoleLine = String(line);
+  pin.box.style.pointerEvents = line === null ? 'none' : '';
+  if (line === null) delete pin.row.dataset.consoleLine;
+  else pin.row.dataset.consoleLine = String(line);
   pin.row.textContent = wrapped ? `${text}…` : text;
 }
 
@@ -42924,6 +43093,91 @@ function onConsolePinMouseDown(entry, event) {
   consoleBuffer(entry).scrollToLine(line);
   renderConsolePin(entry);
   entry.terminal.focus();
+}
+
+
+
+
+function consolePromptFresh() {
+  return { held: null, candidate: null, below: null, covering: false };
+}
+
+
+function consolePromptRows(entry) {
+  const terminal = entry.terminal;
+  const active = terminal.buffer.active;
+  return readConsoleScreenOnce(terminal.wasmTerm, () => {
+    const rows = [];
+    for (let row = 0; row < terminal.rows; row += 1) rows.push(consoleLine(active.getLine(row))?.translateToString(true) ?? '');
+    return rows;
+  });
+}
+
+
+function consolePromptWords(text) {
+  return text.replace(CONSOLE_PROMPT_MARK, '').replace(/\s+/g, ' ').trim();
+}
+
+
+function consolePromptBox(rows, cursor) {
+  for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
+    const text = rows[top] ?? '';
+    if (CONSOLE_PROMPT_RULE.test(text)) return null;
+    if (!CONSOLE_PROMPT_MARK.test(text)) continue;
+    let end = top + 1;
+    while (end < rows.length && rows[end].trim() && !CONSOLE_PROMPT_RULE.test(rows[end])) end += 1;
+    return { top, end };
+  }
+  return null;
+}
+
+
+function consolePromptShown(rows, held, limit) {
+  for (let row = 0; row < limit; row += 1) {
+    const words = consolePromptWords(rows[row]);
+    if (words && held.startsWith(words)) return row;
+  }
+  return -1;
+}
+
+function consolePromptSent(entry) {
+  const rows = consolePromptRows(entry);
+  const box = consolePromptBox(rows, entry.terminal.buffer.active.cursorY);
+  const text = box ? consolePromptWords(rows.slice(box.top, box.end).join(' ')) : '';
+  entry.pin.full.candidate = text ? { text, writes: CONSOLE_PROMPT_ECHO_WRITES } : null;
+}
+
+
+function consolePromptNow(entry) {
+  const full = entry.pin.full;
+  if (!full.held && !full.candidate) return null;
+  const rows = consolePromptRows(entry);
+  const box = consolePromptBox(rows, entry.terminal.buffer.active.cursorY);
+  const limit = box ? box.top : rows.length;
+  const candidate = full.candidate;
+  if (candidate) {
+    if (consolePromptShown(rows, candidate.text, limit) >= 0) {
+      full.held = candidate.text;
+      full.candidate = null;
+      full.below = null;
+      full.covering = false;
+    } else if (--candidate.writes <= 0) {
+      full.candidate = null;
+    }
+  }
+  if (!full.held) return null;
+  const shown = consolePromptShown(rows, full.held, limit);
+  if (shown !== 0) {
+    full.below = null;
+    full.covering = false;
+    return shown < 0 ? full.held : null;
+  }
+  let after = 1;
+  while (after < limit && rows[after].trim() && full.held.includes(consolePromptWords(rows[after]))) after += 1;
+  const below = rows[after] ?? '';
+  if (full.below !== null && full.below !== below) full.covering = true;
+  full.below = below;
+  return full.covering ? full.held : null;
 }
 
 
@@ -48732,6 +48986,7 @@ function monacoMinimapWidth() {
 
 
 function applyMinimapWidth(width) {
+  placeRailGrip(width);
   if (width > 0) {
     drawPaneWidths(paneDrawingState(), libraryIsClosed() ? 0 : clampOpenPaneWidth(libraryWidth), width);
   }
@@ -48820,6 +49075,66 @@ onSettle({
     applyMinimapWidth(width);
   },
 });
+
+
+
+
+let railGripAsked = false;
+let railGripPending = false;
+let railGripDrag = null;
+
+function askRailGrip(asked) {
+  railGripPending = asked;
+}
+function settleRailGrip() {
+  railGripAsked = railGripPending;
+  railGripPending = false;
+  drawRailGrip();
+}
+function drawRailGrip() {
+  if (!railDivider) return;
+  const shut = window.leafMinimap.getShut();
+  railDivider.hidden = !(railGripAsked && window.leafMinimap.windowIsWide());
+  railDivider.classList.toggle('is-rail-shut', shut);
+  railDivider.title = shut ? 'Drag to show the minimap' : 'Drag to hide the minimap';
+}
+
+function placeRailGrip(width) {
+  if (railDivider && width > 0) railDivider.style.setProperty('--rail-grip-thumb', `${width}px`);
+}
+function endRailGripDrag() {
+  if (!railGripDrag) return;
+  leafReleasePointer(railDivider, railGripDrag.pointerId);
+  railGripDrag = null;
+}
+function shutRailFromGrip(shut) {
+  endRailGripDrag();
+  window.leafMinimap.setShut(shut);
+  send({ command: 'setMinimapShut', shut });
+  drawRailGrip();
+}
+if (railDivider) {
+  window.leafMinimap.subscribe(drawRailGrip);
+  railDivider.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    railGripDrag = { pointerId: event.pointerId, startX: event.clientX, shut: window.leafMinimap.getShut(), snap: monacoMinimapWidth() / 2 };
+    leafHoldPointer(railDivider, event.pointerId);
+  });
+  document.addEventListener('pointermove', (event) => {
+    if (!railGripDrag || event.pointerId !== railGripDrag.pointerId) return;
+    const travel = event.clientX - railGripDrag.startX;
+    if (!railGripDrag.shut && travel > railGripDrag.snap) shutRailFromGrip(true);
+    else if (railGripDrag.shut && -travel > railGripDrag.snap) shutRailFromGrip(false);
+  });
+  
+  document.addEventListener('pointerup', (event) => {
+    if (railGripDrag && event.pointerId === railGripDrag.pointerId) endRailGripDrag();
+  });
+  document.addEventListener('pointercancel', (event) => {
+    if (railGripDrag && event.pointerId === railGripDrag.pointerId) endRailGripDrag();
+  });
+}
 var minimapViewportFrame;
 var minimapPreviewFrame;
 
@@ -48920,6 +49235,7 @@ function documentMinimapMarkup() {
   return `<aside class="document-minimap is-loading" aria-label="Document minimap"><div class="document-minimap-track" aria-hidden="true"><div class="document-minimap-content" aria-hidden="true"></div><div class="document-minimap-fade" data-edge="top" aria-hidden="true"></div><div class="document-minimap-fade" data-edge="bottom" aria-hidden="true"></div><div class="lt-spinner document-minimap-spinner" aria-hidden="true"></div><div class="document-minimap-viewport" aria-hidden="true"></div></div></aside>`;
 }
 function renderDocumentMinimap(hasVisibleContent) {
+  askRailGrip(Boolean(hasVisibleContent));
   if (!window.leafMinimap.getEnabled()) {
     return '';
   }
@@ -48943,6 +49259,7 @@ function setMinimapMarkup(html) {
   const hadMinimap = document.body.classList.contains('has-minimap');
   if (app) app.classList.toggle('has-minimap', Boolean(html));
   document.body.classList.toggle('has-minimap', Boolean(html));
+  settleRailGrip();
   if (hadMinimap !== Boolean(html)) scheduleMinimapWidthSync(); 
   if (readerMinimap) {
     minimapSpacerTarget = null;
@@ -48966,6 +49283,9 @@ function setMinimapMarkup(html) {
 function markKeptMinimapStale() { minimapSpacerTarget = null; minimapContentVersion++; }
 
 function clearMinimapMarkupForCodeView() {
+  
+  askRailGrip(true);
+  settleRailGrip();
   if (readerMinimap) {
     readerMinimap.innerHTML = '';
     recordMinimapColumnPlacedByRender();
@@ -50570,7 +50890,7 @@ function refreshSourcePairEditor() {
   if (sourcePairStyledEditor === monacoEditor && sourcePairStyledPaired === paired) return;
   sourcePairStyledEditor = monacoEditor;
   sourcePairStyledPaired = paired;
-  monacoEditor.updateOptions({ minimap: { enabled: !paired, showSlider: 'always' } });
+  monacoEditor.updateOptions(codeViewRailOptions());
   codeViewWrapColumn = 0;
   applyCodeViewWrapColumn();
   scheduleSourcePairAlignment(true);

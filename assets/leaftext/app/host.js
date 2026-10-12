@@ -142,6 +142,7 @@ export const COMMANDS = {
   cancelServiceSignIn: [REFUSED, 'a site has no sign-in listener or credential store to cancel'],
   signOutVault: [REFUSED, 'there is no signed-in account on a site, so there is nothing to sign out of'],
   setLibraryLayout: [ANSWERED],
+  setMinimapShut: [ANSWERED],
   createVault: [REFUSED, 'a vault is a folder picked on a disk'],
   createDropboxVault: [REFUSED, 'a published site has no credential store or callback listener for Dropbox'],
   createMicrosoftVault: [REFUSED, 'a published site has no credential store or callback listener for Microsoft Graph'],
@@ -1523,6 +1524,7 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
     setLibraryState: (command) => ({ libraryProjectPath: String(command.projectPath || '') }),
     // The pane's two travel together: which state it was left in, and how wide it was left.
     setLibraryLayout: (command) => ({ libraryClosed: !!command.closed, libraryWidth: Number(command.width) || 0 }),
+    setMinimapShut: (command) => ({ minimapShut: !!command.shut }),
   };
   for (const [name, keys] of Object.entries(KEPT)) {
     commands[name] = (command) => {

@@ -383,6 +383,8 @@
 | Agents in one list | [✅][l-console-agents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console links open | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Command pinned at top | [✅][l-console-pin] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent prompt pinned | [✅][l-console-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Clicks reach console programs | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Tasks launcher | [✅][l-launchers] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Favorites launcher | [✅][l-launchers] | [✅][o-bookmarks] | [❌][t-seen] | [❌][c-seen] |
 | Recent launcher | [✅][l-launchers] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
@@ -463,6 +465,7 @@
 [l-console-done]: ../01-features/03-library.md#a-finished-console-says-so
 [l-console-agents]: ../01-features/03-library.md#every-agent-in-one-list
 [l-console-pin]: ../01-features/03-library.md#the-command-you-ran-stays-at-the-top
+[l-console-prompt]: ../01-features/03-library.md#the-prompt-you-sent-an-agent-stays-at-the-top
 [l-layout]: ../01-features/03-library.md#layout
 [l-narrow]: ../01-features/03-library.md#narrow-windows
 [l-facts]: ../01-features/03-library.md#facts

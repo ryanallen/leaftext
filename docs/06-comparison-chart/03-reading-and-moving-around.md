@@ -126,6 +126,7 @@
 | Keyed card named | [✅][l-split] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Four rounded corners | [✅][l-split] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Split returns with tab | [✅][l-split] | [✅][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Console beside a note | [✅][l-split] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## History
 
@@ -398,6 +399,7 @@
 | Diagrams as blocks | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | No rebuild on theme | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Spinner until laid out | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Drag rail shut, remembered | [✅][l-minimap-shut] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Deck slide numbers | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Every format mapped | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Source view map | [✅][l-minimap] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -463,6 +465,7 @@
 [l-reload]: ../01-features/02-navigation.md#reload
 [l-chrome]: ../01-features/02-navigation.md#the-chrome
 [l-minimap]: ../01-features/04-minimap.md
+[l-minimap-shut]: ../01-features/04-minimap.md#always-there
 [l-ribbon]: ../01-features/04-minimap.md#the-ribbon-bookmark
 [l-epub]: ../01-features/01-rendering.md#epub-books
 [l-office]: ../01-features/01-rendering.md#office-and-opendocument-files
