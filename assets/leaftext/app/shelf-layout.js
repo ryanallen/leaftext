@@ -1,6 +1,6 @@
 // shelf-layout.js
 // ---------------------------------------------------------------------------
-// The Arthurian shelf's composition. `shelf.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between the three orders, the bays of spines, the key, the open book, and the list itself kept under them.
+// The Arthurian shelf's composition. `shelf.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between the three orders, the finder, the key, the bays of spines, the open book, and the list itself kept under them.
 //
 // `shelf-data.json`, written beside the shelf's `index.md` by the same tool, holds each book's reach, dates and editions in the list's own order, so every drawn line is paired with its record and a list that no longer matches its data is refused rather than drawn wrong. `web/preview/boot.js` hands this to the host, and `shelf.js` redraws the bays out of the same functions when the order or a filter changes. It works on the renderer's HTML as text, as the front page's layout does.
 // ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ const UNPRINTED = 'Edition not chosen yet';
 const SPINE_WIDTH = { least: 26, at: 2000, perDoubling: 4, most: 64 };
 // Taller the longer its title, never shorter than a book; the most holds a two-line title only, so a one-line title is never cut.
 const SPINE_HEIGHT = { base: 70, perLetter: 7.5, least: 150, most: 250 };
-// A date tag stands under the title in the spine's small type, so the spine grows by its letters as well, at a smaller step than a title's.
+// The written date stands under the title in the spine's small type, so the spine grows by its letters as well, at a smaller step than a title's; its width stays the book's length.
 const SPINE_TAG = { gap: 8, perLetter: 6 };
 // A title past this many letters goes on two lines, but only on a spine at least `SPINE_TWO_LINES` thick; a thinner spine stands taller instead.
 const SPINE_ONE_LINE = 24;
@@ -113,15 +113,6 @@ export function baysFor(data, order) {
   return data.bays.map((bay, at) => ({ name: bay.name, plate: bay.plate, beside: !!bay.beside, index: at, books: data.books.filter((book) => book.bay === at) }));
 }
 
-/** A date short enough to stand on a spine: its years, with "c." kept on an approximate one and "by" or "after" on one known from one side, so the spine claims no more than its record; the source's own words are the open book's. */
-export function spineDate(date) {
-  if (!date || date.precision === 'unknown' || (date.from == null && date.to == null)) return '';
-  if (date.from == null) return `by ${date.to}`;
-  if (date.to == null) return `after ${date.from}`;
-  const years = date.from === date.to ? `${date.from}` : `${date.from}–${date.to}`;
-  return date.precision === 'approximate' ? `c. ${years}` : years;
-}
-
 /** The letters of the longer line when a title breaks at the space that evens its two lines, so the spine is tall enough that no face wraps it onto a third. */
 function longerLine(title) {
   let best = title.length;
@@ -129,12 +120,12 @@ function longerLine(title) {
   return best;
 }
 
-/** One spine: its tone, whether it is out yet, how long the book is and how long its title is. */
-export function spineMarkup(book, { order = 'story', picked = '' } = {}) {
+/** One spine: its tone, whether it is out yet, how long the book is, how long its title is, and when it was written in every order, as its open card says it. */
+export function spineMarkup(book, { picked = '' } = {}) {
   const width = spineWidth(book.words || 0);
   const long = book.title.length > SPINE_ONE_LINE && width >= SPINE_TWO_LINES;
   const letters = long ? longerLine(book.title) : book.title.length;
-  const tag = order === 'written' ? spineDate(book.written) : order === 'printed' && book.printed ? spineDate({ ...book.printed, precision: 'exact' }) : '';
+  const tag = book.written.label || '';
   const title = Math.max(SPINE_HEIGHT.least, SPINE_HEIGHT.base + SPINE_HEIGHT.perLetter * letters);
   const height = Math.round((long ? Math.min(SPINE_HEIGHT.most, title) : title) + (tag ? SPINE_TAG.gap + SPINE_TAG.perLetter * tag.length : 0));
   const classes = ['shelf-spine', book.status === 'planned' ? 'is-planned' : '', long ? 'is-long' : ''].filter(Boolean).join(' ');
@@ -162,7 +153,7 @@ export function shelfMarkup(data, { order = 'story', picked = '', shown = null }
     const isReached = bay.index != null && reached.has(bay.index);
     const classes = ['shelf-bay', bay.beside ? 'is-beside' : '', isReached ? 'is-reached' : ''].filter(Boolean).join(' ');
     const tone = isReached ? ` data-tone="${escaped(book.tone)}"` : '';
-    const inside = books.length ? `<div class="shelf-books">${books.map((one) => spineMarkup(one, { order, picked })).join('')}</div>` : '<span class="shelf-empty">No book yet</span>';
+    const inside = books.length ? `<div class="shelf-books">${books.map((one) => spineMarkup(one, { picked })).join('')}</div>` : '<span class="shelf-empty">No book yet</span>';
     // The case's spare width follows the books, so a bay of four spines takes four shares of it and a bay of one takes one.
     return `<div class="${classes}"${tone} style="flex-grow:${Math.max(1, books.length)}"><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
   });
@@ -264,7 +255,7 @@ function findMarkup(data) {
   ].join('');
 }
 
-/** The key under the shelf: a swatch for each tone, the outline a book still to come stands as, and what a spine's thickness says. */
+/** The key over the shelf, read before the first spine: a swatch for each tone, the outline a book still to come stands as, and what a spine's thickness says. */
 function keyMarkup() {
   const tones = SHELF_TONES.map(([key, name]) => `<span data-tone="${key}"><i></i>${escaped(name)}</span>`).join('');
   return `<div class="shelf-key">${tones}<span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div>`;
@@ -297,8 +288,8 @@ export function layoutShelf(html, data) {
     '</section>',
     sortMarkup('story'),
     findMarkup(data),
-    `<div class="shelf-case">${shelfMarkup(data)}</div>`,
     keyMarkup(),
+    `<div class="shelf-case">${shelfMarkup(data)}</div>`,
     `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(1).join('')}${list.list}</details>`,
     list.pager,
     '</article>',

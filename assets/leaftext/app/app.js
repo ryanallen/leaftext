@@ -21092,6 +21092,11 @@ window.addEventListener('keydown', (event) => {
     send({ command: 'open' });
     return;
   }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'n') {
+    event.preventDefault();
+    send({ command: 'newWindow' });
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'w' && currentState.active != null) {
     event.preventDefault();
     send({ command: 'closeTab', index: currentState.active });
@@ -42072,17 +42077,78 @@ function sortedConsoleAgents(rows) {
   return rows.map((row, index) => ({ row, index })).sort((a, b) => rank(a.row) - rank(b.row) || a.index - b.index).map(({ row }) => row);
 }
 
+
+const consoleAgentButtons = new Map();
+let consoleAgentsHeading = null;
+
+let consoleAgentsHeld = false;
+
+function consoleAgentButton(id) {
+  let button = consoleAgentButtons.get(id);
+  if (button) return button;
+  button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'console-agent';
+  button.setAttribute('role', 'listitem');
+  button.dataset.consoleId = String(id);
+  const icon = document.createElement('span');
+  icon.className = 'lt-icon lt-icon-terminal';
+  icon.setAttribute('aria-hidden', 'true');
+  const name = document.createElement('span');
+  name.className = 'console-agent-name';
+  const state = document.createElement('span');
+  state.className = 'console-agent-state';
+  button.append(icon, name, state);
+  button.agentName = name;
+  button.agentState = state;
+  consoleAgentButtons.set(id, button);
+  return button;
+}
+
 function drawConsoleAgents() {
   if (!consoleAgentsBand) return;
   const rows = sortedConsoleAgents(consoleAgentRows);
   consoleAgentsBand.hidden = !rows.length;
   libraryPane?.classList.toggle('has-agents', rows.length > 0);
   libraryPane?.style.setProperty('--console-agent-rows', String(rows.length));
-  consoleAgentsBand.innerHTML = rows.length ? '<div class="console-agents-heading">Agents</div>' + rows.map(row => {
-    const front = row.id === consoleFrontId ? ' console-agent-front' : '';
-    const needs = row.state === 'needs' ? ' console-agent-needs' : '';
-    return `<button type="button" class="console-agent${front}" role="listitem" data-console-id="${Number(row.id)}" title="${escapeAttr(row.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span><span class="console-agent-name">${escapeText(row.title)}</span><span class="console-agent-state${needs}">${consoleAgentWords[row.state] || ''}</span></button>`;
-  }).join('') : '';
+  if (!consoleAgentsHeading) {
+    consoleAgentsHeading = document.createElement('div');
+    consoleAgentsHeading.className = 'console-agents-heading';
+    consoleAgentsHeading.textContent = 'Agents';
+  }
+  if (!rows.length) {
+    consoleAgentsHeading.remove();
+    for (const button of consoleAgentButtons.values()) button.remove();
+    consoleAgentButtons.clear();
+    return;
+  }
+  if (consoleAgentsHeading.parentElement !== consoleAgentsBand || consoleAgentsBand.firstElementChild !== consoleAgentsHeading) consoleAgentsBand.insertBefore(consoleAgentsHeading, consoleAgentsBand.firstElementChild);
+  const listed = new Set(rows.map(row => Number(row.id)));
+  for (const [id, button] of consoleAgentButtons) {
+    if (listed.has(id)) continue;
+    button.remove();
+    consoleAgentButtons.delete(id);
+  }
+  let place = consoleAgentsHeading;
+  for (const row of rows) {
+    const id = Number(row.id);
+    const standing = consoleAgentButtons.has(id);
+    const button = consoleAgentButton(id);
+    const title = String(row.title ?? '');
+    if (button.title !== title) button.title = title;
+    if (button.agentName.textContent !== title) button.agentName.textContent = title;
+    const words = consoleAgentWords[row.state] || '';
+    if (button.agentState.textContent !== words) button.agentState.textContent = words;
+    button.classList.toggle('console-agent-front', id === consoleFrontId);
+    button.agentState.classList.toggle('console-agent-needs', row.state === 'needs');
+    if (consoleAgentsHeld && standing && button.parentElement === consoleAgentsBand) continue;
+    if (consoleAgentsHeld) {
+      if (button.parentElement !== consoleAgentsBand) consoleAgentsBand.appendChild(button);
+      continue;
+    }
+    if (place.nextElementSibling !== button) consoleAgentsBand.insertBefore(button, place.nextElementSibling);
+    place = button;
+  }
 }
 
 window.leafConsoleAgents = rows => {
@@ -42103,6 +42169,11 @@ if (consoleAgentsBand) {
     if (!row) return;
     const id = Number(row.dataset.consoleId);
     if (!window.leafPressConsoleTab(id)) send({ command: 'focusConsole', id });
+  });
+  consoleAgentsBand.addEventListener('pointerenter', () => { consoleAgentsHeld = true; });
+  consoleAgentsBand.addEventListener('pointerleave', () => {
+    consoleAgentsHeld = false;
+    drawConsoleAgents();
   });
 }
 
@@ -42147,6 +42218,36 @@ function consoleBellRang(id) {
     entry.quietTimer = 0;
     setConsoleActivity(id, entry, 'done');
   }
+}
+
+
+function consoleBellsIn(entry, text) {
+  let open = entry.oscOpen === true || (entry.oscOpen === 'escape' && text[0] === ']');
+  let from = open && entry.oscOpen === 'escape' ? 1 : 0;
+  if (!open) {
+    const escape = text.indexOf('\x1b]');
+    const single = text.indexOf('\x9d');
+    if (escape < 0 && single < 0) {
+      entry.oscOpen = text.endsWith('\x1b') ? 'escape' : false;
+      return text.includes('\x07');
+    }
+    from = escape < 0 ? single : single < 0 ? escape : Math.min(escape, single);
+  }
+  const first = text.indexOf('\x07');
+  let bell = first >= 0 && first < from;
+  for (let at = from; at < text.length; at++) {
+    const code = text.charCodeAt(at);
+    if (open) {
+      if (code === 0x07 || code === 0x18 || code === 0x1a) { open = false; continue; }
+      if (code !== 0x1b) continue;
+      open = false;
+    }
+    if (code === 0x07) bell = true;
+    else if (code === 0x9d) open = true;
+    else if (code === 0x1b && text.charCodeAt(at + 1) === 0x5d) { open = true; at++; }
+  }
+  entry.oscOpen = open || (text.endsWith('\x1b') ? 'escape' : false);
+  return bell;
 }
 
 function consoleColorNumber(color) {
@@ -42481,7 +42582,6 @@ function makeConsoleLayer(id) {
     terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
     terminal.onData(data => { consoleKeyTyped(id); consolePinInput(entry, data); send({ command: 'consoleInput', id, data }); });
     terminal.onTitleChange(title => consoleTitleSaid(id, title));
-    terminal.onBell(() => consoleBellRang(id));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
     setupConsolePin(entry);
@@ -42871,6 +42971,7 @@ window.leafConsoleOutput = (id, encoded) => {
 };
 
 function writeConsoleOutput(id, entry, text) {
+  if (consoleBellsIn(entry, text)) consoleBellRang(id);
   entry.terminal.write(text, () => {
     entry.mapOutputPending = true;
     consoleWritten(id, entry);
@@ -42891,6 +42992,7 @@ window.leafConsoleReplay = (id, encoded) => {
   if (entry.frame) cancelAnimationFrame(entry.frame);
   entry.frame = 0;
   entry.decoder = new TextDecoder();
+  entry.oscOpen = false;
   entry.pending = [bytes];
   entry.pendingBytes = bytes.length;
   if (!entry.terminal) return;
@@ -42943,7 +43045,7 @@ function setupConsolePin(entry) {
   box.appendChild(row);
   entry.layer.appendChild(box);
   box.addEventListener('mousedown', event => onConsolePinMouseDown(entry, event));
-  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh() };
+  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh(), chat: false, inline: null, cut: null };
   const write = entry.terminal.write;
   entry.terminal.write = (data, done) => writeConsolePinned(entry, data, write, done);
   entry.terminal.onScroll(() => renderConsolePin(entry));
@@ -42978,6 +43080,7 @@ function consolePinInput(entry, data) {
   const pin = entry.pin;
   if (pin && data === '\r' && entry.terminal.buffer.active.type === 'alternate') consolePromptSent(entry);
   if (!pin || !String(data).includes('\r') || entry.terminal.buffer.active.type !== 'normal') return;
+  if (consoleInlineSent(entry, data)) return;
   const { row, offset } = consolePinCursorOffset(entry);
   const announced = pin.pending && !pin.pending.isDisposed ? pin.pending : null;
   pin.pending = null;
@@ -42991,6 +43094,7 @@ function consolePinInput(entry, data) {
 function writeConsolePinned(entry, data, write, done) {
   const pin = entry.pin;
   if (!pin || typeof data !== 'string') return write(data, done);
+  if (pin.inline) pin.inline.writes -= 1;
   let text = pin.carry + data;
   pin.carry = '';
   const partial = CONSOLE_PIN_PARTIAL.exec(text);
@@ -43014,6 +43118,8 @@ function consolePinMark(entry, kind) {
   if (entry.terminal.buffer.active.type !== 'normal') return;
   
   if (kind === 'A') {
+    pin.chat = false;
+    pin.inline = null;
     if (!pin.marker || pin.marker.isDisposed) return;
     const end = entry.terminal.registerMarker(0);
     if (!end) return;
@@ -43064,6 +43170,7 @@ function renderConsolePin(entry) {
     else drawConsolePin(entry, null, text, false);
     return;
   }
+  if (pin.inline) consoleInlineEcho(entry);
   const line = consolePinNow(entry);
   if (line === null) {
     hideConsolePin(entry);
@@ -43073,7 +43180,7 @@ function renderConsolePin(entry) {
   
   if (pin.read?.marker !== pin.marker || pin.read.line !== line) {
     const text = consoleBuffer(entry).getLine(line)?.translateToString(true) ?? '';
-    pin.read = { marker: pin.marker, line, text, wrapped: Boolean(terminal.buffer.active.getLine(line + 1)?.isWrapped) };
+    pin.read = { marker: pin.marker, line, text, wrapped: pin.marker === pin.cut || Boolean(terminal.buffer.active.getLine(line + 1)?.isWrapped) };
   }
   drawConsolePin(entry, line, pin.read.text, pin.read.wrapped);
 }
@@ -43121,9 +43228,10 @@ function consolePromptFresh() {
 function consolePromptRows(entry) {
   const terminal = entry.terminal;
   const active = terminal.buffer.active;
+  const base = consoleBuffer(entry).baseY;
   return readConsoleScreenOnce(terminal.wasmTerm, () => {
     const rows = [];
-    for (let row = 0; row < terminal.rows; row += 1) rows.push(consoleLine(active.getLine(row))?.translateToString(true) ?? '');
+    for (let row = 0; row < terminal.rows; row += 1) rows.push(consoleLine(active.getLine(base + row))?.translateToString(true) ?? '');
     return rows;
   });
 }
@@ -43134,11 +43242,28 @@ function consolePromptWords(text) {
 }
 
 
-function consolePromptBox(rows, cursor) {
+function consolePromptEcho(text) {
+  return consolePromptWords(text).replace(/…$/, '').trimEnd();
+}
+
+
+function consolePromptJoin(rows, cols) {
+  let text = '';
+  rows.forEach((row, index) => {
+    const words = consolePromptWords(row);
+    const last = index ? rows[index - 1].trimEnd() : '';
+    if (words) text = text ? text + (/\S-$/.test(last) || last.length >= cols ? '' : ' ') + words : words;
+  });
+  return text;
+}
+
+
+function consolePromptBox(rows, cursor, ruled = false) {
   for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
     const text = rows[top] ?? '';
     if (CONSOLE_PROMPT_RULE.test(text)) return null;
     if (!CONSOLE_PROMPT_MARK.test(text)) continue;
+    if (ruled && !CONSOLE_PROMPT_RULE.test(rows[top - 1] ?? '')) return null;
     let end = top + 1;
     while (end < rows.length && rows[end].trim() && !CONSOLE_PROMPT_RULE.test(rows[end])) end += 1;
     return { top, end };
@@ -43149,7 +43274,7 @@ function consolePromptBox(rows, cursor) {
 
 function consolePromptShown(rows, held, limit) {
   for (let row = 0; row < limit; row += 1) {
-    const words = consolePromptWords(rows[row]);
+    const words = consolePromptEcho(rows[row]);
     if (words && held.startsWith(words)) return row;
   }
   return -1;
@@ -43158,7 +43283,7 @@ function consolePromptShown(rows, held, limit) {
 function consolePromptSent(entry) {
   const rows = consolePromptRows(entry);
   const box = consolePromptBox(rows, entry.terminal.buffer.active.cursorY);
-  const text = box ? consolePromptWords(rows.slice(box.top, box.end).join(' ')) : '';
+  const text = box ? consolePromptJoin(rows.slice(box.top, box.end), entry.terminal.cols) : '';
   entry.pin.full.candidate = text ? { text, writes: CONSOLE_PROMPT_ECHO_WRITES } : null;
 }
 
@@ -43193,6 +43318,70 @@ function consolePromptNow(entry) {
   if (full.below !== null && full.below !== below) full.covering = true;
   full.below = below;
   return full.covering ? full.held : null;
+}
+
+
+
+
+
+function consoleInlineSent(entry, data) {
+  const pin = entry.pin;
+  const rows = consolePromptRows(entry);
+  const cursor = entry.terminal.buffer.active.cursorY;
+  const box = consolePromptBox(rows, cursor, true);
+  if (!box) {
+    if (!pin.chat) return false;
+    for (let row = cursor; row >= 0 && cursor - row < 12; row -= 1) if (CONSOLE_PROMPT_RULE.test(rows[row])) return true;
+    pin.chat = false;
+    pin.inline = null;
+    return false;
+  }
+  
+  pin.chat = true;
+  pin.pending?.dispose();
+  pin.pending = null;
+  pin.announcing = false;
+  if (data !== '\r') return true;
+  const text = consolePromptJoin(rows.slice(box.top, box.end), entry.terminal.cols);
+  if (!text) return true;
+  const base = consoleBuffer(entry).baseY;
+  
+  const from = Math.max(0, base + box.top - entry.terminal.rows);
+  pin.inline = { text, from, before: consoleInlineRows(entry, from, base + rows.length), writes: CONSOLE_PROMPT_ECHO_WRITES };
+  return true;
+}
+
+
+function consoleInlineRows(entry, from, to) {
+  const buffer = consoleBuffer(entry);
+  return readConsoleScreenOnce(entry.terminal.wasmTerm, () => {
+    const rows = [];
+    for (let line = from; line < Math.min(to, buffer.length); line += 1) rows.push(buffer.getLine(line)?.translateToString(true) ?? '');
+    return rows;
+  });
+}
+
+
+function consoleInlineEcho(entry) {
+  const pin = entry.pin;
+  const inline = pin.inline;
+  const base = consoleBuffer(entry).baseY;
+  const cursor = entry.terminal.buffer.active.cursorY;
+  const box = consolePromptBox(consolePromptRows(entry), cursor, true);
+  const rows = consoleInlineRows(entry, inline.from, base + (box ? box.top : cursor));
+  const found = rows.findIndex((text, index) => {
+    const words = text !== inline.before[index] && CONSOLE_PROMPT_MARK.test(text) && consolePromptEcho(text);
+    return words && inline.text.startsWith(words);
+  });
+  if (found < 0) {
+    if (inline.writes <= 0) pin.inline = null;
+    return;
+  }
+  pin.inline = null;
+  const marker = entry.terminal.registerMarker(inline.from + found - base - cursor);
+  placeConsolePin(entry, marker);
+  
+  if (marker) pin.cut = consolePromptEcho(rows[found]) !== inline.text ? marker : null;
 }
 
 

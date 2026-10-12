@@ -41,6 +41,7 @@ https://leaftext.com/arthurian/de-excidio-britanniae/de-excidio-britanniae-how-i
 https://leaftext.com/arthurian/de-excidio-britanniae/de-excidio-britanniae-latin.md
 https://leaftext.com/arthurian/de-excidio-britanniae/de-excidio-britanniae-scans.md
 https://leaftext.com/arthurian/de-excidio-britanniae/de-excidio-britanniae.md
+https://leaftext.com/arthurian/de-excidio-britanniae/made-with.md
 https://leaftext.com/arthurian/de-excidio-britanniae/uk/GLOSSARY.md
 https://leaftext.com/arthurian/de-excidio-britanniae/uk/de-excidio-britanniae-uk.md
 https://leaftext.com/arthurian/historia-brittonum/GLOSSARY.md
@@ -68,6 +69,7 @@ https://leaftext.com/arthurian/sources/robert-de-boron-merlin.md
 https://leaftext.com/arthurian/sources/vita-gildae.md
 https://leaftext.com/arthurian/story-map.md
 https://leaftext.com/arthurian/vita-gildae/GLOSSARY.md
+https://leaftext.com/arthurian/vita-gildae/made-with.md
 https://leaftext.com/arthurian/vita-gildae/uk/GLOSSARY.md
 https://leaftext.com/arthurian/vita-gildae/uk/vita-gildae-uk.md
 https://leaftext.com/arthurian/vita-gildae/vita-gildae-how-it-was-made.md

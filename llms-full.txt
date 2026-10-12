@@ -217,6 +217,11 @@
 - Markdown: https://leaftext.com/arthurian/de-excidio-britanniae/de-excidio-britanniae.md
 - Summary: On the Ruin of Britain, by Gildas, translated by Ryan Allen
 
+## Made with
+- Page: https://leaftext.com/arthurian/de-excidio-britanniae/made-with.html
+- Markdown: https://leaftext.com/arthurian/de-excidio-britanniae/made-with.md
+- Summary: What every Arthurian book says about how it was made: the made-with line, the how line under it, and the notes they point at. These tables hold what every book on the shelf was made by, not one boo...
+
 ## Glossary for On the Ruin of Britain
 - Page: https://leaftext.com/arthurian/de-excidio-britanniae/uk/GLOSSARY.html
 - Markdown: https://leaftext.com/arthurian/de-excidio-britanniae/uk/GLOSSARY.md
@@ -351,6 +356,11 @@
 - Page: https://leaftext.com/arthurian/vita-gildae/GLOSSARY.html
 - Markdown: https://leaftext.com/arthurian/vita-gildae/GLOSSARY.md
 - Summary: Read in: UK English
+
+## Made with
+- Page: https://leaftext.com/arthurian/vita-gildae/made-with.html
+- Markdown: https://leaftext.com/arthurian/vita-gildae/made-with.md
+- Summary: What every Arthurian book says about how it was made: the made-with line, the how line under it, and the notes they point at. These tables hold what every book on the shelf was made by, not one boo...
 
 ## Glossary for The Life of Gildas
 - Page: https://leaftext.com/arthurian/vita-gildae/uk/GLOSSARY.html

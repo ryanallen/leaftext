@@ -8363,12 +8363,12 @@ body.library-resizing button {
 .library-shell.library-closed .console-agents { display: none; }
 .console-agents-heading { height: 20px; padding: 0 var(--lt-space-6); color: var(--lt-muted-foreground); font-family: var(--app-font); font-size: var(--lt-text-10); font-weight: var(--lt-weight-600); letter-spacing: var(--lt-tracking-060); line-height: 20px; text-transform: uppercase; }
 .console-agent { display: flex; align-items: center; gap: var(--lt-space-6); box-sizing: border-box; width: 100%; height: 26px; padding: 0 var(--lt-space-6); border: var(--lt-stroke-1) solid transparent; border-radius: var(--lt-radius-md); background: transparent; color: var(--lt-foreground); font-family: var(--app-font); font-size: var(--lt-text-12-5); text-align: left; cursor: default; }
-@media (hover: hover) { .console-agent:hover { background: var(--lt-navigation-button-hover-background); color: var(--lt-primary-foreground); } }
+@media (hover: hover) { .console-agent:hover { background: var(--lt-wash-hover); color: var(--lt-foreground); } .console-agent:hover > .lt-icon, .console-agent:hover > .console-agent-state { color: var(--lt-foreground); } }
 .console-agent-front { border-color: var(--lt-border); background: var(--lt-background); }
 .console-agent > .lt-icon { flex: none; width: 14px; height: 14px; color: var(--lt-muted-foreground); }
 .console-agent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-agent-state { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
-.console-agent-needs { color: var(--lt-primary); font-weight: var(--lt-weight-600); }
+.console-agent-needs { color: var(--lt-primary-ink); font-weight: var(--lt-weight-600); }
 
 .console-pin { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); z-index: 5; height: 0; }
 .console-pin[hidden] { display: none; }

@@ -67,6 +67,7 @@ export const COMMANDS = {
   switchTab: [REFUSED, 'the browser owns tabs on a site'],
   moveTab: [REFUSED, 'the browser owns tabs on a site'],
   tearOutTab: [REFUSED, 'the browser owns windows on a site'],
+  newWindow: [REFUSED, 'the browser owns windows on a site'],
   tabDragOver: [REFUSED, 'the browser owns windows on a site'],
   tabDragOff: [REFUSED, 'the browser owns windows on a site'],
   tabArrivalSlot: [REFUSED, 'the browser owns windows on a site'],
