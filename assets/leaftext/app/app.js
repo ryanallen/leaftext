@@ -42050,16 +42050,16 @@ function consoleBottomLines(entry, count) {
   });
 }
 
-function consoleAgentState(entry) {
+function consoleAgentState(entry, screenLines) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
-  if (consoleBottomLines(entry, rule.lines).some(rule.asks)) return 'needs';
+  if ((screenLines || consoleBottomLines(entry, rule.lines)).some(rule.asks)) return 'needs';
   return entry.activity === 'working' || entry.activity === 'done' ? entry.activity : 'rest';
 }
 
 
-function reportConsoleAgent(id, entry) {
-  const state = consoleAgentState(entry);
+function reportConsoleAgent(id, entry, screenLines) {
+  const state = consoleAgentState(entry, screenLines);
   const said = `${entry.agent || ''} ${state || ''}`;
   if (said === (entry.agentSaid ?? ' ')) return;
   entry.agentSaid = said;
@@ -42180,7 +42180,8 @@ if (consoleAgentsBand) {
 function consoleTitleSaid(id, title) {
   const entry = consoleLayers.get(id);
   if (!entry) return;
-  entry.agent = consoleAgentOf(title);
+  entry.titleAgent = consoleAgentOf(title);
+  entry.agent = entry.titleAgent || entry.screenAgent || null;
   const mark = Array.from(title)[0];
   entry.titleMark = mark === '✳' ? 'done' : '◐◓◑◒'.includes(mark) && mark ? 'working' : null;
   if (entry.titleMark) {
@@ -42397,7 +42398,14 @@ function consoleWritten(id, entry) {
   }
   holdConsoleMarkers(entry);
   renderConsolePin(entry);
-  if (entry.agent) reportConsoleAgent(id, entry);
+  let screenLines;
+  if (type !== 'alternate') entry.screenAgent = null;
+  else if (!entry.titleAgent && !entry.screenAgent) {
+    screenLines = consoleBottomLines(entry, consoleAgentAsks.codex.lines);
+    if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line))) entry.screenAgent = 'codex';
+  }
+  entry.agent = entry.titleAgent || entry.screenAgent || null;
+  reportConsoleAgent(id, entry, screenLines);
 }
 
 

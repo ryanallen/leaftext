@@ -32,7 +32,7 @@
 | hover-tint                              | `#f0b400`                          |
 | primary                                 | `#f0b400`                          |
 | primary-foreground                      | `#1c1a15`                          |
-| primary-ink                             | `#9a6800`                          |
+| primary-ink                             | `#956400`                          |
 | accent                                  | `#f0b400`                          |
 | accent-foreground                       | `#1c1a15`                          |
 | accent-ink                              | `#8f5c00`                          |

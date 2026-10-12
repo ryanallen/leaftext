@@ -200,7 +200,7 @@
   --lt-hover-tint: #6f5847;
   --lt-primary: #8839ef;
   --lt-primary-foreground: #ffffff;
-  --lt-primary-ink: #8839ef;
+  --lt-primary-ink: #7f35df;
   --lt-accent: #8839ef;
   --lt-accent-foreground: #ffffff;
   --lt-accent-ink: #6e12e5;
@@ -1802,7 +1802,7 @@
   --lt-hover-tint: #f0b400;
   --lt-primary: #f0b400;
   --lt-primary-foreground: #1c1a15;
-  --lt-primary-ink: #9a6800;
+  --lt-primary-ink: #956400;
   --lt-accent: #f0b400;
   --lt-accent-foreground: #1c1a15;
   --lt-accent-ink: #8f5c00;
@@ -2866,11 +2866,11 @@
   --lt-border: #d8d8dd;
   --lt-border-strong: #c0c0c6;
   --lt-shadow-ink: #00000033;
-  --lt-muted-foreground: #6e6e73;
-  --lt-hover-tint: #6e6e73;
+  --lt-muted-foreground: #68686d;
+  --lt-hover-tint: #68686d;
   --lt-primary: #0a6fe0;
   --lt-primary-foreground: #ffffff;
-  --lt-primary-ink: #0a6fe0;
+  --lt-primary-ink: #0a6cda;
   --lt-accent: #0a6fe0;
   --lt-accent-foreground: #ffffff;
   --lt-accent-ink: #085fbe;
@@ -2955,8 +2955,8 @@
   --lt-border: #3a3a3c;
   --lt-border-strong: #545456;
   --lt-shadow-ink: #000000;
-  --lt-muted-foreground: #98989d;
-  --lt-hover-tint: #98989d;
+  --lt-muted-foreground: #9d9da1;
+  --lt-hover-tint: #9d9da1;
   --lt-primary: #4a9eff;
   --lt-primary-foreground: #10233a;
   --lt-primary-ink: #4a9eff;
@@ -7405,6 +7405,11 @@ body.library-resizing button {
   .library-hit:hover {
     background: var(--lt-wash-hover);
   }
+  /* The wash under a hovered row takes the quiet ink under 4.5:1, so its words come up to the body's. */
+  .library-hit:hover .library-hit-alias,
+  .library-hit:hover .library-hit-snippet {
+    color: var(--lt-foreground);
+  }
 }
 .library-hit-title {
   display: block;
@@ -7997,6 +8002,15 @@ body.library-resizing button {
   .library-axis-row:hover {
     background: var(--lt-wash-hover);
   }
+  /* The wash under a hovered row takes the quiet ink under 4.5:1, so its words come up to the body's. */
+  .library-file:hover .library-file-title,
+  .library-file:hover .library-file-author,
+  .library-file:hover .library-file-time,
+  .library-file:hover .library-file-preview,
+  .library-nav-folder:hover .library-folder-count,
+  .library-axis-row:hover .library-folder-count {
+    color: var(--lt-foreground);
+  }
 }
 /* The way back out is an ordinary row: it takes the block above and writes nothing of its own, so it wears the same pill, the same box and the same ink as the folders under it. */
 /* The currently-open file: accent-tinted, outranking hover so it holds while pointing elsewhere. */
@@ -8390,8 +8404,11 @@ body.library-resizing button {
 /* The pinned command: one row over the terminal's top edge, at layer 5 so it paints above the edge fade (4), as the source view's held headings do. Its height, width and face are the terminal's, written by console-sticky.js. */
 .console-pin { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); z-index: 5; height: 0; }
 .console-pin[hidden] { display: none; }
-.console-pin-row { position: absolute; inset: 0; overflow: hidden; white-space: pre; text-overflow: ellipsis; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
-@media (hover: hover) { .console-pin-row:hover { background: var(--lt-navigation-button-hover-background); } }
+/* Isolated so the wash layer below stops at the row rather than dropping behind the console. */
+.console-pin-row { position: absolute; inset: 0; isolation: isolate; overflow: hidden; white-space: pre; text-overflow: ellipsis; background: var(--lt-markdown-background); color: var(--lt-markdown-foreground); cursor: default; }
+/* The hover wash goes over the console color rather than in place of it, so the terminal never shows through the command. */
+.console-pin-row::before { content: ""; position: absolute; inset: 0; z-index: var(--lt-z-below); pointer-events: none; background: transparent; transition: background-color var(--lt-duration-120) var(--lt-ease); }
+@media (hover: hover) { .console-pin-row:hover::before { background: var(--lt-wash-hover); } }
 /* The dissolve for what scrolls under it: the source view's dot screen in the console's own color, at falling alpha. */
 .console-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 18px; --lt-grain-dot: var(--lt-markdown-background); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-repeat: repeat; background-attachment: fixed; -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); pointer-events: none; }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
@@ -14309,6 +14326,7 @@ body.mac-frame .document-minimap-frame {
 @media (hover: hover) {
   .home-showall:hover {
     background: var(--lt-wash-hover);
+    color: var(--lt-markdown-foreground);
   }
 }
 /* Folded: one column, five rows, and the rest a press away. Not a scroll box — a nested scroller inside a page that also scrolls takes a wheel meant for the page, and this app's answer to a window too narrow is already a sheet. */
@@ -14435,6 +14453,7 @@ body.mac-frame .document-minimap-frame {
 @media (hover: hover) {
   .home-row-repair:hover {
     background: var(--lt-wash-hover);
+    color: var(--lt-markdown-foreground);
   }
 }
 /* Said once, on the heading that already names the vault. */

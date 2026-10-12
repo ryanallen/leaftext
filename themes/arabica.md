@@ -31,6 +31,7 @@
 | muted-foreground                        | `#6f5847`                          |
 | primary                                 | `#8839ef`                          |
 | primary-foreground                      | `#ffffff`                          |
+| primary-ink                             | `#7f35df`                          |
 | accent                                  | `#8839ef`                          |
 | accent-foreground                       | `#ffffff`                          |
 | accent-ink                              | `#6e12e5`                          |
