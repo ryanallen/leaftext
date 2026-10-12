@@ -6,7 +6,7 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Before Arthur: Britain founded and the Grail brought west
 
-- [On the Ruin of Britain](story-map.md). Gildas. Latin. Coming; not published yet. Story: Before Arthur to Arthur's early reign, broad. Written: 540–547 CE. Edition: Theodor Mommsen, 1898. Length: 22,402 words of Latin.
+- [On the Ruin of Britain](de-excidio-britanniae/de-excidio-britanniae.md). Gildas. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 540–547 CE. Edition: Theodor Mommsen, 1898. Length: 22,402 words of Latin.
 - [The History of the Britons](historia-brittonum/historia-brittonum.md). Attributed to Nennius. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 829–830 CE. Edition: Theodor Mommsen, 1898. Length: 8,880 words of Latin.
 - [The History of the Kings of Britain](story-map.md). Geoffrey of Monmouth. Latin. Coming; not published yet. Story: Before Arthur to After Camlann, broad. Written: 1136 CE. Edition not chosen yet. Length: about 50,000 words of Latin.
 - [Joseph of Arimathea](story-map.md). Robert de Boron. Old French. Coming; not published yet. Story: Before Arthur, broad. Written: 1190–1200 CE. Edition not chosen yet. Length: about 4,018 lines, about 25,000 words of Old French.
@@ -47,7 +47,7 @@ A book whose text is published reaches from the first episode it tells to the la
 ## Arthur's early reign
 
 - [The Saints Who Meet Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1073–1199 CE. Edition not chosen yet. Length: about 20 pages, about 6,600 words of Latin.
-- [The Life of Gildas](story-map.md). Caradoc of Llancarfan. Latin. Coming; not published yet. Story: Arthur's early reign to The knights' adventures, broad. Written: 1100–1165 CE. Edition: Theodor Mommsen, 1898. Length: 1,644 words of Latin.
+- [The Life of Gildas](vita-gildae/vita-gildae.md). Caradoc of Llancarfan. Latin. On the shelf. Story: Arthur's early reign; then Arthur's end. Written: 1100–1165 CE. Edition: Theodor Mommsen, 1898. Length: 1,644 words of Latin.
 - [Les Enfances Gauvain](story-map.md). Anonymous. French. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1250 CE. Edition not chosen yet. Length: about 700 lines, about 4,400 words of French.
 - [The Rise of Gawain (De ortu Waluuanii)](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1299 CE. Edition not chosen yet. Length: about 40 pages, about 13,000 words of Latin.
 - [The Prose Lancelot](story-map.md). Anonymous, the Vulgate cycle. Old French. Coming; not published yet. Story: Arthur's early reign to The Lancelot and Tristan years, broad. Written: 1215–1230 CE. Edition: H. Oskar Sommer, 1910–1912. Length: about 1,100,000 words of Old French.

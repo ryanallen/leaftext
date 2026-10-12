@@ -2,10 +2,18 @@
 
 Every published book on the shelf, by where it sits in the story. Each work's page says when it was written and on what evidence, which edition the book is translated from and why that edition is free to use, and links to the English, the original text and the scans. [The whole story](../story-map.md) lists every episode the books tell.
 
+## Before Arthur: Britain founded and the Grail brought west
+
+- [On the Ruin of Britain](de-excidio-britanniae.md), Latin, 540–547 CE
+
 ## Merlin, Uther and Arthur's birth
 
 - [Merlin](robert-de-boron-merlin.md), Old French, 1200–1240 CE
 - [The History of the Britons](historia-brittonum.md), Latin, 829–830 CE
+
+## Arthur's early reign
+
+- [The Life of Gildas](vita-gildae.md), Latin, 1100–1165 CE
 
 ## After Camlann
 

@@ -24,6 +24,12 @@ Britain is described; Brutus, of Aeneas's line, kills his father by accident, is
 
 Julius Caesar takes Britain at the third try, and emperor after emperor rules it, from Claudius and Severus to Maximus, who takes its soldiers to Brittany, until the Britons kill Rome's leaders and Rome comes only to help and to punish.
 
+<a id="the-picts-and-irish-raid-britain"></a>
+
+### The Picts and the Irish raid Britain after the Romans leave
+
+With its soldiers gone with Maximus, Britain is raided by the Irish and the Picts; the Romans come twice to help and build two walls across the north, then leave for good, and the Britons write to Agitius in vain, starve, and at last strike back from the hills.
+
 <a id="the-cities-of-britain-are-named"></a>
 
 ### The twenty-eight cities of Britain are named
@@ -127,6 +133,12 @@ Vortigern's son Vortimer shuts the Saxons up on Thanet three times and fights th
 ### Hengist's men murder Vortigern's lords at a peace meeting
 
 The Saxons come back in force, ask for peace, and at the meeting Hengist's men pull knives from their shoes and kill Vortigern's three hundred elders, taking Vortigern and Essex and Sussex for his ransom.
+
+<a id="ambrosius-leads-the-britons"></a>
+
+### Ambrosius Aurelianus leads the surviving Britons against the Saxons
+
+After the Saxons burn Britain from sea to sea, some Britons flee overseas and others give themselves up as slaves, and the rest gather under Ambrosius Aurelianus, the last of a Roman family, and win their first victory.
 
 <a id="vortigern-flees-from-germanus"></a>
 
@@ -252,6 +264,24 @@ Malory tells this in [Book I, chapter 7](malory-sources/malory-map.tsv).
 
 As the Saxons grow in Britain and Hengist's son Octa settles in Kent, Arthur leads the British kings in twelve battles, carries an image of Mary at Guinnion and strikes down nine hundred sixty men alone at Mount Badon, while the Saxons send to Germany for more kings.
 
+<a id="the-siege-of-mount-badon"></a>
+
+### The Britons and the Saxons fight by turns until the siege of Mount Badon
+
+The Britons and the Saxons win by turns until the siege of Mount Badon, almost the last great slaughter of the invaders, in the year Gildas was born, after which the cities lie empty and civil wars go on.
+
+<a id="gildas-teaches-and-preaches"></a>
+
+### Gildas studies, teaches and preaches, and dies a hermit at Glastonbury
+
+Gildas, one of King Nau's twenty-four sons, studies in Gaul, teaches and preaches across Britain and in Ireland, copies the Gospels at Llancarfan, lives as a hermit on Steep Holm and beside Glastonbury, and is buried there.
+
+<a id="arthur-hunts-down-hueil"></a>
+
+### Arthur kills Gildas's brother Hueil, then makes peace with Gildas
+
+Hueil, Gildas's eldest brother, raids from Scotland and obeys no king; Arthur hunts him down and kills him on the Isle of Man, then does penance before the bishops, and Gildas forgives him.
+
 <a id="britains-strange-sights"></a>
 
 ### Strange sights of Britain include Arthur's dog's footprint and his son's grave
@@ -259,6 +289,14 @@ As the Saxons grow in Britain and Hengist's son Octa settles in Kent, Arthur lea
 The history lists Britain's and Ireland's strange sights, from Loch Lomond's sixty islands and the Severn's fighting waves to a stone at Builth printed by Arthur's dog Cavall while hunting the boar Twrch Trwyth, and the grave of Arthur's son Anir, which changes length each time it's measured.
 
 ## Arthur's end
+
+<a id="the-knight-of-the-cart"></a>
+
+### Meliagaunce carries off the queen, and Lancelot rides in a cart to save her
+
+Meliagaunce ambushes the queen a-Maying, Lancelot rides a cart to his gate, spends the night with her, falls through Meliagaunce's trapdoor, and comes back in time to fight for her at the stake.
+
+Malory tells this in [Book XIX, chapters 1–9](malory-sources/malory-map.tsv).
 
 <a id="the-last-battle"></a>
 
@@ -269,6 +307,12 @@ Gawain's ghost warns Arthur in a dream, an adder at the parley starts the battle
 Malory tells this in [Book XXI, chapters 3–5](malory-sources/malory-map.tsv).
 
 ## After Camlann
+
+<a id="gildas-condemns-the-kings-and-clergy"></a>
+
+### Gildas condemns Britain's kings and priests
+
+Forty-four years after Badon, Gildas writes to rebuke five British kings, among them Constantine of Dumnonia and Maelgwn, and the priests of Britain, by the words of the prophets and the apostles.
 
 <a id="the-english-kings-families-are-traced"></a>
 

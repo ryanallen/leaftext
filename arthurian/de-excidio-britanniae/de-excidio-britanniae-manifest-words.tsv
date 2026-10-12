@@ -1,0 +1,36 @@
+latin	normalized	kind	english	also	first_page	reason	standard	exceptions
+Aaron et Iulium	iulius et aaron	name	Aaron and Julius		31	the two martyrs as English names them, the title of their Wikipedia article, in Gildas's order	Lucas's Nomina hominum; Merriam-Webster
+Agitium, Agitio	agitius	name	Agitius		28	Gildas's own form, which Wikipedia's Groans of the Britons keeps; that he is Aëtius is a proposal, not the text, so the name is not changed	Lucas's Nomina hominum; Merriam-Webster
+Albanum	albanus	name	Alban		31	the martyr as English names him, the title of his Wikipedia article less "Saint"	Lucas's Nomina hominum; Merriam-Webster
+Ambrosio Aureliano	ambrosius aurelianus	name	Ambrosius Aurelianus		40	the leader's name as Gildas gives it and Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Aquileiam	aquileia	name	Aquileia		33	the city's name, which English keeps	Wikipedia; Merriam-Webster
+Aureli Canine	aurelius caninus	name	Aurelius Caninus		43	Gildas's own form, kept: Caninus, "dog-like", is another word from the Conanus of Wikipedia's article, a byname kept by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster
+Badonici montis	badonicus mons	name	Mount Badon		40	the hill as the history's English names it, so one place has one name on the shelf	Lucas's Geographica; Merriam-Webster
+Britannia, Britanniae, Brittannia, Brittanniae	britannia	name	Britain		27	the island, as English names it	Lucas's Geographica; Merriam-Webster
+Britanni, Britannorum	britanni	word	the Britons		30	the people, never "the British", by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster
+Constantinus	constantinus	name	Constantine		41	the king as English names him, the title of his Wikipedia article less "of Dumnonia"	Wikipedia; Merriam-Webster
+Cuneglase	cuneglasus	name	Cuneglasus		44	the king as Gildas names him and Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+Damnoniae	damnonia	name	Dumnonia		41	the kingdom as Wikipedia files it	Lucas's Geographica; Merriam-Webster
+Demetarum	demetae	name	Dyfed		43	the kingdom the Demetae's name lives on in, as the history's and the annals' English say it	Lucas's Geographica; Merriam-Webster
+Diocletiani	diocletianus	name	Diocletian		31	the emperor as English names him	Wikipedia; Merriam-Webster
+Galliam, Gallias	gallia	name	Gaul		28	the Roman land as English names it	Wikipedia; Merriam-Webster
+Hiberni	hiberni	word	the Irish		36	the people of Ireland, as English names them	Lewis and Short; Merriam-Webster
+Hispaniam	hispania	name	Spain		33	the Roman land as English names it	Wikipedia; Merriam-Webster
+Italiam	italia	name	Italy		30	the land as English names it	Wikipedia; Merriam-Webster
+Legionum urbis	legionum urbs	name	the City of the Legions		31	the town as Gildas names it, said in English, since Wikipedia's Julius and Aaron says Caerleon and the name could also be Chester's	Lucas's Geographica; Merriam-Webster
+Maglocune	maglocunus	name	Maelgwn		44	the king as the annals' and the history's English name him, the title of his Wikipedia article less "Gwynedd"	Lucas's Nomina hominum; Merriam-Webster
+Maximum	maximus	name	Maximus		33	the emperor as English writing names him	Wikipedia; Merriam-Webster
+Picti, Pictorum, Pictorumque	picti	word	the Picts		33	the people, as English names them	Lewis and Short; Merriam-Webster
+Roma, Romam, Romae	roma	name	Rome		30	the city, as English names it	Lucas's Geographica; Merriam-Webster
+Romani, Romanis, Romanorum	romani	word	the Romans		29	the people of Rome and its empire	Lewis and Short; Merriam-Webster
+Sabrinae	sabrina	name	the Severn		28	the river, as English names it	Lucas's Geographica; Merriam-Webster
+Saxones	saxones	word	the Saxons		38	the people, kept apart from the English as the text keeps them, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster
+Scotorum, Scottorum	scotti	word	the Irish		33	the Scotti of Gildas's day are the Irish, who had not yet given Scotland its name	Lewis and Short; Du Cange; Merriam-Webster
+Tamesis	tamesis	name	the Thames		28	the river, as English names it	Lucas's Geographica; Merriam-Webster
+Tiberii	tiberius	name	Tiberius		31	the emperor's name, which English keeps	Wikipedia; Merriam-Webster
+Treveros	treveri	name	Trier		33	the city as English names it now	Wikipedia; Merriam-Webster
+tyranno, tyrannos, tyranni, tyrannis, tyrannorum, tyranne	tyrannus	word	tyrant	despot, where tyrant was just said	33	Gildas's word for a ruler who holds power by force and without right, which English still says	Lewis and Short; Du Cange; Merriam-Webster	
+Verolamiensem	verolamiensis	name	Verulamium		31	the Roman town as English writing names it	Lucas's Geographica; Merriam-Webster
+Vortipori	vortiporius	name	Vortiporius		43	the king as Gildas names him and Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
+cubitorum	cubitus	word	feet		58	a cubit, about a foot and a half; twenty cubits, about thirty feet, said in the US master in feet, as the history says them	Lewis and Short; Merriam-Webster
+vae	vae	word	doom	disaster, where doom was just said; calamity, for the noun of Ezekiel's "vae super vae"	26	the prophets' curse, said "Doom to" every time so it sounds the same in every prophet Gildas quotes; Ezekiel's noun is "calamity"	Lewis and Short; Merriam-Webster
