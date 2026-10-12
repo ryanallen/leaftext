@@ -340,7 +340,7 @@ A panel that slides up from the bottom edge over the whole window, dimming the p
 
 ## Single window
 
-One Leaftext, however many times you launch it. Opening a file from Explorer or Finder while it is running adds a [tab](GLOSSARY.md#tab) to the window you already have and brings it to the front.
+One running Leaftext, however many windows it holds. Opening a file from Explorer or Finder while it is running adds a [tab](GLOSSARY.md#tab) to the window you were last in and brings it to the front; Control N, or launching it again with no file on Windows, opens another window, each with its own tabs, agents and vault.
 
 ## Skipped folders
 

@@ -93,6 +93,7 @@ Click a heading in the [outline](01-features/02-navigation.md#outline), or click
 | Action | Windows | macOS |
 | --- | --- | --- |
 | Open a file | `Ctrl+O` | `Cmd+O` |
+| [A new window](01-features/02-navigation.md#tabs) | `Ctrl+N` | `Cmd+N` |
 | Close tab | `Ctrl+W` | `Cmd+W` |
 | Quit, keeping your tabs and unsaved edits for next time | `Ctrl+Q` | `Cmd+Q` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
