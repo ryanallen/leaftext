@@ -234,7 +234,7 @@ The same file keeps a team's words from drifting. When everybody's notes link on
 
 ### Coming next
 
-Leaftext does not yet let an AI agent on your machine work in the document you have open, start outside tool servers through MCP, or define a word in a book with one press. All three are on the roadmap, and [the chart that sets Leaftext beside Obsidian, Typora and Calibre](#how-leaftext-compares) marks them as coming, with a source for every other check and cross. **[Its sources →](docs/05-compare.md)**
+Leaftext does not yet start outside tool servers through MCP or define a word in a book with one press. Both are on the roadmap, and [the chart that sets Leaftext beside Obsidian, Typora and Calibre](#how-leaftext-compares) marks them as coming, with a source for every other check and cross. **[Its sources →](docs/05-compare.md)**
 
 ## Move around
 

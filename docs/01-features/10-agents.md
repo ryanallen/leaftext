@@ -24,6 +24,33 @@ With agents running in several consoles, in one window or several, one agent can
 
 When an agent in a console calls the same Leaftext document tool on the same file and it fails the same way three times in a row, Leaftext types one message into that agent's own console, headed `From Leaftext`, naming the tool, the file and the kind of failure, and asking it to try something else. It says so once per run of failures; a success, another file, another tool or another kind of failure starts the count again. `leaftext_attempts` lists the agent's last sixteen document calls as Leaftext saw them — the tool, the file, whether it worked and the kind of failure — and keeps none of the document, the answer or the refusal's words. Leaftext sees only its own document tools: the agent's shell commands, its other tools, its model calls and its approval prompts are its own, so a failure there is never counted, and a call you turned down never reaches Leaftext at all. The count lives in the agent's own Leaftext connection, so it is separate for every agent and gone when the agent or its console closes.
 
+## Hold an agent to your checks
+
+Put a `HARNESS.md` in a project folder and an agent working there with the [plugin](#install-the-plugin) installed is held to the checks it names. Every time the agent tries to end a turn that wrote something, Leaftext runs each check; if one fails, the agent is sent back to work with what failed, and the turn ends only when every check passes. Claude Code, Codex and Gemini CLI all work this way, through the hooks the plugin brings. A folder with no `HARNESS.md`, or none in a folder above it, is left alone, and a turn that only talks is never held.
+
+The checks are one table. Anything written around it is ignored:
+
+```markdown
+| Check | Command | Seconds | Skill |
+| --- | --- | --- | --- |
+| Tests | cargo test | 600 | sync-tests |
+| Page script | just check-shell | 120 | shell-fragment |
+```
+
+A check passes when its command ends without an error, inside its seconds; together they may take an hour at most. A pipe inside a command is written `\|`. When a check that names a skill fails, the agent is told to read that skill before its next change. Every document the agent wrote that Leaftext reads — a note, a page, a data file — also goes through the same check `leaftext_check` runs, while Leaftext is open.
+
+**Nothing in a `HARNESS.md` runs until you trust it.** In a console in that folder, type `leaftext --harness trust`: it prints every command the file names and asks you to type `yes`. Change the file and it asks again. An agent cannot do this for you, because the question is answered only at a console a person is typing in. `leaftext --harness check` runs the checks by hand and prints each result and the score.
+
+**Every attempt is kept in a run note**, one per agent session, in Leaftext's own data folder rather than in your project. It lists each job, each attempt, what every check printed last, the score and which attempt was best. The message that sends the agent back ends with the note's address; hold `Ctrl` (`Cmd` on a Mac) and click it in the console to open it as a tab.
+
+**Leaftext also steps in when the agent goes round in circles:**
+
+- When the same check fails the same way three attempts running, the agent is told to stop repeating that change, re-read the skill, and plan a different one.
+- When three attempts in a row score below the best one so far, the agent is told which attempt was best, its score and the files it changed, so it starts again from there.
+- After eight attempts on one job, the turn ends however it scored, and the console says the job stopped short, the best score and where the note is.
+
+Leaftext never commits, never puts files back and never changes how the agent itself works; what happens to the work is still yours.
+
 For a company gateway, follow the agent's own instructions: [Claude Code's gateway setup](https://code.claude.com/docs/en/llm-gateway) or [Codex's model provider configuration](https://developers.openai.com/codex/config-reference). The gateway must support the request format and authentication that the chosen agent sends. Connecting Leaftext as a tool server is a separate step below.
 
 ## Install the plugin

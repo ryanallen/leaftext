@@ -701,7 +701,8 @@ function webRailTarget(metrics, geometry, position, offset) {
 function drawWebMinimap() {
   
   if (!activeWebTab() || codeViewActive) return;
-  if (window.innerWidth <= 720) { setMinimapMarkup(''); return; }
+  askRailGrip(true);
+  if (!window.leafMinimap.getEnabled()) { setMinimapMarkup(''); return; }
   setMinimapMarkup(documentMinimapMarkup().replace(' is-loading', ''));
   const rail = currentMinimap();
   if (!rail) return;
@@ -1258,6 +1259,9 @@ function pressIntoColumn(column) {
     code_scroll: null,
   });
 }
+
+
+window.leafPressBeside = () => pressIntoColumn(besideColumn());
 
 
 function startColumns() {
@@ -22036,7 +22040,7 @@ function renderTabs(state) {
   });
   const markup = tabs.map((tab, index) => {
     if (tab.kind === 'console') {
-      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${consoleLayers.get(tab.webId)?.activity === 'done' ? ' console-done' : ''}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span>${escapeText(tab.title)}</button>${tabCloseMarkup(index)}</span>`;
+      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${consoleLayers.get(tab.webId)?.activity === 'done' ? ' console-done' : ''}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="tab-label" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="lt-icon lt-icon-terminal" aria-hidden="true"></span><span class="console-tab-name">${escapeText(tab.title)}</span></button>${tabCloseMarkup(index)}</span>`;
     }
     
     if (tab.kind === 'web' && !tab.site) {
@@ -42464,6 +42468,11 @@ function makeConsoleLayer(id) {
     
     const write = terminal.write.bind(terminal);
     terminal.write = (data, done) => {
+      
+      if (!data.length) {
+        if (done) requestAnimationFrame(done);
+        return;
+      }
       const place = terminal.viewportY ? consoleBuffer(entry).viewportY : null;
       write(data, done);
       if (place !== null) consoleBuffer(entry).scrollToLine(place);
@@ -42521,9 +42530,15 @@ function holdConsoleLinks(terminal) {
 
 
 function openConsoleLink(address) {
-  let scheme;
-  try { scheme = new URL(address).protocol; } catch (_) { return; }
-  if (scheme === 'http:' || scheme === 'https:' || scheme === 'mailto:') send({ command: 'openExternal', url: address });
+  let url;
+  try { url = new URL(address); } catch (_) { return; }
+  if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'mailto:') send({ command: 'openExternal', url: address });
+  else if (url.protocol === 'file:' && !url.hostname) {
+    let path;
+    try { path = decodeURIComponent(url.pathname); } catch (_) { return; }
+    if (/^\/[A-Za-z]:\//.test(path)) path = path.slice(1).replaceAll('/', '\\');
+    send({ command: 'openPaths', paths: [path] });
+  }
 }
 
 

@@ -2,7 +2,7 @@
 
 ## Web pages
 
-A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scrolling without taking another picture. A page too long to draw at its own width is drawn smaller, so its text shows as bands that still mark where its sections start and end, and the box follows it all the way down. Click the rail to jump, drag the box to move through the page, or scroll over the rail. At a window width of 720 pixels or less, the live page uses its own scrollbar.
+A [web tab](02-navigation.md#web-tabs) keeps the same rail beside its live page. The rail draws a picture of the whole page after it paints and replaces the picture when the page changes height. Its position box follows scrolling without taking another picture. A page too long to draw at its own width is drawn smaller, so its text shows as bands that still mark where its sections start and end, and the box follows it all the way down. Click the rail to jump, drag the box to move through the page, or scroll over the rail. At a window width of 720 pixels or less, or with the rail [dragged shut](#always-there), the live page uses its own scrollbar.
 
 ## Consoles
 
@@ -111,7 +111,7 @@ At 720 pixels and under — a phone, or a window dragged narrow — the rail giv
 
 ## Always there
 
-In any window wider than 720 pixels the minimap is the reader's scroll indicator, and it is there until you put it away. Drag the narrow gap between the page's right border and the rail to the right, and once the pointer has traveled half the rail's width the rail snaps shut: the page takes its width, and the view's own thin scrollbar takes over as the answer to "where am I in this" — the reading page's, the [code view](#the-code-views-minimap)'s editor bar, or a [console](#consoles)'s. Drag the window's right edge back to the left the same distance and the rail snaps open again, and the scrollbar goes. A drag let go short of that point leaves the rail as it was. The choice is remembered, so the window opens the way you left it, and a window 720 pixels wide or less reads with the scrollbar whichever way it was left — see [Responsive behavior](#responsive-behavior).
+In any window wider than 720 pixels the minimap is the reader's scroll indicator, and it is there until you put it away. Drag the narrow gap between the page's right border and the rail to the right, and once the pointer has traveled half the rail's width the rail snaps shut: the page takes its width, and the view's own thin scrollbar takes over as the answer to "where am I in this" — the reading page's, the [code view](#the-code-views-minimap)'s editor bar, a [console](#consoles)'s, or a [web page](#web-pages)'s own. Drag the window's right edge back to the left the same distance and the rail snaps open again, and the scrollbar goes. A drag let go short of that point leaves the rail as it was. The choice is remembered, so the window opens the way you left it, and a window 720 pixels wide or less reads with the scrollbar whichever way it was left — see [Responsive behavior](#responsive-behavior).
 
 Inside another product's frame, the document scrolls within that frame and the minimap stands beside it while the frame is wider than 720 pixels; a narrower frame reads with the scrollbar, the way a narrow window does. A wheel over either the document or the minimap moves the same page; pressing the minimap jumps through it.
 
