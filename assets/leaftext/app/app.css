@@ -4200,6 +4200,7 @@
   --lt-icon-properties: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-info' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='12' cy='12' r='10' /%3E%3Cpath d='M12 16v-4' /%3E%3Cpath d='M12 8h.01' /%3E%3C/svg%3E");
   --lt-icon-open-outside: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-external-link' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 3h6v6' /%3E%3Cpath d='M10 14 21 3' /%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' /%3E%3C/svg%3E");
   --lt-icon-mail: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-mail' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7' /%3E%3Crect x='2' y='4' width='20' height='16' rx='2' /%3E%3C/svg%3E");
+  --lt-icon-define: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-book-open' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 7v14' /%3E%3Cpath d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z' /%3E%3C/svg%3E");
   --lt-icon-bookmark-remove: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-bookmark-minus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 10H9' /%3E%3Cpath d='M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z' /%3E%3C/svg%3E");
   --lt-icon-new-folder: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-folder-plus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 10v6' /%3E%3Cpath d='M9 13h6' /%3E%3Cpath d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' /%3E%3C/svg%3E");
   --lt-icon-row-above: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-horizontal-start' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='13' height='7' x='8' y='3' rx='1' /%3E%3Cpath d='m2 9 3 3-3 3' /%3E%3Crect width='13' height='7' x='8' y='14' rx='1' /%3E%3C/svg%3E");
@@ -4393,6 +4394,7 @@
   --lt-icon-properties: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-info' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Ccircle cx='12' cy='12' r='10' /%3E%3Cpath d='M12 16v-4' /%3E%3Cpath d='M12 8h.01' /%3E%3C/svg%3E");
   --lt-icon-open-outside: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-external-link' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 3h6v6' /%3E%3Cpath d='M10 14 21 3' /%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' /%3E%3C/svg%3E");
   --lt-icon-mail: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-mail' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7' /%3E%3Crect x='2' y='4' width='20' height='16' rx='2' /%3E%3C/svg%3E");
+  --lt-icon-define: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-book-open' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 7v14' /%3E%3Cpath d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z' /%3E%3C/svg%3E");
   --lt-icon-bookmark-remove: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-bookmark-minus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M15 10H9' /%3E%3Cpath d='M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z' /%3E%3C/svg%3E");
   --lt-icon-new-folder: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-folder-plus' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Cpath d='M12 10v6' /%3E%3Cpath d='M9 13h6' /%3E%3Cpath d='M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z' /%3E%3C/svg%3E");
   --lt-icon-row-above: url("data:image/svg+xml,%3C!-- @license lucide-static v1.37.0 - ISC --%3E%3Csvg class='lucide lucide-between-horizontal-start' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' %3E%3Crect width='13' height='7' x='8' y='3' rx='1' /%3E%3Cpath d='m2 9 3 3-3 3' /%3E%3Crect width='13' height='7' x='8' y='14' rx='1' /%3E%3C/svg%3E");
@@ -5083,6 +5085,10 @@
 .lt-icon-mail {
   -webkit-mask-image: var(--lt-icon-mail);
   mask-image: var(--lt-icon-mail);
+}
+.lt-icon-define {
+  -webkit-mask-image: var(--lt-icon-define);
+  mask-image: var(--lt-icon-define);
 }
 .lt-icon-bookmark-remove {
   -webkit-mask-image: var(--lt-icon-bookmark-remove);
@@ -11416,6 +11422,22 @@ body.is-block-dragging .document-body [data-src-start] {
 .selection-format[hidden] {
   display: none;
 }
+
+.selection-format.is-waiting {
+  opacity: var(--lt-opacity-50);
+  cursor: progress;
+}
+
+.selection-define-notice {
+  max-width: 240px;
+  padding: 0 var(--lt-space-4);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12-5);
+  line-height: var(--lt-leading-1-2);
+}
+.selection-define-notice[hidden] {
+  display: none;
+}
 .selection-format .lt-icon {
   display: block;
   width: 17px;
@@ -16448,6 +16470,15 @@ h2.shelf-book-title {
   flex: none;
   padding: var(--lt-space-12) var(--lt-space-24) var(--lt-space-20);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+
+.glossary-sheet-related {
+  margin: 0 0 var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12-5);
+}
+.glossary-sheet-related[hidden] {
+  display: none;
 }
 .glossary-sheet-fulllink {
   padding: 0;

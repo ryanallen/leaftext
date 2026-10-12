@@ -358,6 +358,7 @@
 | Hand-linked glossary terms | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Relative glossary links | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Matched across whitespace | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Define a word | [✅][l-define] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 ## Reload
 
@@ -444,6 +445,7 @@
 | Keyboard-only focus ring | [✅][l-chrome] | ? | ? | ? |
 
 [l-shortcuts]: ../01-features/02-navigation.md#shortcuts
+[l-define]: ../01-features/10-agents.md#define-a-word-in-a-book
 [l-appbar]: ../01-features/02-navigation.md#the-app-bar
 [l-toolbar]: ../01-features/02-navigation.md#the-floating-toolbar
 [l-tabs]: ../01-features/02-navigation.md#tabs

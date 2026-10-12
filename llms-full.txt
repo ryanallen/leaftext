@@ -95,7 +95,7 @@
 ## Reading and moving around
 - Page: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.html
 - Markdown: https://leaftext.com/docs/06-comparison-chart/03-reading-and-moving-around.md
-- Summary: [l-shortcuts]: ../01-features/02-navigation.mdshortcuts [l-appbar]: ../01-features/02-navigation.mdthe-app-bar [l-toolbar]: ../01-features/02-navigation.mdthe-floating-toolbar [l-tabs]: ../01-featu...
+- Summary: [l-shortcuts]: ../01-features/02-navigation.mdshortcuts [l-define]: ../01-features/10-agents.mddefine-a-word-in-a-book [l-appbar]: ../01-features/02-navigation.mdthe-app-bar [l-toolbar]: ../01-feat...
 
 ## Writing and editing
 - Page: https://leaftext.com/docs/06-comparison-chart/04-writing-and-editing.html

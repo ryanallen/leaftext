@@ -183,6 +183,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Computer voices run on your machine, so a computer voice sends no word of the document away and needs no account
 - On desktop, **Connect ElevenLabs…** in the voice list accepts your key, checks it with ElevenLabs and adds voices from your account. The key and account identifier stay in the system credential store, outside `settings.json`
 - The first press with an ElevenLabs voice shows how many uncached characters may be sent, names the Flash v2.5 or Multilingual v2 model, and waits for Continue; Cancel sends no passage. A completed passage replays from kept audio without another paid request
+- On a Mac running macOS 14 or later, **Use my Personal Voice…** in the voice list asks Apple's permission once; once allowed, every Personal Voice you recorded on that Mac is a row under System, spoken by the Mac's own speech engine with each word lit as it is spoken. Nothing is sent anywhere, and the row is not offered on Windows or in a browser
 - **Forget account and audio** removes the credential and that account's stored passages. A failed request stops with a message and never silently switches to a computer voice
 - The sentence being spoken is washed lightly and the word being spoken more strongly, and the page scrolls to keep them on screen until you scroll it yourself
 - While it reads, a small bar stands where the find bar does, holding back a sentence, a pause, forward a sentence, the voice, the speed (0.75× to 2×) and a cross that stops it; a change is heard from the next sentence. The bar steps aside while find is open, and the voice reads on
@@ -190,7 +191,7 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - A speed change keeps an ElevenLabs reading going, at the new speed; a new voice ends it, because its audio was agreed for the voice it was asked in
 - Code, math, diagrams and controls are skipped, the same as Flash words
 - Stops on a view change, another document, or opening Flash words, and is not offered on an [HTML page drawn in its own frame](01-rendering.md#html-files)
-- Saved as `read_aloud_voice` (a computer voice's full name, a provider-prefixed ElevenLabs voice ID, or empty for System), `read_aloud_speed` (75, 100, 125, 150 or 200 percent, 100 by default), and `elevenlabs_model` (Flash v2.5 by default)
+- Saved as `read_aloud_voice` (a computer voice's full name, a provider-prefixed ElevenLabs voice ID, `personal:` and a Personal Voice's identifier, or empty for System), `read_aloud_speed` (75, 100, 125, 150 or 200 percent, 100 by default), and `elevenlabs_model` (Flash v2.5 by default)
 
 ### Typing help
 

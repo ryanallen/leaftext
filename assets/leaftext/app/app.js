@@ -13431,6 +13431,30 @@ window.leafElevenLabsError = (message) => {
   if (elevenLabsStatus) elevenLabsStatus.textContent = String(message || 'ElevenLabs could not answer.');
 };
 
+
+let personalVoices = null;
+let personalVoicesAsked = false;
+let personalVoiceToken = 0;
+function askPersonalVoices() {
+  if (personalVoicesAsked || !elevenLabsDesktop()) return;
+  personalVoicesAsked = true;
+  send({ command: 'personalVoices' });
+}
+window.leafPersonalVoices = (answer) => {
+  const status = answer && typeof answer.status === 'string' ? answer.status : 'unsupported';
+  const voices = status === 'allowed' && Array.isArray(answer.voices) ? answer.voices.filter((voice) => voice && typeof voice.id === 'string' && typeof voice.name === 'string') : [];
+  personalVoices = { status, voices };
+  renderReadAloudVoices();
+};
+
+function personalVoiceChosen() {
+  if (!personalVoices || !readAloudVoice.startsWith('personal:')) return null;
+  const id = readAloudVoice.slice('personal:'.length);
+  return personalVoices.voices.find((voice) => voice.id === id) || null;
+}
+
+if (readAloudVoice.startsWith('personal:')) askPersonalVoices();
+
 function readAloudEngine() {
   return window.speechSynthesis && typeof window.SpeechSynthesisUtterance === 'function' ? window.speechSynthesis : null;
 }
@@ -13539,7 +13563,7 @@ function readAloudChosenVoice() {
 }
 
 function readAloudOffered() {
-  return Boolean(readAloudEngine() || (elevenLabsDesktop() && readAloudVoice.startsWith('elevenlabs:'))) && !readingIsContainedPage() && !codeViewActive && !graphViewOpen && !activeWebTab();
+  return Boolean(readAloudEngine() || personalVoiceChosen() || (elevenLabsDesktop() && readAloudVoice.startsWith('elevenlabs:'))) && !readingIsContainedPage() && !codeViewActive && !graphViewOpen && !activeWebTab();
 }
 
 
@@ -13547,7 +13571,7 @@ function startReadAloud() {
   if (readAloud || !readAloudOffered()) return;
   const paid = elevenLabsDesktop() && readAloudVoice.startsWith('elevenlabs:');
   const { all, local } = readAloudLocalVoices();
-  if (!paid && all.length && !local.length) {
+  if (!paid && !personalVoiceChosen() && all.length && !local.length) {
     leafToast('No voice on this computer can read the page without sending it away.');
     return;
   }
@@ -13702,6 +13726,13 @@ function paidAudioFrame(session, audio, alignment, offsets) {
 function speakReadAloudSentence(session, from = 0) {
   const engine = readAloudEngine();
   const block = session.blocks[session.index];
+  
+  const personal = personalVoiceChosen();
+  session.personal = Boolean(personal);
+  if (personal && readAloud === session && block && block.isConnected !== false) {
+    speakPersonalSentence(session, personal, from);
+    return;
+  }
   if (readAloud !== session || !engine || !block || block.isConnected === false) {
     stopReadAloud();
     return;
@@ -13731,6 +13762,41 @@ function speakReadAloudSentence(session, from = 0) {
   session.utterance = utterance;
   engine.speak(utterance);
 }
+
+function speakPersonalSentence(session, voice, from) {
+  session.from = from;
+  session.word = from;
+  session.token = ++personalVoiceToken;
+  readingInput();
+  lightReadAloudSentence(session);
+  send({ command: 'speakPersonalVoice', token: session.token, voice: voice.id, text: session.sentences[session.at].text.slice(from), rate: readAloudSpeed / 100 });
+}
+window.leafPersonalVoiceWord = (token, start, length) => {
+  const session = readAloud;
+  if (session && session.personal && session.token === token) lightReadAloudWord(session, { charIndex: start, charLength: length });
+};
+window.leafPersonalVoiceDone = (token, error) => {
+  const session = readAloud;
+  if (!session || !session.personal || session.token !== token) return;
+  if (error) {
+    leafToast(String(error));
+    stopReadAloud();
+    return;
+  }
+  session.at += 1;
+  if (readAloudSettle(session)) speakReadAloudSentence(session);
+  else stopReadAloud();
+};
+
+function silenceReadAloud(session) {
+  session.utterance = null;
+  if (session.personal) {
+    session.token = ++personalVoiceToken;
+    send({ command: 'stopPersonalVoice' });
+  }
+  const engine = readAloudEngine();
+  if (engine) engine.cancel();
+}
 function readAloudSentenceDone(session, utterance) {
   if (readAloud !== session || session.utterance !== utterance) return;
   session.at += 1;
@@ -13750,11 +13816,7 @@ function pauseReadAloud() {
     if (session.audioFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(session.audioFrame);
     session.audioFrame = null;
     if (session.audio) session.audio.pause();
-  } else {
-    session.utterance = null;
-    const engine = readAloudEngine();
-    if (engine) engine.cancel();
-  }
+  } else silenceReadAloud(session);
   renderReadAloudPause();
 }
 function playReadAloud() {
@@ -13822,9 +13884,7 @@ function readAloudGo(session) {
   session.word = 0;
   session.from = 0;
   if (!session.paid) {
-    session.utterance = null;
-    const engine = readAloudEngine();
-    if (engine) engine.cancel();
+    silenceReadAloud(session);
     if (session.paused) lightReadAloudSentence(session);
     else speakReadAloudSentence(session);
     return;
@@ -13859,6 +13919,7 @@ function stopReadAloud() {
     send({ command: 'cancelElevenLabs', token: session.token });
     if (elevenLabsConsent && !elevenLabsConsent.hidden) hideElevenLabsSheet();
   }
+  if (session.personal) send({ command: 'stopPersonalVoice' });
   if (session.audioFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(session.audioFrame);
   if (session.audio) { session.audio.pause(); session.audio.removeAttribute('src'); }
   const engine = readAloudEngine();
@@ -13977,8 +14038,10 @@ function readAloudVoiceLabel(name) {
 
 function renderReadAloudVoices() {
   if (!readAloudVoiceChoice) return;
+  askPersonalVoices();
   const { local } = readAloudLocalVoices();
-  const rows = [['', 'System'], ...readAloudLanguageFirst(local).map((voice) => [voice.name, readAloudVoiceLabel(voice.name)])];
+  const personal = !personalVoices ? [] : personalVoices.status === 'unasked' ? [['__allow_personal_voice__', 'Use my Personal Voice…']] : personalVoices.voices.map((voice) => [`personal:${voice.id}`, voice.name]);
+  const rows = [['', 'System'], ...personal, ...readAloudLanguageFirst(local).map((voice) => [voice.name, readAloudVoiceLabel(voice.name)])];
   if (elevenLabsDesktop()) {
     for (const voice of elevenLabsVoices) rows.push([`elevenlabs:${voice.id}`, `${voice.name} · ElevenLabs`]);
     if (readAloudVoice.startsWith('elevenlabs:') && !rows.some(([value]) => value === readAloudVoice)) {
@@ -14012,6 +14075,9 @@ if (readAloudBar) {
     if (readAloudVoiceChoice.value === '__connect_elevenlabs__') {
       renderReadAloudVoices();
       showElevenLabsSheet();
+    } else if (readAloudVoiceChoice.value === '__allow_personal_voice__') {
+      renderReadAloudVoices();
+      send({ command: 'allowPersonalVoice' });
     } else setReadAloudChoice(readAloudVoiceChoice.value, readAloudSpeed);
   });
   if (readAloudSpeedChoice) readAloudSpeedChoice.addEventListener('change', () => setReadAloudChoice(readAloudVoice, readAloudSpeedChoice.value));
@@ -33588,7 +33654,19 @@ const READING_FORMATS = [
   { id: 'annotate', label: 'Annotate', icon: '<span class="lt-icon lt-icon-footnote"></span>' },
   { id: 'comment', label: 'Comment', icon: '<span class="lt-icon lt-icon-comment"></span>' },
   { id: 'ask', label: 'Ask agent', icon: '<span class="lt-icon lt-icon-terminal"></span>' },
+  
+  { id: 'define', label: 'Define', icon: '<span class="lt-icon lt-icon-define"></span>' },
 ];
+
+const BOOK_FORMATS = new Set(['copy', 'define']);
+
+const BOOK_BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6';
+
+const DEFINE_WORD_LIMIT = 80;
+const DEFINE_SENTENCE_LIMIT = 600;
+
+const DEFINE_ANSWER_TIMEOUT_MS = 185000;
+const DEFINE_NO_ANSWER = 'No answer came from the agent in time, so nothing was written.';
 
 
 
@@ -33621,6 +33699,10 @@ let selectionToolbarBlock = null;
 let selectionToolbarRange = null;
 
 let selectionToolbarPressHeld = false;
+
+let selectionToolbarOnBook = false;
+
+let selectionToolbarDefineTimer = 0;
 
 
 function selectionToolbarHoldsFocus(node) {
@@ -33688,6 +33770,12 @@ function closeSelectionInputBox() {
 function selectionEditableBlock(node) {
   const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
   if (!el || !el.closest) return null;
+  
+  if (selectionToolbarOnBook) {
+    const words = el.closest(BOOK_BLOCK_SELECTOR);
+    if (!words || !words.closest('.book-item') || !app.contains(words)) return null;
+    return words.dataset.editingSource === 'true' ? null : words;
+  }
   const block = el.closest(readerEditingAllowed() ? '[data-src-start].leaf-editable' : '[data-src-start]');
   if (!block || block.dataset.editingSource === 'true') return null;
   if (!app.contains(block)) return null;
@@ -33754,7 +33842,7 @@ function syncSelectionToolbar() {
 function markSelectionToolbarState() {
   const kind = selectionToolbarBlock.dataset.blockKind;
   const editing = readerEditingAllowed();
-  const blockable = editing && BLOCK_FORMAT_KINDS.has(kind);
+  const blockable = editing && !selectionToolbarOnBook && BLOCK_FORMAT_KINDS.has(kind);
   const level = kind === 'heading' ? blockHeadingLevel(selectionToolbarBlock) : 0;
   for (const [id, button] of selectionToolbarButtons) {
     
@@ -33975,6 +34063,7 @@ function applyReadingFormat(format) {
   else if (format.id === 'highlight') applyHighlight();
   else if (format.id === 'annotate') applyAnnotate();
   else if (format.id === 'ask') openSelectionAgentRow();
+  else if (format.id === 'define') defineSelectionWord();
   else if (format.id === 'comment') {
     const range = selectionToolbarRange;
     hideSelectionToolbar();
@@ -34074,6 +34163,71 @@ function copySelectionText() {
   if (!selectionToolbarRange) return;
   copyPlainText(selectionToolbarRange.toString());
 }
+
+
+
+
+
+
+function selectionDefinition() {
+  const block = selectionToolbarBlock;
+  const range = selectionToolbarRange;
+  if (!block || !block.isConnected || !range) return null;
+  const word = range.toString().replace(/\s+/g, ' ').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+  if (!word || word.length > DEFINE_WORD_LIMIT) return null;
+  return { word, sentence: sentenceAround(block.textContent || '', selectionToolbarSpan(block)) };
+}
+
+
+function sentenceAround(text, span) {
+  if (!span) return text.replace(/\s+/g, ' ').trim().slice(0, DEFINE_SENTENCE_LIMIT);
+  let start = Math.max(0, Math.min(span.start, text.length));
+  let end = Math.max(start, Math.min(span.end, text.length));
+  while (start > 0 && !/[.!?]/.test(text[start - 1])) start -= 1;
+  while (end < text.length && !/[.!?]/.test(text[end])) end += 1;
+  if (end < text.length) end += 1;
+  start = Math.max(start, span.start - DEFINE_SENTENCE_LIMIT / 2);
+  end = Math.min(end, start + DEFINE_SENTENCE_LIMIT);
+  return text.slice(start, end).replace(/\s+/g, ' ').trim();
+}
+
+
+function defineSelectionWord() {
+  const asked = selectionDefinition();
+  const button = selectionToolbarButtons.get('define');
+  if (!asked || !button || button.classList.contains('is-waiting')) return;
+  showSelectionDefineNotice('');
+  button.classList.add('is-waiting');
+  button.disabled = true;
+  clearTimeout(selectionToolbarDefineTimer);
+  selectionToolbarDefineTimer = setTimeout(() => window.leafDefineAnswered(DEFINE_NO_ANSWER), DEFINE_ANSWER_TIMEOUT_MS);
+  send({ command: 'defineTerm', word: asked.word, sentence: asked.sentence });
+}
+
+
+function showSelectionDefineNotice(words) {
+  const notice = selectionToolbar && selectionToolbar.querySelector('.selection-define-notice');
+  if (!notice) return;
+  notice.textContent = words;
+  notice.hidden = !words;
+}
+
+
+window.leafDefineAnswered = (failure, html, anchor, related) => {
+  clearTimeout(selectionToolbarDefineTimer);
+  selectionToolbarDefineTimer = 0;
+  const button = selectionToolbarButtons.get('define');
+  if (button) {
+    button.classList.remove('is-waiting');
+    button.disabled = false;
+  }
+  if (failure) {
+    showSelectionDefineNotice(String(failure));
+    return;
+  }
+  hideSelectionToolbar();
+  showDefinedGlossaryEntry(String(html || ''), String(anchor || ''), Array.isArray(related) ? related : []);
+};
 
 
 
@@ -34551,11 +34705,15 @@ function bindSelectionToolbar() {
   selectionToolbarPassage = null;
   selectionToolbarBlock = null;
   selectionToolbarRange = null;
+  selectionToolbarOnBook = false;
   const layout = app.querySelector('.reader-layout');
   if (!layout) return;
   
   const onMessage = currentDocumentFormat === 'eml';
-  if (currentDocumentFormat !== 'markdown' && !(onMessage && messageBodyHoldsTypedBlocks())) return;
+  
+  const onBook = currentDocumentFormat !== 'markdown' && !onMessage && !!app.querySelector('.document-body .book-item');
+  selectionToolbarOnBook = onBook;
+  if (currentDocumentFormat !== 'markdown' && !onBook && !(onMessage && messageBodyHoldsTypedBlocks())) return;
 
   selectionToolbar = document.createElement('div');
   selectionToolbar.className = 'selection-toolbar';
@@ -34569,32 +34727,41 @@ function bindSelectionToolbar() {
   selectionToolbarLinkInput = selectionToolbar.querySelector('.selection-link-input');
   selectionToolbarLinkStyle = selectionToolbar.querySelector('.selection-link-style');
 
-  for (const format of INLINE_FORMATS.filter((item) => !onMessage || !item.buttonClass)) {
+  for (const format of INLINE_FORMATS.filter((item) => !onBook && (!onMessage || !item.buttonClass))) {
     const button = selectionToolbarButton(format, () =>
       format.id === 'link' ? openSelectionLinkBox() : format.buttonClass ? applyButtonFormat(format) : applyInlineFormat(format),
     );
     selectionToolbarButtons.set(format.id, button);
     selectionToolbarRow.appendChild(button);
   }
-  const divider = document.createElement('span');
-  divider.className = 'selection-format-divider';
-  selectionToolbarRow.appendChild(divider);
-  for (const format of BLOCK_FORMATS) {
-    const button = selectionToolbarButton(format, () => applyBlockFormat(format));
-    selectionToolbarButtons.set(format.id, button);
-    selectionToolbarRow.appendChild(button);
+  if (!onBook) {
+    const divider = document.createElement('span');
+    divider.className = 'selection-format-divider';
+    selectionToolbarRow.appendChild(divider);
+    for (const format of BLOCK_FORMATS) {
+      const button = selectionToolbarButton(format, () => applyBlockFormat(format));
+      selectionToolbarButtons.set(format.id, button);
+      selectionToolbarRow.appendChild(button);
+    }
   }
   
-  if (!onMessage) {
+  if (!onMessage && !onBook) {
     const button = selectionToolbarButton(BADGE_FORMAT, () => openSelectionToneRow());
     selectionToolbarButtons.set(BADGE_FORMAT.id, button);
     selectionToolbarRow.appendChild(button);
   }
   
-  for (const format of READING_FORMATS.filter((item) => !onMessage || item.id === 'copy')) {
+  const offered = (item) => (onBook ? BOOK_FORMATS.has(item.id) && (item.id !== 'define' || hostAnswers('defineTerm')) : item.id !== 'define' && (!onMessage || item.id === 'copy'));
+  for (const format of READING_FORMATS.filter(offered)) {
     const button = selectionToolbarButton(format, () => applyReadingFormat(format));
     selectionToolbarButtons.set(format.id, button);
     selectionToolbarRow.appendChild(button);
+  }
+  if (onBook) {
+    const notice = document.createElement('div');
+    notice.className = 'selection-define-notice';
+    notice.hidden = true;
+    selectionToolbar.insertBefore(notice, selectionToolbar.querySelector('.selection-toolbar-point'));
   }
 
   selectionToolbarToneRow = document.createElement('div');
@@ -34667,7 +34834,7 @@ window.addEventListener('keydown', (event) => {
     return;
   }
   
-  if (!(event.ctrlKey || event.metaKey) || event.altKey || !readerEditingAllowed()) return;
+  if (!(event.ctrlKey || event.metaKey) || event.altKey || !readerEditingAllowed() || selectionToolbarOnBook) return;
   const key = event.key.toLowerCase();
   const format = INLINE_FORMATS.find((item) => item.id === (key === 'b' ? 'bold' : key === 'i' ? 'italic' : ''));
   if (format) {
@@ -43753,6 +43920,8 @@ function glossarySheetMessage(message) {
 
 function awaitGlossaryEntry() {
   endGlossaryWait();
+  
+  glossarySheetRelated.hidden = true;
   const waiting = document.createElement('div');
   waiting.className = 'glossary-sheet-waiting';
   waiting.setAttribute('role', 'status');
@@ -43771,6 +43940,20 @@ function awaitGlossaryEntry() {
     glossarySheetMessage(GLOSSARY_FAILED);
   }, GLOSSARY_ANSWER_TIMEOUT_MS);
   showGlossary();
+}
+
+const glossarySheetRelated = document.createElement('p');
+glossarySheetRelated.className = 'glossary-sheet-related';
+glossarySheetRelated.hidden = true;
+glossaryFullLink.parentElement.insertBefore(glossarySheetRelated, glossaryFullLink);
+
+function showDefinedGlossaryEntry(html, anchor, related) {
+  glossaryHrefBase = 'glossary:';
+  awaitGlossaryEntry();
+  window.leafShowGlossary(html, anchor);
+  const words = (related || []).map(String).filter(Boolean);
+  glossarySheetRelated.textContent = words.length ? 'Also added: ' + words.join(', ') : '';
+  glossarySheetRelated.hidden = !words.length;
 }
 
 window.leafGlossaryFailed = (reason) => {
@@ -45118,6 +45301,7 @@ const LEAF_MERMAID_ICONS = {
     'properties': { body: "<circle cx=\"12\" cy=\"12\" r=\"10\" /><path d=\"M12 16v-4\" /><path d=\"M12 8h.01\" />", width: 24, height: 24 },
     'open-outside': { body: "<path d=\"M15 3h6v6\" /><path d=\"M10 14 21 3\" /><path d=\"M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6\" />", width: 24, height: 24 },
     'mail': { body: "<path d=\"m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7\" /><rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"2\" />", width: 24, height: 24 },
+    'define': { body: "<path d=\"M12 7v14\" /><path d=\"M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z\" />", width: 24, height: 24 },
     'bookmark-remove': { body: "<path d=\"M15 10H9\" /><path d=\"M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z\" />", width: 24, height: 24 },
     'new-folder': { body: "<path d=\"M12 10v6\" /><path d=\"M9 13h6\" /><path d=\"M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z\" />", width: 24, height: 24 },
     'row-above': { body: "<rect width=\"13\" height=\"7\" x=\"8\" y=\"3\" rx=\"1\" /><path d=\"m2 9 3 3-3 3\" /><rect width=\"13\" height=\"7\" x=\"8\" y=\"14\" rx=\"1\" />", width: 24, height: 24 },

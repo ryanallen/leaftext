@@ -10,6 +10,10 @@ Leaftext's installed app can answer an agent through MCP. Keep Leaftext open, ad
 
 Open a [console in the library](03-library.md#console) and type the installed agent's ordinary command. The agent uses its own model address, model choice and credentials, just as it does when you start it in another terminal. Set those in the agent's own configuration; Leaftext has no model address or key field and does not make the model request.
 
+The agent also keeps everything else it loads in an ordinary terminal: the project's rules, its skills, its hooks and its plugins. Leaftext starts your own shell in the library's folder with your own environment, and the agent reads its configuration by its own rules, so each skill is there and each hook runs once, exactly as it would elsewhere. The [Leaftext plugin](#install-the-plugin) adds its document tools beside your other plugins without replacing any of them.
+
+Remote tool servers, such as a company's own, are set up in the agent's own settings the way that agent's documentation describes, and work in a Leaftext console the same as anywhere. The `mcp.json` file in Leaftext's settings folder is not passed to an agent you run in a console.
+
 To watch a note change while the agent works on it, put the console beside the note: drag its tab onto the right half of the page, choose **Open beside** on the tab, or press `Ctrl+\` (`Cmd+\` on a Mac). See [two documents side by side](02-navigation.md#two-documents-side-by-side).
 
 The mouse wheel scrolls the agent's conversation the way it does in the agent's own terminal: a program that asks for the mouse is sent the wheel itself, one step a notch, so the prompt box keeps what you were typing.
@@ -19,6 +23,10 @@ Once it is [connected](#connect-on-windows), the agent is told it is running ins
 ### Ask an agent about a passage
 
 Highlight words in a note and press **Ask agent** on the bar that appears over them. It lists every console with an agent running in it, named the way its tab is; press one and the agent is handed the words as its next prompt, quoted, under the note's path and the line they came from, so it can open the place rather than search for it. Highlighting alone sends nothing, and the passage is the one you highlighted when you pressed **Ask agent**, however the selection moves afterwards. The button is there only while a console holds an agent, and Leaftext never types into a console at a bare prompt or one running a command that reads no typing.
+
+### Define a word in a book
+
+Highlight a word in a book and press **Define** on the bar that appears over it. The word, the sentence you met it in and the words the book's glossary already holds go to a coding agent running in a console in the same window, which writes an entry for it in the sense this book uses it, and for the related words it finds in the book, into the `GLOSSARY.md` beside the book through `leaftext_glossary`. The glossary sheet opens on the new entry with the related words named at its foot, and the word is underlined through every chapter. A word the glossary already has opens its entry and asks nobody; a glossary with unsaved edits in a tab, or no agent in a console, is said in one line on the bar and nothing is written.
 
 ### Agents in different consoles talk to each other
 
@@ -86,6 +94,8 @@ On Windows the installer already puts the word `leaftext` on your command path. 
 ```
 sudo mkdir -p /usr/local/bin && sudo ln -sf /Applications/leaftext.app/Contents/MacOS/leaftext /usr/local/bin/leaftext
 ```
+
+Installing the plugin and connecting its tools are two separate steps: the skill can be listed while the document tools are not yet there. After installing, or after any change to the agent's tool servers, restart the agent and check that a document tool such as `leaftext_doc` appears in its list of tools. If the skill is there and the tools are not, the agent's own server list says why: `claude mcp list` in Claude Code, `codex mcp list` in Codex.
 
 For an agent the plugin does not cover, connect it by hand as below.
 
