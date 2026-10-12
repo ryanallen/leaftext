@@ -38394,6 +38394,27 @@ function unlocksShowing() {
 function readingDocumentBody() {
   return [...app.querySelectorAll('.document-body')].find((el) => !el.classList.contains('document-minimap-preview')) || null;
 }
+var marginaliaLayout = null;
+var marginaliaResize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateMarginalia);
+function updateMarginalia() {
+  const body = readingDocumentBody();
+  const layout = body && body.closest('.reader-layout');
+  if (layout !== marginaliaLayout) {
+    if (marginaliaResize) marginaliaResize.disconnect();
+    marginaliaLayout = layout;
+    if (layout && marginaliaResize) marginaliaResize.observe(layout);
+  }
+  if (!layout) return;
+  const showing = unlocksShowing().has('marginalia') && !layout.classList.contains('has-contained-document');
+  if (!showing) {
+    layout.classList.remove('has-marginalia');
+    return;
+  }
+  const page = layout.getBoundingClientRect();
+  const column = body.getBoundingClientRect();
+  layout.classList.toggle('has-marginalia', column.left - page.left >= 62 && page.right - column.right >= 62);
+}
+window.addEventListener('resize', updateMarginalia);
 function applyPageOrnaments() {
   const showing = unlocksShowing();
   const body = readingDocumentBody();
@@ -38405,6 +38426,7 @@ function applyPageOrnaments() {
       document.fonts.ready.then(() => measureDropCap(body));
     }
   }
+  updateMarginalia();
   
   app.classList.toggle('has-page-grain', showing.has('page-grain'));
   if (body) {

@@ -15,6 +15,7 @@
 | Rewards unlocked by use | [✅][l-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Themes earned by use | [✅][l-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Page ornaments earned | [✅][l-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Painted margins earned | [✅][l-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Earned rewards never lost | [✅][l-seeds] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Record stays on device | [✅][l-kept] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Record can be reset | [✅][l-kept] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

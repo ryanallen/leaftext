@@ -38,9 +38,28 @@ An agent can hand part of its job to a second agent and pick up the answer itsel
 
 ### An agent drives your other windows
 
-An agent in a console can see and operate another window on your computer — the browser you are already signed in to, or any other program — so it can read a page that needs your account and click and type in it for you. `leaftext_look` with nothing named lists the visible windows; with one named it answers a picture of that window. `leaftext_point` moves, clicks, drags or scrolls at a place in that picture, and `leaftext_type` types text and presses keys such as Enter or Ctrl+A.
+An agent in a console can see and operate another window on your computer — the browser you are already signed in to, or any other program — so it can read a page that needs your account and click and type in it for you. `leaftext_look` with nothing named lists the visible windows; with one named it answers a picture of that window. `leaftext_point` moves, clicks, drags or scrolls at a place in that picture, and `leaftext_type` types text and presses keys such as Enter or Ctrl+A (Cmd+A on a Mac).
 
-The first time an agent looks at a window, Leaftext asks you in a box of the system's own whether that console's agent may see and operate it, and nothing is seen until you press Yes. The agent cannot answer that box: it is outside the page, and Leaftext's own windows can never be looked at or pressed in. While the session lasts, a notice at the top of the window holding that console says which window the agent is driving, and its Stop ends the session. The session also ends when you close that console or the window it drives, and asking about another window starts a new question. Nothing is remembered, so the next agent asks again. If you click into another window while the agent is working, it stops rather than taking the window back, and asks for a fresh look. On a Mac the tools say they are not built there yet.
+The first time an agent looks at a window, Leaftext asks you in a box of the system's own whether that console's agent may see and operate it, and nothing is seen until you press Yes. The agent cannot answer that box: it is outside the page, and Leaftext's own windows can never be looked at or pressed in. While the session lasts, a notice at the top of the window holding that console says which window the agent is driving, and its Stop ends the session. The session also ends when you close that console or the window it drives, and asking about another window starts a new question. Nothing is remembered, so the next agent asks again. If you click into another window while the agent is working, it stops rather than taking the window back, and asks for a fresh look. On a Mac, macOS asks once whether Leaftext may record the screen, which is how it sees another window, and once whether it may use Accessibility, which is how it clicks and types; allow both in System Settings → Privacy & Security, then start the agent again. Looking at a window on a Mac needs macOS 14 or later.
+
+### A watcher starts an agent when something new appears
+
+A watcher is a note in a folder named `watchers` at the top of a vault. Its front matter names the address to read, how often, and the command line that starts your agent; everything under the front matter is the job:
+
+```markdown
+---
+check: https://example.com/issues.json
+every: 15m
+start: claude
+---
+Read each new issue and write a plan for it in plans/.
+```
+
+`every` is minutes or hours, from `1m` to `24h`. `check` is an `https://` address. When it answers with a JSON list — or an object holding one — each entry is an item, named by its `key`, `id`, `guid`, `url` or `link`; any other answer is one item, the whole page, so a change anywhere on it is new.
+
+**Nothing in a watcher runs until you trust it.** In a console, type `leaftext --watcher trust watchers/issues.md`: it prints the address, the interval and the command line and asks you to type `yes`. Change the note and it asks again.
+
+While Leaftext is open, it reads each trusted note's address when it is due. The first answer only records what is there. When a later one holds something new, Leaftext opens a console in the vault beside the page you are reading — without taking your place — types the note's command line, waits until the agent is at its prompt, and types the job with the new items, at most ten, as one message. The items are marked as data read from the address, never as instructions. The agent then works as it would if you had typed it, with its own approvals, and appears on the agents list. A new item starts one console; nothing new starts nothing. If the console closes, or no agent is ready in it within two minutes, Leaftext says so once and starts nothing more for that note until it changes or Leaftext starts again. A note whose address cannot be read is said once, until it can be.
 
 ### An agent going round in circles is told
 
@@ -152,5 +171,15 @@ Ask the agent to use `leaftext_doc` to read a file in Leaftext. It opens that fi
 To look at a document's diagrams, the agent uses `leaftext_diagrams` for the list — each diagram's place, line and kind — and `leaftext_diagram` on one of them to learn whether it draws and, given a path, to have it written there as a PNG it can open and look at.
 
 An agent with no tools set up at all, in any folder, can run `leaftext --diagrams notes.md` at its prompt instead: it [checks every diagram in the file](01-rendering.md#checking-a-files-diagrams) in a window nobody sees, prints a line per diagram, and writes each drawing as a picture, with no Leaftext window needed and yours left as it was.
+
+The same agent, or you, can write a diagram into a Markdown file from the prompt and have it kept only if Leaftext draws it. Pipe the diagram in without its fence and name one place for it:
+
+```text
+type flow.mmd | leaftext --chart notes.md --append
+type flow.mmd | leaftext --chart notes.md --at 12
+type flow.mmd | leaftext --chart notes.md --replace 40
+```
+
+`--append` puts it at the end of the file. `--at` puts it before the line you name, which has to be a blank line, the first line of a block, or one past the last line, so no paragraph, table, list or quote is split in two; any other line is refused with the line that would do. `--replace` swaps the diagram whose fence opens on the line you name. A diagram that draws is saved and its line printed, `notes.md:12  flowchart  kept`. One that does not is refused with the renderer's own words and the file is left as it was. A call missing its place or its diagram exits with 2, a refused diagram with 1, so a script can tell the two apart.
 
 The tools reach the Leaftext copy running under your account. If it is closed, the agent gets a clear answer that Leaftext is not running.

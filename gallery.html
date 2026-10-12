@@ -9220,6 +9220,25 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .reader-layout-no-minimap {
   justify-items: center;
 }
+.reader-layout.has-marginalia::before,
+.reader-layout.has-marginalia::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  background-repeat: repeat-y;
+  background-size: 56px auto;
+}
+.reader-layout.has-marginalia::before {
+  left: 0;
+  background-image: url('marginalia-left.svg');
+}
+.reader-layout.has-marginalia::after {
+  right: 0;
+  background-image: url('marginalia-right.svg');
+}
 /* The growl. Rises into place rather than appearing, because something that appears in the corner of a page has already been half-missed by the time the eye gets there. */
 .app-toast {
   position: fixed;
@@ -19520,7 +19539,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 199 values that do not change with the theme, all 113 icons, and all 175 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 199 values that do not change with the theme, all 113 icons, and all 176 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19552,7 +19571,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>199</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>113</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>175</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>176</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20018,7 +20037,11 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">175 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">176 parts, each drawn here exactly as the app draws it.</p>
+<section class="part">
+<header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
+<div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
+</section>
 <section class="part">
 <header><h3>Document tabs</h3><code class="built">.doc-tab</code><span class="built">document-tabs.js, from the page's own dividers</span></header>
 <div class="stage"><div class="document-body"><div class="doc-tabs is-editable" role="tablist"><button class="doc-tab is-open" role="tab">Overview</button><button class="doc-tab" role="tab">Budget</button><button class="doc-tab-add" type="button">+</button></div></div></div>

@@ -239,6 +239,7 @@
 | Failures stay separate | [✅][l-mermaid] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Stuck diagrams marked | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Diagrams checked at prompt | [✅][l-diagrams-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Diagrams written at prompt | [✅][l-chart-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Full view opens fitted | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Focus returns afterward | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawn heights remembered | [✅][l-mermaid] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -284,6 +285,7 @@
 [l-math]: ../01-features/01-rendering.md#math
 [l-mermaid]: ../01-features/01-rendering.md#mermaid-diagrams
 [l-diagrams-prompt]: ../01-features/01-rendering.md#checking-a-files-diagrams
+[l-chart-prompt]: ../01-features/10-agents.md#work-on-a-document
 [l-sequence-editor]: ../01-features/07-editing.md#the-sequence-diagram-editor
 [l-flowchart-editor]: ../01-features/07-editing.md#the-flowchart-editor
 [o-ofm]: https://obsidian.md/help/obsidian-flavored-markdown

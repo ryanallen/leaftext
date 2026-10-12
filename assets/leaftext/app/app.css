@@ -9192,6 +9192,25 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 .reader-layout-no-minimap {
   justify-items: center;
 }
+.reader-layout.has-marginalia::before,
+.reader-layout.has-marginalia::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 56px;
+  pointer-events: none;
+  background-repeat: repeat-y;
+  background-size: 56px auto;
+}
+.reader-layout.has-marginalia::before {
+  left: 0;
+  background-image: url('marginalia-left.svg');
+}
+.reader-layout.has-marginalia::after {
+  right: 0;
+  background-image: url('marginalia-right.svg');
+}
 
 .app-toast {
   position: fixed;
