@@ -643,11 +643,14 @@
 | Close ends reliably | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents edit documents | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
 | Agents tick tasks | [✅][l-agent] | [✅][o-cli] | [❌][t-seen] | [❌][c-seen] |
-| Twenty-six agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Thirty-three agent tools | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Written agent workflow | [✅][l-agent] | ? | [❌][t-seen] | [❌][c-seen] |
 | Untitled saves refused | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Drawings described to agents | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents message each other | [✅][l-agent-tell] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agents start agents | [✅][l-agent-start] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agents drive other windows | [✅][l-agent-drive] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Ask agent about passage | [✅][l-agent-passage] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Circling agent warned | [✅][l-agent-circle] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent plugin install | [✅][l-agent-plugin] | ? | [❌][t-seen] | [❌][c-seen] |
 | Agents held to checks | [✅][l-agent-harness] | ? | [❌][t-seen] | [❌][c-seen] |
@@ -722,6 +725,9 @@
 [t-seen]: ../05-compare.md#typora
 [l-agent]: ../01-features/10-agents.md
 [l-agent-tell]: ../01-features/10-agents.md#agents-in-different-consoles-talk-to-each-other
+[l-agent-start]: ../01-features/10-agents.md#an-agent-starts-another-and-waits-on-it
+[l-agent-drive]: ../01-features/10-agents.md#an-agent-drives-your-other-windows
+[l-agent-passage]: ../01-features/10-agents.md#ask-an-agent-about-a-passage
 [l-agent-circle]: ../01-features/10-agents.md#an-agent-going-round-in-circles-is-told
 [l-agent-plugin]: ../01-features/10-agents.md#install-the-plugin
 [l-agent-harness]: ../01-features/10-agents.md#hold-an-agent-to-your-checks

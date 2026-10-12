@@ -16,9 +16,23 @@ The mouse wheel scrolls the agent's conversation the way it does in the agent's 
 
 Once it is [connected](#connect-on-windows), the agent is told it is running inside Leaftext, and `leaftext_open` lets it open a web address in a new [web tab](02-navigation.md#web-tabs) beside your documents rather than in an outside browser; `leaftext_eval` and `leaftext_gesture` then work that page. `leaftext_close` closes a tab the way its own close button does, a web page included, so an agent can put away a page it opened.
 
+### Ask an agent about a passage
+
+Highlight words in a note and press **Ask agent** on the bar that appears over them. It lists every console with an agent running in it, named the way its tab is; press one and the agent is handed the words as its next prompt, quoted, under the note's path and the line they came from, so it can open the place rather than search for it. Highlighting alone sends nothing, and the passage is the one you highlighted when you pressed **Ask agent**, however the selection moves afterwards. The button is there only while a console holds an agent, and Leaftext never types into a console at a bare prompt or one running a command that reads no typing.
+
 ### Agents in different consoles talk to each other
 
 With agents running in several consoles, in one window or several, one agent can hand a finding, a request or an answer straight to another. `leaftext_consoles` lists every console, which ones have an agent running in them and which one is the asker's own; `leaftext_tell` types a message into another console's agent as its next prompt, headed with the sender's console title and the console to reply to. Leaftext tells which console an agent is in by itself, so nothing needs setting up, and it never types into a console whose program is not waiting for a message.
+
+### An agent starts another and waits on it
+
+An agent can hand part of its job to a second agent and pick up the answer itself. `leaftext_start_agent` opens a console beside the asker's, in the same folder and window, types the command line it was given — `codex` or `claude` — and answers once that agent has come up and can take a message. `leaftext_wait` types the job into it and holds until the agent is done or needs somebody, then answers its state and the last lines it wrote. A wait answers after 50 seconds unless it asks for longer, saying the agent is still going, and the asker calls it again. The started agent's console is a tab like any other, so you can watch it work and step in.
+
+### An agent drives your other windows
+
+An agent in a console can see and operate another window on your computer — the browser you are already signed in to, or any other program — so it can read a page that needs your account and click and type in it for you. `leaftext_look` with nothing named lists the visible windows; with one named it answers a picture of that window. `leaftext_point` moves, clicks, drags or scrolls at a place in that picture, and `leaftext_type` types text and presses keys such as Enter or Ctrl+A.
+
+The first time an agent looks at a window, Leaftext asks you in a box of the system's own whether that console's agent may see and operate it, and nothing is seen until you press Yes. The agent cannot answer that box: it is outside the page, and Leaftext's own windows can never be looked at or pressed in. While the session lasts, a notice at the top of the window holding that console says which window the agent is driving, and its Stop ends the session. The session also ends when you close that console or the window it drives, and asking about another window starts a new question. Nothing is remembered, so the next agent asks again. If you click into another window while the agent is working, it stops rather than taking the window back, and asks for a fresh look. On a Mac the tools say they are not built there yet.
 
 ### An agent going round in circles is told
 
@@ -124,5 +138,9 @@ Your agent's settings decide which calls need your approval. Leaftext offers eve
 ## Work on a document
 
 Ask the agent to use `leaftext_doc` to read a file in Leaftext. It opens that file in the window and answers its text, task list, and fingerprint. To edit, the agent sends that fingerprint with `leaftext_edit`, waits for the page with `leaftext_idle`, then uses `leaftext_save` to write the file. To tick a checkbox, it uses `leaftext_toggle_task` with the task's place in the list; that action writes the file immediately. Before it says it is done, it can use `leaftext_check` to ask what is wrong with the document: a diagram that will not draw, a relation naming a row that is not there, a data file that will not read, a link to a file that is not there, and a wiki link to a note that does not exist. It changes nothing, and it answers the same fingerprint `leaftext_doc` gives, so a fix can be written against the same reading.
+
+To look at a document's diagrams, the agent uses `leaftext_diagrams` for the list — each diagram's place, line and kind — and `leaftext_diagram` on one of them to learn whether it draws and, given a path, to have it written there as a PNG it can open and look at.
+
+An agent with no tools set up at all, in any folder, can run `leaftext --diagrams notes.md` at its prompt instead: it [checks every diagram in the file](01-rendering.md#checking-a-files-diagrams) in a window nobody sees, prints a line per diagram, and writes each drawing as a picture, with no Leaftext window needed and yours left as it was.
 
 The tools reach the Leaftext copy running under your account. If it is closed, the agent gets a clear answer that Leaftext is not running.

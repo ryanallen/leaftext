@@ -223,6 +223,17 @@ An EPUB or Kindle book prints whole, which can run to thousands of lines, so a b
 
 Printing opens no window, reads only the one file or the one folder, writes nothing, and a copy open in a window never hears of it.
 
+### Checking a file's diagrams
+
+A printed [Mermaid diagram](#mermaid-diagrams) shows as the source it was typed in. To learn whether each one draws, type `leaftext --diagrams notes.md`. Leaftext draws every diagram in the file in a window of its own that never appears on screen, then prints one line per diagram — where it starts in the file, what kind it is, and either `drew` with the picture it wrote, or `refused` with the line it stopped at and why:
+
+```text
+notes.md:3   flowchart  drew     C:\Users\you\AppData\Local\Temp\leaftext-diagrams\notes\notes-1.png
+notes.md:10  flowchart  refused  The drawing stopped at line 2: a label with brackets in it has to be quoted. …
+```
+
+Each picture is a PNG drawn by the same renderer, in the same colors, as the reading page. They go to a folder named after the file under the system's temporary folder, so nothing is written beside your notes; `--out pictures` puts them in a folder you name. The command ends with an error when any diagram did not draw, so a script can run it as a check. The window you are reading in is never touched, and the hidden one closes when the check is done.
+
 On a Mac the program is inside the app: run `/Applications/leaftext.app/Contents/MacOS/leaftext --print notes.md` in Terminal, or add `alias leaftext=/Applications/leaftext.app/Contents/MacOS/leaftext` to your shell's profile and type `leaftext --print notes.md` from then on.
 
 ## Markdown
