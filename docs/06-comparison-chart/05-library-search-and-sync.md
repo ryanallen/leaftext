@@ -15,6 +15,7 @@
 | Whole-machine library mode | [✅][l-vaults] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | New vault from picker | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
 | Clone repository as vault | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Free books online | [✅][l-books-online] | [❌][o-seen] | [❌][t-seen] | [✅][c-get-books] |
 | Rename, repoint, remove vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | [❌][c-seen] |
 | Nothing written into folder | [✅][l-vaults] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Vault registry database | [✅][l-vaults] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
@@ -436,6 +437,7 @@
 | Unfavorited rows linger | [✅][l-favorites] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 
 [l-vaults]: ../01-features/03-library.md#vaults
+[l-books-online]: ../01-features/03-library.md#books-online
 [l-first-bubble]: ../01-features/03-library.md#the-bubble-on-your-first-launch
 [l-first-vault]: ../01-features/03-library.md#your-first-vault
 [l-cloud]: ../01-features/03-library.md#your-cloud-is-already-a-folder
@@ -491,6 +493,7 @@
 [t-outline]: https://support.typora.io/Outline/
 [t-vcs]: https://support.typora.io/Version-Control/
 [c-gui]: https://manual.calibre-ebook.com/gui.html
+[c-get-books]: https://manual.calibre-ebook.com/gui.html#get-books
 [c-viewer]: https://manual.calibre-ebook.com/viewer.html
 [c-seen]: ../05-compare.md#calibre
 [o-seen]: ../05-compare.md#obsidian

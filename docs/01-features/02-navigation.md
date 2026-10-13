@@ -38,7 +38,7 @@ The navigation model is simple from the outside and fairly careful under the hoo
 
 ## Web tabs
 
-Press **+** and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. Typing the first character of a note removes this field.
+Press **+** and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. **Browse free books** under it opens [Books online](03-library.md#books-online). Typing the first character of a note removes the field and the button.
 
 A web tab takes its name from the page's title. Move the pointer onto the app bar to slide its address open, or press **Ctrl+L** to select it. **Enter** opens the new address, **Escape** closes the bar, and **Copy** copies the current address. The bar stays open while you edit and closes after the pointer leaves it and the app bar.
 
@@ -268,6 +268,7 @@ The no-file home screen lists the files you opened most recently, under the **Ch
 - **The three lines at the top change with each visit.** The headline, the line under it and the sentence under that are drawn together from one of three voices — palm leaves and the long history of writing on them, clear thinking, and your files staying files you own — and you get a different one each time you come back to this screen. Nothing under them moves with it: the buttons, both lists, the help line and the version are the same every time.
 - **The screen is about the [vault](03-library.md#vaults) you are standing in.** Recent shows that vault's files alone, the way [Favorites](#favorites) beside it does, and the small word over the headline is the vault's name where it otherwise reads **Leaftext**. Switching vaults from the [library](03-library.md#vaults) pane with the home screen up changes both lists and that word with them. Standing outside every vault, both lists show every vault at once, grouped under each vault's name with the files in no vault last.
 - **A vault with dated work puts it above both.** Open checkboxes carrying a date show up in one full-width box over Recent and Favorites, nearest due first — see [Scheduled tasks](03-library.md#scheduled-tasks).
+- **Books online sits under both.** Once you have the [Books online](03-library.md#books-online) vault, a box under Recent and Favorites lists Project Gutenberg with how many books it holds, then the books you have fetched from it, newest first: title, then author and library. Press the library to browse it, or a book to read it again.
 - Each box is eight rows deep and scrolls, with the app's own thin [bar](#scrollbars) and a soft edge wherever there is more list past it.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.

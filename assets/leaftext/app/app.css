@@ -8147,6 +8147,11 @@ body.library-resizing button {
   opacity: var(--lt-opacity-46);
 }
 
+.library-file[aria-busy="true"] {
+  opacity: var(--lt-opacity-60);
+  cursor: progress;
+}
+
 .library-axis-depth-1 {
   padding-left: var(--lt-space-20);
 }
@@ -9541,6 +9546,31 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   font-family: var(--app-font);
   font-size: var(--lt-text-16);
   line-height: var(--lt-leading-1-5);
+}
+
+.web-address-books {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  margin: 0 auto var(--lt-space-32);
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: none;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .web-address-books:hover {
+    background: none;
+    color: var(--lt-link);
+  }
+}
+.web-address-books:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-link);
+  outline-offset: var(--lt-space-2);
 }
 .web-address::placeholder {
   color: var(--lt-muted-foreground);
@@ -14352,11 +14382,13 @@ body.mac-frame .document-minimap-frame {
   }
 }
 
-.home-scheduled-slot:empty {
+.home-scheduled-slot:empty,
+.home-books-slot:empty {
   display: none;
 }
 
-.home-scheduled {
+.home-scheduled,
+.home-books {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
@@ -16494,6 +16526,13 @@ h2.shelf-book-title {
   flex: none;
   padding: var(--lt-space-12) var(--lt-space-24) var(--lt-space-20);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+
+.glossary-sheet-title {
+  margin: 0 0 var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12-5);
+  font-weight: var(--lt-weight-600);
 }
 
 .glossary-sheet-related {

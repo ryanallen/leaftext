@@ -43,6 +43,8 @@ export async function openHeadless(url, { width = 1600, height = 1000, browser =
   const profile = mkdtempSync(join(tmpdir(), 'leaf-drive-'));
   const child = execFile(browser, [
     '--headless=new',
+    // Edge otherwise starts again as a second process and the one launched here exits at once.
+    '--edge-skip-compat-layer-relaunch',
     '--disable-gpu',
     '--hide-scrollbars',
     // Ubuntu refuses the sandbox the unprivileged user namespaces it needs, and the only pages this ever opens are the site's own.

@@ -459,6 +459,8 @@ function sendWebAddress(input) {
 function hideNewWebAddress(body) {
   const field = body && body.querySelector('.web-address-wrap');
   if (field) field.remove();
+  const books = body && body.querySelector('.web-address-books');
+  if (books) books.remove();
 }
 function showNewWebAddress(body, title, story) {
   if (window.__leafSite || window.__leafEmbedded) return;
@@ -468,6 +470,13 @@ function showNewWebAddress(body, title, story) {
   wrap.className = 'web-address-wrap';
   wrap.innerHTML = '<span class="lt-icon lt-icon-search" aria-hidden="true"></span><input class="web-address" type="text" aria-label="Search Google or enter an address" placeholder="Search Google or enter an address" autocomplete="off" spellcheck="false">';
   body.appendChild(wrap);
+  
+  const books = document.createElement('button');
+  books.type = 'button';
+  books.className = 'web-address-books';
+  books.innerHTML = '<span class="lt-icon lt-icon-define" aria-hidden="true"></span>Browse free books';
+  books.addEventListener('click', () => openBooksOnline('gutenberg'));
+  body.appendChild(books);
   const input = wrap.querySelector('input');
   input.addEventListener('keydown', event => {
     if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
@@ -15107,6 +15116,7 @@ function bindLibraryRows(scope) {
   markLibraryPicks();
   rows.querySelectorAll('[data-open-path]').forEach(bindLibraryFileRow);
   rows.querySelectorAll('[data-nav-into]').forEach(bindFolderEntryRow);
+  rows.querySelectorAll('[data-online-book]').forEach(bindOnlineBookRow);
   if (scope) return;
   const intro = libraryTree.querySelector('.library-intro-action');
   if (intro) {
@@ -15147,6 +15157,33 @@ function bindFolderEntryRow(button) {
   
   bindLibraryRowPress(button, () => setLibraryFolder(button.dataset.navInto));
 }
+
+const onlineBooksWaiting = new Set();
+function bindOnlineBookRow(button) {
+  if (onlineBooksWaiting.has(button.dataset.onlineBook)) button.setAttribute('aria-busy', 'true');
+  bindLibraryRowPress(button, () => pressOnlineBook(button.dataset.onlineBook));
+}
+function pressOnlineBook(key) {
+  if (!key || onlineBooksWaiting.has(key)) return;
+  onlineBooksWaiting.add(key);
+  markOnlineBookRows(key, true);
+  send({ command: 'openOnlineBook', book: key });
+}
+
+function markOnlineBookRows(key, waiting) {
+  for (const list of [libraryTree, librarySearchResults]) {
+    for (const row of list.querySelectorAll('[data-online-book]')) {
+      if (row.dataset.onlineBook !== key) continue;
+      if (waiting) row.setAttribute('aria-busy', 'true');
+      else row.removeAttribute('aria-busy');
+    }
+  }
+}
+
+window.leafOnlineBookSettled = (key) => {
+  onlineBooksWaiting.delete(key);
+  markOnlineBookRows(key, false);
+};
 function bindLibraryFileRow(button) {
   bindLibraryRowPress(button, () => {
     send({ command: 'openRecent', path: button.dataset.openPath });
@@ -15484,6 +15521,7 @@ function newVaultMenuItems() {
   ];
   pushCloneRow(items);
   pushServiceVaultRows(items);
+  pushBooksOnlineRow(items);
   items.push('separator', {
     label: 'Back',
     icon: BACK_ARROW_SVG,
@@ -15505,7 +15543,13 @@ function editVaultMenuItems(vault) {
         if (name && name !== vault.name) send({ command: 'renameVault', id: vault.id, name });
       },
     },
-    {
+    
+    vault.kind === 'books-online' ? {
+      label: 'Refresh the catalog',
+      title: 'Fetch Project Gutenberg\'s catalog again',
+      icon: SYNC_ICON_SVG,
+      run: () => send({ command: 'refreshBooksOnline' }),
+    } : {
       label: 'Change folder…',
       title: vault.rootPath || '',
       icon: FOLDER_ICON_SVG,
@@ -15970,11 +16014,18 @@ function renderLibrary() {
     return true;
   }
   
-  const empty = libraryEntries.length
+  const notice = libraryNotice ? `<p class="library-empty">${escapeText(libraryNotice)}</p>` : '';
+  const empty = libraryEntries.length || libraryNotice
     ? ''
     : `<p class="library-empty">${escapeText(libraryEmptyText())}</p>`;
-  return setLibraryTreeHtml(libraryIntroHtml() + renderProject() + empty, libraryRowListOf(libraryEntries));
+  return setLibraryTreeHtml(libraryIntroHtml() + notice + renderProject() + empty, libraryRowListOf(libraryEntries));
 }
+
+let libraryNotice = '';
+
+window.leafShowLibraryPane = () => {
+  if (libraryTooNarrow() ? !librarySheetOpen : libraryIsClosed()) toggleLibrary();
+};
 
 window.leafSetLibraryFolder = (payload) => {
   const next = payload || {};
@@ -15994,6 +16045,7 @@ window.leafSetLibraryFolder = (payload) => {
   librarySkippedFiles = Number.isFinite(next.skippedFiles) ? next.skippedFiles : 0;
   librarySkippedCodeFiles = Number.isFinite(next.skippedCodeFiles) ? next.skippedCodeFiles : 0;
   libraryBooks = next.books && Number.isFinite(next.books.books) ? next.books : null;
+  libraryNotice = typeof next.notice === 'string' ? next.notice : '';
   
   if (paneSentSomewhere) {
     paneSentSomewhere = false;
@@ -16355,6 +16407,20 @@ function pushServiceVaultRows(items) {
   if (!rows.length) return;
   items.push('separator');
   for (const [label, title, run] of rows) items.push({ label: `${label}…`, title, icon: CLOUD_ICON_SVG, keepOpen: true, run });
+}
+
+const BOOKS_ONLINE_ICON = '<span class="lt-icon lt-icon-define"></span>';
+function pushBooksOnlineRow(items) {
+  items.push('separator', {
+    label: 'Books online…',
+    title: 'Browse Project Gutenberg and read any of its books',
+    icon: BOOKS_ONLINE_ICON,
+    run: () => openBooksOnline('gutenberg'),
+  });
+}
+
+function openBooksOnline(library) {
+  send({ command: 'openBooksOnline', library });
 }
 let waitingServiceForm = null;
 let serviceWaitSequence = Date.now() * 1000 + Math.floor(Math.random() * 1000);
@@ -17320,6 +17386,10 @@ function bookRowHtml(node, selected, current) {
   const tip = book.shut || node.path;
   const badge = book.badge ? `<span class="file-type-badge">${escapeText(book.badge)}</span>` : '';
   const author = book.author ? `<span class="library-file-author">${escapeText(book.author)}</span>` : '';
+  if (book.online) {
+    
+    return `<button type="button" class="library-file library-file-full${selected}"${current} data-online-book="${escapeAttr(book.online)}" title="${escapeAttr(name)}">${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">${escapeText(name)}</span></span>${badge}</span>${author}</span></button>`;
+  }
   return `<button type="button" class="library-file library-file-full${selected}"${current} data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(tip)}">${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">${escapeText(name)}</span></span>${badge}</span>${author}</span></button>`;
 }
 
@@ -19554,6 +19624,18 @@ function updateSearchHitRow(button, hit, folder = '') {
 
 let librarySearchRowElements = new Map();
 
+let librarySearchBooks = null;
+function searchBooksHtml(found) {
+  const shown = found.rows.length;
+  const count = !shown
+    ? 'No matches.'
+    : found.total > shown
+      ? `The first ${formatCount(shown)} of ${formatCount(found.total)} books`
+      : formatCountLabel(shown, 'book', 'books');
+  const rows = found.rows.filter(Boolean).map((node) => fileRowHtml(node)).join('');
+  return `<p class="library-results-count">${escapeText(count)}</p>${rows}`;
+}
+
 function writeSearchResults(html) {
   librarySearchRowElements.clear();
   librarySearchResults.innerHTML = html;
@@ -19569,6 +19651,11 @@ function renderLibrarySearch() {
   if (librarySearchError) {
     const message = (librarySearchError && librarySearchError.message) || 'Search failed.';
     writeSearchResults(`<p class="library-empty">${escapeText(message)}</p>`);
+    return;
+  }
+  if (librarySearchBooks) {
+    writeSearchResults(searchBooksHtml(librarySearchBooks));
+    librarySearchResults.querySelectorAll('[data-online-book]').forEach(bindOnlineBookRow);
     return;
   }
   const hits = librarySearchHits || [];
@@ -19744,6 +19831,11 @@ window.leafSetSearchResults = (payload) => {
   const query = typeof data.query === 'string' ? data.query : '';
   
   if (query !== librarySearchQuery) return;
+  if (Number.isFinite(data.vault) && data.vault !== activeVaultId) return;
+  
+  librarySearchBooks = Array.isArray(data.books) && !data.error
+    ? { rows: data.books, total: Number(data.booksTotal) || data.books.length }
+    : null;
   
   librarySearchPartial = !!data.partial;
   librarySearchLoading = librarySearchPartial;
@@ -40242,6 +40334,42 @@ function bindScheduledRows(root) {
     });
   });
 }
+
+var leafOnlineBooks = null;
+
+function homeBookRowMarkup(name, under, press) {
+  return `<li class="home-list-row"><span class="home-row"><button type="button" class="home-row-open" ${press} title="${escapeAttr(`Open ${name}`)}"><span class="home-row-name">${name.endsWith('.epub') ? documentNameMarkup(name) : `<span class="file-name-stem">${escapeText(name)}</span>`}</span><span class="home-row-folder">${escapeText(under)}</span></button></span></li>`;
+}
+function onlineBooksMarkup() {
+  const held = leafOnlineBooks;
+  if (!held || !Array.isArray(held.libraries) || !held.libraries.length) return '';
+  const books = Array.isArray(held.books) ? held.books.filter(Boolean) : [];
+  const rows = held.libraries.filter(Boolean).map((library) =>
+    homeBookRowMarkup(String(library.name || ''), String(library.detail || ''), `data-home-books-library="${escapeAttr(String(library.id || ''))}"`),
+  ).concat(books.map((book) => {
+    const under = [book.author, book.library].filter(Boolean).join(' · ');
+    return homeBookRowMarkup(`${String(book.title || '')}.epub`, under, `data-path="${escapeAttr(String(book.path || ''))}"`);
+  })).join('');
+  const count = books.length ? ` (${escapeText(formatCount(books.length))})` : '';
+  return `<section class="home-list home-books"><h2>Books online${count}</h2>${homeListBox(rows)}</section>`;
+}
+
+function fillOnlineBooksSlot() {
+  const slot = document.querySelector('.home-books-slot');
+  if (!slot) return;
+  slot.innerHTML = onlineBooksMarkup();
+  slot.querySelectorAll('[data-home-books-library]').forEach((button) => {
+    button.addEventListener('click', () => openBooksOnline(button.dataset.homeBooksLibrary));
+  });
+  slot.querySelectorAll('[data-path]').forEach((button) => {
+    button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.path }));
+  });
+  watchHomeLists(slot);
+}
+window.leafSetOnlineBooks = function (payload) {
+  leafOnlineBooks = payload && typeof payload === 'object' ? payload : null;
+  fillOnlineBooksSlot();
+};
 window.leafSetScheduledTasks = function (rows) {
   leafScheduledTasks = Array.isArray(rows) ? rows : [];
   fillScheduledSlot();
@@ -40331,14 +40459,16 @@ function homeColumnMarkup(which, state) {
 function homeListsMarkup(state) {
   
   const scheduled = '<div class="home-scheduled-slot"></div>';
+  
+  const books = '<div class="home-books-slot"></div>';
   if (!homeListCounts('favorites', state).drawn) {
   
   const recent = homeRecentScoped(state.recent || []);
   return recent.length
-      ? `${scheduled}<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li class="home-list-row">${homeRowMarkup(path)}</li>`).join('')}</ol></div>`
-      : `${scheduled}<p class="empty-help">${escapeText(homeRecentHelp())}</p>`;
+      ? `${scheduled}<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li class="home-list-row">${homeRowMarkup(path)}</li>`).join('')}</ol></div>${books}`
+      : `${scheduled}<p class="empty-help">${escapeText(homeRecentHelp())}</p>${books}`;
   }
-  return `${scheduled}<div class="home-list-grid">${homeColumnMarkup('recent', state)}${homeColumnMarkup('favorites', state)}</div>`;
+  return `${scheduled}<div class="home-list-grid">${homeColumnMarkup('recent', state)}${homeColumnMarkup('favorites', state)}</div>${books}`;
 }
 
 function openHomeFolder(path) {
@@ -41446,6 +41576,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   watchHomeLists(app);
   
   fillScheduledSlot();
+  fillOnlineBooksSlot();
   
   markHomeFavorites(app);
   if (app.querySelector('[data-home-favorite]')) send({ command: 'checkFavorites' });
@@ -43719,8 +43850,47 @@ function glossarySheetMessage(message) {
   glossarySheetBody.appendChild(text);
 }
 
+let glossarySheetHolds = 'term';
+
+let footnoteSheetHref = '';
+let footnoteSheetDocument = null;
+function setGlossarySheetHolds(holds) {
+  glossarySheetHolds = holds;
+  const note = holds === 'note';
+  glossarySheet.setAttribute('aria-label', note ? 'Footnote' : 'Glossary');
+  glossarySheetClose.setAttribute('aria-label', note ? 'Close footnote' : 'Close glossary');
+  glossaryFullLink.textContent = note ? 'Go to the note' : 'Open the full glossary';
+}
+
+function showFootnoteSheet(link, rawHref, target) {
+  endGlossaryWait();
+  setGlossarySheetHolds('note');
+  footnoteSheetHref = rawHref;
+  
+  if (link.getAttribute('data-leaf-glossary-ref') === '1') glossarySheet.setAttribute('aria-label', 'Glossary');
+  if (!glossarySheet.contains(link)) footnoteSheetDocument = link.closest('.document-body');
+  glossarySheetRelated.hidden = true;
+  const note = target.cloneNode(true);
+  note.removeAttribute('id');
+  for (const part of note.querySelectorAll('.footnote-definition-label, .footnote-backref, [data-leaf-note-backlink="1"]')) part.remove();
+  for (const part of note.querySelectorAll('[id]')) part.removeAttribute('id');
+  const title = document.createElement('div');
+  title.className = 'glossary-sheet-title';
+  title.textContent = inPageLandingWords(link, rawHref) || 'Note';
+  glossarySheetBody.innerHTML = '';
+  glossarySheetBody.appendChild(title);
+  
+  const holder = /^(P|LI|DD|DT|SPAN|ASIDE)$/.test(note.tagName) && !note.querySelector('p, div, ul, ol, pre, blockquote, table') ? document.createElement('p') : glossarySheetBody;
+  while (note.firstChild) holder.appendChild(note.firstChild);
+  if (holder !== glossarySheetBody) glossarySheetBody.appendChild(holder);
+  drawCodeFencesIn(glossarySheetBody);
+  glossarySheetBody.scrollTop = 0;
+  showGlossary();
+}
+
 function awaitGlossaryEntry() {
   endGlossaryWait();
+  setGlossarySheetHolds('term');
   
   glossarySheetRelated.hidden = true;
   const waiting = document.createElement('div');
@@ -43769,6 +43939,11 @@ makeSheetDraggable(glossarySheet, glossarySheet.querySelector('.leaf-sheet-grip'
 glossaryFullLink.addEventListener('click', (event) => {
   event.preventDefault();
   dismissGlossary();
+  if (glossarySheetHolds === 'note') {
+    closeTableSheet();
+    send({ command: 'openLink', href: footnoteSheetHref, scroll_anchor: currentScrollAnchor() });
+    return;
+  }
   send({ command: 'openLink', href: glossaryHrefBase, scroll_anchor: currentScrollAnchor() });
 });
 glossarySheetBody.addEventListener('click', (event) => {
@@ -43777,6 +43952,17 @@ glossarySheetBody.addEventListener('click', (event) => {
   const rawHref = link.getAttribute('href') || '';
   if (!rawHref || /^[a-z]+:\/\//i.test(rawHref) || rawHref.startsWith('mailto:')) return;
   event.preventDefault();
+  
+  if (glossarySheetHolds === 'note') {
+    const note = localFootnoteTarget(link, rawHref, footnoteSheetDocument);
+    if (note) {
+      showFootnoteSheet(link, rawHref, note);
+      return;
+    }
+    if (!glossaryAnchorFromHref(rawHref)) dismissGlossary();
+    sendDocumentLink(link, false);
+    return;
+  }
   const within = glossaryAnchorFromHref(rawHref) || (rawHref.startsWith('#') ? rawHref.slice(1) : '');
   if (within) {
     awaitGlossaryEntry();
@@ -44210,9 +44396,10 @@ function linkPreviewOpeningHtml(blocks) {
   }
   return taken;
 }
-function localFootnoteTarget(link, rawHref) {
+
+function localFootnoteTarget(link, rawHref, within) {
   if (!rawHref.startsWith('#') || rawHref.length < 2) return null;
-  const body = link.closest('.document-body');
+  const body = within || link.closest('.document-body');
   if (!body) return null;
   const markdownReference = link.parentElement?.matches('sup.footnote-reference');
   const bookReference = link.getAttribute('data-leaf-note-ref') === '1';
@@ -44754,6 +44941,12 @@ function sendDocumentLink(link, newPage) {
     glossaryHrefBase = /^glossary:/i.test(rawHref) ? 'glossary:' : rawHref.split('#')[0];
     awaitGlossaryEntry();
     send({ command: 'openGlossary', href: rawHref });
+    return;
+  }
+  
+  const note = newPage ? null : localFootnoteTarget(link, rawHref);
+  if (note) {
+    showFootnoteSheet(link, rawHref, note);
     return;
   }
   

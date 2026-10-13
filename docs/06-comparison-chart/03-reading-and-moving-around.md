@@ -345,6 +345,7 @@
 | Skips links and code | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Never links itself | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Entry in a sheet | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
+| Footnote in a sheet | [✅][l-footnote-sheet] | [❌][o-seen] | [❌][t-seen] | [✅][c-viewer] |
 | Four ways to close | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Large glossary spinner | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Missing entry said | [✅][l-glossary] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -466,6 +467,7 @@
 [l-hover]: ../01-features/02-navigation.md#what-a-control-does-under-the-pointer
 [l-open-links]: ../01-features/02-navigation.md#opening-a-link-in-a-new-page
 [l-glossary]: ../01-features/02-navigation.md#glossary
+[l-footnote-sheet]: ../01-features/01-rendering.md#footnotes
 [l-reload]: ../01-features/02-navigation.md#reload
 [l-chrome]: ../01-features/02-navigation.md#the-chrome
 [l-minimap]: ../01-features/04-minimap.md

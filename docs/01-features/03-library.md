@@ -47,7 +47,7 @@ Each Leaftext window opens its own vault. Picking one in a window changes that w
 
 - **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
-- **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or — on a computer with no Google Drive folder — [Google Drive](#your-cloud-is-already-a-folder). Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
+- **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or — on a computer with no Google Drive folder — [Google Drive](#your-cloud-is-already-a-folder), and then [Books online](#books-online). Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
 - The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
 
 ### Open Knowledge Format bundles
@@ -99,6 +99,17 @@ A vault *inside* one of these folders wears the cloud too. Where the files end u
 #### Google Docs, Sheets and Slides
 
 The Google Drive app keeps Google Docs, Sheets and Slides in its folder as shortcuts ending `.gdoc`, `.gsheet` and `.gslides`. When you open one, Leaftext says what it is and offers **Open in Google Docs**, **Open in Google Sheets** or **Open in Google Slides**. The press opens that document in your browser. Leaftext does not sign in to Google or fetch the document through Google's API. If the shortcut does not identify a document, the message says so without an open button.
+
+### Books online
+
+**Books online** is one vault for free libraries on the web, Project Gutenberg first. Choose **Books online…** under **New vault…**, **Browse free books** on an [empty new page](02-navigation.md#web-tabs), or Project Gutenberg in the [Books online box on Home](02-navigation.md#recent-files), and the vault is added, the pane opens, and it lands on **Project Gutenberg**. There is only ever one: any of the three switches to it once it is there.
+
+- **Browsing.** Project Gutenberg lists its categories, each with how many books it holds, and **All books**, which includes the books no category names. A category shows a hundred books at a time in title order, with a row to the next hundred. Each book row shows its title and author.
+- **Searching.** With the vault open, the find bar's **All files** searches the catalog by title and author: plain words look in both, `title:` and `author:` look in one. The first hundred matches are shown, and the line above them says how many there were in all.
+- **Reading.** Press a book and Leaftext fetches its EPUB and opens it. The row says **on this computer** once it has been fetched, and **On this computer** at the top of Project Gutenberg lists every book you have fetched. A fetched book opens without the internet; a book that could not be fetched leaves nothing behind and can be pressed again.
+- **The catalog.** Gutenberg publishes its catalog once a week for apps to read, so Leaftext fetches that one file when the vault is added and again when the copy it holds is a week old. Searching and browsing it needs no internet after that. **Refresh the catalog** in the vault's settings fetches it straight away. A fetch that fails leaves the catalog you had; with none held, the pane says why and opening Project Gutenberg again tries once more.
+
+Removing the vault removes the catalog and every book it fetched. A book already open in a tab stays open.
 
 ## Browsing
 

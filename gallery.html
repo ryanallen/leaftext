@@ -8162,6 +8162,11 @@ body.library-resizing button {
 .library-axis-row.is-hidden {
   opacity: var(--lt-opacity-46);
 }
+/* An online library's book pressed and still being fetched: there, and plainly waiting. */
+.library-file[aria-busy="true"] {
+  opacity: var(--lt-opacity-60);
+  cursor: progress;
+}
 /* A row of the Tags or Fields list: a branch mark, the name, and how many notes carry it. A nested row steps in by one inset a level, as far as four. */
 .library-axis-depth-1 {
   padding-left: var(--lt-space-20);
@@ -9575,6 +9580,31 @@ body.has-split:not(.beside-on-the-left) .reader-corner-tr {
   font-family: var(--app-font);
   font-size: var(--lt-text-16);
   line-height: var(--lt-leading-1-5);
+}
+/* Browse free books, under an empty tab's field: a quiet link-like button, centered where the field is. */
+.web-address-books {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  margin: 0 auto var(--lt-space-32);
+  padding: var(--lt-space-4) var(--lt-space-8);
+  border: 0;
+  border-radius: var(--lt-radius-md);
+  background: none;
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-14);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .web-address-books:hover {
+    background: none;
+    color: var(--lt-link);
+  }
+}
+.web-address-books:focus-visible {
+  outline: var(--lt-stroke-2) solid var(--lt-link);
+  outline-offset: var(--lt-space-2);
 }
 .web-address::placeholder {
   color: var(--lt-muted-foreground);
@@ -14406,11 +14436,13 @@ body.mac-frame .document-minimap-frame {
   }
 }
 /* What is due next, in one box across the whole of what the pair below it uses. The slot is in the markup on every Home screen and empty until the vault answers, so filling it moves nothing either side of it — and it draws nothing at all while it is empty, since a heading over a line saying there is nothing scheduled is a box on the screen somebody sees most, saying nothing. */
-.home-scheduled-slot:empty {
+.home-scheduled-slot:empty,
+.home-books-slot:empty {
   display: none;
 }
-/* The pair's own break-out, so the three boxes line up on both edges instead of reading as three widths. */
-.home-scheduled {
+/* The pair's own break-out, so the boxes over and under it line up on both edges instead of reading as several widths. Books online sits under the pair, filled the same way. */
+.home-scheduled,
+.home-books {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
@@ -16554,6 +16586,13 @@ h2.shelf-book-title {
   flex: none;
   padding: var(--lt-space-12) var(--lt-space-24) var(--lt-space-20);
   border-top: var(--lt-stroke-1) solid var(--lt-border);
+}
+/* Which note a footnote's sheet holds, over its words; a glossary entry opens on its own heading and draws none. */
+.glossary-sheet-title {
+  margin: 0 0 var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12-5);
+  font-weight: var(--lt-weight-600);
 }
 /* The related words Define added beside the one pressed, one quiet line over the link to the whole glossary. */
 .glossary-sheet-related {
@@ -19544,7 +19583,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 199 values that do not change with the theme, all 113 icons, and all 176 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 199 values that do not change with the theme, all 113 icons, and all 177 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19576,7 +19615,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>199</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>113</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>176</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>177</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20042,7 +20081,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">176 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">177 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20060,8 +20099,8 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="document-body"><div class="doc-tab-name" data-tab="1">Overview</div><p>One part of the document.</p></div></div>
 </section>
 <section class="part">
-<header><h3>Web address</h3><code class="built">.web-address</code><span class="built">web-address.js — an empty tab's address or search field, and the live tab's editable address</span></header>
-<div class="stage"><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" placeholder="Search Google or enter an address"></div></div>
+<header><h3>Web address</h3><code class="built">.web-address</code><span class="built">web-address.js — an empty tab's address or search field with **Browse free books** quiet under it, the button that opens Books online and leaves with the field, and the live tab's editable address</span></header>
+<div class="stage"><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" placeholder="Search Google or enter an address"></div><button type="button" class="web-address-books"><span class="lt-icon lt-icon-define"></span>Browse free books</button></div>
 </section>
 <section class="part">
 <header><h3>Live web address bar</h3><code class="built">.web-address-bar</code><span class="built">web-address.js — opens after resting over the app bar or pressing Ctrl+L; moves the native surface below it</span></header>
@@ -20244,7 +20283,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep)</span></header>
+<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep), library-services.js (**Books online…** under New vault…, its own group above Back wearing the Define book mark); in the Books online vault a library, its categories, All books and the Next row are folder rows, a catalog's book is the Kindle book row pressed by its number, its author line ending on this computer once its EPUB is saved and the row dimmed with aria-busy while it is fetched, catalog matches under the find bar are the same rows under the count line, and the host's own sentence stands where a catalog is still arriving</span></header>
 <div class="stage"><div class="library-pane" style="position:static;width:240px;height:380px"><div class="library-tree"><div class="library-group-heading">3 books · 1 open here · 2 shut</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">The Adventures of Sherlock Holmes</span></span><span class="file-type-badge">MOBI 6</span></span><span class="library-file-author">Doyle, Arthur Conan</span></span></button><div class="library-group-heading">Today</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">round-1</span></span><span class="library-file-time">9:14am</span><span class="file-type-badge">MD</span></span><span class="library-file-title">Magic link, round 1: how far one email reaches</span><span class="library-file-preview">One email serves the step after a password and signup, with the password kept.</span></span></button><button type="button" class="library-file is-selected is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-file is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">Picked.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button><button type="button" class="library-nav-folder is-drop-target"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">Where they land</span></button><div class="library-carry-chip" style="position:static;display:inline-block">2 items</div></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
 </section>
 <section class="part">
@@ -20658,6 +20697,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Scheduled task row</h3><code class="built">.home-scheduled</code><span class="built">render-document.js</span></header>
 <div class="stage"><div class="empty-state" style="padding:0"><section class="home-list home-scheduled" style="position:static;transform:none;left:auto;margin:0"><h2>Scheduled tasks (3)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li><span class="home-row home-task-row"><button type="button" class="home-row-open home-task-open"><span class="home-row-name">Chase the invoice</span><span class="home-row-folder">Accounts — C:\Users\me\Vault</span></button><span class="doc-badge doc-badge--red home-task-due">Aug 2</span></span></li><li><span class="home-row home-task-row"><button type="button" class="home-row-open home-task-open"><span class="home-row-name">Winter cleanup schedule</span><span class="home-row-folder">House — C:\Users\me\Vault\Journal</span></button><span class="doc-badge doc-badge--amber home-task-due">Sep 12</span></span></li><li><span class="home-row home-task-row"><button type="button" class="home-row-open home-task-open"><span class="home-row-name">Renew the lease</span><span class="home-row-folder">House — C:\Users\me\Vault</span></button><span class="doc-badge doc-badge--gray home-task-due">Dec 1</span></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div>
+</section>
+<section class="part">
+<header><h3>Books online box</h3><code class="built">.home-books</code><span class="built">render-document.js — under Recent and Favorites at the pair's width, filled after drawing the way the Scheduled box is, and never drawn by a browser host: each library with its book count, then the books fetched into the vault, newest first, title, author and library under it and the EPUB badge</span></header>
+<div class="stage"><div class="empty-state" style="padding:0"><section class="home-list home-books" style="position:static;transform:none;left:auto;margin:0"><h2>Books online (1)</h2><div class="home-list-box"><div class="home-list-scroll"><ol><li class="home-list-row"><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name"><span class="file-name-stem">Project Gutenberg</span></span><span class="home-row-folder">78,325 books</span></button></span></li><li class="home-list-row"><span class="home-row"><button type="button" class="home-row-open"><span class="home-row-name"><span class="file-name-stem">Great Expectations</span><span class="file-type-badge">EPUB</span></span><span class="home-row-folder">Dickens, Charles · Project Gutenberg</span></button></span></li></ol></div><div class="home-list-fade"></div></div></section></div></div>
 </section>
 <section class="part">
 <header><h3>Show all</h3><code class="built">.home-showall</code><span class="built">render-document.js</span></header>
