@@ -324,7 +324,7 @@ an'
 
 an'
 
-### A battle is fought against Eubonia, and Constantine turns to the Lord
+### A battle is fought against Eubonia, and Constantine turns to Yahweh
 
 an' . cxl . Bellum contra euboniam et diſ- <!-- 584 -->
 

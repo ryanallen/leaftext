@@ -44,13 +44,13 @@ After Christ harrows hell, the devils meet in council, fear that baptism and con
 
 <a id="a-devil-ruins-a-rich-mans-family"></a>
 
-### A devil ruins a rich man's family and leads two daughters astray
+### A devil ruins a rich man's family and leads two daughters into sin
 
 A devil kills a rich man's herds and family until he dies in despair, gets one daughter condemned and buried alive, and sends a woman to lead the youngest into a life with men, while a holy man counsels the eldest.
 
-<a id="a-devil-fathers-a-child-on-the-eldest-daughter"></a>
+<a id="a-devil-fathers-a-child-with-the-oldest-daughter"></a>
 
-### A devil fathers a child on the eldest daughter as she sleeps
+### A devil fathers a child with the oldest daughter as she sleeps
 
 The eldest sister goes to bed in anger without her prayers, a devil lies with her in her sleep, and she wakes to a shut door and knows she's been tricked.
 
@@ -98,9 +98,9 @@ Saint Germanus comes to preach in Britain; the cruel King Benli shuts him out, a
 
 The Saxons on Thanet outgrow what the Britons can give them, Hengist sends home for more warriors and his daughter, Vortigern falls in love with her at a feast and gives Kent for her, and Octa and Ebissa take lands in the north.
 
-<a id="germanus-rebukes-vortigern"></a>
+<a id="germanus-scolds-vortigern"></a>
 
-### Germanus comes to rebuke Vortigern for marrying his own daughter
+### Germanus comes to scold Vortigern for marrying his own daughter
 
 Vortigern has a son by his own daughter and has her name Germanus as the father in front of the clergy; the boy asks Vortigern to cut his hair, and Germanus and the Britons curse the king.
 

@@ -104,7 +104,7 @@ To promise, to guarantee.
 
 Also: Adan, Evain
 
-The first man and woman, who Christ takes out of hell.
+The first man and woman in the Bible's Genesis. Yahweh made them and set them in the garden of Eden, but they ate the fruit it'd forbidden, and for that disobedience, Christians believed, every human soul afterward went down to hell at death. The story opens with Christ, after his crucifixion, going down into hell and freeing them and the other good souls, which is why the devils are so angry.
 
 Wikipedia: [Adam and Eve](https://en.wikipedia.org/wiki/Adam_and_Eve)
 
@@ -132,7 +132,7 @@ To mend or make ready; affaitie, well brought up.
 
 Also: Agrevains
 
-A son of King Lot of Orkney, Gawain's brother.
+A son of King Lot of Orkney and Igraine's daughter, so Arthur's nephew, and one of Gawain's brothers. In the later romances he's the one who hates Lancelot and plots to expose his love for Guinevere, a part Malory keeps.
 
 Wikipedia: [Agravain](https://en.wikipedia.org/wiki/Agravain)
 
@@ -148,7 +148,7 @@ To summon someone by letter to appear on a fixed day; the judges summon Merlin's
 
 ## Alain
 
-A kinsman of Joseph of Arimathea who led a company of his own; his story goes into Blaise's book.
+A kinsman of Joseph of Arimathea, son of Bron, who in Robert de Boron's story leads a company of his own westward as one of the Grail's keepers. Merlin tells Blaise that his story belongs in Blaise's book with Joseph's, joining the Grail's history to Arthur's.
 
 Wikipedia: [Fisher King](https://en.wikipedia.org/wiki/Fisher_King)
 
@@ -162,7 +162,7 @@ To grow lighter.
 
 Also: Aurelius Ambroisius
 
-Pendragon's baptismal name, which the English called him by.
+The name Pendragon was baptized with, and the one the English called him by: in this story Pendragon is the older brother of Uther, son of King Constans, who comes back from exile overseas to take back his father's throne from the usurper Vortigern. The name comes from Gildas's real British leader of Roman family who rallied the Britons against the Saxons.
 
 Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aurelianus)
 
@@ -192,7 +192,7 @@ The devil, and the devils as a host, said in the English as the devil: the Frenc
 
 ## Anglois
 
-The English, the people of England.
+The French name for the English, which this story uses for the people Uther and Arthur rule. The romance calls Britain England throughout, never minding the difference between the Britons of Arthur's time and the English who came later and pushed them west.
 
 ## anvel
 
@@ -220,7 +220,7 @@ To burn; burning is the death the law gives Merlin's mother if she can't name th
 
 Also: Artus, Artu
 
-The son of Uther and Igraine.
+The son of Uther Pendragon and Igraine, whose conception Merlin arranges and whose childhood he hides, so that the boy grows up not knowing his own father. He's the hero the whole Arthurian legend gathers around, and this story tells how he came into the world and how the kingdom found him.
 
 Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
@@ -256,7 +256,7 @@ Authority: the standing of a writing that may be cited as true, as the apostles'
 
 ## aumosne
 
-Charity, a good thing done for God's sake; Merlin tells Blaise that writing the book will be a great one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Charity, a good thing done for Yahweh's sake; Merlin tells Blaise that writing the book will be a great one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## avoutire
 
@@ -286,7 +286,7 @@ To joust for sport with heavy lances that have no iron heads.
 
 Also: Blaises
 
-The holy man who hears the confession of Merlin's mother and stands by her, and who writes down in a book what Merlin tells him.
+The holy man who hears the confession of Merlin's mother and stands by her. He writes down in a book everything Merlin tells him, so the story will be kept.
 
 Wikipedia: [Merlin](https://en.wikipedia.org/wiki/Merlin)
 
@@ -294,7 +294,7 @@ Wikipedia: [Merlin](https://en.wikipedia.org/wiki/Merlin)
 
 Also: bonne fin
 
-A good death: dying repentant and at peace with God, having given one's goods away for him. Merlin tells the dying Uther that a good death outweighs all the honors of a life, and that a bad one can lose all the good a life has done.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A good death: dying repentant and at peace with Yahweh, having given one's goods away for it. Merlin tells the dying Uther that a good death outweighs all the honors of a life, and that a bad one can lose all the good a life has done.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## boskillon
 
@@ -306,11 +306,11 @@ A woodcutter.
 
 Also: Bretiaus
 
-A knight of the Duke of Tintagel's who the duke trusts.
+A knight of the Duke of Tintagel, Igraine's husband, who the duke trusts. In the story Merlin takes his likeness himself as part of the trick that brings Uther to Igraine, giving Ulfin the face of Jordain, the duke's other trusted knight, while Uther takes the duke's shape.
 
 ## Bron
 
-A brother-in-law of Joseph of Arimathea, who catches the fish laid on Joseph's table beside the vessel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Joseph of Arimathea's brother-in-law in Robert de Boron's Grail story, who catches the fish laid on Joseph's table beside the holy vessel, and so becomes the Rich Fisherman, keeper of the Grail after Joseph. Merlin tells Blaise that his story belongs with Joseph's in Blaise's book.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Fisher King](https://en.wikipedia.org/wiki/Fisher_King)
 
@@ -318,7 +318,7 @@ Wikipedia: [Fisher King](https://en.wikipedia.org/wiki/Fisher_King)
 
 Also: Chandeler
 
-Candlemas, the Church's feast of the Presentation of Christ in the Temple on February 2; the barons ask for the sword to stay in the stone until then.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Candlemas, the Church's feast of the Presentation of Christ in the Temple on February 2. The barons ask for the sword to stay in the stone until then.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Carduel
 
@@ -368,7 +368,7 @@ To advise; also, to speak together in low voices.
 
 ## Constans
 
-A king of England, the father of Moine, Pendragon and Uther.
+A king of England in this story, the father of three sons, Moine, Pendragon and Uther, and master of Vortigern, his steward. When he dies, the barons make his oldest son, Moine, king, though he's still a boy, and the story of Merlin's kings begins.
 
 ## contrait
 
@@ -402,7 +402,7 @@ An axe; Merlin comes as a woodcutter with one on his shoulder.<sup>[\*](GLOSSARY
 
 ## Damedieu
 
-The Lord God.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The lord god, from the Latin *Dominus Deus*, an old French name for the god used in oaths and prayers. This translation names it Yahweh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## damoisiele
 
@@ -438,7 +438,7 @@ To clear of blame.
 
 Also: desfions
 
-To defy: to declare openly that one owes a lord no more faith and will make war on him; the kin of Moine's murderers defy Vortigern.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+To defy: to declare openly that one owes a lord no more faith and will make war on him; the families of Moine's murderers defy Vortigern.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## despaner
 
@@ -470,7 +470,7 @@ A soothsayer, one who tells what's hidden or the future; what people call Merlin
 
 ## Dieu tonant
 
-God thundering: the noise of the battle at Salisbury is so great that nobody could have heard God thunder.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+god thundering: the noise of the battle at Salisbury is so great that nobody could have heard god thunder. It was an old French way of saying a noise drowned out everything, as people now say you couldn't hear yourself think.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## dist li contes
 
@@ -496,7 +496,7 @@ The red dragon Merlin foretells, which flies through the air over the battle at 
 
 Also: Auctor
 
-A worthy knight of Uther's, Kay's father, who Merlin brings the newborn Arthur to raise as his own.
+A worthy knight of Uther's and Kay's father, who Merlin asks to take in a newborn child and raise him as his own son, his wife nursing the baby while Kay goes to another nurse. Ector agrees without knowing whose child it is. Malory's Sir Ector raises Arthur the same way.
 
 Wikipedia: [Ector (Arthurian legend)](https://en.wikipedia.org/wiki/Ector_(Arthurian_legend))
 
@@ -508,7 +508,7 @@ Buildings.
 
 ## Ekupedes
 
-A kind of devil that lives in the air, the kind that fathered Merlin; Paris and Ulrich guess the word comes from centaurs.
+A kind of devil, in this story, that lives in the air, the kind that fathered Merlin. The word is found nowhere else; Paris and Ulrich guess it comes, garbled, from a word for centaurs, the half-horse creatures of Greek myth. The story makes them spirits, not gods.
 
 ## embarnir
 
@@ -520,7 +520,7 @@ To grow strong, properly to come to a man's strength.
 
 Also: embatirent
 
-To drive in; s'embatre, to come upon a place unawares.
+To drive in; s'embatre, to come across a place without warning.
 
 ## en conseil
 
@@ -558,13 +558,13 @@ The fathering of a child.
 
 ## engien
 
-A trick, a device of cunning: Merlin's word for the deceit by which he gave Uther the duke's shape.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A trick, a device of cunning: Merlin's word for the way he gave Uther the duke's shape.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## England
 
 Also: Engleterre, Engletere
 
-The southern and largest part of Great Britain, where most of this story takes place; the romance doesn't draw its modern borders.
+The southern and largest part of Great Britain, where most of this story takes place. The romance uses the name for the kingdom of Uther and Arthur long before there was any England, and doesn't draw its modern borders; it's simply the land the story's kings rule.
 
 Wikipedia: [England](https://en.wikipedia.org/wiki/England)
 
@@ -574,7 +574,7 @@ An anvil: the one of iron set on the block of stone, with the sword driven throu
 
 ## ensement
 
-Likewise, in the same way.
+In the same way.
 
 ## ensiant
 
@@ -636,7 +636,7 @@ To mock, to make fun of: Ulfin tells Igraine she may be mocking him.<sup>[\*](GL
 
 ## Gaheris
 
-A son of King Lot of Orkney, Gawain's brother.
+A son of King Lot of Orkney and Arthur's half-sister, and so Gawain's brother. Here he's named only among Lot's children; in later romances, and in Malory, he grows up to be one of the knights of Arthur's court.
 
 Wikipedia: [Gaheris](https://en.wikipedia.org/wiki/Gaheris)
 
@@ -662,7 +662,7 @@ A low fellow, a thug; the younger sister brings a crowd of them to her sister's 
 
 ## Gareth
 
-A son of King Lot of Orkney, Gawain's brother.
+A son of King Lot of Orkney and Arthur's half-sister, and so Gawain's brother. Here he's named only among Lot's children; in Malory he becomes the hero of his own tale, the kitchen boy called Beaumains who proves himself a knight.
 
 Wikipedia: [Gareth](https://en.wikipedia.org/wiki/Gareth)
 
@@ -678,7 +678,7 @@ A waste, a wilderness: the *deserte gastine* where Joseph's people go hungry aft
 
 Also: Gauvain, Gauvains
 
-A son of King Lot of Orkney.
+A son of King Lot of Orkney and Arthur's half-sister, named here among Lot's children. In later romances, and in Malory, he becomes one of the greatest of Arthur's knights, his nephew and his champion.
 
 Wikipedia: [Gawain](https://en.wikipedia.org/wiki/Gawain)
 
@@ -700,7 +700,7 @@ Baggage and gear: the duke's knights leave theirs behind and keep only their arm
 
 Also: Hangus, Hanguis, Hangu
 
-The leader of the Saxons.
+The leader of the Saxons, the pagan people from across the North Sea who come into Britain in Vortigern's time. Vortigern takes him and his men into his service to fight for him, and Hengist's Saxons become the Britons' great enemy.
 
 Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
@@ -724,7 +724,7 @@ An heir; Merlin tells Uther he's gained one and must give it up to Merlin, and a
 
 Also: saint graal, graal
 
-The holy vessel of Joseph of Arimathea's story; Merlin tells Blaise he'll go to live among the people who keep it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The holy vessel of Joseph of Arimathea's story, the cup Christ used at the Last Supper, in which Joseph caught his blood at the cross, as Robert de Boron told in his *Joseph*. Merlin tells Blaise he'll go to live among the people who keep it, and that Blaise's book will join theirs.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Holy Grail](https://en.wikipedia.org/wiki/Holy_Grail)
 
@@ -756,7 +756,7 @@ With hair in disorder, shaggy.
 
 Also: Ygerne, Igerne
 
-The Duke of Tintagel's wife.
+The wife of the Duke of Tintagel, famous for her beauty and her goodness, who catches King Uther's eye when the barons come to his court with their wives. She's faithful to her husband and wants nothing to do with the king's attentions.
 
 Wikipedia: [Igraine](https://en.wikipedia.org/wiki/Igraine)
 
@@ -764,7 +764,7 @@ Wikipedia: [Igraine](https://en.wikipedia.org/wiki/Igraine)
 
 Also: Irlande
 
-The large island west of Great Britain, across the Irish Sea.
+The large island west of Great Britain, across the Irish Sea, which Rome never ruled. Its people raided and settled the west of Britain in the centuries after the Romans left, and its monks carried Christianity back to Britain and beyond.
 
 Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
@@ -780,7 +780,7 @@ To confess, to own up.
 
 Also: Jesucrist, Jesucris, Jhesucrist, Jesus
 
-Christ, whose coming to hell takes from the devils the souls they held.
+The son of Yahweh in Christian belief, who Christians hold died on the cross and rose again. The story opens on the belief that after his death he went down into hell and freed the good souls the devils held there, Adam and Eve among them, which is why the devils plot their revenge.
 
 Wikipedia: [Jesus](https://en.wikipedia.org/wiki/Jesus)
 
@@ -788,7 +788,7 @@ Wikipedia: [Jesus](https://en.wikipedia.org/wiki/Jesus)
 
 Also: Jourdain, Jourdains
 
-A knight of the Duke of Tintagel's.
+A knight of the Duke of Tintagel's household, one of the men closest to him, with Bretel. He's one of the few at Tintagel the story names, and Malory leaves him out.
 
 ## jornee
 
@@ -800,7 +800,7 @@ A day's journey; to go by one's jornees is to travel by day's stages.<sup>[\*](G
 
 Also: Joseph
 
-The man given Christ's body from the cross, whose story of the Grail Blaise writes into his book.
+A rich follower of Jesus who, the Gospels say, asked Pilate for Christ's body and laid it in his own tomb. Robert de Boron's *Joseph* made him the first keeper of the Holy Grail, the cup in which he caught Christ's blood, and Merlin has Blaise write Joseph's story into the same book as his own.
 
 Wikipedia: [Joseph of Arimathea](https://en.wikipedia.org/wiki/Joseph_of_Arimathea)
 
@@ -810,7 +810,7 @@ Young.
 
 ## Judas
 
-The apostle who betrayed Christ; the empty place at Joseph's table stands for the one he left at the Last Supper.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The apostle who betrayed Christ to his enemies for thirty pieces of silver and then hanged himself. Merlin tells Uther that Joseph of Arimathea's table had an empty seat for the place Judas left at the Last Supper, and that Uther's table will have one too.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Judas Iscariot](https://en.wikipedia.org/wiki/Judas_Iscariot)
 
@@ -826,7 +826,7 @@ Justice in its hard sense, punishment by law; to do justiche of someone is to pu
 
 Also: Ké, Kés
 
-Ector's son, brought up alongside Arthur.
+Ector's own son, nursed by another woman so his mother can nurse the baby Merlin brought, and brought up as that child's brother. In Malory and the later romances he becomes Arthur's seneschal, the steward of his household, known for his sharp tongue.
 
 Wikipedia: [Sir Kay](https://en.wikipedia.org/wiki/Sir_Kay)
 
@@ -834,7 +834,7 @@ Wikipedia: [Sir Kay](https://en.wikipedia.org/wiki/Sir_Kay)
 
 Also: Loth
 
-King of Orkney, who marries a daughter of Igraine's.
+King of Orkney, who marries one of Igraine's daughters by the Duke of Tintagel. Orkney is the group of islands off the north of Scotland. The marriage is part of the peace made with the duke's family, and their children are Mordred, Gawain, Agravain, Gareth and Gaheris, as the story names them.
 
 Wikipedia: [King Lot](https://en.wikipedia.org/wiki/King_Lot)
 
@@ -850,7 +850,7 @@ Liege, bound to a lord before all others; Uther calls the respected man who'll r
 
 Also: lingnage
 
-A person's kin, their whole family; the kin of Moine's murderers take up the wrong done to them and make war on Vortigern.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A person's relatives, their whole family; the relatives of Moine's murderers take up the wrong done to them and make war on Vortigern.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## litiere
 
@@ -866,7 +866,7 @@ The Book of the Prophecies of Merlin, begun when the king and his people resolve
 
 ## Logres
 
-The Britons' legendary kingdom, which Uther rules, and in this story also its chief city, where he holds court and dies; neither is on a modern map.
+The Britons' legendary kingdom, which Uther rules, and in this story also its chief city, where he holds court and dies. Neither is on a modern map.
 
 Wikipedia: [Logres](https://en.wikipedia.org/wiki/Logres)
 
@@ -878,7 +878,7 @@ A reward, a fee paid for a service; the old man asks what reward the king will g
 
 Also: Londres
 
-The city on the Thames in southeastern England where Uther is crowned after the battle of Salisbury.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The city on the Thames in southeastern England, already the greatest town of Britain under the Romans. Here, after the battle of Salisbury, Uther is crowned king, and the barons gather there for the great feasts of the year.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [London](https://en.wikipedia.org/wiki/London)
 
@@ -904,7 +904,7 @@ Martyrdom: a death suffered for one's faith, as the saints suffered theirs; the 
 
 Also: sainte Marie
 
-The mother of Christ, who the older sister calls on when she wakes.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The mother of Jesus Christ, who Christians believe conceived him as a virgin by the Holy Spirit. She was the most honored of all saints in the Middle Ages, prayed to for help in every need, which is why the older sister calls on her when she wakes in terror.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mary, mother of Jesus](https://en.wikipedia.org/wiki/Mary,_mother_of_Jesus)
 
@@ -918,7 +918,7 @@ The clergy, who the devils say Christ left on earth to save sinners who repent a
 
 Also: Merlins, Mierlin, Mierlins
 
-A child fathered by a devil with a devout woman, who knows what's past from his father and the future from God.
+The child the devils plot to father on a devout young woman, to undo what Christ won. From his father he has the knowledge of everything that's been done and said; Yahweh, for his mother's goodness and her repentance, gives him knowledge of the future too, and leaves him free to choose which side to serve.
 
 Wikipedia: [Merlin](https://en.wikipedia.org/wiki/Merlin)
 
@@ -938,11 +938,11 @@ To go badly for someone.
 
 Also: meserra
 
-To go astray.
+To lose your way, or go wrong.
 
 ## Moine
 
-King Constans's eldest son, a monk, made king after his father.
+King Constans's oldest son, who'd been made a monk, and who the barons make king after their father dies, though he's still young. Vortigern, the old king's steward, runs the kingdom for him.
 
 ## monter
 
@@ -954,7 +954,7 @@ To matter, to amount to; also, to climb.
 
 Also: Mordrès
 
-A son born to King Lot's wife, named first among Gawain's brothers.
+A son born to King Lot's wife, named first among Gawain's brothers. In the oldest record, the Welsh annals, a Mordred falls with Arthur at Camlann; later romances, and Malory, make him Arthur's betrayer.
 
 Wikipedia: [Mordred](https://en.wikipedia.org/wiki/Mordred)
 
@@ -962,13 +962,13 @@ Wikipedia: [Mordred](https://en.wikipedia.org/wiki/Mordred)
 
 Also: Morgue
 
-A daughter of Igraine's who Uther sends to a house of religion to learn to read and write, where she learns the seven arts, astronomy and medicine.
+A daughter of Igraine's. Uther sends her to a house of religion to learn to read and write, and there she learns the seven arts, astronomy and medicine.
 
 Wikipedia: [Morgan le Fay](https://en.wikipedia.org/wiki/Morgan_le_Fay)
 
 ## Morgans
 
-A daughter born out of wedlock, the one King Nentres of Sorhaut marries. Paris and Ulrich's name index runs her and Morgue together, but the French text names them apart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A daughter born outside marriage, the one King Nentres of Sorhaut marries. Paris and Ulrich's name index runs her and Morgue together, but the French text names them apart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## mostres
 
@@ -980,7 +980,7 @@ A church; Pendragon is coming back from one when the next stranger comes to him.
 
 ## Nentres
 
-King of Sorhaut, who marries another of Igraine's daughters.
+King of Sorhaut, who marries Morgans, another of Igraine's daughters, born outside her marriage. Malory calls him King Nentres of Garlot, married to Igraine's daughter Elaine, and has him fight against the young Arthur.
 
 Wikipedia: [King Nentres](https://en.wikipedia.org/wiki/King_Nentres)
 
@@ -1002,7 +1002,7 @@ Wikipedia: [Northumberland](https://en.wikipedia.org/wiki/Northumberland)
 
 ## nueches
 
-A wedding; Uther and Igraine's is held on the thirteenth day after the meeting that made the peace.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A wedding; Uther and Igraine's is held on the thirteenth day after the two weeks that followed the peace talks.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## ochoison
 
@@ -1020,7 +1020,7 @@ A road, a journey.
 
 Also: Orkenie, Orkanie
 
-The islands north of mainland Scotland, made King Lot's kingdom in this story.
+The islands off the north tip of mainland Scotland, which the romances make King Lot's kingdom, so that Lot of Orkney, husband of Arthur's half-sister, is one of the great kings of the story. In history the islands were home to the Picts, then taken by Norse settlers from the ninth century CE.
 
 Wikipedia: [Orkney](https://en.wikipedia.org/wiki/Orkney)
 
@@ -1046,7 +1046,7 @@ A pilgrimage, a journey to a holy place; the peasant has bought leather to mend 
 
 Also: Pandragon, Pandragons
 
-King Constans's second son, Uther's older brother.
+King Constans's second son, Uther's older brother, still a boy when their father dies. His name holds the word *dragon*, as the story will explain.
 
 Wikipedia: [Pendragon](https://en.wikipedia.org/wiki/Pendragon)
 
@@ -1058,7 +1058,7 @@ Penance, what a confessor sets a sinner who has confessed to make amends; the ho
 
 ## Penthecouste
 
-Pentecost, the Church's feast of the Holy Spirit's coming to the apostles, one of the great feasts at which a king held court; the brothers hold court at it by the river as the Saxons come, and Uther founds his table at it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Pentecost, the Church's feast of the Holy Spirit's coming to the apostles, one of the great feasts at which a king held court. The brothers hold court at it by the river as the Saxons come, and Uther founds his table at it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## perron
 
@@ -1110,7 +1110,7 @@ Those closest to a lord, the people he trusts with his secrets; Uther tells two 
 
 ## prophete
 
-The prophets of the Old Testament, who foretold that the Son of God would come to earth; the devils say they took them for it and held them in hell.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The prophets of the Old Testament, who predicted that the son of Yahweh would come to earth; the devils say they took them for it and held them in hell.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## puciele
 
@@ -1148,7 +1148,7 @@ To rebel.
 
 Also: Romme
 
-The city in central Italy where the pope is based; the story's "law of Rome" means the faith of the Church.
+The city in central Italy where the pope, the bishop of Rome, has his seat, the center of the Western Church. The story's "law of Rome" means the Christian faith as the Church at Rome taught it, which converts were baptized into.
 
 Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
@@ -1156,13 +1156,13 @@ Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
 Also: table reonde, tierche table
 
-The third table, which Merlin bids Uther found in the name of the Trinity after the table of the Last Supper and Joseph's table; he makes it at Carduel and seats fifty of the worthiest men of the land at it, with one place left empty.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The third table, which Merlin bids Uther found in the name of the Trinity after the table of the Last Supper and Joseph's table. He makes it at Carduel and seats fifty of the worthiest men of the land at it, with one place left empty.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Round Table](https://en.wikipedia.org/wiki/Round_Table)
 
 ## sacre
 
-The crowning of a king and his anointing by the archbishop; until it's done, Arthur won't call himself lord of the realm.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The crowning of a king and his anointing by the archbishop; until it's done, Arthur won't call himself lord of the kingdom.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## saint esperit
 
@@ -1178,7 +1178,7 @@ Saint Martin's Day, the feast of Saint Martin of Tours on November 11; Uther die
 
 Also: Salesbieres
 
-The plain around Salisbury, in Wiltshire in southern England, where this story sets the Britons' battle with the Saxons.
+The plain around Salisbury, in Wiltshire in southern England, a wide open upland of chalk. This story sets the Britons' great battle with the Saxons there, where the two brothers lead their army against Hengist's host.
 
 Wikipedia: [Salisbury](https://en.wikipedia.org/wiki/Salisbury)
 
@@ -1186,7 +1186,7 @@ Wikipedia: [Salisbury](https://en.wikipedia.org/wiki/Salisbury)
 
 Also: Sathanas
 
-The devil by name; the judge's mother swears by him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The devil by name, the fallen angel Christians hold rules over hell and tempts people to sin. The story opens on his fury that Christ freed the souls hell held, and the judge's mother swears by him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Satan](https://en.wikipedia.org/wiki/Satan)
 
@@ -1202,7 +1202,7 @@ So long as it's honorable: the one limit set on the gift Uther swears to give Me
 
 Also: Saisnes, Saisne, Saxon
 
-The heathen people from over the sea who come to win England.
+The heathen people from over the sea who come to win England in this story, against who Uther and Arthur fight. The real Saxons were one of the Germanic peoples from the North Sea coast, today's northern Germany and Denmark, who settled Britain in the fifth and sixth centuries and became the English.
 
 Wikipedia: [Saxons](https://en.wikipedia.org/wiki/Saxons)
 
@@ -1238,7 +1238,7 @@ Calm, still.
 
 Also: serjant
 
-A servant who does someone's errands; the older sister sends hers for two women, and the herdsman in the forest calls himself one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A servant who does someone's errands; the older sister sends hers for two women, and the herder in the forest calls himself one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## set ars
 
@@ -1256,7 +1256,7 @@ On relics, the remains of saints; Vortigern makes his messengers swear on them t
 
 ## Sorhaut
 
-King Nentres's kingdom in this story; the text gives no secure place for it on a modern map.
+King Nentres's kingdom in this story. Later French romances make Sorhaut a city, the chief town of King Urien's land of Gorre, and Malory gives Nentres the land of Garlot instead; no source places it on a modern map.
 
 ## sortir
 
@@ -1272,7 +1272,7 @@ To give bad advice.
 
 ## Te Deum laudamus
 
-Latin, "We praise you, God": the hymn of thanks the clergy sing when the sword is found and again when Arthur draws it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Latin, "We praise you, Yahweh," an old Latin hymn of thanks still sung in churches at moments of great joy, as at a coronation or a victory. The clergy sing it when the sword in the stone is found.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Te Deum](https://en.wikipedia.org/wiki/Te_Deum)
 
@@ -1296,13 +1296,13 @@ A measure of length, about six and a half feet; Vortigern's tower stands three o
 
 ## Toussains
 
-All Saints' Day, November 1; Ector makes Kay a knight on it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+All Saints' Day, November 1, the Church's feast honoring every saint, known and unknown, and one of the great feasts when a king held court. Ector makes his son Kay a knight on it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## trinité
 
 Also: trinités
 
-The Trinity, God as Father, Son and Holy Spirit; the heathen Saxons don't believe in it, and Merlin bids Uther found the third table in its name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Trinity, the god as Father, Son and Holy Spirit; the heathen Saxons don't believe in it, and Merlin bids Uther found the third table in its name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## trives
 
@@ -1312,7 +1312,7 @@ A truce: the king's men ask the Saxons in their castle for one of three months.<
 
 Also: Urfin, Urfins
 
-An adviser of Uther's.
+An adviser of Uther's, the one the king trusts with his secret love for Igraine, who carries his messages and gifts to her. Malory calls him Sir Ulfius, one of Uther's knights.
 
 Wikipedia: [Gorlois](https://en.wikipedia.org/wiki/Gorlois)
 
@@ -1320,13 +1320,13 @@ Wikipedia: [Gorlois](https://en.wikipedia.org/wiki/Gorlois)
 
 Also: Ursins
 
-An adviser of Pendragon's, sent with two others to ask the Saxons for a truce.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An adviser of Pendragon's, sent with two others to ask the Saxons for a truce. He's one of the few of Pendragon's men the story names, and he's known only from this passage.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Uther
 
 Also: Uther Pendragon, Uter, Uters, Uter Pandragon, Uters Pandragons
 
-King Constans's youngest son, Pendragon's brother, who takes his brother's name when he becomes king.
+King Constans's youngest son, Pendragon's brother, still a boy when their father dies. In British legend he's Uther Pendragon, the best known of the story's kings.
 
 Wikipedia: [Uther Pendragon](https://en.wikipedia.org/wiki/Uther_Pendragon)
 
@@ -1346,7 +1346,7 @@ Kept vigil: the night after the archbishop makes him a knight, Arthur stays awak
 
 ## viers orient
 
-Toward the east, where Pendragon's and Uther's guardians take them, because their forebears came from there. Geoffrey of Monmouth's History of the Kings of Britain, an older telling, sends them over the sea to Brittany.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Toward the east, where Pendragon's and Uther's guardians take them, because their ancestors came from there. Geoffrey of Monmouth's History of the Kings of Britain, an older telling, sends them over the sea to Brittany.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## viespres
 
@@ -1368,7 +1368,7 @@ A peasant, a man of low birth who works the land.<sup>[\*](GLOSSARY.md#new-in-th
 
 Also: Vertigier, Vertigiers
 
-King Moine's steward, the most powerful man in the land.
+King Constans's steward, the most powerful man at court, who runs the young King Moine's affairs for him. In British legend he's the king who invited the Saxons into Britain.
 
 Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
 
@@ -1376,7 +1376,7 @@ Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
 
 Also: Gales
 
-The country on the western side of Great Britain where this story places Carduel.
+The country on the western side of Great Britain, where the Britons held out after the Saxons took the east. This story places Carduel, one of Uther's and Arthur's chief cities, there, though later romances put Carduel at Carlisle in the north of England.
 
 Wikipedia: [Wales](https://en.wikipedia.org/wiki/Wales)
 
@@ -1384,6 +1384,12 @@ Wikipedia: [Wales](https://en.wikipedia.org/wiki/Wales)
 
 Also: Wincestre
 
-A city in Hampshire, inland in southern England, which this story makes a seaport where Pendragon and Uther land.
+A city in Hampshire, inland in southern England, the old capital of Wessex. This story makes it a seaport, where Pendragon and Uther land with their army when they come back to take their kingdom.
 
 Wikipedia: [Winchester](https://en.wikipedia.org/wiki/Winchester)
+
+## Yahweh
+
+The name of the god of the Israelites in the Hebrew Bible, the one god Jews and Christians worship, written in Hebrew with four letters, YHWH. Jews stopped saying the name aloud before Jesus's time and said "my lord" instead, so the Greek and Latin Bibles wrote "lord" where the name stood, and the Latin and French of these books call it only god or lord, never by its name. This translation gives the god its name wherever the source speaks of it, and calls it "it", as it would any people's god.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Yahweh](https://en.wikipedia.org/wiki/Yahweh)

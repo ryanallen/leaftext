@@ -57,7 +57,7 @@ So the first age of the world ran from Adam to Noah, the second from Noah to Abr
 
 ### The last three ages run from David to Judgment Day
 
-The fourth lasted from David to Daniel, the fifth from Daniel to John the Baptist, and the sixth goes from John to the Judgment. Then our Lord Jesus Christ will come to judge the living and the dead, and the world by fire.[^146-2]
+The fourth lasted from David to Daniel, the fifth from Daniel to John the Baptist, and the sixth goes from John to the Judgment. Then Jesus Christ will come to judge the living and the dead, and the world by fire.[^146-2]
 
 ## Part 2: Britain is described, and Brutus, the Picts and the Irish come to settle it
 
@@ -115,7 +115,7 @@ The last to come was Damhoctor, who settled in Britain with all his people, and 
 
 If anyone wants to know when Ireland lay empty, with no one living there, this is what the most learned of the Irish told me. When the children of Israel came through the Red Sea, the Egyptians chased them and were drowned, as we read in the Law.[^156-2]
 
-<a id="page-157"></a>[\[Mommsen 157\]](historia-brittonum-latin.md#page-157) A noble from Scythia was living among the Egyptians with a large household, driven out of his own kingdom, and he was there when they went down in the sea. But he didn't go out to hunt God's people. The ones who'd survived met and decided to drive him out, so he wouldn't besiege their land and take it, since their strongest men had gone under in the Red Sea. So he was driven out.
+<a id="page-157"></a>[\[Mommsen 157\]](historia-brittonum-latin.md#page-157) A noble from Scythia was living among the Egyptians with a large household, driven out of his own kingdom, and he was there when they went down in the sea. But he didn't go out to hunt Yahweh's people. The ones who'd survived met and decided to drive him out, so he wouldn't besiege their land and take it, since their strongest men had gone under in the Red Sea. So he was driven out.
 
 He wandered through Africa for forty-two years. His people came to the altars of the Philistines by the Lake of Salt, and passed between Rusicada and the mountains of Azaria. They followed the river Malva and crossed Mauretania to the Pillars of Hercules. Then they sailed the Tyrrhenian Sea and reached Spain. There they lived for many years, grew and multiplied into a great people. A thousand and two years after the Egyptians were lost in the Red Sea, they came to Ireland, and to the lands of Dál Riata, in the time of Brutus at Rome.
 
@@ -125,7 +125,7 @@ The Britons came to Britain in the third age, and the Irish took Ireland in the 
 
 ### The years are counted from the Saxons' coming to King Merfyn's fourth year
 
-From the Saxons' first year in Britain to King Merfyn's fourth, four hundred twenty-nine years are counted.[^158-3] From the Lord's birth to Patrick's coming to the Irish is four hundred five years.
+From the Saxons' first year in Britain to King Merfyn's fourth, four hundred twenty-nine years are counted.[^158-3] From Jesus's birth to Patrick's coming to the Irish is four hundred five years.
 
 <a id="page-159"></a>[\[Mommsen 159\]](historia-brittonum-latin.md#page-159) From Patrick's death to Saint Brigid's is sixty years, and Columba was born four years before Brigid died. The count begins. From the Incarnation to Patrick's arrival in Ireland were twenty-three of the nineteen-year cycles, four hundred thirty-eight years in all. From then to the current one are twenty-two more, four hundred twenty-one years, and we're now two years into its ogdoad.[^159-1]
 
@@ -135,7 +135,7 @@ I found another account of this Brutus in the old books of our ancestors. After 
 
 <a id="page-160"></a>[\[Mommsen 160\]](historia-brittonum-latin.md#page-160) The first man of Japheth's line to come to Europe was Alanus, and his three children came with him, Hessitio, Armenon and Negue. Hessitio had four, Francus, Romanus, Brutus and Albanus. Armenon had five, Gothus, Valagothus, Gebidus, Burgundus and Longobardus. Negue had three, Vandalus, Saxo and Boguarus.[^160-1] From Hessitio descended four peoples: the Franks, the Latins, the Albans and the Britons. From Armenon came five, the Goths, the Walagoths, the Gepids, the Burgundians and the Lombards. From Negue there were four, the Bavarians, the Vandals, the Saxons and the Thuringians. These peoples spread out over all of Europe.
 
-<a id="page-161"></a>[\[Mommsen 161\]](historia-brittonum-latin.md#page-161) Alanus, they say, was born to Fetebir, and his line runs back, father to father, through Ougomun, Thoi, Boib, Simeon, Mair, Ethach, Aurthach, Ecthet, Oth, Abir, Ra, Ezra, Izrau, Baath, Iobaath, Iovan, Japheth, Noah, Lamech, Methuselah, Enoch, Jared, Mahalalel, Cainan, Enos and Seth to Adam, son of the living God. I learned this from what the old men handed down.
+<a id="page-161"></a>[\[Mommsen 161\]](historia-brittonum-latin.md#page-161) Alanus, they say, was born to Fetebir, and his line runs back, father to father, through Ougomun, Thoi, Boib, Simeon, Mair, Ethach, Aurthach, Ecthet, Oth, Abir, Ra, Ezra, Izrau, Baath, Iobaath, Iovan, Japheth, Noah, Lamech, Methuselah, Enoch, Jared, Mahalalel, Cainan, Enos and Seth to Adam, son of the living Yahweh. I learned this from what the old men handed down.
 
 ### The Britons come from Brutus, and Japheth's seven sons people the world
 
@@ -189,7 +189,7 @@ The sixth was the emperor Maximus, who reigned in Britain. From his time the con
 
 The seventh to reign in Britain was Maximianus. He left Britain with all the Britons' soldiers, killed Gratian, king of the Romans, and held power over all of Europe.
 
-<a id="page-167"></a>[\[Mommsen 167\]](historia-brittonum-latin.md#page-167) He wouldn't send the men who'd gone with him back to Britain, to their wives, their children and their lands. He gave them many regions instead, from the lake on top of Mount Jove to the city called Cant Guic and on to the western mound, that is, Cruc Ochidient.[^167-1] These are the Britons of Brittany, and they've never come back here to this day. Because of this, foreign peoples took Britain, and its citizens were driven out, until God comes to help them.
+<a id="page-167"></a>[\[Mommsen 167\]](historia-brittonum-latin.md#page-167) He wouldn't send the men who'd gone with him back to Britain, to their wives, their children and their lands. He gave them many regions instead, from the lake on top of Mount Jove to the city called Cant Guic and on to the western mound, that is, Cruc Ochidient.[^167-1] These are the Britons of Brittany, and they've never come back here to this day. Because of this, foreign peoples took Britain, and its citizens were driven out, until Yahweh comes to help them.
 
 In our ancestors' old tradition there were seven Roman emperors in Britain; the Romans say nine. The eighth was another Severus, who went back and forth between Britain and Rome, and he died in Rome. The ninth was Constantius. He reigned sixteen years in Britain, and his reign ended with his death there, in its sixteenth year.
 
@@ -201,7 +201,7 @@ Up to this point the Romans had ruled the Britons for four hundred nine years. B
 
 ### Maximus is made emperor in Britain and crosses to Gaul against Gratian
 
-I have to speak of the usurper Maximianus again.[^168-1] Gratian reigned six years with his brother Valentinian, and Ambrose, bishop of Milan, stood out for his Catholic teaching. Valentinian ruled with Theodosius for eight years. A gathering of three hundred eighteen church fathers at Constantinople condemned every heresy.[^168-2] Jerome, then a priest at Bethlehem, was known everywhere. While Gratian held the empire, Maximus was made emperor in Britain by an army mutiny. As soon as he crossed into Gaul, Gratian was beaten at Paris through the treachery of his own general, Merobaudes.[^168-3] Gratian fled, but was caught at Lyon and killed. Maximus made his son Victor his partner in rule. Saint Martin, bishop of Tours, was famous for great miracles.
+I have to speak of the usurper Maximianus again.[^168-1] Gratian reigned six years with his brother Valentinian, and Ambrose, bishop of Milan, stood out for his Catholic teaching. Valentinian ruled with Theodosius for eight years. A gathering of three hundred eighteen church fathers at Constantinople condemned every heresy.[^168-2] Jerome, then a priest at Bethlehem, was known everywhere. While Gratian held the empire, Maximus was made emperor in Britain by an army mutiny. As soon as he crossed into Gaul, Gratian was beaten at Paris, betrayed by his own general, Merobaudes.[^168-3] Gratian fled, but was caught at Lyon and killed. Maximus made his son Victor his partner in rule. Saint Martin, bishop of Tours, was famous for great miracles.
 
 <a id="page-169"></a>[\[Mommsen 169\]](historia-brittonum-latin.md#page-169) A long time later, in the consulship of Valentinian and Theodosius, Maximus was stripped of his royal clothes at the third milestone from Aquileia, brought to trial and sentenced to death. Victor, his son, died in Gaul the same year at the hands of Count Arbogast.
 
@@ -219,7 +219,7 @@ The Romans came to their aid with a huge force and set up emperors in Britain. O
 
 <a id="page-171"></a>[\[Mommsen 171\]](historia-brittonum-latin.md#page-171) The Romans' leaders had been killed in the war with the Britons that I spoke of, and the usurper Maximus was dead.[^171-1] Once Roman rule in Britain was over, the Britons lived in fear for forty years. Vortigern ruled Britain, and all through his reign he was hard pressed: he feared the Picts and the Irish, an attack from Rome, and Ambrosius.[^171-2]
 
-Meanwhile three ships came, driven from Germany into exile, carrying Horsa and Hengist. They were brothers, children of Wihtgils, and their line ran back, father to father, through Witta, Wecta, Woden, Frealaf, Fredulf, Finn and Fodepald to Geta, who was, they say, a son of God. He wasn't the God of gods, amen, the God of armies, but one of the idols they worshiped.[^171-3]
+Meanwhile three ships came, driven from Germany into exile, carrying Horsa and Hengist. They were brothers, children of Wihtgils, and their line ran back, father to father, through Witta, Wecta, Woden, Frealaf, Fredulf, Finn and Fodepald to Geta, who was, they say, a son of a god. He wasn't the god of gods, amen, the god of armies, but one of the idols they worshiped.[^171-3]
 
 <a id="page-172"></a>[\[Mommsen 172\]](historia-brittonum-latin.md#page-172) Vortigern took them in kindly and gave them the island called Thanet in their language and Ruoihm in the Britons'.[^172-1] He received the Saxons in the reign of Gratian, in his second consulship, with Equitius, three hundred forty-seven years after Christ's Passion.[^172-2]
 
@@ -227,7 +227,7 @@ Meanwhile three ships came, driven from Germany into exile, carrying Horsa and H
 
 In Vortigern's time Saint Germanus came to preach in Britain.[^172-3] He became known among the Britons for his miracles; through him many were saved, and more were lost.[^172-4]
 
-I've decided to write down some of what God did through him. Here's the first.
+I've decided to write down some of what Yahweh did through him. Here's the first.
 
 <a id="page-173"></a>[\[Mommsen 173\]](historia-brittonum-latin.md#page-173) There was a wicked king named Benli, a cruel tyrant. Germanus wanted to go to him at once and preach to him. When he reached the town gate with his companions, the gatekeeper came out to greet them. They sent the man in to Benli, who gave them a harsh answer and swore: "If they wait till the end of the year, they'll never set foot inside my town."
 
@@ -239,13 +239,13 @@ He had no livestock of any kind but one cow. He killed her calf, cooked it and s
 
 They got up early again to try to greet the tyrant. While they were praying and waiting by the gate of the fort, a man came running, sweat streaming off him from head to foot. He bowed to them, and Saint Germanus said, "Do you believe in the Holy Trinity?"
 
-"I do," he answered, and was baptized. Germanus kissed him and said, "Go in peace. You'll die within the hour, and God's angels are waiting for you in the air, to take you with them to the God you've believed in."
+"I do," he answered, and was baptized. Germanus kissed him and said, "Go in peace. You'll die within the hour, and Yahweh's angels are waiting for you in the air, to take you with them to the god you've believed in."
 
 <a id="page-175"></a>[\[Mommsen 175\]](historia-brittonum-latin.md#page-175) He went in happy. The king's officer held him and tied him up. He was taken to the tyrant and put to death, since that wicked man killed anyone who hadn't come to serve in the fort by sunrise. Germanus and his companions stayed all day by the town gate, and never got to greet him.
 
 ### Germanus tells the servant to bring his sons out of the fort tonight
 
-As usual the servant came, and Saint Germanus told him, "Make sure not one of your people stays in the fort tonight." He went back in and brought out his sons, nine of them, and they all walked with him to the house where Germanus was staying. Saint Germanus told them to keep fasting, shut the doors and said, "Stay awake, and whatever happens over there, don't look. Pray without stopping, and cry out to your God."
+As usual the servant came, and Saint Germanus told him, "Make sure not one of your people stays in the fort tonight." He went back in and brought out his sons, nine of them, and they all walked with him to the house where Germanus was staying. Saint Germanus told them to keep fasting, shut the doors and said, "Stay awake, and whatever happens over there, don't look. Pray without stopping, and cry out to your god."
 
 <a id="page-176"></a>[\[Mommsen 176\]](historia-brittonum-latin.md#page-176) A little while into the night, fire fell from heaven and burned the fort, which has never been rebuilt, and everyone who was with the tyrant. None of them has been seen to this day.
 
@@ -253,11 +253,11 @@ As usual the servant came, and Saint Germanus told him, "Make sure not one of yo
 
 The next day the man who'd taken them in became a believer and was baptized with all his sons, and the whole district with them. His name was Cadell. Germanus blessed him. "Your line will never lack a king," he went on, "and you'll rule from today." This man is Cadell Ddyrnllwg.[^176-1]
 
-So it happened, and what the prophet said came true: "He raises the needy from the dust and lifts the poor from the dung heap, to sit with princes and hold the throne of glory."[^176-2] As Saint Germanus had said, the servant became a king, and so did all his sons. Their descendants rule the whole land of Powys to this day.
+So it happened, and the words of Hannah's song came true: "He raises the needy from the dust and lifts the poor from the trash heap, to sit with princes and hold the throne of glory."[^176-2][^176-3] As Saint Germanus had said, the servant became a king, and so did all his sons. Their descendants rule the whole land of Powys to this day.
 
 ### The Saxons settle on Thanet and ask Vortigern for the food he promised
 
-Once the Saxons had settled on the island of Thanet, Vortigern said he'd give them food and clothing without fail.[^176-3] They were pleased, and in return swore to fight hard against his enemies. But once these barbarians had grown in number, the Britons couldn't keep them supplied.
+Once the Saxons had settled on the island of Thanet, Vortigern said he'd give them food and clothing without fail.[^176-4] They were pleased, and in return swore to fight hard against his enemies. But once these barbarians had grown in number, the Britons couldn't keep them supplied.
 
 <a id="page-177"></a>[\[Mommsen 177\]](historia-brittonum-latin.md#page-177) When they demanded what they'd been promised, the Britons said, "We can't feed and clothe you. There are too many of you now. Go away; we don't need your help." The Saxons then made a plan with their leaders to break the peace.
 
@@ -283,9 +283,9 @@ Vortigern told him to send for them, and he did: Octa and Ebissa came, with a fl
 
 Hengist kept bringing more ships over, a few at a time, until they left the islands they'd come from empty of people. As his people grew in strength and numbers, they came to the city of the people of Kent.[^180-2]
 
-### Vortigern marries his own daughter, and Germanus comes with the clergy to rebuke him
+### Vortigern marries his own daughter, and Germanus comes with the clergy to scold him
 
-On top of all his other wrongs, Vortigern took his own daughter as his wife, and she had a son by him.[^180-3] When Saint Germanus learned of it, he went with all the Britons' clergy to rebuke him. While a great gathering of churchmen and lay people was meeting, the king told his daughter ahead of time to go out to it, put her son in Germanus's lap and say Germanus was the child's father. She did as she'd been told. Germanus took the child kindly. "I'll be a father to you," he said. "I won't let you go until I'm given a razor, shears and a comb. Then you're to take them to your real father."
+On top of all his other wrongs, Vortigern took his own daughter as his wife, and she had a son by him.[^180-3] When Saint Germanus learned of it, he went with all the Britons' clergy to scold him. While a great gathering of churchmen and lay people was meeting, the king told his daughter ahead of time to go out to it, put her son in Germanus's lap and say Germanus was the child's father. She did as she'd been told. Germanus took the child kindly. "I'll be a father to you," he said. "I won't let you go until I'm given a razor, shears and a comb. Then you're to take them to your real father."
 
 <a id="page-181"></a>[\[Mommsen 181\]](historia-brittonum-latin.md#page-181) The boy obeyed. He went to his grandfather, Vortigern, who was also his father by blood, and said, "You're my father. Shave my head and cut my hair."[^181-1] Vortigern said nothing, and wouldn't answer him. He got up in a rage and fled from Saint Germanus. Germanus and the whole gathering of the Britons condemned him with a curse.
 
@@ -293,7 +293,7 @@ On top of all his other wrongs, Vortigern took his own daughter as his wife, and
 
 ### Vortigern's seers send him to build a fort at his kingdom's edge
 
-Later the king called his seers to him, to ask them what to do.[^181-2] "Go to the farthest edge of your kingdom," they said, "and you'll find a strong fort to defend yourself in. The people you've taken in are jealous of you. They'll kill you by treachery, and after your death they'll take every land you loved, with all your people."
+Later the king called his seers to him, to ask them what to do.[^181-2] "Go to the farthest edge of your kingdom," they said, "and you'll find a strong fort to defend yourself in. The people you've taken in are jealous of you. They'll betray and kill you, and after your death they'll take every land you loved, with all your people."
 
 <a id="page-182"></a>[\[Mommsen 182\]](historia-brittonum-latin.md#page-182) Then he set out with them to look for one. They traveled through many regions and provinces, and finding nothing, came at last to Gwynedd. Searching the mountains of Snowdonia, he finally found a place on one of them where a fort could rightly stand.[^182-1] "Build it here," his seers told him, "because it'll be safe from barbarian peoples forever."
 
@@ -375,7 +375,7 @@ Not long after, Vortimer was dead. Before his death he told his household to put
 
 ### The Saxons come back in force while Vortigern stays their friend
 
-The barbarians came back in force, since Vortigern was their friend because of his wife.[^188-2] No one was bold enough to drive them off, because they didn't take Britain by their own strength, but because God chose it. Who can stand against God's will, or fight it? The Lord did as he wanted, and he governs every people.
+The barbarians came back in force, since Vortigern was their friend because of his wife.[^188-2] No one was bold enough to drive them off, because they didn't take Britain by their own strength, but because Yahweh chose it. Who can stand against Yahweh's will, or fight it? Yahweh did as it wanted, and it governs every people.
 
 <a id="page-189"></a>[\[Mommsen 189\]](historia-brittonum-latin.md#page-189) After the death of King Vortimer, Vortigern's son, and Hengist's return with his hordes, the Saxons hatched a false plan: to trick Vortigern and his army. They sent envoys to ask for peace, so there'd be lasting friendship between them. Vortigern and his elders talked it over and weighed what to do. In the end they all agreed to it. They took the answer back, and afterward a meeting was arranged, at which the Britons and the Saxons would both come unarmed, to seal the bond.
 
@@ -387,7 +387,7 @@ They arranged the meeting and came together. The Saxons talked in a friendly way
 
 ### Germanus preaches to Vortigern, who runs to the land named for him
 
-Saint Germanus preached to Vortigern to turn to his Lord and leave his unlawful marriage.[^190-2][^190-3]
+Saint Germanus preached to Vortigern to turn to his god and leave his unlawful marriage.[^190-2][^190-3]
 
 <a id="page-191"></a>[\[Mommsen 191\]](historia-brittonum-latin.md#page-191) Vortigern fled in misery to the land that took its name from him, Gwrtheyrnion, to hide there with his wives.[^191-1] Saint Germanus followed him there with all the Britons' clergy. He stayed forty days and nights, standing on a rock to pray, on his feet without a break.
 
@@ -411,13 +411,13 @@ Here's his ancestry, traced back to its beginning.
 
 After Vortigern's death Saint Germanus went back to his own country.[^193-2]
 
-<a id="page-194"></a>[\[Mommsen 194\]](historia-brittonum-latin.md#page-194) At that time Saint Patrick was a captive among the Irish. His master was named Milchu, and Patrick kept his pigs. At sixteen he came home from captivity, and later, by God's will, he was schooled in sacred learning. He traveled all the way to Rome and stayed there a long time, to read, to search into the mysteries of God and to go through the books of holy Scripture. He'd been there seven years when Celestine, bishop and pope of Rome, sent Bishop Palladius, the first to go, to turn the Irish to Christ.[^194-1] But God stopped him with storms, since no one on earth can receive anything unless heaven gives it to them.[^194-2]
+<a id="page-194"></a>[\[Mommsen 194\]](historia-brittonum-latin.md#page-194) At that time Saint Patrick was a captive among the Irish. His master was named Milchu, and Patrick kept his pigs. At sixteen he came home from captivity, and later, by Yahweh's will, he was schooled in sacred learning. He traveled all the way to Rome and stayed there a long time, to read, to search into the mysteries of Yahweh and to go through the books of holy Scripture. He'd been there seven years when Celestine, bishop and pope of Rome, sent Bishop Palladius, the first to go, to turn the Irish to Christ.[^194-1] But Yahweh stopped him with storms, since no one on earth can receive anything unless heaven gives it to them.[^194-2]
 
 <a id="page-195"></a>[\[Mommsen 195\]](historia-brittonum-latin.md#page-195) Palladius set out from Ireland, reached Britain and died there, in the land of the Picts.
 
 ### Patrick is sent to the Irish and made a bishop under a new name
 
-When news came of Bishop Palladius's death, another envoy, Patrick, went to turn the Irish to the faith of Christ, in the reign of Theodosius and Valentinian.[^195-1] Celestine, the pope of Rome, sent him, and so did an angel of God named Victor, while Bishop Germanus advised and urged it. Germanus had an older man, Segerus, go with him to a remarkable man who lived nearby, King Amatheus, a high bishop.[^195-2] There the saint, who knew everything that was to happen to him, was consecrated by King Amatheus and took the name Patrick, since he'd been called Maun before. Auxilius, Iserninus and others were ordained to lower ranks with him.
+When news came of Bishop Palladius's death, another envoy, Patrick, went to turn the Irish to the faith of Christ, in the reign of Theodosius and Valentinian.[^195-1] Celestine, the pope of Rome, sent him, and so did an angel of Yahweh named Victor, while Bishop Germanus advised and urged it. Germanus had an older man, Segerus, go with him to a remarkable man who lived nearby, King Amatheus, a high bishop.[^195-2] There the saint, who knew everything that was to happen to him, was consecrated by King Amatheus and took the name Patrick, since he'd been called Maun before. Auxilius, Iserninus and others were ordained to lower ranks with him.
 
 ### Patrick sails to Ireland and preaches there
 
@@ -431,7 +431,7 @@ From the beginning of the world to the baptism of the Irish is five thousand thr
 
 ### Patrick works miracles, founds churches and ordains bishops for forty years
 
-So Saint Patrick preached the gospel of Christ to foreign peoples for forty years. He worked miracles as the apostles did: he gave sight to the blind, healed lepers, made the deaf hear and drove demons out of the bodies they'd taken over. He raised the dead, nine in all, and with his own gifts he ransomed many captives, men and women. He wrote three hundred sixty-five *abegetoria* or more.[^196-2] He founded the same number of churches, three hundred sixty-five, and ordained three hundred sixty-five bishops or more, filled with the spirit of God.
+So Saint Patrick preached the gospel of Christ to foreign peoples for forty years. He worked miracles as the apostles did: he gave sight to the blind, healed lepers, made the deaf hear and drove demons out of the bodies they'd taken over. He raised the dead, nine in all, and with his own gifts he ransomed many captives, men and women. He wrote three hundred sixty-five *abegetoria* or more.[^196-2] He founded the same number of churches, three hundred sixty-five, and ordained three hundred sixty-five bishops or more, filled with the spirit of Yahweh.
 
 <a id="page-197"></a>[\[Mommsen 197\]](historia-brittonum-latin.md#page-197) Up to three thousand priests received orders from Patrick. In one region, Connacht, he turned twelve thousand people to the faith of Christ and baptized them, and in a single day he did the same for seven kings, the sons of Amolgith.[^197-1]
 
@@ -453,7 +453,7 @@ Patrick spent fifteen years in captivity, was consecrated by the holy Amatheus i
 
 <a id="page-199"></a>[\[Mommsen 199\]](historia-brittonum-latin.md#page-199) At that time the Saxons grew in number and strength in Britain.[^199-1] After Hengist's death his son Octa came down from the north of Britain to the kingdom of Kent, and the rulers of Kent are descended from him. Then, in those days, Arthur fought against the Saxons with the Britons' kings, but he was the leader in the battles.[^199-2] The first was at the mouth of the Glein. The second, third, fourth and fifth were on another river, the Dubglas, which is in the region of Lindsey. The sixth was on the Bassas. The seventh was in the forest of Celidon, Cat Coit Celidon in Welsh.[^199-3]
 
-<a id="page-200"></a>[\[Mommsen 200\]](historia-brittonum-latin.md#page-200) The eighth was at Fort Guinnion, where Arthur carried an image of holy Mary, ever virgin, on his shoulders.[^200-1] The pagans fled that day, and many of them were cut down through the power of our Lord Jesus Christ and of Saint Mary the Virgin, his mother. The ninth was fought in the City of the Legion. The tenth was on the bank of the Tribruit. The eleventh was on the hill called Agned. The twelfth was on Mount Badon, where nine hundred sixty men fell in a single day in one charge of Arthur's, and no one struck them down but Arthur himself. He came out the winner in all of them.[^200-2]
+<a id="page-200"></a>[\[Mommsen 200\]](historia-brittonum-latin.md#page-200) The eighth was at Fort Guinnion, where Arthur carried an image of holy Mary, ever virgin, on his shoulders.[^200-1] The pagans fled that day, and many of them were cut down through the power of Jesus Christ and of Saint Mary the Virgin, his mother. The ninth was fought in the City of the Legion. The tenth was on the bank of the Tribruit. The eleventh was on the hill called Agned. The twelfth was on Mount Badon, where nine hundred sixty men fell in a single day in one charge of Arthur's, and no one struck them down but Arthur himself. He came out the winner in all of them.[^200-2]
 
 <a id="page-201"></a>[\[Mommsen 201\]](historia-brittonum-latin.md#page-201) Beaten every time, the Saxons asked Germany for help, and their numbers grew many times over without a break. They brought kings over from Germany to govern them in Britain, until the time of Ida, whose father was Eoppa; Ida was the first to rule Bernicia.[^201-1]
 
@@ -461,11 +461,11 @@ Patrick spent fifteen years in captivity, was consecrated by the holy Amatheus i
 
 ### Ida's line is traced from Woden, and his heir Ecgfrith fights the Pictish king
 
-<a id="page-202"></a>[\[Mommsen 202\]](historia-brittonum-latin.md#page-202) From Woden the line ran down through Beldeg, Beornec, Gechbrond, Aluson, Inguec, Aedibrith, Ossa and Eoppa to Ida.[^202-1]
+<a id="page-202"></a>[\[Mommsen 202\]](historia-brittonum-latin.md#page-202) From Woden the line ran down through Beldeg, Beornec, Gechbrond, Aluson, Inguec, Aedibrith, Ossa and Eoppa to Ida.[^202-1][^202-2]
 
-Ida had twelve sons. Their names are Adda, Aethelric, Decdric, Edric, Deothere and Osmer, with one queen, Bearnoch, and Ealric.[^202-2]
+Ida had twelve sons.[^202-3] Their names are Adda, Aethelric, Decdric, Edric, Deothere and Osmer, with one queen, Bearnoch, and Ealric.[^202-4]
 
-Ealdric was the father of Aelfret, also called Aethelfrith Flesaur. He in turn had seven: Anfrid, Oswald, Osbiu, Oswiu, Osgudu, Oslapf and Offa.[^202-3]
+Ealdric was the father of Aelfret, also called Aethelfrith Flesaur. He in turn had seven: Anfrid, Oswald, Osbiu, Oswiu, Osgudu, Oslapf and Offa.[^202-5]
 
 Oswiu's children were Alhfrith, Aelfwine and Ecgfrith.
 
@@ -485,23 +485,23 @@ Here's where the rulers of the East Angles came from. Woden's descendants ran th
 
 Then the family of the Mercians.
 
-<a id="page-204"></a>[\[Mommsen 204\]](historia-brittonum-latin.md#page-204) From Woden it went down through Guedolgeat, Gueagon, Guithleg, Guerdmund, Offa, Ongen and Eamer to Pybba.
+<a id="page-204"></a>[\[Mommsen 204\]](historia-brittonum-latin.md#page-204) From Woden it went down through Guedolgeat, Gueagon, Guithleg, Guerdmund, Offa, Ongen and Eamer to Pybba.[^204-1]
 
 Pybba had twelve sons. Two of them I know better than the rest: Penda and Eowa.
 
 Penda was Eadlit's father, and Pybba was Penda's.
 
-Aethelbald descended from Pybba through Penda, Eowa and Alweo.
+Aethelbald descended from Pybba through Penda, Eowa and Alweo.[^204-2]
 
-Ecgfrith's forebears go back through Offa, Thingfrith, Eanwulf, Ossulf and Eowa to Pybba.[^204-1]
+Ecgfrith's ancestors go back through Offa, Thingfrith, Eanwulf, Ossulf and Eowa to Pybba.[^204-3]
 
 ### The kings of Deira and Bernicia are traced from Woden
 
-These are the kings of the Deirans. Woden's descendants ran through Beldeg, Brond, Siggar, Sebald and Zegulf to Soemil, who first split Deira from Bernicia.[^204-2]
+These are the kings of the Deirans. Woden's descendants ran through Beldeg, Brond, Siggar, Sebald and Zegulf to Soemil,[^204-4] who first split Deira from Bernicia.[^204-5]
 
-Soemil's line went on through Sguerthing, Giulglis, Usfrean and Iffi to Aella, Edwin, Osfrith and Eadfrith.[^204-3]
+Soemil's line went on through Sguerthing, Giulglis, Usfrean and Iffi to Aella, Edwin, Osfrith and Eadfrith.[^204-6]
 
-Edwin's two sons fell with him in the battle of Meicen, and his family never held the kingdom again, since not one of them came out of that fight alive. All were killed with him by the army of Cadwallon, king of Gwynedd.[^204-4]
+Edwin's two sons fell with him in the battle of Meicen, and his family never held the kingdom again, since not one of them came out of that fight alive. All were killed with him by the army of Cadwallon, king of Gwynedd.[^204-7]
 
 <a id="page-205"></a>[\[Mommsen 205\]](historia-brittonum-latin.md#page-205) Oswiu was the father of Ecgfrith. Ailguin's descendants were Oslach, Alhun, Adlsing, Echun and Oslaph, one generation after another.
 
@@ -533,7 +533,7 @@ Edwin's daughter Eanflaed was baptized on the twelfth day after Pentecost, with 
 
 Before that, Oswiu had handed over to Penda all the riches he had with him there, and Penda shared them out among the Britons' rulers: that's the Atbret Iudeu, the giving back at Iudeu.[^208-4] Only Cadafael, king of Gwynedd, got away with his army, by rising in the night, and that's why he's called Cadafael Cadomedd.[^208-5] Ecgfrith, Oswiu's son, reigned nine years.[^208-6] In his time the holy bishop Cuthbert died on the island of Lindisfarne.[^208-7] Ecgfrith is the one who made war on the Picts and fell there.
 
-Penda, whose father was Pybba, held power ten years. He was the first to split the Mercians' kingdom from the Northumbrians', and by treachery he killed Anna, king of the East Angles, and Saint Oswald of the Northumbrians. He fought the battle of Maserfield, where his brother Eowa, Pybba's son and ruler of the Mercians, fell, as did Oswald of the Northumbrians. Penda won by the devil's magic.[^208-8] He wasn't baptized and never believed in God.
+Penda, whose father was Pybba, held power ten years. He was the first to split the Mercians' kingdom from the Northumbrians'. He betrayed and killed Anna, king of the East Angles, and Saint Oswald of the Northumbrians. He fought the battle of Maserfield, where his brother Eowa, Pybba's son and ruler of the Mercians, fell, as did Oswald of the Northumbrians. Penda won by the devil's magic.[^208-8] He wasn't baptized and never believed in Yahweh.
 
 ### The years are reckoned by consuls from Creation through Vortigern's reign
 
@@ -543,7 +543,7 @@ From the two Gemini, Rufus and Rubellius, to Stilicho is three hundred seventy-t
 
 From Stilicho to Valentinian, Placidia's son, and the reign of Vortigern is twenty-eight.
 
-From the start of Vortigern's rule to the quarrel of Guitolin and Ambrosius is twelve, that is, Guoloppum, the battle of Guoloph.[^209-3] Vortigern held power in Britain when Theodosius and Valentinian were consuls. In the fourth year of his reign the Saxons came to Britain, in the consulship of Felix and Taurus, four hundred years after the Incarnation of our Lord Jesus Christ.[^209-4]
+From the start of Vortigern's rule to the quarrel of Guitolin and Ambrosius is twelve, that is, Guoloppum, the battle of Guoloph.[^209-3] Vortigern held power in Britain when Theodosius and Valentinian were consuls. In the fourth year of his reign the Saxons came to Britain, in the consulship of Felix and Taurus, four hundred years after the Incarnation of Jesus Christ.[^209-4]
 
 From when the Saxons arrived in Britain and Vortigern took them in, to Decius and Valerian, is sixty-nine.[^209-5]
 
@@ -551,9 +551,9 @@ From when the Saxons arrived in Britain and Vortigern took them in, to Decius an
 
 ### The cities of Britain are named, from Cair Guorthigirn on
 
-<a id="page-210"></a>[\[Mommsen 210\]](historia-brittonum-latin.md#page-210) These are the names of all the cities in the whole of Britain, twenty-eight of them.[^210-1]
+<a id="page-210"></a>[\[Mommsen 210\]](historia-brittonum-latin.md#page-210) These are the names of all the cities in the whole of Britain, twenty-eight of them.[^210-1][^210-2]
 
-Cair Guorthigirn.
+Cair Guorthigirn.[^210-3]
 
 Cair Guinntguic.
 
@@ -621,7 +621,7 @@ The third is a hot pool in the region of Huich, walled around with brick and sto
 
 ### Salt springs rise inland, and two waves fight in the Severn's mouth
 
-The fourth is there too: springs of brine, which people boil down for the salt that cures every kind of food. They aren't near the sea, but come up out of the land.
+The fourth is there too: salt springs, which people boil down to cure every kind of food. They aren't near the sea, but come up out of the land.
 
 <a id="page-214"></a>[\[Mommsen 214\]](historia-brittonum-latin.md#page-214) Another is Duorig Habren, that is, the Two Kings of the Severn. When the water rises into the Severn's mouth at high tide, two heaps of foam gather, each on its own, and fight like rams. Each charges the other, they clash, then they pull back and come on again, at every flood. They've done it from the beginning of the world to this day.[^214-1]
 
@@ -643,15 +643,15 @@ By the Wye, apples grow on an ash tree on a wooded slope near its mouth.[^215-2]
 
 In the region of Gwent there's a pit that a wind blows out of all the time, without a break. Even in summer, when the air is still, the gusts never stop, and nobody can bear to stand in front of that deep hole. The Britons call it Vith Guint, and the Latin is *flatio venti*, the breath of the wind. It's a remarkable thing for air to stream up out of the earth.
 
-### Saint Illtud finds an altar that God holds up in a sea cave
+### Saint Illtud finds an altar that Yahweh holds up in a sea cave
 
-In Gower there's another strange thing, an altar at a place called Loyngarth, which God's will holds up.[^215-3] I think its story is better told than kept quiet.
+In Gower there's another strange thing, an altar at a place called Loyngarth, which Yahweh's will holds up.[^215-3] I think its story is better told than kept quiet.
 
-<a id="page-216"></a>[\[Mommsen 216\]](historia-brittonum-latin.md#page-216) Saint Illtud was praying in a cave whose mouth opens on the sea that washes that shore, when a ship came sailing in toward him. Two men were aboard, and with them the body of a holy man, an altar hanging above him, held up by God's will. The man of God went out to meet them, and all the while it stayed in place over the dead saint's face.
+<a id="page-216"></a>[\[Mommsen 216\]](historia-brittonum-latin.md#page-216) Saint Illtud was praying in a cave whose mouth opens on the sea that washes that shore, when a ship came sailing in toward him. Two men were aboard, and with them the body of a holy man, an altar hanging above him, held up by Yahweh's will. The man of Yahweh went out to meet them, and all the while it stayed in place over the dead saint's face.
 
-"This man of God asked us to bring him to you," they told Saint Illtud, "and to lay him in the earth beside you. Don't tell anyone his name, so people won't swear oaths by him." They buried him, then went back to their ship and sailed away.
+"This man of Yahweh asked us to bring him to you," they told Saint Illtud, "and to lay him in the earth beside you. Don't tell anyone his name, so people won't swear oaths by him." They buried him, then went back to their ship and sailed away.
 
-Saint Illtud founded a church around them both, the holy man's body and the altar, which God's will holds up to this day. A lesser king came to test it with a rod in his hand. He bent it in a loop all the way around, gripped both ends and pulled it toward him, and so proved the thing was true; he was dead in less than a month. Another man looked underneath and lost his sight, and he too died before thirty days had passed.
+Saint Illtud founded a church around them both, the holy man's body and the altar, which Yahweh's will holds up to this day. A lesser king came to test it with a rod in his hand. He bent it in a loop all the way around, gripped both ends and pulled it toward him, and so proved the thing was true; he was dead in less than a month. Another man looked underneath and lost his sight, and he too died before thirty days had passed.
 
 ### In Gwent a spring holds a log that people stand on to wash
 
@@ -661,7 +661,7 @@ Gwent has one more: a spring by the wall of Meurig's well, with a log in the mid
 
 ### Arthur's dog leaves a footprint at Builth, and his son's tomb changes length
 
-In Builth there's another: a pile of stones, the topmost bearing a dog's footprint. Cavall, the warrior Arthur's hound, pressed it into the rock while they were hunting the boar Twrch Trwyth, and Arthur later heaped up the mound beneath it. Its name is Carn Cabal.[^217-1] People carry the stone off in their hands for a whole day and night, but the next morning it's back on its heap.
+In Builth there's another: a pile of stones, the top one bearing a dog's footprint. Cavall, the warrior Arthur's hound, pressed it into the rock while they were hunting the boar Twrch Trwyth, and Arthur later heaped up the mound beneath it. Its name is Carn Cabal.[^217-1] People carry the stone off in their hands for a whole day and night, but the next morning it's back on its heap.
 
 In Ergyng there's another, a grave beside a spring named Licat Anir. The man buried there was Anir, the son of the warrior Arthur, who killed him on that spot and laid him in it.[^217-2]
 
@@ -698,6 +698,10 @@ Every edition and scan this translation rests on, in *Chicago* form, each with w
 - Mommsen, Theodor, ed. *Chronica minora saec. IV. V. VI. VII.* Vol. 3. With indices by Johannes Lucas. Monumenta Germaniae Historica, Auctores antiquissimi 13. Berlin: Weidmann, 1898. The Latin text, pages 145 to 219, read from the University of Florida's scan on the [Internet Archive](https://archive.org/details/chronicaminorasa13momm), every page saved in [the scans page](historia-brittonum-scans.md).
 - Stevenson, Joseph, ed. *Nennii Historia Britonum ad fidem codicum manuscriptorum recensuit Josephus Stevenson*. London: English Historical Society, 1838. A second reading of a line Mommsen's scan leaves in doubt, from the University of Toronto's scan on the [Internet Archive](https://archive.org/details/nenniihistoriabr00nennuoft).
 
+**The Bible**
+
+- Exodus, John, 1 Samuel and the Psalms, cited in an endnote by chapter and verse, as a modern English Bible names and numbers them, where the history quotes or leans on a passage a reader needs told.
+
 ## License
 
 Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Anyone may copy, change, print or sell them if they credit Ryan Allen, link to the license and indicate changes. The medieval source text remains in the public domain.
@@ -710,7 +714,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^146-1]: Counted from the Incarnation, eight hundred thirty-one years puts the time of writing in 831 CE, close to King Merfyn's fourth year, which the history gives as its date further on. Mommsen prints the Harleian manuscript's sums; his apparatus shows other manuscripts giving others here.<sup>[\*](#new-in-this-translation)</sup>
 
-[^146-2]: The Latin is *dominus noster*, "our Lord," the Church's name for Christ, which English still uses; this translation capitalizes it as a name.<sup>[\*](#new-in-this-translation)</sup>
+[^146-2]: The Latin is *dominus noster*, "our lord," the Church's title for Christ; the English gives his name alone.<sup>[\*](#new-in-this-translation)</sup>
 
 [^147-1]: In the whole story: [Brutus, the Picts and the Irish come to settle Britain and Ireland](../story-map.md#the-first-peoples-settle-britain-and-ireland).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -718,17 +722,17 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^147-3]: The Latin is *Scotti*, the name Latin writers gave the Irish, in Ireland and in the lands they settled in northern Britain; Scotland is named after them, centuries later.<sup>[\*](#new-in-this-translation)</sup>
 
-[^148-1]: To judge a land, in the Latin's sense, was to rule it, as the judges of Israel ruled before Israel had kings.<sup>[\*](#new-in-this-translation)</sup>
+[^148-1]: To judge a land, in the Latin's sense, was to rule it. Before Israel had kings, the Bible says it was led by judges, leaders Yahweh raised up in a crisis to fight its enemies and settle its quarrels, as Gideon, Deborah and Samson were, and the saying borrows the word for Britain's early rulers.<sup>[\*](#new-in-this-translation)</sup>
 
 [^150-1]: The Latin is *magus*, a learned man who reads the future; this translation says "seer," since he's sent to tell what the child will be.<sup>[\*](#new-in-this-translation)</sup>
 
 [^152-1]: The Harleian manuscript adds *et arminilis fuit*, "and was *arminilis*," a word no dictionary holds. Mommsen prints it as the Harleian manuscript has it; his apparatus gives other manuscripts' forms, as *annilis* and *armiger*, and Alfred von Gutschmid's guess that it hides *ab Italiae terminis*, "from Italy's borders." This translation leaves the word out rather than guess.<sup>[\*](#new-in-this-translation)</sup>
 
-[^152-2]: The Latin is *Turnis*, as if Tours took its name from Turnus, the king Aeneas killed in Italy.<sup>[\*](#new-in-this-translation)</sup>
+[^152-2]: Turnus is the king in Virgil's *Aeneid* who fights Aeneas, the Trojan hero the history has just named, for the hand of the Latin king's daughter, and is killed by him at the poem's end. The Latin *Turnis* makes Tours sound as if it were named after him, tying Brutus's travels to the Trojan story.<sup>[\*](#new-in-this-translation)</sup>
 
 [^153-1]: The Latin says *Britto* here, another form of Brutus's name.<sup>[\*](#new-in-this-translation)</sup>
 
-[^153-2]: The Philistines took the Ark of the Covenant in a battle in Eli's last days, as the first book of Samuel, chapter 4, tells.<sup>[\*](#new-in-this-translation)</sup>
+[^153-2]: Eli was the old priest at the shrine at Shiloh who raised the boy Samuel. In the First Book of Samuel, the Israelites carry the Ark of the Covenant, the gold-covered chest that held the stone tablets of Yahweh's law, into battle against the Philistines, their enemies on the coast, and lose it: the Philistines capture the Ark and kill Eli's two sons, and Eli, hearing the news, falls and dies. The history sets Brutus's reign beside it to date him by the Bible. The passage is 1 Samuel 4.<sup>[\*](#new-in-this-translation)</sup>
 
 [^154-1]: The Latin is *in sinistrali plaga*, "in the left-hand region": to someone facing east, as the old maps were drawn, the left hand is the north.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -738,7 +742,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^156-1]: The Latin says *in regione Demetorum*, the land of the Demetae, the people whose name Dyfed, in southwest Wales, keeps; *Guir Cetgueli* is Gower and Kidwelly, by the coast of Dyfed.<sup>[\*](#new-in-this-translation)</sup>
 
-[^156-2]: The Law is the first five books of the Bible; the crossing of the Red Sea is told in Exodus, chapter 14.<sup>[\*](#new-in-this-translation)</sup>
+[^156-2]: The Law is the first five books of the Bible, which tradition gave to Moses. In Exodus, Moses leads the Israelites out of slavery in Egypt; the king of Egypt sends his chariots after them, Yahweh parts the Red Sea so they cross on dry ground, and the water closes over the army behind them. The Irish learned men the history follows started their own people's story from that day. The passage is Exodus 14.<sup>[\*](#new-in-this-translation)</sup>
 
 [^158-1]: This Brutus is Lucius Junius Brutus, who drove out Rome's last king and was one of its first two consuls, not the Brutus who settled Britain.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -750,7 +754,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^160-1]: This is the history's table of the peoples of Europe, traced to Alanus's three sons; it also survives on its own, as the Frankish Table of Nations. Hessitio's, Armenon's and Negue's sons are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
 
-[^161-1]: Two lines run Brutus back here, one through Alanus to Adam and one through Rea Silvia to Japheth, joining Troy to the Bible. Most of the names between Alanus and Japheth, from Fetebir to Iovan, are known from this genealogy alone. Rea Silvia is the mother of Romulus and Remus in Roman legend, and Numa Pompilius Rome's second king; this account makes them Brutus's forebears.<sup>[\*](#new-in-this-translation)</sup>
+[^161-1]: Two lines run Brutus back here, one through Alanus to Adam and one through Rea Silvia to Japheth, joining Troy to the Bible. Most of the names between Alanus and Japheth, from Fetebir to Iovan, are known from this genealogy alone. Rea Silvia is the mother of Romulus and Remus in Roman legend, and Numa Pompilius Rome's second king; this account makes them Brutus's ancestors.<sup>[\*](#new-in-this-translation)</sup>
 
 [^162-1]: In the whole story: [The Romans rule Britain from Julius Caesar until they leave](../story-map.md#the-romans-rule-britain).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -760,7 +764,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^163-2]: *Quintilis*, "the fifth," was the old name of the Roman year's fifth month, renamed *Iulius*, July, after Julius Caesar's death.<sup>[\*](#new-in-this-translation)</sup>
 
-[^164-1]: Virgil, *Georgics*, book 3, line 25: Britons are woven into a theater's purple curtain, and seem to raise it as it rises.<sup>[\*](#new-in-this-translation)</sup>
+[^164-1]: Virgil, the Roman poet of the *Aeneid*, wrote the *Georgics*, a long poem on farming, around 29 BCE. In its third book he imagines a temple built to honor the emperor Augustus, with a theater whose purple stage curtain is woven with figures of conquered Britons, who seem to lift it as it rises. The history quotes the line as a Roman poet's picture of the Britons. Book 3, line 25.<sup>[\*](#new-in-this-translation)</sup>
 
 [^164-2]: Mainz is on the Rhine, in Germany. Claudius died at Rome, in 54 CE; the history's tomb at Mainz is likely the monument to his brother Drusus there.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -772,7 +776,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^166-1]: Cair Segeint is the Roman fort of Segontium, by Caernarfon in north Wales. The emperor who died in Britain was Constantius, Constantine the Great's father, at York in 306 CE; the history buries Constantine's son at Segontium.<sup>[\*](#new-in-this-translation)</sup>
 
-[^166-2]: Martin of Tours, whose life by Sulpicius Severus tells how he dined with the emperor Maximus.<sup>[\*](#new-in-this-translation)</sup>
+[^166-2]: Martin of Tours was a Roman soldier who, the story goes, cut his cloak in half to give to a freezing beggar, then left the army, became a monk and in 371 CE bishop of Tours, in Gaul. He died in 397 CE and became one of the best-loved saints of the Middle Ages. The life Sulpicius Severus wrote of him tells how he dined with the emperor Maximus and spoke to him boldly.<sup>[\*](#new-in-this-translation)</sup>
 
 [^167-1]: Mount Jove is the Great St Bernard Pass, in the Alps; Cant Guic is Quentovic, a port near the mouth of the Canche, in northern France; and Cruc Ochidient is Welsh for "the western mound."<sup>[\*](#new-in-this-translation)</sup>
 
@@ -796,13 +800,15 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^172-4]: Germanus, bishop of Auxerre, in Gaul, came to Britain in 429 CE to preach against the teaching of Pelagius, as the life of him by Constantius of Lyon tells. The miracles that follow are the history's own.<sup>[\*](#new-in-this-translation)</sup>
 
-[^174-1]: Not a bone of the Passover lamb was to be broken, as Exodus, chapter 12, says; the calf's bones are kept whole the same way.<sup>[\*](#new-in-this-translation)</sup>
+[^174-1]: On the night the Israelites left Egypt, Yahweh told each family to kill a lamb, mark their doorposts with its blood and eat it roasted, without breaking any of its bones; that meal is the Passover, still kept by Jews every spring. The Gospel of John later sees the same rule kept at the crucifixion, when the soldiers don't break Christ's legs. Germanus has the calf's bones kept whole the same way before he brings it back to life. The passage is Exodus 12:46 (with John 19:36).<sup>[\*](#new-in-this-translation)</sup>
 
 [^176-1]: Cadell Ddyrnllwg is held in Welsh genealogies to be the first of the line of the kings of Powys, in east Wales. The Latin spells him *Catel* and *Catell Durnluc*.<sup>[\*](#new-in-this-translation)</sup>
 
-[^176-2]: Psalm 113, verses 7 and 8, a little changed.<sup>[\*](#new-in-this-translation)</sup>
+[^176-2]: Hannah is a woman in the Bible's First Book of Samuel who couldn't have children. She prayed at the shrine at Shiloh for a son, promising to give him to Yahweh, and when Samuel was born she brought him there to serve the priest Eli. Her song of thanks praises a god who turns the world upside down, lifting the poor from the dust and the trash heap to sit with princes. The history uses it for the poor servant Germanus made a king. Its Latin follows 1 Samuel 2:8 almost word for word.<sup>[\*](#new-in-this-translation)</sup>
 
-[^176-3]: In the whole story: [Vortigern marries Hengist's daughter and gives the Saxons Kent](../story-map.md#vortigern-marries-hengists-daughter).<sup>[\*](#new-in-this-translation)</sup>
+[^176-3]: One word of the history's Latin, *erigens*, "raising," comes not from Hannah's song but from Psalm 113:7, a hymn that praises Yahweh in the same words for lifting the poor from the dust to sit with princes.<sup>[\*](#new-in-this-translation)</sup>
+
+[^176-4]: In the whole story: [Vortigern marries Hengist's daughter and gives the Saxons Kent](../story-map.md#vortigern-marries-hengists-daughter).<sup>[\*](#new-in-this-translation)</sup>
 
 [^177-1]: The Latin is *Tithica vallis*, a name Gildas uses too, for the sea the Irish and the Picts crossed in their boats; what it means is uncertain.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -814,15 +820,15 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^180-2]: The city of the people of Kent is Canterbury.<sup>[\*](#new-in-this-translation)</sup>
 
-[^180-3]: In the whole story: [Germanus comes to rebuke Vortigern for marrying his own daughter](../story-map.md#germanus-rebukes-vortigern).<sup>[\*](#new-in-this-translation)</sup>
+[^180-3]: In the whole story: [Germanus comes to scold Vortigern for marrying his own daughter](../story-map.md#germanus-scolds-vortigern).<sup>[\*](#new-in-this-translation)</sup>
 
 [^181-1]: Cutting a boy's hair for the first time was a father's right. By asking it of Vortigern in front of the gathering, the boy makes him own the child as his.<sup>[\*](#new-in-this-translation)</sup>
 
 [^181-2]: In the whole story: [Vortigern's tower keeps falling, and his clerks blame a fatherless child](../story-map.md#vortigerns-tower-keeps-falling).<sup>[\*](#new-in-this-translation)</sup>
 
-[^182-1]: Snowdonia is the mountains of northwest Wales, Eryri in Welsh; the Latin says *montes Hereri*.<sup>[\*](#new-in-this-translation)</sup>
+[^182-1]: Snowdonia is the mountains of northwest Wales, Eryri in Welsh; the Latin says *montes Hereri*. Its peaks are the highest in Wales, and they kept the kings of Gwynedd safe from every invader, so it's where a king running from the Saxons would look for a fort no enemy could reach.<sup>[\*](#new-in-this-translation)</sup>
 
-[^183-1]: Glywysing was a kingdom of southeast Wales, west of the Usk.<sup>[\*](#new-in-this-translation)</sup>
+[^183-1]: Glywysing was a kingdom of southeast Wales, west of the Usk. It lies at the other end of Wales from Snowdonia, so the messengers have crossed the whole country before they find the boy with no father.<sup>[\*](#new-in-this-translation)</sup>
 
 [^183-2]: In the whole story: [Merlin shows Vortigern the two dragons under his tower](../story-map.md#merlin-shows-vortigern-the-dragons).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -852,7 +858,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^190-3]: Mommsen's apparatus says the Harleian manuscript and most others set this call to leave the marriage after Essex and Sussex; Mommsen moves it here, after another group of manuscripts, and this translation keeps his order.<sup>[\*](#new-in-this-translation)</sup>
 
-[^191-1]: Gwrtheyrnion was a district of mid Wales, by the Wye, and its name means "Vortigern's land."<sup>[\*](#new-in-this-translation)</sup>
+[^191-1]: Gwrtheyrnion was a district of mid Wales, by the Wye, and its name means "Vortigern's land." Its rulers in the history's own day claimed to descend from Vortigern, which is why the land kept his name and why the history knows where he hid.<sup>[\*](#new-in-this-translation)</sup>
 
 [^191-2]: The life of Germanus that Constantius of Lyon wrote, about 480 CE, says nothing of Vortigern; the book the history read hasn't survived.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -864,7 +870,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^194-1]: Celestine I was pope from 422 to 432 CE. Palladius was sent to the Christians of Ireland in 431 CE, as the chronicle of Prosper of Aquitaine records.<sup>[\*](#new-in-this-translation)</sup>
 
-[^194-2]: The Gospel of John, chapter 3, verse 27.<sup>[\*](#new-in-this-translation)</sup>
+[^194-2]: John the Baptist says this in the Gospel of John, when his followers complain that people are leaving him to follow Jesus: no one has anything unless heaven gives it, so each has only the part Yahweh gives. The history uses it to say Palladius failed in Ireland because Yahweh had kept that work for Patrick. The passage is John 3:27.<sup>[\*](#new-in-this-translation)</sup>
 
 [^195-1]: Theodosius II ruled the eastern half of the empire and Valentinian III the western half together from 425 to 450 CE.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -898,21 +904,31 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^202-1]: In the whole story: [The English kings' families are traced back to Woden](../story-map.md#the-english-kings-families-are-traced).<sup>[\*](#new-in-this-translation)</sup>
 
-[^202-2]: The history promises twelve sons and names eight, one of them called a queen. Mommsen prints the names as the Harleian manuscript spells them, and this translation keeps those spellings in the lists of names. The lines on this page, from Woden down to Ida, Ida's sons and Aethelfrith's, are the royal genealogy of Bernicia, and most of their names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
+[^202-2]: The lines on this page, from Woden down to Ida, Ida's sons and Aethelfrith's, are the royal genealogy of Bernicia, the northern English kingdom, and most of their names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
 
-[^202-3]: Aethelfrith, king of Bernicia and then of Deira, ruled from about 593 to 616 CE; *Flesaur* is the history's byname for him, of uncertain meaning.<sup>[\*](#new-in-this-translation)</sup>
+[^202-3]: The history promises twelve sons and names eight, one of them called a queen.<sup>[\*](#new-in-this-translation)</sup>
+
+[^202-4]: Mommsen prints the names as the Harleian manuscript spells them, and this translation keeps those spellings in the lists of names.<sup>[\*](#new-in-this-translation)</sup>
+
+[^202-5]: Aethelfrith, king of Bernicia and then of Deira, ruled from about 593 to 616 CE; *Flesaur* is the history's byname for him, of uncertain meaning.<sup>[\*](#new-in-this-translation)</sup>
 
 [^203-1]: The Latin's *Birdei* is Bridei, son of Beli, king of the Picts. Gueith Lin Garan is Welsh for "the battle of Heron Lake," the battle the English call Nechtansmere, in 685 CE. The Latin calls the Saxons *ambrones*, a word for savage raiders.<sup>[\*](#new-in-this-translation)</sup>
 
 [^203-2]: The Latin's *Ealdbert* is Aethelberht, the king of Kent who received the first mission from Rome, at the end of the sixth century CE. The lines of Kent and the East Angles that follow are royal genealogies, and most of their names, from Casser to Rippan and from Guecha to Elric, are known from such lists alone, as is Royth, Rhiainfellt's father.<sup>[\*](#new-in-this-translation)</sup>
 
-[^204-1]: The Mercian line runs from Woden through Guedolgeat to Pybba, and Ecgfrith's back through Offa, Thingfrith, Eanwulf and Ossulf to Eowa; most of its names are known from such royal genealogies alone. The Latin's *Eadlbald* is the Mercian king Aethelbald, who died in 757 CE. This Ecgfrith is the son of the great Offa of Mercia, and died in 796 CE; he isn't the Northumbrian king of the same name.<sup>[\*](#new-in-this-translation)</sup>
+[^204-1]: The Mercian line runs from Woden through Guedolgeat to Pybba, the father of Penda; most of its names are known from such royal genealogies alone.<sup>[\*](#new-in-this-translation)</sup>
 
-[^204-2]: Deira was the English kingdom between the Humber and the Tees, around York; Bernicia lay north of it. The Latin gives the split in Welsh, *Deur o Birneich*, "Deira from Bernicia."<sup>[\*](#new-in-this-translation)</sup>
+[^204-2]: The Latin's *Eadlbald* is the Mercian king Aethelbald, who ruled Mercia for forty-one years and died in 757 CE.<sup>[\*](#new-in-this-translation)</sup>
 
-[^204-3]: The list runs the generations together: Aella, the Latin's *Ulli*, was the first king of Deira, Edwin was his son, and Osfrith and Eadfrith were Edwin's sons. The Deiran line from Woden through Beldeg and Soemil to Aella is a royal genealogy, and most of its names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
+[^204-3]: This Ecgfrith is the son of the great Offa of Mercia, and died in 796 CE; he isn't the Northumbrian king of the same name.<sup>[\*](#new-in-this-translation)</sup>
 
-[^204-4]: Meicen is the battle the English call Hatfield Chase, in 633 CE, where Cadwallon and Penda killed Edwin.<sup>[\*](#new-in-this-translation)</sup>
+[^204-4]: The Deiran line from Woden through Beldeg and Soemil to Aella is a royal genealogy, and most of its names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
+
+[^204-5]: Deira was the English kingdom between the Humber and the Tees, around York; Bernicia lay north of it. The Latin gives the split in Welsh, *Deur o Birneich*, "Deira from Bernicia."<sup>[\*](#new-in-this-translation)</sup>
+
+[^204-6]: The list runs the generations together: Aella, the Latin's *Ulli*, was the first king of Deira, Edwin was his son, and Osfrith and Eadfrith were Edwin's sons.<sup>[\*](#new-in-this-translation)</sup>
+
+[^204-7]: Meicen is the battle the English call Hatfield Chase, in 633 CE, where Cadwallon and Penda killed Edwin. Edwin was the first Christian king of Northumbria and the strongest king in Britain, and Bede says that after his death Cadwallon, a Briton, ravaged Northumbria for a year, which is why a British history counts the battle as a victory.<sup>[\*](#new-in-this-translation)</sup>
 
 [^205-1]: Eadbyrth and Ecgbirth are Eadberht, king of Northumbria, and his brother Ecgberht, the first archbishop of York, in the eighth century CE; "the first of their nation" seems to mean the first archbishop of their people. The lines on this page, Ida's down to them and Ailguin's through Oslach to Oslaph, are royal genealogies whose middle names are known from such lists alone.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -956,13 +972,17 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^209-2]: The two Gemini, Rufus and Rubellius, were consuls in 29 CE, the year old reckonings gave to the Crucifixion. Stilicho was consul in 400 CE.<sup>[\*](#new-in-this-translation)</sup>
 
-[^209-3]: Guoloph is Wallop, in Hampshire. The history tells nothing more of this quarrel or of Guitolin, who's named among Vortigern's forebears.<sup>[\*](#new-in-this-translation)</sup>
+[^209-3]: Guoloph is Wallop, in Hampshire. The history tells nothing more of this quarrel or of Guitolin, who's named among Vortigern's ancestors.<sup>[\*](#new-in-this-translation)</sup>
 
 [^209-4]: Felix and Taurus were consuls in 428 CE, so the history's "four hundred years" is a round number.<sup>[\*](#new-in-this-translation)</sup>
 
 [^209-5]: Which consuls the history means by Decius and Valerian is uncertain.<sup>[\*](#new-in-this-translation)</sup>
 
-[^210-1]: In the whole story: [The twenty-eight cities of Britain are named](../story-map.md#the-cities-of-britain-are-named). *Cair* is Welsh for a fort or walled town. Most of these can't be placed with certainty; those usually identified are Cair Ligualid, Carlisle; Cair Ebrauc, York; Cair Lundem, London; Cair Ceint, Canterbury; Cair Legion, Chester; Cair Segeint, by Caernarfon; Cair Legeion Guar Usic, Caerleon on the Usk; Cair Guent, Caerwent; Cair Lerion, Leicester; Cair Guricon, Wroxeter; Cair Guinntguic, Winchester; and Cair Luit Coyt, by Lichfield.<sup>[\*](#new-in-this-translation)</sup>
+[^210-1]: In the whole story: [The twenty-eight cities of Britain are named](../story-map.md#the-cities-of-britain-are-named).<sup>[\*](#new-in-this-translation)</sup>
+
+[^210-2]: Most of these cities can't be placed with certainty; those usually identified are Cair Ligualid, Carlisle; Cair Ebrauc, York; Cair Lundem, London; Cair Ceint, Canterbury; Cair Legion, Chester; Cair Segeint, by Caernarfon; Cair Legeion Guar Usic, Caerleon on the Usk; Cair Guent, Caerwent; Cair Lerion, Leicester; Cair Guricon, Wroxeter; Cair Guinntguic, Winchester; and Cair Luit Coyt, by Lichfield.<sup>[\*](#new-in-this-translation)</sup>
+
+[^210-3]: *Cair* is Welsh for a fort or walled town, the word that gives Caerleon, Cardiff and Carlisle their first syllable.<sup>[\*](#new-in-this-translation)</sup>
 
 [^213-1]: In the whole story: [Strange sights of Britain include Arthur's dog's footprint and his son's grave](../story-map.md#britains-strange-sights).<sup>[\*](#new-in-this-translation)</sup>
 

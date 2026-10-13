@@ -319,7 +319,7 @@ usque ad confinium Pictorum.
 
 et Hencgistus semper ciulas ad se paulatim invitavit, ita ut insulas ad quas venerant absque habitatore relinquerent, et dum gens illius crevisset et in virtute et in multitudine, venerunt ad supra dictam civitatem Cantorum.
 
-### Vortigern marries his own daughter, and Germanus comes with the clergy to rebuke him
+### Vortigern marries his own daughter, and Germanus comes with the clergy to scold him
 
 Nam super omnia mala adiciens Guorthigirnus accepit filiam sui uxorem sibi, et peperit ei filium. et hoc cum compertum esset a sancto Germano, eum corripere venit cum omni clero Brittonum. et dum conventa esset magna synodus clericorum ac laicorum in uno concilio, ipse rex praemonuit filiam suam, ut exiret ad conventum et ut daret filium suum in sinum Germani et ut diceret, quod ipse erat pater filii, et mulier fecit sicut erat edocta. Germanus autem eum benigne accepit et dicere coepit: pater tibi ero nec te permittam, nisi mihi novacula cum forcipe pectineque detur et ad patrem tuum carnalem tibi dare licetur. et ob-
 
@@ -709,7 +709,7 @@ Iuxta flumen, quod vocatur Guoy, poma inveniuntur super fraxinum in proclivo sal
 
 Est aliud mirabile in regione quae vocatur Guent. est ibi fovea, a qua ventus inflat per omne tempus sine intermissione, et quando non flat ventus in tempore aestatis, de illa fovea incessanter flat, ut nemo possit sustinere neque ante foveae profunditatem. et vocatur nomen eius Vith Guint Brittannico sermone, Latine autem flatio venti. magnum mirabile est ventus de terra flare.
 
-### Saint Illtud finds an altar that God holds up in a sea cave
+### Saint Illtud finds an altar that Yahweh holds up in a sea cave
 
 Est aliud mirabile in Guyr altare, quod est in loco, qui dicitur Loyngarth, quod nutu dei fulcitur. historia istius altaris melius mihi videtur narrare quam reticere. factum est autem dum sanctus Iltutus orabat in spelunca, quae est iuxta mare, quod alluit terram supra dicti loci,
 

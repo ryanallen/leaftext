@@ -76,7 +76,7 @@ An entry marked with an asterisk was written for this translation, not taken fro
 
 Also: Antonius
 
-Anthony of Egypt, the first famous hermit, whose fasting Gildas copies.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Anthony of Egypt, who in the late third century CE gave away everything he owned and went to live alone in the Egyptian desert, praying and fasting, and became the most famous of the first Christian hermits, the model for every monk after him. His *Life*, written by Bishop Athanasius of Alexandria, was read all over the Christian world, and Caradoc says Gildas copied his fasting.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Anthony the Great](https://en.wikipedia.org/wiki/Anthony_the_Great)
 
@@ -84,7 +84,7 @@ Wikipedia: [Anthony the Great](https://en.wikipedia.org/wiki/Anthony_the_Great)
 
 Also: Ardmaca
 
-A town in the north of Ireland, a seat of learning.
+A town in the north of Ireland, the seat of the church Saint Patrick was said to have founded and Ireland's chief church ever since. In the early Middle Ages it was a great center of learning, and Caradoc has Gildas go there to teach and study after his schooling in Britain.
 
 Wikipedia: [Armagh](https://en.wikipedia.org/wiki/Armagh)
 
@@ -92,7 +92,7 @@ Wikipedia: [Armagh](https://en.wikipedia.org/wiki/Armagh)
 
 Also: Arthurus, Arthuro, Arthurum, Arturi, Arturo
 
-The king of all Britain in Gildas's day.
+In Caradoc's story, written in the twelfth century, the king of all Britain in Gildas's day, whose rule all Britain accepts, though Gildas's own brother Hueil refuses to. Caradoc's is one of the oldest stories outside Welsh poetry to make Arthur a crowned king rather than only a war leader.
 
 Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
@@ -100,7 +100,7 @@ Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
 Also: Britanniae, Britanniam, Brittanniam, Brictanniae
 
-The island of Great Britain.
+The island of Great Britain, holding today's England, Wales and Scotland. In Caradoc's *Life of Gildas* it's the land Arthur rules as king, from the north, where Gildas is born the son of a king, to the marshes around Glastonbury in the southwest.
 
 Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
@@ -108,7 +108,7 @@ Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
 Also: Britonum, Britannis, Britannigenis
 
-The Celtic people of Britain, the forebears of the Welsh.
+The Celtic people of Britain, the ancestors of the Welsh, Cornish and Bretons, Gildas's own people. By the time Caradoc wrote, in the twelfth century, their descendants held only Wales and Cornwall, and he tells Gildas's life as a story of their saints and kings in the age of Arthur.
 
 Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
@@ -116,7 +116,7 @@ Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
 Also: Cadocus, Cadoci, Cadoco, Cadocum
 
-The abbot of Llancarfan, a holy man.
+A Welsh saint of the sixth century, abbot of the monastery of Llancarfan in south Wales, one of the most famous holy men of early Wales. In Caradoc's story he's Gildas's close friend, and like Gildas he goes off to live alone on an island in the Bristol Channel to pray.
 
 Wikipedia: [Cadoc](https://en.wikipedia.org/wiki/Cadoc)
 
@@ -124,7 +124,7 @@ Wikipedia: [Cadoc](https://en.wikipedia.org/wiki/Cadoc)
 
 Also: Caratoci, Caradoc
 
-The monk of Llancarfan who wrote this life.
+A Welsh monk of Llancarfan, Cadoc's monastery in south Wales, who wrote saints' lives and perhaps history in the first half of the twelfth century. Geoffrey of Monmouth names him as a writer he leaves Welsh history to. His *Life of Gildas* is the oldest surviving story of Guinevere carried off by another king, and it brings Arthur into Gildas's life.
 
 Wikipedia: [Caradoc of Llancarfan](https://en.wikipedia.org/wiki/Caradoc_of_Llancarfan)
 
@@ -132,7 +132,7 @@ Wikipedia: [Caradoc of Llancarfan](https://en.wikipedia.org/wiki/Caradoc_of_Llan
 
 Also: Cornubiae
 
-The southwest peninsula of Britain.
+The long peninsula at the southwest tip of Britain, a British land where Cornish, a language close to Welsh, was spoken until the eighteenth century. In Caradoc's story, Gildas passes through it on his way from Brittany toward Glastonbury, and it's the country of the kings Gildas had known in Dumnonia.
 
 Wikipedia: [Cornwall](https://en.wikipedia.org/wiki/Cornwall)
 
@@ -140,7 +140,7 @@ Wikipedia: [Cornwall](https://en.wikipedia.org/wiki/Cornwall)
 
 Also: Devvi
 
-The unborn son of Nonnita, later the patron saint of Wales.
+Saint David, called Dewi in Welsh, the patron saint of Wales, a bishop of the sixth century CE who founded the monastery at St Davids in southwest Wales. In Caradoc's story he isn't born yet: when his pregnant mother, Saint Non, comes into the church where Gildas is preaching, Gildas falls silent, which is taken as a sign that the child will be greater than him.
 
 Wikipedia: [Saint David](https://en.wikipedia.org/wiki/Saint_David)
 
@@ -148,7 +148,7 @@ Wikipedia: [Saint David](https://en.wikipedia.org/wiki/Saint_David)
 
 Also: Dibneniae
 
-The land east of Cornwall in the southwest of Britain.
+The land east of Cornwall in the southwest of Britain, then part of the British kingdom of Dumnonia, whose name survives in it, and later an English county. In Caradoc's story, Gildas travels through it toward the Bristol Channel and Glastonbury.
 
 Wikipedia: [Devon](https://en.wikipedia.org/wiki/Devon)
 
@@ -156,7 +156,7 @@ Wikipedia: [Devon](https://en.wikipedia.org/wiki/Devon)
 
 Also: Angliae
 
-The English part of Great Britain, east of Wales.
+The English part of Great Britain, east of Wales, called after the Angles, one of the peoples from across the North Sea who settled it. By Caradoc's day, the twelfth century, it was a single kingdom ruled by the Normans, and the Britons' old lands there were long lost.
 
 Wikipedia: [England](https://en.wikipedia.org/wiki/England)
 
@@ -164,7 +164,7 @@ Wikipedia: [England](https://en.wikipedia.org/wiki/England)
 
 Also: Echin
 
-The island in the Bristol Channel nearer Wales, where Cadoc lives alone.
+A small, low island in the Bristol Channel, nearer the Welsh shore, opposite Cardiff. In Caradoc's story Cadoc lives there alone to pray and fast, while his friend Gildas lives on Steep Holm, its steeper neighbor nearer the English shore; the Welsh named it Echni.
 
 Wikipedia: [Flat Holm](https://en.wikipedia.org/wiki/Flat_Holm)
 
@@ -172,7 +172,7 @@ Wikipedia: [Flat Holm](https://en.wikipedia.org/wiki/Flat_Holm)
 
 Also: Galliae
 
-The Roman land west of the Rhine, roughly today's France and Belgium.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman land west of the Rhine, roughly today's France and Belgium, named after the Gauls, the Celtic peoples Julius Caesar conquered there in the 50s BCE. It was Britain's nearest neighbor across the Channel, and Roman generals in Britain who made themselves emperor, as Maximus did, crossed into it first.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gaul](https://en.wikipedia.org/wiki/Gaul)
 
@@ -180,7 +180,7 @@ Wikipedia: [Gaul](https://en.wikipedia.org/wiki/Gaul)
 
 Also: Gildas, Gildae, Gildam, Gilda
 
-A son of King Nau, a scholar, teacher and holy man.
+In Caradoc's story, one of the twenty-four sons of Nau, a king in the north of Britain, who loves learning more than war, studies and teaches in Gaul, Ireland and Wales, and grows famous as a holy man and preacher. The real Gildas wrote *On the Ruin of Britain* about 545 CE, attacking the kings and priests of his time.
 
 Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
 
@@ -188,7 +188,7 @@ Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
 
 Also: Glastonia, Glastoniae, Glastoniam, Glastiberia, Glastigberi, Ynisgutrin, Urbs Vitrea, Glastoniensis, Glastoniensi, Glastoniense
 
-A town of the Summer Country with a church of Mary.
+A town in Somerset, in the southwest of England, rising out of low marshland that flooded in winter, which made it almost an island. It had one of the oldest churches in Britain, dedicated to Mary, and a great abbey; in Caradoc's day its monks were already linking it with Arthur, and later they claimed to have found his grave there.
 
 Wikipedia: [Glastonbury](https://en.wikipedia.org/wiki/Glastonbury)
 
@@ -196,7 +196,7 @@ Wikipedia: [Glastonbury](https://en.wikipedia.org/wiki/Glastonbury)
 
 Also: Guennuvar
 
-Arthur's wife.
+Arthur's wife and queen, the most famous queen of the Arthurian legend, called Guennuvar in Caradoc's Latin and Gwenhwyfar in Welsh. Caradoc's *Life of Gildas*, written in the twelfth century, is the first story to survive where she's carried off by another king, a tale the later romances tell again and again.
 
 Wikipedia: [Guinevere](https://en.wikipedia.org/wiki/Guinevere)
 
@@ -204,7 +204,7 @@ Wikipedia: [Guinevere](https://en.wikipedia.org/wiki/Guinevere)
 
 Also: Hueil
 
-The oldest of Nau's sons, a raider who obeys no king.
+The oldest of the twenty-four sons of King Nau and so Gildas's brother, a famous fighter and raider in Caradoc's story who refuses to obey any king, Arthur included, and raids south from Scotland. Welsh tradition knew him as Huail son of Caw, a warrior who quarreled with Arthur.
 
 Wikipedia: [Hueil mab Caw](https://en.wikipedia.org/wiki/Hueil_mab_Caw)
 
@@ -212,7 +212,7 @@ Wikipedia: [Hueil mab Caw](https://en.wikipedia.org/wiki/Hueil_mab_Caw)
 
 Also: Hibernia, Hiberniam
 
-The large island west of Great Britain, across the Irish Sea.
+The large island west of Great Britain, across the Irish Sea, which Rome never ruled. Its people raided and settled the west of Britain in the centuries after the Romans left, and its monks carried Christianity back to Britain and beyond.
 
 Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
@@ -220,7 +220,7 @@ Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
 Also: Minau
 
-The island in the Irish Sea where Arthur's men meet Hueil in battle.
+The island in the Irish Sea between Britain and Ireland, called Manaw in Welsh and Minau in Caradoc's Latin. In Caradoc's story it's where Arthur's men meet Gildas's brother Hueil and his raiders in battle.
 
 Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
@@ -228,7 +228,7 @@ Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
 Also: Ierosolimam
 
-The holy city of Judea, where Christ died.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The holy city of the Jews in Judea, where their Temple stood, and where Christ was crucified, buried and, Christians believe, rose from the dead. Pilgrims came from all over the Christian world to see the places of his death and resurrection, and Caradoc has Gildas plan the journey.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jerusalem](https://en.wikipedia.org/wiki/Jerusalem)
 
@@ -236,7 +236,7 @@ Wikipedia: [Jerusalem](https://en.wikipedia.org/wiki/Jerusalem)
 
 Also: Nancarbanensis, Carbana, Carbanam
 
-Cadoc's monastery in the Carfan valley of south Wales.
+A monastery in the valley of the Carfan in south Wales, near today's Barry in the Vale of Glamorgan, founded by Saint Cadoc in the sixth century and one of the great centers of learning of early Wales. Caradoc, who wrote this *Life of Gildas*, was a monk there, and in his story Gildas teaches at it.
 
 Wikipedia: [Llancarfan](https://en.wikipedia.org/wiki/Llancarfan)
 
@@ -244,7 +244,7 @@ Wikipedia: [Llancarfan](https://en.wikipedia.org/wiki/Llancarfan)
 
 Also: Mariae
 
-The mother of Christ. The church at Glastonbury is hers.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The mother of Jesus Christ, the most honored of all saints in the Middle Ages. The old church at Glastonbury, believed in Caradoc's day to be the oldest church in Britain, was dedicated to her, which is why Caradoc calls Glastonbury a town with a church of Mary.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mary, mother of Jesus](https://en.wikipedia.org/wiki/Mary,_mother_of_Jesus)
 
@@ -252,7 +252,7 @@ Wikipedia: [Mary, mother of Jesus](https://en.wikipedia.org/wiki/Mary,_mother_of
 
 Also: Melvas
 
-The king of the Summer Country.
+King of the Summer Country, around Glastonbury, in Caradoc's story. He carries off Arthur's wife, Guinevere, and holds her at Glastonbury, safe behind its rivers and marshes. It's the oldest surviving telling of Guinevere's abduction, the story the later romances and Malory tell of Meliagaunce.
 
 Wikipedia: [Maleagant](https://en.wikipedia.org/wiki/Maleagant)
 
@@ -260,13 +260,13 @@ Wikipedia: [Maleagant](https://en.wikipedia.org/wiki/Maleagant)
 
 Also: Nau
 
-A king in the north, the father of Gildas and his brothers.
+In Caradoc's story, a king in the north of Britain, in what Caradoc calls Scotland, and the father of twenty-four sons, among them Gildas and the rebel Hueil, who Arthur kills. Welsh tradition knows him as Caw of Prydyn, father of Gildas and many saints, and he appears in the Welsh tale of Culhwch and Olwen.
 
 ## Orkney
 
 Also: Orcadibus
 
-The islands off the north coast of Scotland.
+The islands off the north tip of mainland Scotland, settled by Norse seafarers from the ninth century CE. In Caradoc's day they were a base for sea raiders, which is why his pirates come from there to raid Gildas's island in the Bristol Channel.
 
 Wikipedia: [Orkney](https://en.wikipedia.org/wiki/Orkney)
 
@@ -274,7 +274,7 @@ Wikipedia: [Orkney](https://en.wikipedia.org/wiki/Orkney)
 
 Also: Pepidiauc
 
-A district of southwest Wales around St Davids.
+A district of southwest Wales, the peninsula around St Davids in today's Pembrokeshire, part of the old kingdom of Dyfed and the heart of Saint David's church. In Caradoc's story, Gildas preaches there when Trifinus is its king, and falls silent when David's pregnant mother comes into the church.
 
 Wikipedia: [Dewisland](https://en.wikipedia.org/wiki/Dewisland)
 
@@ -282,7 +282,7 @@ Wikipedia: [Dewisland](https://en.wikipedia.org/wiki/Dewisland)
 
 Also: Romam
 
-The city in Italy, the pope's seat.
+The city in Italy, the seat of the pope, head of the Western Church, and the burial place of the apostles Peter and Paul, which made it the greatest place of pilgrimage in the West. In Caradoc's story, Gildas goes there to visit Saint Peter's church.
 
 Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
@@ -290,7 +290,7 @@ Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
 Also: Nonnita
 
-A holy woman, pregnant with David.
+A holy woman of sixth-century Wales, the mother of Saint David, Wales's patron saint; Caradoc calls her Nonnita. In his story she comes into the church in Pebidiog while she's pregnant with David, and Gildas, preaching there, finds he can't speak until she leaves, which is taken as a sign that her unborn son will be greater than him.
 
 Wikipedia: [Saint Non](https://en.wikipedia.org/wiki/Saint_Non)
 
@@ -298,7 +298,7 @@ Wikipedia: [Saint Non](https://en.wikipedia.org/wiki/Saint_Non)
 
 Also: Petro
 
-Peter the apostle, whose church is at Rome.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Peter the apostle, the leader of Jesus's twelve followers, who Christ gave the keys of heaven to; tradition says he became the first bishop of Rome and was crucified there, and his tomb is under the church of Saint Peter's in Rome. In Caradoc's story, Gildas goes to Rome to visit it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saint Peter](https://en.wikipedia.org/wiki/Saint_Peter)
 
@@ -306,7 +306,7 @@ Wikipedia: [Saint Peter](https://en.wikipedia.org/wiki/Saint_Peter)
 
 Also: Scotia, Scotiae
 
-The land in the north of Britain, Nau's kingdom.
+The land in the north of Britain, beyond the old Roman walls. In Caradoc's day, the twelfth century, Scotland meant roughly what it means now, and he makes it the kingdom of Nau, Gildas's father; older Welsh stories put Nau's land in the north of Britain without naming it Scotland.
 
 Wikipedia: [Scotland](https://en.wikipedia.org/wiki/Scotland)
 
@@ -314,7 +314,7 @@ Wikipedia: [Scotland](https://en.wikipedia.org/wiki/Scotland)
 
 Also: Ronech
 
-The island in the Bristol Channel nearer England, where Gildas lives alone.
+A small, steep island in the Bristol Channel, nearer the English shore, opposite Weston-super-Mare. In Caradoc's story Gildas goes there to live alone, praying and fasting, while his friend Cadoc lives on Flat Holm, its flatter neighbor nearer the Welsh shore.
 
 Wikipedia: [Steep Holm](https://en.wikipedia.org/wiki/Steep_Holm)
 
@@ -322,18 +322,24 @@ Wikipedia: [Steep Holm](https://en.wikipedia.org/wiki/Steep_Holm)
 
 Also: aestiva regione
 
-The land Melwas rules, around Glastonbury.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The land Melwas rules in Caradoc's story, around Glastonbury, the English county of Somerset, whose name Caradoc translates as Latin for "summer region." Its low marshes flooded in winter, and the rivers and swamps around Glastonbury made it safe from Arthur's army.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Trifinus
 
 Also: Trifini
 
-A king in Pebidiog when Gildas preaches there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+In Caradoc's story, the king of Pebidiog, around St Davids in southwest Wales, when Gildas preaches there. Welsh genealogies name a Tryffin among the early kings of Dyfed, perhaps the same man, though no one can be sure.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Wales
 
 Also: Walliae, Gualiam
 
-The land of the Britons in the west of Great Britain.
+The land of the Britons in the west of Great Britain, where their language, Welsh, and their kingdoms survived after the Saxons took the east. Caradoc, a Welsh monk, sets much of Gildas's life there: his teaching at Llancarfan, his preaching in Pebidiog, his island near the Welsh shore.
 
 Wikipedia: [Wales](https://en.wikipedia.org/wiki/Wales)
+
+## Yahweh
+
+The name of the god of the Israelites in the Hebrew Bible, the one god Jews and Christians worship, written in Hebrew with four letters, YHWH. Jews stopped saying the name aloud before Jesus's time and said "my lord" instead, so the Greek and Latin Bibles wrote "lord" where the name stood, and the Latin and French of these books call it only god or lord, never by its name. This translation gives the god its name wherever the source speaks of it, and calls it "it", as it would any people's god.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Yahweh](https://en.wikipedia.org/wiki/Yahweh)

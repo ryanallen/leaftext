@@ -182,7 +182,7 @@ Type `[[` and your notes are listed, by file name and by any [other name](docs/0
 
 ## Keep a library
 
-Point it at a folder, then search everything in it and see how every note links to the next.
+Search notes, follow links, and browse and read free Project Gutenberg books.
 
 ### Point it at a folder and it becomes a vault
 
@@ -197,6 +197,12 @@ Until you have a vault the start screen offers to add your notes folder, and the
 Put a date on a checkbox and the start screen keeps a box of everything in the vault still open, nearest due first, over Recent and Favorites. Press a row and you land on that checkbox. **[Scheduled tasks →](docs/01-features/03-library.md#scheduled-tasks)**
 
 Open the calendar at the foot of the library and a month of the vault shows which days its documents were changed, made or dated. Pick a day and the pane lists them. **[Calendar →](docs/01-features/03-library.md#calendar)**
+
+### Browse Project Gutenberg
+
+![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg.png)
+
+Choose **Project Gutenberg** under **Books online** in the vault switcher and its catalog of free books reads in the pane like a folder: its categories, a hundred books at a time, and the find bar searching titles and authors. Press a book and it opens, and once fetched it reads without the internet. **[Books online →](docs/01-features/03-library.md#books-online)**
 
 ### Search everything you've written
 

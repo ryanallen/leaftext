@@ -20,7 +20,7 @@ How it was made: built by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen), [w
 
 **What Paris and Ulrich's marks become.** Their French sets in square brackets what they added to the Huth manuscript, including a few gaps they filled from another copy, [Paris, Bibliothèque nationale de France, français 747](https://archivesetmanuscrits.bnf.fr/ark:/12148/cc125398c), and in round brackets a word they'd take out. The English reads their text, the added words in and the others out, with an endnote where an addition or a changed reading touches the sense. Their summaries in the margin and their footnotes stay in the French; the English tells the story alone.
 
-**Names and titles.** People and places go by the names an English reader knows, such as Arthur, Uther, Igraine and Logres, and the glossary lists every spelling the French gives them. The first two endnotes say how the English handles the French's names for the devil and for God.
+**Names and titles.** People and places go by the names an English reader knows, such as Arthur, Uther, Igraine and Logres, and the glossary lists every spelling the French gives them. The first two endnotes say how the English handles the French's names for the devil and for its god.
 
 **The endnotes.** Some report Paris and Ulrich's own work on the text: a word they added, a reading of the Huth manuscript they changed, a correction from their errata. The rest, marked with an [asterisk](#new-in-this-translation), explain a custom, say who a reference means, and, from Part 5 on, name the chapters of [Malory's *Le Morte d'Arthur*](https://standardebooks.org/ebooks/thomas-malory/le-morte-darthur) that tell the same events.
 
@@ -45,11 +45,11 @@ How it was made: built by [Ryan Allen](merlin-how-it-was-made.md#ryan-allen), [w
 
 ### Christ empties hell, and the devils meet to plan
 
-<a id="page-1"></a>[\[Paris–Ulrich 1:1\]](merlin-old-french.md#page-1) The story says that Satan was furious when our Lord came into hell and led Adam and Eve out,[^1-1][^1-2] with as many of the others as he chose.[^1-3] When the devils heard, they were stunned. They gathered and said, "Who's this man who has beaten us, broken down our walls, dragged out everything we'd hidden, and done whatever he likes? We never thought anyone could be born from a woman and not be ours. But this one is free of us, and he does all he can to destroy and torment us. How could he come into the world without any of the earthly pleasure that belongs to us, and still do this to us?"
+<a id="page-1"></a>[\[Paris–Ulrich 1:1\]](merlin-old-french.md#page-1) The story says that Satan was furious when Jesus came into hell and led Adam and Eve out,[^1-1][^1-2] with as many of the others as he chose.[^1-3] When the devils heard, they were stunned. They gathered and said, "Who's this man who has beaten us, broken down our walls, dragged out everything we'd hidden, and done whatever he likes? We never thought anyone could be born from a woman and not be ours. But this one is free of us, and he does all he can to destroy and torment us. How could he come into the world without any of the earthly pleasure that belongs to us, and still do this to us?"
 
 Then one of the devils answered, "Friends, what ruined us is the very thing we thought would serve us best.[^1-4]
 
-<a id="page-2"></a>[\[Paris–Ulrich 1:2\]](merlin-old-french.md#page-2) "Remember how the prophets said the Son of God would come to earth to save the sinners descended from Adam and Eve? So we captured the ones who said he'd come and free them from hell. They kept saying it until it happened. He's freed everyone we held, and we can't take anything back. He's carried off all who believe he was born to a woman, so completely that we never got a single one of them. We never saw it coming."
+<a id="page-2"></a>[\[Paris–Ulrich 1:2\]](merlin-old-french.md#page-2) "Remember how the prophets said the son of Yahweh would come to earth to save the sinners descended from Adam and Eve? So we captured the ones who said he'd come and free them from hell. They kept saying it until it happened. He's freed everyone we held, and we can't take anything back. He's carried off all who believe he was born to a woman, so completely that we never got a single one of them. We never saw it coming."
 
 "Don't you know," said another, "that he has them baptized in water in his name? They come up out of it in the name of the Father, the Son and the Holy Spirit, and after that we can't have them the way we used to. We've lost them all to this baptism, and we've got no power over them unless what they do brings them back to us.
 
@@ -75,7 +75,7 @@ Then one said, "I don't have the power to conceive or make a woman pregnant. If 
 
 <a id="page-4"></a>[\[Paris–Ulrich 1:4\]](merlin-old-french.md#page-4) Another said, "One of us can easily take the shape of a man and father a child. But he'll have to do it as secretly as he can."
 
-So the devils agreed to father a man who'd lead the rest astray. They're great fools to think our Lord doesn't know what they were plotting. So one of them set out to make a man who'd have his memory and his mind, to trick humanity and Jesus Christ. You can be sure he's mad to think he can fool the one who's lord over him and over everything. With that settled, they ended their meeting.
+So the devils agreed to father a man who'd mislead the rest. They're great fools to think Yahweh doesn't know what they were plotting. So one of them set out to make a man who'd have his memory and his mind, to trick humanity and Jesus Christ. You can be sure he's mad to think he can fool the one who's lord over him and over everything. With that settled, they ended their meeting.
 
 The one who'd said he had power over the woman wasted no time. He went to her and partly won her over, so she gave him everything both she and her husband had.
 
@@ -123,9 +123,9 @@ In that country there was a holy man who was a good confessor.
 
 <a id="page-7"></a>[\[Paris–Ulrich 1:7\]](merlin-old-french.md#page-7) He heard about this strange affair and came to the two sisters who were left, the older and the younger. He comforted them and asked how it had all happened to their father, their mother, their brother and the girl they'd lost.
 
-"Sir, we don't know," they said, "except that we think God hates us, and that's why he lets us suffer this."
+"Sir, we don't know," they said, "except that we think Yahweh hates us, and that's why it lets us suffer this."
 
-"You're wrong to say that," said the holy man. "God has no hatred for anyone, but it pains him when a sinner despises himself. I know the devil was behind all this. Your sister, who died so shamefully: did you know what she was doing?"
+"You're wrong to say that," said the holy man. "Yahweh has no hatred for anyone, but it pains it when a sinner despises himself. I know the devil was behind all this. Your sister, who died so shamefully: did you know what she was doing?"
 
 "Sir, we knew nothing about it," they said.
 
@@ -133,7 +133,7 @@ In that country there was a holy man who was a good confessor.
 
 He taught them well, if only they'd been willing to hear it. The older sister understood him and was very pleased by what he said. He instructed her in the faith. She took great care to learn it, to listen to his teaching and to live by it in what she did and said.
 
-Then the holy man said, "If you truly believe what I tell you, great good will come to you from it. You'll be my friend and my daughter in God, and however great your need, if you take my advice, I'll advise you with our Lord's help. Don't lose heart," he said, "because our Lord will help you if you stay faithful to him. Come to me often; I won't be living far from here."
+Then the holy man said, "If you truly believe what I tell you, great good will come to you from it. You'll be my friend and my daughter in Yahweh, and however great your need, if you take my advice, I'll advise you with Yahweh's help. Don't lose heart," he said, "because Yahweh will help you if you stay faithful to it. Come to me often; I won't be living far from here."
 
 ### The devil sends a woman to tempt the younger sister
 
@@ -141,7 +141,7 @@ So the holy man guided them both and set them on the right path. The older siste
 
 <a id="page-8"></a>[\[Paris–Ulrich 1:8\]](merlin-old-french.md#page-8) When the devil found out, it upset him, and he was afraid he'd lose them, so he thought about how to trick them. A woman who had often done his dirty work had a house nearby. He sent her to the two girls. She drew the younger sister aside; she didn't dare try the older one, seeing how modestly she behaved. She asked about her way of life, and how the other one lived.
 
-"She loves me very much and is very kind to me," the girl said. "But my sister is so upset over everything that's happened to us that she's cheerful with no one, me included. A holy man who talks to her about God all day long has converted her and won her over, so she does nothing but what he wants."
+"She loves me very much and is very kind to me," the girl said. "But my sister is so upset over everything that's happened to us that she's cheerful with no one, me included. A holy man who talks to her about Yahweh all day long has converted her and won her over, so she does nothing but what he wants."
 
 "My dear," the woman said, "it's a shame about that lovely body of yours, because you'll never be happy while you're living with your sister. Oh, my girl, if you knew the pleasure other women have, you'd think nothing of everything you own. We're so content with the people we love that with only a piece of bread we're better off than you'd be with all there is in the world. What's a woman's life worth without a man's love?
 
@@ -171,25 +171,25 @@ The woman said, "Sleep with any man who wants you. Leave the house, say you can'
 
 The girl promised to do as she said. So she ran away from her sister and, on that woman's advice, slept with any man who wanted her, and the devil was delighted to have caught the second one too.
 
-When the older one learned that the younger had gone off like that, she went to the holy man, terrified. Seeing how upset she was, he felt sorry for her. "My friend," he said, "cross yourself and put yourself in God's hands, because I can see you're frightened."
+When the older one learned that the younger had gone off like that, she went to the holy man, terrified. Seeing how upset she was, he felt sorry for her. "My friend," he said, "cross yourself and put yourself in Yahweh's hands, because I can see you're frightened."
 
 "Sir, I have good reason to be," she said, "because I've lost my sister." She told him all she knew of how the younger one had gone, and that she'd truly been sleeping with every man.
 
-When the holy man heard this, it shook him too. "My child," he said, "the devil is still around you, and he'll never rest until he's fooled you all, unless God protects you."
+When the holy man heard this, it shook him too. "My child," he said, "the devil is still around you, and he'll never rest until he's fooled you all, unless Yahweh protects you."
 
-"Sir, for God's sake," she said, "how can I keep safe from him? There's nothing in the world I'm more afraid of than him tricking me."
+"Sir, for god's sake," she said, "how can I keep safe from him? There's nothing in the world I'm more afraid of than him tricking me."
 
 "If you trust what I tell you," the holy man said, "he won't get the better of you."
 
 "Sir, I'll accept whatever you tell me."
 
-"Then do you believe in the Father, the Son and the Holy Spirit," he said, "and that these three powers are one God? And that our Lord came to earth to save the sinners who'd trust in baptism and the other commandments of the Church? That he left his ministers here to rescue those who'd have faith in his name, and put them on the right path?"
+"Then do you believe in the Father, the Son and the Holy Spirit," he said, "and that these three powers are one god? And that Jesus came to earth to save the sinners who'd trust in baptism and the other commandments of the Church? That he left his ministers here to rescue those who'd have faith in his name, and put them on the right path?"
 
 "I believe it just as you've told it," she said, "and won't stop as long as I live, just as I hold that he's lord and king of the whole world. May he protect me so the devil can't trick me."
 
 <a id="page-11"></a>[\[Paris–Ulrich 1:11\]](merlin-old-french.md#page-11) The holy man said, "My daughter, if that's your faith, nothing evil can harm you, no demon and not Satan himself. Please, don't let yourself fall into a rage. Honestly, there's nowhere on earth he'd rather live than in a man or woman full of anger. So guard against all wrongdoing, and against any trouble that comes your way.
 
-"Whenever you're angry, my dear friend, come to me and tell me exactly how it happened. Confess your guilt to our Lord. Every time you lie down and get up, bless yourself in the name of the cross where God's body hung to redeem sinners, men and women, from hell. Do it in the name of the Father, the Son and the Holy Spirit too, so that no demon can trick you.
+"Whenever you're angry, my dear friend, come to me and tell me exactly how it happened. Confess your guilt to Yahweh. Every time you lie down and get up, bless yourself in the name of the cross where Jesus's body hung to redeem sinners, men and women, from hell. Do it in the name of the Father, the Son and the Holy Spirit too, so that no demon can trick you.
 
 "If you do as I've told you, you'll have nothing to fear from the devil. Make sure there's always a lamp wherever you sleep, because he hates light above everything and won't go anywhere near it."
 
@@ -197,11 +197,11 @@ So the holy man taught her, and she was very afraid of being tricked.
 
 ### The older sister goes to bed angry, and a devil gets her pregnant
 
-Then the girl went home, firm in her faith and very humble before God.[^11-1] Decent men and women came to her again and again and said, "Young woman, your sisters' wicked lives must frighten you. Think carefully now, and don't be discouraged. You're very rich, with a large inheritance, and any respectable man would be glad to know you were living well; he'd be happy to marry you."
+Then the girl went home, firm in her faith and very humble before Yahweh.[^11-1] Decent men and women came to her again and again and said, "Young woman, your sisters' wicked lives must frighten you. Think carefully now, and don't be discouraged. You're very rich, with a large inheritance, and any respectable man would be glad to know you were living well; he'd be happy to marry you."
 
-"May our Lord protect me as he knows I need," she said.
+"May Yahweh protect me as it knows I need," she said.
 
-So the young woman spent a long time in peace and led a very good life. No one could ever lead her astray, and the devil knew of no wrong she did.
+So the young woman spent a long time in peace and led a very good life. No one could ever corrupt her, and the devil knew of no wrong she did.
 
 <a id="page-12"></a>[\[Paris–Ulrich 1:12\]](merlin-old-french.md#page-12) That troubled him deeply. He realized he couldn't trick her, and couldn't see how to drag her into sin. She didn't care at all for what he offered, and he couldn't make it please her. At last it occurred to him that he could never make her forget what the holy man had told her unless he made her angry.[^12-1]
 
@@ -219,7 +219,7 @@ When the good young woman saw the girl wouldn't go, she took her by the shoulder
 
 Alone, she lay down on her bed fully dressed and cried bitterly, her heart full of rage at the way her sister had treated her, and in that misery she fell asleep.
 
-<a id="page-13"></a>[\[Paris–Ulrich 1:13\]](merlin-old-french.md#page-13) When the devil knew that in her great anger she'd forgotten everything the holy man had told her, he was delighted. "Now I can do whatever I want with this one," he said. "She's fallen out of the grace of her Lord and her master, and we can put our man in her."
+<a id="page-13"></a>[\[Paris–Ulrich 1:13\]](merlin-old-french.md#page-13) When the devil knew that in her great anger she'd forgotten everything the holy man had told her, he was delighted. "Now I can do whatever I want with this one," he said. "She's fallen out of the grace of Yahweh, her master, and we can put our man in her."
 
 The devil who had the power to have sex with a woman was ready at once. He came to her as she lay asleep, and she conceived. The moment she did, she woke, remembered the holy man who'd advised her, and crossed herself. "Holy Mary," she said, "what's happened to me? I'm worse off than when I got into this bed. Glorious mother of Jesus Christ, protect my soul and my body, and defend them from the devil's torment."
 
@@ -229,7 +229,7 @@ Then she got up and began to look for whoever had done this to her, thinking she
 
 She went to the door of her room and found it shut and locked tight. She searched everywhere again, but there was nothing. Then she knew the devil had tricked her completely.
 
-She began to mourn and call on our Lord: "Lord God, in your mercy, please don't let me be shamed in this world, or sin in any way that costs me my soul."
+She began to mourn and call on Yahweh: "Yahweh, in your mercy, please don't let me be shamed in this world, or sin in any way that costs me my soul."
 
 The night passed and day came. As soon as it was light, the devil took the younger one away, now she'd done what he'd brought her there for. When she and the thugs had gone, the older sister left her room, furious and in tears. She called her servant and told him to bring her two women, and he did at once.
 
@@ -241,15 +241,15 @@ The night passed and day came. As soon as it was light, the devil took the young
 
 When she arrived and the holy man saw her, he said, "My daughter, you're in trouble, I think; I can see you're terribly frightened."
 
-"Sir," she said, "something has happened to me that no woman ever went through. I've come for your advice, for God's sake. You've told me no one can sin so badly that they won't be forgiven, if they truly confess, repent and do what the confessor tells them. Sir, I've sinned, and believe me, the devil has tricked me."
+"Sir," she said, "something has happened to me that no woman ever went through. I've come for your advice, for god's sake. You've told me no one can sin so badly that they won't be forgiven, if they truly confess, repent and do what the confessor tells them. Sir, I've sinned, and believe me, the devil has tricked me."
 
 Then she told him everything: her sister had come to her house, and she'd gotten angry with her. The girl and her thugs had beaten her. She'd gone into her room in a rage and shut the door tight.
 
-"In my great anger I forgot to cross myself. Sir, everything you'd told me to do went out of my head. I lay down on my bed fully dressed, and still furious I fell asleep. When I woke, I found myself shamed and my virginity gone. I searched my room, tried the door and it was shut, and there was no living thing there. I never saw or knew who had done this to me. Sir, that's how it happened, and I was tricked. So please, for God's sake: even if my body is punished, don't let me lose my soul."
+"In my great anger I forgot to cross myself. Sir, everything you'd told me to do went out of my head. I lay down on my bed fully dressed, and still furious I fell asleep. When I woke, I found myself shamed and my virginity gone. I searched my room, tried the door and it was shut, and there was no living thing there. I never saw or knew who had done this to me. Sir, that's how it happened, and I was tricked. So please, for god's sake: even if my body is punished, don't let me lose my soul."
 
 The holy man listened closely and was amazed, because he'd never heard of anything like it. "My friend," he said, "you're possessed by the devil, and he still lives in you. How can I hear your confession or give you penance for this? I really think you're lying. No woman ever lost her virginity in that way, without knowing who took it, or even seeing him. And you want me to believe this was done to you in your sleep!"
 
-"I swear to God," she said, "I'm telling the truth, and you'll find it's so."
+"I swear to god," she said, "I'm telling the truth, and you'll find it's so."
 
 <a id="page-15"></a>[\[Paris–Ulrich 1:15\]](merlin-old-french.md#page-15) "You sinned badly when you broke the obedience I'd asked of you," he said, "and for that I'll give you a penance for the rest of your life, if you're willing to do it as I give it."
 
@@ -257,13 +257,13 @@ The holy man listened closely and was amazed, because he'd never heard of anythi
 
 "Sir," the young woman said, "you'll never ask anything of me I won't do."
 
-"I hope so," he said. "Are you telling me you've come to God and to the ministers of the Church for guidance? That's true confession and repentance: to do and say, as far as you can, what God commands."
+"I hope so," he said. "Are you telling me you've come to Yahweh and to the ministers of the Church for guidance? That's true confession and repentance: to do and say, as far as you can, what Yahweh commands."
 
-"Sir, just as you've said it," she said, "I'll stick to it with all my strength, God willing."
+"Sir, just as you've said it," she said, "I'll stick to it with all my strength, god willing."
 
-"I trust in God," he said, "that if what you've told me is true, you'll have nothing to fear."
+"I trust in Yahweh," he said, "that if what you've told me is true, you'll have nothing to fear."
 
-"Sir," she said, "I swear to God I'm telling the truth."
+"Sir," she said, "I swear to god I'm telling the truth."
 
 "You've promised me you'll keep the penance and give up the sin," said the holy man.
 
@@ -271,13 +271,13 @@ The holy man listened closely and was amazed, because he'd never heard of anythi
 
 "Then you've given up all lust," he said, "and I forbid it for the rest of your life, except what comes in sleep, which no one can guard against. Do you want this, and can you stay away from it?"
 
-"Sir, yes," she said, "if you'll vouch for me to God that I won't be damned for this sin,[^15-1] since he put you on earth by his command."
+"Sir, yes," she said, "if you'll vouch for me to Yahweh that I won't be damned for this sin,[^15-1] since it put you on earth by its command."
 
 She accepted the penance he gave her very willingly, in tears, like someone truly sorry. The holy man made the sign of the cross over her and absolved her, and brought her back into the faith of Jesus Christ as far as he could.
 
 Then he wondered how what she'd told him could be true, and when he thought it through, he knew the devil had tricked her. He called her over, had her drink water in the name of the Father, the Son and the Holy Spirit, and sprinkled some on her.
 
-<a id="page-16"></a>[\[Paris–Ulrich 1:16\]](merlin-old-french.md#page-16) He said, "Be careful not to forget what I've told you. Whenever you need me, come to me, cross yourself and put yourself in God's hands at once. For your penance, I give you all the good you'll do."
+<a id="page-16"></a>[\[Paris–Ulrich 1:16\]](merlin-old-french.md#page-16) He said, "Be careful not to forget what I've told you. Whenever you need me, come to me, cross yourself and put yourself in Yahweh's hands at once. For your penance, I give you all the good you'll do."
 
 ### Her pregnancy shows, and she can't name the father
 
@@ -289,13 +289,13 @@ She stayed home, living that way, until what she carried could no longer be hidd
 
 "Yes, it's true," she said.
 
-"God!" they said. "Who did this to you?"
+"god!" they said. "Who did this to you?"
 
 "I swear on my life," she said, "I don't know."
 
 "Have men had you so many times that you can't say who?"
 
-"May God let me die in labor," she said, "if, to my knowledge or in my sight, any man ever slept with me so that this could come of it."[^16-1]
+"May Yahweh let me die in labor," she said, "if, to my knowledge or in my sight, any man ever slept with me so that this could come of it."[^16-1]
 
 Those who heard this crossed themselves. "That can't be," they said. "It never happened to you or to anyone. Maybe you secretly love the man who did it and don't want to name him. But you'll be a great loss, because as soon as the judges know, you'll have to die."
 
@@ -313,7 +313,7 @@ The holy man saw that she was carrying a living child, and he was astonished. He
 
 "No, sir, honestly," she said. "Never before or since."
 
-At that he was baffled. He wrote down the night and the hour as she'd told them, and said, "Rest easy. When this heir inside you is born, I'll know whether you told me the truth or lied. I have faith in God that if it's as you've told me, you'll never be in danger of death. You may well be afraid: when the judges hear of it, they'll arrest you to get your fine buildings, and say they're punishing you by law. When they've taken you, send for me. I'll come and advise you if I can, and God will help you if you're what you say; he won't forget you."
+At that he was baffled. He wrote down the night and the hour as she'd told them, and said, "Rest easy. When this heir inside you is born, I'll know whether you told me the truth or lied. I have faith in Yahweh that if it's as you've told me, you'll never be in danger of death. You may well be afraid: when the judges hear of it, they'll arrest you to get your fine buildings, and say they're punishing you by law. When they've taken you, send for me. I'll come and advise you if I can, and Yahweh will help you if you're what you say; it won't forget you."
 
 Then he said, "Go home, rest easy and live a good life, because a good life leads to a good death."
 
@@ -337,17 +337,17 @@ When that was done, the holy man spoke to her from outside: "When you've had the
 
 ### Merlin is born and baptized
 
-<a id="page-19"></a>[\[Paris–Ulrich 1:19\]](merlin-old-french.md#page-19) So she stayed a long time in the tower, and the judges had arranged for everything the women with her needed and sent it in.[^19-1] They lived there as you've heard, and she had a child when the Lord God chose. When he was born, he had, as he was bound to, the mind and the power of the devil who had fathered him.
+<a id="page-19"></a>[\[Paris–Ulrich 1:19\]](merlin-old-french.md#page-19) So she stayed a long time in the tower, and the judges had arranged for everything the women with her needed and sent it in.[^19-1] They lived there as you've heard, and she had a child when Yahweh chose. When he was born, he had, as he was bound to, the mind and the power of the devil who had fathered him.
 
-But the demon had been a fool, because our Lord had redeemed her with his death and pardoned the sin for her true repentance,[^19-2] and he had only fooled her by trickery. As soon as she knew she'd been tricked, she asked for mercy as she should. She put herself in the care and under the authority of the Church and of God. She kept the commandments her confessor had given her.
+But the demon had been a fool, because Jesus had redeemed her with his death and pardoned the sin for her true repentance,[^19-2] and he had only fooled her by trickery. As soon as she knew she'd been tricked, she asked for mercy as she should. She put herself in the care and under the authority of the Church and of Yahweh. She kept the commandments her confessor had given her.
 
-So God didn't want the devil to lose what he was owed there, what he'd gone to all that trouble for. He wanted the child to have the devil's skill, his power to know everything said and done in the past, and the boy had all of it.
+So Yahweh didn't want the devil to lose what he was owed there, what he'd gone to all that trouble for. It wanted the child to have the devil's skill, his power to know everything said and done in the past, and the boy had all of it.
 
-Our Lord sees everything, and he chose that the sin should do her no harm at all. That was because of the mother's repentance and the sincere confession he knew was in her heart, since it hadn't happened by her will or wish, and because of the baptism she'd been washed in at the font. So he gave the child the gift of knowing the future.[^19-3]
+Yahweh sees everything, and it chose that the sin should do her no harm at all. That was because of the mother's repentance and the sincere confession it knew was in her heart, since it hadn't happened by her will or wish, and because of the baptism she'd been washed in at the font. So it gave the child the gift of knowing the future.[^19-3]
 
-That's how he knew, from the devil, what had been said and done in the past. As for what lay ahead, our Lord wanted him to know that too, on God's side, to weigh against the other gift.[^19-4] Now he can turn whichever way he likes: if he wants, he can give the devil his due, and our Lord his.
+That's how he knew, from the devil, what had been said and done in the past. As for what lay ahead, Yahweh wanted him to know that too, on Yahweh's side, to weigh against the other gift.[^19-4] Now he can turn whichever way he likes: if he wants, he can give the devil his due, and Yahweh its.
 
-<a id="page-20"></a>[\[Paris–Ulrich 1:20\]](merlin-old-french.md#page-20) The demon formed nothing in him but the body. It's our Lord who puts in the spirit, to see, hear and understand, giving each of us intelligence and memory as he pleases. He gave this child more than others, because he'd need it badly. Then we'll see which side he takes.
+<a id="page-20"></a>[\[Paris–Ulrich 1:20\]](merlin-old-french.md#page-20) The demon formed nothing in him but the body. It's Yahweh who puts in the spirit, to see, hear and understand, giving each of us intelligence and memory as it pleases. It gave this child more than others, because he'd need it badly. Then we'll see which side he takes.
 
 When the women picked him up and looked at him, every one of them was frightened, because he was covered in hair, more than they'd ever seen on a child, and they showed him to his mother.
 
@@ -369,7 +369,7 @@ When he was twice that age, the women said to her, "We'd like to get out of here
 
 "Honestly, there's nothing I can do about it," she said.
 
-Then she cried and begged them, for God's sake, to put up with it a little longer.
+Then she cried and begged them, for god's sake, to put up with it a little longer.
 
 She went to a window with her child in her arms and sobbed. "My son," she said, "I'll die because of you, and I haven't deserved it. No one knows the truth of who fathered you, and no one will believe anything I say. So I'm going to be put to death."
 
@@ -403,13 +403,13 @@ Time went on, until there were only seven days left before she was to be burned.
 
 The child was going around the tower, and when he saw his mother crying, he laughed, full of joy.
 
-"You don't care what your mother's going through," the women told him, "when she's to be burned this week because of you. Damn the day you were born, unless God makes it right, since she'll suffer so much for you!"
+"You don't care what your mother's going through," the women told him, "when she's to be burned this week because of you. Damn the day you were born, unless Yahweh makes it right, since she'll suffer so much for you!"
 
-"Mom, they're lying," the child said. "As long as I live, no one will dare kill you or lay a hand on you or put you to death by law, except God."
+"Mom, they're lying," the child said. "As long as I live, no one will dare kill you or lay a hand on you or put you to death by law, except Yahweh."
 
 ### Mother and child go before the judges, and she swears no man touched her
 
-When she and the two women heard him speak like that, they were very glad. "A child who can say such things," they said, "will grow up a very good and wise man, God willing."
+When she and the two women heard him speak like that, they were very glad. "A child who can say such things," they said, "will grow up a very good and wise man, god willing."
 
 Time went on until the appointed day. When it came, the women were brought out, and Merlin's mother carried him in her arms in front of the judges. They took her two companions aside and asked them whether it was true that the boy could talk like that.
 
@@ -433,7 +433,7 @@ Then he and the young woman came out of the room together; she found her child o
 
 When they saw her, they said, "Will you tell us who this boy's father is? Don't try to hide it."
 
-"I can see the law has handed me over to death," she said. "May God never have pity or mercy on me if I ever saw or knew the father, or ever slept with a man so that he could have fathered a child with me."
+"I can see the law has handed me over to death," she said. "May Yahweh never have pity or mercy on me if I ever saw or knew the father, or ever slept with a man so that he could have fathered a child with me."
 
 "We don't think this can be true," the judges said, "and we'll ask the other women whether what you want us to believe is possible, because no one ever heard of anything like it."
 
@@ -453,7 +453,7 @@ Then Merlin leaped forward, furious at this and at what was being said about her
 
 The judges called him over and asked whether what Merlin had told them was true. He told them everything, exactly as Merlin's mother had said it to him, and they wanted to know if it had really happened to her.
 
-"I told her she had nothing to fear, in the eyes of God or the world, from anyone who'd treat her fairly," the holy man said. "She's told you herself how she was tricked. This child is extraordinary: she conceived him without the pleasure of a man and doesn't know who fathered him. She confessed it and repented, and I gave her her penance."
+"I told her she had nothing to fear, in the eyes of Yahweh or the world, from anyone who'd treat her fairly," the holy man said. "She's told you herself how she was tricked. This child is extraordinary: she conceived him without the pleasure of a man and doesn't know who fathered him. She confessed it and repented, and I gave her her penance."
 
 Then Merlin said to him, "You have in writing the hour and the night I was conceived, so you can tell when I was born and at what time. From that you can learn plenty about what my mom did."
 
@@ -479,7 +479,7 @@ People often tried to get the boy to talk about the women and everyone else, but
 
 <a id="page-26"></a>[\[Paris–Ulrich 1:26\]](merlin-old-french.md#page-26) On the fifteenth day the judge's mother arrived, and Merlin and the young woman were brought out of prison to face the people. Then the judge said, "Merlin, here she is, the one you're to speak against. Now say what you want to say to her."
 
-"You're not nearly as wise as you think," the child said. "Take her into a house in private, with your closest advisers, and I'll call on my mom's: God almighty and her confessor."
+"You're not nearly as wise as you think," the child said. "Take her into a house in private, with your closest advisers, and I'll call on my mom's: Yahweh almighty and her confessor."
 
 Those who heard this were so astonished they could hardly answer, but the judge knew he was speaking wisely.
 
@@ -489,7 +489,7 @@ The child asked all the others, "If I can win my mom's freedom from this man, wi
 
 So Merlin and the judge went into a room together. He brought his mother and two other men, the most respected of his friends, and the child had the young woman's confessor with him. When they were all there, he said to Merlin, "Now you can say what you want to her, to clear your mother."
 
-"I don't want to defend her against what's right," said Merlin, "but I want what's right in the eyes of the Lord God, and what's right for her. She hasn't deserved the torment you want to give her, believe me. If you trust me, you'll clear my mom and stop asking about yours."
+"I don't want to defend her against what's right," said Merlin, "but I want what's right in the eyes of Yahweh, and what's right for her. She hasn't deserved the torment you want to give her, believe me. If you trust me, you'll clear my mom and stop asking about yours."
 
 "You won't get off that easily," the judge said. "You'll have to say more."
 
@@ -537,13 +537,13 @@ When the lady heard Merlin say this and saw he was telling the truth, she sat do
 
 The judge looked at her and said, "Mom, whoever my father is, I'm your son, and I'll treat you as one should. But be honest: is this child telling the truth?"
 
-"Have mercy, for God's sake!" she said. "I can't hide it from you. It's all just as he's said."
+"Have mercy, for god's sake!" she said. "I can't hide it from you. It's all just as he's said."
 
 When he heard it, he said, "This boy was right: he knows who his father is better than I know mine. It isn't fair for me to punish his mother when I spare my own."
 
-Then the judge said, "Merlin, please, for God's sake, so that I can clear you both in front of the people, tell me who your father is."
+Then the judge said, "Merlin, please, for god's sake, so that I can clear you both in front of the people, tell me who your father is."
 
-"I'll tell you," said Merlin, "more out of friendship than because you can make me. I want you to know I'm the son of a devil who tricked my mom. Demons of this kind are called Ekupedes, and they live in the air. This one gave me the mind to know what's been said and done in the past, which is how I know all about the life yours has led. Our Lord wanted me to have this memory because of the goodness and true repentance of the woman who had me.
+"I'll tell you," said Merlin, "more out of friendship than because you can make me. I want you to know I'm the son of a devil who tricked my mom. Demons of this kind are called Ekupedes, and they live in the air. This one gave me the mind to know what's been said and done in the past, which is how I know all about the life yours has led. Yahweh wanted me to have this memory because of the goodness and true repentance of the woman who had me.
 
 <a id="page-29"></a>[\[Paris–Ulrich 1:29\]](merlin-old-french.md#page-29) "Because of the commandments of the Church, which I believe, he's given me so much power that I know some of the future, and you'll see it from what I'm about to tell you."
 
@@ -553,7 +553,7 @@ Then Merlin took him aside and said, "Your mother will go and tell the man who f
 
 So they ended their meeting and went out to the people, and he said, "This child has truly saved his mother from burning. Everyone who sees him should know they'll never see anyone wiser, and never have."
 
-"Thank God she's been spared from death," they all said.
+"Thank god she's been spared from death," they all said.
 
 ### The judge tests Merlin's warning, and Merlin tells Blaise what he is
 
@@ -577,17 +577,17 @@ Blaise said to Merlin, "I've heard you say, and I accept it, that you were conce
 
 Merlin said, "It's the way of every wicked heart to notice the bad more than the good in everything.
 
-"You heard me say I was the son of a demon, but you also know I said God had given me intelligence and knowledge of the future. So if you were wise, you'd ask yourself which side I'll take. I'll tell you this: God let me know these things because the devils have lost me, but I've kept their skill and their cunning.[^30-1]
+"You heard me say I was the son of a demon, but you also know I said Yahweh had given me intelligence and knowledge of the future. So if you were wise, you'd ask yourself which side I'll take. I'll tell you this: Yahweh let me know these things because the devils have lost me, but I've kept their skill and their cunning.[^30-1]
 
-<a id="page-31"></a>[\[Paris–Ulrich 1:31\]](merlin-old-french.md#page-31) "I hold on to as much of it as I should, but not for their good. The demons were fools to conceive me in my mom: they put me in a vessel that was never going to be theirs, and her goodness has done them great harm. Had they made me in my grandmother, I'd have had no power to know God, and I'd have belonged to them. She was the one who brought on everything my mom suffered over her father, and the other troubles you've heard her tell of.
+<a id="page-31"></a>[\[Paris–Ulrich 1:31\]](merlin-old-french.md#page-31) "I hold on to as much of it as I should, but not for their good. The demons were fools to conceive me in my mom: they put me in a vessel that was never going to be theirs, and her goodness has done them great harm. Had they made me in my grandmother, I'd have had no power to know Yahweh, and I'd have belonged to them. She was the one who brought on everything my mom suffered over her father, and the other troubles you've heard her tell of.
 
-"But believe what I teach you about the faith of Jesus Christ. I'll tell you things no one but God could. Make a book of them. Many people will hear it, be better for it and keep from sin, and you'll do a great act of charity by making it."
+"But believe what I teach you about the faith of Jesus Christ. I'll tell you things no one but Yahweh could. Make a book of them. Many people will hear it, be better for it and keep from sin, and you'll do a great act of charity by making it."
 
 ### Blaise agrees to write Merlin's book of Joseph and the Grail
 
-Blaise answered, "I'll be glad to write it.[^31-1] But I call on you never to trick me or lead me astray, or do anything that wouldn't please our Lord. I ask it in the name of the Father, the Son and the Holy Spirit, of the kind lady who carried God in her body, of all his angels, archangels and apostles, and of everything that's God's."
+Blaise answered, "I'll be glad to write it.[^31-1] But I call on you never to trick me or mislead me, or do anything that wouldn't please Yahweh. I ask it in the name of the Father, the Son and the Holy Spirit, of the kind lady who carried Jesus in her body, of all Yahweh's angels, archangels and apostles, and of everything that's Yahweh's."
 
-"May every creature you've named turn God against me," Merlin answered, "if I do anything to you that goes against his will."
+"May every creature you've named turn Yahweh against me," Merlin answered, "if I do anything to you that goes against its will."
 
 "Then tell me whatever good you want," said Blaise, "and from now on I'll do it."
 
@@ -605,13 +605,13 @@ While Blaise was busy with it, Merlin said to him, "Because of what you're doing
 
 Blaise asked how.
 
-"I'll be sent for from the west," said Merlin. "The men who come for me will have sworn to their lord to kill me and bring him my blood. But as soon as they see me and hear me speak, they won't want to anymore. When I go with them, you'll go to the lands where the people who have this Holy Grail live. From then on people will tell of your work and your book, and everyone will be glad to hear it. But it won't carry authority, because you aren't one of the apostles and can't be. They never put anything in writing about our Lord that they hadn't witnessed themselves, and you put nothing in it that didn't come to you from me.
+"I'll be sent for from the west," said Merlin. "The men who come for me will have sworn to their lord to kill me and bring him my blood. But as soon as they see me and hear me speak, they won't want to anymore. When I go with them, you'll go to the lands where the people who have this Holy Grail live. From then on people will tell of your work and your book, and everyone will be glad to hear it. But it won't carry authority, because you aren't one of the apostles and can't be. They never put anything in writing about Yahweh that they hadn't witnessed themselves, and you put nothing in it that didn't come to you from me.
 
 ### Merlin says Blaise's book will join the books of the Grail keepers
 
 "Just as I'm hidden, and always will be, from those I don't choose to show myself to, so all you write will stay secret, and few will ever do any good by it. You'll take it with you when I leave with the men who come for me.
 
-<a id="page-33"></a>[\[Paris–Ulrich 1:33\]](merlin-old-french.md#page-33) "Joseph's book will be there, and the one about the lineages I've mentioned, with yours and mine.[^33-1] Your work will be finished, and you'll take your rightful place in their company. Then your writing will be joined to his, and the labor you and I put in will be fully proved. They may take pity on us for it, if they choose, and pray to our Lord for us. When the two are put together, they'll make one fine volume, one and the same, except that I can't tell the private words between Joseph and Jesus Christ, and it isn't right that I should."
+<a id="page-33"></a>[\[Paris–Ulrich 1:33\]](merlin-old-french.md#page-33) "Joseph's book will be there, and the one about the lineages I've mentioned, with yours and mine.[^33-1] Your work will be finished, and you'll take your rightful place in their company. Then your writing will be joined to his, and the labor you and I put in will be fully proved. They may take pity on us for it, if they choose, and pray to Yahweh for us. When the two are put together, they'll make one fine volume, one and the same, except that I can't tell the private words between Joseph and Jesus Christ, and it isn't right that I should."
 
 England hadn't yet had a Christian ruler, and of those who held the throne before, I'll say only what matters to this tale.
 
@@ -629,7 +629,7 @@ King Moine went to Vortigern and said, "My friend, help defend the land, because
 
 When King Moine and those with him saw they'd get nothing else from Vortigern, they turned away and marched against the Saxons. The Saxons fought them and beat them. Afterward the king's men went off saying they'd lost everything, and that it would never have happened if Vortigern had been there.
 
-That's how things stood. The boy couldn't rule a land as well as he should, and didn't have the people's hearts, so most of them came to hate him. This lasted a long time, until King Moine was thought so worthless that they said they wouldn't put up with him any longer. So they went to Vortigern and said, "Sire, we're without a king or a lord, because the one we have is good for nothing. For God's sake, we beg you, take the crown and govern us. There's no man in this country who could hold it as well as you, or has as much right to."
+That's how things stood. The boy couldn't rule a land as well as he should, and didn't have the people's hearts, so most of them came to hate him. This lasted a long time, until King Moine was thought so worthless that they said they wouldn't put up with him any longer. So they went to Vortigern and said, "Sire, we're without a king or a lord, because the one we have is good for nothing. For god's sake, we beg you, take the crown and govern us. There's no man in this country who could hold it as well as you, or has as much right to."
 
 "If he were dead," Vortigern answered, "and you and the others wanted me as king, I'd be glad to. But as long as he lives, I can't."
 
@@ -643,11 +643,11 @@ When they got back to their own country, they sent for their friends, and once e
 
 Then they settled among themselves which of them would do it, and chose twelve, who went to where King Moine was, while the rest stayed in the town to help them if anyone tried to harm them. The killers found him and fell on him with knives and swords. It was quickly done, because he was only a boy. When it was over, hardly a soul spoke of it. Then they came to Vortigern and said, "Vortigern, now you'll be king, because we've killed King Moine."
 
-### Vortigern rebukes the murderers and is made king, and the princes flee east
+### Vortigern condemns the murderers and is made king, and the princes flee east
 
 When Vortigern heard they'd murdered their lord, he was furious. "You've done a great wrong in killing him," he said. "I advise you to run from the respected men of the land, because they'll put you to death if they can catch you. I'm very sorry you came here."
 
-So they went back, and that was how King Moine died. After that the people of the realm assembled, and once together, they discussed who should be their king. Vortigern, as I've told you, had won over the people and the land, so they all agreed he should rule. At that meeting were two men of standing who had charge of Constans's two other sons, Pendragon and Uther.
+So they went back, and that was how King Moine died. After that the people of the kingdom assembled, and once together, they discussed who should be their king. Vortigern, as I've told you, had won over the people and the land, so they all agreed he should rule. At that meeting were two men of standing who had charge of Constans's two other sons, Pendragon and Uther.
 
 <a id="page-36"></a>[\[Paris–Ulrich 1:36\]](merlin-old-french.md#page-36) They were brothers of King Moine, who was dead. When the two heard Vortigern was to be crowned, they were fairly sure he'd had King Moine killed. They talked it over and said, "As soon as he's king, he'll have these two boys we're guarding put to death. We loved their father very much, because he did us so much good, and it's through him that we still have what we have. We'd be worthless now if we let them be lost. We know very well that once Vortigern rules, he'll get rid of them, because he knows the kingdom ought to be theirs, and he'll do it before they're old enough to claim their land."
 
@@ -733,7 +733,7 @@ They did, and when they'd all come, he said, "You've all said one thing, and you
 
 Then the wisest of them said, "If you'll trust me, we'll save our lives. You know whether I've told you the truth."
 
-They said he had. "Now for God's sake, we beg you, find a way to keep us alive."
+They said he had. "Now for god's sake, we beg you, find a way to keep us alive."
 
 <a id="page-42"></a>[\[Paris–Ulrich 1:42\]](merlin-old-french.md#page-42) "Anyone who couldn't would be a fool," he answered. "Do you know what we'll do? We'll all agree on one story, and say the tower can't stand and never will unless the blood of this fatherless child is put in the mortar of its foundations. Whoever gets it into the walls will see them hold and stay sound forever.
 
@@ -795,7 +795,7 @@ So Merlin took them to a convent, where he'd had his mother become a nun,[^44-2]
 
 "When Vortigern heard this, he thought it amazing, and believed they spoke the truth. They urged him to have me searched for until I was found, and to forbid his men to bring me to him. The moment they caught me, they were to kill me and carry my blood back for the mortar of the tower. That, they said, was how it would hold.
 
-"So Vortigern chose twelve messengers and made them all swear to do just that as soon as they found me. They set out two by two, and these four met and came upon the place where I was. Because I knew very well they were looking for me, I made myself known to them through a boy I hit so that he'd say what I was. That's how they found me, as you've heard. Now ask them if I'm telling the truth."
+"So Vortigern chose twelve messengers and made them all swear to do just that as soon as they found me. They set out two by two, and these four met and came across the place where I was. Because I knew very well they were looking for me, I made myself known to them through a boy I hit so that he'd say what I was. That's how they found me, as you've heard. Now ask them if I'm telling the truth."
 
 Blaise asked them, and they said it was so. They told him that everything Merlin had said about the king and the clerks was just how it happened. Blaise crossed himself. "If this child lives to grow up," he said, "he'll be very wise. It would have been a great loss if you'd killed him."
 
@@ -815,13 +815,13 @@ Blaise asked him whether they wanted to kill him. Merlin laughed. "Not yet."
 
 So the messengers promised Merlin what he'd asked. Then Blaise said, "Merlin, I can see you mean to leave me. Tell me what you want me to do with this work you've had me begin."
 
-"I'll tell you," Merlin answered. "You can see how much sense and memory God has given me. The one who thought he'd made me for himself has lost me. Our Lord has chosen me to serve him, and no one but me can do what I do. You can see too that I have to go with these men to the king. Once I'm there, no one on earth but God will be trusted more than I am. You'll come to that land as well, to finish what you've begun. But you won't come with me; you'll go on your own and look for a country called Northumberland. It's full of great forests and very wild, with parts no one has ever set foot in.
+"I'll tell you," Merlin answered. "You can see how much sense and memory Yahweh has given me. The one who thought he'd made me for himself has lost me. Yahweh has chosen me to serve it, and no one but me can do what I do. You can see too that I have to go with these men to the king. Once I'm there, no one on earth but Yahweh will be trusted more than I am. You'll come to that land as well, to finish what you've begun. But you won't come with me; you'll go on your own and look for a country called Northumberland. It's full of great forests and very wild, with parts no one has ever set foot in.
 
 <a id="page-47"></a>[\[Paris–Ulrich 1:47\]](merlin-old-french.md#page-47) "You'll live there, and I'll visit you often and tell you everything you need for this work you're doing. You'll have to work hard at it, and you'll be well rewarded. Do you know how?[^47-1] All your life you'll have your heart's desire, and after it the perfect joy that lasts forever. People will tell your work for as long as this world lasts, and be glad to hear it.
 
-"Do you know where this grace will come from? From our Lord's gift to Joseph of Arimathea, who was given the body taken down from the cross. Once you've worked hard for Joseph, for his forebears and for the heirs of his line, and done enough good to deserve their company, I'll show you where they are. You'll see the glorious reward Joseph had for the body of Jesus Christ that was given to him.
+"Do you know where this grace will come from? From Yahweh's gift to Joseph of Arimathea, who was given the body taken down from the cross. Once you've worked hard for Joseph, for his ancestors and for the heirs of his line, and done enough good to deserve their company, I'll show you where they are. You'll see the glorious reward Joseph had for the body of Jesus Christ that was given to him.
 
-"So you can be sure my wisdom comes from God: all through the kingdom I'm going to, I'll set its best men struggling for one who's to come from the line God loves so much.[^47-2] These great trials won't come until the fourth king, and he'll be called Arthur.[^47-3]
+"So you can be sure my wisdom comes from Yahweh: all through the kingdom I'm going to, I'll set its best men struggling for one who's to come from the line Yahweh loves so much.[^47-2] These great trials won't come until the fourth king, and he'll be called Arthur.[^47-3]
 
 "So go where I've told you. I'll come often and bring you everything I want put in your book. It'll be loved and prized by many people who'll never have seen it. When you've finished it, take it to the company of those people who have the glorious reward I told you about. I'll have you write some part of the life of every good person in the lands I'm going to. No life was ever heard with more pleasure than the life of this Arthur will be, and of the people of his time. When you've done all this and told their lives, you'll have earned everything that belongs to those in the company of the vessel called the Grail.
 
@@ -835,13 +835,13 @@ So Merlin settled his journey with Blaise.[^48-1] Then he spoke to the messenger
 
 "People have come for me from far away," Merlin told her, "and if you'll let me, I want to go with them. I have to serve Jesus Christ with what he's given me. I can only do that in the land these men want to take me to. Blaise, our master, is going away too, so you'll have to say goodbye to us both."
 
-"My son," his mother said, "I put you in God's hands. I'm not wise enough to hold you back. But if you'd allow it, I'd very much like Blaise to stay."
+"My son," his mother said, "I put you in Yahweh's hands. I'm not wise enough to hold you back. But if you'd allow it, I'd very much like Blaise to stay."
 
 "That can't be," said Merlin.
 
 ### Merlin leaves his mother and rides with the messengers
 
-So Merlin said goodbye to her and went off with the king's men, and Blaise set out the other way for Northumberland, as Merlin had told him. Merlin and the messengers rode on together until one day they passed through a town on market day. Beyond it they came upon a peasant who'd bought a big pair of shoes and was carrying off leather to mend them, because he wanted to go on a pilgrimage.
+So Merlin said goodbye to her and went off with the king's men, and Blaise set out the other way for Northumberland, as Merlin had told him. Merlin and the messengers rode on together until one day they passed through a town on market day. Beyond it they came across a peasant who'd bought a big pair of shoes and was carrying off leather to mend them, because he wanted to go on a pilgrimage.
 
 ### Merlin laughs at a peasant with shoe leather
 
@@ -885,7 +885,7 @@ The messengers asked him why he was laughing.
 
 When the messengers heard what Merlin said, they went to the woman and told her.
 
-<a id="page-51"></a>[\[Paris–Ulrich 1:51\]](merlin-old-french.md#page-51) She was terrified. "For God's sake, have mercy," she said. "I know I can't hide it from you, so I'll tell you the whole truth. It's just as you've said. But please don't tell my husband, because he'd kill me if he knew."
+<a id="page-51"></a>[\[Paris–Ulrich 1:51\]](merlin-old-french.md#page-51) She was terrified. "For god's sake, have mercy," she said. "I know I can't hide it from you, so I'll tell you the whole truth. It's just as you've said. But please don't tell my husband, because he'd kill me if he knew."
 
 When they heard this, the two came back and told their companions, and they agreed among themselves that the world had never had a better seer. Merlin and the messengers rode on together until they were a day's ride from where Vortigern was.[^51-1] Then they said, "Merlin, you ought to advise us. We can tell him we've found you, but we're afraid that since we haven't killed you, he'll hold it against us."
 
@@ -893,11 +893,11 @@ At this, Merlin knew they wished him well. "Do as I say and you'll never be blam
 
 The messengers left and went to Vortigern, who was very glad to see them. "How did it go?" he asked.
 
-"Sire, as well as we could manage," they answered. Then they took him aside and told him the whole story as it happened: how they'd come upon Merlin, and that if he hadn't wished it, they'd never have found him. "He's coming to you very willingly."
+"Sire, as well as we could manage," they answered. Then they took him aside and told him the whole story as it happened: how they'd come across Merlin, and that if he hadn't wished it, they'd never have found him. "He's coming to you very willingly."
 
 "Which Merlin do you mean?" said the king. "Weren't you to look for the fatherless child, and bring me his blood?"
 
-<a id="page-52"></a>[\[Paris–Ulrich 1:52\]](merlin-old-french.md#page-52) "Sire," they answered, "this Merlin we mean is the one born without a father. Apart from God, he's the wisest man and the best seer who ever lived in this world. He told us how you'd made us swear to kill him, exactly as you did. He also said your clerks don't know why your tower falls. But he'll show you so plainly that you'll see it with your own eyes. He's told us plenty of other strange things too. He sent us to find out whether you want to talk to him. If you'd rather, we'll kill him where he is: two of our companions are with him, guarding him."
+<a id="page-52"></a>[\[Paris–Ulrich 1:52\]](merlin-old-french.md#page-52) "Sire," they answered, "this Merlin we mean is the one born without a father. Apart from Yahweh, he's the wisest man and the best seer who ever lived in this world. He told us how you'd made us swear to kill him, exactly as you did. He also said your clerks don't know why your tower falls. But he'll show you so plainly that you'll see it with your own eyes. He's told us plenty of other strange things too. He sent us to find out whether you want to talk to him. If you'd rather, we'll kill him where he is: two of our companions are with him, guarding him."
 
 When Vortigern heard them, he said, "If you'll vouch for Merlin with your lives that he'll show you and me why my tower falls, I don't want him killed now."
 
@@ -909,7 +909,7 @@ The messengers went back, and the king himself with them. When Merlin saw two of
 
 "That's true," they answered. "We'd rather risk dying than kill you, and we had to do one or the other."
 
-"God willing, I'll keep you safe from that," said Merlin.
+"god willing, I'll keep you safe from that," said Merlin.
 
 So Merlin and the messengers rode out together to meet Vortigern. When Merlin saw him, he greeted him. "Vortigern, speak with me in private." He drew aside and called over the two who'd brought him.
 
@@ -939,7 +939,7 @@ The king asked them if he was telling the truth. "Certainly, sire, he is," they 
 
 Then Merlin said to Vortigern, "Do you want to know why it falls, and what brings it down? If you'll do as I say, I'll show you. Do you know what's under it? A great pool of water, and beneath that, two dragons that can't see a thing, one white and the other red. They lie under two big stones, each well aware of the other, and they're very large and strong.
 
-"When the weight of the building presses the earth and the pool down hard on them, they turn with such force that all the water churns, making such a din that whatever stands above them has to fall.[^54-1] That's how these two bring it down.
+"When the weight of the building presses the earth and the pool down hard on them, they turn with such force that all the water churns, making such a racket that whatever stands above them has to fall.[^54-1] That's how these two bring it down.
 
 "Have someone look, and if you don't find it as I've told you, have me killed. If you do, let the men who vouched for me off, and put the blame on the clerks, who knew nothing of all this."
 
@@ -963,7 +963,7 @@ Then the king called Merlin. "Merlin, you told the truth about the water, but I 
 
 So Vortigern ordered them dug, and the water ran out. Then Merlin said to him, "As soon as the dragons down there sense each other, they'll fight until they kill each other. Now send for all the men of standing in the land to watch them. It'll mean something great."
 
-Vortigern said he'd be very glad to, and he summoned the nobles, the clerks and the laymen from all over his kingdom. When they'd all come, he told them all the amazing things Merlin had told him, and how the two dragons were to fight. "That'll be good to see," they said to one another, asking the king whether Merlin had said which would win. He answered that he hadn't yet. Then the workmen ran the water off through the fields, and when it was out, two great slabs of rock lay on the bottom.
+Vortigern said he'd be very glad to, and he summoned the nobles, the clerks and ordinary people from all over his kingdom. When they'd all come, he told them all the amazing things Merlin had told him, and how the two dragons were to fight. "That'll be good to see," they said to one another, asking the king whether Merlin had said which would win. He answered that he hadn't yet. Then the workmen ran the water off through the fields, and when it was out, two great slabs of rock lay on the bottom.
 
 <a id="page-56"></a>[\[Paris–Ulrich 1:56\]](merlin-old-french.md#page-56) At the sight, Merlin turned to Vortigern. "Do you see those two stones?"
 
@@ -1071,7 +1071,7 @@ The ships came in, and once they'd landed, the knights stepped out fully armed, 
 
 ### Pendragon is made king, besieges Hengist and hears of Merlin
 
-The story says that this was how the sons of Constans took the castle. They let the whole kingdom know they were back. When the people heard it, they were overjoyed and all came out to meet them and received them as their lords. So the two brothers returned to their realm and made Pendragon king. He ruled them well and loyally.
+The story says that this was how the sons of Constans took the castle. They let the whole kingdom know they were back. When the people heard it, they were overjoyed and all came out to meet them and received them as their lords. So the two brothers returned home and made Pendragon king. He ruled them well and loyally.
 
 The Saxons Vortigern had settled in the land held on to their castles, which were very strong, and made war on Pendragon and the Christians without end. They fought so long, losing and winning many times, that at last Pendragon laid siege to Hengist's own fort. He sat there half a year or more, until he called his advisers together to discuss how to take it.
 
@@ -1121,7 +1121,7 @@ Then they asked the messengers what town they'd found him in. "In Northumberland
 
 Then the three men said they were sure it had been Merlin, and that he'd said the king himself should go. So Pendragon said he'd leave the siege to his brother Uther and go to Northumberland to search the forests the man had named. He made ready for the journey and went, taking with him the men he thought knew Merlin. When he arrived, he asked for news of Merlin, but found no one who could give him any. Hearing that, he said he'd look in the forest himself, and rode through the woods searching.
 
-It happened that one of his knights came upon a great herd of animals, and a very ugly, misshapen fellow watching over them. The rider asked who he was, and he said he was from Northumberland, the servant of a rich man. "Could you give me news of someone named Merlin?"
+It happened that one of his knights came across a great herd of animals, and a very ugly, misshapen fellow watching over them. The rider asked who he was, and he said he was from Northumberland, the servant of a rich man. "Could you give me news of someone named Merlin?"
 
 "No," said the herder, "but last night I saw a stranger who told me the king would come looking for him in these forests. Do you know anything about that?"
 
@@ -1203,7 +1203,7 @@ When Pendragon and his companions heard this, they were amazed. "You know Merlin
 
 Then the king asked, "Merlin, how did you know of Hengist's death?"
 
-"When you came here, I knew Hengist meant to murder your brother. I went to Uther and told him. Thanks to God and to him, he took my word and was on his guard. I told him how strong and bold Hengist was, since he was to come all alone to Uther's tent to kill him. When I told him this, he didn't believe me.[^69-1] But he did this much: he kept watch that night by himself, telling no one, and armed himself without anyone knowing.
+"When you came here, I knew Hengist meant to murder your brother. I went to Uther and told him. Thanks to Yahweh and to him, he took my word and was on his guard. I told him how strong and bold Hengist was, since he was to come all alone to Uther's tent to kill him. When I told him this, he didn't believe me.[^69-1] But he did this much: he kept watch that night by himself, telling no one, and armed himself without anyone knowing.
 
 "So Uther stood guard that night until Hengist came. When Hengist got there, he went in and searched for your brother where he expected to find him. He wasn't there, so Hengist tried to get out. Uther met him at the door, fought him and soon finished him, since Hengist was unarmed. He'd come only to kill Uther in his sleep and slip away fast if he had to."
 
@@ -1223,7 +1223,7 @@ When the king heard this remarkable story, he asked, "Merlin, what did you look 
 
 "Go and ask Uther who told him what I've told you. If he can't say, never believe anything I tell you. Remember this: when I speak to him, I'll take the shape I had when I warned him about Hengist, and I'll want you to recognize me."
 
-"Merlin, for God's sake, will you let me know it when my brother is talking with you?"
+"Merlin, for god's sake, will you let me know it when my brother is talking with you?"
 
 "Of course you'll know," Merlin answered, "but whatever you do, tell no one. If I ever caught you telling anyone, I'd never trust you again, and the loss would be greater for you than for me."
 
@@ -1239,7 +1239,7 @@ When the king heard this remarkable story, he asked, "Merlin, what did you look 
 
 The story says that this was how Merlin came to know King Pendragon.[^71-2] He said goodbye and went to his master Blaise and told him all of it again. Blaise wrote it down, and it's through him that we know it. Pendragon traveled on, day after day, until he reached Uther, who was delighted to see him. As soon as they'd greeted each other, Pendragon took his brother aside, told him of Hengist's death as Merlin had told it, and asked whether it was true.
 
-"I don't know who told you," said Uther, "but God help me, you've told me something I thought no one knew but God and a very old gentleman who told it to me in private. I didn't think anyone could have found out. For God's sake, tell me who told you this. I'm astonished you know it."
+"I don't know who told you," said Uther, "but god help me, you've told me something I thought no one knew but Yahweh and a very old gentleman who told it to me in private. I didn't think anyone could have found out. For god's sake, tell me who told you this. I'm astonished you know it."
 
 "I know it well," said Pendragon, "but please, tell me who the gentleman was who saved you from death. From what I've learned, if it weren't for him, Hengist would have killed you."
 
@@ -1285,7 +1285,7 @@ Uther came back to Pendragon. "I don't know what this can be." Then he turned to
 
 "I was here when you set off, and when you talked to the man."
 
-Uther crossed himself. "God help me," he said to Pendragon, "I'm under a spell. Nothing like this ever happened to anyone."
+Uther crossed himself. "god help me," he said to Pendragon, "I'm under a spell. Nothing like this ever happened to anyone."
 
 Hearing him talk like this, the king laughed, knowing in his heart it was Merlin doing all this. "Dear brother," he said, "I didn't think you'd lie to me."
 
@@ -1307,7 +1307,7 @@ Hearing him talk like this, the king laughed, knowing in his heart it was Merlin
 
 They stepped out of the tent and stood there a while. Then Pendragon told one of his knights, "Go and see who's in there." He went in, found the gentleman sitting on a bed, and came back and told them.
 
-<a id="page-75"></a>[\[Paris–Ulrich 1:75\]](merlin-old-french.md#page-75) When Uther heard it, he was astounded. "God help us! Now I've seen what I never thought anyone could. My lord, this is the man who saved me from death, without a doubt."
+<a id="page-75"></a>[\[Paris–Ulrich 1:75\]](merlin-old-french.md#page-75) When Uther heard it, he was astounded. "god help us! Now I've seen what I never thought anyone could. My lord, this is the man who saved me from death, without a doubt."
 
 At that the king was overjoyed and told the gentleman he was very welcome. "Sir," he said, "do you want me to tell my brother who you are?"
 
@@ -1359,13 +1359,13 @@ Uther said goodbye to him. Then Pendragon came back to his brother and asked him
 
 "Be quite sure that he's the one who kept Hengist from killing you, and the one I went to find in Northumberland. He has such power that he knows everything that's been done and said in the past, and a great part of the future.
 
-<a id="page-77"></a>[\[Paris–Ulrich 1:77\]](merlin-old-french.md#page-77) "So we should ask him earnestly to stay close to us, and handle all our affairs through him."
+<a id="page-77"></a>[\[Paris–Ulrich 1:77\]](merlin-old-french.md#page-77) "So we should beg him to stay close to us, and handle all our affairs through him."
 
 "My lord," Uther answered, "if he were willing, such a man would serve us well."
 
 ### The brothers beg Merlin to stay, and he agrees
 
-Then both brothers begged Merlin, for God's sake, and because they'd trust him in anything he wished, to stay with them.
+Then both brothers begged Merlin, for god's sake, and because they'd trust him in anything he wished, to stay with them.
 
 "You should both know that I know every hidden thing I want to know," Merlin replied. "And you, my lord," he said to the king, "don't you know I've told you the truth about everything you've asked me?"
 
@@ -1413,15 +1413,15 @@ So Merlin rose to rule over the king's advisers, and did so a long time,[^80-1] 
 
 "I'm willing for you to try," the king answered, "so long as you don't anger him."
 
-"My lord, I'll say nothing and do nothing that ought to trouble him." So Pendragon agreed, and the baron was delighted to have his permission. In the eyes of the world he was very wise, but he was full of malice, a powerful man, very rich and with plenty of family. One day he came upon Merlin at court, made a fuss of him and showed him a friendly face, and in Pendragon's presence called him aside to talk in private.
+"My lord, I'll say nothing and do nothing that ought to trouble him." So Pendragon agreed, and the baron was delighted to have his permission. In the eyes of the world he was very wise, but he was full of malice, a powerful man, very rich and with plenty of family. One day he ran into Merlin at court, made a fuss of him and showed him a friendly face, and in Pendragon's presence called him aside to talk in private.
 
-<a id="page-81"></a>[\[Paris–Ulrich 1:81\]](merlin-old-french.md#page-81) Only five were there, and the baron said to the king, "My lord, here's one of the wisest men in the world. I've heard he told Vortigern he'd die by your fire, and so he did. So for God's sake, all of you, as you know I'm ill, ask him to tell you, if he knows, how my life will end, since I'm sure he can say if he wants to."
+<a id="page-81"></a>[\[Paris–Ulrich 1:81\]](merlin-old-french.md#page-81) Only five were there, and the baron said to the king, "My lord, here's one of the wisest men in the world. I've heard he told Vortigern he'd die by your fire, and so he did. So for god's sake, all of you, as you know I'm ill, ask him to tell you, if he knows, how my life will end, since I'm sure he can say if he wants to."
 
 The king and the others all asked Merlin. He'd heard every word, and knew full well how jealous and wicked at heart the man was. "My lord," he told Pendragon, "you want me to tell you of his death. I'll tell you. On the day he dies, he'll fall from his horse and break his neck. That's how he'll leave this life."
 
 ### The baron comes back in disguise and hears that he'll hang
 
-When the baron heard this, he said to the king, "My lord, you hear what he's told me, and God protect me from it." Then he took Pendragon aside. "Remember what Merlin has said, and I'll come to him again another way and test him."
+When the baron heard this, he said to the king, "My lord, you hear what he's told me, and Yahweh protect me from it." Then he took Pendragon aside. "Remember what Merlin has said, and I'll come to him again another way and test him."
 
 So he went home to his own country and put on different clothes. Once he'd changed, he came back as fast as he could and pretended to be ill. He secretly asked the king to bring Merlin with him, so that Merlin wouldn't know who it was. Pendragon sent back that he'd be glad to go, and that Merlin would never learn it from him.
 
@@ -1431,7 +1431,7 @@ Merlin laughed. "My lord, no king should go so alone that he doesn't have at lea
 
 So Pendragon called those he wanted with him, and they went to see the man. When the royal party got there, the sick man had his wife ready, and she threw herself at the king's feet.
 
-<a id="page-82"></a>[\[Paris–Ulrich 1:82\]](merlin-old-french.md#page-82) "My lord, for God's sake, have your seer tell me whether my husband will get well."
+<a id="page-82"></a>[\[Paris–Ulrich 1:82\]](merlin-old-french.md#page-82) "My lord, for god's sake, have your seer tell me whether my husband will get well."
 
 The king put on a very innocent face and looked at Merlin. "Merlin, could you tell what this woman asks? She wants to know about him."
 
@@ -1451,7 +1451,7 @@ So Pendragon left him and went back. The baron made for an abbey and did just as
 
 Then Merlin called Pendragon and Uther before an altar.
 
-<a id="page-83"></a>[\[Paris–Ulrich 1:83\]](merlin-old-french.md#page-83) "The better I get to know you, the more foolish I find you," he said to them both. "Do you think I don't know what death this fool who's testing me will die? God help me, I know it well, and I'll tell you. You'll wonder still more at what I'll tell you than at the other two things I've already told him."[^83-1]
+<a id="page-83"></a>[\[Paris–Ulrich 1:83\]](merlin-old-french.md#page-83) "The better I get to know you, the more foolish I find you," he said to them both. "Do you think I don't know what death this fool who's testing me will die? god help me, I know it well, and I'll tell you. You'll wonder still more at what I'll tell you than at the other two things I've already told him."[^83-1]
 
 "Merlin," said the king, "can it be true that a man could die that way?"
 
@@ -1459,7 +1459,7 @@ Then Merlin called Pendragon and Uther before an altar.
 
 ### Merlin tells the fake monk he'll drown as well
 
-So Pendragon and Uther together, with Merlin, came to where they were to be taken. "My lord," the abbot said, "for God's sake, have your seer tell me whether the monk who lies there can ever get well."
+So Pendragon and Uther together, with Merlin, came to where they were to be taken. "My lord," the abbot said, "for god's sake, have your seer tell me whether the monk who lies there can ever get well."
 
 The king asked him. Merlin, as if angry, answered, "Sir, he can get up perfectly well if he wants to. There's nothing wrong with him, and he's testing me for nothing. He'll die the two deaths I've told him of, and I'll tell him a third, stranger than either: after breaking his neck and hanging, he'll drown. All three of these will happen to him, so let him stop pretending, because I know his whole heart and everything his wicked mind is thinking."
 
@@ -1527,9 +1527,9 @@ At this, Pendragon and Uther were alarmed. "Do they have so many men that they c
 
 "Yes, if you trust me, and let them get well away from the shore, so they never know you've gathered your army. When they're far enough off, send some of your people toward their ships, as if you didn't mean to let them go back. When they see that, they'll be frightened. Then let one of you two go with your troops and keep so close that you force them to camp away from the river against their will. Once they're camped, they'll be badly short of water, and the boldest of them will lose heart. Hold them like that for two days, and on the third, fight them. If you do this, I promise you your men will win."
 
-Then the two brothers said, "For God's sake, Merlin, tell us whether we'll die in this battle."
+Then the two brothers said, "For god's sake, Merlin, tell us whether we'll die in this battle."
 
-"Nothing that has a beginning lacks an end," Merlin told them. "No one should be dismayed by death if they meet it as they ought, since everyone alive must know they're mortal. The same holds for you: no high rank or wealth can keep you from it."
+"Nothing that has a beginning lacks an end," Merlin told them. "No one should lose heart over death if they meet it as they ought, since everyone alive must know they're mortal. The same holds for you: no high rank or wealth can keep you from it."
 
 Then Pendragon spoke up.
 
@@ -1541,7 +1541,7 @@ Then Pendragon spoke up.
 
 They did just as Merlin had said. Then they said, "Merlin, we've done what you commanded. Now please tell us why you had us do it."
 
-"You want to know about your death," Merlin answered the king, "and how this battle will go, and I'll tell you. Do you know what each of you has promised the other? I'll tell you. You've sworn that in this fight you'll be decent men, true to yourselves and to God. I'll teach you how to be respected, loyal and fair in judgment. I order you to go to confession, since you should do it now more than at any other time, knowing you're to fight. If you're as I tell you, be sure you'll win.
+"You want to know about your death," Merlin answered the king, "and how this battle will go, and I'll tell you. Do you know what each of you has promised the other? I'll tell you. You've sworn that in this fight you'll be decent men, true to yourselves and to Yahweh. I'll teach you how to be respected, loyal and fair in judgment. I order you to go to confession, since you should do it now more than at any other time, knowing you're to fight. If you're as I tell you, be sure you'll win.
 
 "The Saxons don't believe in the Trinity, for which Jesus Christ came to earth, and you're defending the inheritance that's rightfully yours. Whoever dies standing up for their rights, reconciled with the law of Jesus Christ as the Church commands, doesn't need to fear death much.
 
@@ -1567,7 +1567,7 @@ The story says that the two brothers did everything just as Merlin had told them
 
 On the third day King Pendragon arrived in great strength and had his men made ready and his battalions drawn up. When the Saxons saw the two armies, they were terrified.
 
-<a id="page-91"></a>[\[Paris–Ulrich 1:91\]](merlin-old-french.md#page-91) Uther and his troops charged so hard that they drove the Saxons back onto Pendragon's army. There was such a din and uproar, such shouting, that you couldn't have heard God thunder. Pendragon's men stood ready to strike whenever he gave the word, but he was waiting for the sign Merlin had promised. Before long it appeared: a red dragon came flying through the air, breathing fire and flame from its nostrils and mouth. It swept roaring over the Saxons. At the sight, they were badly shaken and terribly afraid.
+<a id="page-91"></a>[\[Paris–Ulrich 1:91\]](merlin-old-french.md#page-91) Uther and his troops charged so hard that they drove the Saxons back onto Pendragon's army. There was such a racket and uproar, such shouting, that you couldn't have heard god thunder. Pendragon's men stood ready to strike whenever he gave the word, but he was waiting for the sign Merlin had promised. Before long it appeared: a red dragon came flying through the air, breathing fire and flame from its nostrils and mouth. It swept roaring over the Saxons. At the sight, they were badly shaken and terribly afraid.
 
 Pendragon and Uther told their troops the enemy was beaten, since they'd seen every sign Merlin had named. Pendragon's men rode at them as fast as their horses could carry them, and when Uther saw the king's forces had closed with them, he threw in all of his own. The Saxons met them as boldly or more, and the two sides clashed hard; it was a fierce, bitter battle, and in it King Pendragon was killed.
 
@@ -1601,7 +1601,7 @@ Things stayed that way a long while, and Merlin was very close to Uther Pendrago
 
 ### Merlin raises the stones at Salisbury and tells Uther where his power comes from
 
-When they got there, Merlin showed them some enormous rocks and said, "Here are the stones you're to take back." At the sight, they thought it sheer madness. They said the whole world couldn't turn one over, and they'd never put such things in their ships, God willing.
+When they got there, Merlin showed them some enormous rocks and said, "Here are the stones you're to take back." At the sight, they thought it sheer madness. They said the whole world couldn't turn one over, and they'd never put such things in their ships, god willing.
 
 "Then you've come for nothing," Merlin told them.
 
@@ -1611,35 +1611,35 @@ They went back and told the king of the impossible task Merlin had set them, whi
 
 When Merlin arrived, Uther told him what his men had said. "Since they've failed me," said Merlin, "I'll keep my promise myself." Then by the power of his art he had the stones brought from Ireland to the cemetery at Salisbury, where they still are. When they'd come, the king went to see them, and took a large part of his people along to see the sight. Once there, they said they'd never seen such enormous blocks, and didn't believe all the world could move one. Everyone was amazed at how Merlin had got them there, though nobody had watched it happen or heard of it. Merlin told them to set the stones upright.
 
-"Merlin," said the king, "no one but God could do that, unless you do it."
+"Merlin," said the king, "no one but Yahweh could do that, unless you do it."
 
-<a id="page-94"></a>[\[Paris–Ulrich 1:94\]](merlin-old-french.md#page-94) "Then leave me to it," said Merlin, "and I'll have kept my promise to Pendragon, because I'll have done something for him that no other mortal man could ever finish."[^93-1][^94-1] So Merlin raised the stones in the cemetery at Salisbury, and that was the end of the work.
+<a id="page-94"></a>[\[Paris–Ulrich 1:94\]](merlin-old-french.md#page-94) "Then leave me to it," said Merlin, "and I'll have kept my promise to Pendragon,[^93-1] because I'll have done something for him that no other mortal man could ever finish."[^94-1] So Merlin raised the stones in the cemetery at Salisbury, and that was the end of the work.
 
 Merlin loved the king very much and served him a long time, until one day he took him aside and said, "It's time I told you the highest secret I know, since I see this whole country is yours. Because I love you, I want to tell you something. Didn't I keep Hengist from killing you? You ought to love me for that."
 
 "There's nothing you could want that I wouldn't do, if I can," the king answered.
 
-"If you do it, the gain will be yours," said Merlin, "since I'll teach you something to win you God's love."
+"If you do it, the gain will be yours," said Merlin, "since I'll teach you something to win you Yahweh's love."
 
 "Merlin, say what you want without fear," said Uther. "You'll never name anything a man can do that I won't do."
 
 "Sire, what I'm about to tell you is going to seem very strange," said Merlin, "and I ask you to keep it secret, since I want the gain and the honor to be yours."
 
-The king promised Merlin he'd never speak of it. Then Merlin said, "Sire, the truth is that I know what's been said and done in the past, a gift I have by nature from the demon who fathered me. Our Lord, who has power over all things, has given me the sense to know part of the future. That's why the devils have lost me: I'll never do their will. Now you know the source of what I can do. I'll tell you what our Lord wants you to know. When you know it, take care to do as our Lord wishes.
+The king promised Merlin he'd never speak of it. Then Merlin said, "Sire, the truth is that I know what's been said and done in the past, a gift I have by nature from the demon who fathered me. Yahweh, who has power over all things, has given me the sense to know part of the future. That's why the devils have lost me: I'll never do their will. Now you know the source of what I can do. I'll tell you what Yahweh wants you to know. When you know it, take care to do as Yahweh wishes.
 
 ### Merlin tells Uther about the table of the Last Supper and Joseph's table
 
-<a id="page-95"></a>[\[Paris–Ulrich 1:95\]](merlin-old-french.md#page-95) "Sire, you must believe that our Lord came to earth to save the world. He sat at the Last Supper and said to the apostles, 'One of you is going to betray me.' The one who did that wrong was cut off from their company, just as our Lord had said.[^95-1] After that, Sire, our Lord died for us, and a knight asked for the body and took it down from the cross.
+<a id="page-95"></a>[\[Paris–Ulrich 1:95\]](merlin-old-french.md#page-95) "Sire, you must believe that Jesus came to earth to save the world. He sat at the Last Supper and said to the apostles, 'One of you is going to betray me.' The one who did that wrong was cut off from their company, just as Jesus had said.[^95-1] After that, Sire, Jesus died for us, and a knight asked for the body and took it down from the cross.
 
-"Then, Sire, our Lord rose again, and after Jesus Christ's death this soldier was in a wild wasteland, with part of his family and many others who were with him. When a great famine struck them, they complained to the knight who led them, and he prayed God to show him why they were suffering such hardship.
+"Then, Sire, Jesus rose again, and after Jesus Christ's death this soldier was in a wild wasteland, with part of his family and many others who were with him. When a great famine struck them, they complained to the knight who led them, and he prayed Yahweh to show him why they were suffering such hardship.
 
-"Our Lord told him to build a table in the name of the one at the Supper, square in shape, and to drape it well in white cloths. He was to set on it a vessel he had, from which Jesus and the apostles had eaten at the Supper, and to cover that completely except on his own side. Bron, his brother-in-law, caught a fish, which was laid in front of Joseph of Arimathea, in the middle of the table beside the vessel.[^95-2] Through it the good were separated from the wicked. Whoever could sit there, Sire, had everything their heart wanted.
+"Yahweh told him to build a table in the name of the one at the Supper, square in shape, and to drape it well in white cloths. He was to set on it a vessel he had, from which Jesus and the apostles had eaten at the Supper, and to cover that completely except on his own side. Bron, his brother-in-law, caught a fish, which was laid in front of Joseph of Arimathea, in the middle of the table beside the vessel.[^95-2] Through it the good were separated from the wicked. Whoever could sit there, Sire, had everything their heart wanted.
 
-"There was always one empty seat there, Sire, standing for where Judas sat at the Supper; when he heard our Lord say those words were meant for him, he left God's company. His place stayed vacant until our Lord set a man in it to make the twelve apostles whole. So these two tables belong together, and at the second, Joseph's, our Lord gave all who sat there what their hearts wanted. People call the vessel that gives them this grace the Grail. If you'll trust me, you'll found a third in the name of the Trinity, and each of the three will stand for one of the Trinity's powers.
+"There was always one empty seat there, Sire, standing for where Judas sat at the Supper; when he heard Jesus say those words were meant for him, he left Jesus's company. His place stayed vacant until Yahweh set a man in it to make the twelve apostles whole. So these two tables belong together, and at the second, Joseph's, Yahweh gave all who sat there what their hearts wanted. People call the vessel that gives them this grace the Grail. If you'll trust me, you'll found a third in the name of the Trinity, and each of the three will stand for one of the Trinity's powers.
 
 <a id="page-96"></a>[\[Paris–Ulrich 1:96\]](merlin-old-french.md#page-96) "I promise you that if you do it, great good will come of it to your body and soul, and things will happen in your time to amaze you. If you're willing, I'll help you all I can, and I swear it'll be one of the most talked-about works in the world. If you trust me, you'll do it, and if you take my word, you'll be very glad."
 
-That's what Merlin said to the king. "I don't want our Lord to lose anything through me," Uther answered, "and I want you to know that I leave it all to you."
+That's what Merlin said to the king. "I don't want Yahweh to lose anything through me," Uther answered, "and I want you to know that I leave it all to you."
 
 "Then decide, Sire, where you'd most like it made."
 
@@ -1663,7 +1663,7 @@ So the people gathered at Carduel for Pentecost, plenty of knights and ladies am
 
 It was like that for all eight days. The king gave plenty of fine gifts and great jewels to the ladies and young women. When the barons had said goodbye and were going, they came to the men of standing who sat at the table, and Uther himself asked what they meant to do.
 
-"Sire," they answered, "we've no wish ever to move from here. We'll bring our wives and children to this town and live here as long as our Lord allows, because that's how we feel."
+"Sire," they answered, "we've no wish ever to move from here. We'll bring our wives and children to this town and live here as long as Yahweh allows, because that's how we feel."
 
 "Do you all feel that way?" the king asked them.
 
@@ -1671,7 +1671,7 @@ It was like that for all eight days. The king gave plenty of fine gifts and grea
 
 When the king heard them speak like that, he was astonished, and so was everyone who listened. He was very glad, and ordered them honored in the town as he was himself.
 
-<a id="page-98"></a>[\[Paris–Ulrich 1:98\]](merlin-old-french.md#page-98) When the people were gone, Uther said to Merlin, "What you told me was true. Now I truly believe our Lord wants this table founded. But I'm very curious about the empty seat, and I'd very much like you to tell me, if you know, who'll sit there."
+<a id="page-98"></a>[\[Paris–Ulrich 1:98\]](merlin-old-french.md#page-98) When the people were gone, Uther said to Merlin, "What you told me was true. Now I truly believe Yahweh wants this table founded. But I'm very curious about the empty seat, and I'd very much like you to tell me, if you know, who'll sit there."
 
 "I can tell you this much," said Merlin: "it won't be taken in your time. The one who fills it will be born to a man who hasn't married yet, or learned he's to father such a child.[^98-1] First he must complete the place where the vessel of the Grail stands, which its keepers have never seen anyone do. That won't happen in your time either, but in the time of the king who comes after you. But I ask you to hold your gatherings and great courts in this town, and to be here yourself for the yearly feasts."
 
@@ -1735,11 +1735,11 @@ Uther said he'd be glad to, and so they began. All eight days he made a fuss of 
 
 "Uther's."
 
-She crossed herself. "God! How treacherous he is, pretending to love the duke and wanting to shame me! Ulfin," she said, "take care never to speak of it again. I want you to know that I'd tell my husband, and if he knew, you'd have to die for it. I'll keep it quiet only this once."
+She crossed herself. "god! How treacherous he is, pretending to love the duke and wanting to shame me! Ulfin," she said, "take care never to speak of it again. I want you to know that I'd tell my husband, and if he knew, you'd have to die for it. I'll keep it quiet only this once."
 
-<a id="page-102"></a>[\[Paris–Ulrich 1:102\]](merlin-old-french.md#page-102) "My lady," he answered, "it would be an honor to lose my life for my lord. No woman ever refused the king's love the way you do, since he loves you more than anything in the world. But maybe you're joking. For God's sake, have pity on him. You can be sure that great harm will still come to you from this, and neither you nor the duke can hold out against the king's will."
+<a id="page-102"></a>[\[Paris–Ulrich 1:102\]](merlin-old-french.md#page-102) "My lady," he answered, "it would be an honor to lose my life for my lord. No woman ever refused the king's love the way you do, since he loves you more than anything in the world. But maybe you're joking. For god's sake, have pity on him. You can be sure that great harm will still come to you from this, and neither you nor the duke can hold out against the king's will."
 
-"I can, God willing," she said, in tears. "I'll defend myself very well: I'll never be anywhere he is."
+"I can, god willing," she said, in tears. "I'll defend myself very well: I'll never be anywhere he is."
 
 ### Uther sends Igraine a gold cup to drink from for his sake
 
@@ -1757,7 +1757,7 @@ When Igraine heard it, she was deeply ashamed and blushed. She drank from the cu
 
 <a id="page-103"></a>[\[Paris–Ulrich 1:103\]](merlin-old-french.md#page-103) "My lady," said Bretel, "the duke says you're to keep it." So she kept it, and Bretel went to Uther and thanked him on Igraine's behalf, though she'd never said a word to him.
 
-Then Ulfin came by to see what Igraine was doing, and found her deep in thought. When the tables were cleared, she called him over. "Ulfin," she said, "your lord has sent me a cup in great treachery. But believe me: I'll tell the duke the disgrace you two are trying to bring about."
+Then Ulfin came by to see what Igraine was doing, and found her deep in thought. When the tables were cleared, she called him over. "Ulfin," she said, "your lord has sent me a cup to trick me. But believe me: I'll tell the duke the disgrace you two are trying to bring about."
 
 "My lady," Ulfin answered, "you're not so foolish as not to know that once a woman tells her husband such a thing, he'll never trust her again. So you'll take good care not to."
 
@@ -1791,13 +1791,13 @@ It was done as he said. He'd had his mounts brought out, and he and Igraine rode
 
 Two men of standing went with this message on Uther's behalf, and rode until they came to Tintagel. There they found the duke, and told him what the king commanded.
 
-<a id="page-105"></a>[\[Paris–Ulrich 1:105\]](merlin-old-french.md#page-105) He heard he'd have to go back the way he'd come, and he knew he'd have to bring Igraine. So he answered the messengers, "You can tell your lord I won't go back to his court. He's done so much to me and mine that I shouldn't trust him or go there. I won't say any more than that, but I call God to witness, who knows he's wronged me too much for me to believe him." So the messengers went back to the king.
+<a id="page-105"></a>[\[Paris–Ulrich 1:105\]](merlin-old-french.md#page-105) He heard he'd have to go back the way he'd come, and he knew he'd have to bring Igraine. So he answered the messengers, "You can tell your lord I won't go back to his court. He's done so much to me and mine that I shouldn't trust him or go there. I won't say any more than that, but I call Yahweh to witness, who knows he's wronged me too much for me to believe him." So the messengers went back to the king.
 
 ### The duke's advisers stand by him, and Uther declares war
 
-Once the envoys had left, the duke called together the men of standing he trusted most with his secrets. He told them why he'd come away from Carduel, and the treachery Uther was trying to bring about with his wife. When they heard it, they said it would never happen, God willing, and that any lord who'd plot such a thing against one of his own men deserved to suffer for it.
+Once the envoys had left, the duke called together the men of standing he trusted most with his secrets. He told them why he'd come away from Carduel, and the betrayal Uther was trying to bring about with his wife. When they heard it, they said it would never happen, god willing, and that any lord who'd plot such a thing against one of his own men deserved to suffer for it.
 
-"I ask you," said the duke, "for God's sake and because you owe it to me, to help me defend my land if the king attacks me."
+"I ask you," said the duke, "for god's sake and because you owe it to me, to help me defend my land if the king attacks me."
 
 They answered that they'd be glad to, and would help him all they could. That was the advice his men gave him.
 
@@ -1845,7 +1845,7 @@ When Ulfin heard the old man talk like that, he wondered where he'd learned what
 
 "When I've spoken to him, will I find you here?" asked Ulfin.
 
-"You'll find either me or my messenger." Then he said, "God be with you," and left.
+"You'll find either me or my messenger." Then he said, "god be with you," and left.
 
 Ulfin went back and told Uther all he'd found. The king laughed and said, "Ulfin, do you know this man?"
 
@@ -1857,7 +1857,7 @@ Ulfin went back and told Uther all he'd found. The king laughed and said, "Ulfin
 
 "Then I'll go with you," said Uther.
 
-Then the king went where Ulfin led him, and once they were out of the camp, they found a man who couldn't walk. As Uther passed in front of him, he cried out, "King, give me something I'll thank you for, and may God give you what you love most in the world."
+Then the king went where Ulfin led him, and once they were out of the camp, they found a man who couldn't walk. As Uther passed in front of him, he cried out, "King, give me something I'll thank you for, and may Yahweh give you what you love most in the world."
 
 Uther laughed and said, "Ulfin, would you do anything for me?"
 
@@ -1893,7 +1893,7 @@ When Merlin heard that, he laughed and said, "Once the oaths are sworn, I'll tel
 
 Then Uther said, "Now I ask you, Merlin, to help me with this, because no man in the world needs it more than I do."
 
-"Sire," said Merlin, "you'll have to go to where Igraine is in a very strange way, since she's a very wise lady, and very faithful to God and to her husband. But now you'll see what power I have to do what you want. Sire, I'll give you the duke's looks so well that no one will know you. He has two knights as close to him and to Igraine as anyone can be: one is named Bretel and the other Jordain. I'll give Ulfin Jordain's face and take Bretel's myself. I'll have the gate of the castle where Igraine is opened and bring you inside, and you'll sleep with her. We'll follow you in, Ulfin and I, in the shapes we'll take.
+"Sire," said Merlin, "you'll have to go to where Igraine is in a very strange way, since she's a very wise lady, and very faithful to Yahweh and to her husband. But now you'll see what power I have to do what you want. Sire, I'll give you the duke's looks so well that no one will know you. He has two knights as close to him and to Igraine as anyone can be: one is named Bretel and the other Jordain. I'll give Ulfin Jordain's face and take Bretel's myself. I'll have the gate of the castle where Igraine is opened and bring you inside, and you'll sleep with her. We'll follow you in, Ulfin and I, in the shapes we'll take.
 
 "But you'll have to leave very early once we're in, since in the morning we'll hear very strange news. Have your army and your barons ready to move out, and don't let a soul go near the castle until we're back. Be careful not to tell anyone where you mean to go, except us two who are here."
 
@@ -1931,7 +1931,7 @@ He said goodbye to Igraine and kissed her very tenderly as he went, in front of 
 
 "Sire," Merlin said, "I've kept my promises to you. Now make sure you keep yours to me."
 
-"You've done me the greatest kindness anyone could, and the finest service one man could do another," he said, "and I'll keep my word, God willing."
+"You've done me the greatest kindness anyone could, and the finest service one man could do another," he said, "and I'll keep my word, god willing."
 
 "I'm asking for it now," Merlin told him, "and I want you to know you've gained an heir, and that you've given him to me, since you're not to keep him. You'll give me all the rights you have in him. Have the hour and the night you fathered him written down, so you'll know whether I've told you the truth."
 
@@ -2011,7 +2011,7 @@ So they came back from their talk, and one of the wisest said to the messengers,
 
 "We don't know the king's mind," they answered, "but he did say he'd set it right entirely as his barons decide."
 
-"Then he'd do right by her, if that were so. You're such decent men that you'll advise him well, God willing, so that it's to his honor."
+"Then he'd do right by her, if that were so. You're such decent men that you'll advise him well, god willing, so that it's to his honor."
 
 ### A day is set for the duke's family to meet the king
 
@@ -2073,19 +2073,19 @@ Ulfin turned to the king and said, "Sire, what do you say? Will you accept what 
 
 Then before everyone Ulfin asked the one who spoke for the lady, "Do you approve these terms?"
 
-<a id="page-120"></a>[\[Paris–Ulrich 1:120\]](merlin-old-french.md#page-120) He replied like the wise man he was. He looked at Igraine and her advisers, who were so downcast and moved that tears welled up from their hearts to their eyes. Some of them were sobbing from pity and from joy. He himself was crying, and said, "Never did a lord make such good amends to his men." He asked Igraine and the duke's family, "Do you accept this peace?"
+<a id="page-120"></a>[\[Paris–Ulrich 1:120\]](merlin-old-french.md#page-120) He replied like the wise man he was. He looked at Igraine and her advisers, who were so sad and moved that tears welled up from their hearts to their eyes. Some of them were sobbing from pity and from joy. He himself was crying, and said, "Never did a lord make such good amends to his men." He asked Igraine and the duke's family, "Do you accept this peace?"
 
 She said nothing. Her relatives and the duke's all spoke up. "No one could refuse it. We welcome it, since we hold the king to be a decent man, and so loyal that we'll trust him in everything else."
 
 So the peace was sworn on both sides, and Uther Pendragon took Igraine as his wife and gave her daughter to King Lot of Orkney.[^120-1] The wedding was held on the thirteenth day after the two weeks that followed the talks. The duke had been killed twenty-one days before they met, so you can count two full months from the night Uther had slept with her in her room.[^120-2]
 
-From Lot's bride came Mordred, Sir Gawain, Agravain, Gareth and Gaheris.[^120-3] King Nentres of Sorhaut married Morgans, another daughter, born out of wedlock. The king sent a third, Morgue, to a convent on the advice of all her friends together, to learn to read and write, and she studied so well that she mastered the seven arts. She knew astonishing things about astronomy and practiced it constantly, and was deeply skilled in medicine, which is why Morgue was called Morgan le Fay. The king provided for all the other children, and he loved the duke's relatives very much.
+From Lot's bride came Mordred, Sir Gawain, Agravain, Gareth and Gaheris.[^120-3] King Nentres of Sorhaut married Morgans, another daughter, born outside marriage. The king sent a third, Morgue, to a convent on the advice of all her friends together, to learn to read and write, and she studied so well that she mastered the seven arts. She knew astonishing things about astronomy and practiced it constantly, and was deeply skilled in medicine, which is why Morgue was called Morgan le Fay. The king provided for all the other children, and he loved the duke's relatives very much.
 
 ### Uther asks Igraine whose child she's carrying
 
 So Uther had Igraine, and kept her until her pregnancy showed.[^120-4] One night, lying beside her, he put his hand on her belly and asked whose child she was carrying.
 
-<a id="page-121"></a>[\[Paris–Ulrich 1:121\]](merlin-old-french.md#page-121) It couldn't be his from their marriage on, since he'd written down every night he'd spent with her; nor could it be the duke's, who hadn't slept with her for a long while before he died. When she heard the question, Igraine was ashamed and began to cry. "Sire," she said, "I can't make you believe a lie about what you know. I'll tell you nothing but the truth; only, for God's sake, have mercy on me, because what I have to say is strange and true, if you promise you won't leave me."
+<a id="page-121"></a>[\[Paris–Ulrich 1:121\]](merlin-old-french.md#page-121) It couldn't be his from their marriage on, since he'd written down every night he'd spent with her; nor could it be the duke's, who hadn't slept with her for a long while before he died. When she heard the question, Igraine was ashamed and began to cry. "Sire," she said, "I can't make you believe a lie about what you know. I'll tell you nothing but the truth; only, for god's sake, have mercy on me, because what I have to say is strange and true, if you promise you won't leave me."
 
 Uther gave his word he'd never leave her, whatever she said.
 
@@ -2111,7 +2111,7 @@ So things stood until the sixth month, when Merlin had promised to come back. He
 
 "Sire, you'll have to help me," said Merlin. Uther said he'd help him every way he could, and promised to see that Merlin got the baby.
 
-"There's a man in this city who's the most respected in the land," Merlin said, "and his wife is the most decent woman there is, the most well-mannered, and graced with every fine quality. She's just had a son, and her husband isn't very rich. I want you to send for him and give him enough of your own so that the couple will swear on relics to do what I ask.
+"There's a man in this city who's the most respected in the land," Merlin said, "and his wife is the most decent woman there is, the most well-mannered, and blessed with every fine quality. She's just had a son, and her husband isn't very rich. I want you to send for him and give him enough of your own so that the couple will swear on relics to do what I ask.
 
 <a id="page-123"></a>[\[Paris–Ulrich 1:123\]](merlin-old-french.md#page-123) "They're to nurse a boy who'll be brought to them, on her own milk, and have another woman feed theirs, and raise the newcomer as their son."
 
@@ -2129,7 +2129,7 @@ Uther sent for the respected man, and when he came, gave him a warm welcome. The
 
 "Sire, that's a great thing you're asking," the man answered. "Please tell me when this child will arrive."
 
-"I swear to God I don't know," said Uther.
+"I swear to god I don't know," said Uther.
 
 The man said he'd do as Uther wished. Then the king gave him such a fine gift that he was stunned, and with that they said goodbye.
 
@@ -2159,7 +2159,7 @@ Then the king went to the queen. "My lady, I'll tell you something, if you'll tr
 
 "Sire, I'll believe you in anything you like, and do whatever you tell me," said Igraine.
 
-"Tomorrow night after midnight, with God's help, you'll have your baby," Uther said.
+"Tomorrow night after midnight, with Yahweh's help, you'll have your baby," Uther said.
 
 <a id="page-125"></a>[\[Paris–Ulrich 1:125\]](merlin-old-french.md#page-125) "As soon as it's born, I ask and order you to have one of your trusted women give it to the first man she finds as she leaves the hall. Tell everyone at the birth never to say you've had a child, because it would be a great shame to me and to you: plenty of people would say it wasn't mine, and it doesn't seem it could be."
 
@@ -2167,9 +2167,9 @@ Then the king went to the queen. "My lady, I'll tell you something, if you'll tr
 
 "Please just do as I ask," said the king.
 
-"Sire, I will, God willing," she said.
+"Sire, I will, god willing," she said.
 
-With that Uther left her. By God's will, the next evening her pains began, and she was in labor until the hour he'd named, and gave birth after midnight, before day. As soon as the baby came, she called a woman she trusted completely. "My dear, take this child to the door of the hall, and if you find any man who asks for it, give it to him. Notice what kind of man he is."
+With that Uther left her. By Yahweh's will, the next evening her pains began, and she was in labor until the hour he'd named, and gave birth after midnight, before day. As soon as the baby came, she called a woman she trusted completely. "My dear, take this child to the door of the hall, and if you find any man who asks for it, give it to him. Notice what kind of man he is."
 
 She did as the queen ordered. She wrapped him in the richest cloths she had and carried him to the hall door. When she got there, she saw a man who looked extremely frail.
 
@@ -2189,7 +2189,7 @@ Ector looked at him, and thought him a very holy man. "Sir, what can I do for yo
 
 "Ector, I've brought you a baby, and I ask you to have him raised more richly than your own. I promise you: if you do, great good will come of it to you and your heirs, more than you'd believe if someone told you."
 
-"Sir, is this the child the king asked me so earnestly to raise?"
+"Sir, is this the child the king begged me to raise?"
 
 "Yes, it is. Uther and all the men of standing ought to ask it of you, and you should know that my asking counts for as much as a very rich man's."
 
@@ -2211,7 +2211,7 @@ The story says that Merlin left Ector, and Ector had the child baptized at once,
 
 She said he was very welcome, held him, and wanted to know whether he'd been christened. Her husband said he had, and was called Arthur. Then she nursed and raised him, and sent her own son to be fed by another woman.
 
-<a id="page-127"></a>[\[Paris–Ulrich 1:127\]](merlin-old-french.md#page-127) Uther ruled the land for a long time after that. Then he fell seriously ill with gout, in his hands and feet. The Saxons rebelled in many places in his kingdom, and did him so much harm that he complained of it to his barons, who advised him to take revenge if he could. The king asked them, for God's sake and for his, to go, as decent men should for their lord. They all answered that they'd go willingly. They went, found Uther's enemies and saw that they'd won over a large part of the country. They came against them. The king's troops fought like soldiers with no leader and were beaten, and the king lost many of his men there.
+<a id="page-127"></a>[\[Paris–Ulrich 1:127\]](merlin-old-french.md#page-127) Uther ruled the land for a long time after that. Then he fell seriously ill with gout, in his hands and feet. The Saxons rebelled in many places in his kingdom, and did him so much harm that he complained of it to his barons, who advised him to take revenge if he could. The king asked them, for god's sake and for his, to go, as decent men should for their lord. They all answered that they'd go willingly. They went, found Uther's enemies and saw that they'd won over a large part of the country. They came against them. The king's troops fought like soldiers with no leader and were beaten, and the king lost many of his men there.
 
 ### The Saxons grow stronger, and Merlin goes to the sick Uther
 
@@ -2227,21 +2227,21 @@ When Uther heard Merlin was coming, he was very glad, and thought he'd find help
 
 "Sire, now you can see that no one's worth anything in a fight without a lord."
 
-<a id="page-128"></a>[\[Paris–Ulrich 1:128\]](merlin-old-french.md#page-128) "Merlin, for God's sake advise me what to do."
+<a id="page-128"></a>[\[Paris–Ulrich 1:128\]](merlin-old-french.md#page-128) "Merlin, for god's sake advise me what to do."
 
 "Sire, I'll tell you a few words, in private, and I want you to believe them. Have your armies and your people summoned. When they're all gathered, have yourself carried on a stretcher to fight the Saxons,[^128-1] and you can be sure you'll defeat them.[^128-2] When you have, you'll see that a land without a lord is worth nothing. When that's done, give away your treasure, since I can see you can't live much longer.
 
 "I want you to know this. Those who have great wealth and die with it all, unable to give it away or use it to do good for their souls, don't own it. It belongs to those who keep them from doing good with it, and those are the devils. A rich man would be better off never having had any of the riches of this earthly life. Honors only harm the soul unless they're shared out as they should be.
 
-"You know ahead of time that you must die, so you should give yours away so that you don't lose the joy of the other world, since what this life offers is worth nothing beside what waits above. I'll tell you why in a single word: you know there's no delight on earth so great that it doesn't fail, while the happiness bought in the next life can't die or end. Whatever we have in this mortal life our Lord lets us have to test whether we'll win the other.[^128-3] So whoever wants to be wise must buy eternal life with what God has given them here.
+"You know ahead of time that you must die, so you should give yours away so that you don't lose the joy of the other world, since what this life offers is worth nothing beside what waits above. I'll tell you why in a single word: you know there's no delight on earth so great that it doesn't fail, while the happiness bought in the next life can't die or end. Whatever we have in this mortal life Yahweh lets us have to test whether we'll win the other.[^128-3] So whoever wants to be wise must buy eternal life with what Yahweh has given them here.
 
-"You've had so much of everything good: what good have you done for our Lord? I've loved you deeply and love you still, and no one should love you more than you love yourself.
+"You've had so much of everything good: what good have you done for Yahweh? I've loved you deeply and love you still, and no one should love you more than you love yourself.
 
 <a id="page-129"></a>[\[Paris–Ulrich 1:129\]](merlin-old-french.md#page-129) "I tell you plainly you won't outlive the victory you'll win in this fight and this battle. Believe me, all the honors a man has in this life can't be worth as much to him as dying well. If you'd done all the good there is and then come to a bad end, you'd risk losing everything. If your life had been wicked and you died well, you'd be forgiven. I want you to know that you'll take nothing from this world but your charity and your good works.
 
 "Now I've shown you how things stand with you. You know your wife Igraine is dead and there can be no other, so your land will be left without an heir after you, which is why you must work hard to do good. I'm going, since I've nothing more to do with you. But ask Ulfin to believe me when the time comes."
 
-"That's grim news," the king said to Merlin, "though you've told me too that I'll beat my enemies. How can I repay our Lord?"
+"That's grim news," the king said to Merlin, "though you've told me too that I'll beat my enemies. How can I repay Yahweh?"
 
 "Only by dying well. I'll leave you now; think of your soul after the battle, please, and of what I've told you."
 
@@ -2257,9 +2257,9 @@ So the king and Merlin said goodbye. Uther summoned his people and said he'd mar
 
 ### Uther gives away his treasure, and Merlin speaks with him as he dies
 
-<a id="page-130"></a>[\[Paris–Ulrich 1:130\]](merlin-old-french.md#page-130) Uther did as you've heard. Then he remembered what Merlin had told him, and went back to Logres. When he got there, he sent for all his great treasure and wealth. He had it made known to all kinds of good people where the poorest of his kingdom were, and gave them rich gifts and generous charity.[^130-1] He shared out the rest on the advice and at the wish of the Church's clergy. So Uther let go of what was his: there was nothing of value he could remember that he didn't hand over for the love of God and on Merlin's word.
+<a id="page-130"></a>[\[Paris–Ulrich 1:130\]](merlin-old-french.md#page-130) Uther did as you've heard. Then he remembered what Merlin had told him, and went back to Logres. When he got there, he sent for all his great treasure and wealth. He had it made known to all kinds of good people where the poorest of his kingdom were, and gave them rich gifts and generous charity.[^130-1] He shared out the rest on the advice and at the wish of the Church's clergy. So Uther let go of what was his: there was nothing of value he could remember that he didn't hand over for the love of Yahweh and on Merlin's word.
 
-He humbled himself before God and his priests so gently that they felt sorry for him. His people looked after him for a long time, until his sickness took a turn for the worse. They gathered at Logres, deeply upset that he was dying; they could see he wouldn't live. He grew so weak that he lost his speech, and couldn't say a word for three days.
+He humbled himself before Yahweh and its priests so gently that they felt sorry for him. His people looked after him for a long time, until his sickness took a turn for the worse. They gathered at Logres, deeply upset that he was dying; they could see he wouldn't live. He grew so weak that he lost his speech, and couldn't say a word for three days.
 
 Then Merlin, who knew everything, came to the city. When he arrived, the men of standing had him brought to them. "Merlin, the king you loved so much is dead."
 
@@ -2267,7 +2267,7 @@ Then Merlin, who knew everything, came to the city. When he arrived, the men of 
 
 They said he was, since he'd been silent three days and never would speak again.
 
-"He will, God willing. Come with me, and I'll make him talk to you."
+"He will, god willing. Come with me, and I'll make him talk to you."
 
 They went to where the king lay, and had all the windows opened. Uther looked at Merlin and turned toward him as well as he could, and seemed to know him. Merlin called to the barons there, and to the Church's bishops.
 
@@ -2277,7 +2277,7 @@ They went to where the king lay, and had all the windows opened. Uther looked at
 
 Then Merlin went around to the other side, by Uther's head, and whispered in his ear: "King, this is a very good death, if your conscience is as it seems. I tell you that your son Arthur will rule your kingdom after you, by the power of Jesus Christ, and he'll be the one who completes the Round Table you founded."
 
-When Uther heard this astonishing news, he drew close and said, "Merlin, ask Arthur for God's sake to pray to Jesus Christ for me."[^131-1]
+When Uther heard this astonishing news, he drew close and said, "Merlin, ask Arthur for god's sake to pray to Jesus Christ for me."[^131-1]
 
 Then Merlin addressed everyone in the room: "Now you've witnessed what you didn't think possible; and believe me, this is the last word he'll ever say."
 
@@ -2285,13 +2285,13 @@ Then Merlin rose, and all the others, who were amazed that the king had spoken; 
 
 ### Uther is buried, and the barons ask Merlin for a king
 
-So King Uther Pendragon died that night, and the land was left without an heir.[^131-2][^131-3] The barons, the clerks and the archbishops gave him the finest service and the greatest honor they could. The day after the burial, the lords and all the Church's bishops gathered to decide how the people would be governed, and couldn't agree on anyone. Then they said together they'd ask Merlin, since he was very wise, and no one had ever known him to give bad advice. So they all agreed on Merlin, and sent for him. When he came, they said, "Merlin, we know your wisdom, and how much you've loved the kings of this realm.
+So King Uther Pendragon died that night,[^131-2] and the land was left without an heir.[^131-3] The barons, the clerks and the archbishops gave him the finest service and the greatest honor they could. The day after the burial, the lords and all the Church's bishops gathered to decide how the people would be governed, and couldn't agree on anyone. Then they said together they'd ask Merlin, since he was very wise, and no one had ever known him to give bad advice. So they all agreed on Merlin, and sent for him. When he came, they said, "Merlin, we know your wisdom, and how much you've loved our kings.
 
-<a id="page-132"></a>[\[Paris–Ulrich 1:132\]](merlin-old-french.md#page-132) "You can see the land's been left without an heir, and a country with no lord is worth little. So we beg you, for God's sake, to help us choose a man who can govern the kingdom for the good of the Church and the salvation of the people."
+<a id="page-132"></a>[\[Paris–Ulrich 1:132\]](merlin-old-french.md#page-132) "You can see the land's been left without an heir, and a country with no lord is worth little. So we beg you, for god's sake, to help us choose a man who can govern the kingdom for the good of the Church and the salvation of the people."
 
-"I'm not God, to advise on such a matter or to name anyone to rule," Merlin told them. "But if you'll follow my advice, I'll give it to you; and don't take it unless it's good."
+"I'm not Yahweh, to advise on such a matter or to name anyone to rule," Merlin told them. "But if you'll follow my advice, I'll give it to you; and don't take it unless it's good."
 
-"May God help us agree on what's good and right for the land," they answered.
+"May Yahweh help us agree on what's good and right for the land," they answered.
 
 "I've loved this kingdom deeply, and all its people. If I told you to make one of you king, I'd easily be believed, and it would be right. But a fine chance has come to you, if you'll see it. Uther died in the two weeks after Saint Martin's Day, and from then it's only a little while to Christmas. If you'll trust me, I'll guide you well and honestly, as the Church and the world would have it."
 
@@ -2307,7 +2307,7 @@ Then they asked each other, "Do you accept this plan?"
 
 "There's no one who shouldn't," came the answer from all.
 
-Then the barons together called on the bishops and archbishops to have the common people pray and give to the poor. They were to order it in every church, each priest making it known. All were to promise one another that they, and we with them, would keep the Church's teaching and the sign God would show us.[^133-1] So all of them stood by Merlin's plan. Then Merlin said goodbye to them, and they begged him to come back at Christmas to see whether what he'd taught them would come true.
+Then the barons together called on the bishops and archbishops to have the common people pray and give to the poor. They were to order it in every church, each priest making it known. All were to promise one another that they, and we with them, would keep the Church's teaching and the sign Yahweh would show us.[^133-1] So all of them stood by Merlin's plan. Then Merlin said goodbye to them, and they begged him to come back at Christmas to see whether what he'd taught them would come true.
 
 "I won't be there, and you won't see me before the election," said Merlin. With that he went to Blaise and told him the things he knew were to come. The great lords and the ministers of the Church had this proclaimed everywhere, and that all the men of standing of the kingdom should come to Logres at Christmas to see Jesus Christ make his choice.
 
@@ -2315,9 +2315,9 @@ Then the barons together called on the bishops and archbishops to have the commo
 
 So it was known and understood all over, and they waited for Christmas. Ector had raised the boy until he was a grown squire, nursed on no milk but Ector's wife's, while their own child had been fed by a peasant woman.[^133-2] Ector hardly knew which of the two he loved more; he'd never called Arthur anything but "my son," and the boy believed it. On All Saints' Day before that Christmas, Ector made Kay a knight, and at Christmas he came to Logres like the others,[^133-3] bringing both of them.
 
-<a id="page-134"></a>[\[Paris–Ulrich 1:134\]](merlin-old-french.md#page-134) On Christmas Eve the clerks, the priests and all the men of standing of the kingdom gathered, having done what Merlin had told them. Once everyone was there, they kept themselves devout and waited for the feast as was right. They heard midnight mass and prayed to our Lord to send them a man fit to uphold Christendom. When it was over, some went away and some stayed in the church to wait for the morning service.
+<a id="page-134"></a>[\[Paris–Ulrich 1:134\]](merlin-old-french.md#page-134) On Christmas Eve the clerks, the priests and all the men of standing of the kingdom gathered, having done what Merlin had told them. Once everyone was there, they kept themselves devout and waited for the feast as was right. They heard midnight mass and prayed to Yahweh to send them a man fit to uphold Christendom. When it was over, some went away and some stayed in the church to wait for the morning service.
 
-Many said that anyone who believed our Lord would trouble himself to choose a king was a great fool. As they were talking, the bell rang, and they all went in. When the congregation was assembled, one of the holiest men of the land was ready to sing the mass. Before he began, he spoke to the people: "You should be gathered here for a good purpose, and for three things, which I'll tell you. First, for the saving of your souls. Second, for the honor of your lives. Third, to see the miracle our Lord will work today, if he's willing, to give us a king to uphold the Church and defend the people and the whole kingdom.
+Many said that anyone who believed Yahweh would trouble itself to choose a king was a great fool. As they were talking, the bell rang, and they all went in. When the congregation was assembled, one of the holiest men of the land was ready to sing the mass. Before he began, he spoke to the people: "You should be gathered here for a good purpose, and for three things, which I'll tell you. First, for the saving of your souls. Second, for the honor of your lives. Third, to see the miracle Yahweh will work today, if it's willing, to give us a king to uphold the Church and defend the people and the whole kingdom.
 
 ### The archbishop prays for a sign, and a sword appears in a stone
 
@@ -2331,27 +2331,27 @@ Those who'd come out first were amazed at the sight, and went back inside to tel
 
 ### The stone is guarded, and the barons argue over who'll try first
 
-Once he understood the words, the archbishop told the people. Then the stone was given into the keeping of nine men of standing and five clerks. Everyone said God had shown them a great sign, and they went back to say mass and give thanks to our Lord, singing *Te Deum laudamus*.
+Once he understood the words, the archbishop told the people. Then the stone was given into the keeping of nine men of standing and five clerks. Everyone said Yahweh had shown them a great sign, and they went back to say mass and give thanks to Yahweh, singing *Te Deum laudamus*.
 
-When the holy man had come to the altar, he turned to the congregation and said, "Now you can know that some of us are good, since our Lord has done this for us. He'll make its meaning clear in his own time." Then he sang the mass. When it was over, they all gathered at the stone. They asked one another who'd try first, and all agreed that no one would make the attempt except as the ministers of the Church advised.[^135-5]
+When the holy man had come to the altar, he turned to the congregation and said, "Now you can know that some of us are good, since Yahweh has done this for us. It'll make its meaning clear in its own time." Then he sang the mass. When it was over, they all gathered at the stone. They asked one another who'd try first, and all agreed that no one would make the attempt except as the ministers of the Church advised.[^135-5]
 
-<a id="page-136"></a>[\[Paris–Ulrich 1:136\]](merlin-old-french.md#page-136) This set off a fierce quarrel, because the highest and most powerful, who had the most strength,[^136-1] wanted their turn before anyone else. Plenty was said that shouldn't be repeated. The archbishop spoke loud enough for most of them to hear: "You aren't as wise or good as I'd like. I want you to know that our Lord sees and knows, and he's chosen one, though we don't know which. This much I can tell you: wealth, birth and pride count for nothing here, only our Lord's will. I trust him so far that if the one who's to draw this sword weren't born yet, it would never come out until he drew it."
+<a id="page-136"></a>[\[Paris–Ulrich 1:136\]](merlin-old-french.md#page-136) This set off a fierce quarrel, because the highest and most powerful, who had the most strength,[^136-1] wanted their turn before anyone else. Plenty was said that shouldn't be repeated. The archbishop spoke loud enough for most of them to hear: "You aren't as wise or good as I'd like. I want you to know that Yahweh sees and knows, and it's chosen one, though we don't know which. This much I can tell you: wealth, birth and pride count for nothing here, only Yahweh's will. I trust it so far that if the one who's to draw this sword weren't born yet, it would never come out until he drew it."
 
 ### The barons accept the archbishop's order and try the sword
 
-All the great and wealthy men agreed. They stepped aside and said they'd accept what the archbishop decided and act entirely on his advice. When he heard it, he was so glad he cried for joy, and said, "This humility comes to you from God. I promise you I'll do everything by his will, so that no one will ever blame me."
+All the great and wealthy men agreed. They stepped aside and said they'd accept what the archbishop decided and act entirely on his advice. When he heard it, he was so glad he cried for joy, and said, "This humility comes to you from Yahweh. I promise you I'll do everything by its will, so that no one will ever blame me."
 
-This meeting was held before high mass. The archbishop told them, "Our Lord has worked a great miracle for us here, and given us a very fine sign. When he set up justice on earth,[^136-2] he put it in a sword, and at the founding of the four orders it was handed to the knights, to defend the Church and uphold the law. Now our Lord makes this choice for us by the blade, and you can be sure he's seen and settled who he means to give that power to. So the great men shouldn't rush, since it can't and won't be drawn out by wealth or pride.
+This meeting was held before high mass. The archbishop told them, "Yahweh has worked a great miracle for us here, and given us a very fine sign. When it set up justice on earth,[^136-2] it put it in a sword, and at the founding of the four orders it was handed to the knights, to defend the Church and uphold the law. Now Yahweh makes this choice for us by the blade, and you can be sure it's seen and settled who it means to give that power to. So the great men shouldn't rush, since it can't and won't be drawn out by wealth or pride.
 
 <a id="page-137"></a>[\[Paris–Ulrich 1:137\]](merlin-old-french.md#page-137) "Nor should the poor be angry if the rich try ahead of them, because it's right and fair that the highest and noblest go first."
 
-So they all agreed to what the archbishop said: he'd decide who went to the stone, and they'd obey the one God gave the grace to and take him as their lord. Then they returned. He picked two hundred and fifty of the most respected men, as far as he knew, and had them take hold of it. When they had, he told the rest to go.
+So they all agreed to what the archbishop said: he'd decide who went to the stone, and they'd obey the one Yahweh gave the grace to and take him as their lord. Then they returned. He picked two hundred and fifty of the most respected men, as far as he knew, and had them take hold of it. When they had, he told the rest to go.
 
 One after another, everyone who cared to made the attempt, but there wasn't one who could draw it out or even move it. Then the stone was given into the keeping of nine men of standing. The people were told that anyone who wanted to could try,[^137-1] and the guards would watch closely to see who drew the sword; but no one who came could ever get it out.[^137-2]
 
 ### Arthur draws the sword for Kay on New Year's Day
 
-So it stayed there the whole week until New Year's Day. The barons were all at high mass, and the archbishop preached to them and taught them all the good he could. Afterward he said, "I told you that even those who live farthest away had time to come. Now you'll see which of you draws it, since God has chosen him." They all said they wouldn't leave until they saw who God gave the gift to.
+So it stayed there the whole week until New Year's Day. The barons were all at high mass, and the archbishop preached to them and taught them all the good he could. Afterward he said, "I told you that even those who live farthest away had time to come. Now you'll see which of you draws it, since Yahweh has chosen him." They all said they wouldn't leave until they saw who Yahweh gave the gift to.
 
 So mass was sung, and the barons went to their lodgings. After the meal the knights, as usual, rode out of town to joust in the fields, and most of the people followed to watch, the nine guards too. When the riders had been at it a good while, they handed their shields to their squires, who took their turn.
 
@@ -2377,15 +2377,15 @@ Ector said, "I raised you as my own, but truly I don't know who your parents are
 
 ### Arthur is heartbroken, and Ector asks him to make Kay his steward
 
-When Arthur heard Ector disown him, he cried, heartbroken. "Dear God," he said, "how can any good come to me, now I've lost my father?"
+When Arthur heard Ector disown him, he cried, heartbroken. "Dear god," he said, "how can any good come to me, now I've lost my father?"
 
-Ector said, "My lord, whoever fathered you, if our Lord wants you to have this grace and I help you get it, what will I have from it?"
+Ector said, "My lord, whoever fathered you, if Yahweh wants you to have this grace and I help you get it, what will I have from it?"
 
 Arthur said, "Sir, whatever you like."
 
 Then Ector told him all he'd done for him: how he'd brought him up, weaned his own son and had him nursed by a stranger.[^139-2] "So you owe me and my boy a reward, since no man ever raised a child more tenderly than I've cared for you. Now I ask you, if you have this grace and I help you to it, to repay it to Kay."
 
-Arthur said, "Sir, please don't disown me, because I wouldn't know where to go. If you can win it for me and God wants me to have it, I'll have nothing that isn't yours to command."
+Arthur said, "Sir, please don't disown me, because I wouldn't know where to go. If you can win it for me and Yahweh wants me to have it, I'll have nothing that isn't yours to command."
 
 <a id="page-140"></a>[\[Paris–Ulrich 1:140\]](merlin-old-french.md#page-140) Ector said, "My son, I won't ask you for your kingdom now. But when you're king, I do want you to make your brother steward of your land, so that whatever wrong he does, he never loses the post. No one else should hold it while he lives. If he's cruel, false and coarse, you must put up with it, since every bad trait he has he took from the woman who nursed him: he's turned out so unlike his blood because his mother fed you instead. So you should bear with him all the more. Please give him what I ask."
 
@@ -2395,11 +2395,11 @@ Then Ector called his friends and his family and said to the archbishop, "Sir, h
 
 ### Arthur draws the sword before the barons, who won't accept a boy king
 
-So Arthur was carried into the church. The barons who'd seen it were deeply troubled, and said it couldn't be that a boy should be their lord. The archbishop grew angry: "Our Lord knows better than you who each of us is."
+So Arthur was carried into the church. The barons who'd seen it were deeply troubled, and said it couldn't be that a boy should be their lord. The archbishop grew angry: "Yahweh knows better than you who each of us is."
 
-<a id="page-141"></a>[\[Paris–Ulrich 1:141\]](merlin-old-french.md#page-141) Ector, his family and many others took Arthur's side, but the common people and the barons of the land were against him. Then the holy man said a bold thing: "If everyone in the world wanted to go against this choice and our Lord alone were for it, it would still happen. I'll show you how much I trust in God. Arthur, my boy, go and put the sword back where you took it from." In front of them all, Arthur carried it back and set it in again, and the archbishop said, "There's never been a finer choice made or seen. Now, my rich lords, see if you can draw it."
+<a id="page-141"></a>[\[Paris–Ulrich 1:141\]](merlin-old-french.md#page-141) Ector, his family and many others took Arthur's side, but the common people and the barons of the land were against him. Then the holy man said a bold thing: "If everyone in the world wanted to go against this choice and Yahweh alone were for it, it would still happen. I'll show you how much I trust in Yahweh. Arthur, my boy, go and put the sword back where you took it from." In front of them all, Arthur carried it back and set it in again, and the archbishop said, "There's never been a finer choice made or seen. Now, my rich lords, see if you can draw it."
 
-They did, but not one of them could get it out. He told them, "Anyone who goes against God's will is a great fool."
+They did, but not one of them could get it out. He told them, "Anyone who goes against Yahweh's will is a great fool."
 
 They said, "Sir, we're not defying him, but it's very strange to us that a boy should be our lord."
 
@@ -2411,7 +2411,7 @@ Then the barons begged him to leave the sword in the stone until Candlemas, when
 
 ### Arthur draws the sword at Candlemas, and the barons ask to wait until Easter
 
-"Go on, Arthur, my son: if it's our Lord's will that you rule this people, give me that sword." Arthur stepped forward and handed it to him. When he and the people saw it, they cried for joy and pity. They asked, "Is anyone still against this choice?"
+"Go on, Arthur, my son: if it's Yahweh's will that you rule this people, give me that sword." Arthur stepped forward and handed it to him. When he and the people saw it, they cried for joy and pity. They asked, "Is anyone still against this choice?"
 
 <a id="page-142"></a>[\[Paris–Ulrich 1:142\]](merlin-old-french.md#page-142) The rich men answered, "Sir, we ask you again to leave it until Easter. If no one comes by then who can draw it, we'll obey this one as we've agreed. If you want to do it some other way, each of us will look out for himself."
 
@@ -2419,11 +2419,11 @@ The archbishop said, "Will you all accept him willingly if I do?"
 
 They all said, "Yes, and from then on let him do as he likes with the land and the kingdom."
 
-He said, "Arthur, my boy, put the sword back in the stone. God willing, you'll never miss the good he's promised you." Arthur went forward and set it back in its place. When it was in, the archbishop had it covered, and it held as it always had.
+He said, "Arthur, my boy, put the sword back in the stone. god willing, you'll never miss the good Yahweh has promised you." Arthur went forward and set it back in its place. When it was in, the archbishop had it covered, and it held as it always had.
 
-Then, having taken the boy into his care, he said, "Arthur, you can be sure that you're king and lord of this people. See that you're a decent man. From now on, choose who you want to know your private words and plans. Give out the honors and the offices of your household just as if the crown were already yours, because it'll be, God willing."
+Then, having taken the boy into his care, he said, "Arthur, you can be sure that you're king and lord of this people. See that you're a decent man. From now on, choose who you want to know your private words and plans. Give out the honors and the offices of your household just as if the crown were already yours, because it'll be yours if it's Yahweh's will."
 
-Arthur answered, "Sir, whatever good God means to give me, I put in the care of the Church and under your guidance. Choose for yourself the people who'd serve me well in doing our Lord's will and for the good of Christendom. Please call my lord to you." So the archbishop called Ector and told him the fine things Arthur had said.
+Arthur answered, "Sir, whatever good Yahweh means to give me, I put in the care of the Church and under your guidance. Choose for yourself the people who'd serve me well in doing Yahweh's will and for the good of Christendom. Please call my lord to you." So the archbishop called Ector and told him the fine things Arthur had said.
 
 ### Kay becomes steward, and at Easter the barons make Arthur wait for Pentecost
 
@@ -2431,7 +2431,7 @@ Then they chose him the advisers they wanted, and on the advice of his guardian 
 
 <a id="page-143"></a>[\[Paris–Ulrich 1:143\]](merlin-old-french.md#page-143) When they'd all come, he told them what he saw of the will of Jesus Christ, who by this choice wanted the boy to have the kingdom, and then the good qualities he'd seen in him since they'd met.
 
-The barons said, "Sir, we don't want to go against our Lord's will, but it amazes us that a man of such low birth should be our lord."
+The barons said, "Sir, we don't want to go against Yahweh's will, but it amazes us that a man of such low birth should be our lord."
 
 The archbishop said, "You're not good Christians if you oppose it."
 
@@ -2447,9 +2447,9 @@ So the meeting broke up, and the next day at high mass they brought the boy to t
 
 ### Arthur won't take the barons' oaths until he's crowned
 
-<a id="page-144"></a>[\[Paris–Ulrich 1:144\]](merlin-old-french.md#page-144) "Sir," they said, "we see clearly that our Lord wants you to be our king and lord, and since he wants it, we want it. We'll accept you as such and hold our lands from you. We ask you to put off your coronation until Pentecost; you'll be no less master of the kingdom and of us for that. We want you to answer us without taking advice."
+<a id="page-144"></a>[\[Paris–Ulrich 1:144\]](merlin-old-french.md#page-144) "Sir," they said, "we see clearly that Yahweh wants you to be our king and lord, and since it wants it, we want it. We'll accept you as such and hold our lands from you. We ask you to put off your coronation until Pentecost; you'll be no less master of the kingdom and of us for that. We want you to answer us without taking advice."
 
-Arthur answered, "You want me to take your oaths, give you back your lands and have you hold them from me. I can't and shouldn't do that: I can't grant or govern your estates or anyone else's until I have my own. You ask me to be lord of the kingdom, which can't be until I've been anointed and crowned and given its honor. But as for the coronation, I'll be glad to grant you the delay, since only God and you can crown me."
+Arthur answered, "You want me to take your oaths, give you back your lands and have you hold them from me. I can't and shouldn't do that: I can't grant or govern your estates or anyone else's until I have my own. You ask me to be lord of the kingdom, which can't be until I've been anointed and crowned and given its honor. But as for the coronation, I'll be glad to grant you the delay, since only Yahweh and you can crown me."
 
 ### The barons test Arthur with gifts until Pentecost
 
@@ -2461,15 +2461,15 @@ When the barons heard the boy's answer, they said he'd be very wise if he lived,
 
 So he gave away everything they offered to test him, and kept none. When the barons saw him act this way, there wasn't one of them who didn't respect him in his heart. Behind his back they said he'd be a great man, since they found no greed or meanness in him. As soon as he'd taken a thing, he'd given it out again, and every gift he made was fitting for the man who got it. So they tested Arthur and couldn't find a single fault in him, and they waited until Pentecost.
 
-When Pentecost came, all the barons gathered at Logres, and everyone who cared to tried the sword, and none could get it out. The archbishop had prepared the crown and the coronation for Pentecost Eve, the Saturday before the evening service. By common consent and with the agreement of most of the lords, he made Arthur a knight.[^145-1] That night Arthur kept watch in the main church until daybreak.
+When Pentecost came, all the barons gathered at Logres, and everyone who cared to tried the sword, and none could get it out. The archbishop had prepared the crown and the coronation for Pentecost Eve, the Saturday before the evening service. By common consent and with the agreement of most of the lords, he made Arthur a knight.[^145-1] That night Arthur kept watch in the main church until dawn.
 
-The next morning the barons were all summoned and gathered there. The archbishop spoke to them all: "Here's a man our Lord has chosen for us, as you see and have seen since Christmas. Everyone who wanted to has tried the sword, and no one could ever get it out but Arthur, who's here. Here are the royal robes and the crown, by common consent and from your own mouths. Now, if any of you is against this choice, let him say so."
+The next morning the barons were all summoned and gathered there. The archbishop spoke to them all: "Here's a man Yahweh has chosen for us, as you see and have seen since Christmas. Everyone who wanted to has tried the sword, and no one could ever get it out but Arthur, who's here. Here are the royal robes and the crown, by common consent and from your own mouths. Now, if any of you is against this choice, let him say so."
 
-<a id="page-146"></a>[\[Paris–Ulrich 1:146\]](merlin-old-french.md#page-146) They answered together, "Sir, we all agree, and want him crowned king by God's will. But he must forgive us all, if he bears any of us ill will for standing against his coronation and his choosing until today." Then they knelt and begged for mercy as one. Arthur, crying with pity, went down on his knees to them too and said, "I forgive you, and pray the Lord who's granted me this honor to do the same."
+<a id="page-146"></a>[\[Paris–Ulrich 1:146\]](merlin-old-french.md#page-146) They answered together, "Sir, we all agree, and want him crowned king by Yahweh's will. But he must forgive us all, if he bears any of us ill will for standing against his coronation and his choosing until today." Then they knelt and begged for mercy as one. Arthur, crying with pity, went down on his knees to them too and said, "I forgive you, and pray Yahweh who's granted me this honor to do the same."
 
-Then they rose, took Arthur in their arms, carried him to where the royal robes were, and dressed him in them. The archbishop, ready to sing mass, said to him, "Sir, go and get the sword and the justice with which you're to defend the Church and protect Christendom." The procession went to the stone, and there he said, "Arthur, are you willing to swear to God to help and raise up the Church as far as you can? Will you keep faith and peace on earth, and uphold what's right? Then go forward and take the sword by which our Lord has chosen you."
+Then they rose, took Arthur in their arms, carried him to where the royal robes were, and dressed him in them. The archbishop, ready to sing mass, said to him, "Sir, go and get the sword and the justice with which you're to defend the Church and protect Christendom." The procession went to the stone, and there he said, "Arthur, are you willing to swear to god to help and raise up the Church as far as you can? Will you keep faith and peace on earth, and uphold what's right? Then go forward and take the sword by which Yahweh has chosen you."
 
-When Arthur heard this, he cried with pity, as did many barons. "As truly as our Lord is God and lord over everything there is," he said, "may he give me the strength and power to do and keep what you've said, just as surely as I mean to."
+When Arthur heard this, he cried with pity, as did many barons. "As truly as Yahweh is god and lord over everything there is," he said, "may it give me the strength and power to do and keep what you've said, just as surely as I mean to."
 
 ### Arthur lifts the sword once more and is crowned king
 
@@ -2527,25 +2527,25 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^1-1]: The French is *li anemis*, "the enemy": the devil, or the devils taken together as one host. The French uses it as a name, beside *dyable*, "devil"; nobody gives the devil that title now, so the English says "Satan" where the French means the devil himself, as here, and "the devil" elsewhere.<sup>[\*](#new-in-this-translation)</sup>
 
-[^1-2]: The French is *nostre sires*: God, here Christ, who, as this opening tells it, had gone down into hell and taken Adam and Eve out of it. The French uses it as his name, so the English capitalizes it; a lower-case "lord" would mean a master of land and people.<sup>[\*](#new-in-this-translation)</sup>
+[^1-2]: The French is *nostre sires*, "our lord": here Jesus, who, as this opening tells it, had gone down into hell and taken Adam and Eve out of it. The French uses the title as his name, so the English names him.<sup>[\*](#new-in-this-translation)</sup>
 
 [^1-3]: In the whole story: [Christ empties hell, and the devils plan a prophet of their own](../story-map.md#the-devils-plan-a-prophet).<sup>[\*](#new-in-this-translation)</sup>
 
 [^1-4]: The words "the very thing we thought would serve us best" are Paris and Ulrich's addition, in square brackets in their French text; the Huth manuscript doesn't have them.
 
-[^3-1]: The Huth manuscript reads *ces oevres*, "these acts"; Paris and Ulrich print *ses oevres*, "his acts", and the English follows them: "his work". Whose work is meant, the man's or the Lord's, the French leaves open.
+[^3-1]: The Huth manuscript reads *ces oevres*, "these acts"; Paris and Ulrich print *ses oevres*, "his acts", and the English follows them: "his work". Whose work is meant, the man's or Yahweh's, the French leaves open.
 
-[^4-1]: In the whole story: [A devil ruins a rich man's family and leads two daughters astray](../story-map.md#a-devil-ruins-a-rich-mans-family).<sup>[\*](#new-in-this-translation)</sup>
+[^4-1]: In the whole story: [A devil ruins a rich man's family and leads two daughters into sin](../story-map.md#a-devil-ruins-a-rich-mans-family).<sup>[\*](#new-in-this-translation)</sup>
 
 [^6-1]: The words "and so they did" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^11-1]: In the whole story: [A devil fathers a child on the eldest daughter as she sleeps](../story-map.md#a-devil-fathers-a-child-on-the-eldest-daughter).<sup>[\*](#new-in-this-translation)</sup>
+[^11-1]: In the whole story: [A devil fathers a child with the oldest daughter as she sleeps](../story-map.md#a-devil-fathers-a-child-with-the-oldest-daughter).<sup>[\*](#new-in-this-translation)</sup>
 
 [^12-1]: The Huth manuscript's words here are out of order (*porroit oublier de f. engingnier chou*); the English follows the order Paris and Ulrich give them: "he could never make her forget what the holy man had told her".
 
 [^14-1]: In the whole story: [The mother confesses to Blaise, and the judges lock her in a tower](../story-map.md#the-mother-confesses-and-is-held-in-a-tower).<sup>[\*](#new-in-this-translation)</sup>
 
-[^15-1]: The words "to God" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
+[^15-1]: The words "to Yahweh" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
 [^16-1]: Paris and Ulrich take a letter out of each of the Huth manuscript's words here, *seuur* and *venue*, to read *seuu*, "knowledge", and *veue*, "sight", and the English follows them: "to my knowledge or in my sight".
 
@@ -2553,7 +2553,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^19-2]: The words "and pardoned the sin" are Paris and Ulrich's addition; the Huth manuscript doesn't have them.
 
-[^19-3]: This is where Merlin is given his two kinds of knowledge: the past from the devil who fathered him, the future from God, to weigh against it. [Geoffrey of Monmouth's](https://archive.org/details/historiesoftheki037587mbp) Merlin, some sixty years earlier, already had a spirit for a father and could foretell what was to come; Robert de Boron is the one who says where each half comes from. The later Merlin romances, Malory's among them, take both halves as given.<sup>[\*](#new-in-this-translation)</sup>
+[^19-3]: This is where Merlin is given his two kinds of knowledge: the past from the devil who fathered him, the future from Yahweh, to weigh against it. [Geoffrey of Monmouth's](https://archive.org/details/historiesoftheki037587mbp) Merlin, some sixty years earlier, already had a spirit for a father and could foretell what was to come; Robert de Boron is the one who says where each half comes from. The later Merlin romances, Malory's among them, take both halves as given.<sup>[\*](#new-in-this-translation)</sup>
 
 [^19-4]: The Huth manuscript reads *pour rendre*, "to give back"; Paris and Ulrich print *pour endroit de*, "as for", and the English follows them.
 
@@ -2605,13 +2605,13 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^53-1]: In the whole story: [Merlin shows Vortigern the two dragons under his tower](../story-map.md#merlin-shows-vortigern-the-dragons).<sup>[\*](#new-in-this-translation)</sup>
 
-[^54-1]: The earth, the weight of the building, and the words "down hard on them" and "with such force that all the water churns" are Paris and Ulrich's additions. In the Huth manuscript, when the dragons feel the pool weigh on them, they simply turn over and make such a din that everything above has to come down.
+[^54-1]: The earth, the weight of the building, and the words "down hard on them" and "with such force that all the water churns" are Paris and Ulrich's additions. In the Huth manuscript, when the dragons feel the pool weigh on them, they simply turn over and make such a racket that everything above has to come down.
 
 [^56-1]: The Huth manuscript compares the red dragon with "the handsome one"; Paris and Ulrich print "the white".
 
 [^57-1]: Here the Huth manuscript reads "the red dragon", though the red is already dead; Paris and Ulrich correct it to the white, the one that won.
 
-[^58-1]: The French is *par la forche de l'autre art*, "by the power of the other art", and doesn't name it. From what Merlin says next, it seems to be the clerks' astronomy, reading the future in the stars and the elements, set against the knowledge he has from God.<sup>[\*](#new-in-this-translation)</sup>
+[^58-1]: The French is *par la forche de l'autre art*, "by the power of the other art", and doesn't name it. From what Merlin says next, it seems to be the clerks' astronomy, reading the future in the stars and the elements, set against the knowledge he has from Yahweh.<sup>[\*](#new-in-this-translation)</sup>
 
 [^61-1]: In the whole story: [Constans's sons land, and Pendragon is made king](../story-map.md#pendragon-is-made-king).<sup>[\*](#new-in-this-translation)</sup>
 
@@ -2753,11 +2753,11 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^130-1]: The Huth manuscript reads "and to all the poorest"; Paris and Ulrich print "where the poorest of his kingdom were", and the English follows them.
 
-[^131-1]: Malory tells this in [Book I, chapter 4](../malory-sources/malory-map.tsv). There Merlin asks the dying king aloud, before all his barons, whether his son Arthur will be king after him, and Uther answers so that everyone hears, giving Arthur God's blessing and his own and telling him to claim the crown. Here Merlin whispers in the king's ear, and no one learns what Uther said to him.<sup>[\*](#new-in-this-translation)</sup>
+[^131-1]: Malory tells this in [Book I, chapter 4](../malory-sources/malory-map.tsv). There Merlin asks the dying king aloud, before all his barons, whether his son Arthur will be king after him, and Uther answers so that everyone hears, giving Arthur Yahweh's blessing and his own and telling him to claim the crown. Here Merlin whispers in the king's ear, and no one learns what Uther said to him.<sup>[\*](#new-in-this-translation)</sup>
 
-[^131-2]: In the whole story: [A sword appears in a stone, and Arthur draws it for Kay](../story-map.md#the-sword-in-the-stone).<sup>[\*](#new-in-this-translation)</sup>
+[^131-2]: The Huth manuscript reads *fu*, "was"; Paris and Ulrich print *fina*, "died", and the English follows them.
 
-[^131-3]: The Huth manuscript reads *fu*, "was"; Paris and Ulrich print *fina*, "died", and the English follows them.
+[^131-3]: In the whole story: [A sword appears in a stone, and Arthur draws it for Kay](../story-map.md#the-sword-in-the-stone).<sup>[\*](#new-in-this-translation)</sup>
 
 [^132-1]: The Huth manuscript reads *comme*, "as"; Paris and Ulrich print *hom*, "a man", and the English follows them.
 

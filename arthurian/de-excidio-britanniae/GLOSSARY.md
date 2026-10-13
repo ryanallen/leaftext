@@ -72,11 +72,23 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 An entry marked with an asterisk was written for this translation, not taken from Lucas's indices to Mommsen's edition of 1898.
 
+## Aaron
+
+Moses's older brother, who spoke for him in front of Egypt's king and became Israel's first high priest. Two of his sons, Nadab and Abihu, burned incense with "strange fire" Yahweh hadn't asked for, and fire came out from Yahweh and killed them on the spot. Gildas tells it to show that Yahweh punished even the families of its own priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Aaron](https://en.wikipedia.org/wiki/Aaron)
+
+## Achan
+
+An Israelite in the Book of Joshua who, when Jericho fell, secretly kept a fine cloak, some silver and a bar of gold from the plunder, which Yahweh had ordered destroyed. Israel then lost its next battle, at Ai, and when the theft was found, Achan and his family were stoned. Gildas tells it to show one man's small theft bringing ruin on many.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Joshua 7](https://en.wikipedia.org/wiki/Joshua_7)
+
 ## Agitius
 
 Also: Agitium, Agitio
 
-A Roman commander, three times consul, the Britons write to for help.
+A Roman commander, three times consul, who got the Britons' famous letter, "the groans of the Britons," begging for help against the Picts and the Irish; none came. Many take him for Aëtius, the general who held the Western Roman Empire together in the 440s CE, though Gildas's own form of the name is kept.
 
 Wikipedia: [Groans of the Britons](https://en.wikipedia.org/wiki/Groans_of_the_Britons)
 
@@ -84,7 +96,7 @@ Wikipedia: [Groans of the Britons](https://en.wikipedia.org/wiki/Groans_of_the_B
 
 Also: Achab
 
-A wicked king of Israel in the Bible, who with his wife had Naboth killed for his vineyard.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Israel, the northern of the two Israelite kingdoms, in the ninth century BCE, remembered as one of its worst rulers. His foreign wife, Jezebel, brought the worship of the god Baal into Israel, and together they had their neighbor Naboth falsely accused and stoned so Ahab could take his vineyard. The prophet Elijah predicted his death, and he was killed in battle after ignoring the one prophet who warned him. Gildas holds him up as a mirror for Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ahab](https://en.wikipedia.org/wiki/Ahab)
 
@@ -92,7 +104,7 @@ Wikipedia: [Ahab](https://en.wikipedia.org/wiki/Ahab)
 
 Also: Albanum
 
-A Christian of Verulamium put to death for his faith under Roman rule.
+A Roman citizen of Verulamium, beside today's St Albans, and Britain's first martyr. During a persecution of Christians he hid a hunted priest in his house, was converted by him, then put on the priest's cloak and gave himself up in his place; he was beheaded for refusing to sacrifice to the Roman gods. Gildas tells of the miracles at his death to show Yahweh's mercy to Britain.
 
 Wikipedia: [Saint Alban](https://en.wikipedia.org/wiki/Saint_Alban)
 
@@ -100,7 +112,7 @@ Wikipedia: [Saint Alban](https://en.wikipedia.org/wiki/Saint_Alban)
 
 Also: Ambrosio Aureliano
 
-A leader of Roman family who rallies the Britons against the Saxons.
+A Briton of Roman family, perhaps the last of the old Roman upper class, whose parents, Gildas says, had worn the purple of high office and were killed by the Saxons. He rallied the survivors and led them to their first victory, the start of the wars that ended at Badon. He's the only British leader of the fifth century Gildas names, and later writers made him a king, the brother of Uther Pendragon and uncle of Arthur.
 
 Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aurelianus)
 
@@ -108,7 +120,7 @@ Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aureli
 
 Also: Amorrhaeorum
 
-A people of Canaan in the Bible, whose wickedness God waited to see grow complete.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the peoples of Canaan before the Israelites took it; Canaan was the land Yahweh promised Abraham. In Genesis, Yahweh tells Abraham that his descendants must wait four generations for the land, because the Amorites' wickedness isn't yet complete, meaning Yahweh waits until a people's sins run their full course before it punishes them. Gildas says the Britons' sins had reached that point.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Amorites](https://en.wikipedia.org/wiki/Amorites)
 
@@ -116,7 +128,7 @@ Wikipedia: [Amorites](https://en.wikipedia.org/wiki/Amorites)
 
 Also: Amos
 
-A prophet of the Bible, a goatherd before God called him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A herder from Tekoa, a village in Judah; in the eighth century BCE Yahweh sent him to preach in the richer northern kingdom of Israel. He condemned the rich for cheating and crushing the poor, and when the priest of the royal shrine at Bethel told him to go home, he answered that he was no professional prophet, just a herder Yahweh had sent. Gildas quotes him against Britain's rulers and priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Amos (prophet)](https://en.wikipedia.org/wiki/Amos_(prophet))
 
@@ -124,7 +136,7 @@ Wikipedia: [Amos (prophet)](https://en.wikipedia.org/wiki/Amos_(prophet))
 
 Also: Antiochiae
 
-A great city of Roman Syria, now Antakya in Turkey, where Ignatius was bishop.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the greatest cities of the Roman empire, in Syria, now Antakya in southern Turkey; the followers of Jesus were first called Christians there. Ignatius was its bishop early in the second century CE until he was arrested and sent to Rome to be thrown to the beasts, and Gildas holds him up to Britain's priests as a bishop who welcomed death for Christ.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Antioch](https://en.wikipedia.org/wiki/Antioch)
 
@@ -132,7 +144,7 @@ Wikipedia: [Antioch](https://en.wikipedia.org/wiki/Antioch)
 
 Also: Aquileiam
 
-A Roman city at the head of the Adriatic in northeastern Italy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A large Roman city at the head of the Adriatic Sea in northeastern Italy, a key fortress guarding the way into Italy from the east. Maximus, the general made emperor by the army in Britain, was defeated and beheaded there in 388 CE by the eastern emperor Theodosius, which is why both the history and Gildas name it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Aquileia](https://en.wikipedia.org/wiki/Aquileia)
 
@@ -140,15 +152,21 @@ Wikipedia: [Aquileia](https://en.wikipedia.org/wiki/Aquileia)
 
 Also: Arabiae
 
-The desert land through which the Israelites wandered on their way out of Egypt.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The desert lands south and east of Israel; Gildas, like other writers of his time, counts the Sinai desert as part of it. In the Bible's story, the Israelites wandered there for forty years after escaping slavery in Egypt, and a whole generation died in it for disobeying Yahweh, which Gildas recalls as a warning to Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Arabian Peninsula](https://en.wikipedia.org/wiki/Arabian_Peninsula)
+
+## Arians
+
+Followers of Arius, a priest of Alexandria in Egypt who taught in the early 300s CE that Christ was created by Yahweh the Father and wasn't its equal. A meeting of the Church's bishops at Nicaea condemned the teaching in 325 CE, but it divided the Church for decades. Gildas says it crossed the sea to Britain and broke the island's peace in the faith.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Arianism](https://en.wikipedia.org/wiki/Arianism)
 
 ## Asa
 
 Also: Asae
 
-A king of Judah in the Bible, who beat a huge Ethiopian army.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Judah, the southern of the two Israelite kingdoms, in the ninth century BCE; he cleared the land of idols and trusted Yahweh. When a huge army from Cush, the Bible's Ethiopia south of Egypt, invaded, he prayed and routed it, and as he came home the prophet Azariah warned him that Yahweh stays only with those who stay with it. Gildas sets the warning before Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Asa of Judah](https://en.wikipedia.org/wiki/Asa_of_Judah)
 
@@ -156,7 +174,7 @@ Wikipedia: [Asa of Judah](https://en.wikipedia.org/wiki/Asa_of_Judah)
 
 Also: Assyrio, Assyriorum, Assyrian
 
-The people of Assyria, in northern Mesopotamia, who once overran Judea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Assyria, an empire centered on the Tigris river in what's now northern Iraq, which dominated the Near East in the eighth and seventh centuries BCE. They destroyed the northern kingdom of Israel in 722 BCE and laid waste to Judah, and the prophets saw them as Yahweh's rod to punish its people. Gildas compares the Saxons' attack on Britain to theirs.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Assyrians](https://en.wikipedia.org/wiki/Assyrians)
 
@@ -164,7 +182,7 @@ Wikipedia: [Assyrians](https://en.wikipedia.org/wiki/Assyrians)
 
 Also: Aureli Canine
 
-The second of the five kings Gildas condemns.
+The second of the five British kings Gildas condemns by name, known only from him. Gildas calls him a lion's cub and charges him with murder, adultery and a love of civil war, and says his father and brothers all died young; *Caninus*, "doglike," may be Gildas's pun on his real name. Geoffrey of Monmouth later made him a king of Britain after Arthur.
 
 Wikipedia: [Aurelius Conanus](https://en.wikipedia.org/wiki/Aurelius_Conanus)
 
@@ -172,7 +190,7 @@ Wikipedia: [Aurelius Conanus](https://en.wikipedia.org/wiki/Aurelius_Conanus)
 
 Also: Azarias
 
-A prophet of the Bible, the son of Oded, who warned King Asa.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in the Bible, the son of Oded, who met King Asa of Judah coming home from his great victory over the Cushite army and told him that Yahweh would stay with him only as long as he stayed with Yahweh; Asa listened and cleared the land of idols. Gildas quotes the warning to Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Azariah (prophet)](https://en.wikipedia.org/wiki/Azariah_(prophet))
 
@@ -180,7 +198,7 @@ Wikipedia: [Azariah (prophet)](https://en.wikipedia.org/wiki/Azariah_(prophet))
 
 Also: Baal
 
-A god worshiped by Israel's neighbors in the Bible, whose prophets Elijah put to death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The storm and rain god worshiped by the Canaanites and Phoenicians, Israel's neighbors. Queen Jezebel brought his worship into Israel, and the prophet Elijah challenged his 450 prophets on Mount Carmel to call down fire on a sacrifice; Baal sent nothing, Israel's god sent fire, and Elijah had Baal's prophets killed. Gildas reads the story as a lesson for priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Baal](https://en.wikipedia.org/wiki/Baal)
 
@@ -188,7 +206,7 @@ Wikipedia: [Baal](https://en.wikipedia.org/wiki/Baal)
 
 Also: Baasae, Baasam
 
-A king of Israel in the Bible, who took the throne by killing Jeroboam's son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Israel, the northern of the two Israelite kingdoms, in the ninth century BCE, who took the throne by killing King Nadab, Jeroboam's son, and wiping out Jeroboam's whole family, then worshiped idols just as Jeroboam had. The prophet Jehu son of Hanani told him his own family would be destroyed the same way, and it was. Gildas uses him as a warning to kings who kill their way to power.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Baasha of Israel](https://en.wikipedia.org/wiki/Baasha_of_Israel)
 
@@ -196,15 +214,21 @@ Wikipedia: [Baasha of Israel](https://en.wikipedia.org/wiki/Baasha_of_Israel)
 
 Also: Badonici, Mount Badon
 
-The hill whose siege Gildas dates to the year he was born.
+The hill where, after long fighting, the Britons won their greatest victory over the Saxons, in the year Gildas was born, about 500 CE. Gildas names no leader there; three centuries later the *History of the Britons* made it the last of Arthur's twelve battles. No one knows for sure where it was, though places near Bath are often suggested.
 
 Wikipedia: [Battle of Badon](https://en.wikipedia.org/wiki/Battle_of_Badon)
+
+## Balaam
+
+A famous seer from the east in the Book of Numbers, hired by Balak, king of Moab, to put a curse on the Israelites camped on his border. On the road, his donkey saw an angel with a sword blocking the way and refused to go on, crushing Balaam's foot against a vineyard wall. In the end Balaam blessed Israel instead. Gildas calls him a turbaned magician.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Balaam](https://en.wikipedia.org/wiki/Balaam)
 
 ## Beersheba
 
 Also: Bersabee
 
-A town at the southern end of Israel in the Bible.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A town in the desert at the southern edge of ancient Israel, connected with Abraham and Isaac in Genesis. "From Dan to Beersheba," naming the country's northernmost and southernmost towns, was the Bible's way of saying the whole of Israel, and Gildas uses it of Samuel, who the whole land knew to be a prophet.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Beersheba](https://en.wikipedia.org/wiki/Beersheba)
 
@@ -212,7 +236,7 @@ Wikipedia: [Beersheba](https://en.wikipedia.org/wiki/Beersheba)
 
 Also: Belgicam
 
-The Roman province of northern Gaul, today's northern France and Belgium, across the strait from Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman province of northern Gaul, today's northern France and Belgium, across the strait from Britain, named after the Belgae, the peoples who lived there before Rome conquered them. Gildas names it because the narrow sea to it, the Strait of Dover, was the one easy crossing from Britain to the continent.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gallia Belgica](https://en.wikipedia.org/wiki/Gallia_Belgica)
 
@@ -220,7 +244,7 @@ Wikipedia: [Gallia Belgica](https://en.wikipedia.org/wiki/Gallia_Belgica)
 
 Also: Bethel
 
-A town of ancient Israel in the Bible, where King Jeroboam set up a shrine.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A town of ancient Israel north of Jerusalem, holy since Jacob dreamed there of a ladder reaching heaven. When Israel split in two, King Jeroboam set up a golden calf at Bethel so his people wouldn't go to the Temple in Jerusalem; prophets were sent there to condemn it, among them Amos and the unnamed prophet from Judah who was killed by a lion, who Gildas recalls.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bethel](https://en.wikipedia.org/wiki/Bethel)
 
@@ -228,7 +252,7 @@ Wikipedia: [Bethel](https://en.wikipedia.org/wiki/Bethel)
 
 Also: Britannia, Britanniae, Brittannia, Brittanniae
 
-The island of Great Britain.
+The island of Great Britain, holding today's England, Wales and Scotland. Gildas, a Briton writing about 545 CE, describes it at the start of his book as a beautiful land of rivers, hills and cities, and then tells how its people, the Britons, lost most of it to the Saxons, as Yahweh's punishment, he says, for their sins.
 
 Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
@@ -236,7 +260,7 @@ Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
 Also: Britanni, Britannorum
 
-The Celtic people of Britain, Gildas's own people.
+The Celtic people of Britain, Gildas's own people, the ancestors of the Welsh, Cornish and Bretons. They lived under Roman rule for nearly four centuries; after the Romans left, they were raided by the Picts and the Irish and then overrun by the Saxons they'd invited in, which Gildas blames on their own sins.
 
 Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
@@ -244,15 +268,21 @@ Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
 Also: Caesariensem
 
-The chief city of Cappadocia, now Kayseri in Turkey, where Basil was bishop.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Caesarea in Cappadocia, the chief city of a Roman province in what's now central Turkey, today's Kayseri. Basil, called the Great, was its bishop from 370 CE; he stood up to the emperor Valens, who backed the Arian teaching that Christ wasn't fully god, and Gildas quotes his brave answer when threatened with death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caesarea (Cappadocia)](https://en.wikipedia.org/wiki/Caesarea_(Cappadocia))
+
+## Caleb
+
+One of the twelve men Moses sent to scout Canaan. Ten came back saying its people were giants who couldn't be beaten; only Caleb and Joshua said Israel could take it with Yahweh's help. When the people refused to go, Yahweh made them wander forty years in the desert, and of all the adults who'd left Egypt, only those two lived to enter the promised land.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Caleb](https://en.wikipedia.org/wiki/Caleb)
 
 ## City of the Legion
 
 Also: Legionum urbis, City of the Legions
 
-The Roman fortress town where Julius and Aaron lived.
+The Roman fortress town where the martyrs Julius and Aaron lived and died, usually taken for Caerleon in south Wales or Chester in the northwest, both bases of a Roman legion, an army unit of about five thousand men. Gildas names it among the places where Britain's Christians died in a Roman persecution.
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
@@ -260,7 +290,7 @@ Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum
 
 Also: Constantinus
 
-The king of Dumnonia, the first of the five kings Gildas condemns.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The king of Dumnonia, in Britain's southwest peninsula, the first of the five kings Gildas condemns by name. Gildas says that, disguised in an abbot's cloak, he murdered two royal boys and their guardians at a church altar, after swearing an oath not to harm anyone, and had left his wife for other women. Geoffrey of Monmouth later made a Constantine of Cornwall Arthur's heir.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Constantine of Dumnonia](https://en.wikipedia.org/wiki/Constantine_of_Dumnonia)
 
@@ -268,7 +298,7 @@ Wikipedia: [Constantine of Dumnonia](https://en.wikipedia.org/wiki/Constantine_o
 
 Also: Cuneglase
 
-The fourth of the five kings Gildas condemns, called the bear.
+The fourth of the five British kings Gildas condemns by name, known only from him, who ruled somewhere in Wales. Gildas calls him the Bear and "tawny butcher," says he made war on his own people, left his wife for her sister, who'd vowed to stay a widow, and looked down on the holy men praying near him.
 
 Wikipedia: [Cuneglasus](https://en.wikipedia.org/wiki/Cuneglasus)
 
@@ -276,7 +306,7 @@ Wikipedia: [Cuneglasus](https://en.wikipedia.org/wiki/Cuneglasus)
 
 Also: Diocletiani
 
-The Roman emperor who persecuted the Christians across his empire, Britain too.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman emperor from 284 to 305 CE, who reorganized the empire and in 303 CE began its last and harshest persecution of Christians: churches were pulled down, holy books burned, and Christians who wouldn't sacrifice to the Roman gods were jailed, tortured and killed. Gildas dates Britain's first martyrs, Alban, Julius and Aaron, to it, though Alban may have died earlier.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Diocletian](https://en.wikipedia.org/wiki/Diocletian)
 
@@ -284,7 +314,7 @@ Wikipedia: [Diocletian](https://en.wikipedia.org/wiki/Diocletian)
 
 Also: Damnoniae
 
-A British kingdom of the southwest peninsula, today's Devon and Cornwall.
+A British kingdom in the southwest peninsula of Britain, today's Devon and Cornwall and part of Somerset, named after the Dumnonii, the people who lived there in Roman times. Its king in Gildas's day was Constantine, the first of the five kings Gildas condemns.
 
 Wikipedia: [Dumnonia](https://en.wikipedia.org/wiki/Dumnonia)
 
@@ -292,7 +322,7 @@ Wikipedia: [Dumnonia](https://en.wikipedia.org/wiki/Dumnonia)
 
 Also: Demetarum
 
-A kingdom of southwest Wales.
+A kingdom of southwest Wales, named after the Demetae, the people who lived there in Roman times. Its ruler in Gildas's day was Vortiporius, the third of the five kings Gildas condemns; a stone found in Dyfed carries the name of a Voteporix the Protector, perhaps the same man.
 
 Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
 
@@ -300,7 +330,7 @@ Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
 
 Also: Accaron
 
-A Philistine city in the Bible, whose god a king of Israel sent to ask about his illness.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the five cities of the Philistines, Israel's enemies on the coast of Canaan. When King Ahaziah of Israel fell through the lattice of his upper room and lay injured, he sent messengers to ask Baal-zebub, Ekron's god, whether he'd recover; the prophet Elijah met them and sent the king a message that he'd die for not asking Israel's god, and he did. Gildas recalls it as a prophet speaking plainly to a king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ekron](https://en.wikipedia.org/wiki/Ekron)
 
@@ -308,7 +338,7 @@ Wikipedia: [Ekron](https://en.wikipedia.org/wiki/Ekron)
 
 Also: Heliae, Helias
 
-A prophet of the Bible, who confronted King Ahab.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The great prophet of Israel in the ninth century BCE; in its northern kingdom he stood up almost alone against King Ahab and Queen Jezebel and their god Baal. He called down a drought, beat Baal's prophets in a contest of fire on Mount Carmel, and at the end was carried up to heaven in a whirlwind with a chariot of fire. Gildas holds him up to Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Elijah](https://en.wikipedia.org/wiki/Elijah)
 
@@ -316,7 +346,7 @@ Wikipedia: [Elijah](https://en.wikipedia.org/wiki/Elijah)
 
 Also: Helisaeus
 
-A prophet of the Bible, Elijah's follower and successor.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The prophet who followed Elijah and took his place when Elijah was carried up to heaven. The Bible tells of his miracles: he healed the Syrian general Naaman of leprosy, raised a dead boy to life, and let his frightened servant see an army of fiery chariots protecting them. Gildas sets his honesty and power beside Britain's greedy priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Elisha](https://en.wikipedia.org/wiki/Elisha)
 
@@ -324,7 +354,7 @@ Wikipedia: [Elisha](https://en.wikipedia.org/wiki/Elisha)
 
 Also: Enoch
 
-A man of the Bible before the flood, who walked with God and was taken up.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man in Genesis who lived before the great flood, the father of Methuselah and great-grandfather of Noah. Genesis says he "walked with Yahweh, and then he wasn't there, because Yahweh took him," so readers believed he never died but was taken up to heaven alive. Gildas asks which of Britain's priests lives so close to Yahweh that he could be said to walk with it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Enoch](https://en.wikipedia.org/wiki/Enoch)
 
@@ -332,7 +362,7 @@ Wikipedia: [Enoch](https://en.wikipedia.org/wiki/Enoch)
 
 Also: Aethiopum, Aethiops, Ethiopian
 
-The people of Ethiopia, the Bible's name for the lands south of Egypt.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Cush, on the upper Nile south of Egypt; the Latin Bible calls Cush Ethiopia, and it's today's Sudan rather than modern Ethiopia. Gildas names them twice: a huge Cushite army that King Asa of Judah defeated, and Jeremiah's saying that a Cushite can no more change his skin than a leopard its spots, meaning people used to evil can't easily change.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ethiopians](https://en.wikipedia.org/wiki/Ethiopians)
 
@@ -340,7 +370,7 @@ Wikipedia: [Ethiopians](https://en.wikipedia.org/wiki/Ethiopians)
 
 Also: Ezechiel
 
-A prophet of the Bible, who saw visions in exile in Babylon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A priest carried off to Babylon with the first Jewish exiles in 597 BCE, who became a prophet among them and saw strange visions: four living creatures carrying Yahweh's throne, a valley of dry bones coming to life. He warned that Jerusalem would fall for its sins, and called himself a watchman who must warn the people or answer for their deaths, a duty Gildas takes on himself.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ezekiel](https://en.wikipedia.org/wiki/Ezekiel)
 
@@ -348,7 +378,7 @@ Wikipedia: [Ezekiel](https://en.wikipedia.org/wiki/Ezekiel)
 
 Also: Gaad
 
-A prophet at King David's court in the Bible.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet at King David's court in the Bible. When David sinned by counting his fighting men, trusting in numbers instead of Yahweh, Gad brought him Yahweh's message to choose one of three punishments; David chose three days of plague, and seventy thousand people died. Gildas tells it to show that even a good king was punished for one sin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gad (prophet)](https://en.wikipedia.org/wiki/Gad_(prophet))
 
@@ -356,7 +386,7 @@ Wikipedia: [Gad (prophet)](https://en.wikipedia.org/wiki/Gad_(prophet))
 
 Also: Galliam, Gallias
 
-The Roman land west of the Rhine, roughly today's France and Belgium.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman land west of the Rhine, roughly today's France and Belgium, named after the Gauls, the Celtic peoples Julius Caesar conquered there in the 50s BCE. It was Britain's nearest neighbor across the Channel, and Roman generals in Britain who made themselves emperor, as Maximus did, crossed into it first.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gaul](https://en.wikipedia.org/wiki/Gaul)
 
@@ -364,13 +394,13 @@ Wikipedia: [Gaul](https://en.wikipedia.org/wiki/Gaul)
 
 Also: Gabaonitarum
 
-The people of Gibeon, a city of Canaan, who won a treaty from the Israelites by a trick.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Gibeon, a city of Canaan near Jerusalem. When Joshua was conquering Canaan, they tricked him into a peace treaty by coming in worn-out clothes with moldy bread, pretending to live far away; Israel kept the oath even after the trick came out. Generations later, King Saul broke it and killed Gibeonites, and Yahweh sent a three-year famine in King David's time until it was put right.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gibeon (ancient city)](https://en.wikipedia.org/wiki/Gibeon_(ancient_city))
 
 ## Gildas
 
-The British monk who wrote this book.
+The British monk who wrote this book, about 545 CE, the only account of Britain's fifth and sixth centuries by someone who lived through them. He was born, he says, in the year of the battle of Badon, and he writes to call Britain's kings and priests to repent, quoting the Bible's prophets against them. Later saints' lives, such as Caradoc's, made him a famous holy man.
 
 Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
 
@@ -378,7 +408,7 @@ Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
 
 Also: Galaad
 
-A hilly land east of the Jordan in the Bible, known for its healing balm.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A hilly land east of the river Jordan, today in northern Jordan, famous in the Bible for its balm, a fragrant resin from its trees used to heal wounds. Jeremiah's cry, "Is there no balm in Gilead, no doctor there?", asks why nothing can heal his people, and Gildas quotes it of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gilead](https://en.wikipedia.org/wiki/Gilead)
 
@@ -386,7 +416,7 @@ Wikipedia: [Gilead](https://en.wikipedia.org/wiki/Gilead)
 
 Also: Gomorrhae
 
-A city of the Bible destroyed by God with Sodom for its wickedness.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A city in Genesis that Yahweh destroyed with fire and burning sulfur from heaven, along with its neighbor Sodom, for the wickedness of its people; the story made both names bywords for sin. Isaiah calls Jerusalem's rulers "people of Gomorrah," and Gildas fits the insult to Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Sodom and Gomorrah](https://en.wikipedia.org/wiki/Sodom_and_Gomorrah)
 
@@ -394,7 +424,7 @@ Wikipedia: [Sodom and Gomorrah](https://en.wikipedia.org/wiki/Sodom_and_Gomorrah
 
 Also: Abacuc
 
-A prophet of the Bible, who complains to God about injustice.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet of Judah shortly before the Babylonians came, in the late seventh century BCE. His short book opens with him complaining to Yahweh about the violence and bribed judges around him and asking how long Yahweh will let it go on, and pronounces doom on anyone who builds a city on bloodshed. Gildas quotes both against Britain's rulers.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Habakkuk](https://en.wikipedia.org/wiki/Habakkuk)
 
@@ -402,7 +432,7 @@ Wikipedia: [Habakkuk](https://en.wikipedia.org/wiki/Habakkuk)
 
 Also: Aggaeus
 
-A prophet of the Bible, who preached to the Jews back from exile.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in Jerusalem in 520 BCE, after the Jews had come home from their exile in Babylon. He urged them to rebuild Yahweh's Temple, which lay in ruins, and promised that Yahweh would shake heaven and earth and overturn the thrones of the nations' kings. Gildas quotes the promise as a threat to Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Haggai](https://en.wikipedia.org/wiki/Haggai)
 
@@ -410,7 +440,7 @@ Wikipedia: [Haggai](https://en.wikipedia.org/wiki/Haggai)
 
 Also: Annaniae
 
-The father of the prophet Jehu in the Bible.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of the prophet Jehu in the Bible, himself a prophet: he told King Asa of Judah he'd done wrong to rely on a foreign king instead of Yahweh, and Asa threw him in prison. His son Jehu scolded later kings, Baasha of Israel and Jehoshaphat of Judah, whose stories Gildas tells.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hanani](https://en.wikipedia.org/wiki/Hanani)
 
@@ -418,7 +448,7 @@ Wikipedia: [Hanani](https://en.wikipedia.org/wiki/Hanani)
 
 Also: Hebraeos
 
-The people of Israel in the Bible.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Israel in the Bible, called Hebrews especially by outsiders and in their early history, from Abraham to the kings. Saul, who Gildas calls the first king of the Hebrews, was anointed by the prophet Samuel when the people demanded a king like the nations around them.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hebrews](https://en.wikipedia.org/wiki/Hebrews)
 
@@ -426,7 +456,7 @@ Wikipedia: [Hebrews](https://en.wikipedia.org/wiki/Hebrews)
 
 Also: Ezechiae
 
-A good king of Judah in the Bible, father of the wicked Manasseh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Judah in the late eighth century BCE, one of the best the Bible tells of. He cleared the land of idols and trusted Yahweh when the Assyrian army besieged Jerusalem, and an angel destroyed the Assyrian camp in a night. His son Manasseh was one of the worst, and Gildas compares Vortiporius, a bad son of a good king, to Manasseh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hezekiah](https://en.wikipedia.org/wiki/Hezekiah)
 
@@ -434,7 +464,7 @@ Wikipedia: [Hezekiah](https://en.wikipedia.org/wiki/Hezekiah)
 
 Also: Ofni
 
-A son of the priest Eli in the Bible, who died in battle on the same day as his brother Phinehas.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the two sons of Eli, the chief priest at Shiloh in Samuel's boyhood. Hophni and his brother Phinehas, priests themselves, grabbed the best meat of the people's offerings before it was given to Yahweh and slept with women who served at the shrine; both were killed on one day when the Philistines captured the holy ark. Gildas tells their story against Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hophni and Phinehas](https://en.wikipedia.org/wiki/Hophni_and_Phinehas)
 
@@ -442,7 +472,7 @@ Wikipedia: [Hophni and Phinehas](https://en.wikipedia.org/wiki/Hophni_and_Phineh
 
 Also: Osee
 
-A prophet of the Bible, who warned Israel's rulers.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet of the Israelites in the eighth century BCE; he preached in their northern kingdom shortly before the Assyrians destroyed it. He compared Israel's worship of other gods to a wife cheating on her husband, and charged its kings and priests with leading the people into sin. Gildas quotes him against both Britain's kings and its priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hosea](https://en.wikipedia.org/wiki/Hosea)
 
@@ -450,7 +480,7 @@ Wikipedia: [Hosea](https://en.wikipedia.org/wiki/Hosea)
 
 Also: Addo
 
-The father, or grandfather, of the prophet Zechariah in the Bible.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Named in the Bible as the father, or in another place the grandfather, of the prophet Zechariah, who preached in Jerusalem after the Jews came back from Babylon. Gildas names Zechariah as "son of Iddo," as the Bible's book of Zechariah sometimes does.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Iddo (prophet)](https://en.wikipedia.org/wiki/Iddo_(prophet))
 
@@ -458,7 +488,7 @@ Wikipedia: [Iddo (prophet)](https://en.wikipedia.org/wiki/Iddo_(prophet))
 
 Also: Ignatius
 
-A bishop of Antioch, taken to Rome and put to death there early in the second century, who wrote letters on the way.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The bishop of Antioch, in Syria, early in the second century CE. Arrested as a Christian, he was taken under guard to Rome to be thrown to wild beasts in the arena, and on the way he wrote letters to the churches, begging the Christians at Rome not to try to save him. Gildas quotes the letter to shame Britain's priests, who'd suffer nothing for Christ.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ignatius of Antioch](https://en.wikipedia.org/wiki/Ignatius_of_Antioch)
 
@@ -466,7 +496,7 @@ Wikipedia: [Ignatius of Antioch](https://en.wikipedia.org/wiki/Ignatius_of_Antio
 
 Also: Scotorum, Scottorum, Hiberni
 
-The people of Ireland, called Scotti and Hiberni in Latin, who raid Britain from the west.
+The people of Ireland, called *Scotti* and *Hiberni* in Latin, who raided Britain from the west in boats once Rome's soldiers had gone, while the Picts raided from the north; some settled in Wales and in western Scotland, which later took its name from them. Gildas pictures them pouring out of their boats like worms.
 
 Wikipedia: [Irish people](https://en.wikipedia.org/wiki/Irish_people)
 
@@ -474,7 +504,7 @@ Wikipedia: [Irish people](https://en.wikipedia.org/wiki/Irish_people)
 
 Also: Esaiae
 
-A prophet of Israel whose book Gildas quotes.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in Jerusalem in the eighth century BCE, while the Assyrian empire was overrunning the lands around Judah; his is the first of the prophets' books in the Bible, which is why Gildas calls him the first of the prophets. He warned the kings and the rich that Yahweh would punish their injustice, and Gildas quotes him more than any other prophet.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Isaiah](https://en.wikipedia.org/wiki/Isaiah)
 
@@ -482,7 +512,7 @@ Wikipedia: [Isaiah](https://en.wikipedia.org/wiki/Isaiah)
 
 Also: Israeliticae
 
-The people of Israel in the Bible, led out of Egypt into the promised land.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Israel in the Bible, descended from Jacob's twelve sons. They were slaves in Egypt until Moses led them out, wandered forty years in the desert, then conquered Canaan, the land Yahweh had promised them. Gildas tells their story as a warning: Yahweh loved them and still punished them when they sinned.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Israelites](https://en.wikipedia.org/wiki/Israelites)
 
@@ -490,15 +520,21 @@ Wikipedia: [Israelites](https://en.wikipedia.org/wiki/Israelites)
 
 Also: Italiam
 
-The land of the Italian peninsula, the heart of the Roman Empire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Italian peninsula, the heart of the Roman Empire, where Rome itself stands. Gildas says the Romans went back to Italy after conquering Britain, and that Maximus, made emperor by the army in Britain, stretched his rule into it before he was killed at Aquileia.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Italy](https://en.wikipedia.org/wiki/Italy)
+
+## Jacob
+
+Abraham's grandson, given the name Israel by Yahweh, whose twelve sons were the ancestors of Israel's twelve tribes. Dying, he blessed each son in turn, and called Judah, whose tribe would give Israel its kings, a lion's cub. Gildas turns that praise into a jab at the young king Aurelius Caninus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Jacob](https://en.wikipedia.org/wiki/Jacob)
 
 ## Jannes and Jambres
 
 Also: Iamnes et Mambres, Jannes and Jambres
 
-The names later tradition gave Pharaoh's two magicians, who matched Moses's first signs; Paul names them in a letter to Timothy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The names later Jewish tradition gave Pharaoh's two magicians, who copied Moses's first miracles with their own tricks, turning staffs into snakes and water into blood, when he came to demand Israel's freedom, until their power failed. Paul names them in a letter to Timothy as the type of false teachers who fight the truth, and Gildas aims the comparison at Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jannes and Jambres](https://en.wikipedia.org/wiki/Jannes_and_Jambres)
 
@@ -506,7 +542,7 @@ Wikipedia: [Jannes and Jambres](https://en.wikipedia.org/wiki/Jannes_and_Jambres
 
 Also: Iechonias
 
-A king of Judah in the Bible, carried off into exile in Babylon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Judah for only three months in 597 BCE, before the Babylonians captured Jerusalem the first time and carried him off to Babylon with the city's leaders and craftsmen. Through Jeremiah, Yahweh said that even if Jeconiah were the signet ring on its right hand, it'd pull him off; Gildas quotes it to warn kings that Yahweh can cast them off too.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jeconiah](https://en.wikipedia.org/wiki/Jeconiah)
 
@@ -514,7 +550,7 @@ Wikipedia: [Jeconiah](https://en.wikipedia.org/wiki/Jeconiah)
 
 Also: Ioiadae
 
-A high priest of Judah in the Bible, who raised King Joash, and father of the Zechariah Joash had stoned.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A high priest of Judah in the Bible. When the queen Athaliah murdered the royal family to take the throne, Jehoiada hid the baby prince Joash in the Temple for six years and then crowned him. After Jehoiada died, Joash turned to idols and had his son, the prophet Zechariah, stoned for warning him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jehoiada](https://en.wikipedia.org/wiki/Jehoiada)
 
@@ -522,7 +558,7 @@ Wikipedia: [Jehoiada](https://en.wikipedia.org/wiki/Jehoiada)
 
 Also: Ioram
 
-A king of Judah in the Bible, Jehoshaphat's son, who killed his brothers to rule.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Judah in the ninth century BCE, Jehoshaphat's son, who killed all his brothers when he took the throne and married a daughter of the wicked King Ahab of Israel. A letter from the prophet Elijah warned him of a plague on his people and a deadly disease of the bowels, and both came. Gildas quotes it against kings who kill their own family.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jehoram of Judah](https://en.wikipedia.org/wiki/Jehoram_of_Judah)
 
@@ -530,7 +566,7 @@ Wikipedia: [Jehoram of Judah](https://en.wikipedia.org/wiki/Jehoram_of_Judah)
 
 Also: Iosaphat
 
-A king of Judah in the Bible, scolded for helping the wicked Ahab.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A good king of Judah in the ninth century BCE, Asa's son, who taught his people Yahweh's law but made an alliance with the wicked King Ahab of Israel and fought beside him in the battle where Ahab died. When he came home, the prophet Jehu son of Hanani scolded him for helping a man who hated Yahweh, which Gildas turns on Christians who stand by bad kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jehoshaphat](https://en.wikipedia.org/wiki/Jehoshaphat)
 
@@ -538,15 +574,15 @@ Wikipedia: [Jehoshaphat](https://en.wikipedia.org/wiki/Jehoshaphat)
 
 Also: Ieu
 
-A prophet of the Bible, the son of Hanani, who scolded King Jehoshaphat.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in the Bible, the son of the prophet Hanani. He told King Baasha of Israel that his family would be wiped out like Jeroboam's for his idol worship, and later scolded King Jehoshaphat of Judah for helping the wicked Ahab. He isn't the army commander Jehu who later killed Ahab's family and took Israel's throne.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
-Wikipedia: [Jehu](https://en.wikipedia.org/wiki/Jehu)
+Wikipedia: [Jehu (prophet)](https://en.wikipedia.org/wiki/Jehu_(prophet))
 
 ## Jephthah
 
 Also: Iepte
 
-A leader of Israel in the Bible, who sacrificed his daughter to keep a vow.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of Israel's judges, war leaders in the days before kings. Before fighting the Ammonites he vowed that if Yahweh gave him victory, he'd sacrifice whatever came out of his house to meet him first; it was his only daughter, dancing with tambourines, and he kept the vow. Gildas reads her as the pleasures a priest should give up for others' good.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jephthah](https://en.wikipedia.org/wiki/Jephthah)
 
@@ -554,31 +590,49 @@ Wikipedia: [Jephthah](https://en.wikipedia.org/wiki/Jephthah)
 
 Also: Hieremiae
 
-A prophet of Israel who mourned the fall of Jerusalem.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in Jerusalem for about forty years before the Babylonians destroyed it in 587 BCE. He warned its kings and people that their unfaithfulness would bring ruin, was beaten, jailed and called a traitor for it, and saw it all come true; the Book of Lamentations, mourning the ruined city, is traditionally his. Gildas calls on him more than on anyone but Isaiah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jeremiah](https://en.wikipedia.org/wiki/Jeremiah)
+
+## Jericho
+
+An ancient city near the Jordan River, in today's West Bank, one of the oldest places people have lived without a break. In the Book of Joshua it's the first city the Israelites take in Canaan: they march around it for seven days, the priests blow their trumpets, and its walls fall down. Gildas tells it as one of the miracles Yahweh did for a people it loved.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Jericho](https://en.wikipedia.org/wiki/Jericho)
 
 ## Jeroboam
 
 Also: Hieroboae, Ieroboae
 
-King of Israel in the Bible, the first to rule its north after it split from Judah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King Jeroboam son of Nebat, an official of King Solomon's who, after Solomon died, led ten of Israel's twelve tribes away from Solomon's son and became the first king of the northern kingdom of Israel. To keep his people from going to the Temple in Jerusalem, he set up golden calves at Bethel and Dan, and the Bible remembers him as the king who made Israel sin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jeroboam](https://en.wikipedia.org/wiki/Jeroboam)
+
+## Jezebel
+
+A princess from Phoenicia, on the coast north of Israel, who married Ahab, king of Israel, in the ninth century BCE. She brought in the worship of the god Baal, hunted down Yahweh's prophets, and had their neighbor Naboth falsely accused and stoned so Ahab could take his vineyard. Her name still means a scheming, wicked woman. Gildas sets her beside Ahab as a warning to Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Jezebel](https://en.wikipedia.org/wiki/Jezebel)
 
 ## Joash
 
 Also: Ioam
 
-A king of Judah in the Bible, who had the prophet Zechariah stoned.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Judah in the ninth century BCE, saved as a baby when his grandmother murdered the royal family and raised in secret in the Temple by the high priest Jehoiada, who crowned him at seven. After Jehoiada died, Joash turned to idols and had Jehoiada's son Zechariah stoned for warning him. Gildas calls him a king of Israel by mistake.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jehoash of Judah](https://en.wikipedia.org/wiki/Jehoash_of_Judah)
+
+## Joshua
+
+Moses's assistant, who led the Israelites into Canaan after Moses died. As one of the twelve men sent to scout the land, he and Caleb alone said Israel could take it with Yahweh's help, and they were the only adults from Egypt who lived to enter it. He led the crossing of the Jordan and the fall of Jericho.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Joshua](https://en.wikipedia.org/wiki/Joshua)
 
 ## Judah
 
 Also: Iuda, Iudam
 
-The southern kingdom of the Bible's Israelites, with Jerusalem as its capital.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The southern of the two kingdoms the Israelites split into after King Solomon died, with Jerusalem as its capital and David's family as its kings. It outlasted the northern kingdom of Israel by more than a century, until the Babylonians destroyed Jerusalem in 587 BCE; its prophets, Isaiah and Jeremiah among them, are the ones Gildas quotes most.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Judah](https://en.wikipedia.org/wiki/Kingdom_of_Judah)
 
@@ -586,7 +640,7 @@ Wikipedia: [Kingdom of Judah](https://en.wikipedia.org/wiki/Kingdom_of_Judah)
 
 Also: Iudaeam
 
-The land of the Jews around Jerusalem, which the Assyrians overran.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The land of the Jews around Jerusalem, the old kingdom of Judah, from which the word "Jew" comes. Gildas compares the Saxons' burning of Britain to the Assyrians' invasion of it in the eighth century BCE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Judea](https://en.wikipedia.org/wiki/Judea)
 
@@ -594,13 +648,13 @@ Wikipedia: [Judea](https://en.wikipedia.org/wiki/Judea)
 
 Also: Aaron et Iulium, Aaron and Julius
 
-Two Christians of the City of the Legion put to death for their faith under Roman rule.
+Two Christians of the City of the Legion, usually taken for Caerleon in south Wales, who were put to death for their faith in a Roman persecution. Gildas puts it in Diocletian's, of 303 CE, though historians think an earlier one, of the third century CE, more likely. Gildas names them with Alban as Britain's first martyrs, whose graves and shrines the Saxon conquest later cut the Britons off from.
 
 ## Lebanon
 
 Also: Libani
 
-The mountains north of Israel in the Bible, known for their snow and cedars.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The range of mountains north of Israel, in today's Lebanon, famous in the Bible for its snowy peaks, its cold streams and its great cedar trees, which Solomon used to build the Temple. Through Jeremiah, Yahweh says the snow never leaves Lebanon, yet its people have forgotten it, and Gildas quotes it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mount Lebanon](https://en.wikipedia.org/wiki/Mount_Lebanon)
 
@@ -608,7 +662,7 @@ Wikipedia: [Mount Lebanon](https://en.wikipedia.org/wiki/Mount_Lebanon)
 
 Also: Levi
 
-A son of Jacob in the Bible, forefather of Israel's priests, whose covenant with God the prophet Malachi recalls.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twelve sons of Jacob, the forefather of the tribe of Levi, from which Israel's priests and Temple servants came; Moses and Aaron were of his tribe. The prophet Malachi says Yahweh's covenant with Levi was one of life and peace because Levi taught truly, and accuses the priests of his own day of breaking it, which Gildas turns on Britain's clergy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Levi](https://en.wikipedia.org/wiki/Levi)
 
@@ -616,7 +670,7 @@ Wikipedia: [Levi](https://en.wikipedia.org/wiki/Levi)
 
 Also: Maglocune, Maelgwn
 
-The king of Gwynedd, the last and greatest of the five kings Gildas condemns.
+King of Gwynedd, in northwest Wales, the last and greatest of the five kings Gildas condemns, and the one he calls the dragon of the isle. Gildas says he killed his uncle to take the throne, then vowed to become a monk, then broke his vow, killed his wife and his nephew and married the nephew's widow. The Welsh annals record his death in a great plague in 547 CE.
 
 Wikipedia: [Maelgwn Gwynedd](https://en.wikipedia.org/wiki/Maelgwn_Gwynedd)
 
@@ -624,7 +678,7 @@ Wikipedia: [Maelgwn Gwynedd](https://en.wikipedia.org/wiki/Maelgwn_Gwynedd)
 
 Also: Malachias
 
-A prophet of the Bible, whose book closes the Christian Old Testament.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The prophet whose book is the last of the prophets in the Christian Old Testament, written after the Jews came back from Babylon and rebuilt the Temple. He charges the priests with offering Yahweh blind and lame animals and breaking its covenant with Levi, and promises a day when Yahweh will come like a refiner's fire. Gildas quotes him at length against Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Malachi](https://en.wikipedia.org/wiki/Malachi)
 
@@ -632,7 +686,7 @@ Wikipedia: [Malachi](https://en.wikipedia.org/wiki/Malachi)
 
 Also: Manasses
 
-A king of Judah in the Bible, the wicked son of the good king Hezekiah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Judah in the seventh century BCE, son of the good king Hezekiah, who ruled for fifty-five years, longer than any other king of Judah. He brought back the worship of idols and, the Bible says, filled Jerusalem with innocent blood, and his sins were remembered as the reason Yahweh let the city fall. Gildas compares Vortiporius, a bad son of a good father, to him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Manasseh of Judah](https://en.wikipedia.org/wiki/Manasseh_of_Judah)
 
@@ -640,7 +694,7 @@ Wikipedia: [Manasseh of Judah](https://en.wikipedia.org/wiki/Manasseh_of_Judah)
 
 Also: Matthiae
 
-The disciple chosen by lot to take Judas's place among the twelve apostles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The disciple chosen to take Judas's place among the twelve apostles after Judas betrayed Christ and died. The remaining apostles put forward two men who'd followed Jesus from the beginning, prayed, and drew lots, and the lot fell on Matthias, which Gildas reads as Yahweh's choice; he sets it against priests who buy their offices.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Matthias the Apostle](https://en.wikipedia.org/wiki/Matthias_the_Apostle)
 
@@ -648,7 +702,7 @@ Wikipedia: [Matthias the Apostle](https://en.wikipedia.org/wiki/Matthias_the_Apo
 
 Also: Maximum mittit
 
-A Roman commander made emperor by the soldiers in Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Magnus Maximus, a Roman general in Britain who was proclaimed emperor by its army in 383 CE, crossed to Gaul, drove out the emperor Gratian and ruled the West from Trier until he was beheaded at Aquileia in 388 CE. Gildas blames him for taking Britain's soldiers and young men overseas, so that they never came back and left the island open to raiders.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
@@ -656,7 +710,7 @@ Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
 Also: Melchisedech
 
-A king and priest in the Bible, who blessed Abraham after his victory over five kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Salem, taken to be Jerusalem, and a priest of Yahweh in Genesis, who came out with bread and wine to bless Abraham when Abraham came back from beating four kings and rescuing his nephew Lot, and Abraham gave him a tenth of everything he'd taken. Christians saw him as an early picture of Christ the priest, and Gildas asks which of Britain's priests is like him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Melchizedek](https://en.wikipedia.org/wiki/Melchizedek)
 
@@ -664,7 +718,7 @@ Wikipedia: [Melchizedek](https://en.wikipedia.org/wiki/Melchizedek)
 
 Also: Mathusalae
 
-A patriarch of the Bible, who lived longer than anyone else in it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man in Genesis who lived before the great flood, Noah's grandfather, who lived 969 years, longer than anyone else in the Bible, so that his name still means a very old man. Gildas asks King Aurelius Caninus whether he expects to live as long as Methuselah, when his father and brothers all died young.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Methuselah](https://en.wikipedia.org/wiki/Methuselah)
 
@@ -672,7 +726,7 @@ Wikipedia: [Methuselah](https://en.wikipedia.org/wiki/Methuselah)
 
 Also: Micheas
 
-A prophet of the Bible, the author of the Book of Micah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet from the countryside of Judah in the late eighth century BCE, at the same time as Isaiah, who spoke up for poor farmers against the rich and powerful of Jerusalem. He charged its rulers, priests and prophets with working for bribes and warned that Jerusalem would be plowed like a field. Gildas quotes him against Britain's kings and clergy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Micah (prophet)](https://en.wikipedia.org/wiki/Micah_(prophet))
 
@@ -680,15 +734,21 @@ Wikipedia: [Micah (prophet)](https://en.wikipedia.org/wiki/Micah_(prophet))
 
 Also: Michae
 
-A prophet of the Bible, who foretold King Ahab's defeat.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in the time of King Ahab of Israel, not the Micah whose book Gildas quotes later. When four hundred court prophets promised Ahab victory against Syria, Micaiah alone told him the truth: Yahweh had put a lying spirit in their mouths to lead him to his death. Ahab had him jailed and was killed in the battle. Gildas sets him against flatterers.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Micaiah](https://en.wikipedia.org/wiki/Micaiah)
+
+## Moses
+
+The prophet who led the Israelites out of slavery in Egypt and through the desert for forty years, and who received Yahweh's law on Mount Sinai, written on two stone tablets. Twice the thirsty people got water from a rock: at Rephidim, early in the desert years, Yahweh told him to strike it, and he did; at Meribah, near their end, Yahweh told him only to speak to it, and he struck it anyway, so Yahweh let him see the promised land from a mountaintop but die before entering it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Moses](https://en.wikipedia.org/wiki/Moses)
 
 ## Naboth
 
 Also: Naboth
 
-A man in the Bible killed so that King Ahab could take his vineyard.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man of Jezreel in the Bible who owned a vineyard next to King Ahab's palace and wouldn't sell it, since it had been in his family for generations. Ahab's wife, Jezebel, had him falsely accused of cursing Yahweh and the king and stoned to death, and Ahab took the vineyard; the prophet Elijah predicted that dogs would lick up Ahab's blood where they'd licked up Naboth's.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Naboth](https://en.wikipedia.org/wiki/Naboth)
 
@@ -696,7 +756,7 @@ Wikipedia: [Naboth](https://en.wikipedia.org/wiki/Naboth)
 
 Also: Nazaraei
 
-People of Israel vowed to God, who let their hair grow and drank no wine.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Israelites who took a vow to belong to Yahweh for a time or for life: they let their hair grow uncut, drank no wine and stayed away from dead bodies. Samson was the most famous of them. Gildas's Latin Bible names them in a line of Lamentations about Jerusalem's finest young men, where most English Bibles now say "princes."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Nazirite](https://en.wikipedia.org/wiki/Nazirite)
 
@@ -704,7 +764,7 @@ Wikipedia: [Nazirite](https://en.wikipedia.org/wiki/Nazirite)
 
 Also: Nabath
 
-The father of King Jeroboam in the Bible, known only as his father.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of Jeroboam, the first king of Israel's northern tribes after they broke away, known in the Bible only as his father. The Bible almost always calls the king "Jeroboam son of Nebat," to mark him as the man who made Israel sin by setting up golden calves, and Gildas uses the same name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Jeroboam](https://en.wikipedia.org/wiki/Jeroboam)
 
@@ -712,7 +772,7 @@ Wikipedia: [Jeroboam](https://en.wikipedia.org/wiki/Jeroboam)
 
 Also: Nicolaum
 
-A man Gildas takes for the founder of a heresy, the Nicolaitans the Book of Revelation condemns.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the seven men the apostles chose in Jerusalem, along with Stephen, to look after the poor, a convert to Judaism from Antioch. The Book of Revelation condemns a sect called the Nicolaitans, and Gildas, like many in his time, takes Nicolaus for its founder, setting him beside Stephen as a bad apple beside a good one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Nicolaism](https://en.wikipedia.org/wiki/Nicolaism)
 
@@ -720,7 +780,7 @@ Wikipedia: [Nicolaism](https://en.wikipedia.org/wiki/Nicolaism)
 
 Also: Ninivitis
 
-The capital of Assyria, spared by God when its people repented at Jonah's warning.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The capital of the Assyrian empire, on the Tigris river opposite today's Mosul in Iraq, the greatest city of its time. Yahweh sent the prophet Jonah to warn it would be destroyed; its people fasted and repented, from the king down, and Yahweh spared it, to Jonah's annoyance. Gildas uses it to show Yahweh would rather forgive than punish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Nineveh](https://en.wikipedia.org/wiki/Nineveh)
 
@@ -728,7 +788,7 @@ Wikipedia: [Nineveh](https://en.wikipedia.org/wiki/Nineveh)
 
 Also: Novatus
 
-Gildas's name for Novatian, a Roman priest who split the church at Rome in the third century.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Gildas's name for Novatian, a priest of Rome who in 251 CE had himself made a rival bishop of Rome, against the lawful bishop Cornelius, because he refused to forgive Christians who'd given in under persecution. His followers formed a separate church that lasted for centuries, and Gildas compares the priests who buy office to him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Novatian](https://en.wikipedia.org/wiki/Novatian)
 
@@ -736,7 +796,7 @@ Wikipedia: [Novatian](https://en.wikipedia.org/wiki/Novatian)
 
 Also: Obed
 
-The father of the prophet Azariah in the Bible, printed as Obed by Mommsen.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of the prophet Azariah in the Bible, himself called a prophet. Azariah son of Oded met King Asa of Judah coming home from victory and warned him that Yahweh would stay with him only while he stayed with Yahweh. Mommsen's text prints the name as Obed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Oded, father of Azariah](https://en.wikipedia.org/wiki/Oded,_father_of_Azariah)
 
@@ -744,15 +804,21 @@ Wikipedia: [Oded, father of Azariah](https://en.wikipedia.org/wiki/Oded,_father_
 
 Also: Parthorum
 
-The people of Parthia, in today's northeastern Iran, Rome's great rival in the east.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Parthia, in what's now northeastern Iran, whose empire stretched from the Euphrates to India and was Rome's great rival in the east for nearly three hundred years. Their horse archers destroyed a Roman army at Carrhae in 53 BCE, and Gildas says Rome's first peace with them showed its power over the whole world.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Parthia](https://en.wikipedia.org/wiki/Parthia)
+
+## Paul
+
+A Jewish teacher who hunted down the first Christians, then became one after a vision of Christ on the road to Damascus, around 34 CE. He traveled the Roman empire founding churches among non-Jews, which is why he's called the teacher of the gentiles, and his letters to those churches make up much of the New Testament. Tradition says he was beheaded in Rome. Gildas quotes him more than any other writer.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Paul the Apostle](https://en.wikipedia.org/wiki/Paul_the_Apostle)
 
 ## Pharisees
 
 Also: Pharisaei
 
-A party of Jewish teachers in the Gospels.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A strict religious party among the Jews in Jesus's time, devoted to keeping Yahweh's law in every detail of daily life, and the teachers most people looked to. In the Gospels they often clash with Jesus, who calls some of them hypocrites who teach the law but don't keep it, and Gildas turns his words on Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pharisees](https://en.wikipedia.org/wiki/Pharisees)
 
@@ -760,7 +826,7 @@ Wikipedia: [Pharisees](https://en.wikipedia.org/wiki/Pharisees)
 
 Also: Philistinorum
 
-A people on the coast of Canaan in the Bible, Israel's enemies.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A people who lived in five cities on the coast of Canaan, in today's Gaza Strip and southern Israel, and were Israel's great enemies in the days of the judges and the first kings. In the Bible they captured the holy ark, blinded Samson, and were fought by Saul and David; the name Palestine comes from them.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Philistines](https://en.wikipedia.org/wiki/Philistines)
 
@@ -768,7 +834,7 @@ Wikipedia: [Philistines](https://en.wikipedia.org/wiki/Philistines)
 
 Also: Philonis
 
-Philo of Alexandria, a Jewish writer of the first century CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Philo of Alexandria, a Jewish writer of the first century CE in Alexandria, the great Greek port of Egypt, who explained the books of Moses in the language of Greek philosophy; Christian scholars read and kept his work. Gildas quotes a saying he credits to him, that Yahweh's help comes where human help ends, though Mommsen found only the thought, not the words, in Philo's *Life of Moses*.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Philo](https://en.wikipedia.org/wiki/Philo)
 
@@ -776,7 +842,7 @@ Wikipedia: [Philo](https://en.wikipedia.org/wiki/Philo)
 
 Also: Finees
 
-The name of two priests Gildas names: Phinehas, Aaron's grandson, who punished fornication in Israel, and Phinehas son of Eli, who died on the same day as his brother Hophni.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two priests Gildas names. One is Aaron's grandson, who punished fornication in Israel; the other is Phinehas son of Eli, who died on the same day as his brother Hophni.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Phinehas](https://en.wikipedia.org/wiki/Phinehas)
 
@@ -784,7 +850,7 @@ Wikipedia: [Phinehas](https://en.wikipedia.org/wiki/Phinehas)
 
 Also: Picti, Pictorum, Pictorumque
 
-A people of the far north of Britain who raid the Britons from the sea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A people of the far north of Britain, beyond the Roman walls, whose name in Latin means "painted people." Gildas says that once Rome's soldiers had gone they raided the Britons from the sea with the Irish, took the north up to the wall, and later settled the far end of the island for good.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
@@ -792,7 +858,7 @@ Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
 Also: Polycarpus
 
-A bishop of Smyrna, burned for his faith in the second century.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The bishop of Smyrna, today's İzmir in Turkey, a famous Christian teacher said to have known John the apostle. When soldiers came to arrest him in about 155 CE, he ordered a meal for them; at eighty-six he refused to curse Christ and was burned at the stake, telling his executioners they needn't nail him to it. Gildas holds up his courage to Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Polycarp](https://en.wikipedia.org/wiki/Polycarp)
 
@@ -800,7 +866,7 @@ Wikipedia: [Polycarp](https://en.wikipedia.org/wiki/Polycarp)
 
 Also: Porphyrius
 
-A Greek philosopher of the third century CE who wrote against the Christians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Greek philosopher of the third century CE, born in Tyre in today's Lebanon, the most famous pagan critic of Christianity in the ancient world; Christian emperors had his book *Against the Christians* burned. Gildas, who knew him from Jerome, quotes his jibe that Britain was "a province fertile in tyrants" and calls him the rabid dog of the East.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Porphyry of Tyre](https://en.wikipedia.org/wiki/Porphyry_of_Tyre)
 
@@ -808,7 +874,7 @@ Wikipedia: [Porphyry of Tyre](https://en.wikipedia.org/wiki/Porphyry_of_Tyre)
 
 Also: Romani, Romanis, Romanorum
 
-The people of Rome and its empire, who rule Britain in Gildas's history.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Rome and its empire, who conquered most of Britain in the first century CE and ruled it for nearly four hundred years, until about 410 CE. Gildas tells their history in Britain, conquest, revolt, the walls they built against the Picts and their final leaving, as the background to the Britons' fall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ancient Rome](https://en.wikipedia.org/wiki/Ancient_Rome)
 
@@ -816,15 +882,23 @@ Wikipedia: [Ancient Rome](https://en.wikipedia.org/wiki/Ancient_Rome)
 
 Also: Roma, Romam, Romae
 
-The city in Italy that rules the empire.
+The city in Italy from which the Roman Empire was ruled. Gildas tells how Rome conquered Britain, put down its revolts, sent legions to save it from the Picts and the Irish, and at last told the Britons to defend themselves and left for good.
 
 Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
+
+## Saint Peter
+
+Also: Petri, Petro, Petrum, Petrus
+
+Peter the apostle, a fisherman who became the leader of Jesus's twelve followers. Christ told him he'd give him the keys of the kingdom of heaven, which is why he's called its keeper, and tradition says he became the first bishop of Rome and was crucified there upside down. Gildas holds him up against Britain's priests, who sit in his seat but don't live as he did.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Saint Peter](https://en.wikipedia.org/wiki/Saint_Peter)
 
 ## Samaria
 
 Also: Samariae
 
-The capital of the northern kingdom of Israel in the Bible, and the land around it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The capital of the northern kingdom of Israel, built by King Omri, Ahab's father, in the ninth century BCE, and the land around it. Its prophets, Jeremiah says, prophesied by the god Baal and misled Israel, and the Assyrians destroyed it in 722 BCE. Its later people were the Samaritans of the Gospels.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Samaria](https://en.wikipedia.org/wiki/Samaria)
 
@@ -832,7 +906,7 @@ Wikipedia: [Samaria](https://en.wikipedia.org/wiki/Samaria)
 
 Also: Sampson
 
-A strong man of the Bible, who pulled down a Philistine temple on himself and his enemies.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A judge of Israel famous for his strength, which lay in his uncut hair. His lover Delilah had it cut and handed him to the Philistines, who blinded him; at a feast in their god's temple he pushed down its two pillars and killed himself and more Philistines than he'd killed in his life. Gildas reads the pillars as the pleasures a priest should pull down.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Samson](https://en.wikipedia.org/wiki/Samson)
 
@@ -840,15 +914,21 @@ Wikipedia: [Samson](https://en.wikipedia.org/wiki/Samson)
 
 Also: Saxones
 
-The people from over the North Sea the Britons' leaders invite into Britain.
+The people from over the North Sea, from today's northern Germany and Denmark, who a British ruler and his advisers invited into Britain to fight the Picts and the Irish; they rebelled, burned the island from sea to sea and settled it, becoming the English. Gildas calls their coming Yahweh's punishment for the Britons' sins.
 
 Wikipedia: [Saxons](https://en.wikipedia.org/wiki/Saxons)
+
+## Sennacherib
+
+King of Assyria, the great empire of what's now northern Iraq, from 705 to 681 BCE. He overran Judah's towns and besieged Jerusalem in 701 BCE, and sent a message to King Hezekiah boasting that no god could stop him, that he'd dug wells and dried up rivers with the soles of his feet. Isaiah answered that Yahweh would turn him back, and the Bible says an angel struck his camp in the night and he went home. Gildas hears the same boast in Britain's proud priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Sennacherib](https://en.wikipedia.org/wiki/Sennacherib)
 
 ## Severn
 
 Also: Sabrinae
 
-The longest river of Britain, flowing from mid Wales to the Bristol Channel.
+The longest river of Britain, about 220 miles, flowing from the hills of mid Wales to the Bristol Channel. Gildas names it with the Thames as Britain's two great rivers, like two arms, along which goods from overseas were once shipped in.
 
 Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
@@ -856,7 +936,7 @@ Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
 Also: Silo
 
-A town of ancient Israel in the Bible, where the priest Eli kept God's shrine.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A town of ancient Israel north of Jerusalem where the holy ark, the chest holding the tablets of Yahweh's law, was kept in a shrine in the days of the priest Eli and the boy Samuel. Its fall to the Philistines became a warning: Jeremiah told the people that Yahweh would destroy the Temple in Jerusalem as it'd let Shiloh be destroyed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Shiloh (biblical city)](https://en.wikipedia.org/wiki/Shiloh_(biblical_city))
 
@@ -864,7 +944,7 @@ Wikipedia: [Shiloh (biblical city)](https://en.wikipedia.org/wiki/Shiloh_(biblic
 
 Also: Smyrnensis
 
-A Greek city on the coast of Asia Minor, now İzmir in Turkey, where Polycarp was bishop.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Greek port city on the coast of what's now western Turkey, today's İzmir, one of the seven churches the Book of Revelation addresses. Polycarp was its bishop and was burned there for his faith in about 155 CE, and Gildas holds him up to Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Smyrna](https://en.wikipedia.org/wiki/Smyrna)
 
@@ -872,23 +952,35 @@ Wikipedia: [Smyrna](https://en.wikipedia.org/wiki/Smyrna)
 
 Also: Sodomorum, Sodomitana
 
-A city of the Bible that God destroyed for its wickedness.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A city in Genesis that Yahweh destroyed with fire and burning sulfur from heaven, along with Gomorrah, for the wickedness of its people; angels led Abraham's nephew Lot and his family out first. The vine of Sodom, from Moses's song in Deuteronomy, bears poisoned grapes, and Gildas uses both the city and the vine for Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Sodom and Gomorrah](https://en.wikipedia.org/wiki/Sodom_and_Gomorrah)
+
+## Solomon
+
+King David's son, who ruled Israel in the tenth century BCE, famous for his wisdom and his riches. He built the first Temple in Jerusalem. Tradition gives him the Book of Proverbs, a collection of short sayings on how to live well, and Gildas quotes its lines on just and unjust rulers as Solomon's.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Solomon](https://en.wikipedia.org/wiki/Solomon)
 
 ## Spain
 
 Also: Hispaniam
 
-The Iberian peninsula, today's Spain and Portugal, a Roman land.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Iberian peninsula, today's Spain and Portugal, then a Roman land of several provinces. Gildas says that Maximus, made emperor by the army in Britain, stretched one wing of his rule to Spain and the other to Italy, meaning he took over the whole Roman West.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Spain](https://en.wikipedia.org/wiki/Spain)
+
+## Stephen
+
+One of seven men the apostles chose in Jerusalem to see to food for the poor, the first deacons. Arrested for preaching about Christ, he gave a long speech to the Jewish high court and was taken out and stoned to death, around 34 CE, the first Christian to die for the faith. Gildas asks which of Britain's priests has suffered as he did.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Saint Stephen](https://en.wikipedia.org/wiki/Saint_Stephen)
 
 ## Syria
 
 Also: Syria
 
-The Roman province around Antioch, from which Ignatius was taken to Rome.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman province around Antioch, in today's Syria and southern Turkey, one of the richest in the empire. Ignatius, bishop of Antioch, was taken under guard from Syria to Rome to be thrown to the beasts, and wrote of fighting beasts all the way, meaning his cruel guards.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Roman Syria](https://en.wikipedia.org/wiki/Roman_Syria)
 
@@ -896,7 +988,7 @@ Wikipedia: [Roman Syria](https://en.wikipedia.org/wiki/Roman_Syria)
 
 Also: Thabor
 
-A mountain in the north of Israel in the Bible.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Mount Tabor, a rounded mountain in Galilee, in the north of today's Israel, standing alone above the plain. The prophet Hosea calls Israel's priests a hunter's net spread over Tabor, catching the people instead of guiding them, and Gildas fits it to Britain's priests; Christians later held it to be where Christ was transfigured before his disciples.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mount Tabor](https://en.wikipedia.org/wiki/Mount_Tabor)
 
@@ -904,7 +996,7 @@ Wikipedia: [Mount Tabor](https://en.wikipedia.org/wiki/Mount_Tabor)
 
 Also: Tamesis
 
-The river of southern England that runs through London.
+The river of southern England that runs through London to the North Sea, about 215 miles long. Gildas names it with the Severn as Britain's two great rivers, and tells how Alban crossed its bed dry-footed with a thousand people on the way to his death; the history names a battle on it.
 
 Wikipedia: [River Thames](https://en.wikipedia.org/wiki/River_Thames)
 
@@ -912,7 +1004,7 @@ Wikipedia: [River Thames](https://en.wikipedia.org/wiki/River_Thames)
 
 Also: Tiberii
 
-The Roman emperor in Christ's lifetime.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman emperor from 14 to 37 CE, the emperor when Jesus was crucified. An early Christian story, which Gildas found in the church historians, says Tiberius proposed to the Roman senate that Christ be made a god and threatened anyone who accused the Christians; historians don't believe it, but Gildas dates Christ's teaching's arrival in Britain to his reign.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tiberius](https://en.wikipedia.org/wiki/Tiberius)
 
@@ -920,13 +1012,13 @@ Wikipedia: [Tiberius](https://en.wikipedia.org/wiki/Tiberius)
 
 Also: Tithicam
 
-The water the Irish and the Picts crossed to raid Britain; no one knows for sure what Gildas means by it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The water the Irish and the Picts crossed in their boats to raid Britain, named by Gildas alone; no one knows for sure what he means by it. It may be the sea itself, named after Tethys, a goddess of the sea, or a firth in the north of Britain such as the Firth of Forth.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Titus
 
 Also: Titum
 
-A companion of Paul, who wrote him one of the letters of the New Testament.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Greek, non-Jewish companion of the apostle Paul, who went with him on his journeys and was later left in charge of the churches on Crete. Paul's letter to Titus, in the New Testament, tells him how to choose church leaders and how to live as an example, and Gildas quotes it against Britain's priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saint Titus](https://en.wikipedia.org/wiki/Saint_Titus)
 
@@ -934,7 +1026,7 @@ Wikipedia: [Saint Titus](https://en.wikipedia.org/wiki/Saint_Titus)
 
 Also: Treveros
 
-A Roman city on the Moselle, in today's western Germany, where emperors kept court.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman city on the Moselle river, in today's western Germany near Luxembourg, one of the capitals of the late Roman Empire where emperors kept court. Maximus, proclaimed emperor by the army in Britain, set up his court there and ruled the West from it from 383 to 388 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Trier](https://en.wikipedia.org/wiki/Trier)
 
@@ -942,7 +1034,7 @@ Wikipedia: [Trier](https://en.wikipedia.org/wiki/Trier)
 
 Also: Verolamiensem
 
-A Roman town in Britain, beside today's St Albans.
+A Roman town in Britain, the third largest in the province, beside today's St Albans, about twenty miles north of London. Alban, Britain's first martyr, was a citizen there and was beheaded on the hill above it, and the medieval town and abbey that grew up around his shrine took his name.
 
 Wikipedia: [Verulamium](https://en.wikipedia.org/wiki/Verulamium)
 
@@ -950,15 +1042,21 @@ Wikipedia: [Verulamium](https://en.wikipedia.org/wiki/Verulamium)
 
 Also: Vortipori
 
-The ruler of Dyfed, the third of the five kings Gildas condemns.
+The ruler of Dyfed, in southwest Wales, the third of the five kings Gildas condemns by name; Gildas calls him a spotted leopard, says he's going gray, and charges him with murder, adultery and sleeping with his own daughter. A memorial stone found in Dyfed names a "Voteporix the Protector," perhaps the same man.
 
 Wikipedia: [Vortiporius](https://en.wikipedia.org/wiki/Vortiporius)
+
+## Yahweh
+
+The name of the god of the Israelites in the Hebrew Bible, the one god Jews and Christians worship, written in Hebrew with four letters, YHWH. Jews stopped saying the name aloud before Jesus's time and said "my lord" instead, so the Greek and Latin Bibles wrote "lord" where the name stood, and the Latin and French of these books call it only god or lord, never by its name. This translation gives the god its name wherever the source speaks of it, and calls it "it", as it would any people's god.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Yahweh](https://en.wikipedia.org/wiki/Yahweh)
 
 ## Zechariah
 
 Also: Zacharias
 
-The name of two men Gildas quotes: Zechariah son of Jehoiada, stoned for warning King Joash, and Zechariah son of Iddo, the prophet of the Book of Zechariah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two men Gildas quotes. One is Zechariah son of Jehoiada, stoned for warning King Joash; the other is Zechariah son of Iddo, the prophet of the Book of Zechariah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Zechariah (Hebrew prophet)](https://en.wikipedia.org/wiki/Zechariah_(Hebrew_prophet))
 
@@ -966,7 +1064,7 @@ Wikipedia: [Zechariah (Hebrew prophet)](https://en.wikipedia.org/wiki/Zechariah_
 
 Also: Sophonias
 
-A prophet of the Bible, who warned of the day of the Lord's anger.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A prophet in Jerusalem in the late seventh century BCE, a few decades before it fell to the Babylonians. His book is the fiercest picture in the Bible of the day of Yahweh, the day Yahweh comes to judge, a day of anger and darkness when silver and gold won't save anyone, and he condemns Jerusalem's princes, judges and priests.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Zephaniah](https://en.wikipedia.org/wiki/Zephaniah)
 
@@ -974,7 +1072,7 @@ Wikipedia: [Zephaniah](https://en.wikipedia.org/wiki/Zephaniah)
 
 Also: Sion
 
-The hill of Jerusalem, and Jerusalem itself, which Gildas reads as the Church.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The hill in Jerusalem where King David's fortress and later the Temple stood, and in the prophets a name for Jerusalem itself and for Yahweh's people; the "daughter of Zion" is the city. Gildas reads every line of the prophets about Zion as a line about the Church, so their grief over the ruined city becomes grief over the Church of his day.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Zion](https://en.wikipedia.org/wiki/Zion)
 
@@ -982,6 +1080,6 @@ Wikipedia: [Zion](https://en.wikipedia.org/wiki/Zion)
 
 Also: Taneos
 
-A city of Egypt where Pharaoh's advisers sat, in the Nile Delta.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A royal city of ancient Egypt in the Nile delta, known to the Greeks as Tanis, where Pharaoh's court and advisers sat. Isaiah mocks the wise men of Zoan for giving Pharaoh foolish advice, and Gildas compares the British leaders who invited the Saxons in to them.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Zoan](https://en.wikipedia.org/wiki/Zoan)

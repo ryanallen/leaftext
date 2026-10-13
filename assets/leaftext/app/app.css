@@ -12464,11 +12464,12 @@ body.is-block-dragging .document-body [data-src-start] {
   width: max-content;
   max-width: 100%;
   
-  timeline-scope: --lt-table-scroll;
-  
   --reader-table-cards: 0;
 }
-.table-lane > table {
+body:not(.mac-frame) .table-bay > .table-lane {
+  timeline-scope: --lt-table-scroll;
+}
+body:not(.mac-frame) .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
 }
 
@@ -12673,18 +12674,24 @@ th.image-cell {
 }
 
 @supports (animation-timeline: scroll()) {
-  .table-lane::before,
-  .table-lane::after {
+  body:not(.mac-frame) .table-lane::before,
+  body:not(.mac-frame) .table-lane::after {
     animation-fill-mode: both;
     animation-timing-function: var(--lt-ease-linear);
     animation-timeline: --lt-table-scroll;
   }
-  .table-lane::before {
+  body:not(.mac-frame) .table-lane::before {
     animation-name: lt-table-edge-behind;
   }
-  .table-lane::after {
+  body:not(.mac-frame) .table-lane::after {
     animation-name: lt-table-edge-ahead;
   }
+}
+body.mac-frame .table-lane::before {
+  opacity: var(--table-fade-left, 0);
+}
+body.mac-frame .table-lane::after {
+  opacity: var(--table-fade-right, 0);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -16392,7 +16399,7 @@ h2.shelf-book-title {
   content: '';
   position: absolute;
   right: 0;
-  bottom: var(--lt-space-8);
+  bottom: 0;
   left: 0;
   height: 3rem;
   background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--lt-background) 92%, black));

@@ -47,19 +47,19 @@ He crossed the sea to Gaul and stayed in its cities, studying very well, for sev
 
 All the Britons praised and honoured the wise teacher's devotion so much that his equal was never found, and couldn't be, for his great merits. He fasted like Anthony the hermit.[^107-5] He prayed in a hair shirt. Whatever he was given he spent on the poor at once. He kept from sweet milk and from honey. He hated meat, and liked cress from the brook better. He ate barley bread mixed with ashes and drank spring water every day. He didn't go into the baths, which his people loved most. His face looked thin, so he seemed like someone with a bad fever.
 
-At midnight he used to go into the river and stand there without moving until he'd said the Lord's Prayer three times. After that he went back to his chapel. There he knelt and prayed to God's majesty until full daylight. He slept little, lying on a rock dressed in a single garment. He ate without ever eating his fill, satisfied only by earning heaven's reward. That was what he longed for.
+At midnight he used to go into the river and stand there without moving until he'd said the Our Father three times. After that he went back to his chapel. There he knelt and prayed to Yahweh's majesty until full daylight. He slept little, lying on a rock in a single set of clothes. He ate without ever eating his fill, satisfied only by earning heaven's reward. That was what he longed for.
 
 ### Gildas preaches across Britain, and in Pebidiog his voice is held back
 
-He taught people to scorn what passes in a moment. He was a famous preacher across Britain's three kingdoms. Kings feared him, as they should, and obeyed him when they listened to his welcome preaching. Every Sunday he preached at a church by the sea, which stands in the district of Pebidiog, in the time of King Trifinus, and a countless crowd heard him.[^107-6]
+He taught people to look down on what passes in a moment. He was a famous preacher across Britain's three kingdoms. Kings feared him, as they should, and obeyed him when they listened to his welcome preaching. Every Sunday he preached at a church by the sea, which stands in the district of Pebidiog, in the time of King Trifinus, and a countless crowd heard him.[^107-6]
 
-Once, as he began to preach, his voice was held back in him, and the people were amazed at it. When Saint Gildas found this, he told everyone there to go out, to learn if one of them was keeping him from preaching God's word. Even after they'd left, he couldn't preach. Then he asked whether anyone, man or woman, was hiding in the church.
+Once, as he began to preach, his voice was held back in him, and the people were amazed at it. When Saint Gildas found this, he told everyone there to go out, to learn if one of them was keeping him from preaching Yahweh's word. Even after they'd left, he couldn't preach. Then he asked whether anyone, man or woman, was hiding in the church.
 
 <a id="page-108"></a>[\[Mommsen 108\]](../vita-gildae-latin.md#page-108) Saint Non answered him. She was pregnant, and would be the mother of the holy child David. "It's me," she said. "I'm staying here between the wall and the door, since I didn't want to go in among the crowd." When he heard this, he told her to go out. Once she'd gone, he called the people back, and they came to hear the gospel preached.
 
-When the sermon was over, he asked God's angel about what had happened: why he'd begun to speak and couldn't finish. The messenger revealed it to him. "Saint Non, a holy woman, is in the church," he said. "She's pregnant now, and will bear a boy of great grace. Because of him you couldn't preach, since God's power held back your words. The child who's coming will be more blessed than you. He'll have no equal in your part of the world."
+When the sermon was over, he asked Yahweh's angel about what had happened: why he'd begun to speak and couldn't finish. The messenger revealed it to him. "Saint Non, a holy woman, is in the church," he said. "She's pregnant now, and will bear a boy of great grace. Because of him you couldn't preach, since Yahweh's power held back your words. The child who's coming will be more blessed than you. He'll have no equal in your part of the world."
 
-Then Gildas said: "I'll leave this region to him. He'll grow quickly and flourish from one age to the next. God's angel, his messenger, has told me that this is truly what's meant to be."[^108-1]
+Then Gildas said: "I'll leave this region to him. He'll grow quickly and flourish from one age to the next. Yahweh's angel, its messenger, has told me that this is truly what's meant to be."[^108-1]
 
 ## Part 2: Arthur hunts Gildas's brother Hueil, then meets Gildas, who takes a bell to Rome
 
@@ -67,11 +67,11 @@ Then Gildas said: "I'll leave this region to him. He'll grow quickly and flouris
 
 So it happened that the holy preacher Gildas crossed to Ireland, where he turned countless people to the Catholic faith.[^108-2] He lived in the time of Arthur, king of all Greater Britain. Gildas loved him, as was right, and always wanted to obey him. But his twenty-three brothers stood against Arthur as a rebel. They wouldn't put up with a lord. They kept routing Arthur, driving him out of forest and field.
 
-Hueil, the eldest, was a constant fighter and a famous soldier. He obeyed no one, not even Arthur. He harassed him, and stirred up the fiercest fury between the two of them. He came very often from Scotland, set fires, and carried off plunder in triumph and to great praise.
+Hueil, the oldest, was a constant fighter and a famous soldier. He obeyed no one, not even Arthur. He harassed him, and stirred up the fiercest fury between the two of them. He came very often from Scotland, set fires, and carried off plunder in triumph and to great praise.
 
 The ruler of all Britain heard that the bold young man had done these things and was doing more like them. So he hunted him down. Hueil had won so many fights and was the best of them. The people of the land said and hoped he'd be their king one day. In that pursuit, and a battle on the Isle of Man, Arthur killed the young raider. After the killing he came home the victor, very glad to have beaten his strongest enemy.
 
-Gildas, the Britons' historian, was still in Ireland then, running a school and preaching in the city of Armagh.[^108-3] He heard that King Arthur had killed his brother. The news hurt him, and he cried and groaned, mourning him as only family can. He prayed for Hueil's spirit every day. He asked mercy for Arthur too, the man who'd hunted his kin down and taken his life. So he kept the command given to the apostles: "Pray for those who persecute you, and do good to those who hate you."[^108-4]
+Gildas, the Britons' historian, was still in Ireland then, running a school and preaching in the city of Armagh.[^108-3] He heard that King Arthur had killed his brother. The news hurt him, and he cried and groaned, mourning him as only family can. He prayed for Hueil's spirit every day. He asked mercy for Arthur too, the man who'd hunted Hueil down and taken his life. So he kept the command given to the apostles: "Pray for those who persecute you, and do good to those who hate you."[^108-4]
 
 ### Gildas brings a bell to Britain and meets Arthur before the bishops
 
@@ -81,7 +81,7 @@ King Arthur and the leading men of all Britain learned that Gildas the Wise had 
 
 ### Gildas takes the bell to Rome and offers it to the pope
 
-From there the good Gildas, a man of peace and of the Catholic faith, went to Rome. He gave the bell to the pope of the Roman church. But when the pontiff shook it, it made no sound. Seeing this, he said: "Man loved by God and by people, tell me what happened to this gift on your way."
+From there the good Gildas, a man of peace and of the Catholic faith, went to Rome. He gave the bell to the head of the Roman church. But when the pope shook it, it made no sound. Seeing this, he said: "Man loved by Yahweh and by people, tell me what happened to this gift on your way."
 
 Gildas told him that the holy Cadoc, abbot of the church of Llancarfan, had wanted to buy it. But Gildas had vowed to offer it to Saint Peter the apostle, and wouldn't sell it. When he heard this, the pope said: "I know Cadoc, that venerable man.
 
@@ -93,13 +93,13 @@ So Gildas took the blessed bell back and went home. He carried it back and gave 
 
 ### Gildas teaches a year at Cadoc's school and copies the four Gospels
 
-Cadoc, abbot of the church of Llancarfan, asked the teacher Gildas to run the school for a year.[^109-1] At his request Gildas ran it to great profit, taking no pay from the students except the prayers of the clergy and the scholars. There he wrote out the four Gospels himself. The book is still in Saint Cadoc's church, covered all over with gold and silver, in honour of God, of its holy scribe and of the Gospels. The Welsh of the country swear their oaths on that precious volume. They don't dare open it to look inside. Nor will they seal peace and friendship between enemies unless it's first laid out in front of them.
+Cadoc, abbot of the church of Llancarfan, asked the teacher Gildas to run the school for a year.[^109-1] At his request Gildas ran it to great profit, taking no pay from the students except the prayers of the clergy and the scholars. There he wrote out the four Gospels himself. The book is still in Saint Cadoc's church, covered all over with gold and silver, in honour of Yahweh, of its holy scribe and of the Gospels. The Welsh of the country swear their oaths on that precious volume. They don't dare open it to look inside. Nor will they seal peace and friendship between enemies unless it's first laid out in front of them.
 
 ### Gildas and Cadoc leave Llancarfan for two islands, Steep Holm and Flat Holm
 
 When the year was over and the students had left the school, the holy abbot Cadoc and Gildas, the best of teachers, agreed together to go to two islands, Steep Holm and Flat Holm. Cadoc went to the one nearer Wales, and Gildas to the one lying towards England.[^109-2] They didn't want crowds of people keeping them from the church's services. So they knew no better plan than to leave the valley of Llancarfan for a hidden life on the islands.
 
-Gildas built a chapel in honour of the holy and undivided Trinity, and his cell beside it. But he didn't keep his bed in that room. It lay under a high cliff, where he stayed awake until midnight, praying to almighty God on the rock. Then he went to the church, frozen through, but the cold was sweet and bearable to him for God's sake. He drew little fish from his net and took eggs from birds' nests, and lived on them, which was food enough for him. The two of them visited each other. They went on that way for seven years.
+Gildas built a chapel in honour of the holy and undivided Trinity, and his cell beside it. But he didn't keep his bed in that room. It lay under a high cliff, where he stayed awake until midnight, praying to almighty Yahweh on the rock. Then he went to the church, frozen through, but the cold was sweet and bearable to him for Yahweh's sake. He drew little fish from his net and took eggs from birds' nests, and lived on them, which was food enough for him. The two of them visited each other. They went on that way for seven years.
 
 ## Part 4: Pirates drive Gildas to Glastonbury, where Arthur besieges Melwas for Guinevere
 
@@ -148,6 +148,7 @@ Every edition and scan this translation rests on, in *Chicago* form, each with w
 **The Bible**
 
 - Luke, cited in an endnote by chapter and verse, as Mommsen's margin gives it.
+- Matthew, cited in an endnote by chapter and verse, where Caradoc's words follow it more closely than the passage Mommsen's margin gives.
 
 **Background for the endnotes**
 
@@ -167,7 +168,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^107-3]: The seven liberal arts of the medieval schools: grammar, rhetoric and logic, then arithmetic, geometry, music and astronomy.<sup>[\*](#new-in-this-translation)</sup>
 
-[^107-4]: Greater Britain is the island, as against Brittany, the lesser Britain across the sea.<sup>[\*](#new-in-this-translation)</sup>
+[^107-4]: Greater Britain is the island, as against Brittany, the lesser Britain across the sea. Britons crossing from the island had settled Brittany in the fifth and sixth centuries, so writers of Caradoc's time said "Greater Britain" to tell the two apart, and here Gildas sails home from Gaul to the island he was born on.<sup>[\*](#new-in-this-translation)</sup>
 
 [^107-5]: Anthony the Great, the Egyptian hermit of the fourth century, the model for monks who lived alone.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -179,7 +180,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^108-3]: Caradoc calls Gildas the Britons' historian for [*On the Ruin of Britain*](../../de-excidio-britanniae/de-excidio-britanniae.md), which tells of the Britons from the Romans to Gildas's own day.<sup>[\*](#new-in-this-translation)</sup>
 
-[^108-4]: The command is Christ's, to his disciples. Mommsen's margin gives Luke 6:27.<sup>[\*](#new-in-this-translation)</sup>
+[^108-4]: The command is Christ's, from his sermon to his followers: love your enemies, do good to those who hate you, and pray for those who persecute you. It was among the hardest things he taught, since people took it for granted that you hated an enemy and paid back harm with harm. Caradoc shows Gildas living it, praying every day for Arthur, the king who'd just killed his brother. Caradoc's words are closest to Matthew 5:44 (with Luke 6:27, which Mommsen's margin gives, where the same teaching comes in a shorter form).<sup>[\*](#new-in-this-translation)</sup>
 
 [^108-5]: Cadoc founded the monastery of Llancarfan and was its abbot.<sup>[\*](#new-in-this-translation)</sup>
 

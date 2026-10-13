@@ -66,19 +66,19 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 ### Arthur carries Christ's cross at Badon, and Columba is born
 
-**516.** The battle of Badon, in which Arthur carries the cross of our Lord Jesus Christ on his shoulders for three days and three nights.[^154-1] The Britons win.[^154-2]
+**516.** The battle of Badon, in which Arthur carries the cross of Jesus Christ on his shoulders for three days and three nights.[^154-1][^154-2][^154-3][^154-4] The Britons win.
 
-**521.** Saint Columba is born, and Saint Brigid dies.[^154-3]
+**521.** Saint Columba is born, and Saint Brigid dies.[^154-5]
 
 ### Arthur and Mordred fight at Camlann, and plague comes to Britain and Ireland
 
-**537.** The battle of Camlann, in which Arthur and Mordred fall.[^154-4] There's plague in Britain and Ireland.[^154-5]
+**537.** The battle of Camlann,[^154-6] in which Arthur and Mordred fall.[^154-7] There's plague in Britain and Ireland.[^154-8]
 
 ## Part 3: A great plague comes, and the northern Britons fight at Arfderydd
 
 ### Ciarán dies, and a great plague takes King Maelgwn
 
-**544.** Ciarán dies.[^154-6][^154-7]
+**544.** Ciarán dies.[^154-9][^154-10]
 
 <a id="page-155"></a>[\[Phillimore 155\]](../annales-cambriae-latin.md#page-155) **547.** A great plague, in which Maelgwn, king of Gwynedd, dies.[^155-1]
 
@@ -100,11 +100,11 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **580.** Gwrgi and Peredur die.[^155-5]
 
-### A battle is fought against Eubonia, and Constantine turns to the Lord
+### A battle is fought against Eubonia, and Constantine turns to Yahweh
 
 <a id="page-156"></a>[\[Phillimore 156\]](../annales-cambriae-latin.md#page-156) **584.** A battle is fought against Eubonia. Deiniol of Bangor is buried.[^156-1]
 
-**589.** Constantine turns to the Lord.[^156-2]
+**589.** Constantine turns to Yahweh.[^156-2]
 
 ### Columba and King Dunod die, and Augustine brings the English to Christ
 
@@ -198,7 +198,7 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **717.** Osberht, king of the Saxons, dies.
 
-**718.** The church of Michael the Archangel is consecrated.
+**718.** The church of Michael the Archangel is consecrated.[^160-2][^160-3]
 
 **721.** A scorching summer.
 
@@ -206,7 +206,7 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 ### A battle is fought at Carno
 
-**728.** The battle of Mount Carno.[^160-2]
+**728.** The battle of Mount Carno.[^160-4]
 
 <a id="page-161"></a>[\[Phillimore 161\]](../annales-cambriae-latin.md#page-161)
 
@@ -232,7 +232,7 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 ### The Britons change their Easter at Elfodd's word
 
-**768.** The Britons change the date of Easter, set right by Elfodd, a man of God.[^162-1]
+**768.** The Britons change the date of Easter, set right by Elfodd, a man of Yahweh.[^162-1]
 
 ### Ffernfael, Cenioyd and Cuthbert die, and the southern Britons are laid waste
 
@@ -342,7 +342,7 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **878.** Áed son of Niall dies.
 
-**880.** The battle of the Conwy, God's vengeance for Rhodri.[^166-3]
+**880.** The battle of the Conwy, Yahweh's vengeance for Rhodri.[^166-3]
 
 **882.** Catgueithen dies.
 
@@ -358,7 +358,7 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 <a id="page-167"></a>[\[Phillimore 167\]](../annales-cambriae-latin.md#page-167) **894.** Anarawd comes with the English to lay waste Ceredigion and Ystrad Tywi.[^167-1]
 
-**895.** The Norsemen come and lay waste England, Brycheiniog, Gwent and Gwynllwg.[^167-2][^167-3]
+**895.** The Norsemen come and lay waste England,[^167-2] Brycheiniog, Gwent and Gwynllwg.[^167-3]
 
 **900.** Alfred, king of Wessex, dies.[^167-4]
 
@@ -432,6 +432,10 @@ Every edition and scan this translation rests on, in *Chicago* form, each with w
 
 - Phillimore, Egerton. "The *Annales Cambriae* and Old-Welsh Genealogies from *Harleian MS.* 3859." *Y Cymmrodor* 9 (1888): 141–183. The Latin text, pages 152 to 169, read from the University of Toronto's scan on the [Internet Archive](https://archive.org/details/ycymmrodor09cymmuoft), every page saved in [the scans page](../annales-cambriae-scans.md), with Google's scan of the same volume, [`ycymmrodor06socigoog`](https://archive.org/details/ycymmrodor06socigoog), as a second reading.
 
+**The Bible**
+
+- Revelation, cited in an endnote by chapter and verse, where the annals name a figure a reader needs told.
+
 ## License
 
 Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Anyone may copy, change, print or sell them if they credit Ryan Allen, link to the license and indicate changes. The medieval source text remains in the public domain.
@@ -444,7 +448,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^153-2]: The Latin says Easter was moved *cum papa leone*, "with Pope Leo." Phillimore takes *cum* for a slip in putting the Old Welsh *cant*, "by" or "with," into Latin, and the English follows him: "Pope Leo, bishop of Rome, makes the change."
 
-[^153-3]: The Latin says Patrick *ad dominum migratur*, travels to the Lord, the annals' way of telling a saint's death. The *History of the Britons* tells how Patrick was sent to preach to the Irish.<sup>[\*](#new-in-this-translation)</sup>
+[^153-3]: The Latin says Patrick *ad dominum migratur*, travels to Yahweh, the annals' way of telling a saint's death. The *History of the Britons* tells how Patrick was sent to preach to the Irish.<sup>[\*](#new-in-this-translation)</sup>
 
 [^153-4]: Benignus followed Patrick as head of the church at Armagh, in Ireland. The Latin names his death *quies*, a rest, as the annals often name a churchman's.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -452,17 +456,23 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^154-1]: In the whole story: [Arthur leads the Britons' kings in twelve battles against the Saxons](../../story-map.md#arthurs-twelve-battles).<sup>[\*](#new-in-this-translation)</sup>
 
-[^154-2]: The annals mean an actual cross, carried into battle as a standard, not the saying "carry your cross." Some readers think it was painted on Arthur's shield, since Welsh *ysgwyd*, "shield," is close to *ysgwydd*, "shoulder." The *History of the Britons* makes Badon the last of Arthur's twelve battles and has him carry an image of Mary on his shoulders at another, Fort Guinnion, which may be the same shield. *Domini nostri*, "our Lord," is the Church's name for Christ, which English still uses.<sup>[\*](#new-in-this-translation)</sup>
+[^154-2]: The annals mean an actual cross, carried into battle as a standard, not the saying "carry your cross." Some readers think it was painted on Arthur's shield, since Welsh *ysgwyd*, "shield," is close to *ysgwydd*, "shoulder."<sup>[\*](#new-in-this-translation)</sup>
 
-[^154-3]: Harley MS 3859 writes *Qui es*, which Phillimore reads as *quies*, "rest," the annals' word for a churchman's death, and the English follows him: "Saint Brigid dies."
+[^154-3]: The *History of the Britons* makes Badon the last of Arthur's twelve battles and has him carry an image of Mary on his shoulders at another, Fort Guinnion, which may be the same shield.<sup>[\*](#new-in-this-translation)</sup>
 
-[^154-4]: In the whole story: [Arthur fights Mordred's host and is carried to Avalon](../../story-map.md#the-last-battle). Malory tells this in [Book XXI, chapter 4](../../malory-sources/malory-map.tsv). There, Arthur and Mordred lead two hosts against each other, and each gives the other his death wound; the annals say only that both fell, not which side each was on or who struck the blow. *Gueith Camlann* is Old Welsh for "the battle of Camlann."<sup>[\*](#new-in-this-translation)</sup>
+[^154-4]: *Domini nostri*, "our lord," is the Church's title for Christ; the English gives his name alone.<sup>[\*](#new-in-this-translation)</sup>
 
-[^154-5]: Phillimore notes that the end of this entry, from *inbrittannia*, "in Britain," on, is written in Harley MS 3859 over letters scraped out, some of which still show.
+[^154-5]: Harley MS 3859 writes *Qui es*, which Phillimore reads as *quies*, "rest," the annals' word for a churchman's death, and the English follows him: "Saint Brigid dies."
 
-[^154-6]: In the whole story: [A great plague comes, and the northern Britons fight at Arfderydd](../../story-map.md#a-great-plague-and-the-battle-of-arfderydd).<sup>[\*](#new-in-this-translation)</sup>
+[^154-6]: *Gueith Camlann*, the annals' own name for it, is Old Welsh for "the battle of Camlann."<sup>[\*](#new-in-this-translation)</sup>
 
-[^154-7]: The Latin is *dormitatio*, a falling asleep, the annals' word for a saint's death, as the Church spoke of the dead sleeping until the Resurrection.<sup>[\*](#new-in-this-translation)</sup>
+[^154-7]: In the whole story: [Arthur fights Mordred's host and is carried to Avalon](../../story-map.md#the-last-battle). Malory tells this in [Book XXI, chapter 4](../../malory-sources/malory-map.tsv). There, Arthur and Mordred lead two hosts against each other, and each gives the other his death wound; the annals say only that both fell, not which side each was on or who struck the blow.<sup>[\*](#new-in-this-translation)</sup>
+
+[^154-8]: Phillimore notes that the end of this entry, from *inbrittannia*, "in Britain," on, is written in Harley MS 3859 over letters scraped out, some of which still show.
+
+[^154-9]: In the whole story: [A great plague comes, and the northern Britons fight at Arfderydd](../../story-map.md#a-great-plague-and-the-battle-of-arfderydd).<sup>[\*](#new-in-this-translation)</sup>
+
+[^154-10]: The Latin is *dormitatio*, a falling asleep, the annals' word for a saint's death, as the Church spoke of the dead sleeping until the Resurrection.<sup>[\*](#new-in-this-translation)</sup>
 
 [^155-1]: Maelgwn is the great king of Gwynedd the *History of the Britons* names in the time of the English kings' wars. Welsh tradition remembers this plague as the Yellow Plague. Phillimore reads *guenedotae* for the *genedotae*, "of Gwynedd," of Harley MS 3859.
 
@@ -476,7 +486,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^156-1]: Harley MS 3859 writes *dispositio*, which Phillimore reads as *depositio*, a saint's burial, and the English follows him: "Deiniol of Bangor is buried."
 
-[^156-2]: The annals don't say which King Constantine turned to God. Gildas rebukes a Constantine of Dumnonia, in the southwest of Britain, and Geoffrey of Monmouth makes a Constantine king after Arthur.<sup>[\*](#new-in-this-translation)</sup>
+[^156-2]: The annals don't say which King Constantine turned to Yahweh. Gildas scolds a Constantine of Dumnonia, in the southwest of Britain, and Geoffrey of Monmouth makes a Constantine king after Arthur.<sup>[\*](#new-in-this-translation)</sup>
 
 [^156-3]: The Latin runs the two names together, *Agustinus mellitus*, with no "and." Both were monks Pope Gregory sent to the English: Augustine became the first archbishop of Canterbury, and Mellitus the first bishop of London.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -502,7 +512,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^158-3]: Harley MS 3859 writes *broc mail*, which Phillimore reads as one name, *brochmail*, and the English follows him: "Brochfael dies." Phillimore adds that he can't be Brochwel Ysgythrog, whose grandson Selyf fell at Chester in 613 CE, if the year is right.
 
-[^159-1]: The Northumbrian church agreed to keep Easter by Rome's reckoning at the Synod of Whitby, in 664 CE.<sup>[\*](#new-in-this-translation)</sup>
+[^159-1]: A synod is a meeting of church leaders. At Whitby, in Yorkshire, in 664 CE, King Oswiu of Northumbria heard two sides argue over how to fix the date of Easter: his monks, taught by the Irish, kept one reckoning, and Rome another. He chose Rome's, saying Peter held the keys of heaven. The Welsh and Irish churches kept their own date for many years, which is why the annals mark the change.<sup>[\*](#new-in-this-translation)</sup>
 
 [^159-2]: Phillimore takes this for the battle the *Anglo-Saxon Chronicle* calls Biedanheafod, under 675 CE, ten years off by a copyist's slip of one *x*, and thinks its likeness to the name of Badon, where Arthur fought in 516 CE, is probably chance.
 
@@ -514,7 +524,11 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^160-1]: The Latin is *pipinus maior*, "Pepin the Greater." Pepin of Herstal ruled the Franks as mayor of the palace, *maior domus*, not as their king, though the annals call him one. The Latin says he dies *in Christo*, "in Christ."<sup>[\*](#new-in-this-translation)</sup>
 
-[^160-2]: Phillimore places this battle in central Scotland, near Loch Tay, where the *Annals of Ulster* put a battle of Monid Carno, not in Wales. Harley MS 3859 writes *mortis*, "of death," which he reads as *montis*, "of the mountain," and the English follows him: "Mount Carno."
+[^160-2]: Michael is the angel the Bible names as a leader of Yahweh's angels. In the Book of Revelation he leads them in a war in heaven and throws down the dragon, Satan, so Christians honoured him as their defender against the devil, and churches to him were often built on hilltops and sea rocks. Phillimore gives no note here; Michael's war is in Revelation 12:7–9.<sup>[\*](#new-in-this-translation)</sup>
+
+[^160-3]: Consecrating a church meant a bishop blessing it and setting it apart for worship. The annals don't say where this one stood.<sup>[\*](#new-in-this-translation)</sup>
+
+[^160-4]: Phillimore places this battle in central Scotland, near Loch Tay, where the *Annals of Ulster* put a battle of Monid Carno, not in Wales. Harley MS 3859 writes *mortis*, "of death," which he reads as *montis*, "of the mountain," and the English follows him: "Mount Carno."
 
 [^162-1]: Rome and the Britons' church reckoned the date of Easter differently, and Elfodd brought the church of Gwynedd over to Rome's reckoning.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -544,15 +558,15 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^166-2]: Phillimore reads the Old Welsh *gueith diu sul* as "Sunday's battle," and the English follows him: "the Sunday battle."
 
-[^166-3]: Phillimore reads the Old Welsh *digal rotri adeo* as "a vengeance for Rhodri at the hand of God," and the English follows him: "God's vengeance for Rhodri."
+[^166-3]: Phillimore reads the Old Welsh *digal rotri adeo* as "a vengeance for Rhodri at the hand of Yahweh," and the English follows him: "Yahweh's vengeance for Rhodri."
 
 [^166-4]: Harley MS 3859 writes *Cerb all*, which Phillimore reads as *Cerball*, and the English follows him: "Cerball dies."
 
 [^167-1]: Harley MS 3859 writes *tui*, which Phillimore reads as *tiui*, Ystrad Tywi, and the English follows him: "Ystrad Tywi."
 
-[^167-2]: Harley MS 3859 writes *Hord mani*, which Phillimore reads as *Nordmani*, "Norsemen," and the English follows him: "The Norsemen come."
+[^167-2]: The Latin's *loycr* is the Old Welsh name for England.<sup>[\*](#new-in-this-translation)</sup>
 
-[^167-3]: The Latin's *loycr* is the Old Welsh name for England.<sup>[\*](#new-in-this-translation)</sup>
+[^167-3]: Harley MS 3859 writes *Hord mani*, which Phillimore reads as *Nordmani*, "Norsemen," and the English follows him: "The Norsemen come."
 
 [^167-4]: The Latin calls Alfred *rex giuoys*, which Phillimore reads as "king of the Gewissi," the old name of the West Saxons, and the English follows him: "king of Wessex."
 

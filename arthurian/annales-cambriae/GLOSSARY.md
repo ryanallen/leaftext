@@ -76,7 +76,7 @@ An entry marked with an asterisk was written for this translation, not taken fro
 
 Also: opergelei
 
-A town on the north coast of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A town on the north coast of Wales, between Rhyl and Colwyn Bay, in the old kingdom of Gwynedd, where an early church stood. The Welsh annals name it only once, when Jonathan, its lord, dies in 856 CE, in an entry beside the death of a king of the Picts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Abergele](https://en.wikipedia.org/wiki/Abergele)
 
@@ -84,13 +84,13 @@ Wikipedia: [Abergele](https://en.wikipedia.org/wiki/Abergele)
 
 Also: Abloẏc
 
-A king whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king the Welsh annals record as dying in 942 CE, with nothing more said. His name is the annals' only trace of him, and historians haven't been able to say for sure which Welsh kingdom he ruled.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Adomnán
 
 Also: adomnan
 
-An Irish abbot of Iona and writer of Columba's life.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An Irish abbot of Iona from 679 CE until his death in 704 CE, which the annals record. Iona is the island monastery off western Scotland that Columba founded. Adomnán wrote the *Life of Columba*, the most important life of an early Irish saint, and a law to protect women, children and clergy in war.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Adomnán](https://en.wikipedia.org/wiki/Adomn%C3%A1n)
 
@@ -98,11 +98,11 @@ Wikipedia: [Adomnán](https://en.wikipedia.org/wiki/Adomn%C3%A1n)
 
 Also: Aed map neill
 
-An Irish high king, the son of Niall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Áed son of Niall, called Findliath, "fair and gray," high king of Ireland from 862 CE until his death in 879 CE, which the Welsh annals put in 878 CE. He belonged to the northern Uí Néill, the family that held the high kingship for centuries, and fought the Vikings settled in Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Áed son of Niall
 
-Áed Findliath, a high king of Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Áed Findliath, "fair and gray," high king of Ireland from 862 CE, son of King Niall Caille; the Welsh annals record his death in 878 CE. He fought hard against the Viking settlers in Ireland, and his death made the news even in Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Áed Findliath](https://en.wikipedia.org/wiki/%C3%81ed_Findliath)
 
@@ -110,7 +110,7 @@ Wikipedia: [Áed Findliath](https://en.wikipedia.org/wiki/%C3%81ed_Findliath)
 
 Also: Edwin
 
-Áedán son of Gabrán, a king of Dál Riata.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Áedán son of Gabrán, who ruled Dál Riata from about 574 CE. Dál Riata was the kingdom of Irish settlers in western Scotland. He was one of the strongest kings of the north in his day, made king, it was said, by Columba, and he fought the Picts and the English of Northumbria, who beat him at Degsastan in 603 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Áedán mac Gabráin](https://en.wikipedia.org/wiki/%C3%81ed%C3%A1n_mac_Gabr%C3%A1in)
 
@@ -118,11 +118,11 @@ Wikipedia: [Áedán mac Gabráin](https://en.wikipedia.org/wiki/%C3%81ed%C3%A1n_
 
 Also: Aidān
 
-A king of the Irish of Dál Riata in western Scotland, the son of Gabrán.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Irish of Dál Riata, in what's now Argyll in western Scotland, from about 574 CE, the son of Gabrán. Adomnán's *Life of Columba* says Columba ordained him king on Iona, and he led great campaigns until the English of Northumbria beat him at Degsastan in 603 CE. The annals record his death in 607 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Aethelbald
 
-A king of Mercia; the annals call him king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Mercia, the great English kingdom of the Midlands, from 716 to 757 CE, the strongest English ruler of his day and overlord of the southern English; the annals call him king of the Saxons, the Welsh name for all the English, and record his death in 757 CE. His own bodyguard murdered him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelbald of Mercia](https://en.wikipedia.org/wiki/%C3%86thelbald_of_Mercia)
 
@@ -130,7 +130,7 @@ Wikipedia: [Æthelbald of Mercia](https://en.wikipedia.org/wiki/%C3%86thelbald_o
 
 Also: Aethelflaed
 
-Æthelflæd, Lady of the Mercians, who the annals call queen.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Æthelflæd, the Lady of the Mercians, daughter of Alfred the Great, who ruled Mercia after her husband's death and led armies against the Danes, building fortresses and taking back Derby and Leicester. The annals call her queen and record her death in 917 CE, under 918 CE in the English chronicles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelflæd](https://en.wikipedia.org/wiki/%C3%86thelfl%C3%A6d)
 
@@ -138,7 +138,7 @@ Wikipedia: [Æthelflæd](https://en.wikipedia.org/wiki/%C3%86thelfl%C3%A6d)
 
 Also: Ædelſtan, Aethelstan
 
-Æthelstan, king of the English in the tenth century.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Æthelstan, grandson of Alfred the Great and king of the English from 924 to 939 CE, the first to rule all of England, who made the Welsh kings come to his court and pay him tribute. He beat an alliance of the Scots, the Norse of Dublin and the Britons of Strathclyde at Brunanburh in 937 CE; the annals record his death in 941 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelstan](https://en.wikipedia.org/wiki/%C3%86thelstan)
 
@@ -146,13 +146,13 @@ Wikipedia: [Æthelstan](https://en.wikipedia.org/wiki/%C3%86thelstan)
 
 Also: Alch frit
 
-A king of the Northumbrians The annals call him a king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Northumbrians from 685 to 704 CE, a scholar king educated among the Irish, who kept his kingdom at peace and is remembered as a patron of learning in Northumbria's golden age. The annals call him a king of the Saxons, the Welsh name for the English, and record his death in 704 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Aldfrith of Northumbria](https://en.wikipedia.org/wiki/Aldfrith_of_Northumbria)
 
 ## Alfred
 
-Alfred the Great, king of the West Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Alfred the Great, king of the West Saxons from 871 to 899 CE, who held Wessex against the Danish armies, made peace with them on his terms, and set up fortified towns and a navy; Welsh kings, among them Anarawd, came to him for protection. The annals record his death under 900 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Alfred the Great](https://en.wikipedia.org/wiki/Alfred_the_Great)
 
@@ -160,13 +160,13 @@ Wikipedia: [Alfred the Great](https://en.wikipedia.org/wiki/Alfred_the_Great)
 
 Also: Albrit
 
-The king of the West Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the West Saxons from 871 to 899 CE, the only English king called "the Great." He beat the Danish Great Army at Edington in 878 CE, rebuilt his kingdom with fortified towns, and had books translated into English. Asser, a monk of St Davids, wrote his life, and Welsh kings sought his protection.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Alt Clut
 
 Also: alt clut
 
-The fortress of the Britons of the north on Dumbarton Rock, on the Firth of Clyde.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"Rock of the Clyde," the fortress of the Britons of the north on Dumbarton Rock, a volcanic plug above the Firth of Clyde, the capital of the kingdom later called Strathclyde. The annals record its breaching by the Vikings in 870 CE, after a four-month siege, by Irish accounts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Dumbarton Castle](https://en.wikipedia.org/wiki/Dumbarton_Castle)
 
@@ -174,7 +174,7 @@ Wikipedia: [Dumbarton Castle](https://en.wikipedia.org/wiki/Dumbarton_Castle)
 
 Also: Anarawd
 
-Anarawd son of Rhodri, king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Anarawd son of Rhodri the Great, king of Gwynedd from 878 CE until his death in 916 CE, which the annals put in 915 CE. He allied first with the Vikings of York and then with Alfred of Wessex, and with English help raided the southern Welsh kingdoms, as the annals record under 894 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Anarawd ap Rhodri](https://en.wikipedia.org/wiki/Anarawd_ap_Rhodri)
 
@@ -182,13 +182,13 @@ Wikipedia: [Anarawd ap Rhodri](https://en.wikipedia.org/wiki/Anarawd_ap_Rhodri)
 
 Also: Anaraut
 
-A king of Gwynedd, the son of Rhodri the Great.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Gwynedd, in north Wales, from 878 to 916 CE, the oldest son of Rhodri the Great; the annals put his death in 915 CE. He made Gwynedd the leading Welsh kingdom, at first with the help of the Vikings of York and later as an ally of Alfred the Great, whose overlordship he accepted.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Anglesey
 
 Also: Mon, inmón, món
 
-The island off the north-west coast of Wales, Môn in Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The large island off the northwest coast of Wales, Môn in Welsh, across the Menai Strait from the mainland, the heartland of the kingdom of Gwynedd and its rich grain land, called the mother of Wales. The annals record battles for it between Welsh kings and Viking raids on it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Anglesey](https://en.wikipedia.org/wiki/Anglesey)
 
@@ -196,7 +196,7 @@ Wikipedia: [Anglesey](https://en.wikipedia.org/wiki/Anglesey)
 
 Also: armterid
 
-A place in the north of Britain where a battle is fought.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of a battle in the north of Britain that the annals date to 573 CE, usually placed at Arthuret, near Longtown in Cumbria, just south of today's Scottish border. Later Welsh poems set Myrddin, the Welsh Merlin, at this battle, where he loses his mind and flees to the forest.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Arfderydd](https://en.wikipedia.org/wiki/Battle_of_Arfderydd)
 
@@ -204,7 +204,7 @@ Wikipedia: [Battle of Arfderydd](https://en.wikipedia.org/wiki/Battle_of_Arfdery
 
 Also: Arthgen
 
-A king of Ceredigion.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Ceredigion, in west Wales, whose death the annals record in 807 CE. He's known from the annals and from the royal family trees of Ceredigion, which take its line back to the founder the kingdom is named after.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Seisyll ap Clydog](https://en.wikipedia.org/wiki/Seisyll_ap_Clydog)
 
@@ -212,19 +212,19 @@ Wikipedia: [Seisyll ap Clydog](https://en.wikipedia.org/wiki/Seisyll_ap_Clydog)
 
 Also: arthur
 
-The leader who carries the cross of Christ at Badon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The British war leader the Welsh annals say carried the cross of Christ on his shoulders for three days and three nights at Badon, where the Britons won. These short entries, written down centuries later, are among the earliest mentions of Arthur anywhere, which is why historians still argue over whether he lived.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
 ## Artmail
 
-The father of the Cadell who dies of poison.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of the Cadell who the annals record as dying of poison in 943 CE. He's known only as Cadell's father, from that one entry.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Arwystli
 
 Also: arguiſtli
 
-A district of mid Wales, in the upper Severn valley.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A district of mid Wales, in the upper Severn valley around today's Llanidloes, often fought over between Powys and Gwynedd. The annals record that Rhodri, a member of a Welsh royal family, was beheaded there in 904 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Arwystli](https://en.wikipedia.org/wiki/Arwystli)
 
@@ -232,7 +232,7 @@ Wikipedia: [Arwystli](https://en.wikipedia.org/wiki/Arwystli)
 
 Also: aſſer
 
-A bishop and scholar of St Davids, who wrote the life of King Alfred.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Welsh monk and bishop of St Davids who became a scholar at the court of Alfred the Great and wrote his life in 893 CE, the first biography of an English king. Alfred later made him bishop of Sherborne. The annals record his death in 908 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Asser](https://en.wikipedia.org/wiki/Asser)
 
@@ -240,7 +240,7 @@ Wikipedia: [Asser](https://en.wikipedia.org/wiki/Asser)
 
 Also: Augustine, Aguſtinuſ
 
-Augustine, sent from Rome to bring the English to Christ, the first archbishop of Canterbury.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Augustine of Canterbury, the monk Pope Gregory the Great sent from Rome in 597 CE to bring the English to Christianity. He baptized King Aethelberht of Kent and became the first archbishop of Canterbury; when he met the British bishops, they refused to accept him as their leader, a quarrel Bede tells.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Augustine of Canterbury](https://en.wikipedia.org/wiki/Augustine_of_Canterbury)
 
@@ -248,13 +248,13 @@ Wikipedia: [Augustine of Canterbury](https://en.wikipedia.org/wiki/Augustine_of_
 
 Also: Aguſtinuſ
 
-The monk Pope Gregory sent to bring the English to Christ, the first archbishop of Canterbury.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The monk Pope Gregory the Great sent from Rome in 597 CE with about forty companions to convert the pagan English. He won over King Aethelberht of Kent and became the first archbishop of Canterbury, which is still the head church of England; the British bishops of Wales refused to work with him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Badon
 
 Also: badoniſ
 
-The place where the Britons fight the battle in which Arthur carries the cross.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The hill where the Britons won their great victory over the Saxons; the Welsh annals date it to about 516 CE and say Arthur carried the cross of Christ on his shoulders for three days and nights there. No one knows for sure where it was, though places near Bath are often suggested.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Badon](https://en.wikipedia.org/wiki/Battle_of_Badon)
 
@@ -262,7 +262,7 @@ Wikipedia: [Battle of Badon](https://en.wikipedia.org/wiki/Battle_of_Badon)
 
 Also: bancorum
 
-The monastery and bishop's seat at Bangor in north-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The monastery and bishop's seat at Bangor, in northwest Wales, on the Menai Strait, founded by Saint Deiniol in the sixth century CE; its cathedral is one of the oldest bishop's seats in Britain. The annals record Deiniol's burial in 584 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bangor, Gwynedd](https://en.wikipedia.org/wiki/Bangor,_Gwynedd)
 
@@ -270,13 +270,13 @@ Wikipedia: [Bangor, Gwynedd](https://en.wikipedia.org/wiki/Bangor,_Gwynedd)
 
 Also: bannguolou
 
-The place of a battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of a battle the annals record in 873 CE, with no word of who fought there or who won. Where it was is uncertain; it's known only from this one entry.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Bede
 
 Also: Beda
 
-The Northumbrian priest and monk who wrote the history of the English church.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Northumbrian priest and monk of Jarrow, the most learned man of his age in western Europe, whose *Ecclesiastical History of the English People*, finished in 731 CE, is the main history of England's early centuries. He popularized dating years from Christ's birth. The annals record his death in 735 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bede](https://en.wikipedia.org/wiki/Bede)
 
@@ -284,7 +284,7 @@ Wikipedia: [Bede](https://en.wikipedia.org/wiki/Bede)
 
 Also: Beli filiuſ elfin
 
-A king of the Britons of Alt Clut.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Britons of Alt Clut, Dumbarton Rock, the kingdom later called Strathclyde, whose death the annals record in 722 CE. He belonged to the royal line of the northern Britons whose family trees survive in the same manuscript as the annals.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Beli II of Alt Clut](https://en.wikipedia.org/wiki/Beli_II_of_Alt_Clut)
 
@@ -292,13 +292,13 @@ Wikipedia: [Beli II of Alt Clut](https://en.wikipedia.org/wiki/Beli_II_of_Alt_Cl
 
 Also: Belin
 
-A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the annals record in 627 CE, with nothing more said. He's known from this one entry, and who he was isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Benignus
 
 Also: benigni, Benignus
 
-Benignus, Patrick's follower as head of the church at Armagh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Benignus, Patrick's young follower, who became head of the church at Armagh after him, according to Irish tradition. The annals record his death in 468 CE, using the word *quies*, "rest," as they often do of churchmen.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Benignus of Armagh](https://en.wikipedia.org/wiki/Benignus_of_Armagh)
 
@@ -306,19 +306,19 @@ Wikipedia: [Benignus of Armagh](https://en.wikipedia.org/wiki/Benignus_of_Armagh
 
 Also: benigni
 
-A bishop, Patrick's disciple and successor at Armagh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop of the fifth century CE, Saint Patrick's disciple and, by Irish tradition, his successor as head of the church of Armagh, Ireland's chief church. The story goes that as a boy he was so taken with Patrick that he followed him everywhere.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Black heathens
 
 Also: agentilibuſ nigriſ, cat dub gint
 
-The Danish raiders, as Phillimore reads the annals' Old Welsh dub gint.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Danish Viking raiders, as Phillimore reads the annals' Old Welsh *dub gint*. The Irish called the Danes the dark foreigners and the Norwegians the fair ones; the annals use the name for the raiders who laid Anglesey waste in 853 CE and took York in 866 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Brendan of Birr
 
 Also: Brendan bẏror
 
-An Irish abbot of Birr.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An Irish abbot of Birr, in the middle of Ireland, a friend of Columba's, honored as a saint and not to be confused with the voyaging Brendan of Clonfert. The annals record his death in 574 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Brendan of Birr](https://en.wikipedia.org/wiki/Brendan_of_Birr)
 
@@ -326,7 +326,7 @@ Wikipedia: [Brendan of Birr](https://en.wikipedia.org/wiki/Brendan_of_Birr)
 
 Also: Brigida, brigidæ
 
-An Irish saint and abbess.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Saint Brigid of Kildare, the most beloved woman saint of Ireland after the Virgin Mary, who founded a great double monastery of nuns and monks at Kildare. Many stories of miracles grew up around her; the annals record her birth in 454 CE and her death in 521 CE, dates historians treat as rough.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Brigid of Kildare](https://en.wikipedia.org/wiki/Brigid_of_Kildare)
 
@@ -334,13 +334,13 @@ Wikipedia: [Brigid of Kildare](https://en.wikipedia.org/wiki/Brigid_of_Kildare)
 
 Also: Cat brin onnen
 
-The place of a battle, perhaps Ashdown in England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of a battle the annals record in 869 CE, "the hill of ash trees" in Old Welsh. Phillimore takes it for the battle of Ashdown, in Berkshire, where the West Saxons under King Æthelred and young Alfred beat a Danish army in 871 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Britain
 
 Also: inbrittannia
 
-The island of Great Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The island of Great Britain, holding today's England, Wales and Scotland. In the centuries these books cover it was home to the Britons, the Celtic people who spoke the language Welsh grew from, until the Saxons and other peoples from across the North Sea settled the east and south and pushed the Britons west.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
@@ -348,7 +348,7 @@ Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
 Also: Britons
 
-The Celtic people of Britain whose history this is, the forebears of the Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Celtic people of Britain whose history this is, the ancestors of the Welsh, the Cornish and the Bretons. They lived under Roman rule for nearly four centuries, then fought the Saxons who settled in the east after the Romans left, and the history tells their story as a people who'll one day win their island back.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
@@ -356,13 +356,13 @@ Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
 Also: broc mail
 
-A man whose death the annals give, not Brochwel Ysgythrog.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the annals record in 662 CE. Phillimore notes he can't be Brochwel Ysgythrog, the famous king of Powys, whose grandson Selyf already fell in 613 CE, so who he was isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Brunanburh
 
 Also: brune
 
-The place of a great battle between the English and the Norse and Scots.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of a great battle in 937 CE, which the annals record under 938 CE, where Æthelstan of England beat an alliance of the Norse king of Dublin, the king of the Scots and the Britons of Strathclyde. It made Æthelstan master of Britain, and an Old English poem celebrates it; where it was is still argued.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Brunanburh](https://en.wikipedia.org/wiki/Battle_of_Brunanburh)
 
@@ -370,7 +370,7 @@ Wikipedia: [Battle of Brunanburh](https://en.wikipedia.org/wiki/Battle_of_Brunan
 
 Also: broceniauc, bricheniauc
 
-A small kingdom of south-east Wales, later Brecknockshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A small kingdom of southeast Wales, around today's Brecon, later Brecknockshire, named after its founder Brychan, a legendary king with dozens of saintly children. The annals record its men killing King Ithel of Gwent in 848 CE and Viking raids on it in 895 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Brycheiniog](https://en.wikipedia.org/wiki/Brycheiniog)
 
@@ -378,19 +378,19 @@ Wikipedia: [Brycheiniog](https://en.wikipedia.org/wiki/Brycheiniog)
 
 Also: catell, Catell, Catel, King Cadell
 
-The name of several Welsh kings in the annals, among them Cadell son of Rhodri and Cadell son of Artmail.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of several Welsh kings the annals mention, among them Cadell son of Rhodri, king in the south of Wales, who died in 909 CE, and Cadell son of Artmail, who died of poison in 943 CE. Cadell was a common name in Welsh royal families.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cadell ap Rhodri
 
 Also: Catell rex
 
-A king of Seisyllwg in south-west Wales, the son of Rhodri the Great.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Seisyllwg in southwest Wales, one of the sons of Rhodri the Great among who Rhodri's lands were shared out; his son was Hywel the Good. The annals record "King Cadell" dying in 909 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cadell of Powys
 
 Also: catell pouiſ
 
-A king of Powys.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Cadell son of Brochfael, a king of Powys, in mid and northeast Wales, whose death the annals record in 808 CE. His son Cyngen was the last of the old royal line of Powys.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cadell ap Brochfael](https://en.wikipedia.org/wiki/Cadell_ap_Brochfael)
 
@@ -398,13 +398,13 @@ Wikipedia: [Cadell ap Brochfael](https://en.wikipedia.org/wiki/Cadell_ap_Brochfa
 
 Also: Catel filiuſ artmail
 
-A man who dies of poison.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man who the annals record as dying of poison in 943 CE. He's known only from that entry, and who poisoned him isn't said.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cadwaladr
 
 Also: catgualart
 
-A king of Gwynedd, the son of Cadwallon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Cadwaladr son of Cadwallon, king of Gwynedd in the seventh century CE, whose death the annals put in a great plague of 682 CE, though most historians date it to the plague of 664 CE. Welsh prophecy later made him a deliverer who'd come back to lead the Britons to victory, and Geoffrey of Monmouth made him the last British king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cadwaladr ap Cadwallon](https://en.wikipedia.org/wiki/Cadwaladr_ap_Cadwallon)
 
@@ -412,13 +412,13 @@ Wikipedia: [Cadwaladr ap Cadwallon](https://en.wikipedia.org/wiki/Cadwaladr_ap_C
 
 Also: catguol laun, Catguollaun, catguollaan, catguol-aum, Cadwallon
 
-A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Gwynedd who, allied with the pagan Penda of Mercia, killed Edwin of Northumbria at Meicen in 633 CE and ravaged Northumbria for a year, the last British king to win such power over the English. He was killed at Heavenfield by Oswald; the annals date both battles a few years early.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cadwgan
 
 Also: cat guocaun
 
-A son of Owain, killed by the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Cadwgan son of Owain, a member of a royal family of south Wales. The annals record that the Saxons, the English, killed him in 951 CE, a year of fighting after the death of Hywel the Good.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cadwgan ab Owain](https://en.wikipedia.org/wiki/Cadwgan_ab_Owain)
 
@@ -426,13 +426,13 @@ Wikipedia: [Cadwgan ab Owain](https://en.wikipedia.org/wiki/Cadwgan_ab_Owain)
 
 Also: cam lann
 
-The place of the battle in which the annals name Arthur and Mordred.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of the battle where, the annals say in 537 CE, Arthur and Mordred fell; it's the oldest mention of the battle that became the end of the Arthurian legend. Where it was isn't known; places in Wales, Cornwall and on Hadrian's Wall have all been suggested.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Camlann](https://en.wikipedia.org/wiki/Battle_of_Camlann)
 
 ## Caradog
 
-Caradog son of Meirion, a king of Gwynedd the Saxons kill.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Caradog son of Meirion, who ruled Gwynedd, in north Wales, from about 754 CE until the Saxons killed him in 798 CE, as the annals record. His death came in years of war along the border between the Welsh and Mercia, the English kingdom of the midlands.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caradog ap Meirion](https://en.wikipedia.org/wiki/Caradog_ap_Meirion)
 
@@ -440,13 +440,13 @@ Wikipedia: [Caradog ap Meirion](https://en.wikipedia.org/wiki/Caradog_ap_Meirion
 
 Also: Caratauc
 
-A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Gwynedd, in north Wales, from about 754 CE, whose killing by the Saxons in 798 CE the annals record. He ruled in years of war along the border between the Welsh and Mercia, the English kingdom of the midlands, when Offa built his great dyke.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Carno
 
 Also: bellum carno, Mount Carno
 
-The place of a battle in Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two battles in the Welsh annals: the battle of Mount Carno, in 728 CE, and a battle of Carno in the tenth century CE, with nothing said of who fought either. Phillimore places the first in central Scotland, near Loch Tay; where the second was fought is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Carno](https://en.wikipedia.org/wiki/Carno)
 
@@ -454,25 +454,25 @@ Wikipedia: [Carno](https://en.wikipedia.org/wiki/Carno)
 
 Also: Cat gueithen
 
-A man driven out and later dead.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man the Welsh annals name twice: driven out in 862 CE, and dead in 882 CE. They don't say who drove him out or from where, and no other record names him, so his story is only those two lines in the annals.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cemoyth
 
 Also: Cemoẏth
 
-A king of the Picts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Picts, the people of the north and east of what's now Scotland, whose death the Welsh annals record in 856 CE, beside the death of Jonathan, lord of Abergele. The annals say nothing more of him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cenioyd
 
 Also: Cenioẏd
 
-A king of the Picts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Picts, the people of the north and east of what's now Scotland, whose death the Welsh annals record in 776 CE. The annals say nothing more of him, and this card takes no side on which of the Picts' kings he was.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cerball
 
 Also: Cerb all
 
-A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the Welsh annals record in 887 CE, with nothing else said. The Wikipedia article this card links takes him for Cerball mac Dúnlainge, king of Osraige in Ireland, who died in 888 CE after a long reign fighting and dealing with the Vikings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cerball mac Dúnlainge](https://en.wikipedia.org/wiki/Cerball_mac_D%C3%BAnlainge)
 
@@ -480,7 +480,7 @@ Wikipedia: [Cerball mac Dúnlainge](https://en.wikipedia.org/wiki/Cerball_mac_D%
 
 Also: cereticiaun, cetericiaun
 
-A kingdom of west Wales, on Cardigan Bay.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of west Wales on Cardigan Bay, named, legend says, after Ceredig, a son of Cunedda, and now a county of Wales. The annals record its kings and the raids on it, and the history places one of its strange things, the grave on Cruc Maur, there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Ceredigion](https://en.wikipedia.org/wiki/Kingdom_of_Ceredigion)
 
@@ -488,19 +488,19 @@ Wikipedia: [Kingdom of Ceredigion](https://en.wikipedia.org/wiki/Kingdom_of_Cere
 
 Also: Ceretic
 
-A king of Elmet in the north of England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Ceretic, the last British king of Elmet, around what's now Leeds, in Yorkshire, whose death the Welsh annals record in 616 CE. Elmet was one of the last British kingdoms in the north of England, and Edwin of Northumbria took it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cetill
 
 Also: cetill
 
-The place of a battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place where the Welsh annals record a battle in the middle of the ninth century CE. They name no sides and no winner, and where it was fought is unknown, so the battle is only its name in the annals.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Chester
 
 Also: cair legion
 
-The City of the Legions, a Roman fortress town on the River Dee.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman fortress town on the River Dee, in northwest England, which the Britons called Cair Legion, the City of the Legions. The annals record the battle there in 613 CE, when Aethelfrith of Northumbria beat the Britons and, Bede says, killed hundreds of monks from Bangor who'd come to pray for them.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Chester](https://en.wikipedia.org/wiki/Chester)
 
@@ -508,13 +508,13 @@ Wikipedia: [Chester](https://en.wikipedia.org/wiki/Chester)
 
 Also: Ciannant in mer
 
-A man of Nevern, in the north of Pembrokeshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man of Nevern, a village in the north of Pembrokeshire, in west Wales, whose death the Welsh annals record in 865 CE. Nevern had an early church, but the annals say nothing of who Cian was or why his death was worth writing down.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Ciarán
 
 Also: ciarani
 
-An Irish saint.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An Irish saint whose death the Welsh annals record in 544 CE, without saying which Ciarán. The one who died in those years was Ciarán of Clonmacnoise, who founded the great monastery of Clonmacnoise on the River Shannon and died young, of plague, soon after.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ciarán of Clonmacnoise](https://en.wikipedia.org/wiki/Ciar%C3%A1n_of_Clonmacnoise)
 
@@ -522,31 +522,31 @@ Wikipedia: [Ciarán of Clonmacnoise](https://en.wikipedia.org/wiki/Ciar%C3%A1n_o
 
 Also: cinauc
 
-A bishop.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop whose burial the Welsh annals record in 606 CE. Nothing else is known of him: the annals give no church, no story and no family, only the name, the title and the burial, which is how they often mark a churchman's end.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cincen
 
 Also: Cinan, cinan
 
-The father of the Gruffudd who his brother Elisedd has killed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of Gruffudd and Elisedd. The Welsh annals tell that Elisedd had his brother Gruffudd killed by a trick after a wait of two months; Cincen is named only as the father, and the annals say nothing else of him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cincenn
 
 Also: Cincenn
 
-A son of Elisedd, who dies of poison.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Elisedd, whose death by poison the Welsh annals record in 946 CE, beside the death of Eneuris, bishop of St Davids. The annals don't say who poisoned him or which Elisedd was his father, and nothing else is known of him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cinnen
 
 Also: Cinnen agentilibuſ
 
-A man the heathens kill.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man the Welsh annals say the heathens, the Vikings, killed in 850 CE. They say nothing else of him; he's kept apart from Cyngen, king of Powys, who the annals say died in Rome four years later, though the names are close.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## City of the Legion
 
 Also: urbiſ legion
 
-A city where a synod meets.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A city the Welsh annals name as the place of a church synod, a meeting of bishops, and of a battle. It's usually taken for Chester, the Roman fortress of a legion, an army unit of about five thousand men, on the border of northeast Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
@@ -554,13 +554,13 @@ Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum
 
 Also: Clitauc
 
-A king the annals say was killed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king whose killing the Welsh annals record in 919 CE; a later entry names his son Hyfaidd, who died in 939 CE. They don't say where Clydog ruled or who killed him, and nothing else in them tells his story.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Columba
 
 Also: columcille, Columcillæ, Columcille
 
-An Irish saint and abbot, Colm Cille in Irish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Colm Cille in Irish, an Irish abbot who left Ireland in 563 CE and founded the monastery on Iona, off western Scotland, from which his monks carried Christianity to the Picts and later to the English of Northumbria. He died in 597 CE, and the annals record his crossing and his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Columba](https://en.wikipedia.org/wiki/Columba)
 
@@ -568,7 +568,7 @@ Wikipedia: [Columba](https://en.wikipedia.org/wiki/Columba)
 
 Also: conſtantini
 
-A king who turns to the Lord.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king the Welsh annals say "turned to Yahweh," meaning he gave up his throne to become a monk, in about 589 CE. He's often taken for the Constantine of Dumnonia who Gildas had condemned about forty years earlier, which would mean he repented, but no one can be sure they're the same man.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Constantine of Dumnonia](https://en.wikipedia.org/wiki/Constantine_of_Dumnonia)
 
@@ -576,13 +576,13 @@ Wikipedia: [Constantine of Dumnonia](https://en.wikipedia.org/wiki/Constantine_o
 
 Also: conguoẏ
 
-The river of north Wales that runs to the sea at Conwy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A river of north Wales that runs from the mountains of Snowdonia north to the sea at the town of Conwy. The annals name a battle on it as Yahweh's vengeance for Rhodri, the king of Gwynedd the English had killed a few years before.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Conwy](https://en.wikipedia.org/wiki/Conwy)
 
 ## Cornish
 
-The people of Cornwall, in the far southwest of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Cornwall, in the far southwest of Britain, Britons who kept their own language, Cornish, a close cousin of Welsh and Breton. The annals record the Britons winning a battle at Hehil among the Cornish in 722 CE, in the years when the West Saxons were pushing west.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cornish people](https://en.wikipedia.org/wiki/Cornish_people)
 
@@ -590,7 +590,7 @@ Wikipedia: [Cornish people](https://en.wikipedia.org/wiki/Cornish_people)
 
 Also: cornuenſeſ, cerniu
 
-The south-western peninsula of Britain, a British kingdom in these years.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The long peninsula at the southwest tip of Britain, in these years a British kingdom, part of the larger Dumnonia; its people spoke Cornish, a language close to Welsh and Breton. The annals record its people's wars with the English of Wessex, who conquered it in the ninth and tenth centuries.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cornwall](https://en.wikipedia.org/wiki/Cornwall)
 
@@ -598,7 +598,7 @@ Wikipedia: [Cornwall](https://en.wikipedia.org/wiki/Cornwall)
 
 Also: Commene fota
 
-An Irish bishop and scholar, Cumméne the Tall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Cumméne the Tall, an Irish bishop and scholar of Clonfert, whose death the Welsh annals record in 661 CE with his name alone. He's often taken for the Cummian who wrote a letter around 632 CE urging the Irish to keep Easter by Rome's reckoning, though that isn't certain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cumméne Fota](https://en.wikipedia.org/wiki/Cumm%C3%A9ne_Fota)
 
@@ -606,25 +606,25 @@ Wikipedia: [Cumméne Fota](https://en.wikipedia.org/wiki/Cumm%C3%A9ne_Fota)
 
 Also: Cudberth, Cuthbert
 
-An abbot.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An abbot whose death the Welsh annals record in 777 CE, without saying of which monastery. He isn't the famous Bishop Cuthbert of Lindisfarne, who died ninety years earlier, and nothing else in the annals tells who he was.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cynan
 
 Also: cinan de ea, Cinan rex
 
-A king Hywel drives off Anglesey.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king who fought Hywel for Gwynedd, in north Wales, in the 810s CE. The annals record Hywel winning a battle against him in 813 CE and driving him off Anglesey, with heavy losses in Hywel's own army. He's kept apart from Cynan Garwyn, Selyf's father, two hundred years earlier.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cynan Garwyn
 
 Also: filíí cinan
 
-A king of Powys, the father of Selyf.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Powys, in mid Wales, in the late sixth century CE, remembered in early Welsh poetry as a warlike raider. The annals name him only as the father of Selyf, who was cut down at the battle of Chester in 613 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cyngen
 
 Also: Cyngen
 
-Cyngen son of Cadell, king of Powys, who dies in Rome.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Cyngen son of Cadell, the last king of Powys, in mid Wales, of his line, who went on pilgrimage to Rome and died there in 854 CE, as the annals record. After him Powys passed to Rhodri the Great of Gwynedd. He set up the stone called the Pillar of Eliseg, honoring his ancestor.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cyngen ap Cadell](https://en.wikipedia.org/wiki/Cyngen_ap_Cadell)
 
@@ -632,13 +632,13 @@ Wikipedia: [Cyngen ap Cadell](https://en.wikipedia.org/wiki/Cyngen_ap_Cadell)
 
 Also: Cinnen rex pouiſ
 
-A king of Powys.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The last king of Powys, in mid Wales, of his line, who died on pilgrimage in Rome in 854 CE, as the annals record. He set up the stone called the Pillar of Eliseg, near Llangollen, to honor his ancestor, and after him Powys passed to Rhodri the Great of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## David
 
 Also: Dauid
 
-The bishop and patron saint of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Saint David, called Dewi in Welsh, the patron saint of Wales, a bishop and monk of the sixth century CE who founded the monastery at Mynyw, today's St Davids, in southwest Wales. The Welsh annals record his death, and his feast day, March 1, is still Wales's national day.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saint David](https://en.wikipedia.org/wiki/Saint_David)
 
@@ -646,7 +646,7 @@ Wikipedia: [Saint David](https://en.wikipedia.org/wiki/Saint_David)
 
 Also: De cantorum, detantorum
 
-A hill fort on the Conwy estuary, the fort of the Decanti.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A hill fort on the twin hills by the Conwy estuary, in north Wales, named for the Decanti, a people of the area, and held in legend by Maelgwn. The annals record it struck by lightning, then destroyed by the Saxons in 822 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Deganwy](https://en.wikipedia.org/wiki/Deganwy)
 
@@ -654,7 +654,7 @@ Wikipedia: [Deganwy](https://en.wikipedia.org/wiki/Deganwy)
 
 Also: danieliſ
 
-The first bishop of Bangor.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The first bishop of Bangor, in north Wales, in the sixth century CE, who founded the monastery there that grew into Bangor Cathedral. The annals record his burial in 584 CE, and he's still remembered as a saint in Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Deiniol](https://en.wikipedia.org/wiki/Deiniol)
 
@@ -662,19 +662,19 @@ Wikipedia: [Deiniol](https://en.wikipedia.org/wiki/Deiniol)
 
 Also: dinas neguid
 
-The place of a battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place where the Welsh annals record a battle in 921 CE, a few years after the deaths of Anarawd of Gwynedd, in 915 CE by their count, and Aethelflaed of the Mercians, in 917 CE. They name no sides and no winner, and where Dinas Neguid was, "the fort of Neguid," is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Dinmeir
 
 Also: dinmeir
 
-The place of a battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place where the Welsh annals record a battle in 906 CE, the same year St Davids, the great church of Dyfed, was sacked. They name no sides, and where Dinmeir was is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Domangart
 
 Also: Domangart, dungart
 
-Domangart Réti, king of Dál Riata, the father of Gabrán.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Domangart Réti, an early king of Dál Riata, in western Scotland, around 500 CE. The annals name him only as the father of Gabrán, whose death they record in 558 CE, and so the grandfather of Áedán.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Domangart Réti](https://en.wikipedia.org/wiki/Domangart_R%C3%A9ti)
 
@@ -682,13 +682,13 @@ Wikipedia: [Domangart Réti](https://en.wikipedia.org/wiki/Domangart_R%C3%A9ti)
 
 Also: dungart
 
-A king of the Irish of Dál Riata in western Scotland, the father of Gabrán.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An early king of the Irish of Dál Riata in western Scotland, around 500 CE, the father of Gabrán and grandfather of Áedán, the strongest of their kings. The annals name him only in recording his son's death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Donyarth
 
 Also: Dungarth
 
-A king of Cornwall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The last known king of Cornwall, whose drowning the Welsh annals record in 875 CE. A stone cross base near St Cleer, in Cornwall, still carries his name in Latin, Doniert, asking prayers for his soul.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Donyarth](https://en.wikipedia.org/wiki/Donyarth)
 
@@ -696,7 +696,7 @@ Wikipedia: [Donyarth](https://en.wikipedia.org/wiki/Donyarth)
 
 Also: dibric
 
-A bishop of south-east Wales, Dyfrig in Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Dyfrig in Welsh, a bishop of southeast Wales in the sixth century CE, remembered as the founder of churches around Ergyng and Llandaff. The annals record his death in 612 CE. Geoffrey of Monmouth later made him the archbishop who crowns Arthur.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Dubricius](https://en.wikipedia.org/wiki/Dubricius)
 
@@ -704,7 +704,7 @@ Wikipedia: [Dubricius](https://en.wikipedia.org/wiki/Dubricius)
 
 Also: dunnagual
 
-A king of the Britons of Alt Clut.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of Alt Clut, the fortress rock of Dumbarton on the Clyde, whose death the annals record in 760 CE. His kingdom, later called Strathclyde, was the longest-lasting British kingdom of the north.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Dumnagual III of Alt Clut](https://en.wikipedia.org/wiki/Dumnagual_III_of_Alt_Clut)
 
@@ -712,7 +712,7 @@ Wikipedia: [Dumnagual III of Alt Clut](https://en.wikipedia.org/wiki/Dumnagual_I
 
 Also: Dunaut
 
-A king of the north of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of the north, remembered in Welsh genealogies as Dunod the Great, son of Pabo, whose death the annals record in 595 CE beside Columba's. Where exactly he ruled is uncertain, though tradition places him in the Pennines.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Dunod Fawr](https://en.wikipedia.org/wiki/Dunod_Fawr)
 
@@ -720,13 +720,13 @@ Wikipedia: [Dunod Fawr](https://en.wikipedia.org/wiki/Dunod_Fawr)
 
 Also: duta
 
-A man who lays Glywysing waste.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man the Welsh annals say laid Glywysing waste in 864 CE. Glywysing was a kingdom of southeast Wales, west of the Usk. The annals don't say who Duta was or where he came from, and nothing else names him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Dyfed
 
 Also: demeticæ, demetorum
 
-A kingdom of south-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of southwest Wales, named after the Demetae, the people who lived there in Roman times, with St Davids at its western tip. The annals record the deaths and wars of its kings, until in the tenth century it was joined with its neighbors into the larger kingdom of Deheubarth.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
 
@@ -734,13 +734,13 @@ Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
 
 Also: ebur
 
-A bishop the annals give a great age.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop whose death the Welsh annals record in 501 CE at the age of three hundred and fifty. No one could live so long, and the number may be a slip by a copyist, but the annals give it as they found it and say nothing more of him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Edmund
 
 Also: Eadmund
 
-Edmund, king of the English, who the annals call king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Edmund I, king of the English from 939 to 946 CE, a grandson of Alfred the Great, who the Welsh annals call king of the Saxons. He was stabbed to death at a feast by an outlaw, and the annals record his killing in 947 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Edmund I](https://en.wikipedia.org/wiki/Edmund_I)
 
@@ -748,13 +748,13 @@ Wikipedia: [Edmund I](https://en.wikipedia.org/wiki/Edmund_I)
 
 Also: Eadmund
 
-A king of the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the English from 939 to 946 CE, a grandson of Alfred the Great, who won back the north from the Vikings and was stabbed to death at a feast by an outlaw. The Welsh annals call him king of the Saxons and record his killing.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Edwin
 
 Also: guin, Etguin, et guin
 
-A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Northumbrians from 616 to 633 CE, who drove out Ceretic of Elmet and became the first Christian king of the north of England, baptized at York at Easter in 627 CE, Bede says, though the annals put it in 626 CE. He was killed at the battle of Meicen by Cadwallon of Gwynedd and Penda of Mercia, as both the history and the annals record.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Edwin of Northumbria](https://en.wikipedia.org/wiki/Edwin_of_Northumbria)
 
@@ -762,7 +762,7 @@ Wikipedia: [Edwin of Northumbria](https://en.wikipedia.org/wiki/Edwin_of_Northum
 
 Also: elbodugo, Elbodg
 
-A bishop of Gwynedd, called the man of God.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop of Gwynedd, in north Wales, who the annals call a man of Yahweh and say brought the Welsh church over to Rome's reckoning of Easter in 768 CE, after the Welsh had kept their own date for over a century. The annals record his death in 809 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Elfodd](https://en.wikipedia.org/wiki/Elfodd)
 
@@ -770,19 +770,19 @@ Wikipedia: [Elfodd](https://en.wikipedia.org/wiki/Elfodd)
 
 Also: elized
 
-The name of two men in the annals: the brother who has Gruffudd killed, and Idwal's son, killed by the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two men in the annals: the brother who had Gruffudd killed by a trick after waiting two months, in the 810s CE, and Idwal's son, killed by the Saxons with his father in 943 CE. A third Elisedd is named only as the father of Cincenn, poisoned in 946 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Eneuris
 
 Also: eneuriſ
 
-A bishop of St Davids.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop of St Davids, the great church of Dyfed in west Wales, whose death the Welsh annals record in 946 CE, beside Cincenn's death by poison. St Davids kept close track of its own bishops, which is why the annals, written there, name so many of them.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## England
 
 Also: loẏcr
 
-The English lands beside Wales, which the annals call by the Welsh name for England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English lands beside Wales, which the annals call by the Welsh name for England. The English kingdoms of Mercia and Wessex were Wales's great enemies in these centuries, and the annals record their raids and battles with the Welsh kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [England](https://en.wikipedia.org/wiki/England)
 
@@ -790,7 +790,7 @@ Wikipedia: [England](https://en.wikipedia.org/wiki/England)
 
 Also: Eowa
 
-A king of the Mercians, Penda's brother.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Mercians, Penda's brother, who ruled with or under him in the 630s CE and was killed in 642 CE at the battle of Maserfield, where Oswald of Northumbria also fell. The history names him in the line of Mercia's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eowa of Mercia](https://en.wikipedia.org/wiki/Eowa_of_Mercia)
 
@@ -798,13 +798,13 @@ Wikipedia: [Eowa of Mercia](https://en.wikipedia.org/wiki/Eowa_of_Mercia)
 
 Also: eoba
 
-A king of the Mercians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Mercians, Penda's brother, whose death the Welsh annals record in the battle of Cocboy, in 644 CE by their count, where Oswald, king of the Northumbrians, was also killed. The English call it the battle of Maserfield.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Eubonia
 
 Also: euboniam, ineubonia
 
-A land near Britain, perhaps the Isle of Man.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Latin name of the Isle of Man, in the Irish Sea between Britain and Ireland. The annals record a battle there, though some read the name in that entry as Manaw Gododdin, near the Firth of Forth.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
@@ -812,19 +812,19 @@ Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
 Also: Fernmail filiuſ iudhail
 
-A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the Welsh annals record in 775 CE, with his father's name and nothing else. Which Ithel was his father, and where he ruled, if he ruled, the annals don't say.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Finnant
 
 Also: finnant
 
-The place of a battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place where the Welsh annals record a battle in the middle of the ninth century CE. They name no sides and no winner, and where Finnant was is unknown, so the battle is only its name in the annals.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Franks
 
 Also: francorum
 
-The people who ruled what's now France and western Germany.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people who settled in Gaul as the Roman Empire fell and ruled what's now France and western Germany, giving France its name. The Welsh annals record the death of Pepin, the Franks' ruler, in 714 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Franks](https://en.wikipedia.org/wiki/Franks)
 
@@ -832,7 +832,7 @@ Wikipedia: [Franks](https://en.wikipedia.org/wiki/Franks)
 
 Also: Gabran, gabran
 
-A king of the Irish of Dál Riata in western Scotland, the son of Domangart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Gabrán son of Domangart, a king of the Irish of Dál Riata, in western Scotland, whose death the Welsh annals record in 558 CE. His son Áedán became the strongest of their kings, and his family held the kingship for generations.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gabrán mac Domangairt](https://en.wikipedia.org/wiki/Gabr%C3%A1n_mac_Domangairt)
 
@@ -840,13 +840,13 @@ Wikipedia: [Gabrán mac Domangairt](https://en.wikipedia.org/wiki/Gabr%C3%A1n_ma
 
 Also: gart mailauc
 
-The place of a battle the Britons win.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of one of three battles the Welsh annals say the Britons won in 722 CE, beside Hehil among the Cornish and Pencon in the south. Where Gart Mailauc was is unknown, and the annals say nothing of who they beat there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Gildas
 
 Also: Gildaſ
 
-A British monk who wrote on the ruin of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A British monk of the sixth century CE whose book *On the Ruin of Britain*, written about 545 CE, is the only account of Britain's fifth and sixth centuries written by someone who lived through them. It names the victory at Badon but no Arthur. The Welsh annals record his death in 570 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
 
@@ -854,13 +854,13 @@ Wikipedia: [Gildas](https://en.wikipedia.org/wiki/Gildas)
 
 Also: glannauc
 
-An island where Cadwallon is besieged, perhaps Puffin Island off Anglesey.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The island where the Welsh annals say Cadwallon of Gwynedd was besieged in 629 CE, without saying who besieged him. It's taken for Puffin Island, off the east tip of Anglesey, Ynys Lannog in Welsh, though that isn't certain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Glywysing
 
 Also: gliuiſigng
 
-A kingdom of south-east Wales, between the Usk and the Tawe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of southeast Wales, between the Usk and the Tawe, which later became Morgannwg, today's Glamorgan. The annals record raids on it, and the history places the plain of Elleti there, where Vortigern's envoys find the fatherless boy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Glywysing](https://en.wikipedia.org/wiki/Glywysing)
 
@@ -868,7 +868,7 @@ Wikipedia: [Glywysing](https://en.wikipedia.org/wiki/Glywysing)
 
 Also: Gregoriuſ, Gregory
 
-The pope who sent Augustine to the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Pope from 590 to 604 CE, who in 597 CE sent the monk Augustine with forty companions to turn the English to Christ, beginning in Kent. Bede tells that he'd seen English boys for sale in Rome and called them angels, not Angles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pope Gregory I](https://en.wikipedia.org/wiki/Pope_Gregory_I)
 
@@ -876,31 +876,31 @@ Wikipedia: [Pope Gregory I](https://en.wikipedia.org/wiki/Pope_Gregory_I)
 
 Also: grip hiud
 
-A son of Cincen, killed by his brother's trick.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Cincen, whose killing by a trick of his brother Elisedd's, after a wait of two months, the Welsh annals record in the 810s CE. They don't say why Elisedd wanted him dead or what he gained.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Guidgar
 
 Also: Guidgar
 
-A man who comes and doesn't return.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man the Welsh annals say "comes and doesn't return," in 630 CE, in the years of Cadwallon's wars with Edwin of Northumbria. They give nothing else, and who he was or where he went is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Guorchiguil
 
 Also: Guorchiguil
 
-A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the Welsh annals record in the late ninth century CE, with his name alone. Who he was, and why the annals marked his death, isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Gwent
 
 Also: guent
 
-A kingdom of south-east Wales, between the Wye and the Usk.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of southeast Wales, between the Wye and the Usk, around Caerwent, the old Roman town whose name it keeps. The annals record its kings and their wars, and the history places one of its strange things there, a pit that wind blows out of without a break.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Gwent](https://en.wikipedia.org/wiki/Kingdom_of_Gwent)
 
 ## Gwgon
 
-Gwgon son of Meurig, a king of Ceredigion who drowns.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Gwgon son of Meurig, the last king of Ceredigion, in west Wales, whose drowning the annals record in 871 CE. After his death Ceredigion passed to Rhodri the Great of Gwynedd, who'd married his sister.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gwgon ap Meurig](https://en.wikipedia.org/wiki/Gwgon_ap_Meurig)
 
@@ -908,13 +908,13 @@ Wikipedia: [Gwgon ap Meurig](https://en.wikipedia.org/wiki/Gwgon_ap_Meurig)
 
 Also: Guoccaun
 
-A king of Ceredigion.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The last king of Ceredigion, in west Wales, whose drowning the annals record in 871 CE. His sister had married Rhodri the Great of Gwynedd, and after Gwgon's death Ceredigion passed to Rhodri's family.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Gwrgi
 
 Also: Guurci
 
-A king of the north of Britain, the brother of Peredur.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of the north, the brother of Peredur, whose deaths the Welsh annals record together in 580 CE. Welsh tradition makes them sons of Eliffer and heroes of the battle of Arfderydd; Peredur's name later went to the romance hero Perceval.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Peredur](https://en.wikipedia.org/wiki/Peredur)
 
@@ -922,7 +922,7 @@ Wikipedia: [Peredur](https://en.wikipedia.org/wiki/Peredur)
 
 Also: guriat
 
-A son of Rhodri, killed with him by the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Rhodri the Great, king of Gwynedd, killed with his father by the Saxons in 877 CE, as the annals record. Rhodri's other sons, Anarawd above all, avenged him at the battle of the Conwy and held Gwynedd after him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gwriad ap Merfyn](https://en.wikipedia.org/wiki/Gwriad_ap_Merfyn)
 
@@ -930,7 +930,7 @@ Wikipedia: [Gwriad ap Merfyn](https://en.wikipedia.org/wiki/Gwriad_ap_Merfyn)
 
 Also: genedotæ, guenedote
 
-A kingdom of north-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of northwest Wales, around Snowdonia and Anglesey, the strongest of the Welsh kingdoms. Its kings claimed Cunedda and Maelgwn as ancestors, and the history was written in the reign of its king Merfyn. The annals follow its kings closely.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Gwynedd](https://en.wikipedia.org/wiki/Kingdom_of_Gwynedd)
 
@@ -938,7 +938,7 @@ Wikipedia: [Kingdom of Gwynedd](https://en.wikipedia.org/wiki/Kingdom_of_Gwynedd
 
 Also: guinnliguiauc
 
-A district of south-east Wales, between the Rhymney and the Usk.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A district of southeast Wales between the Rhymney and the Usk, around today's Newport, named for Gwynllyw, a local king and saint. The annals record the Norsemen laying it waste in 895 CE, with Gwent and Brycheiniog.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gwynllwg](https://en.wikipedia.org/wiki/Gwynllwg)
 
@@ -946,7 +946,7 @@ Wikipedia: [Gwynllwg](https://en.wikipedia.org/wiki/Gwynllwg)
 
 Also: cantſcaul
 
-The place of a battle near Hexham, in the north of England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of a battle near Hexham, in the north of England, where in 634 CE Oswald of Northumbria beat and killed Cadwallon of Gwynedd, ending his year of rule in the north. Bede says Oswald set up a wooden cross before the battle, which gave the field its name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Heavenfield](https://en.wikipedia.org/wiki/Battle_of_Heavenfield)
 
@@ -954,7 +954,7 @@ Wikipedia: [Battle of Heavenfield](https://en.wikipedia.org/wiki/Battle_of_Heave
 
 Also: hehil
 
-The place of a battle among the Cornish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of one of three battles the Welsh annals say the Britons won in 722 CE, this one among the Cornish, in the years when the West Saxons were pressing on Cornwall. Where Hehil was is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Hehil](https://en.wikipedia.org/wiki/Battle_of_Hehil)
 
@@ -962,7 +962,7 @@ Wikipedia: [Battle of Hehil](https://en.wikipedia.org/wiki/Battle_of_Hehil)
 
 Also: hirford
 
-A town on the Wye near the Welsh border.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A town on the Wye near the Welsh border, in western England, which grew up as a Mercian fort against the Welsh. The annals record a battle between the Britons and the Saxons there in 760 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hereford](https://en.wikipedia.org/wiki/Hereford)
 
@@ -970,7 +970,7 @@ Wikipedia: [Hereford](https://en.wikipedia.org/wiki/Hereford)
 
 Also: Hyfaidd
 
-Hyfaidd son of Bleddri, a king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Hyfaidd son of Bleddri, king of Dyfed, in southwest Wales, in the late ninth century CE, whose death the annals record in 892 CE. Asser, Alfred the Great's Welsh biographer, says Hyfaidd's raids drove Dyfed's church to seek Alfred's protection.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hyfaidd ap Bleddri](https://en.wikipedia.org/wiki/Hyfaidd_ap_Bleddri)
 
@@ -978,19 +978,19 @@ Wikipedia: [Hyfaidd ap Bleddri](https://en.wikipedia.org/wiki/Hyfaidd_ap_Bleddri
 
 Also: Himeẏd, hiemid
 
-A king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Dyfed, in southwest Wales, in the late ninth century CE, whose death the annals record. Asser, Alfred the Great's Welsh biographer, says Hyfaidd's raids on St Davids drove its bishops to put themselves under Alfred's protection.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Hyfaidd son of Clydog
 
 Also: Himeid
 
-A son of Clydog.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Clydog, the king whose killing the annals record in 919 CE. The annals record Hyfaidd's own death with Meurig's in 939 CE and say nothing more of him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Hywel
 
 Also: Hywel
 
-The name of several Welsh kings in the annals, the last of them Hywel the Good, king of the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of several Welsh kings in the annals. The first, in the 810s CE, fought Cynan for Gwynedd and drove him off Anglesey; the last is Hywel the Good, who ruled most of Wales and gave his name to its laws.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hywel Dda](https://en.wikipedia.org/wiki/Hywel_Dda)
 
@@ -998,11 +998,11 @@ Wikipedia: [Hywel Dda](https://en.wikipedia.org/wiki/Hywel_Dda)
 
 Also: Higuel rex
 
-A king of most of Wales, Hywel the Good.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Hywel the Good, a grandson of Rhodri the Great, who by his death in 950 CE ruled most of Wales. He went on pilgrimage to Rome, as the annals note, and Welsh law was later written down in his name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Iago
 
-Iago son of Beli, a king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Iago son of Beli, a king of Gwynedd, in north Wales, whose death the annals record in 613 CE, the year of the battle of Chester. His son Cadfan and grandson Cadwallon ruled after him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Iago ap Beli](https://en.wikipedia.org/wiki/Iago_ap_Beli)
 
@@ -1010,17 +1010,17 @@ Wikipedia: [Iago ap Beli](https://en.wikipedia.org/wiki/Iago_ap_Beli)
 
 Also: iacob
 
-A king of Gwynedd, the son of Beli.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Gwynedd, in north Wales, the son of Beli, whose death the annals record in 613 CE. He's the father of Cadfan and the grandfather of Cadwallon, who fought Edwin of Northumbria.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Idris
 
 Also: iudriſ
 
-A man the annals say was killed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man the Welsh annals say was killed in 632 CE, in the same entry as a slaughter on the Severn. He's sometimes taken for a king of Meirionnydd, in Wales, but the annals give only his name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Idwal
 
-Idwal the Bald, a king of Gwynedd the Saxons kill.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Idwal the Bald, Idwal Foel in Welsh, a grandson of Rhodri the Great and king of Gwynedd, in north Wales, from 916 CE. He and his son Elisedd were killed fighting the Saxons, as the annals record in 943 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Idwal Foel](https://en.wikipedia.org/wiki/Idwal_Foel)
 
@@ -1028,19 +1028,19 @@ Wikipedia: [Idwal Foel](https://en.wikipedia.org/wiki/Idwal_Foel)
 
 Also: iudgual
 
-A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Idwal the Bald, a grandson of Rhodri the Great and king of Gwynedd, in north Wales, from 916 CE. The annals record that he and his son Elisedd were killed by the Saxons in 943 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Idwallon
 
 Also: Idwallon
 
-A man whose death the annals record; who he was isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the Welsh annals record in 842 CE, with his name alone. Who he was isn't known, and the annals of those years say little of anyone beyond their deaths.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Ingimundr
 
 Also: Igmunt
 
-A Norse leader driven from Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Norse leader the Welsh annals say came to Anglesey in 902 CE after the Vikings were driven out of Dublin. The English records say he was refused in Wales and settled near Chester, where his men later attacked the town.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ingimundr (tenth century)](https://en.wikipedia.org/wiki/Ingimundr_(tenth_century))
 
@@ -1048,37 +1048,37 @@ Wikipedia: [Ingimundr (tenth century)](https://en.wikipedia.org/wiki/Ingimundr_(
 
 Also: hibernia, inhibernia, adhiberniam
 
-The island west of Great Britain, across the Irish Sea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The island west of Great Britain, across the Irish Sea. The annals, kept in Wales, record its saints, its kings and the Viking raids on it, since the Welsh and Irish churches stayed close and shared their news.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
 ## Ithel
 
-A king of Gwent the men of Brycheiniog kill; also the father of Ffernfael.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two men in the annals. One was a king of Gwent, in southeast Wales, killed by the men of Brycheiniog in 848 CE; the other was the father of the Ffernfael whose death they record in 775 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Ithel of Gwent
 
 Also: iuꝺhail
 
-A king of Gwent.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Gwent, in southeast Wales, whose killing by the men of Brycheiniog, his neighbors to the north, the annals record in 848 CE. The small Welsh kingdoms fought each other as often as the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Jonathan
 
 Also: ionathan
 
-The lord of Abergele.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The lord of Abergele, on the north coast of Wales, whose death the Welsh annals record in 856 CE, in the same entry as Cemoyth, king of the Picts. Abergele had an early church, but the annals give only his title, and what his lordship was is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Jonathan of Abergele
 
 Also: ionathan
 
-The lord of Abergele.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The lord of Abergele, on the north coast of Wales, whose death the Welsh annals record in 856 CE beside that of a king of the Picts. They say nothing else of him, and what his lordship was is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Kentigern
 
 Also: Conthigirni
 
-A bishop of the Britons of the north, also called Mungo.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop of the Britons of the north, also called Mungo, who founded the church at Glasgow and is its patron saint. The Welsh annals record his death in 612 CE, and legend says he spent years in exile in Wales, at St Asaph.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saint Mungo](https://en.wikipedia.org/wiki/Saint_Mungo)
 
@@ -1086,19 +1086,19 @@ Wikipedia: [Saint Mungo](https://en.wikipedia.org/wiki/Saint_Mungo)
 
 Also: Laudent
 
-A man whose death the annals give.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man whose death the Welsh annals record in 831 CE, beside that of Sadyrnfyw Hael of St Davids. Who he was, and why his death was worth noting, the annals don't say; they give only his name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Llanfaes
 
 Also: lannmaéſ
 
-A place in the east of Anglesey.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place in the east of Anglesey, near today's Beaumaris, where the Welsh annals record a battle in 817 CE, during the war between Cynan and Hywel for Gwynedd. It later became the chief town of Anglesey.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Llanfaes](https://en.wikipedia.org/wiki/Llanfaes)
 
 ## Llywarch
 
-Llywarch son of Hyfaidd, a king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Llywarch son of Hyfaidd, a king of Dyfed, in southwest Wales, whose death the annals record in 904 CE. His daughter married Hywel the Good, who through her came to rule Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Llywarch ap Hyfaidd](https://en.wikipedia.org/wiki/Llywarch_ap_Hyfaidd)
 
@@ -1106,19 +1106,19 @@ Wikipedia: [Llywarch ap Hyfaidd](https://en.wikipedia.org/wiki/Llywarch_ap_Hyfai
 
 Also: Loumarch
 
-A king of Dyfed, Hyfaidd's son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Dyfed, in southwest Wales, Hyfaidd's son, whose death the annals record in 904 CE. Through his daughter's marriage to Hywel the Good, Dyfed passed to Hywel's family.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Lunberth
 
 Also: Lunberth
 
-A bishop in St Davids.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop at St Davids, the great church of Dyfed, whose death the Welsh annals record in 944 CE. The annals were kept at St Davids, which is why they note so many of its bishops by name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Maelgwn Gwynedd
 
 Also: mailcun, Maelgwn
 
-A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A powerful king of Gwynedd, in northwest Wales, in the sixth century CE, one of the most famous kings of early Wales. Gildas called him the island's dragon, and the Welsh annals record his death in a great plague in 547 CE; later Welsh legend remembered him as a mighty, proud king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Maelgwn Gwynedd](https://en.wikipedia.org/wiki/Maelgwn_Gwynedd)
 
@@ -1126,13 +1126,13 @@ Wikipedia: [Maelgwn Gwynedd](https://en.wikipedia.org/wiki/Maelgwn_Gwynedd)
 
 Also: maeſ oſmeliavn
 
-A field on Anglesey that Ingimundr holds.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"Osmeliaun's field" in Welsh, a place on Anglesey that the Welsh annals say the Norse leader Ingimundr held after he came there from Ireland in 902 CE. Where on the island it lay is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Maredudd
 
 Also: Maredudd
 
-Maredudd son of Tewdws, a ruler of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Maredudd son of Tewdws, a ruler of Dyfed, in southwest Wales, whose death the annals record in 796 CE, the same year as Offa of Mercia's. Dyfed's kings claimed Irish ancestors, and Maredudd is one of the line Welsh genealogies trace.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Maredudd ap Tewdws](https://en.wikipedia.org/wiki/Maredudd_ap_Tewdws)
 
@@ -1140,13 +1140,13 @@ Wikipedia: [Maredudd ap Tewdws](https://en.wikipedia.org/wiki/Maredudd_ap_Tewdws
 
 Also: morgetiud, margetiud
 
-A king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Dyfed, in southwest Wales, whose death the annals record in 796 CE, in the same entry as the death of Offa, the Mercian king who built the great dyke along the Welsh border. He's known from the annals and the Welsh genealogies of Dyfed's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Maserfield
 
 Also: cocboẏ
 
-The place where Oswald and Eowa fight.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place where, in 642 CE by the English count, Penda of Mercia beat and killed Oswald of Northumbria, with Eowa, Penda's brother, also falling there. It's usually placed at Oswestry, in Shropshire, though that isn't certain; the Welsh annals call it Cocboy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Maserfield](https://en.wikipedia.org/wiki/Battle_of_Maserfield)
 
@@ -1154,7 +1154,7 @@ Wikipedia: [Battle of Maserfield](https://en.wikipedia.org/wiki/Battle_of_Maserf
 
 Also: meicen
 
-The battle where Cadwallon kills Edwin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The battle where, in 633 CE, Cadwallon of Gwynedd and Penda of Mercia beat and killed Edwin, the Christian king of Northumbria. The English call it Hatfield Chase, usually placed near Hatfield, by Doncaster, though that's disputed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Meicen](https://en.wikipedia.org/wiki/Meicen)
 
@@ -1162,7 +1162,7 @@ Wikipedia: [Meicen](https://en.wikipedia.org/wiki/Meicen)
 
 Also: mellituſ
 
-A missionary sent with Augustine, later bishop of London.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman monk Pope Gregory sent in 601 CE to help Augustine's mission to the English, who became the first bishop of London and later archbishop of Canterbury. The Welsh annals name him with Augustine as bringing the English to Christ.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mellitus](https://en.wikipedia.org/wiki/Mellitus)
 
@@ -1170,7 +1170,7 @@ Wikipedia: [Mellitus](https://en.wikipedia.org/wiki/Mellitus)
 
 Also: merciorum, Mercians
 
-The kingdom of the Mercians in the English Midlands.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English kingdom of the Midlands, centered on the Trent, the strongest of the English kingdoms in the eighth century CE under Offa, who built the great dyke along the Welsh border. The annals record its wars with the Welsh again and again.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mercia](https://en.wikipedia.org/wiki/Mercia)
 
@@ -1178,7 +1178,7 @@ Wikipedia: [Mercia](https://en.wikipedia.org/wiki/Mercia)
 
 Also: Merfyn
 
-Merfyn Frych, king of Gwynedd; the history is written in his fourth year.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Merfyn Frych, "the Freckled," king of Gwynedd, in north Wales, from 825 to 844 CE, who founded a new line of its kings, his son being Rhodri the Great. The history says it was written in his fourth year, about 829 CE, and scholars think it was written for his court.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Merfyn Frych](https://en.wikipedia.org/wiki/Merfyn_Frych)
 
@@ -1186,13 +1186,13 @@ Wikipedia: [Merfyn Frych](https://en.wikipedia.org/wiki/Merfyn_Frych)
 
 Also: mermin
 
-A king of Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Merfyn "the Freckled," king of Gwynedd, in north Wales, from 825 CE until his death in 844 CE, which the annals record. He founded the line of kings that ruled much of Wales after him, through his son Rhodri the Great, and the *History of the Britons* was written in his reign.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Meurig
 
 Also: Meurig
 
-The man after who a well in Gwent is named.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of several men. In the history, the man a well in Gwent is named after, among Britain's strange things. In the annals, a Meurig is killed by the Saxons in 849 CE, another dies with Bishop Nobis in 873 CE, and another in 939 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Meurig ab Arthfael](https://en.wikipedia.org/wiki/Meurig_ab_Arthfael)
 
@@ -1200,13 +1200,13 @@ Wikipedia: [Meurig ab Arthfael](https://en.wikipedia.org/wiki/Meurig_ab_Arthfael
 
 Also: moce tauc
 
-The place of a battle between the Picts and the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The battle the Picts and the Britons fought in 750 CE, where, the Welsh annals say, the Britons killed the Picts' king, Talorgan. The Britons were those of Alt Clut, on the Clyde; where the battle was fought is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Moni Iudeorum
 
 Also: iudeorum
 
-The annals' garbled name for Mynyw, David's see, now St Davids, in the southwest of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The annals' garbled name for Mynyw, the see of Saint David, now St Davids, in the far southwest of Wales. The annals record David's death as bishop there; it became the great church of Wales, where the annals themselves were kept.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [St Davids](https://en.wikipedia.org/wiki/St_Davids)
 
@@ -1214,13 +1214,13 @@ Wikipedia: [St Davids](https://en.wikipedia.org/wiki/St_Davids)
 
 Also: mortiſ carno
 
-The place of a battle in central Scotland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of a battle in 728 CE, in central Scotland, near Loch Tay, where the Irish *Annals of Ulster* put a battle of Monid Carno among the Picts. The Welsh manuscript writes it Mount Carno.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Morcant
 
 Also: Morcant
 
-A king of the Britons of the north, Urien's rival.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of the north in the late sixth century CE, one of the four who fought Hussa of Bernicia. The history says Urien was murdered on Morcant's orders, out of envy, while besieging the English on Lindisfarne. The annals record his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Morcant Bulc](https://en.wikipedia.org/wiki/Morcant_Bulc)
 
@@ -1228,7 +1228,7 @@ Wikipedia: [Morcant Bulc](https://en.wikipedia.org/wiki/Morcant_Bulc)
 
 Also: medraut
 
-A man the annals name with Arthur in the battle of Camlann.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man the annals name with Arthur in the battle of Camlann in 537 CE, where both fell, the oldest mention of him anywhere. The annals don't say which side he fought on; later writers made him Arthur's nephew and the traitor who brought him down.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mordred](https://en.wikipedia.org/wiki/Mordred)
 
@@ -1236,7 +1236,7 @@ Wikipedia: [Mordred](https://en.wikipedia.org/wiki/Mordred)
 
 Also: Nobiſ epiſcopuſ
 
-A bishop in St Davids.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop of St Davids, in southwest Wales, who the Welsh annals say ruled there from 840 CE and died in 873 CE. The annals were kept at St Davids, so they note its bishops closely; Asser, Alfred the Great's biographer, names Nobis as his kinsman.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Nobis (bishop)](https://en.wikipedia.org/wiki/Nobis_(bishop))
 
@@ -1244,7 +1244,7 @@ Wikipedia: [Nobis (bishop)](https://en.wikipedia.org/wiki/Nobis_(bishop))
 
 Also: Hord mani
 
-Raiders from Scandinavia, the Vikings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Raiders from Scandinavia, the Vikings, who from the late eighth century CE sacked monasteries and towns along the coasts of Britain and Ireland and later settled there. The Welsh annals record their attacks on Wales, St Davids among them.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Norsemen](https://en.wikipedia.org/wiki/Norsemen)
 
@@ -1252,7 +1252,7 @@ Wikipedia: [Norsemen](https://en.wikipedia.org/wiki/Norsemen)
 
 Also: nordorum
 
-The English kingdom north of the Humber.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English kingdom north of the Humber, made from Deira and Bernicia, which at its height stretched from the Humber to the Firth of Forth. Its kings Edwin, Oswald and Oswiu fought the Welsh and the Mercians, as the annals record.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
 
@@ -1260,7 +1260,7 @@ Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
 
 Also: Northumbrians
 
-The people of Northumbria, in the north of England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English of Northumbria, north of the Humber, in the north of England. Their kings fought the Welsh and the Britons of the north for the lands between, and the history and the annals follow their wars closely.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
 
@@ -1268,7 +1268,7 @@ Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
 
 Also: offa
 
-A king of the Mercians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Mercians from 757 to 796 CE, the strongest English king of his time, who built Offa's Dyke, the great earthwork along the Welsh border. The Welsh annals record his raids on the Britons in 778 and 784 CE, and his death in 796 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Offa of Mercia](https://en.wikipedia.org/wiki/Offa_of_Mercia)
 
@@ -1276,7 +1276,7 @@ Wikipedia: [Offa of Mercia](https://en.wikipedia.org/wiki/Offa_of_Mercia)
 
 Also: Oſbrit
 
-A king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Saxons whose death the Welsh annals record in 717 CE. The annals give only the name and title, and say nothing of which English kingdom he ruled.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Osberht of Northumbria](https://en.wikipedia.org/wiki/Osberht_of_Northumbria)
 
@@ -1284,7 +1284,7 @@ Wikipedia: [Osberht of Northumbria](https://en.wikipedia.org/wiki/Osberht_of_Nor
 
 Also: oſuuald
 
-A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Northumbrians from 634 CE, who won his throne by beating Cadwallon at Heavenfield and brought the Irish monk Aidan to found Lindisfarne. Penda of Mercia killed him at the battle the Welsh call Cocboy in 642 CE, and the English honored him as a saint.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Oswald of Northumbria](https://en.wikipedia.org/wiki/Oswald_of_Northumbria)
 
@@ -1292,7 +1292,7 @@ Wikipedia: [Oswald of Northumbria](https://en.wikipedia.org/wiki/Oswald_of_North
 
 Also: Oſguid
 
-A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Northumbrians from 642 to 670 CE, Oswald's brother, who beat and killed Penda of Mercia in 655 CE and at the Synod of Whitby chose Rome's reckoning of Easter. The Welsh annals record his reign and his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Oswiu](https://en.wikipedia.org/wiki/Oswiu)
 
@@ -1300,17 +1300,17 @@ Wikipedia: [Oswiu](https://en.wikipedia.org/wiki/Oswiu)
 
 Also: Ougen
 
-A king of the Picts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Picts, the people of the north and east of what's now Scotland, whose death the Welsh annals record in 736 CE. The annals say nothing more of him, and this card takes no side on which of the Picts' kings he was.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Owain
 
-The name of two men in the annals: Owain son of Maredudd, of Dyfed, and the father of Cadwgan.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two men in the annals. One is Owain son of Maredudd, of Dyfed's royal family, whose death they record in 811 CE; the other is the father of Cadwgan, who the Saxons killed in 951 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Owain son of Maredudd
 
 Also: Eugem
 
-A son of Maredudd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Maredudd, the ruler of Dyfed, in southwest Wales, whose death the Welsh annals record in 811 CE, fifteen years after his father's. They say nothing more of him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Owain ap Maredudd (Dyfed)](https://en.wikipedia.org/wiki/Owain_ap_Maredudd_(Dyfed))
 
@@ -1318,7 +1318,7 @@ Wikipedia: [Owain ap Maredudd (Dyfed)](https://en.wikipedia.org/wiki/Owain_ap_Ma
 
 Also: Patriciuſ
 
-The saint who preached the faith in Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Briton carried off as a boy to slavery in Ireland, who escaped, became a priest and went back to turn the Irish to Christ in the fifth century CE. He's Ireland's patron saint, and two of his own writings survive. The annals record his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saint Patrick](https://en.wikipedia.org/wiki/Saint_Patrick)
 
@@ -1326,7 +1326,7 @@ Wikipedia: [Saint Patrick](https://en.wikipedia.org/wiki/Saint_Patrick)
 
 Also: pencon
 
-The place of a battle the southern Britons fight.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of one of three battles the Welsh annals say the Britons won in 722 CE, this one fought by the southern Britons, the Welsh of the south. Where Pencon was is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Pencon](https://en.wikipedia.org/wiki/Battle_of_Pencon)
 
@@ -1334,7 +1334,7 @@ Wikipedia: [Battle of Pencon](https://en.wikipedia.org/wiki/Battle_of_Pencon)
 
 Also: Pantha
 
-A king of the Mercians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Mercians from about 626 to 655 CE, the last great pagan English king, who allied with Cadwallon of Gwynedd to kill Edwin and later killed Oswald too. Oswiu of Northumbria killed him in 655 CE, as the annals record.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Penda of Mercia](https://en.wikipedia.org/wiki/Penda_of_Mercia)
 
@@ -1342,7 +1342,7 @@ Wikipedia: [Penda of Mercia](https://en.wikipedia.org/wiki/Penda_of_Mercia)
 
 Also: pipínuſ, Pepin
 
-The ruler of the Franks The annals call him a king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The ruler of the Franks from about 680 CE until his death in 714 CE, as mayor of the palace, the officer who held real power under weak kings. The annals call him Pepin the Greater, king of the Franks; his grandson was Charlemagne's father.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pepin of Herstal](https://en.wikipedia.org/wiki/Pepin_of_Herstal)
 
@@ -1350,7 +1350,7 @@ Wikipedia: [Pepin of Herstal](https://en.wikipedia.org/wiki/Pepin_of_Herstal)
 
 Also: peretur
 
-A king of the north of Britain, the brother of Gwrgi.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of the north, the brother of Gwrgi, whose deaths the Welsh annals record together in 580 CE. Welsh tradition makes them sons of Eliffer; Peredur's name later went to the Welsh romance hero who in French is Perceval.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Peredur](https://en.wikipedia.org/wiki/Peredur)
 
@@ -1358,7 +1358,7 @@ Wikipedia: [Peredur](https://en.wikipedia.org/wiki/Peredur)
 
 Also: pictorum, pictoſ
 
-The people of eastern and northern Scotland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of eastern and northern Scotland in these centuries, beyond the Roman walls, whose name in Latin means "painted people." They raided Roman Britain and later fought the Britons, the Irish of Dál Riata and the English of Northumbria, until in the ninth century their kingdom merged with Dál Riata's into the kingdom that became Scotland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
@@ -1366,7 +1366,7 @@ Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
 Also: leone
 
-The bishop of Rome, Leo I.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Leo I, bishop of Rome from 440 to 461 CE, called Leo the Great, who faced down Attila the Hun outside Rome. The Welsh annals open with him changing the date of Easter in 453 CE, the question that divided the British and Roman churches for two centuries after.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pope Leo I](https://en.wikipedia.org/wiki/Pope_Leo_I)
 
@@ -1374,7 +1374,7 @@ Wikipedia: [Pope Leo I](https://en.wikipedia.org/wiki/Pope_Leo_I)
 
 Also: pouiſ, poẏuiſ
 
-A kingdom of mid and north-east Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of mid and northeast Wales, in the valleys of the upper Severn and the Dee, often at war with Mercia on its eastern border. The annals record its kings, and Cyngen, its last king of the old line, died in Rome.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Powys](https://en.wikipedia.org/wiki/Kingdom_of_Powys)
 
@@ -1382,13 +1382,13 @@ Wikipedia: [Kingdom of Powys](https://en.wikipedia.org/wiki/Kingdom_of_Powys)
 
 Also: regin rex
 
-A king of Dyfed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Dyfed, in southwest Wales, whose death the Welsh annals record in 808 CE, in the same entry as Cadell of Powys. They later record the death of his son Trifun, and say nothing more of either.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rhodri
 
 Also: Rotri, Rhodri, rotri
 
-The name of several Welsh kings in the annals, among them Rhodri the Great and Rhodri son of Hywel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of several Welsh kings in the annals: Rhodri, king of the Britons, who died in 754 CE, and Rhodri the Great, killed by the Saxons in 877 CE. There's also Rhodri son of Hyfaidd, beheaded in 904 CE, and Rhodri son of Hywel the Good.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Rhodri Mawr](https://en.wikipedia.org/wiki/Rhodri_Mawr)
 
@@ -1396,31 +1396,31 @@ Wikipedia: [Rhodri Mawr](https://en.wikipedia.org/wiki/Rhodri_Mawr)
 
 Also: Roſtri
 
-A man beheaded in Arwystli, called Rostri in the annals.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Hyfaidd, king of Dyfed, who the Welsh annals say was beheaded in Arwystli, in mid Wales, in 904 CE, calling him Rostri. They don't say who killed him or why.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rhodri ap Hywel
 
 Also: Rotri filiuſ higuel
 
-A son of Hywel Dda.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Hywel the Good, the king who ruled most of Wales, whose death the Welsh annals record in the 950s CE, a few years after his father's. After Hywel died, his sons fought their cousins for Gwynedd.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rhodri Molwynog
 
 Also: Rotri rex brittonum
 
-A king of Gwynedd The annals call him king of the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Gwynedd, in north Wales, in the early eighth century CE, whose death the Welsh annals record in 754 CE, calling him king of the Britons. His family ruled Gwynedd until the line of Merfyn Frych took over in 825 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rhodri the Great
 
 Also: Rotri et filiuſ eiuſ, digal rotri
 
-A king of Gwynedd who ruled most of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Rhodri son of Merfyn Frych, king of Gwynedd from 844 CE, who added Powys and Ceredigion and ruled most of Wales. He beat the Vikings on Anglesey in 856 CE and was killed by the Saxons with his son Gwriad in 877 CE, as the annals record.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rhuddlan
 
 Also: rudglann
 
-A place on the River Clwyd in north-east Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place on the River Clwyd, in northeast Wales, near the coast, where the Welsh annals record a battle in 796 CE, the year Offa of Mercia died. It was a crossing on the road along the north coast, fought over by the Welsh and the English for centuries.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Rhuddlan](https://en.wikipedia.org/wiki/Rhuddlan)
 
@@ -1428,13 +1428,13 @@ Wikipedia: [Rhuddlan](https://en.wikipedia.org/wiki/Rhuddlan)
 
 Also: run filiuſ urbgen, Rhun
 
-A son of Urien.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Urien, the great king of Rheged in the north. Both the history and the annals say Rhun baptized Edwin of Northumbria and his people, a British claim to an honor Bede gives to the Roman bishop Paulinus; the annals put it in 626 CE, and the history at the Easter after Edwin's daughter's baptism, 627 CE by Bede's count.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rome
 
 Also: rome, inroma, adromam
 
-The city in central Italy, the pope's seat.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The city in central Italy, the seat of the pope, the head of the Western Church. The annals record Welsh kings and churchmen who went there on pilgrimage, and a Welsh king who died there, since dying in Rome was thought a holy end.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
@@ -1442,7 +1442,7 @@ Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
 Also: ſaturbiu hail, Hael
 
-A man of St Davids, called Hael.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Sadyrnfyw Hael, "the Generous," of St Davids, in southwest Wales, whose death the Welsh annals record in 831 CE, beside Laudent's. He's usually taken for a bishop of St Davids, which kept the annals, but they give only his name and byname.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Sadyrnfyw](https://en.wikipedia.org/wiki/Sadyrnfyw)
 
@@ -1450,13 +1450,13 @@ Wikipedia: [Sadyrnfyw](https://en.wikipedia.org/wiki/Sadyrnfyw)
 
 Also: ſaxoneſ, ſaxonum, ſaxonibuſ, aſaxonibuſ
 
-The English The Welsh called them Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English, who the Welsh called Saxons after one of the peoples from across the North Sea who settled Britain in the fifth and sixth centuries; Welsh still calls the English *Saeson*. The annals record their battles with the Welsh, from Badon on, and the raids of their kings on Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saxons](https://en.wikipedia.org/wiki/Saxons)
 
 ## Selyf
 
-Selyf son of Cynan, a king of Powys cut down at the battle of Chester.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Selyf son of Cynan, a king of Powys, in mid Wales, cut down at the battle of Chester in 613 CE, when Aethelfrith of Northumbria beat the Britons. Welsh tradition called him Sarffgadau, "serpent of battles."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Selyf ap Cynan](https://en.wikipedia.org/wiki/Selyf_ap_Cynan)
 
@@ -1464,13 +1464,13 @@ Wikipedia: [Selyf ap Cynan](https://en.wikipedia.org/wiki/Selyf_ap_Cynan)
 
 Also: ſelim
 
-A king of Powys, the son of Cynan.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Powys, in mid Wales, the son of Cynan Garwyn, killed at the battle of Chester in 613 CE, as the Welsh annals record. The battle opened the way for the English of the north to the Irish Sea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Severn
 
 Also: ſabrine
 
-The longest river of Britain, flowing from mid Wales to the Bristol Channel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The longest river of Britain, about 220 miles, flowing from the hills of mid Wales through the borderland and out into the Bristol Channel. It's long been the boundary between the Welsh and the English in the south, and the annals and the history name battles and places along it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
@@ -1478,7 +1478,7 @@ Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
 Also: miniu, inminiu, miniú
 
-St Davids, the bishop's seat in the far west of Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The bishop's seat in the far west of Wales, in Pembrokeshire, Mynyw in Welsh, founded by Saint David in the sixth century CE. It was the greatest church in Wales, the annals themselves were kept there, and the Vikings sacked it again and again.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [St Davids](https://en.wikipedia.org/wiki/St_Davids)
 
@@ -1486,7 +1486,7 @@ Wikipedia: [St Davids](https://en.wikipedia.org/wiki/St_Davids)
 
 Also: ſtrat clut
 
-The kingdom of the Britons of the Clyde valley.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The kingdom of the Britons of the Clyde valley, earlier called Alt Clut after its fortress rock at Dumbarton, the last British kingdom of the north. The Welsh annals record the Saxons laying it waste in the 940s CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Strathclyde](https://en.wikipedia.org/wiki/Strathclyde)
 
@@ -1494,25 +1494,25 @@ Wikipedia: [Strathclyde](https://en.wikipedia.org/wiki/Strathclyde)
 
 Also: diu ſul
 
-A battle on Anglesey, named in Old Welsh for the day it was fought.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A battle on Anglesey in 876 CE, named in Old Welsh, *gueith diu sul*, for the day it was fought. The annals don't say who fought it; Rhodri the Great was fighting the Vikings on the island in those years.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Talorgan
 
 Also: talargan
 
-A king of the Picts the Britons kill at Mocetauc.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Picts, the people of the north and east of what's now Scotland, who the Welsh annals say the Britons killed at the battle of Mocetauc in 750 CE. He was the brother of Óengus, the most powerful Pictish king of his day.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Talorgan son of Fergus
 
 Also: talargan
 
-A king of the Picts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Picts, the brother of Óengus son of Fergus, the most powerful Pictish king of his day. The Welsh annals record that the Britons killed him at the battle of Mocetauc in 750 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Teudebur son of Beli
 
 Also: teudubr
 
-A king of the Britons of Alt Clut.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of Alt Clut, the fortress rock of Dumbarton on the Clyde, whose death the Welsh annals record in 752 CE. His son Dumnagual ruled after him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Teudebur of Alt Clut](https://en.wikipedia.org/wiki/Teudebur_of_Alt_Clut)
 
@@ -1520,13 +1520,13 @@ Wikipedia: [Teudebur of Alt Clut](https://en.wikipedia.org/wiki/Teudebur_of_Alt_
 
 Also: Trifun
 
-A son of Regin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Regin, king of Dyfed, in southwest Wales, whose death the Welsh annals record a few years after his father's. They say nothing more of him; Dyfed passed in those years to a new line of kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Urien
 
 Also: urbgen
 
-A king of Rheged in the north of Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Urien son of Cynfarch, king of Rheged, in the north of Britain around today's Cumbria, in the late sixth century CE, the greatest British war leader of his day, praised in Taliesin's poems. The annals record his son Rhun baptizing Edwin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Urien Rheged](https://en.wikipedia.org/wiki/Urien_Rheged)
 
@@ -1534,7 +1534,7 @@ Wikipedia: [Urien Rheged](https://en.wikipedia.org/wiki/Urien_Rheged)
 
 Also: giuoẏſ
 
-The kingdom of the West Saxons, called the Gewisse.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The kingdom of the West Saxons in southern England, whose people were first called the Gewisse. Under Alfred the Great it held out against the Vikings and grew into the kingdom of England; the annals call Alfred king of the Gewisse.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Wessex](https://en.wikipedia.org/wiki/Wessex)
 
@@ -1542,15 +1542,21 @@ Wikipedia: [Wessex](https://en.wikipedia.org/wiki/Wessex)
 
 Also: gaíí campi
 
-The place of a slaughter, called the field of Gai.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place of the slaughter of 655 CE by the English count, which the Welsh annals call the field of Gai, where Oswiu of Northumbria beat and killed Penda of Mercia. It was near Leeds, but the river Winwaed hasn't been identified for certain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of the Winwaed](https://en.wikipedia.org/wiki/Battle_of_the_Winwaed)
+
+## Yahweh
+
+The name of the god of the Israelites in the Hebrew Bible, the one god Jews and Christians worship, written in Hebrew with four letters, YHWH. Jews stopped saying the name aloud before Jesus's time and said "my lord" instead, so the Greek and Latin Bibles wrote "lord" where the name stood, and the Latin and French of these books call it only god or lord, never by its name. This translation gives the god its name wherever the source speaks of it, and calls it "it", as it would any people's god.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Yahweh](https://en.wikipedia.org/wiki/Yahweh)
 
 ## York
 
 Also: ebrauc
 
-The city in the north of England, Efrog in Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The city on the Ouse in the north of England, Efrog in Welsh, the Roman fortress of Eboracum and later the chief city of Northumbria. The Welsh annals record the Vikings taking it in 866 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [York](https://en.wikipedia.org/wiki/York)
 
@@ -1558,7 +1564,7 @@ Wikipedia: [York](https://en.wikipedia.org/wiki/York)
 
 Also: ſtrat tui
 
-The valley of the River Tywi in south-west Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The valley of the River Tywi in southwest Wales, around Carmarthen and Llandeilo, a rich district fought over by the kings of Dyfed and Gwynedd. The annals record Anarawd of Gwynedd laying it waste in 894 CE, with English help.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ystrad Tywi](https://en.wikipedia.org/wiki/Ystrad_Tywi)
 
@@ -1566,16 +1572,16 @@ Wikipedia: [Ystrad Tywi](https://en.wikipedia.org/wiki/Ystrad_Tywi)
 
 Also: Eꝺpalꝺ
 
-A king of the Mercians The annals call him a king of the Saxons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Mercians from 716 to 757 CE, who made himself overlord of the English south of the Humber. His own bodyguard murdered him. The annals call him a king of the Saxons and record his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Æthelflæd
 
 Also: Ælfled
 
-The Lady of the Mercians, Alfred's daughter. The annals call her a queen.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Lady of the Mercians, Alfred the Great's daughter, who ruled Mercia after her husband's death and built forts against the Vikings until she died in 918 CE. The annals call her a queen and record her death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Æthelstan
 
 Also: Ædelſtan
 
-A king of the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the English from 924 to 939 CE, Alfred the Great's grandson, the first to rule all England, who made the Welsh kings pay him tribute. The Welsh annals record his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>

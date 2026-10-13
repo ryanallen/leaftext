@@ -12508,12 +12508,13 @@ body.is-block-dragging .document-body [data-src-start] {
   /* The table's own width, capped by the bay. A block box at `auto` fills the bay and a `max-width` alone can only cap it. */
   width: max-content;
   max-width: 100%;
-  /* The bands sit here and the scroll is the table's, one box down, so the timeline has to be published up to this element for them to name it. */
-  timeline-scope: --lt-table-scroll;
   /* Whether this reader gets cards at all, published where decorate.js can read it so the card width is written once and the measured class cannot disagree with the width fallback about it. `0` is a reader with room, and the container query below is the only thing that turns it to `1`. */
   --reader-table-cards: 0;
 }
-.table-lane > table {
+body:not(.mac-frame) .table-bay > .table-lane {
+  timeline-scope: --lt-table-scroll;
+}
+body:not(.mac-frame) .table-lane > table {
   scroll-timeline: --lt-table-scroll inline;
 }
 /* The table's two actions stand in the row above it, where the pills are, and appear with that row; a widened picture wears the same shape in its own corner — one shape, two blocks, so it is written once. */
@@ -12718,18 +12719,24 @@ th.image-cell {
 }
 /* The bands ride the table's own sideways scroll, not a clock — so they join the page only where a scroll can drive them. A browser without scroll-driven animations (the export and both sites are handed this file) drops only the timeline line, and what is left is a zero-second clock animation whose fill mode holds the last keyframe: the left band stuck on over a table nobody scrolled. Behind the guard, such a browser keeps the resting `opacity: 0` and shows no band at all. Left on under Reduce Motion for the same reason it is scroll-driven: it only moves when the reader moves it. */
 @supports (animation-timeline: scroll()) {
-  .table-lane::before,
-  .table-lane::after {
+  body:not(.mac-frame) .table-lane::before,
+  body:not(.mac-frame) .table-lane::after {
     animation-fill-mode: both;
     animation-timing-function: var(--lt-ease-linear);
     animation-timeline: --lt-table-scroll;
   }
-  .table-lane::before {
+  body:not(.mac-frame) .table-lane::before {
     animation-name: lt-table-edge-behind;
   }
-  .table-lane::after {
+  body:not(.mac-frame) .table-lane::after {
     animation-name: lt-table-edge-ahead;
   }
+}
+body.mac-frame .table-lane::before {
+  opacity: var(--table-fade-left, 0);
+}
+body.mac-frame .table-lane::after {
+  opacity: var(--table-fade-right, 0);
 }
 /* Exempt by name: a zero duration lands a scroll-driven animation on its last keyframe and holds it there, which for the ahead band is `opacity: 0` — the cut edge unmarked on the very tables that need it. `auto` hands progress back to the scroll. */
 @media (prefers-reduced-motion: reduce) {
@@ -16447,12 +16454,12 @@ h2.shelf-book-title {
 .link-hover-tip-preview.is-entry .link-hover-tip-preview-document > article > :first-child {
   margin-top: 0;
 }
-/* An entry taller than that room is cut, so the words at the cut fade into the card rather than stopping mid-line. Above the divider, not over it: the box's own padding is what the fade stops at. */
+/* An entry taller than that room is cut, so the words at the cut fade into the card rather than stopping mid-line. It runs down through the box's own padding to the cut, where the words are clipped, and stops above the divider. */
 .link-hover-tip-preview.is-capped::after {
   content: '';
   position: absolute;
   right: 0;
-  bottom: var(--lt-space-8);
+  bottom: 0;
   left: 0;
   height: 3rem;
   background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--lt-background) 92%, black));
@@ -20283,12 +20290,12 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="context-menu crumb-menu" style="position:static"><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">A folder</span></button><div class="crumb-menu-row"><button type="button" class="context-menu-item crumb-menu-item is-selected"><span class="lt-icon lt-icon-folder"></span><span class="crumb-menu-label">Vault</span><span class="lt-icon crumb-menu-check lt-icon-check"></span></button><button type="button" class="crumb-menu-edit" style="opacity:1"><span class="lt-icon lt-icon-settings"></span></button></div><button type="button" class="context-menu-item crumb-menu-item" role="switch" aria-checked="true"><span class="crumb-menu-label">Sync automatically</span><span class="crumb-menu-switch" aria-hidden="true"><span class="crumb-menu-switch-thumb"></span></span></button><button type="button" class="context-menu-item crumb-menu-item"><span class="lt-icon library-action-icon lt-icon-new"></span><span class="crumb-menu-label">New vault…</span></button></div></div>
 </section>
 <section class="part">
-<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep), library-services.js (**Books online…** under New vault…, its own group above Back wearing the Define book mark); in the Books online vault a library, its categories, All books and the Next row are folder rows, a catalog's book is the Kindle book row pressed by its number, its author line ending on this computer once its EPUB is saved and the row dimmed with aria-busy while it is fetched, catalog matches under the find bar are the same rows under the count line, and the host's own sentence stands where a catalog is still arriving</span></header>
+<header><h3>Library pane</h3><code class="built">.library</code><span class="built">library.js, library-keys.js (the keyboard ring on a row, inside its edge), library-picks.js (a picked row, a lighter tint of the accent with a hairline inside its edge, worn beside the open row's own tint), library-carry.js (the chip naming what a pointer carries, and the ring on the folder row, the crumb or the pane's own list it would land in), library-rows.js (the view button at the trail's end, lit out of name order and wearing the sort mark, the date heading between a grouped folder's files and the Favorites and Files headings over a folder holding a favorite, all one quiet heading, the fuller file row, a softly filled card with no edge that takes the hover wash under the pointer — the file name and the time it changed, the title on a quieter library-file-title line where it says more than the name, and two lines of its prose — and a folder row's count; a Kindle book row is the fuller row with the book's title, its container in the type badge and its author on a quieter library-file-author line, under a heading counting the folder's books, the ones that open and the ones that are shut; a compact folder, and a row past the folder's cap, draw the single line; a row kept out and drawn by Show hidden wears is-hidden, dimmed), library-axes.js (the Tags and Fields lists: a row per tag or field with its branch mark, turned when open, its count, and one inset a level deep), library-services.js (**Books online…** under New vault…, its own group above Back wearing the Define book mark); in the Books online vault a library, its categories, All books and the Next row are folder rows, a catalog's book is the Kindle book row pressed by its number, its author line ending on this computer once its EPUB is saved and the row dimmed with aria-busy while it is fetched, in the Books online vault the top-level rows are its libraries, each a folder row counting its books where its library can count, and the host's own sentence stands where a catalog is still arriving</span></header>
 <div class="stage"><div class="library-pane" style="position:static;width:240px;height:380px"><div class="library-tree"><div class="library-group-heading">3 books · 1 open here · 2 shut</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">The Adventures of Sherlock Holmes</span></span><span class="file-type-badge">MOBI 6</span></span><span class="library-file-author">Doyle, Arthur Conan</span></span></button><div class="library-group-heading">Today</div><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">round-1</span></span><span class="library-file-time">9:14am</span><span class="file-type-badge">MD</span></span><span class="library-file-title">Magic link, round 1: how far one email reaches</span><span class="library-file-preview">One email serves the step after a password and signup, with the password kept.</span></span></button><button type="button" class="library-file is-selected is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">A note.md</span></button><button type="button" class="library-file is-marked"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-label">Picked.md</span></button><button type="button" class="library-nav-folder"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">A folder</span></button><button type="button" class="library-nav-folder is-drop-target"><span class="lt-icon lt-icon-folder"></span><span class="library-file-label">Where they land</span></button><div class="library-carry-chip" style="position:static;display:inline-block">2 items</div></div><div class="library-outline"><button type="button" class="library-nav-folder library-nav-up"><span class="lt-icon library-action-icon lt-icon-back"></span><span class="library-file-label">A folder</span></button><div class="library-outline-note"><span class="library-outline-note-label">On this page</span><span class="library-outline-count">5 headings</span></div><button type="button" class="library-outline-row library-outline-depth-0"><span class="library-file-label">The page’s own title</span></button><button type="button" class="library-outline-row library-outline-depth-1 is-selected"><span class="library-file-label">The section being read</span></button><button type="button" class="library-outline-row library-outline-depth-2"><span class="library-file-label">One nested under it</span></button><button type="button" class="library-outline-row library-outline-depth-3"><span class="library-file-label">Quieter again</span></button><button type="button" class="library-outline-row library-outline-depth-4"><span class="library-file-label">As deep as the scale goes</span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js, under the find bar</span></header>
-<div class="stage"><div class="library-results find-results" style="max-height:none"><p class="library-results-count"><span class="lt-spinner library-results-spinner"></span>Searching…</p><p class="library-results-count">14 results</p><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button></div></div>
+<header><h3>Search results</h3><code class="built">.library-hit</code><span class="built">library-search.js, under the find bar; in the Books online vault each library answers as its own group in the order it answered — a count line naming the library and its own count, then its books as the fuller book row with the library and what a press does (**Read in Leaftext**, **On this computer** or **Visit** and the library's name) on a second quiet library-file-author line, or the library's own sentence in place of its rows</span></header>
+<div class="stage"><div class="library-results find-results" style="max-height:none"><p class="library-results-count"><span class="lt-spinner library-results-spinner"></span>Searching…</p><p class="library-results-count">14 results</p><button type="button" class="library-hit"><span class="library-hit-title">A note<span class="library-hit-alias">Its other name</span></span><span class="library-hit-snippet">the matched words</span></button><p class="library-results-count">Project Gutenberg: 1 book</p><button type="button" class="library-file library-file-full"><span class="lt-icon lt-icon-leaf"></span><span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">Emma</span></span><span class="file-type-badge">EPUB</span></span><span class="library-file-author">Austen, Jane</span><span class="library-file-author">Project Gutenberg · Read in Leaftext</span></span></button><p class="library-results-count">Open Library</p><p class="library-empty">Open Library did not answer within 10 seconds.</p></div></div>
 </section>
 <section class="part">
 <header><h3>Link list at the caret</h3><code class="built">.reading-link-popup</code><span class="built">reading-link-popup.js, under the [[ typed in a paragraph being edited: every note in the order the host sends them, each a name with its folder at the right and the picked one washed</span></header>

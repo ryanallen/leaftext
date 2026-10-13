@@ -70,7 +70,7 @@ An entry marked with an asterisk was written for this translation, not taken fro
 
 ## Adda
 
-Ida's son, who reigns in Bernicia after him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Ida's son, who in the history reigns in Bernicia after his father. Bernicia was the English kingdom of the far northeast, around Bamburgh. Adda is one of the line of Bernician kings the history lists from Ida down, and he's known only from such king lists.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Adda of Bernicia](https://en.wikipedia.org/wiki/Adda_of_Bernicia)
 
@@ -78,7 +78,7 @@ Wikipedia: [Adda of Bernicia](https://en.wikipedia.org/wiki/Adda_of_Bernicia)
 
 Also: Aelfguin
 
-A son of Oswiu, king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Oswiu, king of the Northumbrians, named in the history's list of Oswiu's children. He was killed young in 679 CE, in a battle by the river Trent against the Mercians, and is known mostly from Bede's account of that war.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ælfwine of Deira](https://en.wikipedia.org/wiki/%C3%86lfwine_of_Deira)
 
@@ -86,7 +86,7 @@ Wikipedia: [Ælfwine of Deira](https://en.wikipedia.org/wiki/%C3%86lfwine_of_Dei
 
 Also: Alli
 
-The first king of Deira, Edwin's father.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The first known king of Deira, around York, in the late sixth century CE, and Edwin's father. Bede tells the story that when Pope Gregory saw fair-haired boys from Deira for sale in Rome and heard their king was called Ælla, he punned that "Alleluia" should be sung there, and later sent missionaries to the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ælla of Deira](https://en.wikipedia.org/wiki/%C3%86lla_of_Deira)
 
@@ -94,7 +94,7 @@ Wikipedia: [Ælla of Deira](https://en.wikipedia.org/wiki/%C3%86lla_of_Deira)
 
 Also: Aeneas, Aeneae
 
-The Trojan hero who settles in Italy; the history traces the Britons' first king back to him.
+The Trojan hero of Virgil's *Aeneid*, who escaped from burning Troy carrying his father on his back, wandered the Mediterranean and settled in Italy, where his descendants founded Rome. The history traces Brutus, the first king of the Britons, back to him, which made the Britons cousins of the Romans and as old a people as any.
 
 Wikipedia: [Aeneas](https://en.wikipedia.org/wiki/Aeneas)
 
@@ -102,7 +102,7 @@ Wikipedia: [Aeneas](https://en.wikipedia.org/wiki/Aeneas)
 
 Also: Eadlbald
 
-A king of Mercia, descended from Pybba.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Mercia, the great English kingdom of the Midlands, from 716 to 757 CE, descended from Pybba; for much of his reign he was overlord of all the English south of the Humber, until his own bodyguard murdered him. The history names him in its line of Mercian kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelbald of Mercia](https://en.wikipedia.org/wiki/%C3%86thelbald_of_Mercia)
 
@@ -110,7 +110,7 @@ Wikipedia: [Æthelbald of Mercia](https://en.wikipedia.org/wiki/%C3%86thelbald_o
 
 Also: Ealdbert
 
-A king of Kent, Hengist's descendant.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Kent at the end of the sixth century CE, descended from Hengist, and the first English king to become a Christian: he welcomed Augustine's mission from Rome in 597 CE, encouraged by his Christian Frankish wife, Bertha. The history names him in its line of the kings of Kent.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelberht of Kent](https://en.wikipedia.org/wiki/%C3%86thelberht_of_Kent)
 
@@ -118,7 +118,7 @@ Wikipedia: [Æthelberht of Kent](https://en.wikipedia.org/wiki/%C3%86thelberht_o
 
 Also: Aelfret, Aedlfred Flesaur, Eadfered Flesaurs, Eadfred, Eadlfrid, Aethelfrith Flesaur
 
-A king of Bernicia and Deira, the father of Oswald and Oswiu.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of Bernicia and later of Deira too, from about 593 to 616 CE, the first to rule both halves of what became Northumbria, and the father of Oswald and Oswiu. He was a fierce war leader who beat the Britons at Chester and the Irish of Dál Riata, until Edwin's ally killed him in battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelfrith](https://en.wikipedia.org/wiki/%C3%86thelfrith)
 
@@ -126,7 +126,7 @@ Wikipedia: [Æthelfrith](https://en.wikipedia.org/wiki/%C3%86thelfrith)
 
 Also: Aedlric, Aedldric
 
-A son of Ida's son Adda, who reigns four years in Bernicia.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Ida's son Adda who, the history says, reigned four years in Bernicia, the English kingdom of the far northeast. He's known only from the king lists of the Bernician royal line, and the lists don't all agree on how the early kings followed one another.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Æthelric of Bernicia](https://en.wikipedia.org/wiki/%C3%86thelric_of_Bernicia)
 
@@ -134,7 +134,7 @@ Wikipedia: [Æthelric of Bernicia](https://en.wikipedia.org/wiki/%C3%86thelric_o
 
 Also: Agned
 
-A hill where Arthur fights.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A hill where, the history says, Arthur fought the eleventh of his twelve battles against the Saxons. No one knows for sure where it was; Geoffrey of Monmouth later identified a Mount Agned with Edinburgh, but that's his own guess.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [List of locations associated with Arthurian legend](https://en.wikipedia.org/wiki/List_of_locations_associated_with_Arthurian_legend)
 
@@ -142,7 +142,7 @@ Wikipedia: [List of locations associated with Arthurian legend](https://en.wikip
 
 Also: Agnominis
 
-Nemed's father, in the Irish tale of how Ireland was settled.
+Nemed's father, in the Irish legend the history tells of how Ireland was settled by a series of peoples arriving one after another. Nemed son of Agnoman leads the second wave; the legend was later written up at length in the Irish *Book of Invasions*.
 
 Wikipedia: [Nemed](https://en.wikipedia.org/wiki/Nemed)
 
@@ -150,7 +150,7 @@ Wikipedia: [Nemed](https://en.wikipedia.org/wiki/Nemed)
 
 Also: Alanus, Alaneus, Alanei
 
-The first man of Japheth's line to come to Europe, in the history's second account of Brutus's forebears.
+In the history's second account of where the Britons came from, the first man of Japheth's line to come to Europe, father of three sons from who the peoples of Europe descend, the Franks, Goths, Britons and others. The history traces his line back through Noah to Adam, joining the Britons' story to the Bible's.
 
 Wikipedia: [Trojan genealogy of Nennius](https://en.wikipedia.org/wiki/Trojan_genealogy_of_Nennius)
 
@@ -158,13 +158,13 @@ Wikipedia: [Trojan genealogy of Nennius](https://en.wikipedia.org/wiki/Trojan_ge
 
 Also: Alba, Albam, Albanorum
 
-The city Ascanius founds in Italy, which gives its kings their name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The city in Latium, southeast of Rome, that Aeneas's son Ascanius founded, in Roman legend; its kings ruled for centuries before Rome was founded by their descendants Romulus and Remus. The history makes its line of Alban kings the ancestors of Brutus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Albans
 
 Also: Albani
 
-A people the history descends from Albanus, son of Hessitio.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A people the history descends from Albanus, son of Hessitio, in its table of the peoples of Europe, which grew out of a list made in the sixth century CE. Who they're meant to be is uncertain; the name may stand for the Alamanni, a Germanic people, or simply be invented to fit.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Frankish Table of Nations](https://en.wikipedia.org/wiki/Frankish_Table_of_Nations)
 
@@ -172,7 +172,7 @@ Wikipedia: [Frankish Table of Nations](https://en.wikipedia.org/wiki/Frankish_Ta
 
 Also: Aldul
 
-Ealdwulf, a king of the East Angles, in the history's line of their kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Ealdwulf, king of the East Angles from about 664 to 713 CE, named in the history's line of East Anglian kings. Bede wrote that he remembered as a boy seeing the pagan altar King Rædwald had kept beside a Christian one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ealdwulf of East Anglia](https://en.wikipedia.org/wiki/Ealdwulf_of_East_Anglia)
 
@@ -180,7 +180,7 @@ Wikipedia: [Ealdwulf of East Anglia](https://en.wikipedia.org/wiki/Ealdwulf_of_E
 
 Also: Alcfrid
 
-A son of Oswiu, king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Oswiu, king of the Northumbrians, who ruled Deira under his father and supported the Roman side in the argument over the date of Easter that was settled at the Synod of Whitby in 664 CE. He later fell out with his father and disappears from history.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Alhfrith](https://en.wikipedia.org/wiki/Alhfrith)
 
@@ -188,13 +188,13 @@ Wikipedia: [Alhfrith](https://en.wikipedia.org/wiki/Alhfrith)
 
 Also: Amatheam, Amatheo
 
-The bishop who consecrates Patrick; the history calls him a king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The bishop who, the history says, ordained Patrick a bishop before he went to Ireland; the history mistakenly calls him a king. Other lives of Patrick name a bishop Amathorex, and he's otherwise unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Ambrose
 
 Also: Ambrosius
 
-The bishop of Milan, a famous teacher of the Church.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Ambrose, bishop of Milan from 374 to 397 CE, one of the great teachers of the Western Church, who baptized Augustine of Hippo and stood up to emperors. The history names him in its chronology of the Roman emperors' reigns.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ambrose](https://en.wikipedia.org/wiki/Ambrose)
 
@@ -202,19 +202,19 @@ Wikipedia: [Ambrose](https://en.wikipedia.org/wiki/Ambrose)
 
 Also: Ambrosii, Ambrosius vocor, Embreis Guletic, Emrys Wledig
 
-A leader of the Britons, Emrys Wledig in Welsh. Vortigern fears him.
+A leader of the Britons, Emrys Wledig, "Emrys the ruler," in Welsh, who later writers made into Merlin. In the history he's a fatherless boy brought to Vortigern to be killed so his blood could hold up a falling tower, who instead reveals two dragons fighting under it and explains them. Vortigern comes to fear him.
 
 Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aurelianus)
 
 ## Amolgith
 
-A king of Connacht, Amalgaid, whose seven sons Patrick baptizes in a single day.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Amalgaid, a king of Connacht in the west of Ireland, whose seven sons Patrick baptized in a single day, the history says, along with twelve thousand people. He's named in the early lives of Patrick, and the family name Uí Amalgada comes from him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Anchises
 
 Also: Anchisae
 
-Aeneas's father, in the history Brutus's forebear.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of the Trojan hero Aeneas in Greek and Roman legend, who Aeneas carried on his back out of burning Troy; Venus, the goddess of love, was Aeneas's mother. The history traces Brutus, first king of the Britons, back through Aeneas to him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Anchises](https://en.wikipedia.org/wiki/Anchises)
 
@@ -222,7 +222,7 @@ Wikipedia: [Anchises](https://en.wikipedia.org/wiki/Anchises)
 
 Also: Neirin
 
-A British poet of the north.
+A British poet of the north in the late sixth century CE, the history says, famous in his day. The great Welsh war poem *Y Gododdin*, mourning a war band that rode to its death at Catraeth, is credited to him, and one of its lines may be the earliest mention of Arthur.
 
 Wikipedia: [Aneirin](https://en.wikipedia.org/wiki/Aneirin)
 
@@ -230,13 +230,13 @@ Wikipedia: [Aneirin](https://en.wikipedia.org/wiki/Aneirin)
 
 Also: Anir
 
-Arthur's son, named among the strange things of Britain.
+Arthur's son, the history says, who Arthur himself killed and buried in Ergyng, by a spring called Licat Anir; his grave is one of the history's wonders of Britain, since it never measures the same twice. It's one of the very few early mentions of a son of Arthur, and nothing more is told of him.
 
 ## Anna
 
 Also: Onnan
 
-The king of the East Angles, that Penda kills.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the East Angles from about 636 CE, a devout Christian whose daughters became abbesses and saints. Penda of Mercia killed him in battle in about 654 CE, the history says, one of many kings Penda killed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Anna of East Anglia](https://en.wikipedia.org/wiki/Anna_of_East_Anglia)
 
@@ -244,13 +244,13 @@ Wikipedia: [Anna of East Anglia](https://en.wikipedia.org/wiki/Anna_of_East_Angl
 
 Also: Onnan
 
-A king of the East Angles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the East Angles, in today's Norfolk and Suffolk, from about 636 to 654 CE, a Christian king whose daughters, among them Æthelthryth of Ely, were honored as saints. He was killed fighting Penda of Mercia, the pagan king who dominated the English kingdoms of his day.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Aquileia
 
 Also: Avvileua
 
-A Roman city at the head of the Adriatic in northeastern Italy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A large Roman city at the head of the Adriatic Sea in northeastern Italy, a key fortress guarding the way into Italy from the east. Maximus, the general made emperor by the army in Britain, was defeated and beheaded there in 388 CE by the eastern emperor Theodosius, which is why both the history and Gildas name it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Aquileia](https://en.wikipedia.org/wiki/Aquileia)
 
@@ -258,7 +258,7 @@ Wikipedia: [Aquileia](https://en.wikipedia.org/wiki/Aquileia)
 
 Also: Argabaste
 
-A Frankish general in Roman service, who kills Maximus's son Victor.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Frankish general in Roman service who, the history says, killed Victor, the son of the usurping emperor Maximus, in 388 CE. Arbogast later became the real power in the Western Empire, and fell in 394 CE fighting the emperor Theodosius.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Arbogast (magister militum)](https://en.wikipedia.org/wiki/Arbogast_(magister_militum))
 
@@ -266,7 +266,7 @@ Wikipedia: [Arbogast (magister militum)](https://en.wikipedia.org/wiki/Arbogast_
 
 Also: Arthur, Arthuri
 
-The leader in the battles of the Britons' kings against the Saxons.
+The war leader who, the history says, fought beside the kings of the Britons against the Saxons and won twelve battles, the last at Mount Badon, carrying an image of Mary into one of them. This list of battles, written about 829 CE, is the oldest account of Arthur's battles that survives, and every later legend of him grows from it.
 
 Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
@@ -274,7 +274,7 @@ Wikipedia: [King Arthur](https://en.wikipedia.org/wiki/King_Arthur)
 
 Also: Ascanius, Ascanio, Ascanium, Ascanii
 
-Aeneas's son, who reigns over the Latins after him.
+Aeneas's son in Roman legend, who reigned over the Latins after his father and founded Alba Longa. The Romans also called him Iulus and made him the ancestor of Julius Caesar's family. The history makes him an ancestor of Brutus, so that Britain's founder comes from Troy as Rome's did.
 
 Wikipedia: [Ascanius](https://en.wikipedia.org/wiki/Ascanius)
 
@@ -282,13 +282,13 @@ Wikipedia: [Ascanius](https://en.wikipedia.org/wiki/Ascanius)
 
 Also: Augusto, Octavian Augustus, Octaviano
 
-The first Roman emperor, who the history says took tribute from Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The first Roman emperor, Julius Caesar's adopted heir, who ruled from 27 BCE to 14 CE. Christ was born during his reign. The history says he took tribute from Britain, though Rome didn't conquer it until the emperor Claudius, in 43 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Augustus](https://en.wikipedia.org/wiki/Augustus)
 
 ## Auxilius
 
-A churchman ordained with Patrick, later a bishop in Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A churchman ordained with Patrick, the history says, and later a bishop in Ireland; Irish tradition names him as one of Patrick's helpers and the founder of a church at Killashee, in County Kildare. Some historians think he and Iserninus belonged to the earlier mission of Palladius.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Auxilius of Ireland](https://en.wikipedia.org/wiki/Auxilius_of_Ireland)
 
@@ -296,11 +296,11 @@ Wikipedia: [Auxilius of Ireland](https://en.wikipedia.org/wiki/Auxilius_of_Irela
 
 Also: Azariae
 
-Mountains in North Africa the Scythian noble's people pass between on their way west.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Mountains in North Africa, the history says, that a noble driven out of Egypt and his people passed between on their way west toward Spain and Ireland, in its legend of how the Irish came from Scythia. Where the name points is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Baath
 
-A son of Magog in Irish legend, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Magog in Irish legend, in the history an ancestor of Alanus in its line of descent from Noah's son Japheth. He's known only from such family trees.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Baath mac Magog](https://en.wikipedia.org/wiki/Baath_mac_Magog)
 
@@ -308,7 +308,7 @@ Wikipedia: [Baath mac Magog](https://en.wikipedia.org/wiki/Baath_mac_Magog)
 
 Also: Badonis
 
-The hill where the twelfth of Arthur's battles is fought.
+The hill where Arthur fights the last of his twelve battles against the Saxons, and where, the history says, he killed 960 men in one charge by himself. It's the battle Gildas, three centuries earlier, already named as the Britons' great victory, without saying who led it. No one knows for sure where it was, though places near Bath are often suggested.
 
 Wikipedia: [Battle of Badon](https://en.wikipedia.org/wiki/Battle_of_Badon)
 
@@ -316,7 +316,7 @@ Wikipedia: [Battle of Badon](https://en.wikipedia.org/wiki/Battle_of_Badon)
 
 Also: Din Guayrdi, Dinguayrdi, Din Guoaroy, Dinguoaroy, Bebbanburth
 
-A fortress on the coast of Northumberland, the seat of the kings of Bernicia.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A fortress on a great rock on the coast of Northumberland, in northeast England, the seat of the kings of Bernicia; the Britons called it Din Guoaroy. The history says it was named after Bebbab, Aethelfrith's queen. A medieval castle still stands there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bamburgh](https://en.wikipedia.org/wiki/Bamburgh)
 
@@ -324,25 +324,25 @@ Wikipedia: [Bamburgh](https://en.wikipedia.org/wiki/Bamburgh)
 
 Also: Bassas
 
-A river where Arthur fights.
+A river where, the history says, Arthur fought the sixth of his twelve battles against the Saxons. No one has identified it with any certainty; it's one of several battle sites in the list known only from it.
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
 ## Bavarians
 
-A Germanic people the history descends from Negue.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people of the upper Danube, in today's southern Germany and Austria, whose name survives in Bavaria. The history descends them from Negue, one of the three sons of Hessitio, in its table of the peoples of Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bavarians](https://en.wikipedia.org/wiki/Bavarians)
 
 ## Bebbab
 
-Aethelfrith's wife, after who Bamburgh is named.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Bebba was the wife of King Aethelfrith of Bernicia. The history says the fortress of Bamburgh, "Bebba's town," was named after her. Bede gives the same story; she's known from it alone.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Bellinus
 
 Also: Bellinus
 
-The king of the Britons the history sets against Julius Caesar.
+The king of the Britons the history sets against Julius Caesar's invasion, son of Minocannus. He may echo Cassivellaunus, the British leader Caesar himself wrote about, or the god-king Beli of Welsh legend, but he's the history's own figure.
 
 Wikipedia: [Cunobelinus](https://en.wikipedia.org/wiki/Cunobelinus)
 
@@ -350,13 +350,13 @@ Wikipedia: [Cunobelinus](https://en.wikipedia.org/wiki/Cunobelinus)
 
 Also: Benli
 
-A cruel king who refuses to let Germanus in.
+A cruel king in the history's story of Germanus, who refused to let the bishop into his fortress and left him outside in the cold. A servant, Cadell, took Germanus in instead, and the history goes on to tell what came of it.
 
 ## Bernicia
 
 Also: Beornica, Birneich, Berneich
 
-An English kingdom of the far northeast of England and the southeast of what's now Scotland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An English kingdom of the far northeast of England and the southeast of what's now Scotland, founded by Ida in the sixth century CE with its seat at Bamburgh; joined with Deira to the south, it formed Northumbria. The history traces its kings' line and their wars with the Britons of the north.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bernicia](https://en.wikipedia.org/wiki/Bernicia)
 
@@ -364,7 +364,7 @@ Wikipedia: [Bernicia](https://en.wikipedia.org/wiki/Bernicia)
 
 Also: Bethleem
 
-The town near Jerusalem where Jerome lived as a priest.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The small town near Jerusalem where Jesus was born and King David came from. The scholar Jerome lived there as a monk and priest from 386 CE until his death, translating the Bible into Latin, which is why the history names it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bethlehem](https://en.wikipedia.org/wiki/Bethlehem)
 
@@ -372,7 +372,7 @@ Wikipedia: [Bethlehem](https://en.wikipedia.org/wiki/Bethlehem)
 
 Also: Bluchbard
 
-A British poet.
+A British poet of the north in the sixth century CE, who the history names with Talhaearn, Aneirin, Taliesin and Cian as famous in their day. None of his poems is known to survive, and he's known from this one mention.
 
 Wikipedia: [Talhaearn Tad Awen](https://en.wikipedia.org/wiki/Talhaearn_Tad_Awen)
 
@@ -380,7 +380,7 @@ Wikipedia: [Talhaearn Tad Awen](https://en.wikipedia.org/wiki/Talhaearn_Tad_Awen
 
 Also: Birdei
 
-A king of the Picts, the cousin of Ecgfrith of Northumbria.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Bridei son of Beli, king of the Picts, the cousin of Ecgfrith of Northumbria, who beat and killed Ecgfrith at the battle of Dun Nechtain, in 685 CE, ending Northumbrian rule over the Picts. The history calls it Gueith Lin Garan.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Bridei son of Beli](https://en.wikipedia.org/wiki/Bridei_son_of_Beli)
 
@@ -388,7 +388,7 @@ Wikipedia: [Bridei son of Beli](https://en.wikipedia.org/wiki/Bridei_son_of_Beli
 
 Also: Brigidae
 
-Saint Brigid of Kildare, an Irish saint and abbess.
+Saint Brigid of Kildare, the most famous woman saint of Ireland, who founded a great monastery of nuns and monks at Kildare in the late fifth or early sixth century CE. The history names her with Columba as a saint of Patrick's age.
 
 Wikipedia: [Brigid of Kildare](https://en.wikipedia.org/wiki/Brigid_of_Kildare)
 
@@ -396,7 +396,7 @@ Wikipedia: [Brigid of Kildare](https://en.wikipedia.org/wiki/Brigid_of_Kildare)
 
 Also: Brittannia, Brittanniam, Brittanniae, Britanniae
 
-The island of Great Britain.
+The island of Great Britain, holding today's England, Wales and Scotland. The history tells its story from its first settlement, which it credits to Brutus, a descendant of the Trojan hero Aeneas, through Roman rule to the Saxons' coming and Arthur's battles against them, as the story of the Britons, the Celtic people the Welsh descend from.
 
 Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
@@ -404,7 +404,7 @@ Wikipedia: [Great Britain](https://en.wikipedia.org/wiki/Great_Britain)
 
 Also: Brittones, Brittonum, Britto
 
-The Celtic people of Britain whose history this is, the forebears of the Welsh.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Celtic people of Britain whose history this is, the ancestors of the Welsh, the Cornish and the Bretons. They lived under Roman rule for nearly four centuries, then fought the Saxons who settled in the east after the Romans left, and the history tells their story as a people who'll one day win their island back.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
@@ -412,7 +412,7 @@ Wikipedia: [Celtic Britons](https://en.wikipedia.org/wiki/Celtic_Britons)
 
 Also: Armoricas, Armorici
 
-The peninsula of northwest France, where Britons settled.
+The peninsula of northwest France, the Roman Armorica, where Britons crossing from Britain settled in the fifth and sixth centuries CE, giving it its name and its Celtic language, Breton, close to Cornish and Welsh. The history says the soldiers Maximianus took from Britain settled there.
 
 Wikipedia: [Brittany](https://en.wikipedia.org/wiki/Brittany)
 
@@ -420,7 +420,7 @@ Wikipedia: [Brittany](https://en.wikipedia.org/wiki/Brittany)
 
 Also: Bruto, Britto
 
-The man the Britons and Britain are named for, of Aeneas's line.
+In the history's story, the first king of the Britons, a descendant of the Trojan hero Aeneas, who was exiled after killing his father by accident, and the man Britain and the Britons take their name from. The legend gave the Britons a Trojan ancestry as noble as the Romans', and Geoffrey of Monmouth later made it the opening of his history.
 
 Wikipedia: [Brutus of Troy](https://en.wikipedia.org/wiki/Brutus_of_Troy)
 
@@ -428,7 +428,7 @@ Wikipedia: [Brutus of Troy](https://en.wikipedia.org/wiki/Brutus_of_Troy)
 
 Also: Builc
 
-A leader of the Irish who comes with his people to Eubonia.
+A leader of the Irish who, the history says, settled with his people in Eubonia, in its legend of the Irish settlements. His name echoes the Fir Bolg, one of the peoples Irish legend says held Ireland before the Gaels came. He's known only from this passage.
 
 Wikipedia: [Fir Bolg](https://en.wikipedia.org/wiki/Fir_Bolg)
 
@@ -436,7 +436,7 @@ Wikipedia: [Fir Bolg](https://en.wikipedia.org/wiki/Fir_Bolg)
 
 Also: Buelt, Buelitiae
 
-A district of mid Wales, around today's Builth Wells.
+A district of mid Wales around today's Builth Wells, on the Wye, called Buelt in Welsh. The history says its kings descended from Vortigern, and two of its wonders, Arthur's dog's footprint at Carn Cabal among them, are there.
 
 Wikipedia: [Builth Wells](https://en.wikipedia.org/wiki/Builth_Wells)
 
@@ -444,13 +444,13 @@ Wikipedia: [Builth Wells](https://en.wikipedia.org/wiki/Builth_Wells)
 
 Also: Burgundi
 
-A Germanic people the history descends from Armenon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people who settled in the Rhône valley in the fifth century CE and gave their name to Burgundy, in eastern France; the medieval German *Nibelungenlied* remembers their kings. The history descends them from Armenon in its table of the peoples of Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Burgundians](https://en.wikipedia.org/wiki/Burgundians)
 
 ## Burgundus
 
-A son of Armenon, the forebear of the Burgundians in the history's table of peoples.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Armenon who, in the history's table of the peoples of Europe, is the forefather of the Burgundians. Like most names in the table, he's made up from the name of the people, as the ancestor such lists gave every nation.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Burgundus](https://en.wikipedia.org/wiki/Burgundus)
 
@@ -458,7 +458,7 @@ Wikipedia: [Burgundus](https://en.wikipedia.org/wiki/Burgundus)
 
 Also: Catgabail, Catgabail Catguommed, Cadafael Cadomedd
 
-A king of Gwynedd, called Cadomedd, "battle shirker."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Gwynedd in the 650s CE who took the throne from Cadwallon's family. The history says that when he joined Penda of Mercia's army against Oswiu of Northumbria, he slipped away with his men by night before the battle at Winwaed, so the Welsh called him Cadomedd, "battle shirker."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cadafael, King of Gwynedd](https://en.wikipedia.org/wiki/Cadafael,_King_of_Gwynedd)
 
@@ -466,7 +466,7 @@ Wikipedia: [Cadafael, King of Gwynedd](https://en.wikipedia.org/wiki/Cadafael,_K
 
 Also: Catel, Catell Durnluc, Cadell
 
-A servant who takes Germanus in and is blessed by him.
+"Cadell of the gleaming hilt," a servant who, the history says, took in the bishop Germanus when the cruel king Benli shut him out, and killed his only calf to feed him. The story goes on to make him king in Benli's place and the founder of the royal line of Powys.
 
 Wikipedia: [Cadell Ddyrnllwg](https://en.wikipedia.org/wiki/Cadell_Ddyrnllwg)
 
@@ -474,7 +474,7 @@ Wikipedia: [Cadell Ddyrnllwg](https://en.wikipedia.org/wiki/Cadell_Ddyrnllwg)
 
 Also: Catgualart
 
-A king of Gwynedd, the son of Cadwallon.
+Cadwaladr son of Cadwallon, king of Gwynedd in the seventh century CE, named in the history's genealogies. Welsh prophecy later made him a deliverer who'd return to win Britain back for the Britons, and Geoffrey of Monmouth made him the last king of the Britons.
 
 Wikipedia: [Cadwaladr ap Cadwallon](https://en.wikipedia.org/wiki/Cadwaladr_ap_Cadwallon)
 
@@ -482,11 +482,11 @@ Wikipedia: [Cadwaladr ap Cadwallon](https://en.wikipedia.org/wiki/Cadwaladr_ap_C
 
 Also: Catguollauni, Catgublaun, Cadwallon
 
-A king of Gwynedd.
+King of Gwynedd who, with Penda of Mercia, killed Edwin of Northumbria at Meicen in 633 CE and ravaged his kingdom, the last British king to hold the English at his mercy, until Oswald killed him at Heavenfield. The history names him with his son Cadwaladr in its account of the northern wars.
 
 ## Cainan
 
-A patriarch of the Bible, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+In Genesis, a man before the flood, Enos's son and Mahalalel's father, in the line from Adam to Noah, who lived 910 years. The history names him in its line of Brutus's ancestors traced back to Adam.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cainan](https://en.wikipedia.org/wiki/Cainan)
 
@@ -494,7 +494,7 @@ Wikipedia: [Cainan](https://en.wikipedia.org/wiki/Cainan)
 
 Also: Brithon
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, a list that likely grew from the Roman towns still remembered, with Welsh names beginning *Cair*, "fort" or "city." Where Cair Brithon stood is uncertain, and it may mean Dumbarton, "the fort of the Britons."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -502,7 +502,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Caratauc
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, named after a man called Caratauc, Caradog in later Welsh, perhaps the famous British leader who fought the Romans. Where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -510,7 +510,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Ceint
 
-One of the twenty-eight cities of Britain the history lists, Canterbury in Kent.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: Canterbury in Kent, the Roman town of Durovernum. The English made it the capital of their kingdom of Kent, and Augustine made its church England's chief one.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Canterbury](https://en.wikipedia.org/wiki/Canterbury)
 
@@ -518,7 +518,7 @@ Wikipedia: [Canterbury](https://en.wikipedia.org/wiki/Canterbury)
 
 Also: Celemion
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, a list that likely grew from Roman towns still remembered. Where Cair Celemion stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -526,7 +526,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Colun
 
-One of the twenty-eight cities of Britain the history lists, Colchester in Essex.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: Colchester in Essex, the Roman Camulodunum. It was the first capital of Roman Britain, and Boudica's rebels burned it in 60 or 61 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Camulodunum](https://en.wikipedia.org/wiki/Camulodunum)
 
@@ -534,7 +534,7 @@ Wikipedia: [Camulodunum](https://en.wikipedia.org/wiki/Camulodunum)
 
 Also: Custoeint
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, named after a Custoeint, perhaps the emperor Constantine. Where it stood is uncertain, though Caernarfon, the Roman Segontium, has been suggested.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -542,7 +542,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Daun
 
-One of the twenty-eight cities of Britain the history lists, Doncaster in Yorkshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: Doncaster in Yorkshire. It was the Roman fort of Danum on the river Don, which gives it its name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Doncaster](https://en.wikipedia.org/wiki/Doncaster)
 
@@ -550,7 +550,7 @@ Wikipedia: [Doncaster](https://en.wikipedia.org/wiki/Doncaster)
 
 Also: Draitou
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, each named with *Cair*, the British word for a fort or walled town. Where this one stood is uncertain, and it's known only from the list, which seems to record the Roman towns the Britons still remembered.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -558,7 +558,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Ebrauc
 
-One of the twenty-eight cities of Britain the history lists, York.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: York, the Roman Eboracum. It was the military capital of northern Britain, where Constantine the Great was proclaimed emperor in 306 CE, and later the capital of Northumbria.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -566,7 +566,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Grauth
 
-One of the twenty-eight cities of Britain the history lists, Cambridge.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, usually taken for Cambridge, on the river Granta, from which its old name comes. It was a small Roman town before the English town grew there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cambridge](https://en.wikipedia.org/wiki/Cambridge)
 
@@ -574,7 +574,7 @@ Wikipedia: [Cambridge](https://en.wikipedia.org/wiki/Cambridge)
 
 Also: Cair Guent
 
-A city of Britain, Caerwent, in southeast Wales.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Caerwent, in southeast Wales, the Roman town of Venta Silurum, capital of the Silures, the people of the area. Its walls still stand, and the kingdom of Gwent took its name from it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -582,7 +582,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Guinntguic
 
-One of the twenty-eight cities of Britain the history lists, Winchester.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: Winchester, the Roman Venta Belgarum. It later became the chief city of the West Saxons and of Alfred the Great's England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Venta Belgarum](https://en.wikipedia.org/wiki/Venta_Belgarum)
 
@@ -590,7 +590,7 @@ Wikipedia: [Venta Belgarum](https://en.wikipedia.org/wiki/Venta_Belgarum)
 
 Also: Guiragon
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, each named with *Cair*, the British word for a fort or walled town. Where this one stood is uncertain, and it's known only from the list, which seems to record the Roman towns the Britons still remembered.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -598,13 +598,13 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Cair Guorthigirn
 
-The city Vortigern builds in Guunnessi and names for himself.
+The city the history says Vortigern built in the land of Guunnessi and named for himself, Vortigern's fort, after he fled from Saint Germanus. Where it was isn't known.
 
 ## Cair Guricon
 
 Also: Guricon
 
-One of the twenty-eight cities of Britain the history lists, Roman Wroxeter in Shropshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: the Roman city of Viroconium, at Wroxeter in Shropshire. It was once the fourth largest town in Roman Britain, and its ruins still stand beside the Severn.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Viroconium Cornoviorum](https://en.wikipedia.org/wiki/Viroconium_Cornoviorum)
 
@@ -612,7 +612,7 @@ Wikipedia: [Viroconium Cornoviorum](https://en.wikipedia.org/wiki/Viroconium_Cor
 
 Also: Legeion, Guar, Usic
 
-One of the twenty-eight cities of Britain the history lists, Caerleon on the Usk.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, "the city of the legion on the Usk," Caerleon in southeast Wales, the Roman fortress of Isca, base of the Second Legion. Geoffrey of Monmouth later made it one of Arthur's courts.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caerleon](https://en.wikipedia.org/wiki/Caerleon)
 
@@ -620,7 +620,7 @@ Wikipedia: [Caerleon](https://en.wikipedia.org/wiki/Caerleon)
 
 Also: Lerion
 
-One of the twenty-eight cities of Britain the history lists, Leicester.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: Leicester, the Roman town of Ratae. It later became a chief town of the Mercians in the English Midlands.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ratae Corieltauvorum](https://en.wikipedia.org/wiki/Ratae_Corieltauvorum)
 
@@ -628,7 +628,7 @@ Wikipedia: [Ratae Corieltauvorum](https://en.wikipedia.org/wiki/Ratae_Corieltauv
 
 Also: Ligualid
 
-One of the twenty-eight cities of Britain the history lists, Carlisle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, Carlisle, the Roman Luguvalium near the west end of Hadrian's Wall. The romances' Carduel, an Arthurian court, is often taken for it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Luguvalium](https://en.wikipedia.org/wiki/Luguvalium)
 
@@ -636,7 +636,7 @@ Wikipedia: [Luguvalium](https://en.wikipedia.org/wiki/Luguvalium)
 
 Also: Luit
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, "the city of the gray wood." Where it stood is uncertain, though Lichfield, the Roman Letocetum, is the usual guess.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -644,7 +644,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Lundem
 
-One of the twenty-eight cities of Britain the history lists, London.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists: London, the Roman Londinium on the Thames. It was the largest city of Roman Britain, and the English later made it a trading town again.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Londinium](https://en.wikipedia.org/wiki/Londinium)
 
@@ -652,7 +652,7 @@ Wikipedia: [Londinium](https://en.wikipedia.org/wiki/Londinium)
 
 Also: Maunguid
 
-One of the twenty-eight cities of Britain the history lists, Manchester.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, usually taken for Manchester, in northwest England, the Roman fort of Mamucium. The identification isn't certain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mamucium](https://en.wikipedia.org/wiki/Mamucium)
 
@@ -660,7 +660,7 @@ Wikipedia: [Mamucium](https://en.wikipedia.org/wiki/Mamucium)
 
 Also: Meguaid
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, each named with *Cair*, the British word for a fort or walled town. Where this one stood is uncertain, though Meifod, in Powys, has been suggested for the name; the list seems to record the Roman towns the Britons still remembered.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -668,7 +668,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Mincip
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists. Where it stood is uncertain, though Verulamium, by St Albans, has been suggested from the Latin *municipium*, "self-governing town."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -676,7 +676,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Pensa, Coyt
 
-One of the twenty-eight cities of Britain the history lists, also called Coyt; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, which the list also calls Coyt. Where it stood is uncertain, and scholars' guesses differ.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -684,7 +684,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Peris
 
-One of the twenty-eight cities of Britain the history lists; Wikipedia's Caer places it at Portchester.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, often placed at Portchester, the Roman fort of Portus Adurni on the harbor at Portsmouth. Where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -692,7 +692,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Cair Segeint
 
-The city where the history buries the son of Constantine the Great.
+The Roman fort of Segontium, by today's Caernarfon in north Wales, where the history says the son of Constantine the Great is buried. The fort guarded the Menai Strait, and later Welsh legend linked it with the emperor Maximus.
 
 Wikipedia: [Segontium](https://en.wikipedia.org/wiki/Segontium)
 
@@ -700,7 +700,7 @@ Wikipedia: [Segontium](https://en.wikipedia.org/wiki/Segontium)
 
 Also: Urnarc
 
-One of the twenty-eight cities of Britain the history lists; where it stood is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of the twenty-eight cities of Britain the history lists, each named with *Cair*, the British word for a fort or walled town. Where this one stood is uncertain, and it's known only from the list, which seems to record the Roman towns the Britons still remembered.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
@@ -708,7 +708,7 @@ Wikipedia: [Caer](https://en.wikipedia.org/wiki/Caer)
 
 Also: Cant Guic
 
-A port in northern France, Quentovic.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Quentovic, a busy port in northern France near the mouth of the river Canche, south of Boulogne, the main harbor for crossings to and from England in the seventh to ninth centuries, now vanished. The history names it in its account of the Saxons' coming.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
@@ -716,7 +716,7 @@ Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
 Also: Cappadoces
 
-The people of Cappadocia, in central Anatolia; the history descends them from Mosoch.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Cappadocia, in central Turkey, known for its high plateaus and its churches cut into the rock. The history descends them from Mosoch, a son of Japheth, in its table of the nations descended from Noah's sons after the Flood.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cappadocia](https://en.wikipedia.org/wiki/Cappadocia)
 
@@ -724,7 +724,7 @@ Wikipedia: [Cappadocia](https://en.wikipedia.org/wiki/Cappadocia)
 
 Also: Karitius
 
-A Roman commander who made himself emperor in Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman naval commander who, in 286 CE, took power in Britain and northern Gaul and ruled them as emperor, minting his own coins, until his finance minister, Allectus, murdered him in 293 CE. The history counts him among the emperors who ruled Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Carausius](https://en.wikipedia.org/wiki/Carausius)
 
@@ -732,7 +732,7 @@ Wikipedia: [Carausius](https://en.wikipedia.org/wiki/Carausius)
 
 Also: Carn Cabal
 
-A cairn in Buelt said to bear the print of Arthur's dog's paw.
+A cairn, a heap of stones, in Builth, in mid Wales. The history says its top stone bears the print of the paw of Cabal, Arthur's dog, from the hunt for a great boar, and that if anyone carries the stone away, it's back on the heap the next day. It's one of the oldest stories of Arthur.
 
 Wikipedia: [Cavall](https://en.wikipedia.org/wiki/Cavall)
 
@@ -740,13 +740,13 @@ Wikipedia: [Cavall](https://en.wikipedia.org/wiki/Cavall)
 
 Also: Categirn
 
-A son of Vortigern.
+A son of Vortigern, the British king who brought the Saxons into Britain. The history says he fell in a battle against them at the ford called Episford, where Horsa, Hengist's brother, also died. English tradition puts the battle at Aylesford, in Kent.
 
 Wikipedia: [Catigern](https://en.wikipedia.org/wiki/Catigern)
 
 ## Cavall
 
-Arthur's dog, Cabal in the Latin.
+Arthur's dog, Cabal in the Latin, the oldest named dog in Arthur's story. The history says that while hunting a great boar, he left his paw print in a stone at Carn Cabal, in Builth. Welsh tales call him Cafall, and later romances keep him as Arthur's hound.
 
 Wikipedia: [Cavall](https://en.wikipedia.org/wiki/Cavall)
 
@@ -754,7 +754,7 @@ Wikipedia: [Cavall](https://en.wikipedia.org/wiki/Cavall)
 
 Also: Caelestino
 
-The pope who sends Palladius and then Patrick to the Irish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Pope Celestine I, bishop of Rome from 422 to 432 CE. In 431 CE he sent Palladius as the first bishop to the Christians of Ireland, and the history makes him the pope who sent Patrick after Palladius failed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pope Celestine I](https://en.wikipedia.org/wiki/Pope_Celestine_I)
 
@@ -762,13 +762,13 @@ Wikipedia: [Pope Celestine I](https://en.wikipedia.org/wiki/Pope_Celestine_I)
 
 Also: Celidon, Cat Coit Celidon
 
-A forest in the north where Arthur fights, Cat Coit Celidon in Welsh.
+A great forest in the north of Britain, the Caledonian Forest, Cat Coit Celidon in Welsh, "the battle of Celidon Wood." The history names it as the place of Arthur's seventh battle. The name points to the woods of southern Scotland, but where the battle was fought is unknown.
 
 ## Ceredigion
 
 Also: Cereticiaun
 
-A kingdom of west Wales, on Cardigan Bay.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of west Wales on Cardigan Bay, named, legend says, after Ceredig, a son of Cunedda, and now a county of Wales. The annals record its kings and the raids on it, and the history places one of its strange things, the grave on Cruc Maur, there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Ceredigion](https://en.wikipedia.org/wiki/Kingdom_of_Ceredigion)
 
@@ -776,35 +776,35 @@ Wikipedia: [Kingdom of Ceredigion](https://en.wikipedia.org/wiki/Kingdom_of_Cere
 
 Also: Ceretic, Certic
 
-The name of two men in the history: Vortigern's interpreter, and the king of Elmet that Edwin drives out.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two men in the history: Vortigern's interpreter, who carries his words to the Saxons, and the king of Elmet, around what's now Leeds, who Edwin of Northumbria drives out. The history's English writes both as Ceretic.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cereuus
 
 Also: voragine Cereuus
 
-A whirlpool in the sea named Mene, in one of the strange things the history tells of Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A whirlpool in the middle of a sea the history calls Mene, in one of the strange things it tells of Ireland: a stone thrown in there turns up the next day back at the edge of the valley of Citheinn. Where the whirlpool lies is unknown, and it's known only from this tale.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cian
 
 Also: Cian, Gueinth Guaut
 
-A British poet, called Gueinth Guaut.
+One of the British poets the history names as famous in the sixth century CE, beside Aneirin and Taliesin, whose poems in early Welsh still survive. No poem of Cian's survives; the history calls him Gueinth Guaut, a byname whose meaning is uncertain.
 
 ## Citheinn
 
-A valley in Ireland a stone walks over by night, in one of the strange things the history tells of.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A valley in Ireland, in one of the strange things the history tells: a stone walks over it by night, and when it was once thrown into the whirlpool of Cereuus, it was found the next day back at the valley's edge. No one knows where the valley was.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## City of the Legion
 
 Also: urbe Legionis
 
-A city where Arthur fights.
+A city the *History of the Britons* names as the place of Arthur's ninth battle, usually taken for Chester or Caerleon, both Roman legionary fortresses. A legion was a Roman army unit of about five thousand men, and Britain had three, so the name points to one of their bases.
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
 ## Claudius
 
-The Roman emperor who comes to Britain and makes Orkney pay tribute.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman emperor from 41 to 54 CE, who sent the army that conquered southern Britain in 43 CE and crossed over himself to see his troops take Camulodunum, today's Colchester. The history counts him second of the emperors who came to Britain and says he made Orkney pay tribute.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Claudius](https://en.wikipedia.org/wiki/Claudius)
 
@@ -812,7 +812,7 @@ Wikipedia: [Claudius](https://en.wikipedia.org/wiki/Claudius)
 
 Also: Columbae
 
-Saint Columba, an Irish saint and abbot, Colm Cille in Irish.
+Saint Columba, Colm Cille in Irish, the Irish abbot who founded the monastery on Iona, off western Scotland, in 563 CE. From Iona his monks carried Christianity to the Picts, and the history names him among the saints of the north in its own time line.
 
 Wikipedia: [Columba](https://en.wikipedia.org/wiki/Columba)
 
@@ -820,7 +820,7 @@ Wikipedia: [Columba](https://en.wikipedia.org/wiki/Columba)
 
 Also: Conachta
 
-The western province of Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The western province of Ireland, one of its four old provinces, around today's Galway, Mayo and Sligo. The history says Patrick preached there and fasted forty days on Cruachan Eile, the mountain now called Croagh Patrick, and names its king, Amolgith.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Connacht](https://en.wikipedia.org/wiki/Connacht)
 
@@ -828,7 +828,7 @@ Wikipedia: [Connacht](https://en.wikipedia.org/wiki/Connacht)
 
 Also: Constantine, Constantinus, Constantini, Constantinum
 
-The emperor Constantine the Great, buried at Cair Segeint in the history; on page 209 a consul of the same name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman emperor from 306 to 337 CE, first proclaimed at York, who made Christianity legal and founded Constantinople. He was buried in Constantinople; the history buries his son, another Constantine, at Cair Segeint, near today's Caernarfon, in north Wales, and on page 209 it names a consul of the same name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Constantine the Great](https://en.wikipedia.org/wiki/Constantine_the_Great)
 
@@ -836,13 +836,13 @@ Wikipedia: [Constantine the Great](https://en.wikipedia.org/wiki/Constantine_the
 
 Also: Constantinopolim
 
-The eastern capital of the Roman Empire, today's Istanbul.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The eastern capital of the Roman Empire, founded by Constantine the Great in 330 CE on the old Greek town of Byzantium, and today's Istanbul, in Turkey. The history names it for the gathering of bishops held there in 381 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Constantinople](https://en.wikipedia.org/wiki/Constantinople)
 
 ## Constantius
 
-The Roman emperor the history counts ninth to rule Britain, Constantine's father.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Constantius Chlorus, a Roman emperor who ruled the western provinces from 293 CE and died at York in 306 CE, where his army proclaimed his son Constantine emperor. The history counts him ninth of the emperors who came to Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Constantius Chlorus](https://en.wikipedia.org/wiki/Constantius_Chlorus)
 
@@ -850,25 +850,25 @@ Wikipedia: [Constantius Chlorus](https://en.wikipedia.org/wiki/Constantius_Chlor
 
 Also: Cruachan Eile
 
-A mountain in Ireland where Patrick fasts forty days.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A mountain in the west of Ireland, now Croagh Patrick, in County Mayo. The history says Patrick climbed it and fasted there forty days and nights, as Moses did on Sinai, and pilgrims still climb it every summer in his memory.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cruc Maur
 
 Also: Cruc Maur
 
-A hill in Ceredigion with a grave on top that fits whoever lies beside it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A hill near Cardigan, in west Wales, Crug Mawr, "the great mound," in Welsh. The history says a grave on its top fits whoever lies down beside it, short or tall, one of the strange things of Britain it lists.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Cruc Ochidient
 
 Also: Cruc Ochidient
 
-The western mound marking the far edge of the lands Maximianus gives his soldiers.
+"The western mound" in Welsh, which the history gives as the far edge of the lands the emperor Maximianus hands his British soldiers in Gaul, from a lake on a mountaintop to Cant Guic and on to this mound. It's part of the legend that the Britons of Brittany descend from those soldiers; where the mound was is unknown.
 
 ## Cunedda
 
 Also: Cunedag
 
-A leader of the Britons of Manaw Gododdin, forefather of Maelgwn.
+A leader of the Britons of Manaw Gododdin, near today's Edinburgh, who the history says came south with his eight sons and drove the Irish out of Wales, about 146 years before Maelgwn reigned. Welsh tradition makes him the founder of Gwynedd's royal line, Maelgwn's ancestor.
 
 Wikipedia: [Cunedda](https://en.wikipedia.org/wiki/Cunedda)
 
@@ -876,7 +876,7 @@ Wikipedia: [Cunedda](https://en.wikipedia.org/wiki/Cunedda)
 
 Also: Cudbert
 
-A bishop of Lindisfarne, honored as a saint.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A monk of Northumbria who became bishop of Lindisfarne, off the Northumbrian coast, and spent his last years as a hermit on Inner Farne, where he died in 687 CE. He was the best-loved saint of the north of England, and the history notes his death in Ecgfrith's reign.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cuthbert](https://en.wikipedia.org/wiki/Cuthbert)
 
@@ -884,7 +884,7 @@ Wikipedia: [Cuthbert](https://en.wikipedia.org/wiki/Cuthbert)
 
 Also: Cinlipiuc
 
-A region of early Wales, near the Severn, where a spring holds four kinds of fish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A district of early Wales, near the Severn, whose bounds are uncertain. The history places one of its strange things there: a spring that holds four kinds of fish, though it's small and shallow. The name is known from early Welsh records but can't be placed on a modern map.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cynllibiwg](https://en.wikipedia.org/wiki/Cynllibiwg)
 
@@ -892,7 +892,7 @@ Wikipedia: [Cynllibiwg](https://en.wikipedia.org/wiki/Cynllibiwg)
 
 Also: Dalrieta, Darieta
 
-The kingdom of the Irish settled in western Scotland.
+The kingdom of Irish settlers in western Scotland, in today's Argyll, with lands in the north of Ireland too, from about 500 CE. Its kings, Áedán among them, fought the Picts and the English, and it later joined with the Picts to form the kingdom of Scotland. The history names it in its story of the Irish settlements.
 
 Wikipedia: [Dál Riata](https://en.wikipedia.org/wiki/D%C3%A1l_Riata)
 
@@ -900,13 +900,13 @@ Wikipedia: [Dál Riata](https://en.wikipedia.org/wiki/D%C3%A1l_Riata)
 
 Also: Damhoctor
 
-The last of the Irish to come, who settles in Britain with all his people.
+The last of the Irish leaders the history says came to Britain, settling with all his people, who were still there in the writer's own day. He's known only from this passage of the history's legend of the Irish settlements, after Builc and the sons of Liethan.
 
 ## Dardanus
 
 Also: Dardani
 
-The founder of Troy's royal line in Greek myth, in the history Brutus's forebear.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+In Greek myth, a son of Zeus who founded the royal line of Troy, so that the Trojans were sometimes called Dardanians after him. The history puts him at the head of Brutus's line, to make Britain's founder a Trojan prince, as Rome's founders were.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Dardanus (son of Zeus)](https://en.wikipedia.org/wiki/Dardanus_(son_of_Zeus))
 
@@ -914,7 +914,7 @@ Wikipedia: [Dardanus (son of Zeus)](https://en.wikipedia.org/wiki/Dardanus_(son_
 
 Also: Decium
 
-A Roman emperor of the third century, whose reign the history counts years by.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman emperor from 249 to 251 CE, remembered by Christians for the first persecution of them across the whole empire, who was killed fighting the Goths. The history counts years to "Decius and Valerian", which seems to mean a pair of consuls, though which ones is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Decius](https://en.wikipedia.org/wiki/Decius)
 
@@ -922,7 +922,7 @@ Wikipedia: [Decius](https://en.wikipedia.org/wiki/Decius)
 
 Also: Deur, Deurorum, Deirans
 
-An English kingdom around York, between the Humber and the Tees.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An English kingdom around York, between the Humber and the Tees, in the sixth and seventh centuries CE. Its first known king was Ælla, Edwin's father; joined with Bernicia to the north, it became Northumbria, whose kings fill the history's last pages.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Deira](https://en.wikipedia.org/wiki/Deira)
 
@@ -930,7 +930,7 @@ Wikipedia: [Deira](https://en.wikipedia.org/wiki/Deira)
 
 Also: Derguentid
 
-A river where Vortimer fights the Saxons.
+A river where the history says Vortimer, Vortigern's son, fought the first of his four battles against the Saxons. The name looks like the British word behind the Derwent, a name several English rivers share, but which river it means is uncertain.
 
 Wikipedia: [Vortimer](https://en.wikipedia.org/wiki/Vortimer)
 
@@ -938,7 +938,7 @@ Wikipedia: [Vortimer](https://en.wikipedia.org/wiki/Vortimer)
 
 Also: Dolobellum
 
-The proconsul who fights Julius Caesar for the king of the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+In the history, the proconsul who fights Julius Caesar for Bellinus, king of the Britons, when Caesar's sixty ships are wrecked at the mouth of the Thames. Caesar's own account names Cassivellaunus as the Britons' leader; Dolobellus is a name no Roman writer gives.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Julius Caesar's invasions of Britain](https://en.wikipedia.org/wiki/Julius_Caesar's_invasions_of_Britain)
 
@@ -946,7 +946,7 @@ Wikipedia: [Julius Caesar's invasions of Britain](https://en.wikipedia.org/wiki/
 
 Also: Dubglas
 
-A river where Arthur fights.
+A river in the region of Lindsey where the history says Arthur fought four of his twelve battles, the second to the fifth. The name means "black water" in British, behind the many Douglases of Britain; which river it was is unknown, though the history places it in Lindsey, in today's Lincolnshire.
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
@@ -954,19 +954,19 @@ Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum
 
 Also: Duorig, Habren
 
-The Two Kings of the Severn, the tidal wave that runs up the river.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"The Two Kings of the Severn," the history's name for the great wave the rising tide drives up the Severn, which it counts among Britain's strange things. Habren is the Severn's Welsh name, and the wave still runs, one of the largest in the world.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
 ## Dutigirn
 
-A British leader who fights the English in the north while the poets sing.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A British leader the history says fought bravely against the English in the north, in the years when the poets Aneirin and Taliesin won their fame. He's known only from this line; nothing else in the history tells where or when he fought.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Dyfed
 
 Also: Demetorum
 
-A kingdom of southwest Wales.
+A kingdom of southwest Wales, named after the Demetae, the people who lived there in Roman times. The history says the sons of Liethan, an Irish leader, held it and the lands around it until Cunedda's family drove them out, an echo of the Irish settlements in west Wales after the Romans left.
 
 Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
 
@@ -974,7 +974,7 @@ Wikipedia: [Kingdom of Dyfed](https://en.wikipedia.org/wiki/Kingdom_of_Dyfed)
 
 Also: Ealdbald
 
-A king of Kent, Aethelberht's son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Kent from 616 to 640 CE, Aethelberht's son, who at first turned back from Christianity after his father's death and married his stepmother, then was won back by the bishop of Canterbury. The history names him in the line of Kent's kings from Hengist.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eadbald of Kent](https://en.wikipedia.org/wiki/Eadbald_of_Kent)
 
@@ -982,7 +982,7 @@ Wikipedia: [Eadbald of Kent](https://en.wikipedia.org/wiki/Eadbald_of_Kent)
 
 Also: Eanfled
 
-The daughter of Edwin, and a wife of Oswiu.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Edwin's daughter, the first Northumbrian baptized, as a baby in 626 CE, who later married Oswiu, king of Northumbria. The history names her among Edwin's family and as Oswiu's wife.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eanflæd](https://en.wikipedia.org/wiki/Eanfl%C3%A6d)
 
@@ -990,7 +990,7 @@ Wikipedia: [Eanflæd](https://en.wikipedia.org/wiki/Eanfl%C3%A6d)
 
 Also: Eastanglorum, Easteranglorum
 
-The kingdom of the East Angles, in what's now Norfolk and Suffolk in eastern England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The kingdom of the East Angles, in what's now Norfolk and Suffolk in eastern England, from the sixth century CE. The ship burial at Sutton Hoo is thought to be one of its kings'. The history traces its line of kings from Woden.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of East Anglia](https://en.wikipedia.org/wiki/Kingdom_of_East_Anglia)
 
@@ -998,7 +998,7 @@ Wikipedia: [Kingdom of East Anglia](https://en.wikipedia.org/wiki/Kingdom_of_Eas
 
 Also: Ebissa
 
-A Saxon leader, Hengist's kinsman.
+A Saxon leader, Hengist's kinsman, who the history says came with Octa and a fleet of forty ships when Vortigern let Hengist send for more of his people. They settled in the north, by the Wall, and he's known only from this story.
 
 Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
@@ -1006,7 +1006,7 @@ Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
 Also: Ecgberth
 
-A king of Kent, the last of Hengist's line the history traces.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Kent from 664 to 673 CE, the last of Hengist's line the history traces, from Octa and Oisc down through Aethelberht. In his reign the Northumbrian church agreed to keep Easter by Rome's reckoning, and Canterbury got the archbishop Theodore.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ecgberht of Kent](https://en.wikipedia.org/wiki/Ecgberht_of_Kent)
 
@@ -1014,17 +1014,17 @@ Wikipedia: [Ecgberht of Kent](https://en.wikipedia.org/wiki/Ecgberht_of_Kent)
 
 Also: Echfird, Echgfrid, Ecgfird, Ecgfrid filius Osbiu, ipse est Ecgfrid, Ecgfrith
 
-A king of the Northumbrians, the son of Oswiu.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Northumbrians from 670 to 685 CE, the son of Oswiu, who led his army into the land of the Picts and was killed by them at the battle of Dun Nechtain in 685 CE. The history counts him in Ida's line and notes that Cuthbert died in his time.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Edric
 
-The name of two men in the history: a son of Ida, and a king of the East Angles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two men in the history: one of the sons of Ida, the first king of Bernicia, in its list of his twelve sons, and a king in the line of the East Angles traced from Woden. Neither is known from anything but these lists.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Edwin
 
 Also: Eadguin, Eoguin, Aedgum, Edgum, Eadgum
 
-A king of the Northumbrians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+King of the Northumbrians from 616 to 633 CE, who drove out Ceretic of Elmet and became the first Christian king of the north of England, baptized at York at Easter in 627 CE, Bede says, though the annals put it in 626 CE. He was killed at the battle of Meicen by Cadwallon of Gwynedd and Penda of Mercia, as both the history and the annals record.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Edwin of Northumbria](https://en.wikipedia.org/wiki/Edwin_of_Northumbria)
 
@@ -1032,7 +1032,7 @@ Wikipedia: [Edwin of Northumbria](https://en.wikipedia.org/wiki/Edwin_of_Northum
 
 Also: Aegyptii, Aegyptios
 
-The people of Egypt who chase the children of Israel into the Red Sea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Egypt, who in the Bible's Exodus held the Israelites as slaves. When Moses led them out, the king of Egypt sent his army after them, and it drowned when the Red Sea closed over it. The history uses the story to date the first settling of Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ancient Egypt](https://en.wikipedia.org/wiki/Ancient_Egypt)
 
@@ -1040,7 +1040,7 @@ Wikipedia: [Ancient Egypt](https://en.wikipedia.org/wiki/Ancient_Egypt)
 
 Also: Heli
 
-The priest who judges Israel, in the first book of Samuel.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The old priest at the shrine at Shiloh, in the Bible's First Book of Samuel, who raised the boy Samuel and judged Israel for forty years. When the Philistines captured the Ark of the Covenant and killed his sons, he fell at the news and died. The history sets Brutus's reign beside him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eli (biblical figure)](https://en.wikipedia.org/wiki/Eli_(biblical_figure))
 
@@ -1048,7 +1048,7 @@ Wikipedia: [Eli (biblical figure)](https://en.wikipedia.org/wiki/Eli_(biblical_f
 
 Also: Elleti
 
-A plain in Glywysing.
+A plain in Glywysing, in southeast Wales, where the history says Vortigern's envoys, searching for a boy with no father, found him playing ball with other boys. Where in Glywysing the plain lay is unknown, and it's known only from this story.
 
 Wikipedia: [List of locations associated with Arthurian legend](https://en.wikipedia.org/wiki/List_of_locations_associated_with_Arthurian_legend)
 
@@ -1056,7 +1056,7 @@ Wikipedia: [List of locations associated with Arthurian legend](https://en.wikip
 
 Also: Elmet
 
-A British kingdom in the north of England, around what's now Leeds.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A British kingdom in the north of England, around what's now Leeds, in the West Riding of Yorkshire, which held out against the English into the seventh century CE. Edwin of Northumbria took it and drove out its king, Ceretic, as the history tells.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Elmet](https://en.wikipedia.org/wiki/Kingdom_of_Elmet)
 
@@ -1064,19 +1064,19 @@ Wikipedia: [Kingdom of Elmet](https://en.wikipedia.org/wiki/Kingdom_of_Elmet)
 
 Also: Elric
 
-Aelfwald, a king of the East Angles, the last of their line the history traces.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Aelfwald, a king of the East Angles from about 713 to 749 CE, the last of their line the history traces from Woden. Bede's own lifetime overlapped his reign, and a life of the hermit Saint Guthlac was written for him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ælfwald of East Anglia](https://en.wikipedia.org/wiki/%C3%86lfwald_of_East_Anglia)
 
 ## Enoch
 
-A patriarch of the Bible, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man in Genesis who lived before the great flood, the father of Methuselah and great-grandfather of Noah. Genesis says he "walked with Yahweh, and then he wasn't there, because Yahweh took him," so later readers believed he never died but was taken up to heaven alive. The history names him in its list of Brutus's ancestors back to Adam.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Enoch](https://en.wikipedia.org/wiki/Enoch)
 
 ## Enos
 
-A patriarch of the Bible, Seth's son, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A patriarch of the Bible, the son of Seth and grandson of Adam, who Genesis says lived 905 years. The history traces the peoples of Europe back to him through Alanus, so that its table of nations runs from Adam to the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Enos (biblical figure)](https://en.wikipedia.org/wiki/Enos_(biblical_figure))
 
@@ -1084,7 +1084,7 @@ Wikipedia: [Enos (biblical figure)](https://en.wikipedia.org/wiki/Enos_(biblical
 
 Also: Eobba
 
-Ida's father.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Ida's father, named in the history's line of the kings of Bernicia, which runs back from Ida through Eoppa to Woden. Nothing is known of Eoppa beyond his place in that list of ancestors.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ida of Bernicia](https://en.wikipedia.org/wiki/Ida_of_Bernicia)
 
@@ -1092,7 +1092,7 @@ Wikipedia: [Ida of Bernicia](https://en.wikipedia.org/wiki/Ida_of_Bernicia)
 
 Also: Ercunbert
 
-A king of Kent, Eadbald's son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Kent from 640 to 664 CE, Eadbald's son, who Bede says was the first English king to order the old idols destroyed and the fast of Lent kept. The history names him in Kent's line from Hengist.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eorcenberht of Kent](https://en.wikipedia.org/wiki/Eorcenberht_of_Kent)
 
@@ -1100,7 +1100,7 @@ Wikipedia: [Eorcenberht of Kent](https://en.wikipedia.org/wiki/Eorcenberht_of_Ke
 
 Also: Eormoric
 
-A king of Kent, Aethelberht's father.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Kent in the sixth century CE, the father of Aethelberht, who welcomed Augustine's mission from Rome in 597 CE. The history names him in Kent's line from Hengist, and he's known only from such lists.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eormenric of Kent](https://en.wikipedia.org/wiki/Eormenric_of_Kent)
 
@@ -1108,7 +1108,7 @@ Wikipedia: [Eormenric of Kent](https://en.wikipedia.org/wiki/Eormenric_of_Kent)
 
 Also: Eua, Eoua
 
-A king of the Mercians, Penda's brother.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Mercians, Penda's brother, who ruled with or under him in the 630s CE and was killed in 642 CE at the battle of Maserfield, where Oswald of Northumbria also fell. The history names him in the line of Mercia's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Eowa of Mercia](https://en.wikipedia.org/wiki/Eowa_of_Mercia)
 
@@ -1116,7 +1116,7 @@ Wikipedia: [Eowa of Mercia](https://en.wikipedia.org/wiki/Eowa_of_Mercia)
 
 Also: Episford, Rithergabail
 
-A ford where Vortimer fights the Saxons, called Rithergabail by the Britons.
+A ford where the history says Vortimer, Vortigern's son, fought the second of his battles against the Saxons, and where Horsa and Vortimer's brother Catigern fell. The Britons called it Rithergabail; English tradition puts it at Aylesford, on the Medway in Kent.
 
 Wikipedia: [Vortimer](https://en.wikipedia.org/wiki/Vortimer)
 
@@ -1124,7 +1124,7 @@ Wikipedia: [Vortimer](https://en.wikipedia.org/wiki/Vortimer)
 
 Also: Equitio
 
-A Roman general and consul of 374, Gratian's colleague in that year.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman general who was consul in 374 CE, sharing the office that year with the emperor Gratian. The history names a year by the consulship of Gratian and Equitius, as Romans named each year for its two consuls.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Equitius (consul)](https://en.wikipedia.org/wiki/Equitius_(consul))
 
@@ -1132,7 +1132,7 @@ Wikipedia: [Equitius (consul)](https://en.wikipedia.org/wiki/Equitius_(consul))
 
 Also: Ercing
 
-A region on the Welsh border, now Archenfield in Herefordshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A district on the Welsh border, now Archenfield, in the southwest of Herefordshire, once a small British kingdom of its own. The history places one of its strange things there: a tomb by a spring, the grave of Arthur's son Anir, which measures a different length each time it's measured.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Ergyng](https://en.wikipedia.org/wiki/Ergyng)
 
@@ -1140,7 +1140,7 @@ Wikipedia: [Ergyng](https://en.wikipedia.org/wiki/Ergyng)
 
 Also: Estsaxum
 
-The land of the East Saxons, north of the Thames.
+The kingdom of the East Saxons, north of the Thames, now the county northeast of London. The history says Vortigern gave Essex, with Sussex and Middlesex, to the Saxons as the price of his life, after Hengist's men killed the Britons' leaders at a feast.
 
 Wikipedia: [Kingdom of Essex](https://en.wikipedia.org/wiki/Kingdom_of_Essex)
 
@@ -1148,7 +1148,7 @@ Wikipedia: [Kingdom of Essex](https://en.wikipedia.org/wiki/Kingdom_of_Essex)
 
 Also: Eubonia, Euboniam
 
-An island the history counts among Britain's three.
+One of Britain's three islands, as the history counts them, the Latin name of the Isle of Man, in the Irish Sea between Britain and Ireland. The history says Builc and his Irish people settled there.
 
 Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
@@ -1156,13 +1156,13 @@ Wikipedia: [Isle of Man](https://en.wikipedia.org/wiki/Isle_of_Man)
 
 Also: Eucharisto
 
-The pope who sends envoys to King Lucius; Bede calls him Eleutherius.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The pope the history says sent envoys to King Lucius of Britain, who asked to be baptized. The Harleian manuscript gives the name as Eucharistus; Bede, telling the same legend, calls the pope Eleutherius, who led the Church in the late second century CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Faunus
 
 Also: Fauni
 
-A Roman god of the countryside, in the history a king and Latinus's forebear.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman god of the woods and fields, the Latin Pan, who in legend was also an early king of Latium, the father of Latinus. The history makes him a king and Latinus's ancestor, in the Roman line it joins to Brutus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Faunus](https://en.wikipedia.org/wiki/Faunus)
 
@@ -1170,7 +1170,7 @@ Wikipedia: [Faunus](https://en.wikipedia.org/wiki/Faunus)
 
 Also: Faustus, Fausti
 
-A saint, a son of Vortigern.
+A son of Vortigern by his own daughter, who the history says grew up a holy man and built a great monastery by the river Renis, where he lived with his brothers in Christ. He's a saint the history alone remembers.
 
 Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
 
@@ -1178,7 +1178,7 @@ Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
 
 Also: Fernmail
 
-A king ruling Builth and Gwrtheyrnion when the history is written.
+Ffernfael son of Tewdwr, the king of Builth and Gwrtheyrnion, in mid Wales, when the history was written, around 829 CE. The history traces his line back to Vortigern, so his family claimed the famous king as their ancestor.
 
 Wikipedia: [Ffernfael ap Tewdwr](https://en.wikipedia.org/wiki/Ffernfael_ap_Tewdwr)
 
@@ -1186,11 +1186,11 @@ Wikipedia: [Ffernfael ap Tewdwr](https://en.wikipedia.org/wiki/Ffernfael_ap_Tewd
 
 Also: Finnaun Guur Helic
 
-A spring in Cynllibiwg with four kinds of fish in it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"The spring of Guur Helic" in Welsh, in Cynllibiwg, which the history counts among Britain's strange things: a small spring with four kinds of fish in it, though it's only knee-deep. Where it lies is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Francus
 
-A son of Hessitio, the forebear of the Franks in the history's table of peoples.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Hessitio in the history's table of the peoples of Europe, and the ancestor of the Franks, named after him. Medieval writers often gave each people a founder whose name matched theirs, as Brutus gives his to the Britons.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Francus](https://en.wikipedia.org/wiki/Francus)
 
@@ -1198,13 +1198,13 @@ Wikipedia: [Francus](https://en.wikipedia.org/wiki/Francus)
 
 Also: Frenessicum
 
-A sea in the far north of Britain the Saxons cross; where it lies isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"The Frisian Sea," a sea the history says the Saxons sailed past on their way to the far north of Britain, settling near the Picts. Frisia is the coast of today's Netherlands, but which water the history means is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Frithuwald
 
 Also: Friodolguald
 
-A king of Bernicia, who reigns six years.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Bernicia, in the far northeast of England, who the history says reigned six years, in the late sixth century CE. The history says that in his time the kingdom of Kent was baptized, Pope Gregory sending the mission.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Frithuwald of Bernicia](https://en.wikipedia.org/wiki/Frithuwald_of_Bernicia)
 
@@ -1212,7 +1212,7 @@ Wikipedia: [Frithuwald of Bernicia](https://en.wikipedia.org/wiki/Frithuwald_of_
 
 Also: Gai
 
-The plain where Oswiu kills Penda.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The plain where the history says Oswiu, king of Northumbria, killed Penda of Mercia in 655 CE. The English call it the battle of the Winwaed, fought somewhere near Leeds, in Yorkshire, though the exact place isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of the Winwaed](https://en.wikipedia.org/wiki/Battle_of_the_Winwaed)
 
@@ -1220,7 +1220,7 @@ Wikipedia: [Battle of the Winwaed](https://en.wikipedia.org/wiki/Battle_of_the_W
 
 Also: Gallia, Gallias, Gallos
 
-The Roman land west of the Rhine, roughly today's France and Belgium.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman land west of the Rhine, roughly today's France and Belgium, named after the Gauls, the Celtic peoples Julius Caesar conquered there in the 50s BCE. It was Britain's nearest neighbor across the Channel, and Roman generals in Britain who made themselves emperor, as Maximus did, crossed into it first.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gaul](https://en.wikipedia.org/wiki/Gaul)
 
@@ -1228,7 +1228,7 @@ Wikipedia: [Gaul](https://en.wikipedia.org/wiki/Gaul)
 
 Also: Galli
 
-The Celtic peoples of Gaul; the history descends them from Gomer.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Celtic peoples of Gaul, what's now France and Belgium, before and under Roman rule. Julius Caesar conquered them in the 50s BCE. The history descends them from Gomer, Japheth's son, in its table of the nations of the world.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gauls](https://en.wikipedia.org/wiki/Gauls)
 
@@ -1236,7 +1236,7 @@ Wikipedia: [Gauls](https://en.wikipedia.org/wiki/Gauls)
 
 Also: Gebidi
 
-A Germanic people the history descends from Armenon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people related to the Goths, who lived along the Danube in what's now Hungary and Romania until the Lombards and Avars crushed them in 567 CE. The history descends them from Armenon in its table of peoples.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gepids](https://en.wikipedia.org/wiki/Gepids)
 
@@ -1244,13 +1244,13 @@ Wikipedia: [Gepids](https://en.wikipedia.org/wiki/Gepids)
 
 Also: Germanus, Germani, Germano
 
-A bishop from Gaul who comes to Britain.
+A Roman governor who became bishop of Auxerre, in Gaul, and came to Britain in 429 CE to argue down the followers of Pelagius, a British teacher the Church called a heretic. In the history he preaches, works wonders and stands up to Vortigern.
 
 ## Germany
 
 Also: Germania, Germaniam
 
-The land across the sea the Saxons come from.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The lands east of the Rhine, Germania to the Romans, home of the Germanic peoples. The history says the Saxons came from there, sailing to Britain in three ships under Hengist and Horsa, as exiles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Germania](https://en.wikipedia.org/wiki/Germania)
 
@@ -1258,13 +1258,13 @@ Wikipedia: [Germania](https://en.wikipedia.org/wiki/Germania)
 
 Also: Geta
 
-The first of Hengist's line, said to be a son of God.
+The first in Hengist's line, as the history traces it back through the English kings' ancestors, and who it says the pagans called a son of a god. The English kings counted their lines from such gods, Woden most of all.
 
 ## Glein
 
 Also: Glein
 
-A river where Arthur first fights, at its mouth.
+The river where the history says Arthur fought the first of his twelve battles against the Saxons, at its mouth. Where it was is uncertain: the River Glen in Northumberland and the Glen in Lincolnshire are among the places proposed.
 
 Wikipedia: [List of locations associated with Arthurian legend](https://en.wikipedia.org/wiki/List_of_locations_associated_with_Arthurian_legend)
 
@@ -1272,7 +1272,7 @@ Wikipedia: [List of locations associated with Arthurian legend](https://en.wikip
 
 Also: Cair Glovi, Gloecester
 
-The city on the Severn, called the fort of Glovi.
+The city on the Severn, in the west of England, Caer Loyw in Welsh, which the history explains as the fort of Glovi, a man in Vortigern's line. It was a Roman town, Glevum, before the Britons or the English held it.
 
 Wikipedia: [Gloucester](https://en.wikipedia.org/wiki/Gloucester)
 
@@ -1280,19 +1280,19 @@ Wikipedia: [Gloucester](https://en.wikipedia.org/wiki/Gloucester)
 
 Also: Glovi
 
-The founder of Gloucester, in Vortigern's line.
+A man in Vortigern's line, as the history traces it, who it says built Gloucester, the fort of Glovi, on the Severn. The story explains the Welsh name of the town, Caer Loyw; the Romans called it Glevum long before.
 
 ## Glywysing
 
 Also: Gleguissing
 
-A kingdom of south-east Wales, between the Usk and the Tawe.
+A kingdom of southeast Wales, between the Usk and the Tawe, which later became Morgannwg, today's Glamorgan. The history places the plain of Elleti there, where Vortigern's envoys find the boy with no father.
 
 Wikipedia: [Glywysing](https://en.wikipedia.org/wiki/Glywysing)
 
 ## Gomer
 
-Japheth's eldest son in the Bible, in the history the father of the Gauls.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Japheth's oldest son in the Bible, and so Noah's grandson. Old writers made him the ancestor of the Celtic peoples, and the history makes him the father of the Gauls in its table of the nations descended from Noah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gomer](https://en.wikipedia.org/wiki/Gomer)
 
@@ -1300,7 +1300,7 @@ Wikipedia: [Gomer](https://en.wikipedia.org/wiki/Gomer)
 
 Also: Gothi, Gothos
 
-A Germanic people the history descends from Armenon, and elsewhere from Magog.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people who moved from the Baltic to the Black Sea and later sacked Rome in 410 CE and ruled Italy and Spain. The history descends them from Armenon in one table of peoples and from Magog, Noah's grandson, in another.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Goths](https://en.wikipedia.org/wiki/Goths)
 
@@ -1308,7 +1308,7 @@ Wikipedia: [Goths](https://en.wikipedia.org/wiki/Goths)
 
 Also: Guir
 
-The peninsula of south Wales west of Swansea.
+The peninsula of south Wales west of Swansea, Gŵyr in Welsh. The history says the sons of Liethan, Irish settlers, held it with Dyfed and Kidwelly until Cunedda's family drove them out.
 
 Wikipedia: [Gower Peninsula](https://en.wikipedia.org/wiki/Gower_Peninsula)
 
@@ -1316,7 +1316,7 @@ Wikipedia: [Gower Peninsula](https://en.wikipedia.org/wiki/Gower_Peninsula)
 
 Also: Gratianum, Gratianus
 
-A Roman emperor, killed in Gaul when Maximus rises against him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman emperor of the west from 367 to 383 CE, who was beaten when Maximus rose against him from Britain, his army going over to Maximus near Paris. Gratian fled and was caught and killed at Lyon, as the history tells.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gratian](https://en.wikipedia.org/wiki/Gratian)
 
@@ -1324,7 +1324,7 @@ Wikipedia: [Gratian](https://en.wikipedia.org/wiki/Gratian)
 
 Also: Gregorio, Gregory
 
-The pope who sent Augustine to the English.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Pope from 590 to 604 CE, who in 597 CE sent the monk Augustine with forty companions to turn the English to Christ, beginning in Kent. Bede tells that he'd seen English boys for sale in Rome and called them angels, not Angles.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pope Gregory I](https://en.wikipedia.org/wiki/Pope_Gregory_I)
 
@@ -1332,19 +1332,19 @@ Wikipedia: [Pope Gregory I](https://en.wikipedia.org/wiki/Pope_Gregory_I)
 
 Also: Guaul
 
-The wall across the north of Britain, Guaul in Welsh.
+"The wall" in Welsh, the history's name for the Roman wall across the north of Britain, the Antonine Wall, built of turf around 142 CE between the Firth of Forth and the Clyde. The history says the Britons built it to keep out the Picts and the Irish.
 
 ## Gueith Lin Garan
 
 Also: Gueith Lin Garan
 
-The battle where the Picts kill Ecgfrith of Northumbria.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"The battle of Lin Garan," the Welsh name the history gives the battle of Dun Nechtain, in Angus, in what's now Scotland. There, in 685 CE, the Picts killed Ecgfrith of Northumbria and broke the Northumbrians' hold on the north.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Guinnion
 
 Also: Guinnion
 
-A fort where Arthur fights.
+A fort where the history says Arthur fought the eighth of his twelve battles, carrying an image of the Virgin Mary on his shoulders, and the pagans were put to flight. Where the fort was is unknown, and it's known only from this list of battles.
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
@@ -1352,7 +1352,7 @@ Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum
 
 Also: Guitolin, Guitolini
 
-A Briton, the son of Glovi.
+A Briton the history names as the son of Glovi, in Vortigern's line of ancestors, and as the man who fought Ambrosius at the battle of Guoloph. The history tells nothing more of their quarrel or of him.
 
 Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aurelianus)
 
@@ -1360,7 +1360,7 @@ Wikipedia: [Ambrosius Aurelianus](https://en.wikipedia.org/wiki/Ambrosius_Aureli
 
 Also: Catguoloph, Guoloppum
 
-The battle between Guitolin and Ambrosius, at a place the English call Wallop.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The battle the history says Guitolin and Ambrosius fought, twelve years after Vortigern began to reign, at a place the English call Wallop. It's thought to be Wallop in Hampshire, but that's a proposal, not a certainty.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Guoloph](https://en.wikipedia.org/wiki/Battle_of_Guoloph)
 
@@ -1368,19 +1368,19 @@ Wikipedia: [Battle of Guoloph](https://en.wikipedia.org/wiki/Battle_of_Guoloph)
 
 Also: Guoyrancgono
 
-The king ruling in Kent when Vortigern gives it to the Saxons.
+The king the history says ruled in Kent when Vortigern gave Kent to Hengist, without even asking him, as the price of marrying Hengist's daughter. He's known only from this passage.
 
 ## Guunnessi
 
 Also: Guunnessi
 
-The land in the north where Vortigern builds a city named for himself.
+A district in the north where the history says Vortigern, fleeing Germanus, built a fortress named after himself, Cair Guorthigirn. Where Guunnessi was is unknown; the history names no region for it.
 
 ## Gwallog
 
 Also: Guallanc
 
-A king of the Britons of the north.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Gwallog son of Lleenog, a king of the Britons of the north in the late sixth century CE, remembered in early Welsh poems as a war leader. The history names him among the four kings, with Urien, Rhydderch Hen and Morcant, who fought the English kings of Bernicia.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Gwallog ap Llênog](https://en.wikipedia.org/wiki/Gwallog_ap_Ll%C3%AAnog)
 
@@ -1388,7 +1388,7 @@ Wikipedia: [Gwallog ap Llênog](https://en.wikipedia.org/wiki/Gwallog_ap_Ll%C3%A
 
 Also: Guent
 
-A kingdom of south-east Wales, between the Wye and the Usk.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A kingdom of southeast Wales, between the Wye and the Usk, around Caerwent, the old Roman town whose name it keeps. The annals record its kings and their wars, and the history places one of its strange things there, a pit that wind blows out of without a break.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Kingdom of Gwent](https://en.wikipedia.org/wiki/Kingdom_of_Gwent)
 
@@ -1396,7 +1396,7 @@ Wikipedia: [Kingdom of Gwent](https://en.wikipedia.org/wiki/Kingdom_of_Gwent)
 
 Also: Guorthegirniaun
 
-A district of mid Wales named for Vortigern.
+A district of mid Wales by the Wye, near Rhayader, whose name means "Vortigern's land." The history says it was named for him and that Ffernfael, of Vortigern's line, ruled it with Builth when the history was written.
 
 Wikipedia: [Gwrtheyrnion](https://en.wikipedia.org/wiki/Gwrtheyrnion)
 
@@ -1404,15 +1404,21 @@ Wikipedia: [Gwrtheyrnion](https://en.wikipedia.org/wiki/Gwrtheyrnion)
 
 Also: Guenedotae
 
-A kingdom of north-west Wales.
+A kingdom of northwest Wales, around Snowdonia and Anglesey, the strongest of the Welsh kingdoms. The history traces its kings back to Cunedda and Maelgwn, and was written in the fourth year of its king Merfyn, about 829 CE.
 
 Wikipedia: [Kingdom of Gwynedd](https://en.wikipedia.org/wiki/Kingdom_of_Gwynedd)
+
+## Hannah
+
+A woman in the Bible's First Book of Samuel who couldn't have children and prayed at the shrine at Shiloh for a son, promising to give him to Yahweh. When her son Samuel was born, she brought him to serve the priest Eli, and sang a song of thanks to a god who lifts the poor from the dust to sit with princes. The history quotes her song when a poor servant becomes a king.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Hannah (biblical figure)](https://en.wikipedia.org/wiki/Hannah_(biblical_figure))
 
 ## Heavenfield
 
 Also: Catscaul
 
-The battle where Oswald kills Cadwallon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The battle near Hexham, in the north of England, where in 634 CE Oswald of Northumbria beat and killed Cadwallon of Gwynedd, who'd killed Edwin the year before. Its Welsh name in the history is Catscaul; Bede says Oswald raised a wooden cross before it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Heavenfield](https://en.wikipedia.org/wiki/Battle_of_Heavenfield)
 
@@ -1420,7 +1426,7 @@ Wikipedia: [Battle of Heavenfield](https://en.wikipedia.org/wiki/Battle_of_Heave
 
 Also: Hengist, Hencgistus, Hencgisti, Hengisto, Hengisti, Hengistus
 
-The leader of the Saxons who come to Britain.
+The leader of the Saxons who, the history says, came to Britain in three ships, exiles from Germany, with his brother Horsa; Bede puts their coming about 449 CE. Vortigern took them in and gave them Thanet in return for fighting the Picts and the Irish. English tradition makes Hengist the founder of the kingdom of Kent.
 
 Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
@@ -1428,7 +1434,7 @@ Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
 Also: Hessitio, Hisitione, Hisitionis, Hisition
 
-Alanus's son, and Brutus's father in the history's second account.
+Alanus's son in the history's second account of the peoples of Europe, and the father of four of them: Francus, Romanus, Brito and Albanus, the ancestors of the Franks, Romans, Britons and Albans. In this account Brutus's father is Hessitio.
 
 Wikipedia: [Istvaeones](https://en.wikipedia.org/wiki/Istvaeones)
 
@@ -1436,7 +1442,7 @@ Wikipedia: [Istvaeones](https://en.wikipedia.org/wiki/Istvaeones)
 
 Also: Hors, Horsa, Horso
 
-Hengist's brother.
+Hengist's brother, who the history says came with him to Britain in three ships, exiles from Germany, and settled with him on Thanet. English tradition names the two brothers as the founders of the English in Kent.
 
 Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
@@ -1444,13 +1450,13 @@ Wikipedia: [Hengist and Horsa](https://en.wikipedia.org/wiki/Hengist_and_Horsa)
 
 Also: Huich
 
-A region of Britain with a hot pool walled in brick and stone; where it lies isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The land of the Hwicce, an English people of the lower Severn, around Worcester and Gloucester. The history places one of Britain's strange things there: a hot pool walled in brick and stone, hot or cold as each bather wants, which Bath's Roman baths seem to fit, though the history doesn't name Bath.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Humber
 
 Also: Umbri
 
-The estuary of eastern England between Yorkshire and Lincolnshire.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The wide tidal estuary of eastern England between Yorkshire and Lincolnshire, where the Ouse and the Trent meet the sea. It long marked the edge of the English kingdoms of the north, and the Northumbrians were named for living north of it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Humber](https://en.wikipedia.org/wiki/Humber)
 
@@ -1458,7 +1464,7 @@ Wikipedia: [Humber](https://en.wikipedia.org/wiki/Humber)
 
 Also: Hussa
 
-A king of Bernicia.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Bernicia, in the far northeast of England, in the late sixth century CE, who the history says reigned seven years. Against him, it says, four British kings fought: Urien, Rhydderch Hen, Gwallog and Morcant.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Hussa of Bernicia](https://en.wikipedia.org/wiki/Hussa_of_Bernicia)
 
@@ -1466,7 +1472,7 @@ Wikipedia: [Hussa of Bernicia](https://en.wikipedia.org/wiki/Hussa_of_Bernicia)
 
 Also: Hiberei
 
-The ancient peoples of Spain; the history descends them from Tubal.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The ancient peoples of Spain, the Iberian Peninsula, before the Romans. The history descends them from Tubal, a son of Japheth, in its table of the nations descended from Noah after the Flood.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Iberians](https://en.wikipedia.org/wiki/Iberians)
 
@@ -1474,7 +1480,7 @@ Wikipedia: [Iberians](https://en.wikipedia.org/wiki/Iberians)
 
 Also: Ida
 
-The first king of the English in Bernicia, the son of Eoppa.
+The first king of the English in Bernicia, in the far northeast of England, from about 547 CE, the son of Eoppa. The history says he reigned twelve years and joined Din Guayrdi, the fortress of Bamburgh, to Bernicia, and traces the kings of Northumbria from him.
 
 Wikipedia: [Ida of Bernicia](https://en.wikipedia.org/wiki/Ida_of_Bernicia)
 
@@ -1482,7 +1488,7 @@ Wikipedia: [Ida of Bernicia](https://en.wikipedia.org/wiki/Ida_of_Bernicia)
 
 Also: Iltutus, Iltutum
 
-A Welsh saint, the founder of a church in Glamorgan.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Welsh saint of the late fifth and early sixth centuries CE, who founded the monastery and school of Llanilltud Fawr, Llantwit Major, in Glamorgan, where tradition says Gildas and David studied. The history tells of an altar that hung in the air in his cave.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Illtud](https://en.wikipedia.org/wiki/Illtud)
 
@@ -1490,7 +1496,7 @@ Wikipedia: [Illtud](https://en.wikipedia.org/wiki/Illtud)
 
 Also: Hiberniam, Hibernia, Hiberniae
 
-The island west of Great Britain, across the Irish Sea.
+The island west of Great Britain, across the Irish Sea. The history tells of its first settlers, of Patrick turning its people to Christ, and of the strange things to be seen there.
 
 Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
@@ -1498,7 +1504,7 @@ Wikipedia: [Ireland](https://en.wikipedia.org/wiki/Ireland)
 
 Also: Scotti, Scottorum, Scottos
 
-The Irish, called Scotti in Latin.
+The people of Ireland, who the Romans called *Scotti*. In these centuries they raided Britain's west coast and settled parts of Wales and western Scotland, which later took its name from them; the history names Irish leaders driven out of Wales by Cunedda's family.
 
 Wikipedia: [Irish people](https://en.wikipedia.org/wiki/Irish_people)
 
@@ -1506,7 +1512,7 @@ Wikipedia: [Irish people](https://en.wikipedia.org/wiki/Irish_people)
 
 Also: Iserinus
 
-A bishop ordained with Patrick for the Irish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A bishop the history says was ordained at the same time as Patrick, with Auxilius, to go to the Irish. Irish tradition remembers him as one of Patrick's helpers, with churches in Leinster.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Iserninus](https://en.wikipedia.org/wiki/Iserninus)
 
@@ -1514,7 +1520,7 @@ Wikipedia: [Iserninus](https://en.wikipedia.org/wiki/Iserninus)
 
 Also: Gueith
 
-The island off the south coast of England.
+The island off the south coast of England, across the Solent from Hampshire, one of the three islands the history counts as Britain's own, with Man and Orkney. The Romans called it Vectis, and the history says it faces Brittany across the sea.
 
 Wikipedia: [Isle of Wight](https://en.wikipedia.org/wiki/Isle_of_Wight)
 
@@ -1522,19 +1528,19 @@ Wikipedia: [Isle of Wight](https://en.wikipedia.org/wiki/Isle_of_Wight)
 
 Also: Istoreth
 
-Istorinus's son, who holds Dál Riata with his people.
+The son of Istorinus, who the history says held Dál Riata, in western Scotland, with his people, in its legend of the Irish settlements in Britain. He's known only from this passage.
 
 ## Istorinus
 
 Also: Istorini
 
-The father of Istoreth, who takes Dál Riata.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The father of Istoreth, who the history says took Dál Riata, in western Scotland, for the Irish, in its legend of their settlements in Britain. He's known only from this passage.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Iudeu
 
 Also: Iudeu
 
-A city in the north where Penda comes.
+A fortress in the north where the history says Penda of Mercia came, and Oswiu of Northumbria handed over all the riches in it to him, which Penda shared out among the British kings: the Britons called it the Restitution of Iudeu. Stirling is among the places proposed, but where Iudeu stood is uncertain.
 
 Wikipedia: [Urbs Iudeu](https://en.wikipedia.org/wiki/Urbs_Iudeu)
 
@@ -1542,7 +1548,7 @@ Wikipedia: [Urbs Iudeu](https://en.wikipedia.org/wiki/Urbs_Iudeu)
 
 Also: Iuvan, Iuvani
 
-A son of Japheth, the Bible's Javan; in the history the father of the Greeks.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Japheth, the Bible's Javan, and so Noah's grandson. His name is the Hebrew word for the Greeks, the Ionians, and the history makes him the father of the Greeks in its table of the nations descended from Noah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Javan](https://en.wikipedia.org/wiki/Javan)
 
@@ -1550,7 +1556,7 @@ Wikipedia: [Javan](https://en.wikipedia.org/wiki/Javan)
 
 Also: Iafeth
 
-A son of Noah; the history says Europe fell to his line.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of Noah's three sons, who with Shem and Ham survived the Flood and whose sons, the Bible says, peopled the world. Old writers gave Europe to Japheth's line, Asia to Shem's and Africa to Ham's, and the history follows them, tracing the Britons back to Japheth.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Japheth](https://en.wikipedia.org/wiki/Japheth)
 
@@ -1558,7 +1564,7 @@ Wikipedia: [Japheth](https://en.wikipedia.org/wiki/Japheth)
 
 Also: Baptistam
 
-The prophet who baptized Christ; the history ends its fifth age of the world with him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The prophet who preached in the desert by the Jordan, calling people to turn from their sins and be baptized, and who baptized Jesus himself. Herod had him beheaded. The history ends its fifth age of the world with him, just before Christ.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [John the Baptist](https://en.wikipedia.org/wiki/John_the_Baptist)
 
@@ -1566,7 +1572,7 @@ Wikipedia: [John the Baptist](https://en.wikipedia.org/wiki/John_the_Baptist)
 
 Also: Iulius, Gaius Julius Caesar, Julius
 
-The Roman general who invades Britain and is later killed in the senate house.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman general who conquered Gaul and crossed to Britain twice, in 55 and 54 BCE, without staying, then made himself master of Rome and was stabbed to death in the senate in 44 BCE. The history says he was beaten off at first and came back with more ships.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Julius Caesar](https://en.wikipedia.org/wiki/Julius_Caesar)
 
@@ -1574,7 +1580,7 @@ Wikipedia: [Julius Caesar](https://en.wikipedia.org/wiki/Julius_Caesar)
 
 Also: Cantia, Cantiae, Chent, Canturguoralen
 
-The kingdom in the south-east corner of Britain.
+The kingdom in the southeast corner of Britain, the first the English held, and now a county of England. The history says Vortigern gave it to Hengist as the price of his daughter, without asking its own king, Guoyrancgonus.
 
 Wikipedia: [Kingdom of Kent](https://en.wikipedia.org/wiki/Kingdom_of_Kent)
 
@@ -1582,13 +1588,13 @@ Wikipedia: [Kingdom of Kent](https://en.wikipedia.org/wiki/Kingdom_of_Kent)
 
 Also: Cetgueli
 
-A town and district on the coast of south Wales.
+A town and district on the coast of south Wales, in Carmarthenshire, Cydweli in Welsh. The history says the sons of Liethan, Irish settlers, held it with Dyfed and Gower until Cunedda's family drove them out.
 
 Wikipedia: [Kidwelly](https://en.wikipedia.org/wiki/Kidwelly)
 
 ## Lamech
 
-Noah's father in the Bible, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Noah's father in the Bible, a descendant of Adam through Seth, who Genesis says lived 777 years. The history names him in the line it traces from Adam down to Alanus, the father of the peoples of Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Lamech (father of Noah)](https://en.wikipedia.org/wiki/Lamech_(father_of_Noah))
 
@@ -1596,7 +1602,7 @@ Wikipedia: [Lamech (father of Noah)](https://en.wikipedia.org/wiki/Lamech_(fathe
 
 Also: Latini, Latinos, Latinorum
 
-The people of Latium in Italy, that Aeneas comes to rule.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Latium, around Rome in Italy, who spoke Latin. In Roman legend Aeneas came there from Troy, married their king's daughter and ruled them, and from his line came Romulus and Remus, Rome's founders, and in the history Brutus too.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Latins (Italic tribe)](https://en.wikipedia.org/wiki/Latins_(Italic_tribe))
 
@@ -1604,7 +1610,7 @@ Wikipedia: [Latins (Italic tribe)](https://en.wikipedia.org/wiki/Latins_(Italic_
 
 Also: filiam Latini, mortem Latini
 
-The king of the Latins whose daughter Aeneas marries.
+The king of the Latins in Roman legend, whose daughter Lavinia married Aeneas when he came from Troy. Virgil's *Aeneid* tells how Aeneas had to fight Turnus, another suitor, for her. The history traces Brutus's line through this marriage.
 
 Wikipedia: [Latinus](https://en.wikipedia.org/wiki/Latinus)
 
@@ -1612,7 +1618,7 @@ Wikipedia: [Latinus](https://en.wikipedia.org/wiki/Latinus)
 
 Also: Laviniam
 
-Latinus's daughter, who marries Aeneas.
+Latinus's daughter, who in Roman legend married Aeneas after he came from Troy, and whose son founded the line of Alba Longa's kings. The history makes her an ancestor of Brutus, the founder of the Britons.
 
 Wikipedia: [Lavinia](https://en.wikipedia.org/wiki/Lavinia)
 
@@ -1620,25 +1626,25 @@ Wikipedia: [Lavinia](https://en.wikipedia.org/wiki/Lavinia)
 
 Also: Lemn
 
-The one river that runs to the sea from Lumonoy's lake.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The one river the history says runs from Lumonoy, the lake with sixty islands, to the sea, among Britain's strange things. Lumonoy is Loch Lomond, and the river is taken for the Leven, which drains it into the Clyde.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Licat Anir
 
 Also: Licat
 
-The spring beside the grave of Arthur's son Anir, in Ergyng.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"Anir's eye," a spring in Ergyng beside the grave of Anir, Arthur's son. The history says Arthur himself killed him there and buried him. The grave measures a different length each time it's measured, one of the strange things of Britain. Where the spring is, is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Liethan
 
 Also: Liethan
 
-The forebear of an Irish family that settles in Dyfed, the Uí Liatháin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The ancestor of the Uí Liatháin, an Irish family whose sons, the history says, held Dyfed, Gower and Kidwelly in south Wales until Cunedda's family drove them out. Irish settlement in southwest Wales is also shown by stones carved in Irish ogham letters.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Lindisfarne
 
 Also: Metcaud, Medcaut
 
-An island off the coast of Northumberland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A tidal island off the coast of Northumberland, in northeast England, reached on foot at low tide, where the Irish monk Aidan founded a monastery in 635 CE. It became the heart of the Northumbrian church, and the history says its bishop Cuthbert died there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Lindisfarne](https://en.wikipedia.org/wiki/Lindisfarne)
 
@@ -1646,7 +1652,7 @@ Wikipedia: [Lindisfarne](https://en.wikipedia.org/wiki/Lindisfarne)
 
 Also: Linnuis
 
-A district where Arthur fights four battles on the Dubglas.
+A district where the history says Arthur fought four battles on the river Dubglas. Lindsey was an English kingdom in what's now north Lincolnshire, and it's the usual reading of the history's *Linnuis*, though no identification is secure.
 
 Wikipedia: [Kingdom of Lindsey](https://en.wikipedia.org/wiki/Kingdom_of_Lindsey)
 
@@ -1654,7 +1660,7 @@ Wikipedia: [Kingdom of Lindsey](https://en.wikipedia.org/wiki/Kingdom_of_Lindsey
 
 Also: Loygare
 
-A king of Ireland in Patrick's time.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Lóegaire son of Niall, a king of Tara, the high seat of Irish kings, in Patrick's time in the fifth century CE. Irish legend says he opposed Patrick at first, and the history says Patrick preached in his reign.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Lóegaire mac Néill](https://en.wikipedia.org/wiki/L%C3%B3egaire_mac_N%C3%A9ill)
 
@@ -1662,7 +1668,7 @@ Wikipedia: [Lóegaire mac Néill](https://en.wikipedia.org/wiki/L%C3%B3egaire_ma
 
 Also: Longobardi, Longobardos
 
-A Germanic people the history descends from Armenon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people who came down from the north and in 568 CE conquered most of Italy, where Lombardy still has their name. The history descends them from Armenon in its table of the peoples of Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Lombards](https://en.wikipedia.org/wiki/Lombards)
 
@@ -1670,7 +1676,7 @@ Wikipedia: [Lombards](https://en.wikipedia.org/wiki/Lombards)
 
 Also: Luchlein
 
-A lake in Ireland ringed by four metals.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The lower lake of Killarney, in County Kerry, in the southwest of Ireland. The history counts it among Ireland's strange things: a lake ringed by four circles of metal, tin, lead, iron and copper, rich in pearls that kings wear in their ears.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Lough Leane](https://en.wikipedia.org/wiki/Lough_Leane)
 
@@ -1678,19 +1684,19 @@ Wikipedia: [Lough Leane](https://en.wikipedia.org/wiki/Lough_Leane)
 
 Also: Loyngarth
 
-A place in Gower with an altar God holds up in the air.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A place in Gower, in south Wales, Llwynarth in Welsh, where the history says Saint Illtud's altar hangs in the air, held up by Yahweh's will, so that anyone can pass a rod under it. Where exactly it was is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Luch Echach
 
 Also: Luch Echach
 
-A lake in Ireland that turns wood to stone.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Lough Neagh, the largest lake in Ireland, in what's now Northern Ireland. The history counts it among Ireland's strange things: its waters were said to turn wood left in them to stone, a belief that lasted into modern times.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Lucius
 
 Also: Lucius
 
-A king of Britain in the time of the Roman emperors.
+A legendary king of Britain who, the history says, asked the pope for baptism in the time of the Roman emperors, and was baptized with all the Britons' kings. Bede tells the same story; historians think it grew from a misreading about a king of Edessa, in the east, called Lucius.
 
 Wikipedia: [Lucius of Britain](https://en.wikipedia.org/wiki/Lucius_of_Britain)
 
@@ -1698,19 +1704,19 @@ Wikipedia: [Lucius of Britain](https://en.wikipedia.org/wiki/Lucius_of_Britain)
 
 Also: Lumonoy
 
-A lake in the north of Britain with sixty islands.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Loch Lomond, the great lake northwest of Glasgow, in what's now Scotland. The history counts it among Britain's strange things: sixty islands, sixty rocks, sixty eagles' nests and sixty rivers in, but only one river out to the sea, the Leven.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Lyon
 
 Also: Lugduni
 
-A city on the Rhône in southeastern France, Roman Lugdunum, where Gratian is caught.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A city on the Rhône in southeastern France, Roman Lugdunum, once the chief city of Roman Gaul. The history says the emperor Gratian, beaten by Maximus near Paris, fled there and was caught and killed in 383 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Lyon](https://en.wikipedia.org/wiki/Lyon)
 
 ## Madai
 
-A son of Japheth in the Bible, in the history the father of the Medes.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Japheth in the Bible, and so Noah's grandson. His name is the Hebrew word for the Medes, a people of ancient Iran, and the history makes him the father of the Medes in its table of the nations descended from Noah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Madai](https://en.wikipedia.org/wiki/Madai)
 
@@ -1718,13 +1724,13 @@ Wikipedia: [Madai](https://en.wikipedia.org/wiki/Madai)
 
 Also: Mailcun, Mailcunus, Maelgwn
 
-A great king of the Britons in Gwynedd.
+A great king of the Britons in Gwynedd, in northwest Wales, in the sixth century CE. The history says his family descended from Cunedda, who came south from Manaw Gododdin and drove the Irish out of Wales, which made his family Gwynedd's royal line.
 
 Wikipedia: [Maelgwn Gwynedd](https://en.wikipedia.org/wiki/Maelgwn_Gwynedd)
 
 ## Magog
 
-A son of Japheth in the Bible, in the history the father of the Scythians and the Goths.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Japheth in the Bible, and so Noah's grandson, whose name later stood for wild peoples of the far north. The history makes him the father of the Scythians and the Goths in its table of the nations descended from Noah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Magog (Bible)](https://en.wikipedia.org/wiki/Magog_(Bible))
 
@@ -1732,7 +1738,7 @@ Wikipedia: [Magog (Bible)](https://en.wikipedia.org/wiki/Magog_(Bible))
 
 Also: Malalehel
 
-A patriarch of the Bible, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A patriarch of the Bible, a great-grandson of Seth, who Genesis says lived 895 years. The history names him in the line it traces from Adam down to Alanus, the father of the peoples of Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mahalalel](https://en.wikipedia.org/wiki/Mahalalel)
 
@@ -1740,7 +1746,7 @@ Wikipedia: [Mahalalel](https://en.wikipedia.org/wiki/Mahalalel)
 
 Also: Mogantia
 
-A city on the Rhine in Germany, where the history says Claudius's tomb is shown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A city on the Rhine in Germany, Roman Mogontiacum, a great army base on the frontier. The history says the tomb of the emperor Claudius is shown there, though Claudius died and was buried at Rome; the monument at Mainz is likely the one to his brother Drusus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mainz](https://en.wikipedia.org/wiki/Mainz)
 
@@ -1748,7 +1754,7 @@ Wikipedia: [Mainz](https://en.wikipedia.org/wiki/Mainz)
 
 Also: Malvam
 
-A river in North Africa, today's Moulouya in Morocco.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A river in North Africa, today's Moulouya in Morocco, which the Romans took as the border between their provinces of Mauretania. The history names it on the route of the Irish ancestors' long journey from Egypt to Spain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Moulouya River](https://en.wikipedia.org/wiki/Moulouya_River)
 
@@ -1756,7 +1762,7 @@ Wikipedia: [Moulouya River](https://en.wikipedia.org/wiki/Moulouya_River)
 
 Also: Manau
 
-The land of the Britons around the head of the Firth of Forth.
+The British district around the head of the Firth of Forth, near today's Edinburgh and Stirling, in the lands of the Gododdin. The history says Cunedda and his sons came from there to Wales and drove out the Irish.
 
 Wikipedia: [Manaw Gododdin](https://en.wikipedia.org/wiki/Manaw_Gododdin)
 
@@ -1764,7 +1770,7 @@ Wikipedia: [Manaw Gododdin](https://en.wikipedia.org/wiki/Manaw_Gododdin)
 
 Also: Mariae
 
-The mother of Christ, whose image Arthur carries into battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The mother of Jesus Christ, the most honored of all saints in the Middle Ages. The history says that at his battle at Castle Guinnion, Arthur carried an image of her on his shoulders, likely meaning on his shield, and the Saxons were routed through the power of Christ and of Mary.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mary, mother of Jesus](https://en.wikipedia.org/wiki/Mary,_mother_of_Jesus)
 
@@ -1772,7 +1778,7 @@ Wikipedia: [Mary, mother of Jesus](https://en.wikipedia.org/wiki/Mary,_mother_of
 
 Also: Cocboy
 
-The battle where Penda kills Oswald.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The battle where Penda of Mercia killed Oswald, the Christian king of Northumbria, in 642 CE. The Welsh called it Cocboy, and it's usually placed at Oswestry, in Shropshire. The English remembered Oswald as a saint.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Battle of Maserfield](https://en.wikipedia.org/wiki/Battle_of_Maserfield)
 
@@ -1780,7 +1786,7 @@ Wikipedia: [Battle of Maserfield](https://en.wikipedia.org/wiki/Battle_of_Maserf
 
 Also: Maritaniam
 
-The Roman name for the lands of northwest Africa, in what's now Morocco and Algeria.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman name for northwest Africa, in what's now Morocco and Algeria, after the Mauri, the Moors. The history names it on the long journey of the Irish ancestors from Egypt to Spain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mauretania](https://en.wikipedia.org/wiki/Mauretania)
 
@@ -1788,7 +1794,7 @@ Wikipedia: [Mauretania](https://en.wikipedia.org/wiki/Mauretania)
 
 Also: Maximianus, Maximiano
 
-The seventh emperor the history counts in Britain, who takes its soldiers to Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The seventh emperor the history counts as ruling Britain, who took its soldiers with him to Europe to fight for the throne. The history says he gave them lands in Gaul instead of sending them home, and that the Bretons of Brittany descend from them. Historians see him as a doubling of Maximus, who did take Britain's army to the Continent in 383 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
@@ -1796,7 +1802,7 @@ Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
 Also: Maximus
 
-The sixth emperor the history counts in Britain, made emperor there by its soldiers.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Magnus Maximus, a Roman general in Britain who was proclaimed emperor by its army in 383 CE, crossed to Gaul, drove out the emperor Gratian and ruled the West from Trier until he was defeated and beheaded at Aquileia in 388 CE. The history counts him as the sixth emperor to rule in Britain, and Welsh legend made him the forefather of several royal families.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
@@ -1804,7 +1810,7 @@ Wikipedia: [Magnus Maximus](https://en.wikipedia.org/wiki/Magnus_Maximus)
 
 Also: Medos
 
-An ancient people of Iran; the history descends them from Madai.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An ancient people of Iran, who built an empire in the seventh century BCE and helped destroy Assyria before the Persians took them over. The history descends them from Madai, Japheth's son, in its table of the nations descended from Noah.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Medes](https://en.wikipedia.org/wiki/Medes)
 
@@ -1812,7 +1818,7 @@ Wikipedia: [Medes](https://en.wikipedia.org/wiki/Medes)
 
 Also: Meicen
 
-The battle where Cadwallon kills Edwin.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The battle where, in 633 CE, Cadwallon of Gwynedd and Penda of Mercia beat and killed Edwin, the Christian king of Northumbria. The English call it Hatfield Chase, usually placed near Hatfield, by Doncaster, though that's disputed.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Meicen](https://en.wikipedia.org/wiki/Meicen)
 
@@ -1820,13 +1826,13 @@ Wikipedia: [Meicen](https://en.wikipedia.org/wiki/Meicen)
 
 Also: Mene
 
-A sea named in one of the strange things the history tells of Ireland, with the whirlpool Cereuus in it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A sea named in one of the strange things the history tells of Ireland, with the whirlpool Cereuus in the middle of it, where a thrown stone vanishes and comes back. Which sea is meant is unknown, and it's known only from this tale.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Mercia
 
 Also: Merciorum, Mercians
 
-The English kingdom of the Midlands, ruled by Penda's family.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English kingdom of the Midlands, centered on the Trent, ruled by Penda's family. Penda made it the strongest power in England in the seventh century CE, fighting beside the Welsh against Northumbria, and the history traces its kings from Woden.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Mercia](https://en.wikipedia.org/wiki/Mercia)
 
@@ -1834,7 +1840,7 @@ Wikipedia: [Mercia](https://en.wikipedia.org/wiki/Mercia)
 
 Also: Mermini
 
-Merfyn Frych, king of Gwynedd; the history is written in his fourth year.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Merfyn Frych, "the Freckled," king of Gwynedd, in north Wales, from 825 to 844 CE, who founded a new line of its kings, his son being Rhodri the Great. The history says it was written in his fourth year, about 829 CE, and scholars think it was written for his court.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Merfyn Frych](https://en.wikipedia.org/wiki/Merfyn_Frych)
 
@@ -1842,7 +1848,7 @@ Wikipedia: [Merfyn Frych](https://en.wikipedia.org/wiki/Merfyn_Frych)
 
 Also: Meroblaudis
 
-Gratian's general, who betrays him at Paris.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Frankish general in Roman service and Gratian's commander, who the history says betrayed him at Paris in 383 CE, when Gratian's army went over to Maximus. Merobaudes was consul three times; he died, by his own hand or Maximus's order, soon after.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Merobaudes (general)](https://en.wikipedia.org/wiki/Merobaudes_(general))
 
@@ -1850,7 +1856,7 @@ Wikipedia: [Merobaudes (general)](https://en.wikipedia.org/wiki/Merobaudes_(gene
 
 Also: Matusalae
 
-A patriarch of the Bible, in the history a forebear of Alanus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A man in Genesis who lived before the great flood, Enoch's son and Noah's grandfather, who lived 969 years, longer than anyone else in the Bible. The history names him in its list of Brutus's ancestors traced back through Noah's family to Adam, joining the Britons' story to the Bible's.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Methuselah](https://en.wikipedia.org/wiki/Methuselah)
 
@@ -1858,7 +1864,7 @@ Wikipedia: [Methuselah](https://en.wikipedia.org/wiki/Methuselah)
 
 Also: Mouric
 
-The man after who a well in Gwent is named.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of several men. In the history, the man a well in Gwent is named after, among Britain's strange things. In the annals, a Meurig is killed by the Saxons in 849 CE, another dies with Bishop Nobis in 873 CE, and another in 939 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Meurig ab Arthfael](https://en.wikipedia.org/wiki/Meurig_ab_Arthfael)
 
@@ -1866,7 +1872,7 @@ Wikipedia: [Meurig ab Arthfael](https://en.wikipedia.org/wiki/Meurig_ab_Arthfael
 
 Also: Milchu
 
-The man in Ireland who holds Patrick captive.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The man in Ireland who, the history says, held Patrick as a slave when he was young, setting him to keep his pigs. Patrick's own writings tell of six years as a captive in Ireland before he escaped home to Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Slemish](https://en.wikipedia.org/wiki/Slemish)
 
@@ -1874,13 +1880,13 @@ Wikipedia: [Slemish](https://en.wikipedia.org/wiki/Slemish)
 
 Also: Minmanton
 
-Cair Segeint's other name.
+The history's other name for Cair Segeint, the Roman fort of Segontium by Caernarfon, in north Wales, where it says Constantine, son of Constantine the Great, was buried. The name's meaning is uncertain.
 
 ## Minocannus
 
 Also: Minocanni
 
-Bellinus's father, said to have conquered the Tyrrhenian Sea.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+In the history, the father of Bellinus, king of the Britons when Caesar came. It says Minocannus had taken every island of the Tyrrhenian Sea, west of Italy. No Roman writer names him; he belongs to the history's own legend of Britain's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Cunobelinus](https://en.wikipedia.org/wiki/Cunobelinus)
 
@@ -1888,7 +1894,7 @@ Wikipedia: [Cunobelinus](https://en.wikipedia.org/wiki/Cunobelinus)
 
 Also: Morcant, Morcanto
 
-A king of the Britons of the north, Urien's rival.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Britons of the north in the late sixth century CE, one of the four who fought Hussa of Bernicia. The history says Urien was murdered on Morcant's orders, out of envy, while besieging the English on Lindisfarne. The annals record his death.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Morcant Bulc](https://en.wikipedia.org/wiki/Morcant_Bulc)
 
@@ -1896,7 +1902,7 @@ Wikipedia: [Morcant Bulc](https://en.wikipedia.org/wiki/Morcant_Bulc)
 
 Also: Moyses
 
-The prophet who leads Israel out of Egypt.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The prophet who led the Israelites out of slavery in Egypt and through the desert for forty years, and who received Yahweh's law on Mount Sinai, written on two stone tablets. Twice the thirsty people got water from a rock: at Rephidim, early in the desert years, Yahweh told him to strike it, and he did; at Meribah, near their end, Yahweh told him only to speak to it, and he struck it anyway, so Yahweh let him see the promised land from a mountaintop but die before entering it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Moses](https://en.wikipedia.org/wiki/Moses)
 
@@ -1904,7 +1910,7 @@ Wikipedia: [Moses](https://en.wikipedia.org/wiki/Moses)
 
 Also: Mosoch
 
-A son of Japheth, the Bible's Meshech; in the history the father of the Cappadocians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Japheth in the Bible, Meshech, and so Noah's grandson. The history makes him the father of the Cappadocians, of central Turkey, in its table of the nations descended from Noah after the Flood.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Meshech](https://en.wikipedia.org/wiki/Meshech)
 
@@ -1912,13 +1918,13 @@ Wikipedia: [Meshech](https://en.wikipedia.org/wiki/Meshech)
 
 Also: Montis Iovis
 
-The Great St Bernard Pass, in the Alps.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Great St Bernard Pass, in the Alps between Switzerland and Italy, which the Romans called Mons Iovis, "the mountain of Jupiter," after a temple there. The history gives a lake on top of it as one edge of the lands Maximianus gives his British soldiers.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Nebuchadnezzar
 
 Also: Nabuchodonosor
 
-The king of Babylon who took the Jews into exile.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The king of Babylon who took Jerusalem in 587 BCE, burned the Temple and carried the Jews off into exile. The history ends one of its ages of the world with the exile in Babylon.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Nebuchadnezzar II](https://en.wikipedia.org/wiki/Nebuchadnezzar_II)
 
@@ -1926,7 +1932,7 @@ Wikipedia: [Nebuchadnezzar II](https://en.wikipedia.org/wiki/Nebuchadnezzar_II)
 
 Also: Nimeth
 
-The second leader to settle Ireland, in the Irish tale of how Ireland was settled.
+The leader of the second settlement of Ireland, in the Irish tale of how Ireland was settled, the *Lebor Gabála Érenn*. His people came after Partholón's and were driven out, and the history tells the same story in short.
 
 Wikipedia: [Nemed](https://en.wikipedia.org/wiki/Nemed)
 
@@ -1934,7 +1940,7 @@ Wikipedia: [Nemed](https://en.wikipedia.org/wiki/Nemed)
 
 Also: Nordorum
 
-The people of Northumbria, in the north of England.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The English of Northumbria, north of the Humber, in the north of England. Their kings fought the Welsh and the Britons of the north for the lands between, and the history and the annals follow their wars closely.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
 
@@ -1942,7 +1948,7 @@ Wikipedia: [Northumbria](https://en.wikipedia.org/wiki/Northumbria)
 
 Also: Numae, Pampilii
 
-The legendary second king of Rome, in the history a forebear of Brutus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The legendary second king of Rome, after Romulus, remembered as a peacemaker who gave Rome its religious customs and calendar. The history makes him an ancestor of Brutus, joining Britain's founder to Rome's kings.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Numa Pompilius](https://en.wikipedia.org/wiki/Numa_Pompilius)
 
@@ -1950,7 +1956,7 @@ Wikipedia: [Numa Pompilius](https://en.wikipedia.org/wiki/Numa_Pompilius)
 
 Also: Octha
 
-Hengist's son.
+Hengist's son, who the history says came with Ebissa and a fleet of forty ships when Vortigern let Hengist send for more of his people. They settled in the north, by the Wall; the rulers of Kent later traced their line from him.
 
 Wikipedia: [Octa of Kent](https://en.wikipedia.org/wiki/Octa_of_Kent)
 
@@ -1958,7 +1964,7 @@ Wikipedia: [Octa of Kent](https://en.wikipedia.org/wiki/Octa_of_Kent)
 
 Also: Offa
 
-The name of three men in the history: a son of Aethelfrith, a forebear of the Mercian kings, and the great king of Mercia whose son Ecgfrith it names.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of three men in the history. One is a son of Aethelfrith, another an ancestor of the Mercian kings, and the third the great king of Mercia whose son Ecgfrith it names.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Offa of Mercia](https://en.wikipedia.org/wiki/Offa_of_Mercia)
 
@@ -1966,11 +1972,11 @@ Wikipedia: [Offa of Mercia](https://en.wikipedia.org/wiki/Offa_of_Mercia)
 
 Also: Oghgul
 
-The island Hengist's elders came from, usually taken for Angeln, in the north of Germany.
+The island the history says Hengist's elders came from, usually taken for Angeln, the homeland of the Angles, in the north of Germany near Denmark. The history calls it an island, though Angeln is a peninsula.
 
 ## Oisc
 
-A king of Kent, Octa's son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Kent, Octa's son, in the line the history traces from Hengist to Ecgberht. Bede says the kings of Kent were called Oiscingas after him, so he was remembered as the founder of their family.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Oisc of Kent](https://en.wikipedia.org/wiki/Oisc_of_Kent)
 
@@ -1978,13 +1984,13 @@ Wikipedia: [Oisc of Kent](https://en.wikipedia.org/wiki/Oisc_of_Kent)
 
 Also: Oper Linn Liuan, Liuan
 
-A pool where a river runs into the Severn, which swallows the tide and spits it out.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"The mouth of the Liuan's lake" in Welsh, a pool where a river empties into the Severn, which the history counts among Britain's strange things: it swallows the tide as it comes in and spits it out again like a mountain. Which river it means is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Orkney
 
 Also: Orcades
 
-The islands off the north coast of Scotland.
+The islands off the north tip of mainland Scotland, the third of the three large islands the history says belong to Britain. It says the Picts settled there first, coming from Scythia, before they took the north of Britain.
 
 Wikipedia: [Orkney](https://en.wikipedia.org/wiki/Orkney)
 
@@ -1992,7 +1998,7 @@ Wikipedia: [Orkney](https://en.wikipedia.org/wiki/Orkney)
 
 Also: Oswald, Oswaldum, Oswald Lamnguin, Lamnguin
 
-A king of the Northumbrians.
+King of the Northumbrians from 634 CE, who won his throne by beating Cadwallon at Heavenfield and brought Christianity back to his people with the help of Irish monks. The history calls him Lamnguin, "bright blade," and tells how Penda killed him.
 
 Wikipedia: [Oswald of Northumbria](https://en.wikipedia.org/wiki/Oswald_of_Northumbria)
 
@@ -2000,7 +2006,7 @@ Wikipedia: [Oswald of Northumbria](https://en.wikipedia.org/wiki/Oswald_of_North
 
 Also: Osguid
 
-A king of the Northumbrians.
+King of the Northumbrians from 642 to 670 CE, Oswald's brother. The history says he once handed over all his treasure to Penda of Mercia at Iudeu, then later killed Penda on the plain of Gai, in 655 CE.
 
 Wikipedia: [Oswiu](https://en.wikipedia.org/wiki/Oswiu)
 
@@ -2008,7 +2014,7 @@ Wikipedia: [Oswiu](https://en.wikipedia.org/wiki/Oswiu)
 
 Also: Palladius, Palladii
 
-The first bishop sent to the Irish, before Patrick.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A deacon of Rome who Pope Celestine sent in 431 CE as the first bishop to the Christians of Ireland, as Prosper of Aquitaine's chronicle records. The history says Yahweh stopped him with storms, so that the mission was left to Patrick.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Palladius (bishop of Ireland)](https://en.wikipedia.org/wiki/Palladius_(bishop_of_Ireland))
 
@@ -2016,7 +2022,7 @@ Wikipedia: [Palladius (bishop of Ireland)](https://en.wikipedia.org/wiki/Palladi
 
 Also: Partholomus
 
-The first leader to settle Ireland, in the Irish tale of how Ireland was settled.
+The leader of the first settlement of Ireland after the Flood, in the Irish tale of how Ireland was settled, the *Lebor Gabála Érenn*. His people, it says, all died of a plague, and the history tells the same story in short.
 
 Wikipedia: [Partholón](https://en.wikipedia.org/wiki/Parthol%C3%B3n)
 
@@ -2024,7 +2030,7 @@ Wikipedia: [Partholón](https://en.wikipedia.org/wiki/Parthol%C3%B3n)
 
 Also: Pascent
 
-A son of Vortigern.
+A son of Vortigern who, the history says, ruled Builth and Gwrtheyrnion, in mid Wales, after his father's death, by the gift of Ambrosius. The kings of those lands in the history's own day traced their line back through him.
 
 Wikipedia: [Pasgen ap Cadeyrn](https://en.wikipedia.org/wiki/Pasgen_ap_Cadeyrn)
 
@@ -2032,7 +2038,7 @@ Wikipedia: [Pasgen ap Cadeyrn](https://en.wikipedia.org/wiki/Pasgen_ap_Cadeyrn)
 
 Also: Patricius, Patricii, Patricio, Maun
 
-The saint who preached the faith in Ireland.
+A Briton carried off as a boy to slavery in Ireland, who escaped, studied, and was sent back to turn the Irish to Christ in the fifth century CE. The history tells his life at length, comparing him to Moses.
 
 Wikipedia: [Saint Patrick](https://en.wikipedia.org/wiki/Saint_Patrick)
 
@@ -2040,7 +2046,7 @@ Wikipedia: [Saint Patrick](https://en.wikipedia.org/wiki/Saint_Patrick)
 
 Also: Penda, Pendae, Pantha
 
-A king of the Mercians.
+King of the Mercians from about 626 to 655 CE, the last great pagan English king, who the history says first split Mercia from Northumbria, and who fought beside the Welsh. Oswiu killed him on the plain of Gai.
 
 Wikipedia: [Penda of Mercia](https://en.wikipedia.org/wiki/Penda_of_Mercia)
 
@@ -2048,7 +2054,7 @@ Wikipedia: [Penda of Mercia](https://en.wikipedia.org/wiki/Penda_of_Mercia)
 
 Also: Picti, Pictis, Pictos, Pictorum, Pictish
 
-The people of eastern and northern Scotland.
+The people of eastern and northern Scotland, beyond the Roman walls, whose name in Latin means "painted people." The history says they came from Scythia and settled the islands of Orkney first, then the north of Britain, and they're among the peoples the Britons fight once the Romans leave.
 
 Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
@@ -2056,7 +2062,7 @@ Wikipedia: [Picts](https://en.wikipedia.org/wiki/Picts)
 
 Also: Pici
 
-A Roman god and early king of Latium, in the history Latinus's forebear.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman god of the woods and an early king of Latium in legend, said to have been turned into a woodpecker, *picus* in Latin, by the witch Circe. The history makes him Latinus's ancestor in the line it joins to Brutus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Picus](https://en.wikipedia.org/wiki/Picus)
 
@@ -2064,7 +2070,7 @@ Wikipedia: [Picus](https://en.wikipedia.org/wiki/Picus)
 
 Also: Herculis
 
-The headlands on either side of the Strait of Gibraltar.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The two headlands on either side of the Strait of Gibraltar, where the Mediterranean meets the Atlantic: the Rock of Gibraltar in Spain and a mountain in Morocco opposite. Greek myth said Hercules set them up, and they marked the end of the known world. The history names them on the Irish ancestors' route west.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pillars of Hercules](https://en.wikipedia.org/wiki/Pillars_of_Hercules)
 
@@ -2072,7 +2078,7 @@ Wikipedia: [Pillars of Hercules](https://en.wikipedia.org/wiki/Pillars_of_Hercul
 
 Also: Placidae
 
-The empress Galla Placidia, mother of Valentinian III.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The empress Galla Placidia, daughter of the emperor Theodosius, who ruled the western Roman Empire for her young son Valentinian III from 425 CE. The history counts years to Valentinian's reign as "Placidia's son," naming him by his famous mother.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Galla Placidia](https://en.wikipedia.org/wiki/Galla_Placidia)
 
@@ -2080,7 +2086,7 @@ Wikipedia: [Galla Placidia](https://en.wikipedia.org/wiki/Galla_Placidia)
 
 Also: Postumus
 
-A king of the Latins, Brutus's brother.
+In the history, a king of the Latins who reigned thirty-nine years, Brutus's brother, and the one the kings of Alba Longa were named Silvii after. He belongs to the Roman legend of Aeneas's line, which the history uses to make Brutus a prince of Troy and Rome.
 
 Wikipedia: [Silvius (mythology)](https://en.wikipedia.org/wiki/Silvius_(mythology))
 
@@ -2088,7 +2094,7 @@ Wikipedia: [Silvius (mythology)](https://en.wikipedia.org/wiki/Silvius_(mytholog
 
 Also: Povisorum
 
-A kingdom of mid and north-east Wales.
+A kingdom of mid and northeast Wales, in the valleys of the upper Severn and the Dee. The history traces its kings, and those of neighboring Builth, back to the men Germanus and Vortigern knew.
 
 Wikipedia: [Kingdom of Powys](https://en.wikipedia.org/wiki/Kingdom_of_Powys)
 
@@ -2096,7 +2102,7 @@ Wikipedia: [Kingdom of Powys](https://en.wikipedia.org/wiki/Kingdom_of_Powys)
 
 Also: Pubba, Pybba, Pippa
 
-A king of the Mercians, the father of Penda.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of the Mercians around 600 CE, Penda's father, who the history says had twelve sons. The line of Mercia's kings it traces from Woden comes down through him to Penda and Offa's family.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Pybba of Mercia](https://en.wikipedia.org/wiki/Pybba_of_Mercia)
 
@@ -2104,7 +2110,7 @@ Wikipedia: [Pybba of Mercia](https://en.wikipedia.org/wiki/Pybba_of_Mercia)
 
 Also: Rea, Reae, Silvia, Silviae
 
-Rhea Silvia, the mother of Romulus and Remus in Roman legend; in the history Alanus's mother.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Rhea Silvia, the mother of Romulus and Remus in Roman legend, a royal priestess who had the twins by the god Mars; they were left to die and suckled by a wolf, and grew up to found Rome. The history makes her Alanus's mother in its table of peoples.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Rhea Silvia](https://en.wikipedia.org/wiki/Rhea_Silvia)
 
@@ -2112,13 +2118,13 @@ Wikipedia: [Rhea Silvia](https://en.wikipedia.org/wiki/Rhea_Silvia)
 
 Also: Renis
 
-A river on whose bank Faustus founds a house.
+A river on whose bank, the history says, Vortigern's son Faustus founded a great religious house that was still standing in the writer's day. Which river it was is unknown.
 
 ## Rhiainfellt
 
 Also: Riemmelth
 
-A British princess, one of Oswiu's two wives.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A British princess, daughter of Royth and granddaughter of Rum, who the history says was one of Oswiu of Northumbria's two wives, the other being Edwin's daughter Eanflaed. The marriage joined a Northumbrian king to a British royal family of the north.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Rhiainfellt](https://en.wikipedia.org/wiki/Rhiainfellt)
 
@@ -2126,13 +2132,13 @@ Wikipedia: [Rhiainfellt](https://en.wikipedia.org/wiki/Rhiainfellt)
 
 Also: Rum map Urbgen, Rhun son of Urien
 
-A son of Urien.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Urien, the great king of Rheged in the north. Both the history and the annals say Rhun baptized Edwin of Northumbria and his people, a British claim to an honor Bede gives to the Roman bishop Paulinus; the annals put it in 626 CE, and the history at the Easter after Edwin's daughter's baptism, 627 CE by Bede's count.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rhydderch Hen
 
 Also: Riderchhen
 
-A king of the Britons of Strathclyde.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Rhydderch the Old, king of the Britons of Alt Clut, on the Clyde, in the late sixth century CE, one of the four kings the history says fought Hussa of Bernicia. Adomnán's *Life of Columba* says Columba predicted his peaceful death; Welsh tradition remembers him as generous.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Rhydderch Hael](https://en.wikipedia.org/wiki/Rhydderch_Hael)
 
@@ -2140,7 +2146,7 @@ Wikipedia: [Rhydderch Hael](https://en.wikipedia.org/wiki/Rhydderch_Hael)
 
 Also: Romam, Romae
 
-The city in central Italy, the emperors' seat.
+The city in central Italy, the capital of the Roman Empire and the emperors' seat. The history says Rome was founded by descendants of Aeneas, the Trojan hero who's also Brutus's ancestor, which makes the Britons and the Romans related, and tells how its emperors conquered and ruled Britain.
 
 Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
@@ -2148,19 +2154,19 @@ Wikipedia: [Rome](https://en.wikipedia.org/wiki/Rome)
 
 Also: Rubelio
 
-A Roman consul of AD 29, one of the two the history calls the Gemini.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Lucius Rubellius Geminus, a Roman consul in 29 CE, one of the two the history calls the Gemini. Old reckonings gave that year to Christ's crucifixion, and the history counts years from it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rufus
 
 Also: Rufum, Rufo
 
-The name of two Roman consuls the history counts years by: one of the Gemini of AD 29, and Constantine's colleague.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two Roman consuls the history counts years by. One is Gaius Fufius Geminus, one of the two Gemini of 29 CE, the year old reckonings gave to the crucifixion; the other is a later consul, Constantine's colleague.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Rusicada
 
 Also: Rusicadam
 
-A Roman city in North Africa, today's Skikda in Algeria.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman port in North Africa, today's Skikda, on the coast of northeastern Algeria. The history names it on the long route of the Irish ancestors from Egypt west to Spain, past the Altars of the Philistines.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Skikda](https://en.wikipedia.org/wiki/Skikda)
 
@@ -2168,7 +2174,7 @@ Wikipedia: [Skikda](https://en.wikipedia.org/wiki/Skikda)
 
 Also: sanctus Martinus, Martinus Turonensis
 
-Saint Martin, bishop of Tours.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Martin of Tours, a Roman soldier who, the story goes, cut his cloak in half for a freezing beggar, then became a monk and bishop of Tours, in Gaul, dying in 397 CE. The history says his miracles made him known in the reign of Maximus, who he spoke with.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Martin of Tours](https://en.wikipedia.org/wiki/Martin_of_Tours)
 
@@ -2176,7 +2182,7 @@ Wikipedia: [Martin of Tours](https://en.wikipedia.org/wiki/Martin_of_Tours)
 
 Also: Satanas
 
-The devil by name; he enters Vortigern's heart.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The devil by name, the fallen angel Christians hold rules over hell and tempts people to sin. The history says Satan entered Vortigern's heart when he fell in love with Hengist's daughter.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Satan](https://en.wikipedia.org/wiki/Satan)
 
@@ -2184,7 +2190,7 @@ Wikipedia: [Satan](https://en.wikipedia.org/wiki/Satan)
 
 Also: Saturni
 
-The Roman god of the harvest, in the history Latinus's earliest forebear.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The Roman god of the harvest and of a golden age, said in legend to have ruled Latium when he fled from heaven, and honored at the midwinter feast of Saturnalia. The history makes him Latinus's earliest ancestor, at the head of the line it joins to Brutus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Saturn (mythology)](https://en.wikipedia.org/wiki/Saturn_(mythology))
 
@@ -2192,13 +2198,13 @@ Wikipedia: [Saturn (mythology)](https://en.wikipedia.org/wiki/Saturn_(mythology)
 
 Also: Saxones
 
-The people from over the North Sea who come to Britain.
+The people from over the North Sea, from today's northern Germany and Denmark, who come to Britain when Vortigern, the British king, hires Hengist and Horsa and their men to fight for him, and then turn on the Britons; later they're the English. The history tells of the long wars against them, Arthur's twelve battles among them.
 
 Wikipedia: [Saxons](https://en.wikipedia.org/wiki/Saxons)
 
 ## Scythia
 
-The ancients' name for the lands north of the Black Sea, where the noble driven from Egypt comes from.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The ancients' name for the wide lands north of the Black Sea, home of the horse-riding Scythians. The history says a noble of Scythia, living in Egypt when the Egyptians drowned in the Red Sea, was driven out, and his people later came to Ireland.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Scythia](https://en.wikipedia.org/wiki/Scythia)
 
@@ -2206,7 +2212,7 @@ Wikipedia: [Scythia](https://en.wikipedia.org/wiki/Scythia)
 
 Also: Scythas, Scythian
 
-The people of Scythia; the history descends them from Magog.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The people of Scythia, horse-riding nomads of the plains north of the Black Sea, famous to the Greeks as archers. The history descends them from Magog, Japheth's son, and makes them ancestors of the Irish.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Scythians](https://en.wikipedia.org/wiki/Scythians)
 
@@ -2214,13 +2220,13 @@ Wikipedia: [Scythians](https://en.wikipedia.org/wiki/Scythians)
 
 Also: Segerum
 
-An older man Germanus sends ahead to King Amatheus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An older man the history says Germanus sent with him to King Amatheus, a high bishop who lived nearby, in the story of how Patrick was ordained. He's known only from this passage.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Severn
 
 Also: Sabrina, Sabrinae
 
-The longest river of Britain, flowing from mid Wales to the Bristol Channel.
+The longest river of Britain, about 220 miles, flowing from the hills of mid Wales through the borderland and out into the Bristol Channel. The history lists the marvels of its estuary, among them its tidal wave, a great wall of water that runs upriver at high tide, which it calls the Severn's two kings.
 
 Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
@@ -2228,7 +2234,7 @@ Wikipedia: [River Severn](https://en.wikipedia.org/wiki/River_Severn)
 
 Also: Severus, Severi
 
-The Roman emperor who builds a wall across Britain; the history names a later Severus too.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Septimius Severus, the Roman emperor who came to Britain in 208 CE to fight the peoples of the far north and died at York in 211 CE. The history says he built a wall across the island; it also names a later Severus, whose killing a rebel rose up over.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Septimius Severus](https://en.wikipedia.org/wiki/Septimius_Severus)
 
@@ -2236,7 +2242,7 @@ Wikipedia: [Septimius Severus](https://en.wikipedia.org/wiki/Septimius_Severus)
 
 Also: Sem
 
-A son of Noah; the history says Asia fell to his line.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+One of Noah's three sons, who with Japheth and Ham survived the Flood. Old writers gave Asia to Shem's line, Europe to Japheth's and Africa to Ham's, and the history follows them; the word "Semitic" comes from his name.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Shem](https://en.wikipedia.org/wiki/Shem)
 
@@ -2244,7 +2250,7 @@ Wikipedia: [Shem](https://en.wikipedia.org/wiki/Shem)
 
 Also: Silvius, Silvium, Silvii
 
-Aeneas's son, Brutus's father in the history's first account.
+In the history's first account, Aeneas's son and Brutus's father, who reigned over the Latins for twelve years. Roman legend made Silvius, "of the woods," the name of all the kings of Alba Longa after him.
 
 Wikipedia: [Silvius (mythology)](https://en.wikipedia.org/wiki/Silvius_(mythology))
 
@@ -2252,7 +2258,7 @@ Wikipedia: [Silvius (mythology)](https://en.wikipedia.org/wiki/Silvius_(mytholog
 
 Also: Hereri
 
-The mountains of north-west Wales, Snowdonia.
+The mountains of northwest Wales, Eryri in Welsh, around Snowdon, the highest peak in Wales. The history says Vortigern's wise men sent him there to build a fortress on a mountaintop, where the building kept falling down.
 
 Wikipedia: [Snowdonia](https://en.wikipedia.org/wiki/Snowdonia)
 
@@ -2260,19 +2266,19 @@ Wikipedia: [Snowdonia](https://en.wikipedia.org/wiki/Snowdonia)
 
 Also: Stillitionem, Stillitione
 
-A Roman general, consul in 400 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman general, half Vandal by birth, who ran the western empire for the young emperor Honorius around 400 CE and was consul that year. The history counts years to Stilicho's consulship, and from it to Vortigern's reign.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Stilicho](https://en.wikipedia.org/wiki/Stilicho)
 
 ## Stone of the Inscription
 
-A stone on the shore of the Channel where Vortimer fights his third battle; where it stood isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A stone on the shore of the Channel where the history says Vortimer, Vortigern's son, fought his third battle against the Saxons, in the open field beside it. The name suggests a Roman inscribed stone, but where it stood isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Sussex
 
 Also: Sutsaxum
 
-The land of the South Saxons, on the south coast.
+The kingdom of the South Saxons, on the south coast of England, now the counties of East and West Sussex. The history says Vortigern gave it, with Essex and Middlesex, to the Saxons as the price of his life.
 
 Wikipedia: [Kingdom of Sussex](https://en.wikipedia.org/wiki/Kingdom_of_Sussex)
 
@@ -2280,7 +2286,7 @@ Wikipedia: [Kingdom of Sussex](https://en.wikipedia.org/wiki/Kingdom_of_Sussex)
 
 Also: Talhaern, Talhaearn Tataguen
 
-A British poet, called Tataguen.
+A British poet the history names first among the famous poets of the sixth century CE, calling him Tataguen, "father of inspiration." None of his poems survive, unlike those of Aneirin and Taliesin, named beside him.
 
 Wikipedia: [Talhaearn Tad Awen](https://en.wikipedia.org/wiki/Talhaearn_Tad_Awen)
 
@@ -2288,7 +2294,7 @@ Wikipedia: [Talhaearn Tad Awen](https://en.wikipedia.org/wiki/Talhaearn_Tad_Awen
 
 Also: Taliessin
 
-A British poet.
+A British poet of the late sixth century CE, whose poems praising Urien of Rheged and his son Owain are among the oldest in Welsh. Later legend made him a wizard and seer; the history names him among the famous poets of his day.
 
 Wikipedia: [Taliesin](https://en.wikipedia.org/wiki/Taliesin)
 
@@ -2296,7 +2302,7 @@ Wikipedia: [Taliesin](https://en.wikipedia.org/wiki/Taliesin)
 
 Also: Tauro
 
-A Roman consul of 428, Felix's colleague.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Flavius Taurus, a Roman consul in 428 CE with Felix. The history dates the Saxons' arrival in Britain by their consulship, four hundred years after Christ's coming, a round number.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Taurus (consul 428)](https://en.wikipedia.org/wiki/Taurus_(consul_428))
 
@@ -2304,7 +2310,7 @@ Wikipedia: [Taurus (consul 428)](https://en.wikipedia.org/wiki/Taurus_(consul_42
 
 Also: Teibi
 
-A river of west Wales.
+A river of west Wales that reaches the sea at Cardigan, famous for its salmon and its coracles. The history says Vortigern withdrew in disgrace to his fort in Dyfed by the Teifi.
 
 Wikipedia: [River Teifi](https://en.wikipedia.org/wiki/River_Teifi)
 
@@ -2312,7 +2318,7 @@ Wikipedia: [River Teifi](https://en.wikipedia.org/wiki/River_Teifi)
 
 Also: Teudubir
 
-Ffernfael's father, a king of Builth.
+Ffernfael's father, a king of Builth, in mid Wales, whose line the history traces back father to father through Pasgen to Vortigern and Glovi. He's known from that list, written when his son ruled, around 829 CE.
 
 Wikipedia: [Ffernfael ap Tewdwr](https://en.wikipedia.org/wiki/Ffernfael_ap_Tewdwr)
 
@@ -2320,7 +2326,7 @@ Wikipedia: [Ffernfael ap Tewdwr](https://en.wikipedia.org/wiki/Ffernfael_ap_Tewd
 
 Also: Tamesis
 
-The river of southern England that runs through London.
+The river of southern England that runs through London to the North Sea, about 215 miles long. Gildas names it with the Severn as Britain's two great rivers, and tells how Alban crossed its bed dry-footed with a thousand people on the way to his death; the history names a battle on it.
 
 Wikipedia: [River Thames](https://en.wikipedia.org/wiki/River_Thames)
 
@@ -2328,7 +2334,7 @@ Wikipedia: [River Thames](https://en.wikipedia.org/wiki/River_Thames)
 
 Also: Tanet, Ruoihm
 
-An island at the north-east tip of Kent, Ruoihm in the Britons' tongue.
+The northeast tip of Kent, cut off then by a channel of the sea, Ruoihm in the Britons' tongue. The history says Vortigern gave it to Hengist and the first Saxons to live on, in return for fighting the Picts and the Irish.
 
 Wikipedia: [Isle of Thanet](https://en.wikipedia.org/wiki/Isle_of_Thanet)
 
@@ -2336,7 +2342,7 @@ Wikipedia: [Isle of Thanet](https://en.wikipedia.org/wiki/Isle_of_Thanet)
 
 Also: Theodosio
 
-The Roman emperor Theodosius the Great, who rules with Valentinian.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two Roman emperors in the history. Theodosius the Great ruled from 379 to 395 CE with Valentinian II and made Christianity the empire's religion, and Theodosius II ruled the eastern empire from 408 to 450 CE.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Theodosius I](https://en.wikipedia.org/wiki/Theodosius_I)
 
@@ -2344,13 +2350,13 @@ Wikipedia: [Theodosius I](https://en.wikipedia.org/wiki/Theodosius_I)
 
 Also: Deodric, Deoric
 
-A king of Bernicia, Adda's brother.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Bernicia in the late sixth century CE, Adda's brother and one of Ida's sons. The history says Urien and his sons fought bravely against him, and Urien besieged him for three days on the island of Lindisfarne.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Theodric of Bernicia](https://en.wikipedia.org/wiki/Theodric_of_Bernicia)
 
 ## Thracians
 
-An ancient people of the southeastern Balkans; the history descends them from Tiras.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+An ancient people of the southeastern Balkans, in today's Bulgaria, northern Greece and European Turkey, famous to the Greeks as fierce fighters. The history descends them from Tiras, Japheth's youngest son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Thracians](https://en.wikipedia.org/wiki/Thracians)
 
@@ -2358,13 +2364,13 @@ Wikipedia: [Thracians](https://en.wikipedia.org/wiki/Thracians)
 
 Also: Turingi
 
-A Germanic people the history descends from Negue.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Germanic people of central Germany, whose name lives on in today's Thuringia, conquered by the Franks in 531 CE. The history descends them from Negue in its table of the peoples of Europe.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Thuringii](https://en.wikipedia.org/wiki/Thuringii)
 
 ## Tiras
 
-The youngest son of Japheth in the Bible, in the history the father of the Thracians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The youngest son of Japheth in the Bible, and so Noah's grandson. Old writers took him for the ancestor of the Thracians, and the history follows them in its table of the nations descended from Noah after the Flood.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tiras](https://en.wikipedia.org/wiki/Tiras)
 
@@ -2372,19 +2378,19 @@ Wikipedia: [Tiras](https://en.wikipedia.org/wiki/Tiras)
 
 Also: Tithicam
 
-A valley the Saxon envoys cross on their way home; where it lies isn't known.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A valley the history says the Saxon envoys crossed on their way home, a name Gildas uses too, the *Tithica vallis*. It seems to mean the sea the Irish and the Picts crossed in their boats, but where it lies, or what it means, is uncertain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Trahannon
 
 Also: Trahannoni
 
-A river whose mouth a single wave of the tide floods.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A river whose mouth, the history says, a single great wave of the tide floods, among Britain's strange things. It's usually taken for the Trent, where the rising tide still drives a wave called the aegir upriver, though that isn't certain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Tribruit
 
 Also: Tribruit
 
-A river shore where Arthur fights.
+The shore of a river the history calls Tribruit, where it says Arthur fought the tenth of his twelve battles. An early Welsh poem names a battle at Tryfrwyd too, but where the river was is unknown.
 
 Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum)
 
@@ -2392,13 +2398,13 @@ Wikipedia: [Historia Brittonum](https://en.wikipedia.org/wiki/Historia_Brittonum
 
 Also: Trinovantum
 
-The place near which Julius Caesar fights his third battle in Britain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The place the history says Julius Caesar fought his third battle in Britain near. The Trinovantes were a British people of what's now Essex, who sided with Caesar; Geoffrey of Monmouth later made Trinovantum the old name of London, "New Troy."<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Trinovantum](https://en.wikipedia.org/wiki/Trinovantum)
 
 ## Trojan War
 
-The war the Greeks fought against Troy, after which Aeneas sails to Italy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The war the Greeks fought against Troy, in Asia Minor, to win back Helen, the Spartan queen a Trojan prince carried off, as Homer's poems tell. After ten years the Greeks took the city by the trick of the wooden horse, and Aeneas escaped and sailed to Italy.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Trojan War](https://en.wikipedia.org/wiki/Trojan_War)
 
@@ -2406,13 +2412,13 @@ Wikipedia: [Trojan War](https://en.wikipedia.org/wiki/Trojan_War)
 
 Also: Troi
 
-A king of Troy in Greek myth, in the history a forebear of Brutus.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A king of Troy in Greek myth, Dardanus's grandson, who gave his name to the Trojans and to Troy itself. The history makes him an ancestor of Brutus, joining Britain's founder to Troy's royal line.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tros (mythology)](https://en.wikipedia.org/wiki/Tros_(mythology))
 
 ## Tubal
 
-A son of Japheth in the Bible, in the history the father of the Iberians, the Spanish and the Italians.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A son of Japheth in the Bible, and so Noah's grandson. The history makes him the father of the Iberians, the Spanish and the Italians in its table of the nations descended from Noah after the Flood.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tubal](https://en.wikipedia.org/wiki/Tubal)
 
@@ -2420,7 +2426,7 @@ Wikipedia: [Tubal](https://en.wikipedia.org/wiki/Tubal)
 
 Also: Turni, Turonensis
 
-The history's name for Tours, a city on the Loire in France, which it says Brutus founds.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The history's name for Tours, a city on the Loire in central France, which it says Brutus founded on his travels; the Latin *Turnis* makes it sound named after Turnus, the king Aeneas killed. The Romans knew the town as Caesarodunum, and its later name came from the Turones, the Gauls who lived there.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tours](https://en.wikipedia.org/wiki/Tours)
 
@@ -2428,7 +2434,7 @@ Wikipedia: [Tours](https://en.wikipedia.org/wiki/Tours)
 
 Also: Turno, Turni
 
-The king in Italy that Aeneas defeats.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The king of the Rutuli in Italy who, in Virgil's *Aeneid*, fought Aeneas for the hand of Lavinia, the Latin king's daughter, and was killed by him in single combat at the poem's end. The history's *Turnis*, its name for Tours, makes the town sound named after him.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Turnus](https://en.wikipedia.org/wiki/Turnus)
 
@@ -2436,7 +2442,7 @@ Wikipedia: [Turnus](https://en.wikipedia.org/wiki/Turnus)
 
 Also: Troynt
 
-The boar Arthur hunts with his dog Cavall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The great boar Arthur hunts with his dog Cavall, Troynt in the history's Latin, which says the dog left its paw print in a stone on the hunt. The Welsh tale *Culhwch and Olwen* tells the hunt at length, across Ireland, Wales and Cornwall.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Twrch Trwyth](https://en.wikipedia.org/wiki/Twrch_Trwyth)
 
@@ -2444,7 +2450,7 @@ Wikipedia: [Twrch Trwyth](https://en.wikipedia.org/wiki/Twrch_Trwyth)
 
 Also: Tyrreni, Tyrrenum
 
-The sea west of Italy, between it and Corsica, Sardinia and Sicily.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The part of the Mediterranean west of Italy, between it and Corsica, Sardinia and Sicily, named for the Tyrrhenians, the Greek name for the Etruscans. The history says Minocannus took every island in it, and names it on Brutus's travels.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tyrrhenian Sea](https://en.wikipedia.org/wiki/Tyrrhenian_Sea)
 
@@ -2452,7 +2458,7 @@ Wikipedia: [Tyrrhenian Sea](https://en.wikipedia.org/wiki/Tyrrhenian_Sea)
 
 Also: Urbgen
 
-A king of Rheged in the north of Britain.
+Urien son of Cynfarch, king of Rheged, in the north of Britain around today's Cumbria, in the late sixth century CE, the greatest British war leader of his day, praised in Taliesin's poems. The history names him first of the four kings who fought the English of Bernicia.
 
 Wikipedia: [Urien Rheged](https://en.wikipedia.org/wiki/Urien_Rheged)
 
@@ -2460,7 +2466,7 @@ Wikipedia: [Urien Rheged](https://en.wikipedia.org/wiki/Urien_Rheged)
 
 Also: Valentiniano, Valentinianum, Valentiano, Valentianus
 
-The emperor Valentinian II, Gratian's brother; later in the history, Valentinian III, Placidia's son.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+The name of two Roman emperors in the history. Valentinian II, Gratian's half-brother, ruled from 375 to 392 CE, and later Valentinian III, Placidia's son, ruled the western empire from 425 to 455 CE, in Vortigern's time.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Valentinian II](https://en.wikipedia.org/wiki/Valentinian_II)
 
@@ -2468,7 +2474,7 @@ Wikipedia: [Valentinian II](https://en.wikipedia.org/wiki/Valentinian_II)
 
 Also: Valerianum
 
-A Roman emperor of the third century, whose reign the history counts years by.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A Roman emperor from 253 to 260 CE, who persecuted Christians and was captured in battle by the king of Persia, the only Roman emperor ever taken prisoner. The history counts years to "Decius and Valerian," which seems to mean a pair of consuls.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Valerian (emperor)](https://en.wikipedia.org/wiki/Valerian_(emperor))
 
@@ -2476,13 +2482,13 @@ Wikipedia: [Valerian (emperor)](https://en.wikipedia.org/wiki/Valerian_(emperor)
 
 Also: Vith Guint
 
-The Welsh name of a pit in Gwent that a wind always blows out of.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+"The wind's breath" in Welsh, the history's name for a pit in Gwent that a wind blows out of all the time, one of Britain's strange things. Where it is, is unknown.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 ## Vortigern
 
 Also: Guorthigirnus, Guorthigirno, Guorthigirni, Guorthigirnum, Guorthigirn, Vortigern Guortheneu, Guortheneu
 
-A king of the Britons.
+A king of the Britons in the fifth century CE who, the history says, took the Saxons into Britain to fight the Picts and the Irish. The ground he gave them let in the people who'd take Britain from the Britons. Gildas tells the same story of a proud tyrant without naming him.
 
 Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
 
@@ -2490,7 +2496,7 @@ Wikipedia: [Vortigern](https://en.wikipedia.org/wiki/Vortigern)
 
 Also: Guorthemir
 
-A son of Vortigern.
+A son of Vortigern who, the history says, fought the Saxons bravely after his father gave in to them, driving them back in four battles. British legend remembered him as a hero who might have saved Britain.
 
 Wikipedia: [Vortimer](https://en.wikipedia.org/wiki/Vortimer)
 
@@ -2498,7 +2504,7 @@ Wikipedia: [Vortimer](https://en.wikipedia.org/wiki/Vortimer)
 
 Also: Valagothi
 
-A people the history descends from Armenon, named in its table of peoples.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A people the history descends from Armenon in its table of the peoples of Europe. The name seems to mean the Visigoths, the western Goths who sacked Rome in 410 CE and ruled Spain, though that isn't certain.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Frankish Table of Nations](https://en.wikipedia.org/wiki/Frankish_Table_of_Nations)
 
@@ -2506,7 +2512,7 @@ Wikipedia: [Frankish Table of Nations](https://en.wikipedia.org/wiki/Frankish_Ta
 
 Also: Guectha
 
-Woden's son in Hengist's line, a forebear of the kings of Kent.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+Woden's son in Hengist's line, as the history traces it, an ancestor of the kings of Kent. The English kings counted their lines back to Woden, and Wecta is known only from such lists.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Wecta](https://en.wikipedia.org/wiki/Wecta)
 
@@ -2514,7 +2520,7 @@ Wikipedia: [Wecta](https://en.wikipedia.org/wiki/Wecta)
 
 Also: Woden
 
-A forebear in Hengist's line, known elsewhere as the chief god of the pagan English.
+The chief god of the pagan English, Odin to the Norse, who Wednesday is named after. The English kings traced their lines back to him, and the history sets him in Hengist's line of ancestors and at the head of the kings of Kent, Bernicia, Mercia and East Anglia.
 
 Wikipedia: [Odin](https://en.wikipedia.org/wiki/Odin)
 
@@ -2522,6 +2528,12 @@ Wikipedia: [Odin](https://en.wikipedia.org/wiki/Odin)
 
 Also: Guoy
 
-A river of Wales and England that runs into the Severn.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A river that rises in the mountains of mid Wales and runs south through Hereford to join the Severn estuary at Chepstow, long the border between Wales and England. The history places one of its strange things by it.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [River Wye](https://en.wikipedia.org/wiki/River_Wye)
+
+## Yahweh
+
+The name of the god of the Israelites in the Hebrew Bible, the one god Jews and Christians worship, written in Hebrew with four letters, YHWH. Jews stopped saying the name aloud before Jesus's time and said "my lord" instead, so the Greek and Latin Bibles wrote "lord" where the name stood, and the Latin and French of these books call it only god or lord, never by its name. This translation gives the god its name wherever the source speaks of it, and calls it "it", as it would any people's god.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+
+Wikipedia: [Yahweh](https://en.wikipedia.org/wiki/Yahweh)

@@ -12152,29 +12152,27 @@ function pictureMenuTarget(picture) {
   return !!(picture.closest('.reader-layout') || picture.closest('.image-sheet-overlay'));
 }
 
-function selectionTextInReadingView() {
+function selectionCopyInReadingView() {
+  const none = { text: '', html: '' };
   
   const contained = siteFrameDocument();
-  if (contained) return containedPageSelectionText(contained);
+  if (contained) {
+    const text = containedPageSelectionText(contained);
+    return text ? { text, html: containedPageSelectionHtml(contained) } : none;
+  }
   const selection = window.getSelection();
-  if (!selection || selection.isCollapsed || !selection.rangeCount) return '';
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return none;
   const body = app.querySelector('.document-body');
   
-  if (!body || body.offsetParent === null) return '';
-  for (let index = 0; index < selection.rangeCount; index += 1) {
-    if (!body.contains(selection.getRangeAt(index).commonAncestorContainer)) return '';
-  }
-  return selection.toString();
-}
-
-function selectionHtmlInReadingView() {
-  if (!selectionTextInReadingView()) return '';
-  const contained = siteFrameDocument();
-  if (contained) return containedPageSelectionHtml(contained);
-  const selection = window.getSelection();
-  let html = '';
-  for (let index = 0; index < selection.rangeCount; index += 1) html += richCopyOfRange(selection.getRangeAt(index));
-  return html;
+  if (!body || body.offsetParent === null) return none;
+  const ranges = [];
+  for (let index = 0; index < selection.rangeCount; index += 1) ranges.push(selection.getRangeAt(index));
+  if (ranges.some((range) => !body.contains(range.commonAncestorContainer))) return none;
+  const pairs = ranges.map((range) => richCopyPairOfRange(range));
+  const html = pairs.map((pair) => pair.html).join('');
+  
+  if (pairs.every((pair) => pair.words === null)) return { text: selection.toString(), html };
+  return { text: pairs.map((pair, index) => (pair.words === null ? ranges[index].toString() : pair.words)).join(''), html };
 }
 
 const TABLE_MENU_ITEMS = [
@@ -12672,8 +12670,9 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   contextMenuPath = path;
   contextMenuTargetKind = kind || 'file';
   contextMenuLink = link || null;
-  contextMenuSelectionText = contextMenuTargetKind === 'page' ? selectionTextInReadingView() : '';
-  contextMenuSelectionHtml = contextMenuSelectionText ? selectionHtmlInReadingView() : '';
+  const selectionCopy = contextMenuTargetKind === 'page' ? selectionCopyInReadingView() : { text: '', html: '' };
+  contextMenuSelectionText = selectionCopy.text;
+  contextMenuSelectionHtml = selectionCopy.html;
   contextMenuPicture = contextMenuTargetKind === 'picture' ? picture || null : null;
   contextMenuTableCell = contextMenuTargetKind === 'table' ? tableCell || null : null;
   
@@ -19651,14 +19650,38 @@ let librarySearchRowElements = new Map();
 
 let librarySearchBooks = null;
 function searchBooksHtml(found) {
-  const shown = found.rows.length;
-  const count = !shown
-    ? 'No matches.'
-    : found.total > shown
-      ? `The first ${formatCount(shown)} of ${formatCount(found.total)} books`
-      : formatCountLabel(shown, 'book', 'books');
-  const rows = found.rows.filter(Boolean).map((node) => fileRowHtml(node)).join('');
-  return `<p class="library-results-count">${escapeText(count)}</p>${rows}`;
+  return found.groups.map((group) => {
+    const head = `<p class="library-results-count">${escapeText(group.name)}</p>`;
+    if (group.error) return `${head}<p class="library-empty">${escapeText(group.error)}</p>`;
+    const shown = group.rows.length;
+    const count = !shown
+      ? 'No matches.'
+      : group.total > shown
+        ? `The first ${formatCount(shown)} of ${formatCount(group.total)} books`
+        : formatCountLabel(shown, 'book', 'books');
+    const rows = group.rows.filter(Boolean).map(bookHitHtml).join('');
+    return `<p class="library-results-count">${escapeText(`${group.name}: ${count}`)}</p>${rows}`;
+  }).join('');
+}
+
+function bookHitHtml(hit) {
+  const badge = hit.badge ? `<span class="file-type-badge">${escapeText(hit.badge)}</span>` : '';
+  const author = hit.author ? `<span class="library-file-author">${escapeText(hit.author)}</span>` : '';
+  const line = hit.line ? `<span class="library-file-author">${escapeText(hit.line)}</span>` : '';
+  return `<button type="button" class="library-file library-file-full" data-online-book="${escapeAttr(hit.key || '')}" title="${escapeAttr(hit.title || '')}">${LEAF_FILE_ICON}<span class="library-file-text"><span class="library-file-head"><span class="library-file-label"><span class="file-name-stem">${escapeText(hit.title || '')}</span></span>${badge}</span>${author}${line}</span></button>`;
+}
+
+function mergeBookGroup(held, query, data) {
+  const groups = held && held.query === query ? held.groups : [];
+  const group = {
+    library: data.library,
+    name: typeof data.libraryName === 'string' && data.libraryName ? data.libraryName : data.library,
+    rows: Array.isArray(data.books) ? data.books : [],
+    total: Number(data.booksTotal) || 0,
+    error: typeof data.libraryError === 'string' ? data.libraryError : null,
+  };
+  const at = groups.findIndex((kept) => kept.library === group.library);
+  return { query, groups: at < 0 ? groups.concat([group]) : groups.map((kept, place) => (place === at ? group : kept)) };
 }
 
 function writeSearchResults(html) {
@@ -19858,8 +19881,8 @@ window.leafSetSearchResults = (payload) => {
   if (query !== librarySearchQuery) return;
   if (Number.isFinite(data.vault) && data.vault !== activeVaultId) return;
   
-  librarySearchBooks = Array.isArray(data.books) && !data.error
-    ? { rows: data.books, total: Number(data.booksTotal) || data.books.length }
+  librarySearchBooks = typeof data.library === 'string' && !data.error
+    ? mergeBookGroup(librarySearchBooks, query, data)
     : null;
   
   librarySearchPartial = !!data.partial;
@@ -21095,12 +21118,12 @@ window.addEventListener('keydown', (event) => {
     if (codeViewActive || isEditableMouseTarget(event.target)) {
       return;
     }
-    const selected = selectionTextInReadingView();
-    if (!selected) {
+    const selected = selectionCopyInReadingView();
+    if (!selected.text) {
       return;
     }
     event.preventDefault();
-    copyRich(selected, selectionHtmlInReadingView());
+    copyRich(selected.text, selected.html);
     return;
   }
   if (event.ctrlKey && !event.metaKey && !event.altKey && event.key === 'Tab') {
@@ -25540,6 +25563,22 @@ function richCopyMathSource(el) {
 }
 
 
+function richCopyDropped(node) {
+  const tag = String(node.tagName || '').toUpperCase();
+  if (RICH_COPY_DROPPED.has(tag) || RICH_COPY_DROPPED.has(node.tagName)) return true;
+  if (node.hasAttribute && node.hasAttribute('hidden')) return true;
+  return !!(node.getAttribute && node.getAttribute('aria-hidden') === 'true');
+}
+
+
+function richCopyHoldsDropped(node) {
+  for (const child of Array.from((node && node.childNodes) || [])) {
+    if (child.nodeType === 1 && (richCopyDropped(child) || richCopyHoldsDropped(child))) return true;
+  }
+  return false;
+}
+
+
 function richCopyNode(node, base, diagrams) {
   if (!node) return '';
   if (node.nodeType === 3) return richCopyEscape(node.nodeValue != null ? node.nodeValue : node.textContent || '');
@@ -25547,10 +25586,9 @@ function richCopyNode(node, base, diagrams) {
   const children = () => Array.from(node.childNodes || []).map((child) => richCopyNode(child, base, diagrams)).join('');
   if (node.nodeType === 11) return children();
   const tag = String(node.tagName || '').toUpperCase();
-  const has = (name) => !!(node.hasAttribute && node.hasAttribute(name));
   const attribute = (name) => (node.getAttribute ? node.getAttribute(name) : null);
   const classes = node.classList;
-  if (RICH_COPY_DROPPED.has(tag) || RICH_COPY_DROPPED.has(node.tagName) || has('hidden') || attribute('aria-hidden') === 'true') return '';
+  if (richCopyDropped(node)) return '';
   if (classes && classes.contains && classes.contains('katex')) {
     const tex = richCopyMathSource(node);
     return tex ? richCopyEscape(tex) : '';
@@ -25584,8 +25622,51 @@ function richCopyNode(node, base, diagrams) {
 }
 
 
-function richCopyOfRange(range, base = document.baseURI) {
-  if (!range || typeof range.cloneContents !== 'function') return '';
+
+
+
+const RICH_COPY_LINE = '\u0001';
+const RICH_COPY_GAP = '\u0002';
+const RICH_COPY_BLOCKS = new Set([
+  'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'UL', 'OL', 'LI', 'TABLE', 'THEAD', 'TBODY', 'TFOOT', 'DIV', 'SECTION',
+  'ARTICLE', 'HEADER', 'FOOTER', 'ASIDE', 'MAIN', 'FIGURE', 'FIGCAPTION', 'DL', 'DT', 'DD', 'DETAILS', 'SUMMARY', 'HR', 'BR',
+]);
+
+function richCopyWords(node, diagrams) {
+  if (!node) return '';
+  if (node.nodeType === 3) return String(node.nodeValue != null ? node.nodeValue : node.textContent || '').replace(/\s+/g, ' ');
+  if (node.nodeType !== 1 && node.nodeType !== 11) return '';
+  const words = (child) => richCopyWords(child, diagrams);
+  const children = () => Array.from(node.childNodes || []).map(words).join('');
+  if (node.nodeType === 11) return children();
+  if (richCopyDropped(node)) return '';
+  const tag = String(node.tagName || '').toUpperCase();
+  const classes = node.classList;
+  if (classes && classes.contains && classes.contains('katex')) return richCopyMathSource(node);
+  if (tag === 'IMG') return (node.getAttribute && node.getAttribute('alt')) || '';
+  if (tag === 'PRE') {
+    const mermaid = classes && classes.contains && classes.contains('mermaid');
+    const source = mermaid ? diagrams.shift() || '' : node.textContent || '';
+    return `${RICH_COPY_GAP}${String(source).replace(/\n+$/, '')}${RICH_COPY_GAP}`;
+  }
+  if (tag === 'TR') {
+    const cells = Array.from(node.childNodes || []).filter((cell) => cell.nodeType === 1 && /^T[DH]$/i.test(cell.tagName) && !richCopyDropped(cell));
+    return `${RICH_COPY_LINE}${cells.map((cell) => words(cell).replace(/[\s\u0001\u0002]+/g, ' ').trim()).join('\t')}${RICH_COPY_LINE}`;
+  }
+  if (tag === 'P') return `${RICH_COPY_GAP}${children()}${RICH_COPY_GAP}`;
+  if (RICH_COPY_BLOCKS.has(tag)) return `${RICH_COPY_LINE}${children()}${RICH_COPY_LINE}`;
+  return children();
+}
+
+
+function richCopyWordsOf(clone, diagrams) {
+  return richCopyWords(clone, diagrams)
+    .replace(/^[ \u0001\u0002]+|[ \u0001\u0002]+$/g, '')
+    .replace(/ *[\u0001\u0002][ \u0001\u0002]*/g, (run) => (run.includes(RICH_COPY_GAP) ? '\n\n' : '\n'));
+}
+
+
+function richCopyDiagrams(range) {
   const root = range.commonAncestorContainer;
   const holder = root && root.nodeType === 1 ? root : root && root.parentElement;
   const diagrams = [];
@@ -25594,8 +25675,22 @@ function richCopyOfRange(range, base = document.baseURI) {
       if (range.intersectsNode(diagram)) diagrams.push(diagram.__mermaidSource != null ? diagram.__mermaidSource : diagram.textContent || '');
     }
   }
-  const html = richCopyNode(range.cloneContents(), base, diagrams);
-  return /<[a-z]/.test(html) ? html : '';
+  return diagrams;
+}
+
+
+function richCopyOfRange(range, base = document.baseURI) {
+  return richCopyPairOfRange(range, base).html;
+}
+
+
+function richCopyPairOfRange(range, base = document.baseURI) {
+  if (!range || typeof range.cloneContents !== 'function') return { words: null, html: '' };
+  const diagrams = richCopyDiagrams(range);
+  const clone = range.cloneContents();
+  const html = richCopyNode(clone, base, diagrams.slice());
+  const words = richCopyHoldsDropped(clone) ? richCopyWordsOf(clone, diagrams) : null;
+  return { words, html: /<[a-z]/.test(html) ? html : '' };
 }
 
 function escapeTreeText(text) {
@@ -34143,7 +34238,8 @@ function markInsideAMark(root) {
 
 function copySelectionText() {
   if (!selectionToolbarRange) return;
-  copyRich(selectionToolbarRange.toString(), richCopyOfRange(selectionToolbarRange));
+  const copy = richCopyPairOfRange(selectionToolbarRange);
+  copyRich(copy.words === null ? selectionToolbarRange.toString() : copy.words, copy.html);
 }
 
 
@@ -47194,6 +47290,12 @@ if (app) {
     },
     { passive: false },
   );
+  onColumn('scroll', (event) => {
+    if (!document.body.classList.contains('mac-frame')) return;
+    const table = event.target;
+    if (table.tagName !== 'TABLE' || !table.parentElement?.classList.contains('table-lane')) return;
+    queueMacTableFade(table);
+  }, true);
   onColumn('click', (event) => {
     if (!event.target || !event.target.closest) return;
     const codeButton = event.target.closest('.code-copy');
@@ -47355,6 +47457,32 @@ function renderMathElements() {
     });
 }
 let wideTableResizeObserver;
+const macTableFadeQueue = new Set();
+let macTableFadeFrame = 0;
+function measureMacTableFade(table) {
+  const lane = table.parentElement;
+  if (!lane?.classList.contains('table-lane')) return null;
+  const end = Math.max(0, table.scrollWidth - table.clientWidth);
+  const place = Math.max(0, Math.min(end, table.scrollLeft));
+  const tenth = end / 10;
+  return [lane, end ? String(Math.min(1, place / tenth)) : '0', end ? String(Math.min(1, (end - place) / tenth)) : '0'];
+}
+function paintMacTableFade(fade) {
+  if (!fade) return;
+  const [lane, left, right] = fade;
+  lane.style.setProperty('--table-fade-left', left);
+  lane.style.setProperty('--table-fade-right', right);
+}
+function queueMacTableFade(table) {
+  macTableFadeQueue.add(table);
+  if (macTableFadeFrame) return;
+  macTableFadeFrame = requestAnimationFrame(() => {
+    macTableFadeFrame = 0;
+    const fades = Array.from(macTableFadeQueue, measureMacTableFade);
+    macTableFadeQueue.clear();
+    fades.forEach(paintMacTableFade);
+  });
+}
 function syncTableLaneState(table) {
   const lane = table && table.closest ? table.closest('.table-lane') : null;
   const bay = lane && lane.parentElement;
@@ -47423,6 +47551,12 @@ function decideTableLanes(changed) {
     table.classList.toggle('is-cards', cards[at]);
     syncTableLaneState(table);
   });
+  if (document.body.classList.contains('mac-frame')) {
+    for (const lane of changed) {
+      const table = lane.querySelector('table');
+      if (table) queueMacTableFade(table);
+    }
+  }
 }
 
 function measureWideTables(root = app) {
