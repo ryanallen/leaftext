@@ -692,7 +692,7 @@ The sheet is not saved. It describes the current view rather than a preference, 
 | --- | --- |
 | Vault registry | `manifest.db` — the vaults you have named, and which one is active |
 | Vault text | Held in memory for the active vault only; dropped when the folder you are in changes, and on quit |
-| Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, notes before data files and smallest first within each. A file past either is still [found by its name and its words](#search), up to 100,000 files listed |
+| Documents read | Up to 25,000 per vault, or 32 MB of text — whichever comes first, notes before data files and smallest first within each. A file past either is still [found by its name and its words](#search), up to 100,000 files listed, a folder level at a time so a cache deep in one corner cannot use them up before your own folders are reached |
 | Folders not read | A folder that declares itself a cache, and eleven names a build tool picks. See [Skipped folders](#skipped-folders) |
 | Repositories inside a vault | Found up to three folders deep, stopping at the first one on each branch. See [Repositories inside repositories](#repositories-inside-repositories) |
 | Scheduled tasks | The active vault's open dated checkboxes, nearest due first. See [Scheduled tasks](#scheduled-tasks) |
