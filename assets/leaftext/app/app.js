@@ -15486,7 +15486,8 @@ function vaultMenuItems() {
     run: () => switchVault(0),
   }];
   for (const vault of leafVaults) {
-    if (!vault || !vault.id) continue;
+    
+    if (!vault || !vault.id || vault.kind === 'books-online') continue;
     items.push({
       label: vault.name || vault.rootPath,
       title: vault.rootPath || '',
@@ -15495,13 +15496,7 @@ function vaultMenuItems() {
       vaultId: vault.id,
       run: () => switchVault(vault.id),
       
-      edit: () => {
-        crumbMenuVault = vault;
-        changeRepoRevealed = false;
-        
-        send({ command: 'getVaultGit', id: vault.id });
-        showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
-      },
+      edit: () => showVaultPanel(vault),
     });
   }
   items.push('separator');
@@ -15512,7 +15507,16 @@ function vaultMenuItems() {
     keepOpen: true,
     run: () => showCrumbMenu(crumbMenuOwner, newVaultMenuItems(), 'Folder on this computer…'),
   });
+  pushBooksOnlineSection(items);
   return items;
+}
+
+function showVaultPanel(vault) {
+  crumbMenuVault = vault;
+  changeRepoRevealed = false;
+  
+  send({ command: 'getVaultGit', id: vault.id });
+  showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
 }
 function newVaultMenuItems() {
   const items = [
@@ -15521,7 +15525,6 @@ function newVaultMenuItems() {
   ];
   pushCloneRow(items);
   pushServiceVaultRows(items);
-  pushBooksOnlineRow(items);
   items.push('separator', {
     label: 'Back',
     icon: BACK_ARROW_SVG,
@@ -16410,12 +16413,15 @@ function pushServiceVaultRows(items) {
 }
 
 const BOOKS_ONLINE_ICON = '<span class="lt-icon lt-icon-define"></span>';
-function pushBooksOnlineRow(items) {
-  items.push('separator', {
-    label: 'Books online…',
+function pushBooksOnlineSection(items) {
+  const vault = leafVaults.find((entry) => entry && entry.kind === 'books-online');
+  items.push('separator', { heading: 'Books online' }, {
+    label: 'Project Gutenberg',
     title: 'Browse Project Gutenberg and read any of its books',
     icon: BOOKS_ONLINE_ICON,
+    selected: !!vault && vault.id === activeVaultId,
     run: () => openBooksOnline('gutenberg'),
+    edit: vault ? () => showVaultPanel(vault) : undefined,
   });
 }
 
