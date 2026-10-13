@@ -12057,6 +12057,8 @@ let contextMenuLink = null;
 
 let contextMenuSelectionText = '';
 
+let contextMenuSelectionHtml = '';
+
 let contextMenuTabIndex = null;
 
 let contextMenuPicture = null;
@@ -12165,6 +12167,16 @@ function selectionTextInReadingView() {
   return selection.toString();
 }
 
+function selectionHtmlInReadingView() {
+  if (!selectionTextInReadingView()) return '';
+  const contained = siteFrameDocument();
+  if (contained) return containedPageSelectionHtml(contained);
+  const selection = window.getSelection();
+  let html = '';
+  for (let index = 0; index < selection.rangeCount; index += 1) html += richCopyOfRange(selection.getRangeAt(index));
+  return html;
+}
+
 const TABLE_MENU_ITEMS = [
   { action: 'tableRowAbove', icon: 'row-above', label: 'Add row above' },
   { action: 'tableRowBelow', icon: 'row-below', label: 'Add row below' },
@@ -12263,6 +12275,7 @@ function hideContextMenu() {
   contextMenuPath = null;
   contextMenuLink = null;
   contextMenuSelectionText = '';
+  contextMenuSelectionHtml = '';
   contextMenuPicture = null;
   contextMenuPictureFullWindow = false;
   contextMenuTableCell = null;
@@ -12596,9 +12609,14 @@ function fillContextMenu(menu, entries, level) {
       const path = contextMenuPath;
       const link = contextMenuLink;
       const selected = contextMenuSelectionText;
+      const selectedHtml = contextMenuSelectionHtml;
       const picture = contextMenuPicture;
       const tableCell = contextMenuTableCell;
       hideContextMenu();
+      if (entry.action === 'copySelection') {
+        copyRich(selected, selectedHtml);
+        return;
+      }
       if (path) runContextAction(entry.action, path, link, selected, picture, tableCell);
     });
     menu.appendChild(item);
@@ -12655,6 +12673,7 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   contextMenuTargetKind = kind || 'file';
   contextMenuLink = link || null;
   contextMenuSelectionText = contextMenuTargetKind === 'page' ? selectionTextInReadingView() : '';
+  contextMenuSelectionHtml = contextMenuSelectionText ? selectionHtmlInReadingView() : '';
   contextMenuPicture = contextMenuTargetKind === 'picture' ? picture || null : null;
   contextMenuTableCell = contextMenuTargetKind === 'table' ? tableCell || null : null;
   
@@ -21081,7 +21100,7 @@ window.addEventListener('keydown', (event) => {
       return;
     }
     event.preventDefault();
-    copyPlainText(selected);
+    copyRich(selected, selectionHtmlInReadingView());
     return;
   }
   if (event.ctrlKey && !event.metaKey && !event.altKey && event.key === 'Tab') {
@@ -25478,6 +25497,105 @@ function footnoteDefinitionWysiwygSafe(el) {
   if (paragraphs.length !== 1) return false;
   if (el.querySelector('ul, ol, pre, table, blockquote, img, .katex, .mermaid, input')) return false;
   return !!footnoteNameOf(el) && inlineMarkdownDomWysiwygSafe(paragraphs[0]);
+}
+
+
+
+
+const RICH_COPY_TAGS = new Set([
+  'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'BR', 'HR', 'STRONG', 'B', 'EM', 'I', 'U', 'S', 'DEL', 'SUB', 'SUP', 'MARK',
+  'CODE', 'PRE', 'BLOCKQUOTE', 'UL', 'OL', 'LI', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'A', 'IMG',
+]);
+
+const RICH_COPY_DROPPED = new Set(['NAV', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SCRIPT', 'STYLE', 'TEMPLATE', 'SVG', 'svg', 'CANVAS', 'IFRAME', 'OBJECT']);
+const RICH_COPY_VOID = new Set(['BR', 'HR', 'IMG']);
+
+function richCopyEscape(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function richCopyAttribute(value) {
+  return richCopyEscape(value).replace(/"/g, '&quot;');
+}
+
+
+function richCopyAddress(raw, base) {
+  const written = String(raw || '').trim();
+  if (!written || written.startsWith('#')) return '';
+  let url;
+  try {
+    url = new URL(written, base || undefined);
+  } catch (error) {
+    return '';
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:' && url.protocol !== 'mailto:') return '';
+  if (/\.local$|^localhost$|^127\.|^\[::1\]$/.test(url.hostname)) return '';
+  return url.href;
+}
+
+
+function richCopyMathSource(el) {
+  const annotation = el.querySelector ? el.querySelector('annotation[encoding="application/x-tex"]') : null;
+  return annotation ? String(annotation.textContent || '').trim() : '';
+}
+
+
+function richCopyNode(node, base, diagrams) {
+  if (!node) return '';
+  if (node.nodeType === 3) return richCopyEscape(node.nodeValue != null ? node.nodeValue : node.textContent || '');
+  if (node.nodeType !== 1 && node.nodeType !== 11) return '';
+  const children = () => Array.from(node.childNodes || []).map((child) => richCopyNode(child, base, diagrams)).join('');
+  if (node.nodeType === 11) return children();
+  const tag = String(node.tagName || '').toUpperCase();
+  const has = (name) => !!(node.hasAttribute && node.hasAttribute(name));
+  const attribute = (name) => (node.getAttribute ? node.getAttribute(name) : null);
+  const classes = node.classList;
+  if (RICH_COPY_DROPPED.has(tag) || RICH_COPY_DROPPED.has(node.tagName) || has('hidden') || attribute('aria-hidden') === 'true') return '';
+  if (classes && classes.contains && classes.contains('katex')) {
+    const tex = richCopyMathSource(node);
+    return tex ? richCopyEscape(tex) : '';
+  }
+  if (tag === 'PRE' && classes && classes.contains && classes.contains('mermaid')) {
+    const source = diagrams.shift();
+    return source ? `<pre><code>${richCopyEscape(source)}</code></pre>` : '';
+  }
+  if (tag === 'IMG') {
+    const src = richCopyAddress(attribute('src'), base);
+    const alt = attribute('alt') || '';
+    if (src) return `<img src="${richCopyAttribute(src)}" alt="${richCopyAttribute(alt)}">`;
+    return alt ? `[${richCopyEscape(alt)}]` : '';
+  }
+  if (tag === 'A') {
+    const href = richCopyAddress(attribute('href'), base);
+    return href ? `<a href="${richCopyAttribute(href)}">${children()}</a>` : children();
+  }
+  if (!RICH_COPY_TAGS.has(tag)) return children();
+  const name = tag.toLowerCase();
+  if (RICH_COPY_VOID.has(tag)) return `<${name}>`;
+  if (tag === 'PRE') return `<pre><code>${richCopyEscape(node.textContent || '')}</code></pre>`;
+  let spans = '';
+  if (tag === 'TD' || tag === 'TH') {
+    for (const span of ['colspan', 'rowspan']) {
+      const value = Number(attribute(span));
+      if (Number.isInteger(value) && value > 1) spans += ` ${span}="${value}"`;
+    }
+  }
+  return `<${name}${spans}>${children()}</${name}>`;
+}
+
+
+function richCopyOfRange(range, base = document.baseURI) {
+  if (!range || typeof range.cloneContents !== 'function') return '';
+  const root = range.commonAncestorContainer;
+  const holder = root && root.nodeType === 1 ? root : root && root.parentElement;
+  const diagrams = [];
+  if (holder && holder.querySelectorAll && typeof range.intersectsNode === 'function') {
+    for (const diagram of holder.querySelectorAll('pre.mermaid')) {
+      if (range.intersectsNode(diagram)) diagrams.push(diagram.__mermaidSource != null ? diagram.__mermaidSource : diagram.textContent || '');
+    }
+  }
+  const html = richCopyNode(range.cloneContents(), base, diagrams);
+  return /<[a-z]/.test(html) ? html : '';
 }
 
 function escapeTreeText(text) {
@@ -34025,7 +34143,7 @@ function markInsideAMark(root) {
 
 function copySelectionText() {
   if (!selectionToolbarRange) return;
-  copyPlainText(selectionToolbarRange.toString());
+  copyRich(selectionToolbarRange.toString(), richCopyOfRange(selectionToolbarRange));
 }
 
 
@@ -39392,6 +39510,16 @@ function containedPageSelectionText(page) {
   const selection = view && view.getSelection ? view.getSelection() : null;
   if (!selection || selection.isCollapsed || !selection.rangeCount) return '';
   return selection.toString();
+}
+
+
+function containedPageSelectionHtml(page) {
+  const view = page.defaultView;
+  const selection = view && view.getSelection ? view.getSelection() : null;
+  if (!selection || selection.isCollapsed || !selection.rangeCount) return '';
+  let html = '';
+  for (let index = 0; index < selection.rangeCount; index += 1) html += richCopyOfRange(selection.getRangeAt(index), page.baseURI);
+  return html;
 }
 
 function containedPageCanvasReadings(page) {
@@ -47574,12 +47702,37 @@ function copyCodeBlock(button, text) {
 }
 
 function copyPlainText(text) {
+  copyRich(text, '');
+}
+
+function copyRich(text, html) {
   if (!text) return;
+  if (copyThroughEvent(text, html)) return;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {}, () => { legacyCopy(text); });
   } else {
     legacyCopy(text);
   }
+}
+
+function copyThroughEvent(text, html) {
+  let written = false;
+  const fill = (event) => {
+    if (!event.clipboardData) return;
+    event.clipboardData.setData('text/plain', text);
+    if (html) event.clipboardData.setData('text/html', html);
+    event.preventDefault();
+    written = true;
+  };
+  document.addEventListener('copy', fill, true);
+  try {
+    document.execCommand('copy');
+  } catch (error) {
+    written = false;
+  } finally {
+    document.removeEventListener('copy', fill, true);
+  }
+  return written;
 }
 function legacyCopy(text) {
   const area = document.createElement('textarea');
