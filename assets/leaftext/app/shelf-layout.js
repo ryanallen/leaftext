@@ -31,8 +31,8 @@ const UNPRINTED = 'Edition not chosen yet';
 
 // A spine is thicker the more words its source holds: the least at `at` words or fewer, `perDoubling` more for every doubling, never past the most.
 const SPINE_WIDTH = { least: 26, at: 2000, perDoubling: 4, most: 64 };
-// Taller the longer its title, never shorter than a book; the most holds a two-line title only, so a one-line title is never cut.
-const SPINE_HEIGHT = { base: 70, perLetter: 7.5, least: 150, most: 250 };
+// Taller the longer its title, never shorter than a book and never capped; a two-line title's longer line is counted at the widest heading face any theme sets, IBM Plex Mono's 7.8px a letter rounded up.
+const SPINE_HEIGHT = { base: 70, perLetter: 7.5, perLongLetter: 8, least: 150 };
 // The written date stands under the title in the spine's small type, so the spine grows by its letters as well, at a smaller step than a title's; its width stays the book's length.
 const SPINE_TAG = { gap: 8, perLetter: 6 };
 // A title past this many letters goes on two lines, but only on a spine at least `SPINE_TWO_LINES` thick; a thinner spine stands taller instead.
@@ -114,7 +114,7 @@ export function baysFor(data, order) {
 }
 
 /** The letters of the longer line when a title breaks at the space that evens its two lines, so the spine is tall enough that no face wraps it onto a third. */
-function longerLine(title) {
+export function longerLine(title) {
   let best = title.length;
   for (let at = title.indexOf(' '); at !== -1; at = title.indexOf(' ', at + 1)) best = Math.min(best, Math.max(at, title.length - at - 1));
   return best;
@@ -126,8 +126,8 @@ export function spineMarkup(book, { picked = '' } = {}) {
   const long = book.title.length > SPINE_ONE_LINE && width >= SPINE_TWO_LINES;
   const letters = long ? longerLine(book.title) : book.title.length;
   const tag = book.written.label || '';
-  const title = Math.max(SPINE_HEIGHT.least, SPINE_HEIGHT.base + SPINE_HEIGHT.perLetter * letters);
-  const height = Math.round((long ? Math.min(SPINE_HEIGHT.most, title) : title) + (tag ? SPINE_TAG.gap + SPINE_TAG.perLetter * tag.length : 0));
+  const title = Math.max(SPINE_HEIGHT.least, SPINE_HEIGHT.base + (long ? SPINE_HEIGHT.perLongLetter : SPINE_HEIGHT.perLetter) * letters);
+  const height = Math.round(title + (tag ? SPINE_TAG.gap + SPINE_TAG.perLetter * tag.length : 0));
   const classes = ['shelf-spine', book.status === 'planned' ? 'is-planned' : '', long ? 'is-long' : ''].filter(Boolean).join(' ');
   const said = `${book.title}, ${book.author}${book.status === 'planned' ? ', coming' : ''}${tag ? `, ${tag}` : ''}`;
   return [

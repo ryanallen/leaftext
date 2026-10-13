@@ -32,6 +32,8 @@ Each passage is told the way a good English writer would tell it today, then che
 
 Where the source points at someone by a title its first readers knew at once, as "the teacher of the gentiles" for Paul, the English says the name, and a note tells the story.
 
+[Open riddles.tsv](riddles.tsv)
+
 <a id="plain-speech"></a>
 
 ## Plain speech
@@ -229,6 +231,14 @@ The endnotes at the end of the book: what a reader would ask about a custom, a r
 ## Every allusion told
 
 Where the text leans on a story from the Bible, the Church or another old book, its endnote tells that story, who, what happened and why the text brings it up, so no reader needs the Bible open beside it; chapter and verse follow the telling, never stand in for it.
+
+[Open annales-cambriae.md](annales-cambriae.md#endnotes)
+
+<a id="one-note-one-thing"></a>
+
+## One note, one thing
+
+Each story, person, custom or reading gets its own endnote at the sentence that leans on it, never one note at a paragraph's end summing up all it tells.
 
 [Open annales-cambriae.md](annales-cambriae.md#endnotes)
 
