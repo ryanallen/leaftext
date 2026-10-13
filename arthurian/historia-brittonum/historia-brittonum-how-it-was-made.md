@@ -26,6 +26,12 @@ Every range was run through the book's own check tool and the shelf's checks, an
 
 Each passage is told the way a good English writer would tell it today, then checked against the source so every event, person and act is there and nothing is invented.
 
+<a id="names-not-riddles"></a>
+
+## Names, not riddles
+
+Where the source points at someone by a title its first readers knew at once, as "the teacher of the gentiles" for Paul, the English says the name, and a note tells the story.
+
 <a id="plain-speech"></a>
 
 ## Plain speech
@@ -42,7 +48,7 @@ Each sentence is written as English, not in the source's grammar: a verb rather 
 
 ## Every link said
 
-Where the source joins a cause and its effect with a bare "and", the English says how they connect, with "to", "by", "so", "until" or "because".
+Where the source joins a cause and its effect with a bare "and", the English says how they connect, with "to", "by", "so", "until" or "because"; where it strings quotations together, the English says who speaks each one and why, never a bare "Again:".
 
 <a id="nothing-said-twice"></a>
 
@@ -212,6 +218,14 @@ The endnotes at the end of the book: what a reader would ask about a custom, a r
 
 [Open historia-brittonum.md](historia-brittonum.md#endnotes)
 
+<a id="every-allusion-told"></a>
+
+## Every allusion told
+
+Where the text leans on a story from the Bible, the Church or another old book, its endnote tells that story, who, what happened and why the text brings it up, so no reader needs the Bible open beside it; chapter and verse follow the telling, never stand in for it.
+
+[Open historia-brittonum.md](historia-brittonum.md#endnotes)
+
 <a id="additions-marked"></a>
 
 ## Additions marked
@@ -225,6 +239,14 @@ A note or glossary entry this translation adds, rather than one the printed edit
 ## Sourced glossary
 
 The glossary of the people, places and words the book uses: each entry comes from the printed edition's own index or word list, or is marked as added, with the page it was found on, and its terms are underlined in the text. Every person, place and people the book names has an entry, linked to its Wikipedia article where there is one, except the names of a family tree, which one endnote explains.
+
+[Open GLOSSARY.md](GLOSSARY.md)
+
+<a id="cards-that-teach"></a>
+
+## Cards that teach
+
+Every card for a person, place, people or idea tells who or what it is, what happened and why the text brings it up, in a few plain sentences, never only what kind of thing it is.
 
 [Open GLOSSARY.md](GLOSSARY.md)
 

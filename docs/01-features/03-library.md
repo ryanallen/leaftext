@@ -24,7 +24,6 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [Graph](#graph) | A force-directed map of how documents link to each other, shown on the page rather than in the pane |
 | [Cloud folders](#your-cloud-is-already-a-folder) | Dropbox, OneDrive, iCloud Drive, Box, Nextcloud, Google Drive and the Kindle app's books become vaults on their own when their app is on this machine, and their rows wear a cloud |
 | [GitHub sync](#github-sync) | A vault can be a git repository that pushes to GitHub, manually from its header or automatically once local changes stop when that vault opts in — and a repository can be [cloned](#clone-a-repository) into a new vault |
-| [Storage services](#storage-services) | Connect Dropbox, OneDrive, SharePoint, Box, a WebDAV server or an S3 bucket and keep a local copy for offline reading |
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
@@ -48,7 +47,7 @@ Each Leaftext window opens its own vault. Picking one in a window changes that w
 
 - **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
-- **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or a [storage service](#storage-services). Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
+- **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or — on a computer with no Google Drive folder — [Google Drive](#your-cloud-is-already-a-folder). Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
 - The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
 
 ### Open Knowledge Format bundles
@@ -96,6 +95,10 @@ On Windows the Google Drive app mounts each signed-in account as a drive of its 
 No Google Drive app yet? **New vault… → Google Drive…** gets it for you. Leaftext downloads Google's own installer from Google and opens it, so your computer asks whether to let Google's app install; then you sign in to Google Drive in its own window, and your **My Drive** opens in Leaftext by itself the moment its folder appears. If the app is already installed but signed out, the same row just starts it. If the download fails, Google's download page opens in your browser instead. Cancel stops the wait, and the row is not shown on a computer that already has a Google Drive folder, since that folder is already a vault.
 
 A vault *inside* one of these folders wears the cloud too. Where the files end up is what the mark is about, and a folder under Dropbox syncs exactly as Dropbox does.
+
+#### Google Docs, Sheets and Slides
+
+The Google Drive app keeps Google Docs, Sheets and Slides in its folder as shortcuts ending `.gdoc`, `.gsheet` and `.gslides`. When you open one, Leaftext says what it is and offers **Open in Google Docs**, **Open in Google Sheets** or **Open in Google Slides**. The press opens that document in your browser. Leaftext does not sign in to Google or fetch the document through Google's API. If the shortcut does not identify a document, the message says so without an open button.
 
 ## Browsing
 
@@ -177,32 +180,6 @@ Search and the [graph](#graph) go almost as wide. A note in a folder whose name 
 The other thing that walk refuses is a folder a machine filled: one that declares itself a cache, or one named `target`, `node_modules`, `build`, `dist`, `vendor`, `venv`, `.venv`, `__pycache__`, `.next`, `.gradle` or `Pods`. A vault that is also a folder you build in can hold a hundred generated files for every note you wrote, and reading and watching all of them costs a third of your computer while you sit still. The pane still lists these folders and you can still open one; what changes is that search does not read inside them, and a change inside one is not something Leaftext goes and looks at. When a search leaves any of them out, the line above the results says how many and names them if you rest on it. A document you have actually opened from inside one still updates when it changes on disk.
 
 A folder a tool filled without saying so — a cache of thousands of tiny data files under a name of its own — is read like any other, and it cannot crowd out your notes: a vault too big to read whole reads the files written to be read first and data files such as JSON, YAML and XML after, and every file in it, read or not, is still found by its name.
-
-## Storage services
-
-The **New vault** page offers Dropbox, OneDrive, SharePoint, Box, WebDAV and S3. Dropbox, OneDrive, SharePoint and Box use your own app registration and open sign-in in your browser. A WebDAV server or S3 bucket takes your user name and password or key pair and checks it with the server. Credentials are kept in the operating system's credential store, under the profile folder, vault and account. An older sign-in is carried over only after Leaftext confirms it belongs to that vault.
-
-| Service | What the connection asks for |
-| --- | --- |
-| Dropbox | Your app key and a folder path such as `/Notes`; register `http://127.0.0.1:37653/` as its redirect address |
-| OneDrive | Your desktop app client ID, drive ID, and folder ID |
-| SharePoint | Your desktop app client ID, document library drive ID, and folder ID |
-| Box | Your app's client ID and client secret, and a folder ID; register `http://127.0.0.1/` as its redirect address |
-| WebDAV | The folder's `https://` address, such as a Nextcloud folder's WebDAV link, your user name and your password |
-| S3 | The endpoint (blank for Amazon), region, bucket, an optional prefix, and your access key ID and secret access key |
-
-
-While a new service vault is waiting for sign-in or a server check, **Cancel** stops that attempt and removes the new vault. The library returns to the vault and folder you were browsing unless you have moved elsewhere. Canceling **Enter password…** on an existing WebDAV or S3 vault keeps that vault and its earlier sign-in. A canceled attempt cannot later add a credential or show a sign-in failure.
-
-Leaftext keeps a local copy of readable files, so opening, searching, and following links work offline.
-
-### Google Docs, Sheets and Slides
-
-The Google Drive app keeps Google Docs, Sheets and Slides in its folder as shortcuts ending `.gdoc`, `.gsheet` and `.gslides`. When you open one, Leaftext says what it is and offers **Open in Google Docs**, **Open in Google Sheets** or **Open in Google Slides**. The press opens that document in your browser. Leaftext does not sign in to Google or fetch the document through Google's API. If the shortcut does not identify a document, the message says so without an open button.
-
-The vault's settings show the account and refresh state, with **Refresh**, **Sign in**, and **Sign out**; a WebDAV or S3 vault shows **Enter password…** in place of **Sign in**. A connected vault refreshes every five minutes. A WebDAV vault asks its server about every folder until the server has shown that it marks a folder changed whenever something inside it changes; from then on it asks only about the folders that changed, and still checks every folder about once an hour. Three consecutive failures pause automatic refresh until you press **Refresh**. Signing out keeps the local files.
-
-An explicit **Save** sends your edited file using the version it was opened against. A refused save or a conflicting remote version leaves your local edit intact and unsent; refreshing preserves that edit.
 
 ## File actions
 
@@ -638,7 +615,7 @@ The terminal button beside the **New document** plus above the tabs opens a cons
 
 Type an installed agent's command into the console and it keeps its own settings: its model and gateway, and the project rules, skills, hooks and plugins it loads in any other terminal. [Connect the agent to Leaftext](10-agents.md) in the agent's settings if you want it to work with the open document.
 
-The console draws with Ghostty's terminal core, the same code the Ghostty terminal runs, built for the page on Windows and the Mac alike. Scrolled back through a console's output, you keep your place while the program goes on printing. A console behind another tab keeps everything it prints but draws none of it until you come back to it, so a long build printing away costs the document you are reading nothing. When a console finishes work, its tab icon turns the theme's main color and breathes until you type in that console. The mark stays visible while you read another tab or bring the finished console forward.
+The console draws with Ghostty's terminal core, the same code the Ghostty terminal runs, built for the page on Windows and the Mac alike. Scrolled back through a console's output, you keep your place while the program goes on printing. A console behind another tab keeps everything it prints but draws none of it until you come back to it, so a long build printing away costs the document you are reading nothing. While a console is working, its tab icon pulses gray; when it finishes, the icon turns the theme's main color and holds still. The mark stays visible while you read another tab or bring the finished console forward.
 
 Alt chords reach the program the way a terminal sends them: on Windows, `Alt+B`, `Alt+F` and every other Alt letter arrive as an escape followed by the letter, so a shell or editor that moves by word with them does; on a Mac, Option types the character it composes, as it does in Terminal. A console also tells the programs it starts that the terminal is Leaftext, the way a terminal names itself, so an agent run there knows where it is.
 
@@ -652,7 +629,7 @@ A web or mail address a console prints — `https://`, `http://` or `mailto:` �
 
 ### A finished console says so
 
-When a program in a console finishes its work, the console's tab icon turns the theme's main color and a soft glow breathes behind it, so with several agents running you can see which one is ready for you without opening each. Claude Code says it is working and when it has finished in its title, and the tab reads that; any other program counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into that console clears the mark; looking at the tab alone does not. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
+While a program in a console is working, the console's tab icon is gray and a soft glow pulses behind it; when it finishes, the icon turns the theme's main color and holds still, so with several agents running you can see which one is ready for you without opening each. An agent at rest keeps the colored mark too, and only a plain shell at rest stays gray; its row in the Agents list wears the same mark. Claude Code says it is working and when it has finished in its title, and the tab reads that; any other program counts as finished once it has printed for a while and then gone quiet for five seconds, or rings the terminal bell. Typing into a finished plain shell takes the color off; looking at the tab alone does not. Under [Reduce Motion](05-settings.md#reduce-motion) the glow holds still.
 
 ### Every agent in one list
 

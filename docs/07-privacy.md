@@ -11,7 +11,6 @@ Every document you open is read from your own disk. Your settings, recent files,
 ## Who the app talks to
 
 - **GitHub, to check for a newer version.** On launch the app asks the public Leaftext repository which version is newest, and downloads an installer only when you press Update.
-- **A service you connect, and only that service.** When you add a Dropbox, OneDrive, SharePoint, Box, WebDAV or S3 vault, the app talks straight to that service from your computer. No copy passes through anyone else.
 - **A web page you open.** A web page tab loads that page the way a browser does.
 
 ## Google Drive

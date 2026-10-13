@@ -15483,7 +15483,6 @@ function newVaultMenuItems() {
     { label: 'Folder on this computer…', icon: FOLDER_ICON_SVG, run: () => send({ command: 'createVault' }) },
   ];
   pushCloneRow(items);
-  items.push('separator');
   pushServiceVaultRows(items);
   items.push('separator', {
     label: 'Back',
@@ -15491,38 +15490,6 @@ function newVaultMenuItems() {
     keepOpen: true,
     run: () => showCrumbMenu(crumbMenuOwner, vaultMenuItems(), 'New vault…'),
   });
-  return items;
-}
-
-function vaultRemoteItems(vault) {
-  if (!vault || (!vault.signsIn && !vault.account)) return [];
-  const items = ['separator', { heading: 'Account' }];
-  if (vault.account) {
-    items.push({ note: `Signed in as ${vault.account}` });
-    const copy = vaultRemoteByVault.get(vault.id);
-    const busy = Boolean(copy && copy.busy);
-    if (copy && copy.refreshedAt) items.push({ note: `Last refreshed ${sinceInWords(copy.refreshedAt)}` });
-    
-    if (copy && copy.offline) items.push({ note: 'Offline — reading the copy on this machine. It will catch up when the network comes back.' });
-    if (copy && copy.resting) items.push({ note: 'Not asking for now, because the service kept refusing. Refresh to try again.' });
-    items.push({
-      label: busy ? 'Refreshing…' : 'Refresh',
-      icon: SYNC_ICON_SVG,
-      disabled: busy,
-      keepOpen: true,
-      run: () => send({ command: 'refreshVault', id: vault.id }),
-    });
-    if (copy && copy.message) items.push({ note: copy.message, danger: Boolean(copy.error) });
-    items.push({
-      label: 'Sign out',
-      title: 'Forgets the sign-in. The copied files stay, and go on reading.',
-      keepOpen: true,
-      run: () => send({ command: 'signOutVault', id: vault.id }),
-    });
-  } else {
-    items.push({ note: 'Not signed in, so this vault is not being kept up to date.' });
-    items.push(signInVaultRow(vault));
-  }
   return items;
 }
 function editVaultMenuItems(vault) {
@@ -15558,7 +15525,6 @@ function editVaultMenuItems(vault) {
       danger: true,
       run: () => send({ command: 'removeVault', id: vault.id }),
     },
-    ...vaultRemoteItems(vault),
     ...vaultGitItems(vault),
     'separator',
     {
@@ -16377,95 +16343,21 @@ function refreshSwitcherGlyphs() {
   }
 }
 
-const vaultRemoteByVault = new Map();
-window.leafSetVaultRemote = (state) => {
-  if (!state || !state.id) return;
-  vaultRemoteByVault.set(state.id, state);
-  refreshVaultGitPanel(state.id);
-};
-
-function sinceInWords(seconds) {
-  const ago = Math.max(0, Math.floor(Date.now() / 1000) - Number(seconds || 0));
-  if (ago < 90) return 'just now';
-  const minutes = Math.round(ago / 60);
-  if (minutes < 60) return `${minutes} minutes ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return hours === 1 ? 'an hour ago' : `${hours} hours ago`;
-  const days = Math.round(hours / 24);
-  return days === 1 ? 'yesterday' : `${days} days ago`;
-}
-
 const SERVICE_VAULT_ROWS = [
-  ['Dropbox', 'Copy one Dropbox folder through its API', () => showDropboxVaultForm()],
   ['Google Drive', 'Get the Google Drive app and open your Drive', () => startGoogleDriveSetup()],
-  ['OneDrive', 'Copy one OneDrive folder through Microsoft Graph', () => showMicrosoftVaultForm('OneDrive', 'onedrive')],
-  ['SharePoint', 'Copy one SharePoint folder through Microsoft Graph', () => showMicrosoftVaultForm('SharePoint', 'sharepoint')],
-  ['Box', 'Copy one Box folder through its API', () => showBoxVaultForm()],
-  ['WebDAV', 'Copy one folder from a WebDAV server such as Nextcloud', () => showWebDavVaultForm()],
-  ['S3', 'Copy one prefix of an S3 bucket', () => showS3VaultForm()],
 ];
-function pushServiceVaultRows(items) {
-  for (const [label, title, run] of SERVICE_VAULT_ROWS) {
-    
-    if (label === 'Google Drive' && !(Array.isArray(cloudFolders) && !cloudFolders.some((folder) => folder && folder.id === 'gdrive'))) continue;
-    items.push({ label: `${label}…`, title, icon: CLOUD_ICON_SVG, keepOpen: true, run });
-  }
-}
 
-function crumbFormValues() {
-  return Array.from(crumbMenu.querySelectorAll('.crumb-menu-input'), (field) => (field.type === 'password' ? field.value : field.value.trim()));
+function serviceVaultRowShown(label) {
+  return label !== 'Google Drive' || (Array.isArray(cloudFolders) && !cloudFolders.some((folder) => folder && folder.id === 'gdrive'));
 }
-const serviceFormDrafts = new Map();
-function clearServiceFormDraft(heading) {
-  serviceFormDrafts.delete(heading);
-}
-function showServiceForm(items) {
-  const heading = items.find((entry) => entry && entry.heading).heading;
-  const draft = serviceFormDrafts.get(heading) || {};
-  let fieldIndex = 0;
-  for (const entry of items) {
-    if (entry.heading) entry.form = true;
-    if (entry.input !== undefined) {
-      const index = fieldIndex++;
-      if (!entry.secret) {
-        entry.input = draft[index] || '';
-        entry.onInput = (value) => {
-          const current = serviceFormDrafts.get(heading) || {};
-          current[index] = value;
-          serviceFormDrafts.set(heading, current);
-        };
-      }
-    }
-    for (const button of entry.buttons || []) {
-      if (button.label !== 'Cancel') continue;
-      button.run = () => { clearServiceFormDraft(heading); hideCrumbMenu(); };
-    }
-  }
-  showCrumbMenu(crumbMenuOwner, items);
+function pushServiceVaultRows(items) {
+  const rows = SERVICE_VAULT_ROWS.filter(([label]) => serviceVaultRowShown(label));
+  if (!rows.length) return;
+  items.push('separator');
+  for (const [label, title, run] of rows) items.push({ label: `${label}…`, title, icon: CLOUD_ICON_SVG, keepOpen: true, run });
 }
 let waitingServiceForm = null;
 let serviceWaitSequence = Date.now() * 1000 + Math.floor(Math.random() * 1000);
-function startServiceWait(heading, service, command, checksServer = false) {
-  clearServiceFormDraft(heading);
-  if (typeof window.__leafHostAnswers === 'function' && !window.__leafHostAnswers(command.command)) {
-    hideCrumbMenu();
-    send(command);
-    return;
-  }
-  const attemptId = `service-${++serviceWaitSequence}`;
-  showCrumbMenu(crumbMenuOwner, [
-    { heading, form: true },
-    { note: checksServer ? 'Checking these with the server.' : `Finish signing in to ${service} in your browser. This closes by itself when ${service} answers.` },
-    { buttons: [{ label: 'Cancel', keepOpen: true, run: () => {
-      send({ command: 'cancelServiceSignIn', attemptId });
-      waitingServiceForm = null;
-      hideCrumbMenu();
-    } }] },
-  ]);
-  waitingServiceForm = { note: crumbMenu.querySelector('.crumb-menu-note'), attemptId };
-  command.attemptId = attemptId;
-  send(command);
-}
 
 function startGoogleDriveSetup() {
   const attemptId = `service-${++serviceWaitSequence}`;
@@ -16490,134 +16382,6 @@ window.leafSignInEnded = (attemptId) => {
   if (!crumbMenu.hidden && crumbMenu.contains(waitingServiceForm.note)) hideCrumbMenu();
   waitingServiceForm = null;
 };
-const OWN_CREDENTIALS_NOTE = "The address, user name and password are your own. Leaftext keeps the password in this computer's credential store, the same place it keeps every vault sign-in.";
-function showBoxVaultForm() {
-  const save = () => {
-    const [clientId, clientSecret, folderId] = crumbFormValues();
-    if (!clientId || !clientSecret || !folderId) return;
-    startServiceWait('New Box vault', 'Box', { command: 'createBoxVault', clientId, clientSecret, folderId });
-  };
-  showServiceForm([
-    { heading: 'New Box vault' },
-    { note: 'Use your own Box app. Register http://127.0.0.1/ as its redirect address. Copy the folder ID from the folder’s Box web address.' },
-    { input: '', placeholder: 'Client ID', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Client secret', secret: true, commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Folder ID', commitOnBlur: false, onEnter: save },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Connect', primary: true, run: save, keepOpen: true },
-    ] },
-  ]);
-}
-function showWebDavVaultForm() {
-  const save = () => {
-    const [url, user, password] = crumbFormValues();
-    if (!url || !user || !password) return;
-    startServiceWait('New WebDAV vault', 'WebDAV', { command: 'createWebDavVault', url, user, password }, true);
-  };
-  showServiceForm([
-    { heading: 'New WebDAV vault' },
-    { note: OWN_CREDENTIALS_NOTE },
-    { input: '', placeholder: 'Folder address, such as https://cloud.example.com/…/Notes', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'User name', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Password', secret: true, commitOnBlur: false, onEnter: save },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Connect', primary: true, run: save, keepOpen: true },
-    ] },
-  ]);
-}
-function showS3VaultForm() {
-  const save = () => {
-    const [endpoint, region, bucket, prefix, accessKey, secretKey] = crumbFormValues();
-    if (!region || !bucket || !accessKey || !secretKey) return;
-    startServiceWait('New S3 vault', 'S3', { command: 'createS3Vault', endpoint, region, bucket, prefix, accessKey, secretKey }, true);
-  };
-  showServiceForm([
-    { heading: 'New S3 vault' },
-    { note: "The key pair is your own. Leaftext keeps the secret access key in this computer's credential store, the same place it keeps every vault sign-in." },
-    { input: '', placeholder: 'Endpoint (leave blank for Amazon)', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Region, such as us-east-1', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Bucket', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Prefix (leave blank for the whole bucket)', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Access key ID', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Secret access key', secret: true, commitOnBlur: false, onEnter: save },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Connect', primary: true, run: save, keepOpen: true },
-    ] },
-  ]);
-}
-
-function signInVaultRow(vault) {
-  if (vault.kind !== 'webdav' && vault.kind !== 's3') {
-    return {
-      label: 'Sign in ↗',
-      title: 'Opens the service in your browser. Nothing is typed into Leaftext.',
-      keepOpen: true,
-      run: () => send({ command: 'signInVault', id: vault.id }),
-    };
-  }
-  const label = vault.kind === 's3' ? 'Secret access key' : 'Password';
-  return {
-    label: 'Enter password…',
-    title: "Kept in this computer's credential store, never in a file Leaftext writes.",
-    keepOpen: true,
-    run: () => {
-      const save = () => {
-        const [secret] = crumbFormValues();
-        if (!secret) return;
-        startServiceWait(vault.name || 'Sign in', vault.kind === 's3' ? 'S3' : 'WebDAV', { command: 'signInVault', id: vault.id, secret }, true);
-      };
-      showServiceForm([
-        { heading: vault.name || 'Sign in' },
-        { input: '', placeholder: label, secret: true, commitOnBlur: false, onEnter: save },
-        { buttons: [
-          { label: 'Cancel', run: hideCrumbMenu },
-          { label: 'Connect', primary: true, run: save, keepOpen: true },
-        ] },
-      ]);
-    },
-  };
-}
-function showDropboxVaultForm() {
-  const save = () => {
-    const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
-    const appKey = fields[0] && fields[0].value.trim();
-    const folderPath = fields[1] && fields[1].value.trim();
-    if (!appKey || !folderPath) return;
-    startServiceWait('New Dropbox vault', 'Dropbox', { command: 'createDropboxVault', appKey, folderPath });
-  };
-  showServiceForm([
-    { heading: 'New Dropbox vault' },
-    { note: 'Enter your Dropbox app key. Register http://127.0.0.1:37653/ as its redirect address.' },
-    { input: '', placeholder: 'Dropbox app key', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Folder path, such as /Notes', commitOnBlur: false, onEnter: save },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Connect', primary: true, run: save, keepOpen: true },
-    ] },
-  ]);
-}
-function showMicrosoftVaultForm(label, kind) {
-  const save = () => {
-    const fields = crumbMenu.querySelectorAll('.crumb-menu-input');
-    const [clientId, driveId, folderId] = Array.from(fields, (field) => field.value.trim());
-    if (!clientId || !driveId || !folderId) return;
-    startServiceWait(`New ${label} vault`, label, { command: 'createMicrosoftVault', kind, clientId, driveId, folderId });
-  };
-  showServiceForm([
-    { heading: `New ${label} vault` },
-    { note: 'Use a Microsoft desktop app registration. Copy the drive and folder IDs from Microsoft Graph.' },
-    { input: '', placeholder: 'Desktop app client ID', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Drive ID', commitOnBlur: false, onEnter: save },
-    { input: '', placeholder: 'Folder ID', commitOnBlur: false, onEnter: save },
-    { buttons: [
-      { label: 'Cancel', run: hideCrumbMenu },
-      { label: 'Connect', primary: true, run: save, keepOpen: true },
-    ] },
-  ]);
-}
 
 
 
@@ -22112,8 +21876,10 @@ function renderTabs(state) {
   const consoleLabel = unlocksShowing().has('console-scanlines') ? `tab-label ${CONSOLE_SCANLINES}` : 'tab-label';
   const markup = tabs.map((tab, index) => {
     if (tab.kind === 'console') {
-      const icon = consoleIconClass(consoleLayers.get(tab.webId)?.agent);
-      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${consoleLayers.get(tab.webId)?.activity === 'done' ? ' console-done' : ''}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="${consoleLabel}" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="console-tab-icon" aria-hidden="true"><span class="console-tab-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-tab-name">${escapeText(tab.title)}</span></button>${tabCloseMarkup(index)}</span>`;
+      const layer = consoleLayers.get(tab.webId);
+      const icon = consoleIconClass(layer?.agent);
+      const state = `${layer?.activity === 'done' ? ' console-done' : ''}${layer?.activity === 'working' ? ' console-working' : ''}${layer?.agent ? ' console-has-agent' : ''}`;
+      return `<span class="tab console-tab${index === active ? ' tab-active' : ''}${state}" data-tab-pos="${index}" data-tab-path="" data-console-id="${tab.webId}"><button type="button" class="${consoleLabel}" data-tab-index="${index}" title="${escapeAttr(tab.tip || tab.title)}"><span class="console-tab-icon" aria-hidden="true"><span class="console-tab-glow"><span class="${icon}"></span></span><span class="${icon}"></span></span><span class="console-tab-name">${escapeText(tab.title)}</span></button>${tabCloseMarkup(index)}</span>`;
     }
     
     if (tab.kind === 'web' && !tab.site) {
@@ -42342,7 +42108,9 @@ function setConsoleActivity(id, entry, activity) {
   entry.activity = activity;
   if (activity === 'working') entry.worked = true;
   for (const tab of tabBar.querySelectorAll('.console-tab')) {
-    if (tab.dataset.consoleId === String(id)) tab.classList.toggle('console-done', activity === 'done');
+    if (tab.dataset.consoleId !== String(id)) continue;
+    tab.classList.toggle('console-done', activity === 'done');
+    tab.classList.toggle('console-working', activity === 'working');
   }
   reportConsoleAgent(id, entry);
 }
@@ -42406,6 +42174,7 @@ function reportConsoleAgent(id, entry, screenLines) {
     const icon = consoleIconClass(entry.agent);
     for (const tab of tabBar.querySelectorAll('.console-tab')) {
       if (tab.dataset.consoleId !== String(id)) continue;
+      tab.classList.toggle('console-has-agent', Boolean(entry.agent));
       for (const mark of tab.querySelector('.tab-label')?.querySelectorAll('.lt-icon') || []) {
         if (mark.className !== icon) mark.className = icon;
       }
@@ -42439,15 +42208,24 @@ function consoleAgentButton(id) {
   button.className = 'console-agent';
   button.setAttribute('role', 'listitem');
   button.dataset.consoleId = String(id);
+  
+  const box = document.createElement('span');
+  box.className = 'console-agent-icon';
+  box.setAttribute('aria-hidden', 'true');
+  const glow = document.createElement('span');
+  glow.className = 'console-agent-glow';
+  const halo = document.createElement('span');
+  halo.className = 'lt-icon lt-icon-terminal';
+  glow.append(halo);
   const icon = document.createElement('span');
   icon.className = 'lt-icon lt-icon-terminal';
-  icon.setAttribute('aria-hidden', 'true');
+  box.append(glow, icon);
   const name = document.createElement('span');
   name.className = 'console-agent-name';
   const state = document.createElement('span');
   state.className = 'console-agent-state';
-  button.append(icon, name, state);
-  button.agentIcon = icon;
+  button.append(box, name, state);
+  button.agentIcons = [halo, icon];
   button.agentName = name;
   button.agentState = state;
   consoleAgentButtons.set(id, button);
@@ -42487,10 +42265,11 @@ function drawConsoleAgents() {
     if (button.title !== title) button.title = title;
     if (button.agentName.textContent !== title) button.agentName.textContent = title;
     const icon = consoleIconClass(row.agent);
-    if (button.agentIcon.className !== icon) button.agentIcon.className = icon;
+    for (const mark of button.agentIcons) if (mark.className !== icon) mark.className = icon;
     const words = consoleAgentWords[row.state] || '';
     if (button.agentState.textContent !== words) button.agentState.textContent = words;
     button.classList.toggle('console-agent-front', id === consoleFrontId);
+    button.classList.toggle('console-agent-working', row.state === 'working');
     button.agentState.classList.toggle('console-agent-needs', row.state === 'needs');
     if (consoleAgentsHeld && standing && button.parentElement === consoleAgentsBand) continue;
     if (consoleAgentsHeld) {
@@ -52634,8 +52413,8 @@ window.__leafBooted = true;
 send({ command: 'frontEndReady', today: groveLocalDay(new Date()) });
 leafBootState(window.__leafInitialState || { recent: [], favorites: [], document: null });
 window.leafSetNavigation({ canGoBack: false, canGoForward: false });
-if (window.__leafRetiredGoogleNotice) {
-  leafQueueToast(window.__leafRetiredGoogleNotice, 'ok');
+if (window.__leafRetiredServiceNotice) {
+  leafQueueToast(window.__leafRetiredServiceNotice, 'ok');
 }
 
 
