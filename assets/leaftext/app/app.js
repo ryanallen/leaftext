@@ -43087,20 +43087,43 @@ function drawConsoleRow(line, row, cols) {
     }
     text = '';
   };
-  
+  const pieces = new Map();
+  const arcs = new Map();
+  const rowAlpha = ctx.globalAlpha;
   let pieceColor = -1;
-  const fillPieces = () => {
+  const fillRects = () => {
     if (pieceColor === -1) return;
     ctx.fillStyle = this.rgbToCSS(pieceColor >> 16, (pieceColor >> 8) & 255, pieceColor & 255);
     ctx.fill();
     pieceColor = -1;
   };
+  const fillPieces = () => {
+    fillRects();
+    for (const [key, shapes] of pieces) {
+      const [color, alpha] = key.split(':').map(Number);
+      ctx.fillStyle = this.rgbToCSS(color >> 16, (color >> 8) & 255, color & 255);
+      ctx.globalAlpha = rowAlpha * alpha;
+      ctx.beginPath();
+      for (let at = 0; at < shapes.length; at += 2) drawConsoleGeometry(ctx, shapes[at], shapes[at + 1], top);
+      ctx.fill();
+    }
+    ctx.globalAlpha = rowAlpha;
+    pieces.clear();
+    for (const [color, shapes] of arcs) {
+      ctx.strokeStyle = this.rgbToCSS(color >> 16, (color >> 8) & 255, color & 255);
+      ctx.lineWidth = shapes[0].width;
+      ctx.beginPath();
+      for (let at = 0; at < shapes.length; at += 2) drawConsoleGeometry(ctx, shapes[at], shapes[at + 1], top);
+      ctx.stroke();
+    }
+    arcs.clear();
+  };
   for (let column = 0; column < line.length; column += 1) {
     const cell = line[column];
     if (cell.width === 0) continue;
     const linked = cell.hyperlink_id > 0 && cell.hyperlink_id === this.hoveredHyperlinkId;
-    const rects = consolePieceKind(cell.codepoint) ? consolePieceRects(this, cell.codepoint) : undefined;
-    if (cell.width !== 1 || cell.grapheme_len > 0 || rects === null || cell.flags & odd || linked || consoleCellUnderLink(this, column, row) || this.isInSelection(column, row)) {
+    const shape = consolePieceKind(cell.codepoint) ? consolePieceRects(this, cell.codepoint) : undefined;
+    if (cell.width !== 1 || cell.grapheme_len > 0 || cell.flags & odd || linked || consoleCellUnderLink(this, column, row) || this.isInSelection(column, row)) {
       fillText();
       fillPieces();
       if (spacing) ctx.letterSpacing = '0px';
@@ -43110,15 +43133,22 @@ function drawConsoleRow(line, row, cols) {
     const font = `${cell.flags & flags.ITALIC ? 'italic ' : ''}${cell.flags & flags.BOLD ? 'bold ' : ''}${plainFont}`;
     const inverse = cell.flags & flags.INVERSE;
     const color = inverse ? (cell.bg_r << 16) | (cell.bg_g << 8) | cell.bg_b : (cell.fg_r << 16) | (cell.fg_g << 8) | cell.fg_b;
-    if (rects) {
+    if (shape) {
       fillText();
-      if (color !== pieceColor) {
-        fillPieces();
-        pieceColor = color;
-        ctx.beginPath();
-      }
       const x = column * width;
-      for (let at = 0; at < rects.length; at += 4) ctx.rect(x + rects[at], top + rects[at + 1], rects[at + 2], rects[at + 3]);
+      if (shape.kind === 'rect' && !shape.alpha) {
+        if (color !== pieceColor) {
+          fillRects();
+          pieceColor = color;
+          ctx.beginPath();
+        }
+        drawConsoleGeometry(ctx, shape, x, top);
+        continue;
+      }
+      const groups = shape.kind === 'arc' ? arcs : pieces;
+      const key = shape.kind === 'arc' ? color : `${color}:${shape.alpha || 1}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(shape, x);
       continue;
     }
     if (!spacing && font !== plainFont && consoleLetterGap(this, font) !== 0) {
@@ -43261,56 +43291,74 @@ function consolePieceRects(renderer, code) {
   const scale = renderer.devicePixelRatio || 1;
   let held = renderer.consolePieces;
   if (!held || held.width !== width || held.height !== height || held.scale !== scale) held = renderer.consolePieces = { width, height, scale, shapes: new Map() };
-  let rects = held.shapes.get(code);
-  if (rects !== undefined) return rects;
+  let shape = held.shapes.get(code);
+  if (shape !== undefined) return shape;
   const kind = consolePieceKind(code);
   const spec = kind === 'box' ? CONSOLE_BOX_ARMS[code - 0x2500] : '';
-  if (kind === 'block' && code >= 0x2591 && code <= 0x2593 || spec.endsWith('arc') || spec.length === 1) rects = null;
-  else {
-    rects = [];
+  const light = Math.max(1 / scale, consoleSnap(width / 8, scale));
+  if (kind === 'block' && code >= 0x2591 && code <= 0x2593) shape = { kind: 'rect', rects: [0, 0, width, height], alpha: (code - 0x2590) / 4 };
+  else if (spec.endsWith('arc')) {
+    const lineX = consoleSnap(width / 2 - light / 2, scale) + light / 2;
+    const lineY = consoleSnap(height / 2 - light / 2, scale) + light / 2;
+    const toX = spec[1] !== '0' ? width : 0;
+    const toY = spec[2] !== '0' ? height : 0;
+    shape = { kind: 'arc', width: light, arc: [toX, lineY, lineX, lineY, lineX, toY, Math.min(Math.abs(toX - lineX), Math.abs(toY - lineY))] };
+  } else if (spec.length === 1) {
+    shape = { kind: 'polygon', polygons: [] };
+    if (spec !== '\\') shape.polygons.push(consoleDiagonalPolygon(width, height, light, false));
+    if (spec !== '/') shape.polygons.push(consoleDiagonalPolygon(width, height, light, true));
+  } else {
+    const rects = [];
     if (kind === 'braille') consoleBrailleRects(code, width, height, scale, rects);
     else if (kind === 'block') consoleBlockRects(code, width, height, scale, rects);
     else consoleBoxRects(code, width, height, scale, rects);
+    shape = { kind: 'rect', rects };
   }
-  held.shapes.set(code, rects);
-  return rects;
+  held.shapes.set(code, shape);
+  return shape;
 }
 
+function consoleDiagonalPolygon(w, h, light, rising) {
+  const dx = w + 2 * light;
+  const dy = h + 2 * light * h / w;
+  const nx = dy * light / (2 * Math.hypot(dx, dy));
+  const ny = dx * light / (2 * Math.hypot(dx, dy));
+  const first = rising ? [-light, -light * h / w] : [w + light, -light * h / w];
+  const last = rising ? [w + light, h + light * h / w] : [-light, h + light * h / w];
+  let polygon = [[first[0] + nx, first[1] - ny], [last[0] + nx, last[1] - ny], [last[0] - nx, last[1] + ny], [first[0] - nx, first[1] + ny]];
+  for (const [axis, edge, side] of [[0, 0, 1], [0, w, -1], [1, 0, 1], [1, h, -1]]) {
+    const clipped = [];
+    for (let i = 0; i < polygon.length; i += 1) {
+      const a = polygon[i];
+      const b = polygon[(i + 1) % polygon.length];
+      const insideA = side * (a[axis] - edge) >= 0;
+      const insideB = side * (b[axis] - edge) >= 0;
+      if (insideA !== insideB) {
+        const t = (edge - a[axis]) / (b[axis] - a[axis]);
+        clipped.push([a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])]);
+      }
+      if (insideB) clipped.push(b);
+    }
+    polygon = clipped;
+  }
+  return polygon;
+}
 
-function drawConsoleLivePiece(ctx, code, x, y, w, h, scale) {
-  if (code >= 0x2591 && code <= 0x2593) {
-    const alpha = ctx.globalAlpha;
-    ctx.globalAlpha = alpha * (code - 0x2590) / 4;
-    ctx.fillRect(x, y, w, h);
-    ctx.globalAlpha = alpha;
-    return;
+function drawConsoleGeometry(ctx, shape, x, y) {
+  if (shape.kind === 'rect') {
+    for (let at = 0; at < shape.rects.length; at += 4) ctx.rect(x + shape.rects[at], y + shape.rects[at + 1], shape.rects[at + 2], shape.rects[at + 3]);
+  } else if (shape.kind === 'polygon') {
+    for (const polygon of shape.polygons) {
+      ctx.moveTo(x + polygon[0][0], y + polygon[0][1]);
+      for (let at = 1; at < polygon.length; at += 1) ctx.lineTo(x + polygon[at][0], y + polygon[at][1]);
+      ctx.closePath();
+    }
+  } else {
+    const [toX, lineY, lineX, , , toY, radius] = shape.arc;
+    ctx.moveTo(x + toX, y + lineY);
+    ctx.arcTo(x + lineX, y + lineY, x + lineX, y + toY, radius);
+    ctx.lineTo(x + lineX, y + toY);
   }
-  const spec = CONSOLE_BOX_ARMS[code - 0x2500];
-  const light = Math.max(1 / scale, consoleSnap(w / 8, scale));
-  ctx.lineWidth = light;
-  if (spec.length === 1) {
-    
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(x, y, w, h);
-    ctx.clip();
-    ctx.beginPath();
-    const overrun = light * h / w;
-    if (spec !== '\\') { ctx.moveTo(x + w + light, y - overrun); ctx.lineTo(x - light, y + h + overrun); }
-    if (spec !== '/') { ctx.moveTo(x - light, y - overrun); ctx.lineTo(x + w + light, y + h + overrun); }
-    ctx.stroke();
-    ctx.restore();
-    return;
-  }
-  const lineX = consoleSnap(w / 2 - light / 2, scale) + light / 2;
-  const lineY = consoleSnap(h / 2 - light / 2, scale) + light / 2;
-  const toX = spec[1] !== '0' ? w : 0;
-  const toY = spec[2] !== '0' ? h : 0;
-  ctx.beginPath();
-  ctx.moveTo(x + toX, y + lineY);
-  ctx.arcTo(x + lineX, y + lineY, x + lineX, y + toY, Math.min(Math.abs(toX - lineX), Math.abs(toY - lineY)));
-  ctx.lineTo(x + lineX, y + toY);
-  ctx.stroke();
 }
 
 
@@ -43332,13 +43380,17 @@ function drawConsoleCell(cell, column, row, color) {
   if (cell.flags & flags.FAINT) ctx.globalAlpha = alpha * 0.5;
   const x = column * width;
   const y = row * height;
-  const rects = consolePieceRects(this, cell.codepoint);
+  const shape = consolePieceRects(this, cell.codepoint);
   
-  if (rects) {
-    ctx.beginPath();
-    for (let at = 0; at < rects.length; at += 4) ctx.rect(x + rects[at], y + rects[at + 1], rects[at + 2], rects[at + 3]);
+  ctx.beginPath();
+  drawConsoleGeometry(ctx, shape, x, y);
+  if (shape.kind === 'arc') {
+    ctx.lineWidth = shape.width;
+    ctx.stroke();
+  } else {
+    ctx.globalAlpha *= shape.alpha || 1;
     ctx.fill();
-  } else drawConsoleLivePiece(ctx, cell.codepoint, x, y, width, height, this.devicePixelRatio || 1);
+  }
   ctx.globalAlpha = alpha;
   
   if (cell.flags & (flags.UNDERLINE | flags.STRIKETHROUGH) || cell.hyperlink_id > 0 || this.hoveredLinkRange) engineCell.call(this, { ...cell, codepoint: 32 }, column, row, color);
