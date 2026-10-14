@@ -25583,15 +25583,6 @@ const RICH_COPY_TAGS = new Set([
 ]);
 
 const RICH_COPY_DROPPED = new Set(['NAV', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SCRIPT', 'STYLE', 'TEMPLATE', 'SVG', 'svg', 'CANVAS', 'IFRAME', 'OBJECT']);
-const RICH_COPY_VOID = new Set(['BR', 'HR', 'IMG']);
-
-function richCopyEscape(text) {
-  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-function richCopyAttribute(value) {
-  return richCopyEscape(value).replace(/"/g, '&quot;');
-}
 
 
 function richCopyAddress(raw, base) {
@@ -25623,57 +25614,6 @@ function richCopyDropped(node) {
 }
 
 
-function richCopyHoldsDropped(node) {
-  for (const child of Array.from((node && node.childNodes) || [])) {
-    if (child.nodeType === 1 && (richCopyDropped(child) || richCopyHoldsDropped(child))) return true;
-  }
-  return false;
-}
-
-
-function richCopyNode(node, base, diagrams) {
-  if (!node) return '';
-  if (node.nodeType === 3) return richCopyEscape(node.nodeValue != null ? node.nodeValue : node.textContent || '');
-  if (node.nodeType !== 1 && node.nodeType !== 11) return '';
-  const children = () => Array.from(node.childNodes || []).map((child) => richCopyNode(child, base, diagrams)).join('');
-  if (node.nodeType === 11) return children();
-  const tag = String(node.tagName || '').toUpperCase();
-  const attribute = (name) => (node.getAttribute ? node.getAttribute(name) : null);
-  const classes = node.classList;
-  if (richCopyDropped(node)) return '';
-  if (classes && classes.contains && classes.contains('katex')) {
-    const tex = richCopyMathSource(node);
-    return tex ? richCopyEscape(tex) : '';
-  }
-  if (tag === 'PRE' && classes && classes.contains && classes.contains('mermaid')) {
-    const source = diagrams.shift();
-    return source ? `<pre><code>${richCopyEscape(source)}</code></pre>` : '';
-  }
-  if (tag === 'IMG') {
-    const src = richCopyAddress(attribute('src'), base);
-    const alt = attribute('alt') || '';
-    if (src) return `<img src="${richCopyAttribute(src)}" alt="${richCopyAttribute(alt)}">`;
-    return alt ? `[${richCopyEscape(alt)}]` : '';
-  }
-  if (tag === 'A') {
-    const href = richCopyAddress(attribute('href'), base);
-    return href ? `<a href="${richCopyAttribute(href)}">${children()}</a>` : children();
-  }
-  if (!RICH_COPY_TAGS.has(tag)) return children();
-  const name = tag.toLowerCase();
-  if (RICH_COPY_VOID.has(tag)) return `<${name}>`;
-  if (tag === 'PRE') return `<pre><code>${richCopyEscape(node.textContent || '')}</code></pre>`;
-  let spans = '';
-  if (tag === 'TD' || tag === 'TH') {
-    for (const span of ['colspan', 'rowspan']) {
-      const value = Number(attribute(span));
-      if (Number.isInteger(value) && value > 1) spans += ` ${span}="${value}"`;
-    }
-  }
-  return `<${name}${spans}>${children()}</${name}>`;
-}
-
-
 
 
 
@@ -25684,35 +25624,90 @@ const RICH_COPY_BLOCKS = new Set([
   'ARTICLE', 'HEADER', 'FOOTER', 'ASIDE', 'MAIN', 'FIGURE', 'FIGCAPTION', 'DL', 'DT', 'DD', 'DETAILS', 'SUMMARY', 'HR', 'BR',
 ]);
 
-function richCopyWords(node, diagrams) {
+
+function richCopyBuild(node, parent, base, diagrams, state, withWords) {
   if (!node) return '';
-  if (node.nodeType === 3) return String(node.nodeValue != null ? node.nodeValue : node.textContent || '').replace(/\s+/g, ' ');
+  if (node.nodeType === 3) {
+    const value = String(node.nodeValue != null ? node.nodeValue : node.textContent || '');
+    parent.appendChild(document.createTextNode(value));
+    return withWords ? value.replace(/\s+/g, ' ') : '';
+  }
   if (node.nodeType !== 1 && node.nodeType !== 11) return '';
-  const words = (child) => richCopyWords(child, diagrams);
-  const children = () => Array.from(node.childNodes || []).map(words).join('');
-  if (node.nodeType === 11) return children();
-  if (richCopyDropped(node)) return '';
-  const tag = String(node.tagName || '').toUpperCase();
+  if (node.nodeType === 1 && richCopyDropped(node)) {
+    state.dropped = true;
+    return '';
+  }
+  const tag = node.nodeType === 1 ? String(node.tagName || '').toUpperCase() : '';
+  const attribute = (name) => (node.getAttribute ? node.getAttribute(name) : null);
   const classes = node.classList;
-  if (classes && classes.contains && classes.contains('katex')) return richCopyMathSource(node);
-  if (tag === 'IMG') return (node.getAttribute && node.getAttribute('alt')) || '';
+  const appendText = (value) => { if (value) parent.appendChild(document.createTextNode(value)); };
+  if (classes && classes.contains && classes.contains('katex')) {
+    const tex = richCopyMathSource(node);
+    appendText(tex);
+    return withWords ? tex : '';
+  }
+  if (tag === 'IMG') {
+    const src = richCopyAddress(attribute('src'), base);
+    const alt = attribute('alt') || '';
+    if (src) {
+      const image = document.createElement('img');
+      image.setAttribute('src', src);
+      image.setAttribute('alt', alt);
+      parent.appendChild(image);
+    } else appendText(alt ? `[${alt}]` : '');
+    return withWords ? alt : '';
+  }
   if (tag === 'PRE') {
     const mermaid = classes && classes.contains && classes.contains('mermaid');
-    const source = mermaid ? diagrams.shift() || '' : node.textContent || '';
-    return `${RICH_COPY_GAP}${String(source).replace(/\n+$/, '')}${RICH_COPY_GAP}`;
+    const source = String(mermaid ? diagrams.shift() || '' : node.textContent || '');
+    if (source) {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.textContent = source;
+      pre.appendChild(code);
+      parent.appendChild(pre);
+    } else if (!mermaid) {
+      const pre = document.createElement('pre');
+      pre.appendChild(document.createElement('code'));
+      parent.appendChild(pre);
+    }
+    return withWords ? `${RICH_COPY_GAP}${source.replace(/\n+$/, '')}${RICH_COPY_GAP}` : '';
   }
-  if (tag === 'TR') {
-    const cells = Array.from(node.childNodes || []).filter((cell) => cell.nodeType === 1 && /^T[DH]$/i.test(cell.tagName) && !richCopyDropped(cell));
-    return `${RICH_COPY_LINE}${cells.map((cell) => words(cell).replace(/[\s\u0001\u0002]+/g, ' ').trim()).join('\t')}${RICH_COPY_LINE}`;
+  let holder = parent;
+  if (RICH_COPY_TAGS.has(tag)) {
+    if (tag !== 'A' || richCopyAddress(attribute('href'), base)) {
+      holder = document.createElement(tag.toLowerCase());
+      if (tag === 'A') holder.setAttribute('href', richCopyAddress(attribute('href'), base));
+      if (tag === 'TD' || tag === 'TH') {
+        for (const span of ['colspan', 'rowspan']) {
+          const value = Number(attribute(span));
+          if (Number.isInteger(value) && value > 1) holder.setAttribute(span, String(value));
+        }
+      }
+      parent.appendChild(holder);
+    }
   }
-  if (tag === 'P') return `${RICH_COPY_GAP}${children()}${RICH_COPY_GAP}`;
-  if (RICH_COPY_BLOCKS.has(tag)) return `${RICH_COPY_LINE}${children()}${RICH_COPY_LINE}`;
-  return children();
+  const words = [];
+  const cells = [];
+  for (const child of node.childNodes || []) {
+    const childWords = richCopyBuild(child, holder, base, diagrams, state, withWords);
+    if (withWords) {
+      words.push(childWords);
+      if (tag === 'TR' && child.nodeType === 1 && /^T[DH]$/i.test(child.tagName) && !richCopyDropped(child)) {
+        cells.push(childWords.replace(/[\s\u0001\u0002]+/g, ' ').trim());
+      }
+    }
+  }
+  if (!withWords) return '';
+  const joined = words.join('');
+  if (tag === 'TR') return `${RICH_COPY_LINE}${cells.join('\t')}${RICH_COPY_LINE}`;
+  if (tag === 'P') return `${RICH_COPY_GAP}${joined}${RICH_COPY_GAP}`;
+  if (RICH_COPY_BLOCKS.has(tag)) return `${RICH_COPY_LINE}${joined}${RICH_COPY_LINE}`;
+  return joined;
 }
 
-
-function richCopyWordsOf(clone, diagrams) {
-  return richCopyWords(clone, diagrams)
+function richCopyWordsOf(words) {
+  return words
     .replace(/^[ \u0001\u0002]+|[ \u0001\u0002]+$/g, '')
     .replace(/ *[\u0001\u0002][ \u0001\u0002]*/g, (run) => (run.includes(RICH_COPY_GAP) ? '\n\n' : '\n'));
 }
@@ -25732,16 +25727,19 @@ function richCopyDiagrams(range) {
 
 
 function richCopyOfRange(range, base = document.baseURI) {
-  return richCopyPairOfRange(range, base).html;
+  return richCopyPairOfRange(range, base, false).html;
 }
 
 
-function richCopyPairOfRange(range, base = document.baseURI) {
+function richCopyPairOfRange(range, base = document.baseURI, withWords = true) {
   if (!range || typeof range.cloneContents !== 'function') return { words: null, html: '' };
   const diagrams = richCopyDiagrams(range);
   const clone = range.cloneContents();
-  const html = richCopyNode(clone, base, diagrams.slice());
-  const words = richCopyHoldsDropped(clone) ? richCopyWordsOf(clone, diagrams) : null;
+  const safe = document.createElement('div');
+  const state = { dropped: false };
+  const builtWords = richCopyBuild(clone, safe, base, diagrams, state, withWords);
+  const html = safe.innerHTML;
+  const words = withWords && state.dropped ? richCopyWordsOf(builtWords) : null;
   return { words, html: /<[a-z]/.test(html) ? html : '' };
 }
 
