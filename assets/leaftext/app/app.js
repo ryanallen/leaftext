@@ -42981,10 +42981,53 @@ function consoleLetterGap(renderer, font) {
     renderer.ctx.font = font;
     
     if ('letterSpacing' in renderer.ctx) renderer.ctx.letterSpacing = '0px';
-    gap =renderer.metrics.width - renderer.ctx.measureText('M').width;
+    gap = renderer.metrics.width - renderer.ctx.measureText('M').width;
     held.gaps.set(font, gap);
   }
   return gap;
+}
+
+function measureConsoleFont() {
+  const ctx = this.ctx;
+  const previousFont = ctx.font;
+  const previousSpacing = ctx.letterSpacing;
+  ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
+  const measured = ctx.measureText('M');
+  ctx.font = previousFont;
+  if ('letterSpacing' in ctx) ctx.letterSpacing = previousSpacing;
+  const scale = this.devicePixelRatio || 1;
+  const ascent = measured.fontBoundingBoxAscent || this.fontSize * 0.8;
+  const descent = measured.fontBoundingBoxDescent || this.fontSize * 0.2;
+  const width = Math.max(1, Math.round(measured.width * scale)) / scale;
+  const height = Math.max(1, Math.ceil((ascent + descent) * scale)) / scale;
+  const baseline = Math.min(height, Math.ceil(ascent * scale) / scale);
+  return { width, height, baseline };
+}
+
+function refreshConsoleGrid(id, entry) {
+  const terminal = entry.terminal;
+  if (!terminal) return;
+  const renderer = terminal.renderer;
+  if (renderer.measureFont !== measureConsoleFont) {
+    entry.fit.fit();
+    sendConsoleSize(id, entry);
+    return;
+  }
+  const scale = window.devicePixelRatio || 1;
+  const before = renderer.getMetrics();
+  const changedScale = renderer.devicePixelRatio !== scale;
+  renderer.devicePixelRatio = scale;
+  renderer.remeasureFont();
+  const after = renderer.getMetrics();
+  const changed = changedScale || before.width !== after.width || before.height !== after.height || before.baseline !== after.baseline;
+  if (changed) {
+    renderer.consoleLetterGaps = null;
+    renderer.resize(terminal.cols, terminal.rows);
+  }
+  entry.fit.fit();
+  if (changed && !entry.layer.hidden) renderer.render(terminal.wasmTerm, true, terminal.viewportY, terminal);
+  sendConsoleSize(id, entry);
 }
 
 function consoleCellUnderLink(renderer, column, row) {
@@ -43046,12 +43089,22 @@ function drawConsoleRow(line, row, cols) {
     }
     text = '';
   };
+  
+  let pieceColor = -1;
+  const fillPieces = () => {
+    if (pieceColor === -1) return;
+    ctx.fillStyle = this.rgbToCSS(pieceColor >> 16, (pieceColor >> 8) & 255, pieceColor & 255);
+    ctx.fill();
+    pieceColor = -1;
+  };
   for (let column = 0; column < line.length; column += 1) {
     const cell = line[column];
     if (cell.width === 0) continue;
     const linked = cell.hyperlink_id > 0 && cell.hyperlink_id === this.hoveredHyperlinkId;
-    if (cell.width !== 1 || cell.grapheme_len > 0 || cell.flags & odd || linked || consoleCellUnderLink(this, column, row) || this.isInSelection(column, row)) {
+    const rects = consolePieceKind(cell.codepoint) ? consolePieceRects(this, cell.codepoint) : undefined;
+    if (cell.width !== 1 || cell.grapheme_len > 0 || rects === null || cell.flags & odd || linked || consoleCellUnderLink(this, column, row) || this.isInSelection(column, row)) {
       fillText();
+      fillPieces();
       if (spacing) ctx.letterSpacing = '0px';
       this.renderCellText(cell, column, row);
       continue;
@@ -43059,6 +43112,17 @@ function drawConsoleRow(line, row, cols) {
     const font = `${cell.flags & flags.ITALIC ? 'italic ' : ''}${cell.flags & flags.BOLD ? 'bold ' : ''}${plainFont}`;
     const inverse = cell.flags & flags.INVERSE;
     const color = inverse ? (cell.bg_r << 16) | (cell.bg_g << 8) | cell.bg_b : (cell.fg_r << 16) | (cell.fg_g << 8) | cell.fg_b;
+    if (rects) {
+      fillText();
+      if (color !== pieceColor) {
+        fillPieces();
+        pieceColor = color;
+        ctx.beginPath();
+      }
+      const x = column * width;
+      for (let at = 0; at < rects.length; at += 4) ctx.rect(x + rects[at], top + rects[at + 1], rects[at + 2], rects[at + 3]);
+      continue;
+    }
     if (!spacing && font !== plainFont && consoleLetterGap(this, font) !== 0) {
       fillText();
       this.renderCellText(cell, column, row);
@@ -43073,7 +43137,213 @@ function drawConsoleRow(line, row, cols) {
     text += String.fromCodePoint(cell.codepoint || 32);
   }
   fillText();
+  fillPieces();
   if (spacing) ctx.letterSpacing = '0px';
+}
+
+
+const CONSOLE_BOX_ARMS = ('0101 0202 1010 2020 0101:3 0202:3 1010:3 2020:3 0101:4 0202:4 1010:4 2020:4 0110 0210 0120 0220 0011 0012 0021 0022 1100 1200 2100 2200 1001 1002 2001 2002 '
+  + '1110 1210 2110 1120 2120 2210 1220 2220 1011 1012 2011 1021 2021 2012 1022 2022 0111 0112 0211 0212 0121 0122 0221 0222 1101 1102 1201 1202 2101 2102 2201 2202 '
+  + '1111 1112 1211 1212 2111 1121 2121 2112 2211 1122 1221 2212 1222 2122 2221 2222 0101:2 0202:2 1010:2 2020:2 0303 3030 0310 0130 0330 0013 0031 0033 1300 3100 3300 1003 3001 3003 '
+  + '1310 3130 3330 1013 3031 3033 0313 0131 0333 1303 3101 3303 1313 3131 3333 0110:arc 0011:arc 1001:arc 1100:arc / \\ x 0001 1000 0100 0010 0002 2000 0200 0020 0201 1020 0102 2010').split(' ');
+
+
+const CONSOLE_QUADRANTS = '218B9ED467';
+
+
+function consolePieceKind(code) {
+  if (code >= 0x2800 && code <= 0x28ff) return 'braille';
+  if (code >= 0x2580 && code <= 0x259f) return 'block';
+  if (code >= 0x2500 && code <= 0x257f) return 'box';
+  return null;
+}
+
+function consoleSnap(value, scale) {
+  return Math.round(value * scale) / scale;
+}
+
+
+function addConsoleRect(out, left, top, right, bottom, scale) {
+  const x = consoleSnap(left, scale);
+  const y = consoleSnap(top, scale);
+  out.push(x, y, consoleSnap(right, scale) - x, consoleSnap(bottom, scale) - y);
+}
+
+function consoleBlockRects(code, w, h, scale, out) {
+  if (code === 0x2580) return addConsoleRect(out, 0, 0, w, h / 2, scale);
+  if (code <= 0x2588) return addConsoleRect(out, 0, h - h * (code - 0x2580) / 8, w, h, scale);
+  if (code <= 0x258f) return addConsoleRect(out, 0, 0, w * (0x2590 - code) / 8, h, scale);
+  if (code === 0x2590) return addConsoleRect(out, w / 2, 0, w, h, scale);
+  if (code === 0x2594) return addConsoleRect(out, 0, 0, w, h / 8, scale);
+  if (code === 0x2595) return addConsoleRect(out, w - w / 8, 0, w, h, scale);
+  const quadrants = parseInt(CONSOLE_QUADRANTS[code - 0x2596], 16);
+  if (quadrants & 8) addConsoleRect(out, 0, 0, w / 2, h / 2, scale);
+  if (quadrants & 4) addConsoleRect(out, w / 2, 0, w, h / 2, scale);
+  if (quadrants & 2) addConsoleRect(out, 0, h / 2, w / 2, h, scale);
+  if (quadrants & 1) addConsoleRect(out, w / 2, h / 2, w, h, scale);
+}
+
+
+function consoleBrailleRects(code, w, h, scale, out) {
+  const size = Math.max(1 / scale, consoleSnap(Math.min(w / 2, h / 4) * 0.6, scale));
+  for (let dot = 0; dot < 8; dot += 1) {
+    if (!((code - 0x2800) & (1 << dot))) continue;
+    
+    const column = dot < 6 ? Math.floor(dot / 3) : dot - 6;
+    const row = dot < 6 ? dot % 3 : 3;
+    const x = consoleSnap(w / 4 + column * w / 2 - size / 2, scale);
+    const y = consoleSnap(h / 8 + row * h / 4 - size / 2, scale);
+    out.push(x, y, size, size);
+  }
+}
+
+function consoleBoxRects(code, w, h, scale, out) {
+  const spec = CONSOLE_BOX_ARMS[code - 0x2500];
+  const up = spec.charCodeAt(0) - 48;
+  const right = spec.charCodeAt(1) - 48;
+  const down = spec.charCodeAt(2) - 48;
+  const left = spec.charCodeAt(3) - 48;
+  const light = Math.max(1 / scale, consoleSnap(w / 8, scale));
+  const gap = light;
+  const thickness = weight => weight === 2 ? light * 2 : weight === 0 ? 0 : light;
+  
+  const reach = weight => weight === 3 ? gap + light / 2 : thickness(weight) / 2;
+  const cx = w / 2;
+  const cy = h / 2;
+  
+  if (spec.length > 4) {
+    const dashes = Number(spec.slice(5));
+    const size = thickness(right || up);
+    const along = right ? w : h;
+    const middle = consoleSnap((right ? cy : cx) - size / 2, scale);
+    const step = along / dashes;
+    const space = Math.max(1 / scale, consoleSnap(step / 3, scale));
+    for (let dash = 0; dash < dashes; dash += 1) {
+      const start = consoleSnap(dash * step + space / 2, scale);
+      const length = consoleSnap((dash + 1) * step - space / 2, scale) - start;
+      if (right) out.push(start, middle, length, size);
+      else out.push(middle, start, size, length);
+    }
+    return;
+  }
+  const horizontal = (from, to, middle, size) => { const top = consoleSnap(middle - size / 2, scale); addConsoleRect(out, from, top, to, top + size, scale); };
+  const vertical = (from, to, middle, size) => { const edge = consoleSnap(middle - size / 2, scale); addConsoleRect(out, edge, from, edge + size, to, scale); };
+  
+  const singleStart = (weight, opposite, sideA, sideB, middle) => {
+    if (!opposite && (sideA === 3 || sideB === 3)) return middle + gap - light / 2;
+    return middle - Math.max(reach(sideA), reach(sideB), thickness(weight) / 2);
+  };
+  const doubleStart = (opposite, same, other, middle) => {
+    if (same === 3) return middle + gap - light / 2;
+    if (other === 3) return middle - gap - light / 2;
+    if (same || other) return middle - Math.max(thickness(same), thickness(other)) / 2;
+    return opposite ? middle - light / 2 : middle - gap - light / 2;
+  };
+  if (right === 3) {
+    horizontal(doubleStart(left, up, down, cx), w, cy - gap, light);
+    horizontal(doubleStart(left, down, up, cx), w, cy + gap, light);
+  } else if (right) horizontal(singleStart(right, left, up, down, cx), w, cy, thickness(right));
+  if (left === 3) {
+    horizontal(0, w - doubleStart(right, up, down, w - cx), cy - gap, light);
+    horizontal(0, w - doubleStart(right, down, up, w - cx), cy + gap, light);
+  } else if (left) horizontal(0, w - singleStart(left, right, up, down, w - cx), cy, thickness(left));
+  if (down === 3) {
+    vertical(doubleStart(up, left, right, cy), h, cx - gap, light);
+    vertical(doubleStart(up, right, left, cy), h, cx + gap, light);
+  } else if (down) vertical(singleStart(down, up, left, right, cy), h, cx, thickness(down));
+  if (up === 3) {
+    vertical(0, h - doubleStart(down, left, right, h - cy), cx - gap, light);
+    vertical(0, h - doubleStart(down, right, left, h - cy), cx + gap, light);
+  } else if (up) vertical(0, h - singleStart(up, down, left, right, h - cy), cx, thickness(up));
+}
+
+
+function consolePieceRects(renderer, code) {
+  const { width, height } = renderer.metrics;
+  const scale = renderer.devicePixelRatio || 1;
+  let held = renderer.consolePieces;
+  if (!held || held.width !== width || held.height !== height || held.scale !== scale) held = renderer.consolePieces = { width, height, scale, shapes: new Map() };
+  let rects = held.shapes.get(code);
+  if (rects !== undefined) return rects;
+  const kind = consolePieceKind(code);
+  const spec = kind === 'box' ? CONSOLE_BOX_ARMS[code - 0x2500] : '';
+  if (kind === 'block' && code >= 0x2591 && code <= 0x2593 || spec.endsWith('arc') || spec.length === 1) rects = null;
+  else {
+    rects = [];
+    if (kind === 'braille') consoleBrailleRects(code, width, height, scale, rects);
+    else if (kind === 'block') consoleBlockRects(code, width, height, scale, rects);
+    else consoleBoxRects(code, width, height, scale, rects);
+  }
+  held.shapes.set(code, rects);
+  return rects;
+}
+
+
+function drawConsoleLivePiece(ctx, code, x, y, w, h, scale) {
+  if (code >= 0x2591 && code <= 0x2593) {
+    const alpha = ctx.globalAlpha;
+    ctx.globalAlpha = alpha * (code - 0x2590) / 4;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = alpha;
+    return;
+  }
+  const spec = CONSOLE_BOX_ARMS[code - 0x2500];
+  const light = Math.max(1 / scale, consoleSnap(w / 8, scale));
+  ctx.lineWidth = light;
+  if (spec.length === 1) {
+    
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    ctx.beginPath();
+    const overrun = light * h / w;
+    if (spec !== '\\') { ctx.moveTo(x + w + light, y - overrun); ctx.lineTo(x - light, y + h + overrun); }
+    if (spec !== '/') { ctx.moveTo(x - light, y - overrun); ctx.lineTo(x + w + light, y + h + overrun); }
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  const lineX = consoleSnap(w / 2 - light / 2, scale) + light / 2;
+  const lineY = consoleSnap(h / 2 - light / 2, scale) + light / 2;
+  const toX = spec[1] !== '0' ? w : 0;
+  const toY = spec[2] !== '0' ? h : 0;
+  ctx.beginPath();
+  ctx.moveTo(x + toX, y + lineY);
+  ctx.arcTo(x + lineX, y + lineY, x + lineX, y + toY, Math.min(Math.abs(toX - lineX), Math.abs(toY - lineY)));
+  ctx.lineTo(x + lineX, y + toY);
+  ctx.stroke();
+}
+
+
+function drawConsoleCell(cell, column, row, color) {
+  const engineCell = Object.getPrototypeOf(this).renderCellText;
+  if (cell.width !== 1 || cell.grapheme_len || !consolePieceKind(cell.codepoint)) return engineCell.call(this, cell, column, row, color);
+  const flags = window.GhosttyWeb.CellFlags;
+  if (cell.flags & flags.INVISIBLE) return;
+  const ctx = this.ctx;
+  const { width, height } = this.metrics;
+  if (color) ctx.fillStyle = color;
+  else if (this.isInSelection(column, row)) ctx.fillStyle = this.theme.selectionForeground;
+  else {
+    const inverse = cell.flags & flags.INVERSE;
+    ctx.fillStyle = inverse ? this.rgbToCSS(cell.bg_r, cell.bg_g, cell.bg_b) : this.rgbToCSS(cell.fg_r, cell.fg_g, cell.fg_b);
+  }
+  ctx.strokeStyle = ctx.fillStyle;
+  const alpha = ctx.globalAlpha;
+  if (cell.flags & flags.FAINT) ctx.globalAlpha = alpha * 0.5;
+  const x = column * width;
+  const y = row * height;
+  const rects = consolePieceRects(this, cell.codepoint);
+  
+  if (rects) {
+    ctx.beginPath();
+    for (let at = 0; at < rects.length; at += 4) ctx.rect(x + rects[at], y + rects[at + 1], rects[at + 2], rects[at + 3]);
+    ctx.fill();
+  } else drawConsoleLivePiece(ctx, cell.codepoint, x, y, width, height, this.devicePixelRatio || 1);
+  ctx.globalAlpha = alpha;
+  
+  if (cell.flags & (flags.UNDERLINE | flags.STRIKETHROUGH) || cell.hyperlink_id > 0 || this.hoveredLinkRange) engineCell.call(this, { ...cell, codepoint: 32 }, column, row, color);
 }
 
 function makeConsoleLayer(id) {
@@ -43100,6 +43370,11 @@ function makeConsoleLayer(id) {
     terminal.loadAddon(fit);
     terminal.open(host);
     terminal.renderer.renderLine = drawConsoleRow;
+    terminal.renderer.renderCellText = drawConsoleCell;
+    if (terminal.renderer.ctx && terminal.renderer.remeasureFont) {
+      terminal.renderer.measureFont = measureConsoleFont;
+      terminal.renderer.remeasureFont();
+    }
     
     if (!isMacPlatform) terminal.inputHandler.encoder.setOption(window.GhosttyWeb.KeyEncoderOption.ALT_ESC_PREFIX, true);
     terminal.attachCustomKeyEventHandler(event => consoleAltKey(id, event));
@@ -43157,10 +43432,16 @@ function makeConsoleLayer(id) {
     setupConsolePin(entry);
     paintConsoleTheme(entry);
     entry.fit = fit;
+    for (const method of ['setFontSize', 'setFontFamily']) {
+      if (!terminal.renderer[method]) continue;
+      const original = terminal.renderer[method].bind(terminal.renderer);
+      terminal.renderer[method] = value => { original(value); refreshConsoleGrid(id, entry); };
+    }
+    entry.scaleChange = () => refreshConsoleGrid(id, entry);
+    window.addEventListener('resize', entry.scaleChange);
     entry.observer = new ResizeObserver(() => {
       if (layer.hidden) return;
-      fit.fit();
-      sendConsoleSize(id, entry);
+      refreshConsoleGrid(id, entry);
       if (consoleFrontId !== id) return;
       writeConsoleFade();
       renderConsolePin(entry);
@@ -43176,8 +43457,7 @@ function makeConsoleLayer(id) {
       if (consoleFrontId === id) scheduleMinimapPreviewUpdate();
     });
     if (consoleFrontId === id) {
-      fit.fit();
-      sendConsoleSize(id, entry);
+      refreshConsoleGrid(id, entry);
       terminal.focus();
       bindDocumentMinimap();
       scheduleMinimapPreviewUpdate();
@@ -43437,8 +43717,7 @@ function placeConsoleLayers(state = currentState) {
     entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
     entry.layer.classList.toggle('is-split', shown && split);
     if (shown && wasHidden && entry.fit) {
-      entry.fit.fit();
-      sendConsoleSize(id, entry);
+      refreshConsoleGrid(id, entry);
     }
   }
   const besideTab = besideCard && state && state.beside && state.tabs ? state.tabs[state.beside.tab] : null;
@@ -43484,8 +43763,7 @@ window.leafConsoleFront = id => {
   sayStartupDrawn(true);
   if (changed || !currentMinimap()) drawConsoleRail(entry);
   if (entry.fit) {
-    entry.fit.fit();
-    sendConsoleSize(id, entry);
+    refreshConsoleGrid(id, entry);
     if (entry.drawOwed) {
       entry.drawOwed = false;
       const terminal = entry.terminal;
@@ -43603,6 +43881,7 @@ window.leafConsolePrune = tabs => {
     if (entry.quietTimer) clearTimeout(entry.quietTimer);
     if (entry.agentTimer) clearTimeout(entry.agentTimer);
     if (entry.observer) entry.observer.disconnect();
+    if (entry.scaleChange) window.removeEventListener('resize', entry.scaleChange);
     teardownConsolePin(entry);
     if (entry.mouseRelease) document.removeEventListener('mouseup', entry.mouseRelease);
     if (entry.terminal) entry.terminal.dispose();
