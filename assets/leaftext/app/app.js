@@ -15570,7 +15570,7 @@ function showVaultPanel(vault) {
   crumbMenuVault = vault;
   changeRepoRevealed = false;
   
-  send({ command: 'getVaultGit', id: vault.id });
+  if (vault.kind !== 'books-online') send({ command: 'getVaultGit', id: vault.id });
   showCrumbMenu(crumbMenuOwner, editVaultMenuItems(vault));
 }
 function newVaultMenuItems() {
@@ -15589,6 +15589,31 @@ function newVaultMenuItems() {
   return items;
 }
 function editVaultMenuItems(vault) {
+  const back = {
+    label: 'Back',
+    icon: BACK_ARROW_SVG,
+    
+    keepOpen: true,
+    
+    run: () => {
+      crumbMenuVault = null;
+      showCrumbMenu(crumbMenuOwner, vaultMenuItems());
+    },
+  };
+  
+  if (vault.kind === 'books-online') {
+    return [
+      { heading: 'Books online' },
+      {
+        label: 'Refresh the catalog',
+        title: 'Fetch Project Gutenberg\'s catalog again',
+        icon: SYNC_ICON_SVG,
+        run: () => send({ command: 'refreshBooksOnline' }),
+      },
+      'separator',
+      back,
+    ];
+  }
   return [
     {
       heading: `Editing ${vault.name || ''}`,
@@ -15602,23 +15627,11 @@ function editVaultMenuItems(vault) {
       },
     },
     
-    vault.kind === 'books-online' ? {
-      label: 'Refresh the catalog',
-      title: 'Fetch Project Gutenberg\'s catalog again',
-      icon: SYNC_ICON_SVG,
-      run: () => send({ command: 'refreshBooksOnline' }),
-    } : {
+    vaultIsACloudFolder(vault) ? null : {
       label: 'Change folder…',
       title: vault.rootPath || '',
       icon: FOLDER_ICON_SVG,
       run: () => send({ command: 'changeVaultFolder', id: vault.id }),
-    },
-    {
-      label: 'Open Knowledge Format bundle',
-      switch: true,
-      checked: Boolean(vault.okfBundle),
-      keepOpen: true,
-      run: () => send({ command: 'setVaultOkfBundle', id: vault.id, enabled: !vault.okfBundle }),
     },
     {
       label: 'Remove vault',
@@ -15629,18 +15642,8 @@ function editVaultMenuItems(vault) {
     },
     ...vaultGitItems(vault),
     'separator',
-    {
-      label: 'Back',
-      icon: BACK_ARROW_SVG,
-      
-      keepOpen: true,
-      
-      run: () => {
-        crumbMenuVault = null;
-        showCrumbMenu(crumbMenuOwner, vaultMenuItems());
-      },
-    },
-  ];
+    back,
+  ].filter(Boolean);
 }
 
 function vaultSyncs(id) {
@@ -15653,9 +15656,18 @@ function samePathKey(path) {
   return String(path || '').split('\\').join('/').replace(/\/+$/, '').toLowerCase();
 }
 
+function vaultIsACloudFolder(vault) {
+  const path = samePathKey(vault && vault.rootPath);
+  return Boolean(path && Array.isArray(cloudFolders) && cloudFolders.some((folder) => samePathKey(folder.path) === path));
+}
+
 function vaultIsInACloudFolder(id) {
-  if (!id || !cloudFolders || !cloudFolders.length) return false;
-  const vault = leafVaults.find((entry) => entry && entry.id === id);
+  if (!id) return false;
+  return pathIsInACloudFolder(leafVaults.find((entry) => entry && entry.id === id));
+}
+
+function pathIsInACloudFolder(vault) {
+  if (!cloudFolders || !cloudFolders.length) return false;
   const path = samePathKey(vault && vault.rootPath);
   if (!path) return false;
   return cloudFolders.some((folder) => {
@@ -16195,8 +16207,10 @@ function pushChangeRepoPanel(items, vault, repo) {
 }
 
 function vaultGitItems(vault) {
-  const items = ['separator', { heading: 'GitHub' }];
   const state = vaultGitByVault.get(vault.id);
+  
+  if (pathIsInACloudFolder(vault) && !(state && state.repo && state.repo.atRoot)) return [];
+  const items = ['separator', { heading: 'GitHub' }];
   if (!state) {
     items.push({ note: 'Checking this folder…' });
     return items;

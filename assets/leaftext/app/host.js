@@ -143,7 +143,6 @@ export const COMMANDS = {
   linkVaultRemote: [REFUSED, 'a vault is a folder on a disk, and a site is one folder already'],
   syncVault: [REFUSED, 'pushing a repository needs a disk and a process'],
   setVaultGitAutoSync: [REFUSED, 'a site has no vault registry'],
-  setVaultOkfBundle: [REFUSED, 'a site has no vault registry'],
   ignoreVaultRepos: [REFUSED, 'a site is a folder on somebody else’s host with no disk under it and no git to ignore anything'],
   setGitIdentity: [REFUSED, 'it writes who git commits as into the git settings on a machine, and a site is a folder on somebody else’s host with no machine and no git under it'],
   cancelServiceSignIn: [REFUSED, 'a site starts no Google Drive download, so there is none to cancel'],

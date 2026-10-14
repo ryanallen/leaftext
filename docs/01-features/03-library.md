@@ -48,15 +48,7 @@ Each Leaftext window opens its own vault. Picking one in a window changes that w
 - **Library** is the no-vault state, marked with the machine rather than a box because it is not a collection — the pane starts at your drive roots and browses anywhere. Search is unavailable, because it has no bounded set of words to read. The graph still works: it maps the open document instead of a vault.
 - **A vault** roots the pane at that folder. Everything below it is browsable, searchable and mappable.
 - **New vault…** opens the kinds of vault: a folder on this computer, a [cloned repository](#clone-a-repository), or — on a computer with no Google Drive folder — [Google Drive](#your-cloud-is-already-a-folder). Under **New vault…** the switcher has a [Books online](#books-online) section of its own. Press **Back** to return to your vaults. Choosing a folder opens the folder picker; its name becomes the vault's name.
-- The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync).
-
-### Open Knowledge Format bundles
-
-An Open Knowledge Format bundle is a folder of Markdown concepts. Add its folder as a vault, open that vault's settings, and turn on **Open Knowledge Format bundle**. Leaftext reads the concepts, their fields, and optional `index.md` and `log.md` as Markdown. It keeps fields it does not recognize when you edit and save a concept.
-
-Inside a marked bundle, a link beginning `/` starts at the bundle folder. A relative link starts beside the concept containing it. The same links work in the reading view, hover preview, code view, and graph. If marked vaults nest, the innermost marked folder supplies the root, even while another vault is selected. Turning the switch off restores ordinary file links; the switch changes no file in the folder.
-
-A published folder of concepts uses its published listing as the root for links beginning `/`. Links that climb above that root do not open a document.
+- The settings button appears when you point at a vault row or reach it with the keyboard, and opens a panel to rename it, point it at a different folder, remove it, or connect it to [GitHub](#github-sync). A [sync app's own folder](#your-cloud-is-already-a-folder) cannot be pointed elsewhere or made a repository, since the sync app already copies it, and [Books online](#books-online) offers only Refresh the catalog.
 
 
 > [!NOTE]
@@ -88,7 +80,7 @@ Leaftext holds no account and no password for any of them. **Their app does the 
 
 Only what is really there is added: a client you do not have is not listed, and neither is one whose folder has been deleted. Where a client records having been moved — Dropbox, OneDrive, Nextcloud — that record is what gets read, so a Dropbox living somewhere other than the default is still found. Nothing is scanned to do it; each is a named place, checked.
 
-Remove one and it comes back the next time Leaftext looks, which is when it starts and whenever you come back to its window. A client installed while Leaftext is open is found on that return, because leaving the window is what you did to install it. A vault is a row in a list, not a copy of anything, and it is a folder you have — the alternative is remembering a refusal forever to save you a row.
+Leaftext looks when it starts and whenever you come back to its window, so a client installed while Leaftext is open is found on that return, because leaving the window is what you did to install it. Remove one and it stays removed: Leaftext remembers the folder and adds it again only when you add it yourself with **Folder on this computer…**.
 
 On Windows the Google Drive app mounts each signed-in account as a drive of its own, labeled with the account. Leaftext finds every one and adds its **My Drive** as a vault named for the account — **My Drive (you@example.com)** — so two accounts are two vaults you can tell apart; Shared drives and Other computers stay in the library. A name you give one is kept. These drives download a file the moment anything reads it, so in them Leaftext lists every note by name, time and size without reading any: rows carry no title or preview, a field rule hides nothing there, and search, the map, fields and Home's tasks do not look inside them. A note is fetched when you open it.
 
@@ -111,7 +103,7 @@ The Google Drive app keeps Google Docs, Sheets and Slides in its folder as short
 - **Reading.** Each match says its library and what a press does: **Read in Leaftext**, **On this computer** once fetched, or **Visit** and the library's name for a book only that library's own page can show, which a press opens in your browser. Press a book Leaftext can read and it fetches its EPUB and opens it. The row says **on this computer** once it has been fetched, and the Books online box on Home lists every book you have fetched, newest first. With a fetched book open, the pane stays on Project Gutenberg. A fetched book opens without the internet; a book that could not be fetched leaves nothing behind and can be pressed again.
 - **The catalog.** Gutenberg publishes its catalog once a week for apps to read, so Leaftext fetches that one file, and the download counts leaftext.com reads out of Gutenberg each week, when the vault is added and again when the copy it holds is a week old. Searching and browsing it needs no internet after that. **Refresh the catalog** in the vault's settings fetches it straight away. A fetch that fails leaves the catalog you had; with none held, the pane says why and opening Project Gutenberg again tries once more. Download counts that cannot be had leave the books in title order.
 
-Removing the vault removes the catalog and every book it fetched. A book already open in a tab stays open.
+Books online is the app's own, so it cannot be renamed, removed or put on GitHub; its settings hold **Refresh the catalog** alone.
 
 ## Browsing
 
