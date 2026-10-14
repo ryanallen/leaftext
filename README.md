@@ -182,7 +182,7 @@ Type `[[` and your notes are listed, by file name and by any [other name](docs/0
 
 ## Keep a library
 
-Search notes, follow links, and browse and read free Project Gutenberg books.
+Search notes, follow links, and browse and read free books from Project Gutenberg and Standard Ebooks.
 
 ### Point it at a folder and it becomes a vault
 
@@ -202,7 +202,7 @@ Open the calendar at the foot of the library and a month of the vault shows whic
 
 ![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg.png)
 
-Choose **Project Gutenberg** under **Books online** in the vault switcher and its catalog of free books reads in the pane like a folder: its categories, a hundred books at a time, and the find bar searching titles and authors. Press a book and it opens, and once fetched it reads without the internet. **[Books online →](docs/01-features/03-library.md#books-online)**
+Choose **Project Gutenberg** under **Books online** for its categories and catalog. Search the same vault for titles from Standard Ebooks, then press a book to fetch its EPUB and read it offline. Both libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
 
 ### Search everything you've written
 
@@ -363,7 +363,7 @@ New here? The **[Quickstart](docs/03-quickstart.md)** gets you reading in a coup
 | [Installation](docs/02-installation.md) | Both platforms, the first-launch warnings, file associations, updates |
 | [Rendering](docs/01-features/01-rendering.md) | Every syntax and format it reads, with live examples |
 | [Navigation](docs/01-features/02-navigation.md) | Tabs, two documents side by side, history, outline, pager, glossary, link hints and the link menu, live reload |
-| [Library](docs/01-features/03-library.md) | Vaults, the file tree, search, the graph, GitHub sync, file actions |
+| [Library](docs/01-features/03-library.md) | Vaults, Books online, the file tree, search, the graph, GitHub sync, file actions |
 | [Minimap](docs/01-features/04-minimap.md) | The side rail, in both the reading view and the code view |
 | [Settings](docs/01-features/05-settings.md) | Every preference, its default, and where it is stored |
 | [Themes](docs/01-features/06-themes.md) | The fifteen families and the six earned ones, appearance, fonts, diagram colors |
