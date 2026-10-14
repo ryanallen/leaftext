@@ -35,6 +35,7 @@ export const APP_BASE = `${APP_DIR}/`;
 /** Which build the site is reading through, so a reader of either site can tell how old it is. */
 export const VERSION_PATH = `${ASSET_DIR}/version.json`;
 export const IMAGE_SIZES_PATH = `${ASSET_DIR}/image-sizes.json`;
+export const GUTENBERG_DOWNLOADS_PATH = `${ASSET_DIR}/gutenberg-downloads.csv.gz`;
 
 /** The notices of everything compiled into the module, beside it rather than inside it, because every license they reproduce asks to go with the distribution. */
 export const LICENSES_PATH = `${ASSET_DIR}/licenses.md`;

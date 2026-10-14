@@ -17170,7 +17170,7 @@ function keepLibraryFolderView(next) {
 function libraryViewOf(view) {
   const list = (value) => (Array.isArray(value) ? value.filter((one) => typeof one === 'string') : []);
   return {
-    sort: LIBRARY_SORT_WORDS[view && view.sort] ? view.sort : 'name',
+    sort: LIBRARY_SORT_WORDS[view && view.sort] || (view && view.sort === 'popular') ? view.sort : 'name',
     descending: !!(view && view.descending),
     groupByDate: !!(view && view.groupByDate),
     compact: !view || view.compact !== false,
@@ -17184,10 +17184,13 @@ function libraryViewHides(view) {
   return !!view && (view.hidden.length + view.hidePatterns.length + view.hideFields.length) > 0;
 }
 function libraryViewIsDefault(view) {
+  if (view && libraryInBooksOnline()) return view.sort === 'popular';
   return !view || (view.sort === 'name' && !view.descending && !view.groupByDate && view.compact && !view.showHidden && !libraryViewHides(view));
 }
 
 function libraryViewWords(view) {
+  if (view.sort === 'popular') return 'Sorted by most popular';
+  if (libraryInBooksOnline()) return `Sorted by title, ${view.descending ? 'z to a' : 'a to z'}`;
   const direction = LIBRARY_SORT_DIRECTIONS[view.sort].find((one) => one.descending === view.descending);
   const grouped = view.groupByDate && libraryViewGroups(view) ? ', grouped by date' : '';
   const details = view.compact ? '' : ', details shown';
@@ -17221,8 +17224,24 @@ function trailEndWidth(widthOf) {
 function sendFolderView(change) {
   send({ command: 'setFolderView', path: libraryProjectPath, view: { ...libraryFolderView, ...change } });
 }
+
+function libraryInBooksOnline() {
+  return String(libraryProjectPath || '').startsWith('books:');
+}
+
+function booksOnlineViewMenuItems(view) {
+  const items = [{ heading: 'Sort by' },
+    { label: 'Most popular', selected: view.sort === 'popular', run: () => sendFolderView({ sort: 'popular', descending: false }) },
+    { label: 'Title', selected: view.sort !== 'popular', run: () => sendFolderView({ sort: 'name', descending: false }) }];
+  items.push('separator');
+  for (const direction of LIBRARY_SORT_DIRECTIONS.name) {
+    items.push({ label: direction.label, selected: view.sort !== 'popular' && view.descending === direction.descending, run: () => sendFolderView({ sort: 'name', descending: direction.descending }) });
+  }
+  return items;
+}
 function libraryViewMenuItems() {
   const view = libraryFolderView;
+  if (libraryInBooksOnline()) return booksOnlineViewMenuItems(view);
   const lists = libraryListMenuItems();
   
   if (libraryListShowing() !== 'folders') return lists.concat(['separator'], libraryArrangementItems());
@@ -43588,6 +43607,8 @@ const CONSOLE_PIN_PARTIAL = /\x1b\](?:1(?:3(?:3(?:;[^\x07\x1b]*)?)?)?)?$/;
 const CONSOLE_PROMPT_MARK = /^\s*[❯›>](?:\s|$)/;
 const CONSOLE_PROMPT_RULE = /^\s*─/;
 
+const CONSOLE_CHAT_DONE = /^\s*\S+ \S.* for \d[^·]*· done\b/;
+
 const CONSOLE_PROMPT_ECHO_WRITES = 30;
 
 
@@ -43601,7 +43622,7 @@ function setupConsolePin(entry) {
   box.appendChild(row);
   entry.layer.appendChild(box);
   box.addEventListener('mousedown', event => onConsolePinMouseDown(entry, event));
-  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh(), chat: false, inline: null, cut: null };
+  entry.pin = { box, row, marker: null, pending: null, end: null, announcing: false, lastRow: -1, carry: '', drawn: '', screen: 'normal', full: consolePromptFresh(), chat: false, inline: null, cut: null, sent: null };
   const write = entry.terminal.write;
   entry.terminal.write = (data, done) => writeConsolePinned(entry, data, write, done);
   entry.terminal.onScroll(() => renderConsolePin(entry));
@@ -43629,6 +43650,7 @@ function placeConsolePin(entry, marker) {
   entry.pin.marker = marker;
   entry.pin.end?.dispose();
   entry.pin.end = null;
+  entry.pin.sent = null;
 }
 
 
@@ -43731,6 +43753,7 @@ function renderConsolePin(entry) {
     return;
   }
   if (pin.inline) consoleInlineEcho(entry);
+  if (pin.sent) consoleSentFound(entry);
   const line = consolePinNow(entry);
   if (line === null) {
     hideConsolePin(entry);
@@ -43742,7 +43765,46 @@ function renderConsolePin(entry) {
     const text = consoleBuffer(entry).getLine(line)?.translateToString(true) ?? '';
     pin.read = { marker: pin.marker, line, text, wrapped: pin.marker === pin.cut || Boolean(terminal.buffer.active.getLine(line + 1)?.isWrapped) };
   }
-  drawConsolePin(entry, line, pin.read.text, pin.read.wrapped);
+  
+  const sent = pin.sent;
+  if (sent && !consoleRowOpens(pin.read.text, sent.text)) drawConsolePin(entry, line, sent.mark + sent.text, false);
+  else drawConsolePin(entry, line, pin.read.text, pin.read.wrapped);
+}
+
+
+function consoleRowOpens(row, text) {
+  const words = CONSOLE_PROMPT_MARK.test(row) && consolePromptEcho(row);
+  return Boolean(words) && text.startsWith(words);
+}
+
+
+function consoleSentFound(entry) {
+  const pin = entry.pin;
+  const sent = pin.sent;
+  const buffer = consoleBuffer(entry);
+  const marker = pin.marker;
+  const alive = marker && !marker.isDisposed && marker.line >= 0 && marker.line < buffer.length;
+  const row = alive ? buffer.getLine(marker.line)?.translateToString(true) ?? '' : null;
+  if (sent.seen && sent.seen.marker === marker && sent.seen.line === (alive ? marker.line : -1) && sent.seen.row === row) return;
+  if (!alive || !consoleRowOpens(row, sent.text)) {
+    const cursor = buffer.baseY + entry.terminal.buffer.active.cursorY;
+    let echo = -1;
+    let done = -1;
+    for (let line = Math.min(cursor, buffer.length) - 1; line >= 0; line -= 1) {
+      const text = buffer.getLine(line)?.translateToString(true) ?? '';
+      if (consoleRowOpens(text, sent.text)) { echo = line; break; }
+      if (done < 0 && CONSOLE_CHAT_DONE.test(text)) done = line;
+    }
+    const target = echo >= 0 ? echo : alive ? -1 : done >= 0 ? done + 1 : -1;
+    const moved = target >= 0 ? entry.terminal.registerMarker(target - cursor) : null;
+    if (moved) {
+      placeConsolePin(entry, moved);
+      pin.sent = sent;
+    }
+  }
+  const now = pin.marker;
+  const nowAlive = now && !now.isDisposed && now.line >= 0 && now.line < buffer.length;
+  sent.seen = { marker: now, line: nowAlive ? now.line : -1, row: nowAlive ? buffer.getLine(now.line)?.translateToString(true) ?? '' : null };
 }
 
 
@@ -43947,6 +44009,7 @@ function consoleInlineEcho(entry) {
   pin.inline = null;
   const marker = entry.terminal.registerMarker(inline.from + found - base - cursor);
   placeConsolePin(entry, marker);
+  if (marker) pin.sent = { text: inline.text, mark: rows[found].match(CONSOLE_PROMPT_MARK)[0].trimStart() };
   
   if (marker) pin.cut = consolePromptEcho(rows[found]) !== inline.text ? marker : null;
 }

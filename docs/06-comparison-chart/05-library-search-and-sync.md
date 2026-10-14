@@ -16,6 +16,7 @@
 | New vault from picker | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
 | Clone repository as vault | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Free books online | [✅][l-books-online] | [❌][o-seen] | [❌][t-seen] | [✅][c-get-books] |
+| Books by popularity | [✅][l-books-online] | [❌][o-seen] | [❌][t-seen] | ? |
 | Rename, repoint, remove vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | [❌][c-seen] |
 | Nothing written into folder | [✅][l-vaults] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Vault registry database | [✅][l-vaults] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
@@ -102,6 +103,7 @@
 | Cut a file | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Copy a file | [✅][l-file-actions] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
 | Copy file path | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | [❌][c-seen] |
+| Copy folder path | [✅][l-folders] | ? | ? | [❌][c-seen] |
 | Rename in place | [✅][l-file-actions] | [✅][o-explorer] | [✅][t-files] | [❌][c-seen] |
 | Case-only renames | [✅][l-file-actions] | [✅][o-seen] | ? | [❌][c-seen] |
 | Reveal in file manager | [✅][l-file-actions] | [✅][o-seen] | [✅][t-files] | [✅][c-seen] |
@@ -141,6 +143,7 @@
 | Bad names refused | [✅][l-file-actions] | [✅][o-seen] | ? | [❌][c-seen] |
 | Bare names become Markdown | [✅][l-file-actions] | [✅][o-seen] | ? | [❌][c-seen] |
 | Unreadable extensions refused | [✅][l-file-actions] | ? | ? | [❌][c-seen] |
+| Unopenable files listed | [✅][l-file-types] | ? | ? | [❌][c-seen] |
 | Paste never overwrites | [✅][l-cut-copy] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Deleted files restorable | [✅][l-delete] | [✅][o-notes] | [✅][t-seen] | [❌][c-seen] |
 | Get Info brought forward | [✅][l-file-actions] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -382,6 +385,7 @@
 | Screenshot pasted into console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Finished console marked | [✅][l-console-done] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents in one list | [✅][l-console-agents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agents name their consoles | [✅][l-agent-name] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console links open | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Command pinned at top | [✅][l-console-pin] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agent prompt pinned | [✅][l-console-prompt] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -466,6 +470,7 @@
 [l-console]: ../01-features/03-library.md#console
 [l-console-done]: ../01-features/03-library.md#a-finished-console-says-so
 [l-console-agents]: ../01-features/03-library.md#every-agent-in-one-list
+[l-agent-name]: ../01-features/10-agents.md#run-the-agent-in-a-console
 [l-console-pin]: ../01-features/03-library.md#the-command-you-ran-stays-at-the-top
 [l-console-prompt]: ../01-features/03-library.md#the-prompt-you-sent-an-agent-stays-at-the-top
 [l-layout]: ../01-features/03-library.md#layout

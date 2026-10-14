@@ -14,6 +14,8 @@ The agent also keeps everything else it loads in an ordinary terminal: the proje
 
 Remote tool servers, such as a company's own, are set up in the agent's own settings the way that agent's documentation describes, and work in a Leaftext console the same as anywhere. The `mcp.json` file in Leaftext's settings folder is not passed to an agent you run in a console.
 
+A console running an agent is named on its tab and in the **Agents** list by what it is doing. Where the agent gives its session a topic, that topic is the name. Where it gives none — Claude Code started on a skill, for one — the agent names its own console with a few words for the job through `leaftext_name` on its first prompt, and until it does the console reads the first five words of the prompt it was sent, without the skill, a pasted picture's placeholder or a path's folders. Point at the tab or the row to read the whole prompt. Starting over with `/clear`, `/new` or `/reset`, or leaving the agent, lets the name go.
+
 To watch a note change while the agent works on it, put the console beside the note: drag its tab onto the right half of the page, choose **Open beside** on the tab, or press `Ctrl+\` (`Cmd+\` on a Mac). See [two documents side by side](02-navigation.md#two-documents-side-by-side).
 
 The mouse wheel scrolls the agent's conversation the way it does in the agent's own terminal: a program that asks for the mouse is sent the wheel itself, one step a notch, so the prompt box keeps what you were typing.

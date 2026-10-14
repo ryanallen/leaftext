@@ -49,6 +49,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: '17 7 * * 1'
 
 # Only what Pages needs. This workflow publishes the site; it never touches a
 # release or a tag.
@@ -123,6 +125,14 @@ jobs:
       # docs page, which is how an old #/route link is sent on to its page.
       - name: Write the pages through the app beside them
         run: node scripts/site-assets.mjs --bake
+
+      - name: Refresh Gutenberg download counts
+        run: |
+          mkdir -p assets/leaftext
+          curl --fail --location --max-time 30 --silent https://leaftext.com/assets/leaftext/gutenberg-downloads.csv.gz -o assets/leaftext/gutenberg-downloads.csv.gz || true
+          if ! (set -o pipefail; curl --fail --location --max-time 600 --silent https://www.gutenberg.org/cache/epub/feeds/rdf-files.tar.bz2 | bzip2 -dc | node scripts/gutenberg-downloads.mjs assets/leaftext/gutenberg-downloads.csv.gz); then
+            echo 'Keeping the previously published Gutenberg download counts.'
+          fi
 
       # The pictures an earlier run already took. Each page's own key in
       # cards/keys.json decides whether it is taken again, so this restores the

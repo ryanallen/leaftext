@@ -46,6 +46,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{data_dir}/manifest.db` | The [vaults](03-library.md#vaults) you have named, and which one is active |
 | `{data_dir}/spoken-audio` | Completed ElevenLabs passages and their word timing, kept until you forget that account in the speaker's voice list |
 | `{data_dir}/remote/<vault id>` | Files a storage service vault from an earlier version copied down. One that held edits never sent stays here as an ordinary folder vault; the rest are deleted the first time this version starts |
+| `{data_dir}/books-online` | The [Books online](03-library.md#books-online) catalog and its download counts. Removing the vault deletes them |
 | `{data_dir}/models` | Nothing Leaftext writes now: a model an earlier version downloaded here is deleted when the app starts, and uninstalling deletes the folder too |
 | `{data_dir}/webview2` | The window's own WebView2 data; each new version drops the last one's compiled scripts the first time it starts |
 | `{data_dir}/web` | The web page tabs' own browser data, sign-ins included |
