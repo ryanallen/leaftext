@@ -104,7 +104,7 @@ What one [frontmatter](GLOSSARY.md#frontmatter) field holds. Six of them, the sa
 
 ## File actions
 
-The right-click menu in the [library pane](GLOSSARY.md#library-pane) and on a page being read. On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On the page: Copy where words are highlighted, then Favorite, Copy path, Reveal file, Properties, Delete. On a folder or the empty space around it: Open folder, Paste, Reveal folder, Properties. Delete goes to the Recycle Bin or Trash, not away for good, and it asks first — see [Confirmation](GLOSSARY.md#confirmation).
+The right-click menu in the [library pane](GLOSSARY.md#library-pane) and on a page being read. On a file: Open, Cut, Copy, Copy path, Rename, Reveal file, Properties, Delete. On the page: Copy where words are highlighted, then Favorite, Copy path, Reveal file, Properties, Delete. On a folder on this computer: Open folder, Paste, Reveal folder, Properties; the empty space around its rows offers the same actions except Open folder. A [Books online](01-features/03-library.md#books-online) category offers only Open folder. Delete goes to the Recycle Bin or Trash, not away for good, and it asks first — see [Confirmation](GLOSSARY.md#confirmation).
 
 ## File association
 

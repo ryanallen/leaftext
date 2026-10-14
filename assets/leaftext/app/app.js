@@ -12091,21 +12091,21 @@ const CONTEXT_MENU_ITEMS = [
 
 const FOLDER_MENU_ITEMS = [
   { action: 'openFolder', icon: 'open', label: 'Open folder', folderOnly: true },
-  { action: 'favorite', icon: 'favorite-off', label: 'Favorite', command: 'toggleFavorite', folderOnly: true },
+  { action: 'favorite', icon: 'favorite-off', label: 'Favorite', command: 'toggleFavorite', folderOnly: true, onDisk: true },
   'separator',
   
-  { action: 'newFile', icon: 'new', label: 'New file', command: 'newFile' },
-  { action: 'newFolder', icon: 'new-folder', label: 'New folder', command: 'newFolder' },
+  { action: 'newFile', icon: 'new', label: 'New file', command: 'newFile', onDisk: true },
+  { action: 'newFolder', icon: 'new-folder', label: 'New folder', command: 'newFolder', onDisk: true },
   'separator',
-  { action: 'hideRow', icon: 'hide', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide', folderOnly: true },
-  { action: 'showRow', icon: 'show', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show', folderOnly: true },
-  { action: 'paste', icon: 'paste', label: 'Paste', command: 'pasteFile' },
-  { action: 'exportSite', icon: 'export', label: 'Export as site…', command: 'exportSite' },
+  { action: 'hideRow', icon: 'hide', label: 'Hide from the pane', command: 'setFolderView', paneRow: 'hide', folderOnly: true, onDisk: true },
+  { action: 'showRow', icon: 'show', label: 'Show in the pane', command: 'setFolderView', paneRow: 'show', folderOnly: true, onDisk: true },
+  { action: 'paste', icon: 'paste', label: 'Paste', command: 'pasteFile', onDisk: true },
+  { action: 'exportSite', icon: 'export', label: 'Export as site…', command: 'exportSite', onDisk: true },
   'separator',
   
   { action: 'copyPath', icon: 'copy-path', label: 'Copy path', command: 'copyPath', onDisk: true },
-  { action: 'reveal', icon: 'reveal', label: 'Reveal folder', command: 'revealFile' },
-  { action: 'properties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
+  { action: 'reveal', icon: 'reveal', label: 'Reveal folder', command: 'revealFile', onDisk: true },
+  { action: 'properties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties', onDisk: true },
 ];
 
 const LINK_MENU_ITEMS = [
@@ -12473,6 +12473,7 @@ function contextMenuEntries() {
       .filter((entry) => {
         if (entry === 'separator') return true;
         if (!contextMenuHostAnswers(entry)) return false;
+        if (entry.onDisk && !contextMenuPathOnDisk()) return false;
         if (entry.action === 'paste') return libraryHoldsTransfer();
         if (entry.paneRow) return libraryRowMenuShows(contextMenuPath, entry.paneRow, contextMenuTargetKind);
         
@@ -12480,7 +12481,6 @@ function contextMenuEntries() {
         if (entry.selectionOnly) return !!contextMenuSelectionText;
         if (entry.ribbonKept) return readingRibbonKept();
         if (entry.savedPageOpen) return currentDocumentFormat === 'html';
-        if (entry.onDisk && !contextMenuPathOnDisk()) return false;
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         
         if (entry.whileSplit) return contextMenuTargetKind === 'tab' && splitOpen();

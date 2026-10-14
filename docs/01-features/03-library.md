@@ -27,7 +27,7 @@ The library is the part of Leaftext that helps you find documents, not just read
 | [File actions](#file-actions) | Right-click a file or the page you are reading for the actions that fit it |
 | [Picture actions](#right-click-a-picture) | Right-click a picture for its own actions: open it big, copy it, find its file, and take it out of an unlocked page |
 | [Deleting](#deleting-asks-first-and-can-be-taken-back) | Delete asks before it goes, and offers the file back for a few seconds afterward — on the message, or with Ctrl+Z |
-| [Folder actions](#folders-and-the-space-around-them) | Right-click a folder — or the empty space in the pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties |
+| [Folder actions](#folders-and-the-space-around-them) | Right-click a folder on this computer — or the empty space in its pane — to make a file or a folder in it, paste, export it as a site, reveal it, or see its properties. A Books online category offers Open folder only |
 | [Calendar](#calendar) | A month, week or day of the vault's documents by when they were changed, made or dated; pick a day and the pane lists it |
 | [Launchers at the foot](#launchers-at-the-foot) | Scheduled tasks, Favorites, Recent, Search and Calendar, one press from the bottom of the pane |
 | [Console](#console) | A command line for the folder shown in the library, opened beside the New document button above the tabs |
@@ -255,7 +255,7 @@ Two things stop an undo, and it says which: the file is no longer in the bin, or
 
 ### Folders, and the space around them
 
-Right-clicking a **folder row** — or the empty space below the rows, which stands for the folder you are browsing — offers what a place can do rather than what a document can. Both make in the folder that was right-clicked, and a name already taken there is refused rather than written over:
+Right-clicking a **folder on this computer** — or the empty space below its rows, which stands for the folder you are browsing — offers these actions. Both make in the folder that was right-clicked, and a name already taken there is refused rather than written over. In Books online, a category's right-click menu offers **Open folder** only; the empty space in a category has no folder menu.
 
 | Action | What it does |
 | --- | --- |
