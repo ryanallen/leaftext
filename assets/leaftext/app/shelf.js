@@ -55,13 +55,15 @@ export function shownBooks(data, { search = '', part = '', tone = '', status = '
     .map((book) => book.book));
 }
 
-/** The six tones of the theme in force, each with its ink, set on the shelf as the values its stylesheet paints with. */
-export function paintTones(root, scale) {
+/** The six tones of the theme in force, each with its ink, set on the shelf as the values its stylesheet paints with; on a dark theme the spines' sheen dims, because the full one under light words lifts their ground until they stop reading. */
+export function paintTones(root, scale, dark = false, sheen = '') {
+  if (dark) root.style.setProperty('--shelf-sheen', 'var(--lt-tint-sheen-dim)');
+  else root.style.removeProperty('--shelf-sheen');
   const tones = typeof scale === 'function' ? scale(SHELF_TONES.length) : [];
   SHELF_TONES.forEach(([key], at) => {
     const tone = tones[at];
     if (!tone) return;
-    root.style.setProperty(`--shelf-tone-${key}`, readableFill(tone.fill, tone.ink));
+    root.style.setProperty(`--shelf-tone-${key}`, readableFill(tone.fill, tone.ink, sheen));
     root.style.setProperty(`--shelf-ink-${key}`, tone.ink);
   });
   return tones.length;
@@ -95,14 +97,26 @@ function contrastOf(a, b) {
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
-/** The tone, or the nearest shade of it toward black or white that its ink reads on at 4.5:1. A color the shelf cannot measure is left as the scale gave it. */
-export function readableFill(fill, ink) {
+/** The color and alpha of a sheen written as `rgba(…)`, or nothing where it is not one the shelf can read. */
+function sheenOf(color) {
+  const rgba = /^rgba\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d*(?:\.\d+)?)\s*\)$/i.exec(String(color || '').trim());
+  if (!rgba) return null;
+  const alpha = Number(rgba[4]);
+  return alpha > 0 && alpha <= 1 ? { channels: rgba.slice(1, 4).map(Number), alpha } : null;
+}
+
+/** The tone, or the nearest shade of it toward black or white that its ink reads on at 4.5:1, both flat and with the spine's sheen laid over it, since the title runs across both. A color the shelf cannot measure is left as the scale gave it. */
+export function readableFill(fill, ink, sheen = '') {
   const tone = channelsOf(fill);
   const print = channelsOf(ink);
-  if (!tone || !print || contrastOf(tone, print) >= READABLE) return fill;
+  if (!tone || !print) return fill;
+  const light = sheenOf(sheen);
+  const lit = (channels) => (light ? channels.map((byte, at) => byte * (1 - light.alpha) + light.channels[at] * light.alpha) : channels);
+  const reads = (channels) => Math.min(contrastOf(channels, print), contrastOf(lit(channels), print)) >= READABLE;
+  if (reads(tone)) return fill;
   const toward = luminanceOf(print) > luminanceOf(tone) ? 0 : 255;
   let shade = tone;
-  for (let step = 1; step <= 20 && contrastOf(shade, print) < READABLE; step += 1) {
+  for (let step = 1; step <= 20 && !reads(shade); step += 1) {
     shade = tone.map((byte) => Math.round(byte + (toward - byte) * step * 0.05));
   }
   return '#' + shade.map((byte) => byte.toString(16).padStart(2, '0')).join('');
@@ -354,8 +368,12 @@ export function installShelf(root, data, env = globalThis) {
   }
   // The sheet stands outside the shelf the tones are set on, so it is painted as well.
   const paint = () => {
-    paintTones(root, view.leafCategoricalScale);
-    paintTones(sheet, view.leafCategoricalScale);
+    const page = view.document && view.document.documentElement;
+    const dark = Boolean(page && page.dataset && page.dataset.theme === 'dark');
+    // The sheen the spines will wear, read off the token the stylesheet paints with rather than spelled again here.
+    const sheen = page && typeof view.getComputedStyle === 'function' ? view.getComputedStyle(page).getPropertyValue(dark ? '--lt-tint-sheen-dim' : '--lt-tint-sheen') : '';
+    paintTones(root, view.leafCategoricalScale, dark, sheen);
+    paintTones(sheet, view.leafCategoricalScale, dark, sheen);
   };
   const unsubscribe = view.leafTheme && typeof view.leafTheme.subscribe === 'function' ? view.leafTheme.subscribe(paint) : (paint(), null);
   drawAll();

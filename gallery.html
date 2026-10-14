@@ -4078,6 +4078,7 @@
   /* Fixed tints */
   --lt-tint-recess: rgba(0, 0, 0, 0.16);
   --lt-tint-sheen: rgba(255, 255, 255, 0.22);
+  --lt-tint-sheen-dim: rgba(255, 255, 255, 0.03);
   --lt-tint-backdrop: rgba(0, 0, 0, 0.45);
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   --lt-console-scanline-red: rgba(255, 0, 0, 0.035);
@@ -15121,9 +15122,9 @@ p.shelf-line {
   min-height: 228px;
   padding: 0 var(--lt-space-8);
   --shelf-ledge: var(--lt-border);
-  /* The ledge: a painted band with a lit lip along its top, never a cast shadow. */
+  /* The ledge: a painted band with a lit lip along its top, never a cast shadow; the lip dims on a dark theme with the spines' sheen. */
   padding-bottom: var(--lt-space-6);
-  background: linear-gradient(var(--lt-tint-sheen), var(--lt-tint-sheen)) left bottom calc(var(--lt-space-6) - var(--lt-stroke-1)) / 100% var(--lt-stroke-1) no-repeat, linear-gradient(var(--shelf-ledge), var(--shelf-ledge)) left bottom / 100% var(--lt-space-6) no-repeat;
+  background: linear-gradient(var(--shelf-sheen, var(--lt-tint-sheen)), var(--shelf-sheen, var(--lt-tint-sheen))) left bottom calc(var(--lt-space-6) - var(--lt-stroke-1)) / 100% var(--lt-stroke-1) no-repeat, linear-gradient(var(--shelf-ledge), var(--shelf-ledge)) left bottom / 100% var(--lt-space-6) no-repeat;
 }
 /* The bookend before a bay: the strong rule standing up, dashed before the bay beside the story. */
 .shelf-bay::before {
@@ -15176,7 +15177,7 @@ p.shelf-line {
   opacity: var(--lt-opacity-60);
 }
 
-/* A spine: a published book filled with its tone and painted round — shade at both edges, a sheen a third of the way in — its title running bottom to top in the heading face, a darker band at head and foot. */
+/* A spine: a published book filled with its tone and painted round — shade at both edges, a sheen a third of the way in, dimmed on a dark theme so it never washes out the light words over it — its title running bottom to top in the heading face, a darker band at head and foot. */
 .shelf-spine {
   all: unset;
   cursor: pointer;
@@ -15189,7 +15190,7 @@ p.shelf-line {
   box-sizing: border-box;
   padding: var(--lt-space-12) 0 var(--lt-space-8);
   border-radius: var(--lt-radius-xs) var(--lt-radius-xs) 0 0;
-  --spine-round: linear-gradient(90deg, var(--lt-tint-recess) 0, transparent 22%, var(--lt-tint-sheen) 38%, transparent 62%, var(--lt-tint-recess) 100%);
+  --spine-round: linear-gradient(90deg, var(--lt-tint-recess) 0, transparent 22%, var(--shelf-sheen, var(--lt-tint-sheen)) 38%, transparent 62%, var(--lt-tint-recess) 100%);
   background: var(--spine-round), var(--spine);
   color: var(--spine-ink);
   border-top: var(--lt-space-8) solid var(--lt-tint-recess);
@@ -15206,7 +15207,7 @@ p.shelf-line {
   left: calc(-1 * var(--lt-space-2));
   right: calc(-1 * var(--lt-space-2));
   height: var(--lt-space-6);
-  background: linear-gradient(var(--lt-tint-sheen), var(--lt-tint-sheen)) top / 100% var(--lt-stroke-1) no-repeat, var(--shelf-ledge);
+  background: linear-gradient(var(--shelf-sheen, var(--lt-tint-sheen)), var(--shelf-sheen, var(--lt-tint-sheen))) top / 100% var(--lt-stroke-1) no-repeat, var(--shelf-ledge);
   transition: transform var(--lt-duration-260) var(--lt-ease-emphasized);
 }
 .shelf-spine-title {
@@ -19614,7 +19615,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 199 values that do not change with the theme, all 113 icons, and all 177 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 200 values that do not change with the theme, all 113 icons, and all 177 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19644,7 +19645,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 <div class="tabs" role="tablist">
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
-<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>199</b></button>
+<button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>200</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>113</b></button>
 <button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>177</b></button>
 </div>
@@ -19751,7 +19752,7 @@ body.leaf-paper .leaf-top-sheet-close {
 </div>
 </section>
 <section class="panel" id="values" role="tabpanel" hidden>
-<p class="lead">199 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
+<p class="lead">200 values that are the same whatever theme is on: the spacing, the type scale, the corners, how long things take.</p>
 <h3>Corners</h3><div class="wall wide">
 <div class="value"><code>lt-radius-xs</code><i class="demo tile" style="border-radius:var(--lt-radius-xs)"></i><code>2px</code></div>
 <div class="value"><code>lt-radius-sm</code><i class="demo tile" style="border-radius:var(--lt-radius-sm)"></i><code>4px</code></div>
@@ -19974,6 +19975,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <h3>Fixed tints</h3><div class="wall wide">
 <div class="value"><code>lt-tint-recess</code><code>rgba(0, 0, 0, 0.16)</code></div>
 <div class="value"><code>lt-tint-sheen</code><code>rgba(255, 255, 255, 0.22)</code></div>
+<div class="value"><code>lt-tint-sheen-dim</code><code>rgba(255, 255, 255, 0.03)</code></div>
 <div class="value"><code>lt-tint-backdrop</code><code>rgba(0, 0, 0, 0.45)</code></div>
 <div class="value"><code>lt-grain-dot-strong</code><code>rgba(0, 0, 0, 0.55)</code></div>
 <div class="value"><code>lt-console-scanline-red</code><code>rgba(255, 0, 0, 0.035)</code></div>

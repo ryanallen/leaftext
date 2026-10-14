@@ -4070,6 +4070,7 @@
   /* Fixed tints */
   --lt-tint-recess: rgba(0, 0, 0, 0.16);
   --lt-tint-sheen: rgba(255, 255, 255, 0.22);
+  --lt-tint-sheen-dim: rgba(255, 255, 255, 0.03);
   --lt-tint-backdrop: rgba(0, 0, 0, 0.45);
   --lt-grain-dot-strong: rgba(0, 0, 0, 0.55);
   --lt-console-scanline-red: rgba(255, 0, 0, 0.035);
@@ -15067,7 +15068,7 @@ p.shelf-line {
   --shelf-ledge: var(--lt-border);
   
   padding-bottom: var(--lt-space-6);
-  background: linear-gradient(var(--lt-tint-sheen), var(--lt-tint-sheen)) left bottom calc(var(--lt-space-6) - var(--lt-stroke-1)) / 100% var(--lt-stroke-1) no-repeat, linear-gradient(var(--shelf-ledge), var(--shelf-ledge)) left bottom / 100% var(--lt-space-6) no-repeat;
+  background: linear-gradient(var(--shelf-sheen, var(--lt-tint-sheen)), var(--shelf-sheen, var(--lt-tint-sheen))) left bottom calc(var(--lt-space-6) - var(--lt-stroke-1)) / 100% var(--lt-stroke-1) no-repeat, linear-gradient(var(--shelf-ledge), var(--shelf-ledge)) left bottom / 100% var(--lt-space-6) no-repeat;
 }
 
 .shelf-bay::before {
@@ -15133,7 +15134,7 @@ p.shelf-line {
   box-sizing: border-box;
   padding: var(--lt-space-12) 0 var(--lt-space-8);
   border-radius: var(--lt-radius-xs) var(--lt-radius-xs) 0 0;
-  --spine-round: linear-gradient(90deg, var(--lt-tint-recess) 0, transparent 22%, var(--lt-tint-sheen) 38%, transparent 62%, var(--lt-tint-recess) 100%);
+  --spine-round: linear-gradient(90deg, var(--lt-tint-recess) 0, transparent 22%, var(--shelf-sheen, var(--lt-tint-sheen)) 38%, transparent 62%, var(--lt-tint-recess) 100%);
   background: var(--spine-round), var(--spine);
   color: var(--spine-ink);
   border-top: var(--lt-space-8) solid var(--lt-tint-recess);
@@ -15150,7 +15151,7 @@ p.shelf-line {
   left: calc(-1 * var(--lt-space-2));
   right: calc(-1 * var(--lt-space-2));
   height: var(--lt-space-6);
-  background: linear-gradient(var(--lt-tint-sheen), var(--lt-tint-sheen)) top / 100% var(--lt-stroke-1) no-repeat, var(--shelf-ledge);
+  background: linear-gradient(var(--shelf-sheen, var(--lt-tint-sheen)), var(--shelf-sheen, var(--lt-tint-sheen))) top / 100% var(--lt-stroke-1) no-repeat, var(--shelf-ledge);
   transition: transform var(--lt-duration-260) var(--lt-ease-emphasized);
 }
 .shelf-spine-title {
