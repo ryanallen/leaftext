@@ -154,6 +154,12 @@ Every reading says whose it is: the scholars who edited the text by name, the pr
 
 Where the dictionaries leave a passage open, it's translated as the scholars who edited the text read it, and the doubt is given in an endnote, never smoothed over.
 
+<a id="fiction-called-fiction"></a>
+
+## Fiction called fiction
+
+Each book's note opens by saying whether it's fiction or fact, and which parts were made up. A book is fact only when none of it was made up, so a history with any legend in it counts as fiction.
+
 <a id="no-borrowed-wording"></a>
 
 ## No borrowed wording
