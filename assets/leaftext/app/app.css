@@ -6408,6 +6408,26 @@ body.is-maximized #winMaximize .wc-restore {
   padding-left: var(--lt-space-12);
   color: var(--lt-muted-foreground);
 }
+
+.context-menu-item:disabled {
+  opacity: var(--lt-opacity-46);
+}
+@media (hover: hover) {
+  .context-menu-item:disabled:hover {
+    background: transparent;
+  }
+}
+
+.context-menu-reason {
+  display: flex;
+  gap: var(--lt-space-8);
+  max-width: 260px;
+  padding: 0 var(--lt-space-12) var(--lt-space-8);
+  color: var(--lt-muted-foreground);
+  font-family: var(--app-font);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-35);
+}
 .context-menu-separator {
   height: 1px;
   margin: var(--lt-space-4) var(--lt-space-6);
@@ -8144,6 +8164,10 @@ body.library-resizing button {
 .library-file.is-hidden,
 .library-nav-folder.is-hidden,
 .library-axis-row.is-hidden {
+  opacity: var(--lt-opacity-46);
+}
+
+.library-file.is-unreadable > * {
   opacity: var(--lt-opacity-46);
 }
 

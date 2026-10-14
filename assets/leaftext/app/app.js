@@ -12063,6 +12063,8 @@ let contextMenuTabIndex = null;
 
 let contextMenuPicture = null;
 let contextMenuPictureFullWindow = false;
+
+let contextMenuUnreadable = '';
 const CONTEXT_MENU_ITEMS = [
   { action: 'open', icon: 'document', label: 'Open', command: 'openRecent' },
   { action: 'favorite', icon: 'favorite-off', label: 'Favorite', command: 'toggleFavorite' },
@@ -12101,6 +12103,7 @@ const FOLDER_MENU_ITEMS = [
   { action: 'exportSite', icon: 'export', label: 'Export as site…', command: 'exportSite' },
   'separator',
   
+  { action: 'copyPath', icon: 'copy-path', label: 'Copy path', command: 'copyPath', onDisk: true },
   { action: 'reveal', icon: 'reveal', label: 'Reveal folder', command: 'revealFile' },
   { action: 'properties', icon: 'properties', label: isMacPlatform ? 'Get Info' : 'Properties', command: 'showProperties' },
 ];
@@ -12277,6 +12280,7 @@ function hideContextMenu() {
   contextMenuPicture = null;
   contextMenuPictureFullWindow = false;
   contextMenuTableCell = null;
+  contextMenuUnreadable = '';
   returnKeyboardToConsole();
 }
 
@@ -12471,9 +12475,12 @@ function contextMenuEntries() {
         if (!contextMenuHostAnswers(entry)) return false;
         if (entry.action === 'paste') return libraryHoldsTransfer();
         if (entry.paneRow) return libraryRowMenuShows(contextMenuPath, entry.paneRow, contextMenuTargetKind);
+        
+        if (contextMenuUnreadable && (entry.action === 'favorite' || entry.action === 'openBeside')) return false;
         if (entry.selectionOnly) return !!contextMenuSelectionText;
         if (entry.ribbonKept) return readingRibbonKept();
         if (entry.savedPageOpen) return currentDocumentFormat === 'html';
+        if (entry.onDisk && !contextMenuPathOnDisk()) return false;
         if (entry.folderOnly) return contextMenuTargetKind === 'folder';
         
         if (entry.whileSplit) return contextMenuTargetKind === 'tab' && splitOpen();
@@ -12487,7 +12494,17 @@ function contextMenuEntries() {
         return true;
       })
       .map(labelForFavoriteEntry)
+      .map(disabledOpenEntry)
   );
+}
+
+function disabledOpenEntry(entry) {
+  if (!contextMenuUnreadable || entry === 'separator' || entry.action !== 'open') return entry;
+  return { ...entry, disabled: true, reason: contextMenuUnreadable };
+}
+
+function contextMenuPathOnDisk() {
+  return !String(contextMenuPath || '').startsWith('books:');
 }
 function contextMenuHostAnswers(entry) {
   if (!entry.command) return true;
@@ -12560,7 +12577,7 @@ function openContextMenuChild(button, entries, level, focusFirst = false) {
   menu.style.top = `${at.top}px`;
   button.setAttribute('aria-expanded', 'true');
   contextMenuChildren.push({ menu, button });
-  if (focusFirst) leafFocusForKeyboard(menu.querySelector('.context-menu-item'));
+  if (focusFirst) leafFocusForKeyboard(menu.querySelector('.context-menu-item:not(:disabled)'));
 }
 
 function contextMenuRow(entry) {
@@ -12604,6 +12621,8 @@ function fillContextMenu(menu, entries, level) {
         return;
       }
       
+      if (entry.disabled) return;
+      
       const path = contextMenuPath;
       const link = contextMenuLink;
       const selected = contextMenuSelectionText;
@@ -12618,6 +12637,19 @@ function fillContextMenu(menu, entries, level) {
       if (path) runContextAction(entry.action, path, link, selected, picture, tableCell);
     });
     menu.appendChild(item);
+    if (entry.disabled) {
+      item.disabled = true;
+      const reason = document.createElement('div');
+      reason.className = 'context-menu-reason';
+      const slot = document.createElement('span');
+      slot.className = 'context-menu-icon';
+      slot.setAttribute('aria-hidden', 'true');
+      reason.appendChild(slot);
+      const words = document.createElement('span');
+      words.textContent = entry.reason;
+      reason.appendChild(words);
+      menu.appendChild(reason);
+    }
   }
 }
 
@@ -12625,7 +12657,7 @@ function contextMenuKeydown(event) {
   const menu = event.target.closest('.context-menu');
   if (!menu || (menu !== contextMenu && !contextMenuChildren.some((child) => child.menu === menu))) return;
   const level = menu === contextMenu ? 0 : contextMenuChildren.findIndex((child) => child.menu === menu) + 1;
-  const items = Array.from(menu.querySelectorAll('.context-menu-item'));
+  const items = Array.from(menu.querySelectorAll('.context-menu-item:not(:disabled)'));
   const index = items.indexOf(event.target);
   if (event.key === 'Tab') { hideContextMenu(); return; }
   if (event.key === 'Escape') {
@@ -12659,7 +12691,7 @@ appSurface.addEventListener('keydown', contextMenuKeydown);
 function clampContextMenu(x, y) {
   leafPlaceFloating(contextMenu, x, y);
 }
-function showContextMenu(x, y, path, kind, link, picture, tableCell) {
+function showContextMenu(x, y, path, kind, link, picture, tableCell, unreadable) {
   
   const holdingConsole = contextMenuPressConsoleId === undefined ? consoleHoldingKeyboard() : contextMenuPressConsoleId;
   contextMenuPressConsoleId = undefined;
@@ -12675,6 +12707,7 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   contextMenuSelectionHtml = selectionCopy.html;
   contextMenuPicture = contextMenuTargetKind === 'picture' ? picture || null : null;
   contextMenuTableCell = contextMenuTargetKind === 'table' ? tableCell || null : null;
+  contextMenuUnreadable = contextMenuTargetKind === 'file' ? unreadable || '' : '';
   
   contextMenuPictureFullWindow = !!(contextMenuPicture && contextMenuPicture.closest('.image-sheet-overlay'));
   
@@ -12688,7 +12721,7 @@ function showContextMenu(x, y, path, kind, link, picture, tableCell) {
   clampContextMenu(x, y);
   contextMenuConsoleId = holdingConsole;
   contextMenuPressFocus = document.activeElement;
-  leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item'));
+  leafFocusForKeyboard(contextMenu.querySelector('.context-menu-item:not(:disabled)'));
 }
 document.addEventListener('contextmenu', (event) => {
   const paneTag = event.target.closest ? event.target.closest('.library-axis-row[data-axis-tag]') : null;
@@ -12726,7 +12759,7 @@ document.addEventListener('contextmenu', (event) => {
     const slot = row.getAttribute('data-tab-index');
     contextMenuTabIndex = slot === null ? null : Number(slot);
     const kind = row.hasAttribute('data-folder-path') ? 'folder' : (contextMenuTabIndex === null ? 'file' : 'tab');
-    showContextMenu(event.clientX, event.clientY, row.getAttribute('data-reveal-path'), kind);
+    showContextMenu(event.clientX, event.clientY, row.getAttribute('data-reveal-path'), kind, null, null, null, row.getAttribute('data-unreadable'));
     return;
   }
   
@@ -15204,6 +15237,10 @@ window.leafOnlineBookSettled = (key) => {
 };
 function bindLibraryFileRow(button) {
   bindLibraryRowPress(button, () => {
+    if (button.dataset.unreadable) {
+      leafToast(button.dataset.unreadable);
+      return;
+    }
     send({ command: 'openRecent', path: button.dataset.openPath });
     
     closeLibrarySheet();
@@ -15963,9 +16000,6 @@ function setLibraryTreeHtml(html, rows) {
   return true;
 }
 
-let librarySkippedFiles = 0;
-let librarySkippedCodeFiles = 0;
-
 let libraryBooks = null;
 
 function libraryBooksHeadHtml() {
@@ -15977,27 +16011,7 @@ function libraryBooksHeadHtml() {
 }
 
 function libraryEmptyText() {
-  const hidden = libraryHiddenEmptyText();
-  if (hidden) return hidden;
-  const opening = 'Nothing to read in this folder.';
-  const code = librarySkippedCodeFiles === 1
-    ? '1 code file lives here, which Leaftext opens but the pane does not list.'
-    : librarySkippedCodeFiles > 1
-      ? `${librarySkippedCodeFiles} code files live here, which Leaftext opens but the pane does not list.`
-      : '';
-  const other = librarySkippedFiles === 1
-    ? `1 ${code ? 'other ' : ''}file is not a kind Leaftext opens.`
-    : librarySkippedFiles > 1
-      ? `${librarySkippedFiles} ${code ? 'other ' : ''}files are not a kind Leaftext opens.`
-      : '';
-  if (code) return [opening, code, other].filter(Boolean).join(' ');
-  if (librarySkippedFiles === 1) {
-    return `${opening} 1 file lives here, but it is not a kind Leaftext opens.`;
-  }
-  if (librarySkippedFiles > 1) {
-    return `${opening} ${librarySkippedFiles} files live here, but none is a kind Leaftext opens.`;
-  }
-  return opening;
+  return libraryHiddenEmptyText() || 'Nothing in this folder.';
 }
 
 const VAULT_INTRO_HINT = 'vaultIntro';
@@ -16063,8 +16077,6 @@ window.leafSetLibraryFolder = (payload) => {
   keepLibraryFolderView(next);
   libraryRootName = typeof next.rootName === 'string' ? next.rootName : '';
   
-  librarySkippedFiles = Number.isFinite(next.skippedFiles) ? next.skippedFiles : 0;
-  librarySkippedCodeFiles = Number.isFinite(next.skippedCodeFiles) ? next.skippedCodeFiles : 0;
   libraryBooks = next.books && Number.isFinite(next.books.books) ? next.books : null;
   libraryNotice = typeof next.notice === 'string' ? next.notice : '';
   
@@ -17356,12 +17368,17 @@ function libraryRowTime(millis, now) {
 
 function libraryRowLabel(node, byName) {
   const name = (node && (node.name || node.path)) || '';
-  const { stem, extension } = documentNameParts(name);
+  const { stem, extension } = node && node.unreadable ? unreadableNameParts(name) : documentNameParts(name);
   return {
     stem: `<span class="file-name-stem">${escapeText(!byName && node && node.title ? node.title : stem)}</span>`,
     badge: extension ? `<span class="file-type-badge">${escapeText(extension)}</span>` : '',
     plainStem: stem,
   };
+}
+
+function unreadableNameParts(name) {
+  const dot = name.lastIndexOf('.');
+  return dot > 0 && dot < name.length - 1 ? { stem: name.slice(0, dot), extension: name.slice(dot + 1).toUpperCase() } : { stem: name, extension: '' };
 }
 
 function libraryTitleSaysMore(title, stem) {
@@ -17386,10 +17403,12 @@ function keepDrawnRowHeads(entries) {
 
 function fileRowHtml(node, between) {
   const isSelected = librarySelectedPath && node.path === librarySelectedPath;
-  const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '');
+  const selected = (isSelected ? ' is-selected' : '') + (node.hidden ? ' is-hidden' : '') + (node.unreadable ? ' is-unreadable' : '');
   const current = isSelected ? ' aria-current="true"' : '';
   if (node.book) return bookRowHtml(node, selected, current);
-  const open = `data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}" title="${escapeAttr(node.path)}"`;
+  
+  const unreadable = node.unreadable ? ` data-unreadable="${escapeAttr(node.unreadable)}"` : '';
+  const open = `data-open-path="${escapeAttr(node.path)}" data-reveal-path="${escapeAttr(node.path)}"${unreadable} title="${escapeAttr(node.unreadable || node.path)}"`;
   const full = typeof node.preview === 'string';
   const { stem, badge, plainStem } = libraryRowLabel(node, full);
   if (!full) {
@@ -17507,7 +17526,7 @@ function libraryNodeDrawsSame(one, was) {
   const book = one.book || {};
   const wasBook = was.book || {};
   return one.path === was.path && one.name === was.name && one.title === was.title && one.preview === was.preview
-    && one.modified === was.modified && one.count === was.count && !!one.hidden === !!was.hidden
+    && one.modified === was.modified && one.count === was.count && !!one.hidden === !!was.hidden && one.unreadable === was.unreadable
     && book.shut === wasBook.shut && book.badge === wasBook.badge && book.author === wasBook.author;
 }
 
@@ -42623,7 +42642,8 @@ function drawConsoleAgents() {
     const standing = consoleAgentButtons.has(id);
     const button = consoleAgentButton(id);
     const title = String(row.title ?? '');
-    if (button.title !== title) button.title = title;
+    const tip = row.prompt ? String(row.prompt) : title;
+    if (button.title !== tip) button.title = tip;
     if (button.agentName.textContent !== title) button.agentName.textContent = title;
     const icon = consoleIconClass(row.agent);
     for (const mark of button.agentIcons) if (mark.className !== icon) mark.className = icon;

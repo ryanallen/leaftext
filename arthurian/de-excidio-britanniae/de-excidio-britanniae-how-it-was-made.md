@@ -248,6 +248,12 @@ Each story, person, custom or reading gets its own endnote at the sentence that 
 
 Where Malory's *Le Morte d'Arthur* tells the same passage, an endnote names his book and chapters; where it doesn't, nothing is said.
 
+<a id="arthur-story-callouts"></a>
+
+## Arthur-story callouts
+
+In a history the legend grew from, as Gildas, the *History of the Britons* and the *Welsh Annals*, each person, place or event the Arthur story retells gets a short box in the text, straight after the paragraph that first names it, headed "In the Arthur story" and ending on the asterisk this translation marks its own words with: who or what it becomes in the legend, and in which tellings, so a reader sees how the history feeds the story. The box is this translation's, never the source's.
+
 <a id="additions-marked"></a>
 
 ## Additions marked

@@ -14,7 +14,7 @@ The *Welsh Annals* are a Latin chronicle of Wales, put together in 950–999 CE,
 <!-- made-with -->
 Translated with machine assistance by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ryan-allen) for [Leaftext](https://leaftext.com), more than 6 million new tokens so far on this book; a working translation, not a scholarly edition.
 
-How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ryan-allen), [who designed the system that made it](../annales-cambriae-how-it-was-made.md#designed-the-system), [all checks passed](../annales-cambriae-how-it-was-made.md#all-checks-passed), [readable first](../annales-cambriae-how-it-was-made.md#readable-first), [names, not riddles](../annales-cambriae-how-it-was-made.md#names-not-riddles), [plain speech](../annales-cambriae-how-it-was-made.md#plain-speech), [shaped for English](../annales-cambriae-how-it-was-made.md#shaped-for-english), [every link said](../annales-cambriae-how-it-was-made.md#every-link-said), [nothing said twice](../annales-cambriae-how-it-was-made.md#nothing-said-twice), [the right word each time](../annales-cambriae-how-it-was-made.md#the-right-word-each-time), [no word worn out](../annales-cambriae-how-it-was-made.md#no-word-worn-out), [modern idiom](../annales-cambriae-how-it-was-made.md#modern-idiom), [US English](../annales-cambriae-how-it-was-made.md#us-english), [English word order](../annales-cambriae-how-it-was-made.md#english-word-order), [natural tenses](../annales-cambriae-how-it-was-made.md#natural-tenses), [contractions](../annales-cambriae-how-it-was-made.md#contractions), [neutral tone](../annales-cambriae-how-it-was-made.md#neutral-tone), [gender neutral](../annales-cambriae-how-it-was-made.md#gender-neutral), [no false echoes](../annales-cambriae-how-it-was-made.md#no-false-echoes), [prose and verse read aloud; source lines and stanzas kept](../annales-cambriae-how-it-was-made.md#read-aloud), [scenes read for movement](../annales-cambriae-how-it-was-made.md#scenes-read-for-movement), [checked against the scan](../annales-cambriae-how-it-was-made.md#checked-against-the-scan), [sources named](../annales-cambriae-how-it-was-made.md#sources-named), [honest where unsure](../annales-cambriae-how-it-was-made.md#honest-where-unsure), [no borrowed wording](../annales-cambriae-how-it-was-made.md#no-borrowed-wording), [source over Malory](../annales-cambriae-how-it-was-made.md#source-over-malory), [translated by manifest](../annales-cambriae-how-it-was-made.md#translated-by-manifest), [every choice logged](../annales-cambriae-how-it-was-made.md#every-choice-logged), [changes carried everywhere](../annales-cambriae-how-it-was-made.md#changes-carried-everywhere), [story headings](../annales-cambriae-how-it-was-made.md#story-headings), [matching outlines](../annales-cambriae-how-it-was-made.md#matching-outlines), [laid out for screens](../annales-cambriae-how-it-was-made.md#laid-out-for-screens), [pages linked to scans](../annales-cambriae-how-it-was-made.md#pages-linked-to-scans), [endnotes](../annales-cambriae-how-it-was-made.md#endnotes), [every allusion told](../annales-cambriae-how-it-was-made.md#every-allusion-told), [one note, one thing](../annales-cambriae-how-it-was-made.md#one-note-one-thing), [Malory cross-referenced](../annales-cambriae-how-it-was-made.md#malory-cross-referenced), [additions marked](../annales-cambriae-how-it-was-made.md#additions-marked), [sourced glossary](../annales-cambriae-how-it-was-made.md#sourced-glossary), [cards that teach](../annales-cambriae-how-it-was-made.md#cards-that-teach), [modern names](../annales-cambriae-how-it-was-made.md#modern-names), [places located from sources](../annales-cambriae-how-it-was-made.md#places-located-from-sources), [no guessed identities](../annales-cambriae-how-it-was-made.md#no-guessed-identities), [no common words glossed](../annales-cambriae-how-it-was-made.md#no-common-words-glossed), [free with credit](../annales-cambriae-how-it-was-made.md#free-with-credit).
+How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ryan-allen), [who designed the system that made it](../annales-cambriae-how-it-was-made.md#designed-the-system), [all checks passed](../annales-cambriae-how-it-was-made.md#all-checks-passed), [readable first](../annales-cambriae-how-it-was-made.md#readable-first), [names, not riddles](../annales-cambriae-how-it-was-made.md#names-not-riddles), [plain speech](../annales-cambriae-how-it-was-made.md#plain-speech), [shaped for English](../annales-cambriae-how-it-was-made.md#shaped-for-english), [every link said](../annales-cambriae-how-it-was-made.md#every-link-said), [nothing said twice](../annales-cambriae-how-it-was-made.md#nothing-said-twice), [the right word each time](../annales-cambriae-how-it-was-made.md#the-right-word-each-time), [no word worn out](../annales-cambriae-how-it-was-made.md#no-word-worn-out), [modern idiom](../annales-cambriae-how-it-was-made.md#modern-idiom), [US English](../annales-cambriae-how-it-was-made.md#us-english), [English word order](../annales-cambriae-how-it-was-made.md#english-word-order), [natural tenses](../annales-cambriae-how-it-was-made.md#natural-tenses), [contractions](../annales-cambriae-how-it-was-made.md#contractions), [neutral tone](../annales-cambriae-how-it-was-made.md#neutral-tone), [gender neutral](../annales-cambriae-how-it-was-made.md#gender-neutral), [no false echoes](../annales-cambriae-how-it-was-made.md#no-false-echoes), [prose and verse read aloud; source lines and stanzas kept](../annales-cambriae-how-it-was-made.md#read-aloud), [scenes read for movement](../annales-cambriae-how-it-was-made.md#scenes-read-for-movement), [checked against the scan](../annales-cambriae-how-it-was-made.md#checked-against-the-scan), [sources named](../annales-cambriae-how-it-was-made.md#sources-named), [honest where unsure](../annales-cambriae-how-it-was-made.md#honest-where-unsure), [no borrowed wording](../annales-cambriae-how-it-was-made.md#no-borrowed-wording), [source over Malory](../annales-cambriae-how-it-was-made.md#source-over-malory), [translated by manifest](../annales-cambriae-how-it-was-made.md#translated-by-manifest), [every choice logged](../annales-cambriae-how-it-was-made.md#every-choice-logged), [changes carried everywhere](../annales-cambriae-how-it-was-made.md#changes-carried-everywhere), [story headings](../annales-cambriae-how-it-was-made.md#story-headings), [matching outlines](../annales-cambriae-how-it-was-made.md#matching-outlines), [laid out for screens](../annales-cambriae-how-it-was-made.md#laid-out-for-screens), [pages linked to scans](../annales-cambriae-how-it-was-made.md#pages-linked-to-scans), [endnotes](../annales-cambriae-how-it-was-made.md#endnotes), [every allusion told](../annales-cambriae-how-it-was-made.md#every-allusion-told), [one note, one thing](../annales-cambriae-how-it-was-made.md#one-note-one-thing), [Malory cross-referenced](../annales-cambriae-how-it-was-made.md#malory-cross-referenced), [Arthur-story callouts](../annales-cambriae-how-it-was-made.md#arthur-story-callouts), [additions marked](../annales-cambriae-how-it-was-made.md#additions-marked), [sourced glossary](../annales-cambriae-how-it-was-made.md#sourced-glossary), [cards that teach](../annales-cambriae-how-it-was-made.md#cards-that-teach), [modern names](../annales-cambriae-how-it-was-made.md#modern-names), [places located from sources](../annales-cambriae-how-it-was-made.md#places-located-from-sources), [no guessed identities](../annales-cambriae-how-it-was-made.md#no-guessed-identities), [no common words glossed](../annales-cambriae-how-it-was-made.md#no-common-words-glossed), [free with credit](../annales-cambriae-how-it-was-made.md#free-with-credit).
 <!-- /made-with -->
 
 **The years.** Harley MS 3859 gives no dates. It writes *an'*, short for *annus*, "year," once for every year, numbers every tenth, and writes an entry beside some of them. Each entry opens on the year Phillimore printed beside it, which he took from earlier printings of the annals, and the years with nothing written beside them are left out. His count isn't perfectly even: he sets 444 beside the first year, which his own later dates make 445, and his notes point out where the copyist wrote a year too many or too few.
@@ -23,6 +23,7 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **The History of the Britons.** In Harley MS 3859 the annals come after the [*History of the Britons*](../../historia-brittonum/historia-brittonum.md), the Latin history that lists Arthur's twelve battles, also translated on this shelf.
 
+**In the Arthur story.** Besides Badon and Camlann, many of these years name people the Arthur story takes up. Wherever a year names someone or something the legend retells, a box straight after it, headed "In the Arthur story," says what the legend makes of it and in which books. Those boxes, like the endnotes and glossary cards that end on an asterisk, are this translation's words, not the annals'.
 
 ## Why this book
 
@@ -68,11 +69,15 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **516.** The battle of Badon, in which Arthur carries the cross of Jesus Christ on his shoulders for three days and three nights.[^154-1][^154-2][^154-3][^154-4] The Britons win.
 
+> **In the Arthur story:** Geoffrey of Monmouth makes Badon Arthur's great victory over the Saxons and sets it at Bath, where Arthur kills 470 men himself with his sword Caliburn. Geoffrey's Arthur carries the Virgin's image painted inside his shield, Pridwen, much as he carries the cross here and an image of Mary at Guinnion in the *History of the Britons*. Wace and Layamon follow Geoffrey, and in the Welsh *Dream of Rhonabwy*, Arthur's host is gathering for Badon.<sup>[\*](#new-in-this-translation)</sup>
+
 **521.** Saint Columba is born, and Saint Brigid dies.[^154-5]
 
 ### Arthur and Mordred fight at Camlann, and plague comes to Britain and Ireland
 
 **537.** The battle of Camlann,[^154-6] in which Arthur and Mordred fall.[^154-7] There's plague in Britain and Ireland.[^154-8]
+
+> **In the Arthur story:** Camlann becomes Arthur's last battle in every telling. Geoffrey of Monmouth makes Mordred Arthur's nephew, left to rule while Arthur fights Rome, who takes the crown and the queen; Arthur kills him at Camlann and is carried, mortally wounded, to the island of Avalon. The French *Mort Artu* and Malory make Mordred Arthur's son as well as his nephew and set the battle on Salisbury Plain. These annals say only that both fell, not that they fought each other.<sup>[\*](#new-in-this-translation)</sup>
 
 ## Part 3: A great plague comes, and the northern Britons fight at Arfderydd
 
@@ -81,6 +86,8 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 **544.** Ciarán dies.[^154-9][^154-10]
 
 <a id="page-155"></a>[\[Phillimore 155\]](../annales-cambriae-latin.md#page-155) **547.** A great plague, in which Maelgwn, king of Gwynedd, dies.[^155-1]
+
+> **In the Arthur story:** Maelgwn is the king Gildas called "dragon of the island." Geoffrey of Monmouth makes him Malgo, one of the kings after Arthur. In the Welsh tale of Taliesin, the boy poet beats Maelgwn's court poets and frees his master Elffin from Maelgwn's prison.<sup>[\*](#new-in-this-translation)</sup>
 
 ### Gabrán son of Domangart dies, and Columba goes to Britain
 
@@ -92,7 +99,11 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **570.** Gildas dies.[^155-3]
 
+> **In the Arthur story:** Gildas, who wrote *On the Ruin of Britain*, also on this shelf, names no Arthur, but the legend gives him a quarrel with Arthur. Caradoc of Llancarfan's *Life of Gildas* has Arthur kill Gildas's brother Hueil and Gildas forgive him, and has Gildas make peace between Arthur and Melwas, who had carried Guinevere off to Glastonbury. Gerald of Wales says Gildas threw away what he'd written in Arthur's praise because of his brother.<sup>[\*](#new-in-this-translation)</sup>
+
 **573.** The battle of Arfderydd.[^155-4]
+
+> **In the Arthur story:** Arfderydd, at Arthuret near Carlisle, is where the Welsh Merlin goes mad. Welsh poems in Myrddin's voice say his lord Gwenddoleu fell there and Myrddin fled into the forest of Celyddon out of his mind, and later copies of these annals add that Merlin went mad at this battle. Geoffrey of Monmouth's *Life of Merlin* tells of a battle that drives Merlin into the wild without naming it, and the Lailoken tales tell of a wild prophet of the same war; both are planned for this shelf.<sup>[\*](#new-in-this-translation)</sup>
 
 ### Brendan of Birr, Gwrgi and Peredur die
 
@@ -100,17 +111,23 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **580.** Gwrgi and Peredur die.[^155-5]
 
+> **In the Arthur story:** Peredur is the Welsh name of Perceval: *Peredur son of Efrawg* is the Welsh telling of the Grail knight's story. This Peredur, son of Eliffer, is a king of the north, and nothing old makes him the knight. He does fight in the legend, though: in Geoffrey of Monmouth's *Life of Merlin*, Peredur, prince of the North Welsh, leads an army beside Merlin in the battle that drives Merlin mad.<sup>[\*](#new-in-this-translation)</sup>
+
 ### A battle is fought against Eubonia, and Constantine turns to Yahweh
 
 <a id="page-156"></a>[\[Phillimore 156\]](../annales-cambriae-latin.md#page-156) **584.** A battle is fought against Eubonia. Deiniol of Bangor is buried.[^156-1]
 
 **589.** Constantine turns to Yahweh.[^156-2]
 
+> **In the Arthur story:** Welsh and Cornish tradition remembers a King Constantine of Cornwall who gave up his crown to become a monk, and this entry is usually taken for him. Geoffrey of Monmouth's Constantine, son of Cador of Cornwall, takes Arthur's crown after Camlann, and Malory ends *Le Morte d'Arthur* with him chosen king.<sup>[\*](#new-in-this-translation)</sup>
+
 ### Columba and King Dunod die, and Augustine brings the English to Christ
 
 **595.** Columba dies, and so does King Dunod. Augustine and Mellitus bring the English to Christ.[^156-3]
 
 **601.** A synod meets at the City of the Legion. Gregory dies. David, bishop of Moni Iudeorum.[^156-4]
+
+> **In the Arthur story:** The City of the Legion is Caerleon or Chester. Geoffrey of Monmouth makes Caerleon Arthur's royal city, where he wears his crown at a great Whitsun feast. Geoffrey also makes David, the bishop named here, Arthur's uncle and archbishop of Caerleon, who later goes to St Davids and dies there.<sup>[\*](#new-in-this-translation)</sup>
 
 ### Bishop Cinauc is buried, and armies meet at Chester
 
@@ -119,6 +136,10 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 **607.** Áedán son of Gabrán dies.
 
 **612.** The death of Kentigern and of Bishop Dubricius.[^156-5]
+
+> **In the Arthur story:** Dubricius is Geoffrey of Monmouth's Archbishop Dubricius of Caerleon, who crowns the fifteen-year-old Arthur, speaks to his army before Badon and is there again at the Whitsun feast. Wace and Layamon keep him; in Malory, the Archbishop of Canterbury does his work.<sup>[\*](#new-in-this-translation)</sup>
+
+> **In the Arthur story:** Kentigern, the saint of Glasgow, is the bishop of the Lailoken tales: the wild prophet Lailoken, later made into Merlin, comes to him out of the woods and is given the sacrament before he dies a threefold death. Jocelyn of Furness's *Life of Kentigern* mentions Lailoken too, and both are planned for this shelf.<sup>[\*](#new-in-this-translation)</sup>
 
 **613.** The battle of Chester, where Selyf son of Cynan is cut down. Iago, whose father was Beli, dies.[^156-6]
 
@@ -136,9 +157,13 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 
 **626.** Edwin is baptised, and Rhun son of Urien baptises him.[^157-3]
 
+> **In the Arthur story:** Urien, Rhun's father, is the King Uriens of the French romances and Malory, Morgan le Fay's husband. Rhun's brother Owain is the hero of the Welsh tale *Owain* and of *The Dream of Rhonabwy*, and Malory's Sir Ywain.<sup>[\*](#new-in-this-translation)</sup>
+
 **627.** Belin dies.
 
 **629.** King Cadwallon is besieged on the island of Glannauc.
+
+> **In the Arthur story:** Cadwallon of Gwynedd is the Cadwallo of Geoffrey of Monmouth, who carries the British story on after Arthur. Raised with Edwin, he quarrels with him, is driven out to Brittany and comes back to kill him. Geoffrey ends his history with Cadwallo's son.<sup>[\*](#new-in-this-translation)</sup>
 
 **630.** Guidgar comes and doesn't return. On the first of January, the battle of Meicen, where Edwin is killed with his two sons. But Cadwallon wins.[^157-4]
 
@@ -177,6 +202,8 @@ How it was made: built by [Ryan Allen](../annales-cambriae-how-it-was-made.md#ry
 **676.** A star of amazing size is seen shining over the whole world.[^159-3]
 
 **682.** A great plague in Britain, in which Cadwaladr son of Cadwallon dies.[^159-4]
+
+> **In the Arthur story:** Cadwaladr is the last king of the Britons in Geoffrey of Monmouth, who ends his *History of the Kings of Britain* when an angel tells Cadwaladr to go to Rome and give up the island, which the Britons will win back one day. Welsh prophecy kept waiting for him to come back, as the Bretons waited for Arthur.<sup>[\*](#new-in-this-translation)</sup>
 
 **683.** Plague in Ireland.
 
@@ -480,7 +507,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^155-3]: Gildas wrote *On the Ruin of Britain*, a sermon against the Britons' kings, which names the siege of Mount Badon but not Arthur.<sup>[\*](#new-in-this-translation)</sup>
 
-[^155-4]: Later Welsh poems set Myrddin, the Welsh Merlin, at this battle, where he loses his mind and flees into the forest; Geoffrey of Monmouth's *Life of Merlin* tells of a battle that drives Merlin mad, without naming it. Phillimore notes an *an'* scraped out just before *armterid*, "Arfderydd," on the same line.<sup>[\*](#new-in-this-translation)</sup>
+[^155-4]: Phillimore notes an *an'* scraped out just before *armterid*, "Arfderydd," on the same line.
 
 [^155-5]: Welsh genealogies make Gwrgi and Peredur brothers, sons of Eliffer, kings in the north of Britain. A Welsh romance gives the name Peredur to its hero, who stands for Percival; the annals' Peredur is a king who died in 580 CE.<sup>[\*](#new-in-this-translation)</sup>
 

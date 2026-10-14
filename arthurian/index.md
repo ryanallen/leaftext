@@ -218,7 +218,7 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## After Camlann
 
-- [Arthur's Grave in the Chroniclers](story-map.md). Anonymous. Latin. Coming; not published yet. Story: After Camlann, broad. Written: 1125–1534 CE. Edition not chosen yet. Length: about 30 pages, about 9,900 words of Latin.
+- [The Chroniclers on Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: After Camlann, broad. Written: 1125–1534 CE. Edition not chosen yet. Length: about 30 pages, about 9,900 words of Latin.
 - [Draco Normannicus, its Arthur letters](story-map.md). Stephen of Rouen. Latin. Coming; not published yet. Story: After Camlann, broad. Written: 1167–1169 CE. Edition not chosen yet. Length: about 300 lines, about 1,800 words of Latin.
 - [Lailoken and the Life of Kentigern](story-map.md). Anonymous. Latin. Coming; not published yet. Story: After Camlann, broad. Written: 1175–1199 CE. Edition not chosen yet. Length: about 8 pages, about 2,600 words of Latin.
 - [Lohengrin](story-map.md). Anonymous. Middle High German. Coming; not published yet. Story: After Camlann, broad. Written: 1283–1289 CE. Edition not chosen yet. Length: about 7,670 lines, about 46,000 words of Middle High German.
