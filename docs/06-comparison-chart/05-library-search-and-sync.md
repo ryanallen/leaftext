@@ -16,6 +16,9 @@
 | New vault from picker | [✅][l-vaults] | [✅][o-vaults] | [✅][t-files] | [❌][c-seen] |
 | Clone repository as vault | [✅][l-clone] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Free books online | [✅][l-books-online] | [❌][o-seen] | [❌][t-seen] | [✅][c-get-books] |
+| Internet Archive text search | [✅][l-books-online] | ? | ? | ? |
+| Public EPUB access check | [✅][l-books-online] | ? | ? | ? |
+| Private item browser fallback | [✅][l-books-online] | ? | ? | ? |
 | Books by popularity | [✅][l-books-online] | [❌][o-seen] | [❌][t-seen] | ? |
 | Rename, repoint, remove vaults | [✅][l-vaults] | [✅][o-vaults] | [❌][t-seen] | [❌][c-seen] |
 | Nothing written into folder | [✅][l-vaults] | [❌][o-seen] | [✅][t-seen] | [❌][c-seen] |

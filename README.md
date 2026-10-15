@@ -182,7 +182,7 @@ Type `[[` and your notes are listed, by file name and by any [other name](docs/0
 
 ## Keep a library
 
-Search notes, follow links, and browse and read free books from Project Gutenberg and Standard Ebooks.
+Search notes, follow links, and find free books from Internet Archive, Project Gutenberg and Standard Ebooks.
 
 ### Point it at a folder and it becomes a vault
 
@@ -202,7 +202,7 @@ Open the calendar at the foot of the library and a month of the vault shows whic
 
 ![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg.png)
 
-Choose **Books online** in the vault switcher, then **Project Gutenberg** for its categories or **Standard Ebooks** to browse its books. Search either library from the same vault, then press a book to fetch its EPUB and read it offline. Both libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
+Choose **Books online** in the vault switcher, then **Project Gutenberg** for its categories or **Standard Ebooks** to browse its books. Search all three libraries from the same vault. Internet Archive checks an item for a public EPUB when pressed and opens its Archive page when no readable download is available. Downloaded books open offline. All three libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
 
 ### Search everything you've written
 
