@@ -16106,8 +16106,7 @@ window.leafSetLibraryFolder = (payload) => {
   renderLibrary();
   if (librarySelectedPath) centerSelectedLibraryRowOnce(folder);
   refreshPaneFoot();
-  
-  if (librarySearchQuery) runLibrarySearch(librarySearchQuery);
+  searchAfterFolder(next);
 };
 
 window.leafSetVaults = (payload) => {
@@ -16125,6 +16124,7 @@ window.leafSetVaults = (payload) => {
   
   requestKnownVaultStatuses();
   if (activeVaultId !== previous) {
+    resetOnlineSearch();
     
     libraryProjectPath = '';
     refreshConsoleLauncher();
@@ -19860,10 +19860,38 @@ function searchNoteHtml() {
   }
   return parts.length ? `<p class="library-search-note">${parts.join('')}</p>` : '';
 }
+let onlineSearchSent = null;
+let onlineSearchOrder = null;
+function resetOnlineSearch() {
+  onlineSearchSent = null;
+  onlineSearchOrder = null;
+}
+function onlineSearchScope() {
+  const vault = leafVaults.find((entry) => entry && entry.id === activeVaultId);
+  return vault && vault.kind === 'books-online' ? libraryProjectPath.replace(/^books:/, '').split('/')[0] : null;
+}
+function onlineSearchIdentity(query) {
+  const scope = onlineSearchScope();
+  return scope !== null && onlineSearchOrder !== null
+    ? JSON.stringify([activeVaultId, query, scope, onlineSearchOrder]) : null;
+}
+function searchAfterFolder(next) {
+  if (onlineSearchScope() === null) resetOnlineSearch();
+  else if (next.view) onlineSearchOrder = next.view.sort === 'popular' ? 'popular' : next.view.descending ? 'descending' : 'ascending';
+  if (!librarySearchQuery) return;
+  const identity = onlineSearchIdentity(librarySearchQuery);
+  if (identity !== null && identity === onlineSearchSent) return;
+  runLibrarySearch(librarySearchQuery);
+}
+window.leafBookCatalogChanged = (library) => {
+  const scope = onlineSearchScope();
+  if (scope !== null && (!scope || scope === library) && librarySearchQuery) runLibrarySearch(librarySearchQuery);
+};
 function runLibrarySearch(value) {
   const query = (value || '').trim();
   librarySearchQuery = query;
   if (!query) {
+    onlineSearchSent = null;
     librarySearchHits = null;
     librarySearchHitsQuery = '';
     librarySearchError = null;
@@ -19881,6 +19909,7 @@ function runLibrarySearch(value) {
   librarySearchPartial = false;
   librarySearchError = null;
   renderLibrarySearch();
+  onlineSearchSent = onlineSearchIdentity(query);
   send({ command: 'search', query, today: localDateStamp() });
 }
 
