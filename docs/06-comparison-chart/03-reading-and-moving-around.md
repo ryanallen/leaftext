@@ -171,6 +171,9 @@
 | Show-all sheet | [✅][l-recent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Voices rotate per visit | [✅][l-recent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Counts read naturally | [✅][l-recent] | ? | ? | ? |
+| Home web address | [✅][l-home-address] | ? | ? | ? |
+
+[l-home-address]: ../01-features/02-navigation.md#web-tabs
 
 ## Loading and scrollbars
 

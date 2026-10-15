@@ -40,6 +40,8 @@ The navigation model is simple from the outside and fairly careful under the hoo
 
 Press **+** and enter an address in the field in the middle of the empty page. A bare host such as `ryanallen.com` opens over HTTPS; words open a Google search. **Browse free books** under it opens [Books online](03-library.md#books-online). Typing the first character of a note removes the field and the button.
 
+On [Home](#recent-files), add the **Web address** box with the small plus below the boxes. Type an address or search words and press **Enter** or **Go** to open a new selected web tab. Tabs already open stay available.
+
 A web tab takes its name from the page's title. Move the pointer onto the app bar to slide its address open, or press **Ctrl+L** to select it. **Enter** opens the new address, **Escape** closes the bar, and **Copy** copies the current address. The bar stays open while you edit and closes after the pointer leaves it and the app bar.
 
 Back, Forward and Refresh control the live page. Refresh keeps your place as the page loads, even when its own script adds content later. Closing, switching and dragging work as they do on document tabs. A saved web tab reopens at its last address when you bring it forward. Links asking for a new window open in another web tab. A link that hands off to another app on the computer — a Linear issue, a Slack channel, a `mailto:` address — asks first: a message names the app, and **Open** starts it. The [minimap](04-minimap.md#web-pages) shows a picture of the page and follows its scroll position.
