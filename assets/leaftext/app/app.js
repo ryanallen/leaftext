@@ -16466,11 +16466,11 @@ const BOOKS_ONLINE_ICON = '<span class="lt-icon lt-icon-define"></span>';
 function pushBooksOnlineSection(items) {
   const vault = leafVaults.find((entry) => entry && entry.kind === 'books-online');
   items.push('separator', { heading: 'Books online' }, {
-    label: 'Project Gutenberg',
-    title: 'Browse Project Gutenberg and read any of its books',
+    label: 'Books online',
+    title: 'Browse online book libraries',
     icon: BOOKS_ONLINE_ICON,
     selected: !!vault && vault.id === activeVaultId,
-    run: () => openBooksOnline('gutenberg'),
+    run: () => openBooksOnline(),
     edit: vault ? () => showVaultPanel(vault) : undefined,
   });
 }

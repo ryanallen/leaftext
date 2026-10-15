@@ -202,7 +202,7 @@ Open the calendar at the foot of the library and a month of the vault shows whic
 
 ![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg.png)
 
-Choose **Project Gutenberg** under **Books online** for its categories and catalog. Search the same vault for titles from Standard Ebooks, then press a book to fetch its EPUB and read it offline. Both libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
+Choose **Books online** in the vault switcher, then **Project Gutenberg** for its categories or **Standard Ebooks** to browse its books. Search either library from the same vault, then press a book to fetch its EPUB and read it offline. Both libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
 
 ### Search everything you've written
 
