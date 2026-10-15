@@ -14256,6 +14256,82 @@ body.mac-frame .document-minimap-frame {
   letter-spacing: var(--lt-tracking-120);
   text-transform: uppercase;
 }
+.home-list h2,
+.recent h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+}
+.home-box-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--lt-space-4);
+  margin-left: auto;
+}
+.home-add-menu[hidden],
+.home-box-slot[hidden] {
+  display: none;
+}
+.home-box-controls button,
+.home-add-box,
+.home-web-address-go {
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-md);
+  background: var(--lt-background);
+  color: var(--lt-primary-ink);
+}
+@media (hover: hover) {
+  .home-box-controls button:hover,
+  .home-add-box:hover,
+  .home-web-address-go:hover {
+    background: var(--lt-navigation-button-hover-background);
+    border-color: var(--lt-navigation-button-hover-background);
+    color: var(--lt-primary-foreground);
+  }
+}
+.home-box-arrangement,
+.home-add-menu {
+  display: flex;
+  align-items: center;
+  gap: var(--lt-space-8);
+  margin-top: var(--lt-space-16);
+}
+.home-add-menu {
+  flex-wrap: wrap;
+}
+.home-add-box,
+.home-box-controls button {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.home-box-grip { cursor: grab; }
+@media (hover: hover) {
+  .home-box-controls {
+    opacity: 0;
+    transition: var(--lt-transition-hover-reveal-leave);
+  }
+  .home-box-slot:hover .home-box-controls {
+    opacity: 1;
+    transition: var(--lt-transition-hover-reveal-arrive);
+  }
+}
+.home-box-slot:focus-within .home-box-controls {
+  opacity: 1;
+  transition: var(--lt-transition-hover-reveal-arrive);
+}
+.home-boxes > .home-box-slot {
+  min-width: 0;
+}
+.home-boxes > .home-box-slot[data-home-box="scheduled"],
+.home-boxes > .home-box-slot[data-home-box="books-online"],
+.home-boxes > .home-box-slot[data-home-box="web-address"] {
+  grid-column: 1 / -1;
+}
 .empty-state h1 {
   color: var(--lt-markdown-heading);
   font-family: var(--heading-font);

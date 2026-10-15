@@ -13172,6 +13172,12 @@ function keepHomeDescriptionOffered() {
 }
 
 const LEAF_SETTINGS = (window.__leafSettings && typeof window.__leafSettings === 'object') ? window.__leafSettings : {};
+const HOME_BOX_KINDS = ['scheduled', 'recent', 'favorites', 'books-online', 'web-address'];
+let homeBoxOrder = Array.isArray(LEAF_SETTINGS.homeBoxes) ? LEAF_SETTINGS.homeBoxes.filter((kind, index, all) => HOME_BOX_KINDS.includes(kind) && all.indexOf(kind) === index).slice(0, 5) : ['scheduled', 'recent', 'favorites', 'books-online'];
+function setHomeBoxOrder(boxes) {
+  homeBoxOrder = boxes.filter((kind, index, all) => HOME_BOX_KINDS.includes(kind) && all.indexOf(kind) === index).slice(0, 5);
+  send({ command: 'setHomeBoxes', boxes: homeBoxOrder });
+}
 
 if (window.__leafScrollbarsAlways === true) {
   appSurface.classList.add('is-scrollbars-always');
@@ -40597,10 +40603,13 @@ function bindHomeShowAll(root) {
 function fillScheduledSlot() {
   const slot = document.querySelector('.home-scheduled-slot');
   if (!slot) return;
-  slot.innerHTML = scheduledTasksMarkup();
+  slot.innerHTML = homeBoxContent('scheduled', scheduledTasksMarkup());
+  slot.hidden = !slot.innerHTML;
+  reorderHomeBoxes();
   bindScheduledRows(slot);
   watchHomeLists(slot);
   bindHomeShowAll(slot);
+  bindHomeArrange(document.querySelector('.empty-state') || slot);
   if (homeSheetShowing === 'scheduled') openHomeSheet('scheduled');
 }
 
@@ -40637,13 +40646,19 @@ function onlineBooksMarkup() {
 function fillOnlineBooksSlot() {
   const slot = document.querySelector('.home-books-slot');
   if (!slot) return;
-  slot.innerHTML = onlineBooksMarkup();
+  slot.innerHTML = homeBoxContent('books-online', onlineBooksMarkup());
+  slot.hidden = !slot.innerHTML;
+  reorderHomeBoxes();
+  bindOnlineBooksSlot(slot);
+}
+function bindOnlineBooksSlot(slot) {
   slot.querySelectorAll('[data-home-books-library]').forEach((button) => {
     button.addEventListener('click', () => openBooksOnline(button.dataset.homeBooksLibrary));
   });
   slot.querySelectorAll('[data-path]').forEach((button) => {
     button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.path }));
   });
+  bindHomeArrange(document.querySelector('.empty-state') || slot);
   watchHomeLists(slot);
 }
 window.leafSetOnlineBooks = function (payload) {
@@ -40738,17 +40753,115 @@ function homeColumnMarkup(which, state) {
 
 function homeListsMarkup(state) {
   
-  const scheduled = '<div class="home-scheduled-slot"></div>';
+  const scheduled = '<div class="home-box-slot home-scheduled-slot" data-home-box="scheduled"></div>';
   
-  const books = '<div class="home-books-slot"></div>';
+  const books = '<div class="home-box-slot home-books-slot" data-home-box="books-online"></div>';
+  const favorites = '<div class="home-box-slot" data-home-box="favorites" hidden></div>';
+  const address = `<div class="home-box-slot" data-home-box="web-address"${homeBoxOrder.includes('web-address') ? '' : ' hidden'}>${homeBoxOrder.includes('web-address') ? homeBoxContent('web-address', webAddressBoxMarkup()) : ''}</div>`;
+  const tools = '<div class="home-box-arrangement"><button type="button" class="home-add-box" aria-label="Add a box" title="Add a box"><span class="lt-icon lt-icon-new"></span></button><div class="home-add-menu" role="menu" hidden></div></div>';
   if (!homeListCounts('favorites', state).drawn) {
   
   const recent = homeRecentScoped(state.recent || []);
-  return recent.length
-      ? `${scheduled}<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li class="home-list-row">${homeRowMarkup(path)}</li>`).join('')}</ol></div>${books}`
-      : `${scheduled}<p class="empty-help">${escapeText(homeRecentHelp())}</p>${books}`;
+  const recentMarkup = recent.length
+      ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li class="home-list-row">${homeRowMarkup(path)}</li>`).join('')}</ol></div>`
+      : `<p class="empty-help">${escapeText(homeRecentHelp())}</p>`;
+  return `<div class="home-boxes">${scheduled}<div class="home-box-slot" data-home-box="recent">${homeBoxContent('recent', recentMarkup)}</div>${favorites}${books}${address}</div>${tools}`;
   }
-  return `${scheduled}<div class="home-list-grid">${homeColumnMarkup('recent', state)}${homeColumnMarkup('favorites', state)}</div>${books}`;
+  return `<div class="home-list-grid home-boxes">${scheduled}<div class="home-box-slot" data-home-box="recent">${homeBoxContent('recent', homeColumnMarkup('recent', state))}</div><div class="home-box-slot" data-home-box="favorites">${homeBoxContent('favorites', homeColumnMarkup('favorites', state))}</div>${books}${address}</div>${tools}`;
+}
+function homeBoxContent(kind, content) {
+  if (!content) return '';
+  const controls = `<span class="home-box-controls"><button type="button" class="home-box-grip" data-home-box-grip="${kind}" aria-label="Move ${kind}"><span class="lt-icon lt-icon-grip"></span></button><button type="button" class="home-box-remove" data-home-box-remove="${kind}" aria-label="Remove ${kind}"><span class="lt-icon lt-icon-close"></span></button></span>`;
+  return content.includes('</h2>') ? content.replace('</h2>', `${controls}</h2>`) : controls + content;
+}
+function webAddressBoxMarkup() {
+  return '<section class="home-list home-web-address"><h2>Web address</h2><div class="web-address-wrap"><span class="lt-icon lt-icon-search"></span><input class="web-address" type="text" aria-label="Search Google or enter an address" placeholder="Search Google or enter an address" autocomplete="off" spellcheck="false"><button type="button" class="home-web-address-go">Go</button></div></section>';
+}
+function homeBoxSlot(kind) {
+  let slot = document.querySelector(`[data-home-box="${kind}"]`);
+  if (!slot) {
+    slot = document.createElement('div');
+    slot.className = `home-box-slot${kind === 'scheduled' ? ' home-scheduled-slot' : ''}${kind === 'books-online' ? ' home-books-slot' : ''}`;
+    slot.dataset.homeBox = kind;
+    document.querySelector('.home-boxes').appendChild(slot);
+  }
+  if (kind === 'scheduled') slot.innerHTML = homeBoxContent(kind, scheduledTasksMarkup());
+  if (kind === 'recent') {
+    const hasFavorites = homeListCounts('favorites', currentState).drawn > 0;
+    const recent = homeRecentScoped(currentState.recent || []);
+    const markup = hasFavorites ? homeColumnMarkup('recent', currentState) : recent.length
+      ? `<div class="recent"><h2>Recent (${escapeText(formatCount(recent.length))})</h2><ol>${recent.map((path) => `<li class="home-list-row">${homeRowMarkup(path)}</li>`).join('')}</ol></div>`
+      : `<p class="empty-help">${escapeText(homeRecentHelp())}</p>`;
+    slot.innerHTML = homeBoxContent(kind, markup);
+  }
+  if (kind === 'favorites') slot.innerHTML = homeBoxContent(kind, homeListCounts('favorites', currentState).drawn ? homeColumnMarkup('favorites', currentState) : '');
+  if (kind === 'books-online') slot.innerHTML = homeBoxContent(kind, onlineBooksMarkup());
+  if (kind === 'web-address') slot.innerHTML = homeBoxContent(kind, webAddressBoxMarkup());
+  slot.hidden = !slot.innerHTML;
+  if (kind === 'scheduled') { bindScheduledRows(slot); watchHomeLists(slot); bindHomeShowAll(slot); }
+  if (kind === 'books-online') bindOnlineBooksSlot(slot);
+  if (kind === 'recent' || kind === 'favorites') { bindHomeRows(slot); watchHomeLists(slot); bindHomeShowAll(slot); }
+  bindHomeArrange(document.querySelector('.empty-state') || slot);
+  return slot;
+}
+function moveHomeBox(kind, target) {
+  if (kind === target || !homeBoxOrder.includes(kind) || !homeBoxOrder.includes(target)) return;
+  const boxes = homeBoxOrder.filter((item) => item !== kind);
+  boxes.splice(homeBoxOrder.indexOf(target), 0, kind);
+  setHomeBoxOrder(boxes);
+  reorderHomeBoxes();
+}
+function bindHomeArrange(root) {
+  const bindOnce = (element, event, handler) => {
+    if (element.dataset.homeBound) return;
+    element.dataset.homeBound = 'true';
+    element.addEventListener(event, handler);
+  };
+  root.querySelectorAll('.home-add-box').forEach((button) => bindOnce(button, 'click', () => {
+    const menu = root.querySelector('.home-add-menu');
+    menu.replaceChildren(...HOME_BOX_KINDS.filter((kind) => !homeBoxOrder.includes(kind) && (kind !== 'favorites' || homeListCounts('favorites', currentState).drawn)).map((kind) => {
+      const choice = document.createElement('button');
+      choice.type = 'button';
+      choice.textContent = kind === 'books-online' ? 'Books online' : kind === 'web-address' ? 'Web address' : kind[0].toUpperCase() + kind.slice(1);
+      choice.dataset.homeAddKind = kind;
+      choice.addEventListener('click', () => {
+        const added = homeBoxSlot(kind);
+        setHomeBoxOrder([...homeBoxOrder, kind]);
+        reorderHomeBoxes();
+        bindHomeArrange(document.querySelector('.empty-state') || added);
+        menu.hidden = true;
+      });
+      return choice;
+    }));
+    menu.hidden = !menu.hidden;
+  }));
+  root.querySelectorAll('[data-home-box-remove]').forEach((button) => bindOnce(button, 'click', () => {
+    setHomeBoxOrder(homeBoxOrder.filter((kind) => kind !== button.dataset.homeBoxRemove));
+    reorderHomeBoxes();
+  }));
+  root.querySelectorAll('[data-home-box-grip]').forEach((grip) => bindOnce(grip, 'pointerdown', (event) => {
+    const kind = grip.dataset.homeBoxGrip;
+    root.addEventListener('pointerup', function drop(eventUp) {
+      root.removeEventListener('pointerup', drop);
+      const target = document.elementFromPoint(eventUp.clientX, eventUp.clientY)?.closest('[data-home-box]');
+      if (target) moveHomeBox(kind, target.dataset.homeBox);
+    });
+  }));
+  root.querySelectorAll('.home-web-address-go').forEach((button) => {
+    const input = button.closest('.web-address-wrap').querySelector('input');
+    bindOnce(button, 'click', () => sendWebAddress(input));
+    bindOnce(input, 'keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
+      event.preventDefault();
+      sendWebAddress(input);
+    });
+  });
+}
+function reorderHomeBoxes() {
+  const root = document.querySelector('.home-boxes');
+  if (!root) return;
+  const slots = new Map(Array.from(root.querySelectorAll('[data-home-box]')).map((slot) => [slot.dataset.homeBox, slot]));
+  root.replaceChildren(...homeBoxOrder.map((kind) => slots.get(kind)).filter(Boolean));
 }
 
 function openHomeFolder(path) {
@@ -41853,6 +41966,7 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
   const homeVaultSwitch = app.querySelector('.home-vault-switch');
   if (homeVaultSwitch) bindVaultSwitch(homeVaultSwitch, false);
   bindHomeRows(app);
+  bindHomeArrange(app);
   watchHomeLists(app);
   
   fillScheduledSlot();

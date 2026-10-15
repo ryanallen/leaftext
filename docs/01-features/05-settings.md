@@ -15,7 +15,7 @@ Settings are owned by the Rust app rather than browser storage, which keeps them
 | [Graph size](#graph-size) | Focus, Medium, Large, Everything | Focus | The [graph](03-library.md#graph) view's own toolbar |
 | [Calendar date](#calendar-date) | Changed, Made, or a date field written in the vault | Due | The [calendar](03-library.md#calendar) sheet |
 
-Other preferences are saved here but set where they apply: the [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice, speed and ElevenLabs model, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
+Other preferences are saved here but set where they apply: the [Home box order](#home-boxes), [Speed Reader](#speed-reader), the [Flash words](#flash-words) pace, the [Read aloud](#read-aloud) voice, speed and ElevenLabs model, [typing help](#typing-help), and [the two padlocks](#the-padlocks).
 
 **Speed Reader** is a reading-view tool on the [floating toolbar](02-navigation.md#the-floating-toolbar) — a way of reading rather than a setting to hunt for — though it saves to the same file as the rest. The code view's [typing help](07-editing.md#typing-help) wand works the same way: toggled where it applies, saved here.
 
@@ -86,6 +86,7 @@ Both JSON files are editable by hand, and a byte order mark in front of the open
   "calendar_field": "field:due",
   "library_project_path": "",
   "library_closed": false,
+  "home_boxes": ["scheduled", "recent", "favorites", "books-online"],
   "library_width": 240,
   "window_width": 1080,
   "window_height": 820,
@@ -153,6 +154,10 @@ Leaftext removes broken entries from the recent list automatically and collapses
 - Saved as `minimap_shut`, open until you drag it shut, so the window opens the way you left it
 - The rail still comes and goes with the document, and a window 720 pixels wide or narrower [wears the self-hiding scrollbar instead](04-minimap.md#responsive-behavior) whichever way it was left
 - A `minimap_enabled` left in an older `settings.json` from when the minimap had a checkbox is still ignored and dropped on the next save
+
+### Home boxes
+
+Move or close a Home box from the quiet controls on its heading; the small plus below the boxes adds one back or adds a Web address box. Each change saves immediately as `home_boxes` and is restored the next time the app opens. Empty Scheduled tasks, Books online and Favorites boxes stay out of view until they have content.
 
 ### Speed Reader
 

@@ -148,6 +148,7 @@ export const COMMANDS = {
   cancelServiceSignIn: [REFUSED, 'a site starts no Google Drive download, so there is none to cancel'],
   setLibraryLayout: [ANSWERED],
   setMinimapShut: [ANSWERED],
+  setHomeBoxes: [ANSWERED],
   createVault: [REFUSED, 'a vault is a folder picked on a disk'],
   getCloudFolders: [REFUSED, 'nothing here can look for a sync folder on this machine'],
   openBooksOnline: [REFUSED, 'Books online keeps its catalog and its books in a folder on a disk'],
@@ -1526,6 +1527,7 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
     // The pane's two travel together: which state it was left in, and how wide it was left.
     setLibraryLayout: (command) => ({ libraryClosed: !!command.closed, libraryWidth: Number(command.width) || 0 }),
     setMinimapShut: (command) => ({ minimapShut: !!command.shut }),
+    setHomeBoxes: (command) => ({ homeBoxes: Array.isArray(command.boxes) ? command.boxes.filter((kind) => ['scheduled', 'recent', 'favorites', 'books-online', 'web-address'].includes(kind)).filter((kind, index, all) => all.indexOf(kind) === index).slice(0, 5) : [] }),
   };
   for (const [name, keys] of Object.entries(KEPT)) {
     commands[name] = (command) => {

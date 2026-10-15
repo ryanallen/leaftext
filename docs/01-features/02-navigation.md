@@ -263,18 +263,20 @@ A re-pin reads your place at the moment it runs, never the moment it was queued.
 
 ![The Leaftext home screen with no document open: the Choose file, New document and Add your notes folder buttons with a line under them, above two boxes side by side, Recent on the left and Favorites on the right, each row a file name over the folder it sits in and each favorite carrying a heart](../../imgs/home.png)
 
-The no-file home screen lists the files you opened most recently, under the **Choose file** and **New document** buttons — plus **Add your notes folder** until you have a [vault](03-library.md#your-first-vault); the last 50 are kept. Every row shows the file's clean name with its type as a badge and the folder underneath, so you read the name rather than the path. With any [favorites](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
+The no-file home screen lists the files you opened most recently, under the **Choose file** and **New document** buttons — plus **Add your notes folder** until you have a [vault](03-library.md#your-first-vault); the last 50 are kept. Every row shows the file's clean name with its type as a badge and the folder underneath, so you read the name rather than the path. With any [favorites](#favorites) it becomes two boxes side by side, Recent on the left and Favorites on the right. Hover or focus a box to reveal its heading's grip and close controls; on touch they stay visible. The small plus below the boxes adds one back or adds a **Web address** box. Changes save immediately for the next launch. The whole path is still the row's tooltip either way, and a right-click gives the same menu it always did.
 
 - **The three lines at the top change with each visit.** The headline, the line under it and the sentence under that are drawn together from one of three voices — palm leaves and the long history of writing on them, clear thinking, and your files staying files you own — and you get a different one each time you come back to this screen. Nothing under them moves with it: the buttons, both lists, the help line and the version are the same every time.
 - **The screen is about the [vault](03-library.md#vaults) you are standing in.** Recent shows that vault's files alone, the way [Favorites](#favorites) beside it does, and the small word over the headline is the vault's name where it otherwise reads **Leaftext**. Switching vaults from the [library](03-library.md#vaults) pane with the home screen up changes both lists and that word with them. Standing outside every vault, both lists show every vault at once, grouped under each vault's name with the files in no vault last.
-- **A vault with dated work puts it above both.** Open checkboxes carrying a date show up in one full-width box over Recent and Favorites, nearest due first — see [Scheduled tasks](03-library.md#scheduled-tasks).
-- **Books online sits under both.** Once you have the [Books online](03-library.md#books-online) vault, a box under Recent and Favorites lists Project Gutenberg with how many books it holds, then the books you have fetched from it, newest first: title, then author and library. Press the library to browse it, or a book to read it again.
+- **Scheduled tasks starts above the lists.** Open checkboxes carrying a date show up in a full-width box, nearest due first — see [Scheduled tasks](03-library.md#scheduled-tasks). You can move or close this box like the others.
+- **Books online starts below the lists.** Once you have the [Books online](03-library.md#books-online) vault, its box lists Project Gutenberg with how many books it holds, then the books you have fetched from it, newest first: title, then author and library. Press the library to browse it, or a book to read it again. Its place is yours to change.
 - Each box is eight rows deep and scrolls, with the app's own thin [bar](#scrollbars) and a soft edge wherever there is more list past it.
 - Missing files are removed automatically.
 - Equivalent path spellings collapse to one entry.
 - Clicking a recent file opens it immediately.
 
 Where the window is too narrow for two columns, each list shows its first five rows with a **Show all** button under it, which opens that list in a sheet from the bottom of the window — drag it down or press Escape to close it.
+
+![Home with a small plus below the boxes and compact move and close controls revealed on Favorites](../../imgs/home-box-controls-v1.png)
 
 ### Favorites
 
