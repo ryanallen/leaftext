@@ -202,7 +202,7 @@ Open the calendar at the foot of the library and a month of the vault shows whic
 
 ![The library pane on Books online, opened into Project Gutenberg's Classics of Literature category: a list of free books, each with its title, author and an EPUB mark](imgs/browse-project-gutenberg.png)
 
-Choose **Books online** in the vault switcher, then **Project Gutenberg** for its categories or **Standard Ebooks** to browse its books. Search all three libraries from the same vault. Internet Archive checks an item for a public EPUB when pressed and opens its Archive page when no readable download is available. Downloaded books open offline. All three libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
+Choose **Books online** in the vault switcher, then **Internet Archive** for its most popular texts, **Project Gutenberg** for its categories, or **Standard Ebooks** to browse its books. Search all three libraries from the same vault. Internet Archive checks an item for a public EPUB when pressed and opens its Archive page when no readable download is available. Downloaded books open offline. All three libraries answer under the find bar in one place. **[Books online →](docs/01-features/03-library.md#books-online)**
 
 ### Search everything you've written
 
