@@ -16407,7 +16407,15 @@ function syncOutcomeText(state) {
   if (!message) return '';
   
   if (state.error) {
-    if (message === 'failed:signin') return 'GitHub refused the push because nothing is signed in. Sign in above, then Sync again.';
+    const failure = state.syncFailure;
+    if (failure) {
+      const saved = failure.localCommitFinished ? 'Saved on this computer. ' : '';
+      const step = failure.operation === 'git fetch' ? 'checking for changes' : failure.operation === 'git push' ? 'sending your commits' : failure.operation;
+      if (failure.category === 'signin') return `${saved}GitHub refused authentication while ${step}. Open this vault’s GitHub settings for sign-in help, then Sync again.`;
+      if (failure.category === 'ssh') return `${saved}GitHub refused the SSH key while ${step}. Check this vault’s GitHub settings, then Sync again.`;
+      if (message !== 'failed:identity') return `${saved}${message}`;
+    }
+    if (message === 'failed:signin') return 'GitHub refused authentication. Open this vault’s GitHub settings for sign-in help, then Sync again.';
     if (message === 'failed:identity') return 'git had nothing to commit as, because it does not know who you are. Fill in your name and email above, press Set, then Sync again.';
     return message;
   }
@@ -16422,7 +16430,10 @@ function syncOutcomeText(state) {
     
     const cameDown = Number(parts[2] || 0);
     const arrival = cameDown ? `; ${cameDown} came down.` : '.';
-    if (!committed) return `Nothing to send${arrival}`;
+    if (!committed) {
+      const remote = state.repo && state.repo.remote;
+      return remote ? `Synced to ${remote}${arrival}` : `Synced${arrival}`;
+    }
     
     const remote = state.repo && state.repo.remote;
     return remote
