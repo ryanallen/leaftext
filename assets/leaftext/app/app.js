@@ -16656,12 +16656,17 @@ function renderVaultSyncButton() {
   const stopped = !spinning && Boolean(vault && vault.gitAutoSync && state && state.error);
   librarySyncButton.classList.toggle('is-stopped', stopped);
   const count = librarySyncButton.querySelector('.library-sync-count');
-  if (count) count.textContent = spinning ? '' : stopped ? `Stopped · ${waiting}` : String(waiting);
+  const changed = repo ? repo.changed || 0 : 0;
+  const ahead = repo ? repo.ahead || 0 : 0;
+  const amount = changed > 0 ? `${changed} ${changed === 1 ? 'file' : 'files'}` : `${ahead} ${ahead === 1 ? 'commit' : 'commits'}`;
+  if (count) count.textContent = spinning ? '' : stopped ? `Stopped · ${amount}` : amount;
+  const destination = repo && repo.remote ? repo.remote : 'GitHub';
+  const summary = `${changed ? `${changed} changed ${changed === 1 ? 'file' : 'files'}` : 'No changed files'}; ${ahead} ${ahead === 1 ? 'commit' : 'commits'} to send to ${destination}.`;
   const label = spinning
     ? SYNC_WORKING
     : stopped
-      ? `Automatic sync stopped: ${syncOutcomeText(state)}\nSync ${waiting} to GitHub`
-      : `Sync ${waiting} to GitHub`;
+      ? `Automatic sync stopped: ${syncOutcomeText(state)}\n${summary}`
+      : summary;
   librarySyncButton.title = label;
   librarySyncButton.setAttribute('aria-label', label);
   renderVaultSyncProgress(spinning);
