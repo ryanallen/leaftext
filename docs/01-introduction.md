@@ -55,7 +55,7 @@ New to the terms? Words like [minimap](GLOSSARY.md#minimap) and [frontmatter](GL
 ### Find
 
 - Point Leaftext at a folder to make it a [vault](01-features/03-library.md#vaults) — the unit search, syncing, and the graph work over.
-- Find free books from [Internet Archive, Project Gutenberg and Standard Ebooks](01-features/03-library.md#books-online), then read downloaded EPUBs offline.
+- Find free books from [Internet Archive, Open Library, Project Gutenberg and Standard Ebooks](01-features/03-library.md#books-online), then read downloaded EPUBs offline.
 - Browse it a folder at a time in the [library pane](01-features/03-library.md#file-tree), with a breadcrumb that always says where you are.
 - [Search](01-features/03-library.md#search) names and contents across the vault, with snippets. No index on disk, and nothing uploaded.
 - Press a [tag](01-features/03-library.md#tags) to find its notes and nested tags; rename it across the vault after confirming the file count.
