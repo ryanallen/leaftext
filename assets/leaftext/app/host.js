@@ -222,6 +222,7 @@ export const COMMANDS = {
   updateDownload: [REFUSED, 'a published site is already the version it serves'],
   applyUpdate: [REFUSED, 'there is nothing installed here to replace'],
   logError: [REFUSED, 'the browser console already has it'],
+  journalProbeAck: [REFUSED, 'only the desktop journal monitors its reader shells'],
 };
 
 /** Whether this host answers a command, for a page that means to hide the controls it does not. */

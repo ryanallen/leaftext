@@ -176,6 +176,9 @@
 | Press clears notices | [✅][l-journal] | ? | ? | ? |
 | Journal rolls over | [✅][l-journal] | ? | ? | ? |
 | Page errors logged | [✅][l-journal] | [❌][o-seen] | [✅][t-seen] | ? |
+| Missed window responses logged | [✅][l-journal] | ? | ? | ? |
+| Missed page responses logged | [✅][l-journal] | ? | ? | ? |
+| Response recovery paired | [✅][l-journal] | ? | ? | ? |
 | Journal of faults | [✅][l-journal] | [❌][o-seen] | [✅][t-seen] | ? |
 
 ## Safety and platform

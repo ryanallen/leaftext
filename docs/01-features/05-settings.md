@@ -51,7 +51,7 @@ There is nothing to open. Every control changes the app the moment you use it an
 | `{data_dir}/webview2` | The window's own WebView2 data; each new version drops the last one's compiled scripts the first time it starts |
 | `{data_dir}/web` | The web page tabs' own browser data, sign-ins included |
 | `{data_dir}/updates` | Verified installer waiting to be applied ([Updates](#updates)) |
-| `{data_dir}/journal.log` | What the app printed this run, and any crash ([Journal](#journal)) |
+| `{data_dir}/journal.log` | What the app printed this run, crashes and missed window or page responses ([Journal](#journal)) |
 | `{data_dir}/journal.prev.log` | The previous journal, kept when the live one fills up |
 | `{data_dir}/run.marker` | A one-line file saying a run is under way, which run and when it started; the close that saves takes it away ([Journal](#journal)) |
 
@@ -275,15 +275,16 @@ With it off, a panel arriving slows as it lands and one leaving is gone quicker,
 
 Leaftext keeps a plain text note of what it did, at `{data_dir}/journal.log`. It is written for bug reports: if something goes wrong, that file is what to attach.
 
-- It holds what the app printed, the details of a crash, and a line for each [GitHub sync](03-library.md#syncing) that failed — nothing else
+- It holds what the app printed, the details of a crash, a missed window or page response, and a line for each [GitHub sync](03-library.md#syncing) that failed
 - **Every line says when and which run.** It opens with the date and time to the second and the run's number — `[11 October 2026, 8:30:41am, run 12345]` — which is the same number Task Manager shows for that copy, so two launches' lines are never mixed up
 - An error in a page names the tab it happened in, and a line of code an agent ran in a page is noted with the tab and its first 200 characters, so an error that code caused can be read against it
 - A crash outside the app's own code, and a page whose process ended, each leave a line too
+- If the window or a visible, unminimized reading page misses a response for five seconds, an independent monitor records it with the last-known operation or document. Recovery gets a matching incident number and elapsed time. Native dialogs and suspension reset that wait. A missed response does not establish what caused a freeze; a forced quit before the reporting interval or a journal that cannot be written may leave no line
 - **Your writing is never in it.** File paths are recorded, document text is not
 - It stops at about a megabyte, at which point it becomes `journal.prev.log` and a fresh one starts — even in the middle of one long run. That is two files, about two megabytes together, and it never grows past them. A single line longer than 16 KB is cut, saying how much was dropped
 - It is safe to delete, and it is not sent anywhere — nothing leaves your machine unless you attach it yourself
 
-**A run that ended without closing.** Beside the journal sits an empty `run.marker`. Leaftext leaves it there when it opens and takes it away when it closes, so a marker still sitting there on the next launch means the run before it never got that far — it was ended from Task Manager, the machine went down, or it stopped on its own. That launch says so once, in the corner: *Leaftext closed unexpectedly last time. The journal may say why.*
+**A run that ended without closing.** Beside the journal sits `run.marker`, naming the run and when it started. Leaftext leaves it there when it opens and takes it away when it closes, so a marker still sitting there on the next launch means the run before it never got that far — it was ended from Task Manager, the machine went down, or it stopped on its own. That launch says so once, in the corner: *Leaftext closed unexpectedly last time. The journal may say why.*
 
 - It says only that the last run did not close. It does not claim to know what happened, and it makes no promise about the tabs or the words that were open
 - The journal beside it is where a reason would be if there is one, which is what the sentence points at. A crash the app noticed is in there; a machine that went down leaves nothing to write
