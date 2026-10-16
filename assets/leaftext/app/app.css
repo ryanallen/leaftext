@@ -6628,6 +6628,7 @@ body.is-maximized #winMaximize .wc-restore {
 .link-hover-tip::before,
 .block-drag-ghost::before,
 .home-row-ghost::before,
+.home-box-ghost::before,
 .tab-drag-ghost::before,
 .find-bar::before,
 .flash-reader::before,
@@ -14506,6 +14507,38 @@ body.mac-frame .document-minimap-frame {
   margin-top: var(--lt-space-48);
 }
 
+.home-books-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--lt-space-12);
+}
+.home-books-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lt-space-4);
+  min-width: 0;
+  border: var(--lt-stroke-1) solid var(--lt-border);
+  border-radius: var(--lt-radius-lg);
+  background: transparent;
+  padding: var(--lt-space-14) var(--lt-space-16);
+  text-align: left;
+}
+@media (hover: hover) {
+  .home-books-card:hover {
+    background: var(--lt-wash-hover);
+  }
+}
+.home-books-card-name {
+  color: var(--lt-navigation-recent-item-foreground);
+  font-size: var(--lt-text-14);
+  line-height: var(--lt-leading-1-4);
+}
+.home-books-card-line {
+  color: var(--lt-muted-foreground);
+  font-size: var(--lt-text-12);
+  line-height: var(--lt-leading-1-4);
+}
+
 .home-task-due {
   grid-column: 3;
   margin-right: var(--lt-space-16);
@@ -14762,6 +14795,38 @@ body.is-home-row-dragging button {
 }
 body.is-home-row-dragging .home-list-scroll li {
   transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}
+
+.home-box-ghost {
+  position: fixed;
+  z-index: var(--lt-z-50);
+  --lt-shadow-host-radius: var(--lt-radius-lg);
+  --lt-shadow-host-border: 0;
+  border-radius: var(--lt-shadow-host-radius);
+  background: var(--lt-markdown-background);
+  pointer-events: none;
+}
+
+.home-box-slot.is-landing {
+  --lt-grain-dot: var(--lt-grain-hover);
+  border-radius: var(--lt-radius-lg);
+  background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge));
+  background-size: var(--lt-grain-tile) var(--lt-grain-tile);
+  background-repeat: repeat;
+}
+.is-carried {
+  visibility: hidden;
+}
+
+.home-box-slot.is-easing {
+  transition: transform var(--lt-duration-140) var(--lt-ease-emphasized);
+}
+body.is-home-box-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+body.is-home-box-dragging button {
+  cursor: grabbing;
 }
 
 .home-row.is-going {

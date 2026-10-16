@@ -25253,6 +25253,11 @@ function inlineDomToMarkdown(node) {
         return;
       }
     }
+    
+    if (tag === 'img') {
+      out += child.getAttribute('data-picture-source') || '';
+      return;
+    }
     if (tag === 'br') {
       
       out += '<br>';
@@ -25374,6 +25379,38 @@ function listIsSpacedApart(listEl) {
 }
 
 
+function itemLines(markdown, holder, childIndent) {
+  const text = markdown.trim();
+  if (!Array.from(holder.querySelectorAll('img')).some((picture) => picture.getAttribute('data-picture-source'))) return text.replace(/\\\n/g, ' ').replace(/\n+/g, ' ');
+  return text.replace(/[ \t]*\r?\n[ \t]*/g, '\n' + childIndent);
+}
+
+
+function pictureTokensIn(source) {
+  return source.match(/!\[(?:[^\]\\]|\\.)*\](?:\((?:[^()\\\s]|\\.)*(?:\s+(?:"[^"]*"|'[^']*'))?\)|\[[^\]]*\])/g) || [];
+}
+
+
+function holdPictureSources(el) {
+  const pictures = Array.from(el.querySelectorAll('img'));
+  if (!pictures.length) return true;
+  const { start, end } = rangeOf(el, 'block');
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+  const tokens = pictureTokensIn(sliceSourceBytes(start, end));
+  if (tokens.length !== pictures.length) return false;
+  pictures.forEach((picture, at) => picture.setAttribute('data-picture-source', tokens[at]));
+  return true;
+}
+
+
+function picturesStandBesideWords(el) {
+  if (!el.querySelector('img')) return true;
+  if (el.classList && el.classList.contains('image-lane')) return false;
+  if (Array.from(el.querySelectorAll('a')).some((link) => link.querySelector('img'))) return false;
+  return !!el.textContent.trim();
+}
+
+
 function listDomToMarkdown(listEl, indent) {
   const ordered = listEl.tagName.toLowerCase() === 'ol';
   const startNum = Number(listEl.getAttribute('start') || '1') || 1;
@@ -25400,12 +25437,13 @@ function listDomToMarkdown(listEl, indent) {
       if (tag === 'ul' || tag === 'ol' || tag === 'input') child.remove();
     });
     
-    const content = (barRowToMarkdown(clone) ?? inlineDomToMarkdown(clone)).trim().replace(/\\\n/g, ' ').replace(/\n+/g, ' ');
+    const childIndent = indent + ' '.repeat(marker.length);
+    const content = itemLines(barRowToMarkdown(clone) ?? inlineDomToMarkdown(clone), clone, childIndent);
     const lines = [indent + marker + task + content];
     Array.from(li.children).forEach((child) => {
       const tag = child.tagName ? child.tagName.toLowerCase() : '';
       if (tag === 'ul' || tag === 'ol') {
-        lines.push(listDomToMarkdown(child, indent + ' '.repeat(marker.length)));
+        lines.push(listDomToMarkdown(child, childIndent));
       }
     });
     items.push(lines.join('\n'));
@@ -25416,7 +25454,7 @@ function listDomToMarkdown(listEl, indent) {
 
 
 function itemWithParagraphsToMarkdown(li, lead, childIndent) {
-  const oneLine = (p) => inlineDomToMarkdown(p).trim().replace(/\\\n/g, ' ').replace(/\n+/g, ' ');
+  const oneLine = (p) => itemLines(inlineDomToMarkdown(p), p, childIndent);
   const lines = [];
   Array.from(li.children).forEach((child) => {
     const tag = child.tagName ? child.tagName.toLowerCase() : '';
@@ -25577,7 +25615,7 @@ function tableTextsToMarkdown(el, rows) {
 
 const MARKDOWN_WYSIWYG_INLINE_TAGS = new Set([
   'a', 'br', 'strong', 'b', 'em', 'i', 'del', 's', 'code',
-  'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div',
+  'abbr', 'kbd', 'mark', 'ins', 'sub', 'sup', 'span', 'div', 'img',
 ]);
 
 
@@ -25592,12 +25630,12 @@ function inlineMarkdownDomWysiwygSafe(el) {
 
 
 function markdownBlockWysiwygSafe(el) {
-  return !el.classList?.contains('link-card') && !el.hasAttribute?.('data-leaf-row') && inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('img, .katex, .mermaid, input');
+  return !el.classList?.contains('link-card') && !el.hasAttribute?.('data-leaf-row') && inlineMarkdownDomWysiwygSafe(el) && !el.querySelector('.katex, .mermaid, input') && picturesStandBesideWords(el);
 }
 
 
 function listWysiwygSafe(el) {
-  return !el.querySelector('pre, blockquote, table, img, .katex, .mermaid');
+  return !el.querySelector('pre, blockquote, table, .katex, .mermaid') && picturesStandBesideWords(el);
 }
 
 
@@ -25611,7 +25649,7 @@ function tableWysiwygSafe(el) {
 
 function blockquoteWysiwygSafe(el) {
   if (blockquoteIsAlert(el)) return false;
-  if (el.querySelector('blockquote, pre, table, ul, ol, img, .katex, .mermaid, input')) {
+  if (el.querySelector('blockquote, pre, table, ul, ol, .katex, .mermaid, input') || !picturesStandBesideWords(el)) {
     return false;
   }
   return Array.from(el.children).every((child) => child.tagName.toLowerCase() === 'p');
@@ -25621,7 +25659,7 @@ function blockquoteWysiwygSafe(el) {
 function footnoteDefinitionWysiwygSafe(el) {
   const paragraphs = Array.from(el.children).filter((child) => child.tagName.toLowerCase() === 'p');
   if (paragraphs.length !== 1) return false;
-  if (el.querySelector('ul, ol, pre, table, blockquote, img, .katex, .mermaid, input')) return false;
+  if (el.querySelector('ul, ol, pre, table, blockquote, .katex, .mermaid, input') || !picturesStandBesideWords(el)) return false;
   return !!footnoteNameOf(el) && inlineMarkdownDomWysiwygSafe(paragraphs[0]);
 }
 
@@ -26420,7 +26458,7 @@ function blockMarkerOf(el) {
 
 function blockCanBeCutInHalf(el) {
   const kind = el.dataset.blockKind;
-  return (kind === 'paragraph' || kind === 'heading') && markdownBlockWysiwygSafe(el);
+  return (kind === 'paragraph' || kind === 'heading') && markdownBlockWysiwygSafe(el) && picturesWriteBack(el);
 }
 
 
@@ -26803,16 +26841,27 @@ function emailBlockTypeableInPlace(el) {
 
 function listTypeableInPlace(el) {
   if (!listWysiwygSafe(el)) return false;
-  if (!listIsSpacedApart(el)) return true;
+  
+  const pictured = !!el.querySelector('img');
+  if (pictured && !holdPictureSources(el)) return false;
+  if (!pictured && !listIsSpacedApart(el)) return true;
   const { start, end } = rangeOf(el, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   const src = sliceSourceBytes(start, end);
   for (const gap of ['\n\n', '\n']) {
     el.__listItemGap = gap;
-    if (blockDomToMarkdown(el) === src) return true;
+    if (inDocumentEnding(blockDomToMarkdown(el)) === src) return true;
   }
   delete el.__listItemGap;
   return false;
+}
+
+
+function picturesWriteBack(el) {
+  if (!el.querySelector('img')) return true;
+  if (!holdPictureSources(el)) return false;
+  const { start, end } = rangeOf(el, 'block');
+  return inDocumentEnding(blockDomToMarkdown(el)) === sliceSourceBytes(start, end);
 }
 
 
@@ -27527,11 +27576,11 @@ function bindEditableBlocks(format, elements = null) {
         : format === 'xml' || bookBlock || slideBlock
           ? !!innerSpan
           : format === 'markdown' &&
-            (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el)) ||
+            (((kind === 'heading' || kind === 'paragraph') && markdownBlockWysiwygSafe(el) && picturesWriteBack(el)) ||
               (kind === 'list' && listTypeableInPlace(el)) ||
               (kind === 'table' && tableWysiwygSafe(el)) ||
-              (kind === 'blockquote' && blockquoteWysiwygSafe(el)) ||
-              (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el)));
+              (kind === 'blockquote' && blockquoteWysiwygSafe(el) && picturesWriteBack(el)) ||
+              (kind === 'footnote_definition' && footnoteDefinitionWysiwygSafe(el) && picturesWriteBack(el)));
     if (wysiwyg) {
       if (innerSpan) el.__innerSpan = innerSpan;
       if (runSpan) el.__epubRuns = true;
@@ -27604,7 +27653,7 @@ function bindSwappedParagraph(el, kept = false) {
   const plainSpan = currentDocumentFormat === 'epub' ? xmlBlockTypeableInPlace(el) : null;
   const runSpan = currentDocumentFormat === 'epub' && !plainSpan ? epubRunTypeableInPlace(el) : null;
   const innerSpan = plainSpan || runSpan;
-  const wysiwyg = currentDocumentFormat === 'epub' ? !!innerSpan : markdownBlockWysiwygSafe(el);
+  const wysiwyg = currentDocumentFormat === 'epub' ? !!innerSpan : markdownBlockWysiwygSafe(el) && picturesWriteBack(el);
   if (innerSpan) el.__innerSpan = innerSpan;
   if (runSpan) el.__epubRuns = true;
   if (wysiwyg) markMarkdownEditable(el);
@@ -40670,22 +40719,14 @@ function bindScheduledRows(root) {
 }
 
 var leafOnlineBooks = null;
-
-function homeBookRowMarkup(name, under, press) {
-  return `<li class="home-list-row"><span class="home-row"><button type="button" class="home-row-open" ${press} title="${escapeAttr(`Open ${name}`)}"><span class="home-row-name">${name.endsWith('.epub') ? documentNameMarkup(name) : `<span class="file-name-stem">${escapeText(name)}</span>`}</span><span class="home-row-folder">${escapeText(under)}</span></button></span></li>`;
-}
 function onlineBooksMarkup() {
   const held = leafOnlineBooks;
   if (!held || !Array.isArray(held.libraries) || !held.libraries.length) return '';
-  const books = Array.isArray(held.books) ? held.books.filter(Boolean) : [];
-  const rows = held.libraries.filter(Boolean).map((library) =>
-    homeBookRowMarkup(String(library.name || ''), String(library.detail || ''), `data-home-books-library="${escapeAttr(String(library.id || ''))}"`),
-  ).concat(books.map((book) => {
-    const under = [book.author, book.library].filter(Boolean).join(' · ');
-    return homeBookRowMarkup(`${String(book.title || '')}.epub`, under, `data-path="${escapeAttr(String(book.path || ''))}"`);
-  })).join('');
-  const count = books.length ? ` (${escapeText(formatCount(books.length))})` : '';
-  return `<section class="home-list home-books"><h2>Books online${count}</h2>${homeListBox(rows)}</section>`;
+  const cards = held.libraries.filter(Boolean).map((library) => {
+    const name = String(library.name || '');
+    return `<button type="button" class="home-books-card" data-home-books-library="${escapeAttr(String(library.id || ''))}" title="${escapeAttr(`Browse ${name}`)}"><span class="home-books-card-name">${escapeText(name)}</span><span class="home-books-card-line">${escapeText(String(library.detail || ''))}</span></button>`;
+  }).join('');
+  return `<section class="home-list home-books"><h2>Books online</h2><div class="home-books-cards">${cards}</div></section>`;
 }
 
 function fillOnlineBooksSlot() {
@@ -40700,11 +40741,7 @@ function bindOnlineBooksSlot(slot) {
   slot.querySelectorAll('[data-home-books-library]').forEach((button) => {
     button.addEventListener('click', () => openBooksOnline(button.dataset.homeBooksLibrary));
   });
-  slot.querySelectorAll('[data-path]').forEach((button) => {
-    button.addEventListener('click', () => send({ command: 'openRecent', path: button.dataset.path }));
-  });
   bindHomeArrange(document.querySelector('.empty-state') || slot);
-  watchHomeLists(slot);
 }
 window.leafSetOnlineBooks = function (payload) {
   leafOnlineBooks = payload && typeof payload === 'object' ? payload : null;
@@ -40848,65 +40885,6 @@ function homeBoxSlot(kind) {
   if (kind === 'recent' || kind === 'favorites') { bindHomeRows(slot); watchHomeLists(slot); bindHomeShowAll(slot); }
   bindHomeArrange(document.querySelector('.empty-state') || slot);
   return slot;
-}
-function moveHomeBox(kind, target) {
-  if (kind === target || !homeBoxOrder.includes(kind) || !homeBoxOrder.includes(target)) return;
-  const boxes = homeBoxOrder.filter((item) => item !== kind);
-  boxes.splice(homeBoxOrder.indexOf(target), 0, kind);
-  setHomeBoxOrder(boxes);
-  reorderHomeBoxes();
-}
-function bindHomeArrange(root) {
-  const bindOnce = (element, event, handler) => {
-    if (element.dataset.homeBound) return;
-    element.dataset.homeBound = 'true';
-    element.addEventListener(event, handler);
-  };
-  root.querySelectorAll('.home-add-box').forEach((button) => bindOnce(button, 'click', () => {
-    const menu = root.querySelector('.home-add-menu');
-    menu.replaceChildren(...HOME_BOX_KINDS.filter((kind) => !homeBoxOrder.includes(kind) && (kind !== 'favorites' || homeListCounts('favorites', currentState).drawn)).map((kind) => {
-      const choice = document.createElement('button');
-      choice.type = 'button';
-      choice.textContent = kind === 'books-online' ? 'Books online' : kind === 'web-address' ? 'Web address' : kind[0].toUpperCase() + kind.slice(1);
-      choice.dataset.homeAddKind = kind;
-      choice.addEventListener('click', () => {
-        const added = homeBoxSlot(kind);
-        setHomeBoxOrder([...homeBoxOrder, kind]);
-        reorderHomeBoxes();
-        bindHomeArrange(document.querySelector('.empty-state') || added);
-        menu.hidden = true;
-      });
-      return choice;
-    }));
-    menu.hidden = !menu.hidden;
-  }));
-  root.querySelectorAll('[data-home-box-remove]').forEach((button) => bindOnce(button, 'click', () => {
-    setHomeBoxOrder(homeBoxOrder.filter((kind) => kind !== button.dataset.homeBoxRemove));
-    reorderHomeBoxes();
-  }));
-  root.querySelectorAll('[data-home-box-grip]').forEach((grip) => bindOnce(grip, 'pointerdown', (event) => {
-    const kind = grip.dataset.homeBoxGrip;
-    root.addEventListener('pointerup', function drop(eventUp) {
-      root.removeEventListener('pointerup', drop);
-      const target = document.elementFromPoint(eventUp.clientX, eventUp.clientY)?.closest('[data-home-box]');
-      if (target) moveHomeBox(kind, target.dataset.homeBox);
-    });
-  }));
-  root.querySelectorAll('.home-web-address-go').forEach((button) => {
-    const input = button.closest('.web-address-wrap').querySelector('input');
-    bindOnce(button, 'click', () => sendWebAddress(input));
-    bindOnce(input, 'keydown', (event) => {
-      if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
-      event.preventDefault();
-      sendWebAddress(input);
-    });
-  });
-}
-function reorderHomeBoxes() {
-  const root = document.querySelector('.home-boxes');
-  if (!root) return;
-  const slots = new Map(Array.from(root.querySelectorAll('[data-home-box]')).map((slot) => [slot.dataset.homeBox, slot]));
-  root.replaceChildren(...homeBoxOrder.map((kind) => slots.get(kind)).filter(Boolean));
 }
 
 function openHomeFolder(path) {
@@ -41698,7 +41676,8 @@ function drawSwappedBlock(old, html, start, end, layoutClass = '') {
   const heading = /^H[1-6]$/.test(old.tagName);
   if (!fresh || holder.children.length !== 1 || (heading ? !/^H[1-6]$/.test(fresh.tagName) : fresh.tagName !== 'P')) return null;
   const active = document.activeElement;
-  const kept = fresh.tagName === old.tagName && active !== old && (!active || !old.contains(active)) && markdownBlockWysiwygSafe(old) === markdownBlockWysiwygSafe(fresh);
+  
+  const kept = fresh.tagName === old.tagName && active !== old && (!active || !old.contains(active)) && !fresh.querySelector('img') && markdownBlockWysiwygSafe(old) === markdownBlockWysiwygSafe(fresh);
   if (kept) {
     const heldBelow = old.classList.contains('is-held-below');
     
@@ -42047,6 +42026,167 @@ function sameDocumentFragmentHref(rawHref) {
     return rawHref.slice(1);
   }
   return null;
+}
+
+var homeBoxDrag = null;
+function homeBoxSlots() {
+  const root = document.querySelector('.home-boxes');
+  return root ? Array.from(root.querySelectorAll('[data-home-box]')) : [];
+}
+
+function liftHomeBox(drag, event) {
+  const slot = homeBoxSlots().find((one) => one.dataset.homeBox === drag.kind);
+  if (!slot) return false;
+  const box = slot.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  ghost.className = 'home-box-ghost';
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.innerHTML = slot.innerHTML;
+  ghost.style.left = box.left + 'px';
+  ghost.style.top = box.top + 'px';
+  ghost.style.width = box.width + 'px';
+  appSurface.appendChild(ghost);
+  coverWebSurface(true, ghost);
+  drag.slot = slot;
+  drag.ghost = ghost;
+  drag.offsetX = event.clientX - box.left;
+  drag.offsetY = event.clientY - box.top;
+  drag.moved = true;
+  drag.carried = slot.firstElementChild;
+  if (drag.carried) drag.carried.classList.add('is-carried');
+  slot.classList.add('is-landing');
+  document.body.classList.add('is-home-box-dragging');
+  return true;
+}
+
+function moveHomeBoxLanding(drag, x, y) {
+  const under = document.elementFromPoint(x, y);
+  const target = under && under.closest ? under.closest('[data-home-box]') : null;
+  if (!target || target === drag.slot) return;
+  const root = drag.slot.parentElement;
+  const slots = homeBoxSlots();
+  const before = new Map(slots.map((one) => [one, one.getBoundingClientRect()]));
+  const after = slots.indexOf(target) > slots.indexOf(drag.slot);
+  root.insertBefore(drag.slot, after ? target.nextSibling : target);
+  slots.forEach((one) => {
+    if (one === drag.slot) return;
+    const was = before.get(one);
+    const now = one.getBoundingClientRect();
+    const dx = was.left - now.left;
+    const dy = was.top - now.top;
+    if (!dx && !dy) return;
+    one.classList.remove('is-easing');
+    one.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+    void one.offsetWidth;
+    one.classList.add('is-easing');
+    one.style.transform = '';
+  });
+}
+
+function endHomeBoxDrag(keep) {
+  const drag = homeBoxDrag;
+  if (!drag) return;
+  homeBoxDrag = null;
+  drag.unbind();
+  leafReleasePointer(drag.holder, drag.pointerId);
+  if (!drag.moved) return;
+  if (drag.ghost) { coverWebSurface(false, drag.ghost); drag.ghost.remove(); }
+  drag.slot.classList.remove('is-landing');
+  if (drag.carried) drag.carried.classList.remove('is-carried');
+  document.body.classList.remove('is-home-box-dragging');
+  homeBoxSlots().forEach((one) => {
+    one.classList.remove('is-easing');
+    one.style.transform = '';
+  });
+  const drawn = homeBoxSlots().map((one) => one.dataset.homeBox).filter((kind) => homeBoxOrder.includes(kind));
+  if (keep && drawn.join(',') !== homeBoxOrder.join(',')) setHomeBoxOrder(drawn);
+  reorderHomeBoxes();
+}
+function startHomeBoxDrag(grip, event) {
+  if (event.button !== undefined && event.button !== 0) return;
+  endHomeBoxDrag(false);
+  
+  const holder = document.querySelector('.home-boxes');
+  if (!holder) return;
+  const drag = { kind: grip.dataset.homeBoxGrip, holder, pointerId: event.pointerId, startX: event.clientX || 0, startY: event.clientY || 0, moved: false };
+  const move = (moving) => {
+    const x = moving.clientX || 0;
+    const y = moving.clientY || 0;
+    if (!drag.moved && Math.hypot(x - drag.startX, y - drag.startY) < HOME_DRAG_THRESHOLD) return;
+    if (!drag.moved && !liftHomeBox(drag, moving)) return;
+    drag.ghost.style.left = (x - drag.offsetX) + 'px';
+    drag.ghost.style.top = (y - drag.offsetY) + 'px';
+    moveHomeBoxLanding(drag, x, y);
+  };
+  const up = (released) => {
+    const under = document.elementFromPoint(released.clientX || 0, released.clientY || 0);
+    endHomeBoxDrag(!!(under && under.closest && under.closest('.empty-state')));
+  };
+  const cancel = () => endHomeBoxDrag(false);
+  const key = (pressed) => {
+    if (pressed.key !== 'Escape') return;
+    pressed.preventDefault();
+    endHomeBoxDrag(false);
+  };
+  holder.addEventListener('pointermove', move);
+  holder.addEventListener('pointerup', up);
+  holder.addEventListener('pointercancel', cancel);
+  holder.addEventListener('lostpointercapture', cancel);
+  document.addEventListener('keydown', key, true);
+  drag.unbind = () => {
+    holder.removeEventListener('pointermove', move);
+    holder.removeEventListener('pointerup', up);
+    holder.removeEventListener('pointercancel', cancel);
+    holder.removeEventListener('lostpointercapture', cancel);
+    document.removeEventListener('keydown', key, true);
+  };
+  homeBoxDrag = drag;
+  leafHoldPointer(holder, event.pointerId);
+}
+function bindHomeArrange(root) {
+  const bindOnce = (element, event, handler) => {
+    if (element.dataset.homeBound) return;
+    element.dataset.homeBound = 'true';
+    element.addEventListener(event, handler);
+  };
+  root.querySelectorAll('.home-add-box').forEach((button) => bindOnce(button, 'click', () => {
+    const menu = root.querySelector('.home-add-menu');
+    menu.replaceChildren(...HOME_BOX_KINDS.filter((kind) => !homeBoxOrder.includes(kind) && (kind !== 'favorites' || homeListCounts('favorites', currentState).drawn)).map((kind) => {
+      const choice = document.createElement('button');
+      choice.type = 'button';
+      choice.textContent = kind === 'books-online' ? 'Books online' : kind === 'web-address' ? 'Web address' : kind[0].toUpperCase() + kind.slice(1);
+      choice.dataset.homeAddKind = kind;
+      choice.addEventListener('click', () => {
+        const added = homeBoxSlot(kind);
+        setHomeBoxOrder([...homeBoxOrder, kind]);
+        reorderHomeBoxes();
+        bindHomeArrange(document.querySelector('.empty-state') || added);
+        menu.hidden = true;
+      });
+      return choice;
+    }));
+    menu.hidden = !menu.hidden;
+  }));
+  root.querySelectorAll('[data-home-box-remove]').forEach((button) => bindOnce(button, 'click', () => {
+    setHomeBoxOrder(homeBoxOrder.filter((kind) => kind !== button.dataset.homeBoxRemove));
+    reorderHomeBoxes();
+  }));
+  root.querySelectorAll('[data-home-box-grip]').forEach((grip) => bindOnce(grip, 'pointerdown', (event) => startHomeBoxDrag(grip, event)));
+  root.querySelectorAll('.home-web-address-go').forEach((button) => {
+    const input = button.closest('.web-address-wrap').querySelector('input');
+    bindOnce(button, 'click', () => sendWebAddress(input));
+    bindOnce(input, 'keydown', (event) => {
+      if (event.key !== 'Enter' || event.isComposing || event.repeat) return;
+      event.preventDefault();
+      sendWebAddress(input);
+    });
+  });
+}
+function reorderHomeBoxes() {
+  const root = document.querySelector('.home-boxes');
+  if (!root) return;
+  const slots = new Map(Array.from(root.querySelectorAll('[data-home-box]')).map((slot) => [slot.dataset.homeBox, slot]));
+  root.replaceChildren(...homeBoxOrder.map((kind) => slots.get(kind)).filter(Boolean));
 }
 
 
