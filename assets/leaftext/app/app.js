@@ -11770,6 +11770,14 @@ function sendPageExport(format) {
   send({ command: 'exportPdf', format: format || '', width: size.width, height: size.height, ...(size.page ? { page: size.page } : {}) });
 }
 
+function loadEveryPicture() {
+  const body = app.querySelector('.document-body');
+  const waiting = body ? Array.from(body.querySelectorAll('img')).filter((picture) => !picture.complete) : [];
+  if (!waiting.length) return null;
+  waiting.forEach((picture) => { picture.loading = 'eager'; });
+  return Promise.all(waiting.map((picture) => picture.decode().catch(() => {})));
+}
+
 const PAGE_EXPORT_WAIT_REARM_MS = 10000;
 
 
@@ -11777,13 +11785,14 @@ const PAGE_EXPORT_WAIT_REARM_MS = 10000;
 function askPageExport(format) {
   
   drawEveryCodeFence();
-  if (!mermaidWaitingForExport().length) {
+  const pictures = loadEveryPicture();
+  if (!mermaidWaitingForExport().length && !pictures) {
     sendPageExport(format);
     return;
   }
   beginReaderLoading();
   const holding = window.setInterval(beginReaderLoading, PAGE_EXPORT_WAIT_REARM_MS);
-  drawEveryMermaidDiagram().finally(inThisColumn(() => {
+  Promise.all([drawEveryMermaidDiagram(), pictures]).finally(inThisColumn(() => {
     window.clearInterval(holding);
     clearReaderLoading();
     sendPageExport(format);
@@ -48341,6 +48350,17 @@ function laneWidePicture(block) {
   const alone =
     pictures.length === 1 && pictures[0].dataset.imageMissing !== 'true' && !(block.textContent || '').trim();
   block.classList.toggle('image-lane', alone);
+  holdLaneWidth(block, alone ? pictures[0] : null);
+}
+
+function holdLaneWidth(block, picture) {
+  const width = picture && !picture.complete ? Number(picture.getAttribute('width')) : 0;
+  if (!(width > 0)) {
+    block.style.removeProperty('--lane-picture-width');
+    return;
+  }
+  block.style.setProperty('--lane-picture-width', `${width}px`);
+  picture.addEventListener('load', () => block.style.removeProperty('--lane-picture-width'), { once: true });
 }
 
 function markLinksThatGoNowhere(root = app) {
@@ -48465,6 +48485,7 @@ function isRailPictureSrc(src) {
 
 function stampLocalImages(root = app) {
   if (!root) return;
+  fitPictureWidth = pictureFitWidth();
   root.querySelectorAll('img[src]').forEach((img) => {
     
     restoreMissingImage(img);
@@ -48472,10 +48493,61 @@ function stampLocalImages(root = app) {
     const src = img.getAttribute('src') || '';
     if (!isLocalImageSrc(src)) return;
     const base = src.split('?')[0];
-    const stamped = `${base}?leaf-epoch=${localImageEpoch}${isRailPictureSrc(src) ? `&${RAIL_PICTURE_MARK}` : ''}`;
+    const stamped = `${base}?leaf-epoch=${localImageEpoch}${isRailPictureSrc(src) ? `&${RAIL_PICTURE_MARK}` : fitPictureQuery(img)}`;
     if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);
   });
+  scheduleFitPictures();
 }
+let fitPicturesFrame = 0;
+
+function scheduleFitPictures() {
+  if (fitPicturesFrame) return;
+  fitPicturesFrame = requestAnimationFrame(() => {
+    fitPicturesFrame = 0;
+    const body = app.querySelector('.document-body');
+    if (!body) return;
+    fitPictureWidth = pictureFitWidth();
+    for (const img of body.querySelectorAll('img[src]')) {
+      const src = img.getAttribute('src') || '';
+      if (img.complete || !isLocalImageSrc(src) || isRailPictureSrc(src)) continue;
+      const fitted = src.replace(new RegExp(`&${FIT_PICTURE_KEY}=\\d+`), '') + fitPictureQuery(img);
+      if (fitted !== src) img.setAttribute('src', fitted);
+    }
+  });
+}
+
+const FIT_PICTURE_KEY = 'leaf-fit';
+const FIT_PICTURE_STEP = 256;
+let fitPictureWidth = 0;
+
+function fitPictureStep(cssWidth) {
+  return Math.ceil((cssWidth * (window.devicePixelRatio || 1)) / FIT_PICTURE_STEP) * FIT_PICTURE_STEP;
+}
+
+function pictureFitWidth() {
+  const layout = app.querySelector('.reader-layout');
+  return fitPictureStep((layout && layout.clientWidth) || window.innerWidth || 0);
+}
+
+function fitPictureQuery(img) {
+  if (img.closest('.document-minimap, .note-card-media')) return '';
+  const width = Number(img.getAttribute('width'));
+  if (!(width > 0) || !(fitPictureWidth > 0)) return '';
+  const block = img.parentElement;
+  const alone = block && block.tagName === 'P' && block.children.length === 1 && !(block.textContent || '').trim();
+  const body = alone ? null : img.closest('.document-body');
+  const ask = alone || !body || !body.clientWidth ? fitPictureWidth : Math.min(fitPictureWidth, fitPictureStep(body.clientWidth));
+  return width > ask ? `&${FIT_PICTURE_KEY}=${ask}` : '';
+}
+
+function pictureFileSrc(picture) {
+  return (picture.currentSrc || picture.src || '').replace(new RegExp(`&${FIT_PICTURE_KEY}=\\d+`), '');
+}
+
+window.addEventListener('resize', () => {
+  if (!fitPictureWidth || pictureFitWidth() <= fitPictureWidth) return;
+  stampLocalImages();
+});
 
 function readingDrawsLocalPicture(root = app) {
   if (!root) return false;
@@ -50019,7 +50091,7 @@ function openImageSheet(picture, opener) {
   shown.className = 'image-sheet-picture';
   shown.alt = picture.alt || '';
   
-  shown.src = picture.currentSrc || picture.src;
+  shown.src = pictureFileSrc(picture);
   
   const corner = document.createElement('div');
   corner.className = 'image-sheet-corner';
@@ -50147,7 +50219,7 @@ function printPictureAsPdf(picture, path) {
   shown.width = width;
   shown.height = height;
   
-  shown.src = picture.currentSrc || picture.src;
+  shown.src = pictureFileSrc(picture);
   picturePrint.innerHTML = '';
   picturePrint.appendChild(shown);
   document.body.classList.add('leaf-paper-picture');
@@ -50194,7 +50266,7 @@ function pictureCanvas(picture, background) {
       resolve(canvas);
     };
     asked.onerror = () => reject(new Error('That picture could not be read, so nothing was written.'));
-    asked.src = picture.currentSrc || picture.src;
+    asked.src = pictureFileSrc(picture);
   });
 }
 
@@ -51288,13 +51360,7 @@ function bindDocumentMinimapPreview(track) {
       minimapLayoutObserver.observe(layout);
     }
   }
-  source.querySelectorAll('img').forEach((image) => {
-    if (image.complete) {
-      return;
-    }
-    image.addEventListener('load', invalidateMinimapPreview, { once: true });
-    image.addEventListener('error', invalidateMinimapPreview, { once: true });
-  });
+  answerPicturesThatMoveThePage(source, invalidateMinimapPreview);
   scheduleMinimapPreviewUpdate();
 }
 function disconnectMinimapPreviewObservers() {
@@ -51770,12 +51836,15 @@ function observeReaderReflow() {
     });
     readerReflowObserver.observe(source);
   }
+  answerPicturesThatMoveThePage(source, () => scheduleReaderLayoutUpdate(true));
+}
+
+function answerPicturesThatMoveThePage(source, answer) {
   source.querySelectorAll('img').forEach((image) => {
-    if (image.complete) {
-      return;
-    }
-    image.addEventListener('load', () => scheduleReaderLayoutUpdate(true), { once: true });
-    image.addEventListener('error', () => scheduleReaderLayoutUpdate(true), { once: true });
+    if (image.complete) return;
+    const boxed = Number(image.getAttribute('width')) > 0 && Number(image.getAttribute('height')) > 0;
+    if (!boxed) image.addEventListener('load', answer, { once: true });
+    image.addEventListener('error', answer, { once: true });
   });
 }
 
@@ -53580,6 +53649,8 @@ function askRailPicture(img) {
   if (!isLocalImageSrc(src) || !(width > 0) || !(height > 0) || img.closest('.note-card-media')) return;
   if (!isRailPictureSrc(src)) img.setAttribute('src', `${src}${src.includes('?') ? '&' : '?'}${RAIL_PICTURE_MARK}`);
   img.removeAttribute('srcset');
+  
+  img.removeAttribute('loading');
   img.style.width = `${width}px`;
   img.style.aspectRatio = `${width} / ${height}`;
 }

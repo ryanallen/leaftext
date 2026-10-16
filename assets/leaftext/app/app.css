@@ -13360,7 +13360,7 @@ body.mac-frame .table-lane::after {
   position: relative;
   left: 50%;
   transform: translateX(-50%);
-  width: max-content;
+  width: var(--lane-picture-width, max-content);
   max-width: max(100%, calc(100cqi - 2 * var(--reader-lane-inset)));
 }
 
