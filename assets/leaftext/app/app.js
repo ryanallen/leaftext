@@ -27444,12 +27444,33 @@ function fencedCodeInnerSpan(src) {
   return { from, to: close.index };
 }
 
+function sourceEditTextRect(el, offset) {
+  const point = blockTextPoint(el, offset);
+  if (!point) return null;
+  const range = document.createRange();
+  range.setStart(point.node, point.offset);
+  range.collapse(true);
+  const rect = range.getBoundingClientRect();
+  return rect && Number.isFinite(rect.top) && rect.height > 0 ? rect : null;
+}
+function sourceEditPointAnchor(el, fraction, viewportY) {
+  const body = app.querySelector('.document-body');
+  if (!body || !Number.isFinite(fraction) || !Number.isFinite(viewportY)) return null;
+  const blocks = visibleReaderAnchorBlockList(body);
+  const index = blocks.indexOf(el);
+  if (index < 0) return null;
+  const shellRect = app.getBoundingClientRect();
+  const anchor = anchorForBlockIndex(blocks, index, shellRect);
+  anchor.point = { fraction: Math.max(0, Math.min(1, fraction)), offsetY: viewportY - shellRect.top };
+  return anchor;
+}
 
 function wireSourceEditable(el) {
   const wired = rangeOf(el, 'block');
   if (!Number.isFinite(wired.start) || !Number.isFinite(wired.end)) return;
   let start = 0;
   let end = 0;
+  let editPoint = null;
   
   const readRange = () => {
     const { start: blockStart, end: blockEnd } = rangeOf(el, 'block');
@@ -27465,11 +27486,13 @@ function wireSourceEditable(el) {
     }
   };
   
-  el.__startSourceEdit = () => {
+  el.__startSourceEdit = (event) => {
     if (el.dataset.editingSource === 'true' || (currentDocumentFormat === 'epub' && !hasRangeOf(el, 'block'))) return;
     readRange();
-    
     const aboveAnchor = anchorAboveElement(el);
+    const renderedRect = el.getBoundingClientRect();
+    const pressed = event && Number.isFinite(event.clientY) && Number.isFinite(event.clientX) && renderedRect.height > 0;
+    const fraction = pressed ? Math.max(0, Math.min(1, (event.clientY - renderedRect.top) / renderedRect.height)) : 0;
     const src = sliceSourceBytes(start, end);
     el.__editBaseline = src;
     el.__renderedHtml = el.innerHTML;
@@ -27481,9 +27504,37 @@ function wireSourceEditable(el) {
     
     beginTypingRun(el);
     el.focus({ preventScroll: true });
-    if (aboveAnchor) {
-      readerScrollAnchor = aboveAnchor;
-      restoreReaderScrollAnchor(aboveAnchor);
+    let anchor = aboveAnchor;
+    let offset = 0;
+    if (pressed) {
+      const firstLine = !/[\r\n]/.test(src.trimEnd()) || el.classList.contains('mermaid');
+      const landing = sourceEditPointAnchor(el, firstLine ? 0 : fraction, event.clientY);
+      if (landing) {
+        readerScrollAnchor = landing;
+        restoreReaderScrollAnchor(landing);
+        const rect = el.getBoundingClientRect();
+        const x = Math.max(rect.left + 1, Math.min(rect.right - 1, event.clientX));
+        const y = rect.top + (firstLine ? 0 : fraction * rect.height);
+        const hit = !firstLine && typeof document.caretRangeFromPoint === 'function' ? document.caretRangeFromPoint(x, y) : null;
+        if (hit && el.contains(hit.startContainer)) {
+          const before = document.createRange();
+          before.selectNodeContents(el);
+          before.setEnd(hit.startContainer, hit.startOffset);
+          offset = before.cloneContents().textContent.length;
+        }
+        const line = sourceEditTextRect(el, offset);
+        if (line && rect.height > 0) {
+          anchor = sourceEditPointAnchor(el, (line.top - rect.top) / rect.height, event.clientY);
+          editPoint = { fraction, offset };
+        }
+      }
+    }
+    placeCaretInBlock(el, offset);
+    if (anchor) {
+      readerScrollAnchor = anchor;
+      restoreReaderScrollAnchor(anchor);
+    } else if (pressed) {
+      readerScrollAnchor = null;
     }
   };
   
@@ -27515,16 +27566,19 @@ function wireSourceEditable(el) {
     if (currentDocumentFormat === 'xml' || currentDocumentFormat === 'epub') {
       leafToast('This one carries markup, so the file’s own text opens instead.');
     }
-    el.__startSourceEdit();
+    el.__startSourceEdit(event);
   }, { signal: unlockedLayerSignal() });
   el.addEventListener('blur', () => {
     if (el.dataset.editingSource !== 'true') return;
     const text = el.innerText;
+    const line = editPoint && sourceEditTextRect(el, Math.min(editPoint.offset, el.textContent.length));
+    const pointAnchor = text.trim() && line && sourceEditPointAnchor(el, editPoint.fraction, line.top);
+    editPoint = null;
     el.removeAttribute('contenteditable');
     el.classList.remove('leaf-editing-source');
     delete el.dataset.editingSource;
     
-    const aboveAnchor = anchorAboveElement(el);
+    const aboveAnchor = pointAnchor || anchorAboveElement(el);
     if (!blockTextNeedsWriting(el, text)) {
       
       el.innerHTML = el.__renderedHtml;
@@ -27544,8 +27598,8 @@ function wireSourceEditable(el) {
 }
 
 
-function startBlockSourceEdit(el) {
-  if (el && typeof el.__startSourceEdit === 'function') el.__startSourceEdit();
+function startBlockSourceEdit(el, event) {
+  if (el && typeof el.__startSourceEdit === 'function') el.__startSourceEdit(event);
 }
 
 
@@ -48062,7 +48116,7 @@ if (app) {
     event.preventDefault();
     const diagram = tool.closest('pre.mermaid');
     if (!diagram) return;
-    if (tool.dataset.mermaidTool === 'source') startBlockSourceEdit(diagram);
+    if (tool.dataset.mermaidTool === 'source') startBlockSourceEdit(diagram, event);
     else openMermaidBlockSheet(diagram);
   });
   
@@ -51758,6 +51812,11 @@ function restoreReaderScrollAnchor(anchor) {
   
   correctReaderScrollOrigin();
   const shellRect = app.getBoundingClientRect();
+  if (validReaderAnchorPoint(anchor?.point)) {
+    const rect = element.getBoundingClientRect();
+    setReaderScrollTop(app.scrollTop + rect.top - shellRect.top + anchor.point.fraction * rect.height - anchor.point.offsetY);
+    return;
+  }
   const heldRow = element.tagName === 'TABLE' && Number.isInteger(anchor?.row?.index) && Number.isFinite(anchor.row.offsetY) && element.rows ? element.rows[anchor.row.index] : null;
   if (heldRow) {
     setReaderScrollTop(app.scrollTop + heldRow.getBoundingClientRect().top - shellRect.top + anchor.row.offsetY);
@@ -51766,6 +51825,9 @@ function restoreReaderScrollAnchor(anchor) {
   const rect = element.getBoundingClientRect();
   const offsetY = Number.isFinite(anchor?.offsetY) ? anchor.offsetY : 0;
   setReaderScrollTop(app.scrollTop + rect.top - shellRect.top + offsetY);
+}
+function validReaderAnchorPoint(point) {
+  return Boolean(point && Number.isFinite(point.fraction) && point.fraction >= 0 && point.fraction <= 1 && Number.isFinite(point.offsetY));
 }
 
 let readerLayoutHoldsAnchor = false;
@@ -51797,7 +51859,7 @@ function scheduleReaderLayoutUpdate(holdAnchor = false) {
     
     restoreReaderScrollAnchor(readerScrollAnchor || captureReaderScrollAnchor());
     
-    if (!holding) {
+    if (!holding && !validReaderAnchorPoint(readerScrollAnchor?.point)) {
       readerScrollAnchor = captureReaderScrollAnchor() || readerScrollAnchor;
     }
     updateMinimapViewport();
