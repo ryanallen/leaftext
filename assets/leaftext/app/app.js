@@ -44874,7 +44874,8 @@ function consoleModelPrompt(entry, agent) {
     for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
       const line = text(top);
       if (CONSOLE_PROMPT_RULE.test(line)) break;
-      const mark = /^(\s*[❯›>])(?: |$)/.exec(line);
+      
+      const mark = /^(\s*[❯›>])(?:[ \u00a0]|$)/.exec(line);
       if (!mark) continue;
       const ruled = top > 0 && CONSOLE_PROMPT_RULE.test(text(top - 1));
       if (agent === 'codex' ? mark[1].trim() !== '›' || top === 0 || text(top - 1).trim() : !ruled) break;

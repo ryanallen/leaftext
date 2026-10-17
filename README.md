@@ -31,7 +31,7 @@ Free, on macOS and Windows.
 | If you want to… | Go to |
 | --- | --- |
 | See it beside Obsidian, Typora and Calibre | [How Leaftext compares](#how-leaftext-compares) |
-| Read the Arthurian books translated for Leaftext | [Read the Arthurian books](#read-the-arthurian-books) |
+| Read the Arthurian books translated in Leaftext | [Read the Arthurian books](#read-the-arthurian-books) |
 | See what it looks like | [Read your files](#read-your-files) |
 | Read a file without leaving the terminal | [Read it at your prompt too](#read-it-at-your-prompt-too) |
 | Open a Word, Excel or PowerPoint file | [Word, Excel and PowerPoint files](#word-excel-and-powerpoint-files) |
@@ -48,7 +48,7 @@ Free, on macOS and Windows.
 
 ## Read the Arthurian books
 
-Three books of the Arthur legend, newly translated for Leaftext from the Latin and the Old French, each with its original and the scans of the printed page a press away.
+Three books of the Arthur legend, newly translated in Leaftext from the Latin and the Old French, each with its original and the scans of the printed page a press away.
 
 **[*Merlin*](arthurian/merlin/merlin.md) · [*The History of the Britons*](arthurian/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](arthurian/annales-cambriae/annales-cambriae.md)**
 
