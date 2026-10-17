@@ -43347,11 +43347,6 @@ const CONSOLE_AGENT_QUIET_MS = 16;
 
 function consoleWritten(id, entry) {
   if (entry.modelPending) submitConsoleModel(id, entry);
-  const type = entry.terminal.buffer.active.type;
-  if (type !== entry.bufferType) {
-    entry.bufferType = type;
-    if (consoleFrontId === id) writeConsoleFade();
-  }
   holdConsoleMarkers(entry);
   renderConsolePin(entry);
   
@@ -43818,7 +43813,7 @@ function makeConsoleLayer(id) {
   layer.addEventListener('pointerdown', () => {
     if (id === besideConsoleId()) pressIntoColumn(besideColumn());
   }, true);
-  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
+  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -43904,7 +43899,6 @@ function makeConsoleLayer(id) {
       fitConsoleStatus(entry);
       refreshConsoleGrid(id, entry);
       if (consoleFrontId !== id) return;
-      writeConsoleFade();
       renderConsolePin(entry);
     });
     entry.observer.observe(layer);
@@ -43922,7 +43916,6 @@ function makeConsoleLayer(id) {
       terminal.focus();
       bindDocumentMinimap();
       scheduleMinimapPreviewUpdate();
-      writeConsoleFade();
     }
   }).catch(error => leafToast(error.message));
   return entry;
@@ -44088,18 +44081,6 @@ function consoleRowHeight(terminal) {
 }
 
 
-function writeConsoleFade() {
-  const fade = leftColumn?.fade;
-  if (!fade) return;
-  const entry = frontConsoleEntry();
-  if (entry?.terminal && !entry.layer.hidden && entry.terminal.buffer.active.type === 'alternate') {
-    fade.style.setProperty('--reader-edge-fade-top', `calc(var(--console-inset-top) + ${consoleRowHeight(entry.terminal)}px)`);
-  } else {
-    fade.style.removeProperty('--reader-edge-fade-top');
-  }
-}
-
-
 function consolePasteChord(event) {
   if (event.key?.toLowerCase() !== 'v' && !(event.altKey && event.code === 'KeyV')) return false;
   if (event.shiftKey) return false;
@@ -44191,6 +44172,9 @@ function placeConsoleLayers(state = currentState) {
     if (!column || !column.reader) continue;
     const covered = column === keyedColumn ? consoleFrontId !== null : column === besideCard && besideCovered;
     column.reader.classList.toggle('is-under-console', covered);
+    
+    const underConsole = column === keyedColumn ? consoleFrontId !== null : column === besideCard && !!besideTab && besideTab.kind === 'console';
+    if (column.fade) column.fade.classList.toggle('is-under-console', underConsole);
   }
 }
 
@@ -44218,10 +44202,7 @@ window.leafConsoleFront = id => {
   if (changed && consoleAgentRows.length) drawConsoleAgents();
   for (const [other, entry] of consoleLayers) entry.layer.hidden = other !== id;
   placeConsoleLayers();
-  if (id === null) {
-    writeConsoleFade();
-    return;
-  }
+  if (id === null) return;
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
   entry.layer.hidden = false;
   placeConsoleLayers();
@@ -44239,7 +44220,6 @@ window.leafConsoleFront = id => {
     scheduleMinimapPreviewUpdate();
     renderConsolePin(entry);
   }
-  writeConsoleFade();
 };
 
 
@@ -44356,7 +44336,7 @@ function showConsoleModelMenu(button, items) {
 }
 
 function startConsoleCommand(id, entry, button, record, command) {
-  const allowed = command === '/model' || (record?.agent === 'claude' && /^\/model (fable|opus|sonnet|haiku)$/.test(command)) || (['claude', 'antigravity'].includes(record?.agent) && command === '/effort');
+  const allowed = command === '/model' || (record?.agent === 'claude' && /^\/model (fable|opus|sonnet|haiku)$/.test(command)) || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command));
   if (!allowed) return;
   const note = consoleModelRefusal(id, entry, record);
   if (note) { showConsoleModelMenu(button, [{ note }]); return; }
@@ -44373,14 +44353,17 @@ function startConsoleCommand(id, entry, button, record, command) {
   entry.terminal.focus();
 }
 
-function openConsoleModel(id, entry, button, effort = false) {
+function openConsoleModel(id, entry, button, effort = false, context = false) {
   entry.modelMenuCard = keyedColumn;
   const record = entry.statusRecord;
   const refusal = consoleModelRefusal(id, entry, record);
   const choose = command => startConsoleCommand(id, entry, button, record, command);
   const aliases = ['Fable', 'Opus', 'Sonnet', 'Haiku'];
   const family = /^(?:claude[- ]+)?(fable|opus|sonnet|haiku)(?:[- ]\d+(?:[-.]\d+)*)?$/i.exec(record?.model || '')?.[1].toLowerCase();
-  const items = refusal ? [{ note: refusal }] : [
+  const items = refusal ? [{ note: refusal }] : context ? [
+    { label: 'Compact the conversation', run: () => choose('/compact') },
+    { label: 'Start a new conversation', run: () => choose(record.agent === 'codex' ? '/new' : '/clear') },
+  ] : [
     ...(!effort && record.agent === 'claude' ? aliases.map(alias => ({ label: alias, selected: family === alias.toLowerCase(), run: () => choose(`/model ${alias.toLowerCase()}`) })) : []),
     { label: `Choose in ${record.agent === 'claude' ? 'Claude Code' : record.agent === 'codex' ? 'Codex' : effort ? 'Google Antigravity' : 'Antigravity'}…`, run: () => choose(effort && record.agent !== 'codex' ? '/effort' : '/model') },
   ];
@@ -44448,7 +44431,8 @@ function drawConsoleStatus(id, entry) {
   strip.replaceChildren(...fields.map(field => {
     const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(entry.statusRecord.agent);
     const effort = field.field === 'effort';
-    const item = document.createElement(model || effort ? 'button' : 'span');
+    const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(entry.statusRecord.agent);
+    const item = document.createElement(model || effort || context ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
     if (field.agent && field.agent !== 'gemini') {
@@ -44467,13 +44451,13 @@ function drawConsoleStatus(id, entry) {
       item.appendChild(meter);
     }
     item.appendChild(document.createTextNode(field.text));
-    if (model || effort) {
+    if (model || effort || context) {
       item.type = 'button';
       item.classList.add('console-status-model');
       if (effort) item.classList.add('console-status-effort');
       item.setAttribute('aria-haspopup', 'menu');
       item.setAttribute('aria-expanded', 'false');
-      item.setAttribute('aria-label', effort ? 'Change reasoning effort' : `Change model: ${field.text}`);
+      item.setAttribute('aria-label', context ? `Free up context: ${field.text}` : effort ? 'Change reasoning effort' : `Change model: ${field.text}`);
       const chevron = document.createElement('span');
       chevron.className = 'lt-icon lt-icon-chevron-down';
       chevron.setAttribute('aria-hidden', 'true');
@@ -44482,13 +44466,13 @@ function drawConsoleStatus(id, entry) {
         if (event.button !== 0) return;
         event.preventDefault();
         event.stopPropagation();
-        openConsoleModel(id, entry, item, effort);
+        openConsoleModel(id, entry, item, effort, context);
       });
       item.addEventListener('keydown', event => {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
         event.stopPropagation();
-        openConsoleModel(id, entry, item, effort);
+        openConsoleModel(id, entry, item, effort, context);
       });
     }
     return item;
@@ -44875,7 +44859,7 @@ function consoleModelPrompt(entry, agent) {
       const line = text(top);
       if (CONSOLE_PROMPT_RULE.test(line)) break;
       
-      const mark = /^(\s*[❯›>])(?:[ \u00a0]|$)/.exec(line);
+      const mark = /^(\s*[❯›>])(?:\s|$)/.exec(line);
       if (!mark) continue;
       const ruled = top > 0 && CONSOLE_PROMPT_RULE.test(text(top - 1));
       if (agent === 'codex' ? mark[1].trim() !== '›' || top === 0 || text(top - 1).trim() : !ruled) break;

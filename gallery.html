@@ -8442,6 +8442,10 @@ body.library-resizing button {
 .console-status[hidden], .console-status-field[hidden] { display: none; }
 .console-status-field { display: inline-flex; align-items: center; gap: var(--lt-space-6); flex: none; }
 .console-status-agent { font-weight: var(--lt-weight-600); color: var(--lt-markdown-foreground); }
+.console-status-model { appearance: none; border: none; border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); background: transparent; color: inherit; font: inherit; cursor: pointer; }
+@media (hover: hover) { .console-status-model:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-status-model[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
+.console-status-model:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }
 .console-status-fill { display: block; height: 100%; background: var(--lt-primary-ink); }
 .reader-column.is-under-console, .console-front .reader-toolbar { visibility: hidden; }
@@ -8485,7 +8489,7 @@ body.library-resizing button {
 .console-agent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .console-agent-state { flex: none; color: var(--lt-muted-foreground); font-size: var(--lt-text-11); }
 .console-agent-needs { color: var(--lt-primary-ink); font-weight: var(--lt-weight-600); }
-/* The pinned command: one row over the terminal's top edge, at layer 5 so it paints above the edge fade (4), as the source view's held headings do. Its height, width and face are the terminal's, written by console-sticky.js. */
+/* The pinned command: one row over the terminal's top edge, at layer 5 so it paints above the terminal. Its height, width and face are the terminal's, written by console-sticky.js. */
 .console-pin { position: absolute; top: var(--console-inset-top); left: var(--lt-space-8); z-index: 5; height: 0; }
 .console-pin[hidden] { display: none; }
 /* Isolated so the wash layer below stops at the row rather than dropping behind the console. */
@@ -8493,8 +8497,6 @@ body.library-resizing button {
 /* The hover wash goes over the console color rather than in place of it, so the terminal never shows through the command. */
 .console-pin-row::before { content: ""; position: absolute; inset: 0; z-index: var(--lt-z-below); pointer-events: none; background: transparent; transition: background-color var(--lt-duration-120) var(--lt-ease); }
 @media (hover: hover) { .console-pin-row:hover::before { background: var(--lt-wash-hover); } }
-/* The dissolve for what scrolls under it: the source view's dot screen in the console's own color, at falling alpha. */
-.console-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 18px; --lt-grain-dot: var(--lt-markdown-background); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-repeat: repeat; background-attachment: fixed; -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); pointer-events: none; }
 /* The floating bar: the views, then the edits, parked over the foot of the page. Placed by the grid rather than inside the scroller, so it holds still while the document moves under it, and centered because it belongs to the page rather than to either edge of the window. */
 /* How much room the page leaves at its foot for the bar: the bar's own height plus the gap it floats above the edge, and nothing at all when it is not there. */
 :root {
@@ -9122,8 +9124,8 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
       transparent
     );
   background-size: 100% var(--reader-edge-fade-depth), 100% var(--reader-edge-fade-depth);
-  /* The top wash starts at the bar's edge for the same reason the top band does; the bottom one is anchored to the card's edge. A console holding its own first row moves both halves under it. */
-  background-position: 0 var(--reader-edge-fade-top, var(--app-bar-height)), 0 100%;
+  /* The top wash starts at the bar's edge for the same reason the top band does; the bottom one is anchored to the card's edge. */
+  background-position: 0 var(--app-bar-height), 0 100%;
   background-repeat: no-repeat;
   /* Over the document (the code view's textarea layer sits at 2), under the loading wash (6), the library sheet (5) and the app bar (10). */
   z-index: 4;
@@ -9144,6 +9146,10 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 
    On the card's own fade rather than on the root: both views open in one card, and the card beside goes on drawing a page. Keyed on the window, a pair faded that page to the editor's color and stopped it a whole editor minimap short of its own edge. The page marks the fade of the card the view is in — see writeViewFades. */
 .reader-edge-fade.is-under-map {
+  display: none;
+}
+/* A console's edges hold what its program put there — a launch banner, the line being typed — so the fade stays off a card a console stands in. */
+.reader-edge-fade.is-under-console {
   display: none;
 }
 .reader-edge-fade.is-code-view {
@@ -9172,7 +9178,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 /* Hung off the bar's bottom edge, not the cell's top: the cell's first 40px are behind the bar, where a band would be invisible. Same hold and same span as the wash beneath, which is what keeps the two from parting and drawing a bright line where they do. */
 .reader-edge-fade::before {
-  top: var(--reader-edge-fade-top, var(--app-bar-height));
+  top: var(--app-bar-height);
   -webkit-mask-image: linear-gradient(
     to bottom,
     var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
@@ -20497,12 +20503,12 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="stage"><div class="library-foot" style="position:relative;height:66px;width:240px"><div class="library-foot-rail"><button type="button" class="icon-button library-foot-button" aria-label="Themes"><span class="lt-icon lt-icon-theme"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Scheduled tasks"><span class="lt-icon lt-icon-check-circle"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Favorites"><span class="lt-icon lt-icon-favorite-on"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Recent"><span class="lt-icon lt-icon-recent"></span></button><button type="button" class="icon-button library-foot-button" aria-label="Search"><span class="lt-icon lt-icon-search"></span></button></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, held off the left frame by --reader-gutter while the library is shut as the page is, and the terminal's own scroll bar held down while the minimap is shown; while a full-screen program is in front it sets --reader-edge-fade-top on the left column's fade, so the top fade starts one row below that inset and the program's held first row reads at full strength</span></header>
+<header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, held off the left frame by --reader-gutter while the library is shut as the page is, and the terminal's own scroll bar held down while the minimap is shown; while it stands in a card it marks that card's edge fade is-under-console, which takes the fade off, so the text a program puts at the console's top and bottom edges reads at full strength</span></header>
 <div class="stage"><div class="console-layer"><div class="console-terminal"></div></div></div>
 </section>
 <section class="part">
-<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console.js, from the record the host hands it for the agent session in that console: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's mark and name (console-status-agent), its model, the context used with a small meter (console-status-meter, console-status-fill), each limit with its meter and reset, the cost and the folder, a field the session did not report left out; where the row would run past its width the folder goes first, then the cost, then the limits; hidden while the record is empty</span></header>
-<div class="stage"><div class="console-status"><span class="console-status-field console-status-agent" data-field="agent"><span class="lt-icon lt-icon-agent-codex" aria-hidden="true"></span>Codex</span><span class="console-status-field" data-field="model">gpt-6-sol</span><span class="console-status-field" data-field="context"><span class="console-status-meter"><span class="console-status-fill" style="width:14%"></span></span>Context 36k of 258k</span><span class="console-status-field" data-field="limits"><span class="console-status-meter"><span class="console-status-fill" style="width:21%"></span></span>Weekly 21% used · resets in 4d 2h</span><span class="console-status-field" data-field="folder">app</span></div></div>
+<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console.js, from the record the host hands it for the agent session in that console: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's mark and name (console-status-agent), its reported model (console-status-model, a menu button for Claude Code, Codex and Antigravity), a neutral Effort menu button (console-status-effort) for those same agents, opening their own effort choices, the context used with a small meter (console-status-meter, console-status-fill), a menu button for Claude Code, Codex and Antigravity offering Compact the conversation and Start a new conversation, each limit with its meter and reset, the cost and the folder, a field the session did not report left out; where the row would run past its width the folder goes first, then the cost, then the limits and finally the effort control; hidden while the record is empty</span></header>
+<div class="stage"><div class="console-status"><span class="console-status-field console-status-agent" data-field="agent"><span class="lt-icon lt-icon-agent-codex" aria-hidden="true"></span>Codex</span><button type="button" class="console-status-field console-status-model" data-field="model" aria-label="Change model: gpt-6-sol" aria-haspopup="menu" aria-expanded="false">gpt-6-sol<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button><button type="button" class="console-status-field console-status-model console-status-effort" data-field="effort" aria-label="Change reasoning effort" aria-haspopup="menu" aria-expanded="false">Effort…<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button><button type="button" class="console-status-field console-status-model" data-field="context" aria-label="Free up context: Context 36k of 258k" aria-haspopup="menu" aria-expanded="false"><span class="console-status-meter"><span class="console-status-fill" style="width:14%"></span></span>Context 36k of 258k<span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></button><span class="console-status-field" data-field="limits"><span class="console-status-meter"><span class="console-status-fill" style="width:21%"></span></span>Weekly 21% used · resets in 4d 2h</span><span class="console-status-field" data-field="folder">app</span></div></div>
 </section>
 <section class="part">
 <header><h3>Console map rail</h3><code class="built">.console-minimap</code><span class="built">minimap.js</span></header>

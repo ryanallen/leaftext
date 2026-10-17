@@ -18,7 +18,17 @@ With the plugin installed, Codex and Claude consoles use the conversation title 
 
 ### The agent's status under its console
 
-With the plugin installed, a row under the console shows what the agent's own session says about itself, taken from the record the agent writes as it works. Codex shows its model, the context it has used of its window, and each limit with when it resets. Claude Code, Antigravity and Gemini CLI show their model and the tokens they have used. A figure the session never wrote down is left out rather than guessed, an agent without the plugin shows no row at all, and on a narrow console the folder goes first, then the cost, then the limits.
+With the plugin installed, a row under the console shows what the agent's own session says about itself, taken from the record the agent writes as it works. Codex shows its model, the context it has used of its window, and each limit with when it resets. Claude Code, Antigravity and Gemini CLI show their model and the tokens they have used. A figure the session never wrote down is left out rather than guessed, an agent without the plugin shows no row at all, and on a narrow console the folder goes first, then the cost, then the limits and finally the effort button.
+
+Press the reported model in a Claude Code, Codex or Antigravity console to change it. Claude Code offers **Fable**, **Opus**, **Sonnet** and **Haiku** as quick choices, plus **Choose in Claude Code…** for its full picker. Codex and Antigravity open their own pickers, where the agent supplies the models your account can use. A quick choice uses the agent's alias, so your provider or organization can refuse it. The label keeps the last reported model until the agent reports again, which may take another ordinary answer.
+
+Press **Effort…** beside the model to open the agent's reasoning choices. **Choose in Claude Code…** and **Choose in Google Antigravity…** open their effort pickers. **Choose in Codex…** opens its model picker; confirm the current model to reach its reasoning levels. The agent shows which levels your current model supports and which is selected, and handles saving or canceling the choice. Leaftext keeps its button labeled **Effort…** because the status report does not include the active level. If the button has yielded on a narrow console, the model's full picker also offers effort choices.
+
+![The Effort button opening Codex in a Leaftext console, with a sample status record](../../imgs/console-effort-v1.png)
+
+Press the context figure in a Claude Code, Codex or Antigravity console for **Compact the conversation** or **Start a new conversation**. The new conversation keeps the old one on disk for the agent's own resume. Claude Code can compact from its token figure even without a reported window.
+
+These menus wait for the agent to finish and for its prompt to be empty. Send or clear an unfinished message before choosing a model, effort or conversation command. Leaftext types the command, waits to see it in the prompt, then presses Enter separately. Typing, switching consoles or closing one cancels that Enter. If the command has not appeared within two seconds, Leaftext leaves it for you to submit. It never clears your message. Consoles and their input belong to the installed app; the browser cannot send these commands.
 
 Claude Code hands the context it has used, both limits and the session's cost only to a status line you set yourself. To show them in the row, add this to your Claude Code `settings.json`:
 

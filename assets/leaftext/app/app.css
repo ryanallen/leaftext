@@ -8480,8 +8480,6 @@ body.library-resizing button {
 .console-pin-row::before { content: ""; position: absolute; inset: 0; z-index: var(--lt-z-below); pointer-events: none; background: transparent; transition: background-color var(--lt-duration-120) var(--lt-ease); }
 @media (hover: hover) { .console-pin-row:hover::before { background: var(--lt-wash-hover); } }
 
-.console-pin::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 18px; --lt-grain-dot: var(--lt-markdown-background); background-image: radial-gradient(circle, var(--lt-grain-dot) 0 var(--lt-grain-radius), transparent var(--lt-grain-edge)); background-size: var(--lt-grain-tile) var(--lt-grain-tile); background-repeat: repeat; background-attachment: fixed; -webkit-mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); mask-image: linear-gradient(to bottom, var(--lt-mask-opaque) 0 2px, transparent); pointer-events: none; }
-
 
 :root {
   --reader-toolbar-space: 0px;
@@ -9105,7 +9103,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
     );
   background-size: 100% var(--reader-edge-fade-depth), 100% var(--reader-edge-fade-depth);
   
-  background-position: 0 var(--reader-edge-fade-top, var(--app-bar-height)), 0 100%;
+  background-position: 0 var(--app-bar-height), 0 100%;
   background-repeat: no-repeat;
   
   z-index: 4;
@@ -9124,6 +9122,10 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 
 .reader-edge-fade.is-under-map {
+  display: none;
+}
+
+.reader-edge-fade.is-under-console {
   display: none;
 }
 .reader-edge-fade.is-code-view {
@@ -9148,7 +9150,7 @@ body.has-reader-toolbar:not(.is-embedded) :is(.reader-toolbar, .reader-graph-sta
 }
 
 .reader-edge-fade::before {
-  top: var(--reader-edge-fade-top, var(--app-bar-height));
+  top: var(--app-bar-height);
   -webkit-mask-image: linear-gradient(
     to bottom,
     var(--lt-mask-opaque) 0 var(--reader-edge-fade-hold),
