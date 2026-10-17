@@ -24855,10 +24855,6 @@ function bindTableCheckboxes() {
 }
 
 
-
-
-
-
 function bindTableCheckboxesIn(table) {
   const { start, end } = rangeOf(table, 'block');
   if (!Number.isFinite(start) || !Number.isFinite(end)) return;
@@ -24868,9 +24864,9 @@ function bindTableCheckboxesIn(table) {
     box.addEventListener('task-set', () => drawTaskDone(box));
     box.addEventListener('change', () => {
       drawTaskDone(box);
-      
-      const whole = tableWysiwygSafe(table) ? tableDomToMarkdown(table) : sliceSourceBytes(start, end);
-      sendCheckboxBlockEdit(table, start, end, whole, tableCellPosition(table, cell), box);
+      const position = tableCellPosition(table, cell);
+      const whole = position ? null : tableWysiwygSafe(table) ? tableDomToMarkdown(table) : sliceSourceBytes(start, end);
+      sendCheckboxBlockEdit(table, start, end, whole, position, box);
     });
   });
 }
@@ -26145,6 +26141,7 @@ function releaseEditCommand(message, after) {
 
 
 function dropKeptWrites() {
+  for (const pending of tableCheckboxPending.values()) if (pending.reader === app) pending.stale = true;
   const dropped = keptCommits.filter((kept) => kept.message);
   if (!dropped.length) return;
   keptCommits = keptCommits.filter((kept) => !kept.message);
@@ -27244,19 +27241,56 @@ function commitBlockLeaving(el, start, end, text) {
 }
 
 
+const tableCheckboxPending = new Map();
 
+window.leafTableCheckboxFallback = (token) => tableCheckboxPending.get(token)?.fallback();
+
+function sendTableCheckboxFallback(token) {
+  const pending = tableCheckboxPending.get(token);
+  if (!pending || pending.sent) return;
+  const { el, box, start, end, path, document: drawn, generation } = pending;
+  const range = rangeOf(el, 'block');
+  if (pending.stale || (codeViewActive && !renderIsForTheCardBeside()) || !el.isConnected || activeDocumentPath() !== path || currentState?.document !== drawn ||
+      el.__checkboxGeneration !== generation || range.start !== start || range.end !== end) {
+    window.leafEditAnswered(token, false, '');
+    if (activeDocumentPath() === path) send({ command: 'refreshDocument', keepPlace: true });
+    return;
+  }
+  pending.sent = true;
+  const text = tableWysiwygSafe(el) ? tableDomToMarkdown(el) : sliceSourceBytes(start, end);
+  send({ command: 'editBlock', start, end, text, autosave: true, cell: pending.cell, token, path, member: pending.member });
+}
 
 function sendCheckboxBlockEdit(el, start, end, text, cell, box) {
   const drawn = box.checked;
-  const token = leafWaitForEdit((held, why) => {
-    if (!held) {
+  const token = leafWaitForEdit(inThisColumn((held, why) => {
+    const pending = tableCheckboxPending.get(token);
+    if (pending) {
+      window.clearTimeout(pending.timer);
+      tableCheckboxPending.delete(token);
+    }
+    if (!held && (!pending || box.__checkboxToken === token)) {
       box.checked = !drawn;
       box.dispatchEvent(new Event('task-set'));
     }
     if (why) leafToast(why, 'error');
-  });
-  send({ command: 'editBlock', start, end, text, autosave: true, cell, token });
-  setEditBaseline(el);
+  }));
+  if (text == null && cell) {
+    const path = activeDocumentPath();
+    const member = heldMember();
+    const generation = (el.__checkboxGeneration || 0) + 1;
+    el.__checkboxGeneration = generation;
+    box.__checkboxToken = token;
+    const pending = { el, box, start, end, cell, path, member, generation, reader: app, document: currentState?.document, sent: false, fallback: inThisColumn(() => sendTableCheckboxFallback(token)) };
+    tableCheckboxPending.set(token, pending);
+    pending.timer = columnTimer(() => {
+      if (!tableCheckboxPending.has(token)) return;
+      window.leafEditAnswered(token, false, '');
+      if (activeDocumentPath() === path) send({ command: 'refreshDocument', keepPlace: true });
+    }, 10000);
+    send({ command: 'editBlock', start, end, text: '', autosave: true, cell, token, path, member, deferTableFallback: true });
+  } else send({ command: 'editBlock', start, end, text, autosave: true, cell, token });
+  if (el.__editingActive) setEditBaseline(el);
 }
 
 
@@ -43772,12 +43806,16 @@ function makeConsoleLayer(id) {
   const host = document.createElement('div');
   host.className = 'console-terminal';
   layer.appendChild(host);
+  const status = document.createElement('div');
+  status.className = 'console-status';
+  status.hidden = true;
+  layer.appendChild(status);
   consoleShell.appendChild(layer);
   
   layer.addEventListener('pointerdown', () => {
     if (id === besideConsoleId()) pressIntoColumn(besideColumn());
   }, true);
-  const entry = { layer, host, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
+  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, bufferType: 'normal', markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -43860,6 +43898,7 @@ function makeConsoleLayer(id) {
     window.addEventListener('resize', entry.scaleChange);
     entry.observer = new ResizeObserver(() => {
       if (layer.hidden) return;
+      fitConsoleStatus(entry);
       refreshConsoleGrid(id, entry);
       if (consoleFrontId !== id) return;
       writeConsoleFade();
@@ -44276,6 +44315,103 @@ window.leafConsoleReplay = (id, encoded) => {
   });
 };
 
+function consoleStatusCount(count) {
+  return count >= 1000 ? `${Math.round(count / 1000)}k` : String(Math.round(count));
+}
+
+function consoleStatusWait(resetsAt) {
+  const minutes = Math.max(0, Math.round((resetsAt * 1000 - Date.now()) / 60000));
+  const days = Math.floor(minutes / 1440);
+  const hours = Math.floor((minutes % 1440) / 60);
+  if (days) return `${days}d ${hours}h`;
+  return hours ? `${hours}h ${minutes % 60}m` : `${minutes}m`;
+}
+
+function consoleStatusLimitName(minutes) {
+  if (minutes === 10080) return 'Weekly';
+  if (!minutes) return 'Limit';
+  return minutes % 60 === 0 ? `${minutes / 60}-hour` : `${minutes}-minute`;
+}
+
+
+function consoleStatusFields(record) {
+  const fields = [];
+  const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', gemini: 'Gemini CLI' }[record.agent];
+  if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
+  if (record.model) fields.push({ field: 'model', text: record.model });
+  const size = record.contextWindow;
+  const used = record.tokens ?? (record.contextPercent != null && size ? record.contextPercent / 100 * size : null);
+  if (used != null && size) fields.push({ field: 'context', text: `Context ${consoleStatusCount(used)} of ${consoleStatusCount(size)}`, meter: used / size * 100 });
+  else if (record.contextPercent != null) fields.push({ field: 'context', text: `Context ${Math.round(record.contextPercent)}% used`, meter: record.contextPercent });
+  else if (used != null) fields.push({ field: 'context', text: `${consoleStatusCount(used)} tokens` });
+  for (const limit of record.limits || []) {
+    if (limit.resetsAt && limit.resetsAt * 1000 <= Date.now()) continue;
+    const reset = limit.resetsAt ? ` · resets in ${consoleStatusWait(limit.resetsAt)}` : '';
+    fields.push({ field: 'limits', text: `${consoleStatusLimitName(limit.windowMinutes)} ${Math.round(limit.usedPercent)}% used${reset}`, meter: limit.usedPercent });
+  }
+  if (record.cost != null) fields.push({ field: 'cost', text: `$${record.cost.toFixed(2)}` });
+  if (record.folder) fields.push({ field: 'folder', text: record.folder });
+  return fields;
+}
+
+function drawConsoleStatus(id, entry) {
+  const strip = entry.status;
+  const fields = entry.statusRecord ? consoleStatusFields(entry.statusRecord) : [];
+  strip.replaceChildren(...fields.map(field => {
+    const item = document.createElement('span');
+    item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
+    item.dataset.field = field.field;
+    if (field.agent && field.agent !== 'gemini') {
+      const icon = document.createElement('span');
+      icon.className = `lt-icon lt-icon-agent-${field.agent}`;
+      icon.setAttribute('aria-hidden', 'true');
+      item.appendChild(icon);
+    }
+    if (field.meter != null) {
+      const meter = document.createElement('span');
+      meter.className = 'console-status-meter';
+      const fill = document.createElement('span');
+      fill.className = 'console-status-fill';
+      fill.style.width = `${Math.max(0, Math.min(100, field.meter))}%`;
+      meter.appendChild(fill);
+      item.appendChild(meter);
+    }
+    item.appendChild(document.createTextNode(field.text));
+    return item;
+  }));
+  const shown = fields.length > 0;
+  if (strip.hidden === shown) {
+    strip.hidden = !shown;
+    entry.host.classList.toggle('is-above-status', shown);
+    if (entry.terminal && !entry.layer.hidden) refreshConsoleGrid(id, entry);
+  }
+  fitConsoleStatus(entry);
+  
+  if (entry.statusTimer) clearTimeout(entry.statusTimer);
+  entry.statusTimer = 0;
+  const resets = (entry.statusRecord?.limits || []).map(limit => limit.resetsAt * 1000 - Date.now()).filter(wait => wait > 0);
+  if (resets.length) entry.statusTimer = setTimeout(() => drawConsoleStatus(id, entry), Math.min(...resets, 2 ** 31 - 1));
+}
+
+
+function fitConsoleStatus(entry) {
+  const strip = entry.status;
+  if (!strip || strip.hidden) return;
+  for (const item of strip.children) item.hidden = false;
+  for (const field of ['folder', 'cost', 'limits']) {
+    if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
+    for (const item of strip.querySelectorAll(`[data-field="${field}"]`)) item.hidden = true;
+  }
+}
+
+
+window.leafConsoleStatus = (id, record) => {
+  const entry = consoleLayers.get(id) || (record ? makeConsoleLayer(id) : null);
+  if (!entry) return;
+  entry.statusRecord = record && typeof record === 'object' ? record : null;
+  drawConsoleStatus(id, entry);
+};
+
 
 window.leafConsoleLines = (id, count) => {
   const entry = consoleLayers.get(id);
@@ -44299,6 +44435,7 @@ window.leafConsolePrune = tabs => {
     if (entry.scrollFrame) cancelAnimationFrame(entry.scrollFrame);
     if (entry.quietTimer) clearTimeout(entry.quietTimer);
     if (entry.agentTimer) clearTimeout(entry.agentTimer);
+    if (entry.statusTimer) clearTimeout(entry.statusTimer);
     if (entry.observer) entry.observer.disconnect();
     if (entry.scaleChange) window.removeEventListener('resize', entry.scaleChange);
     teardownConsolePin(entry);

@@ -192,7 +192,7 @@ export const COMMANDS = {
   tableModel: [ANSWERED], // Relations resolve only among the pages this site serves, at most 64 of them for one table.
   tableRows: [REFUSED, 'listing every row would fetch every page this site serves on the first keystroke'],
   toggleTask: [ANSWERED],
-  editBlock: [ANSWERED],
+  editBlock: [ANSWERED], // A table checkbox may request fallback text before its terminal answer.
   resendDocumentSource: [REFUSED, 'This host always sends the whole document source.'],
   editBlocks: [ANSWERED],
   setField: [ANSWERED],
@@ -952,6 +952,7 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
   function applyEdit(edit) {
     if (!openBuffer()) return null;
     const state = core.bufferEdit(buffer, edit);
+    if (state?.needsTableFallback) return state;
     if (state) delivery(() => {
       if (state.refused) run(state.refused);
       if (state.written) run(state.written);
@@ -1212,17 +1213,24 @@ export async function startLeaftext({ documents, name = '', read, loadRenderer, 
     // The page asks for this where a paragraph drawn alone could not be placed; the document it holds is drawn again where the reader is.
     refreshDocument: () => { if (held?.path === open) drawDocument(open, held.bytes, { keepPlace: true }); },
     editBlock: (command) => {
-      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held, seq: command.seq, live: !!command.live, autosave: !!command.autosave, kind: command.kind, member: command.member };
+      const edit = { edit: 'block', start: command.start, end: command.end, text: command.text, undo: !command.autosave && !command.continuing, cell: command.cell, paragraph: !!command.paragraph, held: !!command.held, seq: command.seq, live: !!command.live, autosave: !!command.autosave, kind: command.kind, member: command.member, deferTableFallback: !!command.deferTableFallback, continuing: !!command.continuing, token: command.token };
+      let refused = false;
       if (command.live) {
         if (openBuffer()) {
           const state = core.bufferEdit(buffer, edit);
+          refused = !!state?.refused;
           if (state?.refused) run(state.refused);
           if (state) run(`window.leafBlocksResynced(${JSON.stringify(state)});`);
         }
       } else {
-        applyEdit(edit);
+        const state = applyEdit(edit);
+        if (state?.needsTableFallback) {
+          run(`window.leafTableCheckboxFallback(${JSON.stringify(command.token)});`);
+          return;
+        }
+        refused = !!state?.refused;
       }
-      answerEdit(command.token, !!buffer);
+      answerEdit(command.token, !!buffer && !refused);
     },
     editBlocks: (command) => applyEdit({ edit: 'blocks', blocks: command.blocks, continuing: !!command.continuing, standing: !!command.standing, member: command.member }),
     // A press into a book's other chapter: the buffer holds that chapter and the book is drawn again from it, which hands the page the chapter to type in. A quiet hold is the source view's, which opens next and draws nothing here.

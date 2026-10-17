@@ -388,6 +388,8 @@
 | Screenshot pasted into console | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Finished console marked | [✅][l-console-done] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents in one list | [✅][l-console-agents] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Agent context status | [✅][l-agent-status] | ? | ? | ? |
+| Agent limits and resets | [✅][l-agent-status] | ? | ? | ? |
 | Agents name their consoles | [✅][l-agent-name] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Console links open | [✅][l-console] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Command pinned at top | [✅][l-console-pin] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
@@ -506,3 +508,5 @@
 [c-seen]: ../05-compare.md#calibre
 [o-seen]: ../05-compare.md#obsidian
 [t-seen]: ../05-compare.md#typora
+
+[l-agent-status]: ../01-features/10-agents.md#the-agents-status-under-its-console

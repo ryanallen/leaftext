@@ -8418,6 +8418,14 @@ body.library-resizing button {
 
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
 .console-terminal { width: 100%; height: 100%; }
+
+.console-terminal.is-above-status { height: calc(100% - var(--lt-space-24)); }
+.console-status { display: flex; align-items: center; gap: var(--lt-space-16); height: var(--lt-space-24); overflow: hidden; white-space: nowrap; font-size: var(--lt-text-12); line-height: var(--lt-leading-1-2); color: var(--lt-muted-foreground); }
+.console-status[hidden], .console-status-field[hidden] { display: none; }
+.console-status-field { display: inline-flex; align-items: center; gap: var(--lt-space-6); flex: none; }
+.console-status-agent { font-weight: var(--lt-weight-600); color: var(--lt-markdown-foreground); }
+.console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }
+.console-status-fill { display: block; height: 100%; background: var(--lt-primary-ink); }
 .reader-column.is-under-console, .console-front .reader-toolbar { visibility: hidden; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
 

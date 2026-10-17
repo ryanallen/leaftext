@@ -16,6 +16,18 @@ Remote tool servers, such as a company's own, are set up in the agent's own sett
 
 With the plugin installed, Codex and Claude consoles use the conversation title the agent has saved, on both the tab and the **Agents** row. This works when the agent has turned its own terminal title off. The name appears once a hook can read it; until then, the console reads the first five words of the prompt without its skill, pasted-picture placeholder or path folders. The agent can explicitly name its console through `leaftext_name`, which takes priority over the automatic topic. Hover the tab or row to read the original prompt. Starting over with `/clear`, `/new` or `/reset`, switching conversations, or leaving the agent clears the previous name. Other agents keep their native terminal titles and prompt fallback.
 
+### The agent's status under its console
+
+With the plugin installed, a row under the console shows what the agent's own session says about itself, taken from the record the agent writes as it works. Codex shows its model, the context it has used of its window, and each limit with when it resets. Claude Code, Antigravity and Gemini CLI show their model and the tokens they have used. A figure the session never wrote down is left out rather than guessed, an agent without the plugin shows no row at all, and on a narrow console the folder goes first, then the cost, then the limits.
+
+Claude Code hands the context it has used, both limits and the session's cost only to a status line you set yourself. To show them in the row, add this to your Claude Code `settings.json`:
+
+```json
+"statusLine": { "type": "command", "command": "leaftext --harness status-line" }
+```
+
+Inside a Leaftext console it prints nothing, because the row shows the same figures; in any other terminal it prints them as one plain line.
+
 To watch a note change while the agent works on it, put the console beside the note: drag its tab onto the right half of the page, choose **Open beside** on the tab, or press `Ctrl+\` (`Cmd+\` on a Mac). See [two documents side by side](02-navigation.md#two-documents-side-by-side).
 
 The mouse wheel scrolls the agent's conversation the way it does in the agent's own terminal: a program that asks for the mouse is sent the wheel itself, one step a notch, so the prompt box keeps what you were typing.

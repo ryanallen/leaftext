@@ -8436,6 +8436,14 @@ body.library-resizing button {
 /* Two cards are two whole cards, the same as a page's. */
 .console-layer.is-split { border-top: var(--lt-stroke-1) solid var(--lt-border); border-radius: var(--reader-card-radius); }
 .console-terminal { width: 100%; height: 100%; }
+/* The agent's own status, one row at the foot of the layer; the terminal gives up that row's height. */
+.console-terminal.is-above-status { height: calc(100% - var(--lt-space-24)); }
+.console-status { display: flex; align-items: center; gap: var(--lt-space-16); height: var(--lt-space-24); overflow: hidden; white-space: nowrap; font-size: var(--lt-text-12); line-height: var(--lt-leading-1-2); color: var(--lt-muted-foreground); }
+.console-status[hidden], .console-status-field[hidden] { display: none; }
+.console-status-field { display: inline-flex; align-items: center; gap: var(--lt-space-6); flex: none; }
+.console-status-agent { font-weight: var(--lt-weight-600); color: var(--lt-markdown-foreground); }
+.console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }
+.console-status-fill { display: block; height: 100%; background: var(--lt-primary-ink); }
 .reader-column.is-under-console, .console-front .reader-toolbar { visibility: hidden; }
 .console-tab .tab-label { display: flex; align-items: center; gap: var(--lt-space-4); position: relative; }
 /* Its own box, because an ellipsis never draws on a bare run of text inside a flex label. */
@@ -19756,7 +19764,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><filter id="lt-shadow-halftone" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1 0 0 0 1" result="coverage"/><feComponentTransfer in="coverage" result="cut"><feFuncA type="linear" slope="4.5" intercept="-0.949"/></feComponentTransfer><feFlood style="flood-color:var(--lt-shadow-ink)" result="ink"/><feComposite in="ink" in2="cut" operator="in" result="inked"/><feComposite in="inked" in2="SourceGraphic" operator="in"/></filter></svg>
 <header class="top">
 <h1>Leaftext themes, drawn</h1>
-<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 200 values that do not change with the theme, all 113 icons, and all 178 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
+<p class="lead">Every one of the 21 themes, in light and dark: all 86 colors, the 200 values that do not change with the theme, all 113 icons, and all 179 parts of the interface — painted by the app's own stylesheet. Pick one.</p>
 <div class="pick" id="familyPick">
 <button type="button" data-family="amaranth" aria-pressed="false">Amaranth</button>
 <button type="button" data-family="arabica" aria-pressed="false">Arabica</button>
@@ -19788,7 +19796,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <button type="button" role="tab" data-panel="colors" aria-selected="true" aria-controls="colors">Colors <b>86</b></button>
 <button type="button" role="tab" data-panel="values" aria-selected="false" aria-controls="values">Values <b>200</b></button>
 <button type="button" role="tab" data-panel="icons" aria-selected="false" aria-controls="icons">Icons <b>113</b></button>
-<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>178</b></button>
+<button type="button" role="tab" data-panel="interface" aria-selected="false" aria-controls="interface">Interface <b>179</b></button>
 </div>
 </header>
 <section class="panel" id="colors" role="tabpanel">
@@ -20255,7 +20263,7 @@ body.leaf-paper .leaf-top-sheet-close {
 <div class="wall packs"><div class="glyph"><code>agent-antigravity</code></div><div class="glyph"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="feather"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="lucide"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="tabler"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="remix"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="phosphor"><span class="lt-icon lt-icon-agent-antigravity"></span></div><div class="glyph" data-leaf-pack="heroicons"><span class="lt-icon lt-icon-agent-antigravity"></span></div></div>
 </section>
 <section class="panel" id="interface" role="tabpanel" hidden>
-<p class="lead">178 parts, each drawn here exactly as the app draws it.</p>
+<p class="lead">179 parts, each drawn here exactly as the app draws it.</p>
 <section class="part">
 <header><h3>Marginalia border</h3><code class="built">.has-marginalia</code><span class="built">page-ornaments.js marks the reading layout when both side margins fit the painted art</span></header>
 <div class="stage"><div class="reader-layout has-marginalia" style="width:1000px;height:120px"><div class="document-body"><h1>Illuminated page</h1></div></div></div>
@@ -20491,6 +20499,10 @@ body.leaf-paper .leaf-top-sheet-close {
 <section class="part">
 <header><h3>Console surface</h3><code class="built">.console-layer</code><span class="built">console.js, with a 12px inset below the app bar named --console-inset-top, 8px at its other edges, held off the left frame by --reader-gutter while the library is shut as the page is, and the terminal's own scroll bar held down while the minimap is shown; while a full-screen program is in front it sets --reader-edge-fade-top on the left column's fade, so the top fade starts one row below that inset and the program's held first row reads at full strength</span></header>
 <div class="stage"><div class="console-layer"><div class="console-terminal"></div></div></div>
+</section>
+<section class="part">
+<header><h3>Console status</h3><code class="built">.console-status</code><span class="built">console.js, from the record the host hands it for the agent session in that console: one row at the foot of the console layer, the terminal (is-above-status) one row shorter above it; the agent's mark and name (console-status-agent), its model, the context used with a small meter (console-status-meter, console-status-fill), each limit with its meter and reset, the cost and the folder, a field the session did not report left out; where the row would run past its width the folder goes first, then the cost, then the limits; hidden while the record is empty</span></header>
+<div class="stage"><div class="console-status"><span class="console-status-field console-status-agent" data-field="agent"><span class="lt-icon lt-icon-agent-codex" aria-hidden="true"></span>Codex</span><span class="console-status-field" data-field="model">gpt-6-sol</span><span class="console-status-field" data-field="context"><span class="console-status-meter"><span class="console-status-fill" style="width:14%"></span></span>Context 36k of 258k</span><span class="console-status-field" data-field="limits"><span class="console-status-meter"><span class="console-status-fill" style="width:21%"></span></span>Weekly 21% used · resets in 4d 2h</span><span class="console-status-field" data-field="folder">app</span></div></div>
 </section>
 <section class="part">
 <header><h3>Console map rail</h3><code class="built">.console-minimap</code><span class="built">minimap.js</span></header>

@@ -8,7 +8,7 @@ Each of these apps is good at something. Obsidian is a notebook of linked Markdo
 
 **✅** the app does this, and the link in the cell is where it says so. **❌** it does not do this: it says it cannot, it only converts the file into something else first, or it is not the kind of app that would. A mark linking to [how the marks were checked](05-compare.md#how-the-marks-were-checked) was read off the app itself rather than off its pages. **?** neither its own pages nor the app settle it either way. A **bold** row also opens the chart on the front page.
 
-Sources read 16 October 2026, 8:29am. The apps themselves checked 23 September 2026, 10:14am.
+Sources read 16 October 2026, 10:38pm. The apps themselves checked 23 September 2026, 10:14am.
 
 1. [Files and formats](06-comparison-chart/01-files-and-formats.md)
 2. [Markdown and diagrams](06-comparison-chart/02-markdown-and-diagrams.md)
@@ -24,6 +24,8 @@ Sources read 16 October 2026, 8:29am. The apps themselves checked 23 September 2
 Obsidian's cross for books and Office files is its own list of the formats it opens, which names neither and points to community plugins for the rest. Typora's is its import, which converts those files into Markdown through Pandoc rather than opening them as themselves. Calibre's is its list of conversion inputs, which converts a Word file into an ebook rather than opening it.
 
 The missed-response rows remain unknown for the other readers: [Obsidian's support account](https://obsidian.md/help/resources), [Typora's log guide](https://support.typora.io/Get-Logs/) and [Calibre's debug commands](https://manual.calibre-ebook.com/generated/en/calibre-debug.html) describe diagnostics without establishing an independent response monitor or paired recovery records.
+
+The agent-status rows remain unknown for the other readers: [Obsidian's core plugin list](https://obsidian.md/help/Plugins/Core%2Bplugins), [Typora's support index](https://support.typora.io/) and [Calibre's viewer guide](https://manual.calibre-ebook.com/viewer.html) do not establish a console row carrying an external agent's model, context and limits.
 
 ## How the marks were checked
 
