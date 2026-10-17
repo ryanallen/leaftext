@@ -25,6 +25,7 @@
 | Exact byte splices | [✅][l-inline] | [✅][o-seen] | ? | [❌][c-seen] |
 | Untouched text untouched | [✅][l-inline] | [✅][o-seen] | ? | [❌][c-seen] |
 | Checkboxes save instantly | [✅][l-inline] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |
+| Table character checkboxes | [✅][l-inline] | ? | ? | ? |
 | Task date menu | [✅][l-inline] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Cell edits keep spacing | [✅][l-inline] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Alignment markers survive | [✅][l-inline] | [✅][o-seen] | [✅][t-seen] | [❌][c-seen] |

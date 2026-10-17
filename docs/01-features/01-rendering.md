@@ -393,7 +393,7 @@ A table with one column and at most one body row draws as a card. A header on it
 
 **A table with a few rows in it can become a relational table.** Point at a table with a header row and two or more body rows and its quiet bar appears above it: **Table**, **Cards**, **Board**, **List**, **Sort** and **Filter**. [Relational tables](08-relational-tables.md) explains the RDB view, relations, temporary layouts, filters and the optional schema comment. It leaves ordinary GFM tables as the file you own.
 
-A table cell that starts with a task-list marker — `[ ]` or `[x]` — renders it as a checkbox, so a table can carry a status column, and words after the marker sit beside the box and dim while it is ticked:
+A table cell that starts with a task-list marker — `[ ]` or `[x]` — renders it as a checkbox, so a table can carry a status column, and words after the marker sit beside the box and dim while it is ticked. A body cell holding only `☐` or `☑` also draws a checkbox and keeps that character spelling when [ticked and saved](07-editing.md#inline-editing-the-reading-view). Character boxes in headers, prose, code or cells with additional words stay text:
 
 | Step            | Done  |
 | --------------- | ----- |

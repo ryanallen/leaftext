@@ -12292,6 +12292,14 @@ function hideContextMenu() {
   contextMenuUnreadable = '';
   returnKeyboardToConsole();
 }
+function dismissContextMenuOnPointer(event) {
+  if (contextMenu.hidden || event.button !== 0 || (isMacPlatform && event.ctrlKey)) return;
+  if (contextMenu.contains(event.target) || contextMenuChildren.some((child) => child.menu.contains(event.target))) return;
+  
+  contextMenuConsoleId = null;
+  hideContextMenu();
+}
+window.addEventListener('pointerdown', dismissContextMenuOnPointer, true);
 
 function runTableContextAction(action, cell) {
   const table = cell && cell.closest ? cell.closest('table') : null;
@@ -25545,6 +25553,7 @@ function tableCellMarkdown(cell) {
   const box = cell.querySelector('input[type="checkbox"]');
   const text = tableCellWords(inlineDomToMarkdown(cell));
   if (!box) return text;
+  if (box.getAttribute('data-leaf-task-marker') === 'unicode') return box.checked ? '☑' : '☐';
   const marker = box.checked ? '[x]' : '[ ]';
   return text ? marker + ' ' + text : marker;
 }
@@ -41915,10 +41924,8 @@ function renderState(keepDetachedRender = false, landingAnchor = null) {
       if (freshBody) freshBody.style.setProperty('--reader-scroll-origin', previousScrollOrigin);
     }
     
-    if (arriving || localImagesNeedRefresh) {
-      localImageEpoch += 1;
-      localImagesNeedRefresh = false;
-    }
+    if (arriving) localImageEpoch += 1;
+    if (localImagesNeedRefresh) retryFailedPictures();
     stampLocalImages();
     laneWideTables();
     laneWidePictures();
@@ -48533,23 +48540,82 @@ function isLocalImageSrc(src) {
 
 const RAIL_PICTURE_MARK = 'leaf-rail=1';
 function isRailPictureSrc(src) {
-  const query = src.split('?')[1] || '';
+  const query = (src.split('?')[1] || '').split('#')[0];
   return query.split('&').includes(RAIL_PICTURE_MARK);
 }
+const localPictureRecords = new WeakMap();
+function localPictureKey(src) {
+  try {
+    const url = new URL(src);
+    if (!(url.protocol === 'leaf-image:' && url.hostname === 'local') &&
+        !(['http:', 'https:'].includes(url.protocol) && url.hostname === 'leaf-image.local')) return '';
+    return url.origin === 'null' ? 'leaf-image://local' + url.pathname : url.origin + url.pathname;
+  } catch (_) { return ''; }
+}
+function localPictureRecord() {
+  const path = currentState?.document?.path || activeDocumentPath();
+  let record = localPictureRecords.get(app);
+  if (!record || record.path !== path) {
+    record = { path, versions: new Map(), failed: new Set(), pending: new Set(), frame: 0 };
+    localPictureRecords.set(app, record);
+  }
+  return record;
+}
+function advancePictureVersions(record, keys) {
+  if (Array.from(keys).some((key) => record.versions.get(key) >= Number.MAX_SAFE_INTEGER - 1)) {
+    localImageEpoch += 1;
+    for (const key of record.versions.keys()) record.versions.set(key, 0);
+    return new Set(record.versions.keys());
+  }
+  for (const key of keys) record.versions.set(key, (record.versions.get(key) || 0) + 1);
+  return keys;
+}
+function retryFailedPictures() {
+  const record = localPictureRecord();
+  advancePictureVersions(record, record.failed);
+  record.failed.clear();
+  localImagesNeedRefresh = false;
+}
 
-function stampLocalImages(root = app) {
+function stampLocalImages(root = app, matching = null) {
   if (!root) return;
+  const record = localPictureRecord();
+  const drawn = new Set();
   fitPictureWidth = pictureFitWidth();
   root.querySelectorAll('img[src]').forEach((img) => {
-    
-    restoreMissingImage(img);
-    
-    const src = img.getAttribute('src') || '';
+    const src = (img.dataset && img.dataset.imageMissingSrc) || img.getAttribute('src') || '';
+    const key = localPictureKey(src);
+    if (matching && !matching.has(key)) return;
     if (!isLocalImageSrc(src)) return;
-    const base = src.split('?')[0];
-    const stamped = `${base}?leaf-epoch=${localImageEpoch}${isRailPictureSrc(src) ? `&${RAIL_PICTURE_MARK}` : fitPictureQuery(img)}`;
+    if (key) {
+      drawn.add(key);
+      if (!record.versions.has(key)) record.versions.set(key, 0);
+    }
+    restoreMissingImage(img);
+    const hashAt = src.indexOf('#');
+    const hash = hashAt < 0 ? '' : src.slice(hashAt);
+    const address = hashAt < 0 ? src : src.slice(0, hashAt);
+    const queryAt = address.indexOf('?');
+    const base = queryAt < 0 ? address : address.slice(0, queryAt);
+    const query = new URLSearchParams(queryAt < 0 ? '' : address.slice(queryAt + 1));
+    query.set('leaf-epoch', localImageEpoch);
+    const version = record.versions.get(key) || 0;
+    if (version) query.set('leaf-change', version); else query.delete('leaf-change');
+    if (!isRailPictureSrc(src)) {
+      query.delete(FIT_PICTURE_KEY);
+      const fit = fitPictureQuery(img);
+      if (fit) query.set(FIT_PICTURE_KEY, fit.split('=')[1]);
+    }
+    const stamped = base + '?' + query + hash;
     if (img.getAttribute('src') !== stamped) img.setAttribute('src', stamped);
   });
+  if (root === app && !matching) {
+    for (const key of record.versions.keys()) if (!drawn.has(key)) {
+      record.versions.delete(key);
+      record.failed.delete(key);
+      record.pending.delete(key);
+    }
+  }
   scheduleFitPictures();
 }
 let fitPicturesFrame = 0;
@@ -48564,7 +48630,10 @@ function scheduleFitPictures() {
     for (const img of body.querySelectorAll('img[src]')) {
       const src = img.getAttribute('src') || '';
       if (img.complete || !isLocalImageSrc(src) || isRailPictureSrc(src)) continue;
-      const fitted = src.replace(new RegExp(`&${FIT_PICTURE_KEY}=\\d+`), '') + fitPictureQuery(img);
+      const hashAt = src.indexOf('#');
+      const hash = hashAt < 0 ? '' : src.slice(hashAt);
+      const address = hashAt < 0 ? src : src.slice(0, hashAt);
+      const fitted = address.replace(new RegExp(`&${FIT_PICTURE_KEY}=\\d+`), '') + fitPictureQuery(img) + hash;
       if (fitted !== src) img.setAttribute('src', fitted);
     }
   });
@@ -48603,31 +48672,38 @@ window.addEventListener('resize', () => {
   stampLocalImages();
 });
 
-function readingDrawsLocalPicture(root = app) {
-  if (!root) return false;
-  
-  for (const img of root.querySelectorAll('img[src]')) {
-    if (isLocalImageSrc(img.getAttribute('src') || '')) return true;
-    if (isLocalImageSrc((img.dataset && img.dataset.imageMissingSrc) || '')) return true;
-  }
-  return false;
-}
-
-window.leafRefreshImages = () => {
-  
-  if (!readingIsContainedPage() && !minimapPreviewDocument() && !readingDrawsLocalPicture()) return;
-  localImageEpoch += 1;
-  stampLocalImages();
-  
-  stampContainedPageImages(siteFrameDocument(), localImageEpoch);
-  stampContainedPageImages(minimapPreviewDocument(), localImageEpoch);
-  
-  refreshContainedPageStylesheets(siteFrameDocument(), localImageEpoch);
-  refreshContainedPageStylesheets(minimapPreviewDocument(), localImageEpoch);
-  
-  laneWidePictures();
-  bindImageSheet();
-  scheduleMinimapPreviewUpdate();
+window.leafRefreshImages = (addresses) => {
+  if (!Array.isArray(addresses) || addresses.length > 64) return;
+  for (const column of [keyedColumn, besideColumn()].filter(Boolean)) withColumn(column, () => {
+    if (readingIsContainedPage() || minimapPreviewDocument()) {
+      localImageEpoch += 1;
+      stampContainedPageImages(siteFrameDocument(), localImageEpoch);
+      stampContainedPageImages(minimapPreviewDocument(), localImageEpoch);
+      refreshContainedPageStylesheets(siteFrameDocument(), localImageEpoch);
+      refreshContainedPageStylesheets(minimapPreviewDocument(), localImageEpoch);
+      scheduleMinimapPreviewUpdate();
+      return;
+    }
+    const record = localPictureRecord();
+    for (const address of addresses) {
+      if (typeof address !== 'string') continue;
+      const key = localPictureKey(address);
+      if (key && record.versions.has(key)) record.pending.add(key);
+    }
+    if (!record.pending.size || record.frame) return;
+    record.frame = columnFrame(() => {
+      record.frame = 0;
+      if (localPictureRecords.get(app) !== record || record.path !== (currentState?.document?.path || activeDocumentPath())) return;
+      const matching = advancePictureVersions(record, record.pending);
+      stampLocalImages(app, matching);
+      stampLocalImages(readerMinimap, matching);
+      for (const key of matching) record.failed.delete(key);
+      record.pending.clear();
+      laneWidePictures();
+      bindImageSheet();
+      scheduleMinimapPreviewUpdate();
+    });
+  });
 };
 
 const MISSING_IMAGE_SIZE = 40;
@@ -48668,7 +48744,12 @@ function restoreMissingImage(img) {
 
 if (app) {
   onColumn('error', (event) => {
-    if (isLocalImageSrc(event.target.getAttribute?.('src') || '')) localImagesNeedRefresh = true;
+    const key = localPictureKey(event.target.getAttribute?.('src') || '');
+    if (key) {
+      const record = localPictureRecord();
+      if (record.versions.has(key)) record.failed.add(key);
+      localImagesNeedRefresh = true;
+    }
     markMissingImage(event.target);
   }, true);
 }
