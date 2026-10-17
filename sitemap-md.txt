@@ -44,6 +44,14 @@ https://leaftext.com/arthurian/de-excidio-britanniae/de-excidio-britanniae.md
 https://leaftext.com/arthurian/de-excidio-britanniae/made-with.md
 https://leaftext.com/arthurian/de-excidio-britanniae/uk/GLOSSARY.md
 https://leaftext.com/arthurian/de-excidio-britanniae/uk/de-excidio-britanniae-uk.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/GLOSSARY.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings-how-it-was-made.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings-latin.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings-scans.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/made-with.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/uk/GLOSSARY.md
+https://leaftext.com/arthurian/geoffrey-of-monmouths-history-of-the-kings/uk/geoffrey-of-monmouths-history-of-the-kings-uk.md
 https://leaftext.com/arthurian/historia-brittonum/GLOSSARY.md
 https://leaftext.com/arthurian/historia-brittonum/historia-brittonum-how-it-was-made.md
 https://leaftext.com/arthurian/historia-brittonum/historia-brittonum-latin.md
@@ -64,6 +72,7 @@ https://leaftext.com/arthurian/merlin/uk/merlin-uk.md
 https://leaftext.com/arthurian/sources/README.md
 https://leaftext.com/arthurian/sources/annales-cambriae.md
 https://leaftext.com/arthurian/sources/de-excidio-britanniae.md
+https://leaftext.com/arthurian/sources/geoffrey-of-monmouths-history-of-the-kings.md
 https://leaftext.com/arthurian/sources/historia-brittonum.md
 https://leaftext.com/arthurian/sources/robert-de-boron-merlin.md
 https://leaftext.com/arthurian/sources/vita-gildae.md

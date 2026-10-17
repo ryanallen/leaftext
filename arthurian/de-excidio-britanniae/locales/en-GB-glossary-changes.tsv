@@ -1,28 +1,28 @@
 id	file	anchor	before	after	reason	master_sha256
-neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-neighbors	uk/GLOSSARY.md	front	neighbors	neighbours	UK spelling; a whole-word row misses the inflected form	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-worshiped	uk/GLOSSARY.md	front	worshiped	worshipped	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-worshiped	uk/GLOSSARY.md	front	worshiped	worshipped	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-traveled	uk/GLOSSARY.md	front	traveled	travelled	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-gray	uk/GLOSSARY.md	front	gray	grey	UK spelling	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	uk/GLOSSARY.md	../GLOSSARY.md	reciprocal edition link	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#names-not-riddles	../de-excidio-britanniae-how-it-was-made.md#names-not-riddles	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#english-word-order	../de-excidio-britanniae-how-it-was-made.md#english-word-order	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#contractions	../de-excidio-britanniae-how-it-was-made.md#contractions	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#checked-against-the-scan	../de-excidio-britanniae-how-it-was-made.md#checked-against-the-scan	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#translated-by-manifest	../de-excidio-britanniae-how-it-was-made.md#translated-by-manifest	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#every-choice-logged	../de-excidio-britanniae-how-it-was-made.md#every-choice-logged	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#changes-carried-everywhere	../de-excidio-britanniae-how-it-was-made.md#changes-carried-everywhere	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#matching-outlines	../de-excidio-britanniae-how-it-was-made.md#matching-outlines	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#pages-linked-to-scans	../de-excidio-britanniae-how-it-was-made.md#pages-linked-to-scans	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#endnotes	../de-excidio-britanniae-how-it-was-made.md#endnotes	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#every-allusion-told	../de-excidio-britanniae-how-it-was-made.md#every-allusion-told	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#one-note-one-thing	../de-excidio-britanniae-how-it-was-made.md#one-note-one-thing	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#additions-marked	../de-excidio-britanniae-how-it-was-made.md#additions-marked	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#sourced-glossary	../de-excidio-britanniae-how-it-was-made.md#sourced-glossary	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#cards-that-teach	../de-excidio-britanniae-how-it-was-made.md#cards-that-teach	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#modern-names	../de-excidio-britanniae-how-it-was-made.md#modern-names	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
-locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#places-located-from-sources	../de-excidio-britanniae-how-it-was-made.md#places-located-from-sources	shared file one folder up	1e3eadbd0318ff39b1713037a853b3674584bbcd7f9a43d7e259b9d0909edacb
+neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+neighbors	uk/GLOSSARY.md	front	neighbors	neighbours	UK spelling; a whole-word row misses the inflected form	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+worshiped	uk/GLOSSARY.md	front	worshiped	worshipped	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+worshiped	uk/GLOSSARY.md	front	worshiped	worshipped	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+neighbor	uk/GLOSSARY.md	front	neighbor	neighbour	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+traveled	uk/GLOSSARY.md	front	traveled	travelled	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+gray	uk/GLOSSARY.md	front	gray	grey	UK spelling	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	uk/GLOSSARY.md	../GLOSSARY.md	reciprocal edition link	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#names-not-riddles	../de-excidio-britanniae-how-it-was-made.md#names-not-riddles	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#english-word-order	../de-excidio-britanniae-how-it-was-made.md#english-word-order	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#contractions	../de-excidio-britanniae-how-it-was-made.md#contractions	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#checked-against-the-scan	../de-excidio-britanniae-how-it-was-made.md#checked-against-the-scan	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#translated-by-manifest	../de-excidio-britanniae-how-it-was-made.md#translated-by-manifest	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#every-choice-logged	../de-excidio-britanniae-how-it-was-made.md#every-choice-logged	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#changes-carried-everywhere	../de-excidio-britanniae-how-it-was-made.md#changes-carried-everywhere	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#matching-outlines	../de-excidio-britanniae-how-it-was-made.md#matching-outlines	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#pages-linked-to-scans	../de-excidio-britanniae-how-it-was-made.md#pages-linked-to-scans	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#endnotes	../de-excidio-britanniae-how-it-was-made.md#endnotes	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#every-allusion-told	../de-excidio-britanniae-how-it-was-made.md#every-allusion-told	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#one-note-one-thing	../de-excidio-britanniae-how-it-was-made.md#one-note-one-thing	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#additions-marked	../de-excidio-britanniae-how-it-was-made.md#additions-marked	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#sourced-glossary	../de-excidio-britanniae-how-it-was-made.md#sourced-glossary	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#cards-that-teach	../de-excidio-britanniae-how-it-was-made.md#cards-that-teach	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#modern-names	../de-excidio-britanniae-how-it-was-made.md#modern-names	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb
+locale-link	uk/GLOSSARY.md	links	de-excidio-britanniae-how-it-was-made.md#places-located-from-sources	../de-excidio-britanniae-how-it-was-made.md#places-located-from-sources	shared file one folder up	3b9be81ca596b646bd2a51d9a14a22e1dcd312ddb6d8cd6845b4ec95f65a33cb

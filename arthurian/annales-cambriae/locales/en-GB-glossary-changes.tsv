@@ -1,32 +1,32 @@
 id	file	anchor	before	after	reason	master_sha256
-gray	uk/GLOSSARY.md	front	gray	grey	UK spelling	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-gray	uk/GLOSSARY.md	front	gray	grey	UK spelling	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-honored	uk/GLOSSARY.md	front	honored	honoured	UK spelling; a whole-word row misses the inflected form	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-honoring	uk/GLOSSARY.md	front	honoring	honouring	UK spelling; a whole-word row misses the inflected form	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-honor	uk/GLOSSARY.md	front	honor	honour	UK spelling	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-neighbors	uk/GLOSSARY.md	front	neighbors	neighbours	UK spelling; a whole-word row misses the inflected form	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-neighbors	uk/GLOSSARY.md	front	neighbors	neighbours	UK spelling; a whole-word row misses the inflected form	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-honored	uk/GLOSSARY.md	front	honored	honoured	UK spelling; a whole-word row misses the inflected form	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-honor	uk/GLOSSARY.md	front	honor	honour	UK spelling	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-baptizing	uk/GLOSSARY.md	front	baptizing	baptising	UK house choice; a whole-word row misses the inflected form	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	uk/GLOSSARY.md	../GLOSSARY.md	reciprocal edition link	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#names-not-riddles	../annales-cambriae-how-it-was-made.md#names-not-riddles	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#english-word-order	../annales-cambriae-how-it-was-made.md#english-word-order	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#contractions	../annales-cambriae-how-it-was-made.md#contractions	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#checked-against-the-scan	../annales-cambriae-how-it-was-made.md#checked-against-the-scan	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#translated-by-manifest	../annales-cambriae-how-it-was-made.md#translated-by-manifest	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#every-choice-logged	../annales-cambriae-how-it-was-made.md#every-choice-logged	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#changes-carried-everywhere	../annales-cambriae-how-it-was-made.md#changes-carried-everywhere	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#matching-outlines	../annales-cambriae-how-it-was-made.md#matching-outlines	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#pages-linked-to-scans	../annales-cambriae-how-it-was-made.md#pages-linked-to-scans	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#endnotes	../annales-cambriae-how-it-was-made.md#endnotes	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#every-allusion-told	../annales-cambriae-how-it-was-made.md#every-allusion-told	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#one-note-one-thing	../annales-cambriae-how-it-was-made.md#one-note-one-thing	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#additions-marked	../annales-cambriae-how-it-was-made.md#additions-marked	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#sourced-glossary	../annales-cambriae-how-it-was-made.md#sourced-glossary	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#cards-that-teach	../annales-cambriae-how-it-was-made.md#cards-that-teach	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#modern-names	../annales-cambriae-how-it-was-made.md#modern-names	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
-locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#places-located-from-sources	../annales-cambriae-how-it-was-made.md#places-located-from-sources	shared file one folder up	cdd3be85a354127263c95a3f98f6a87ec007a08c5e9b9bbdf0ee5ae4d3bf6ca9
+gray	uk/GLOSSARY.md	front	gray	grey	UK spelling	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+gray	uk/GLOSSARY.md	front	gray	grey	UK spelling	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+honored	uk/GLOSSARY.md	front	honored	honoured	UK spelling; a whole-word row misses the inflected form	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+honoring	uk/GLOSSARY.md	front	honoring	honouring	UK spelling; a whole-word row misses the inflected form	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+honor	uk/GLOSSARY.md	front	honor	honour	UK spelling	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+neighbors	uk/GLOSSARY.md	front	neighbors	neighbours	UK spelling; a whole-word row misses the inflected form	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+neighbors	uk/GLOSSARY.md	front	neighbors	neighbours	UK spelling; a whole-word row misses the inflected form	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+honored	uk/GLOSSARY.md	front	honored	honoured	UK spelling; a whole-word row misses the inflected form	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+honor	uk/GLOSSARY.md	front	honor	honour	UK spelling	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+baptizing	uk/GLOSSARY.md	front	baptizing	baptising	UK house choice; a whole-word row misses the inflected form	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	uk/GLOSSARY.md	../GLOSSARY.md	reciprocal edition link	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#names-not-riddles	../annales-cambriae-how-it-was-made.md#names-not-riddles	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#english-word-order	../annales-cambriae-how-it-was-made.md#english-word-order	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#contractions	../annales-cambriae-how-it-was-made.md#contractions	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#checked-against-the-scan	../annales-cambriae-how-it-was-made.md#checked-against-the-scan	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#translated-by-manifest	../annales-cambriae-how-it-was-made.md#translated-by-manifest	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#every-choice-logged	../annales-cambriae-how-it-was-made.md#every-choice-logged	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#changes-carried-everywhere	../annales-cambriae-how-it-was-made.md#changes-carried-everywhere	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#matching-outlines	../annales-cambriae-how-it-was-made.md#matching-outlines	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#pages-linked-to-scans	../annales-cambriae-how-it-was-made.md#pages-linked-to-scans	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#endnotes	../annales-cambriae-how-it-was-made.md#endnotes	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#every-allusion-told	../annales-cambriae-how-it-was-made.md#every-allusion-told	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#one-note-one-thing	../annales-cambriae-how-it-was-made.md#one-note-one-thing	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#additions-marked	../annales-cambriae-how-it-was-made.md#additions-marked	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#sourced-glossary	../annales-cambriae-how-it-was-made.md#sourced-glossary	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#cards-that-teach	../annales-cambriae-how-it-was-made.md#cards-that-teach	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#modern-names	../annales-cambriae-how-it-was-made.md#modern-names	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2
+locale-link	uk/GLOSSARY.md	links	annales-cambriae-how-it-was-made.md#places-located-from-sources	../annales-cambriae-how-it-was-made.md#places-located-from-sources	shared file one folder up	228503c94034cee2327d1378b30d209d94c6879934932d528c48f9103b7489f2

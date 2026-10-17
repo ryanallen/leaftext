@@ -1916,7 +1916,7 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^79-5]: These words are from Paul's first letter to the Corinthians, where he tells them to do everything for Yahweh's glory and to follow his example, as he follows Christ's. Mommsen's margin gives 1 Corinthians 11:1.<sup>[\*](#new-in-this-translation)</sup>
 
-[^79-6]: Paul's first letter is Romans, the first of his letters in the Bible, written about 57 CE to the Christians at Rome before he'd visited them. In it he describes the pagan world: people who knew there was a god but didn't honour it or thank it, and grew foolish in their own cleverness. Mommsen's margin gives Romans 1:21–22.<sup>[\*](#new-in-this-translation)</sup>
+[^79-6]: Paul's first letter is Romans, the first of his letters in the Bible, written about 57 CE to the Christians at Rome before he'd visited them. In it he describes the pagan world: people who knew there was a god but didn't honour it or thank it, and thought themselves clever but grew foolish. Mommsen's margin gives Romans 1:21–22.<sup>[\*](#new-in-this-translation)</sup>
 
 [^79-7]: Paul says the pagans traded the truth about Yahweh for a lie and worshipped things Yahweh made instead of Yahweh itself, so it let them sink into shameful passions. Gildas says it fits Britain's priests better than the pagans. Mommsen's margin gives Romans 1:25–26.<sup>[\*](#new-in-this-translation)</sup>
 

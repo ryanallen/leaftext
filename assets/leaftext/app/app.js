@@ -42944,7 +42944,7 @@ function consoleAgentOf(title) {
 const consoleAgentAsks = {
   claude: { lines: 4, asks: line => line.includes('Esc to cancel') },
   codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) },
-  antigravity: { lines: 6, asks: line => line.includes('Approve/reject') || /esc to cancel/i.test(line) },
+  antigravity: { lines: 6, asks: (line, _, lines) => line.includes('Approve/reject') || (/esc to cancel/i.test(line) && !lines.some(row => row.includes('tab Complete'))) },
 };
 
 
@@ -42985,6 +42985,7 @@ function reportConsoleAgent(id, entry, screenLines) {
   if (said === before) return;
   entry.agentSaid = said;
   if (before.split(' ')[0] !== (entry.agent || '')) {
+    closeConsoleModel(entry);
     const icon = consoleIconClass(entry.agent);
     for (const tab of tabBar.querySelectorAll('.console-tab')) {
       if (tab.dataset.consoleId !== String(id)) continue;
@@ -43156,6 +43157,7 @@ function consoleOutputArrived(id) {
 function consoleKeyTyped(id) {
   const entry = consoleLayers.get(id);
   if (!entry) return;
+  cancelConsoleModel(entry);
   entry.lastKey = Date.now();
   clearTimeout(entry.quietTimer);
   entry.quietTimer = 0;
@@ -43344,6 +43346,7 @@ const CONSOLE_AGENT_QUIET_MS = 16;
 
 
 function consoleWritten(id, entry) {
+  if (entry.modelPending) submitConsoleModel(id, entry);
   const type = entry.terminal.buffer.active.type;
   if (type !== entry.bufferType) {
     entry.bufferType = type;
@@ -43963,6 +43966,7 @@ function consoleWheel(id, entry, event) {
   } else {
     step = (terminal.getMode(1) ? '\x1bO' : '\x1b[') + (steps < 0 ? 'A' : 'B');
   }
+  cancelConsoleModel(entry);
   send({ command: 'consoleInput', id, data: step.repeat(Math.abs(steps)) });
   return true;
 }
@@ -44015,6 +44019,7 @@ function sendConsoleMouse(id, terminal, button, event, release) {
   if (!extended && (cell.column > 223 || cell.row > 223)) return cell;
   let report = consoleMouseReport(terminal, release && !extended ? 3 : button, cell.column, cell.row, event);
   if (release && extended) report = report.slice(0, -1) + 'm';
+  cancelConsoleModel(consoleLayers.get(id));
   send({ command: 'consoleInput', id, data: report });
   return cell;
 }
@@ -44107,6 +44112,7 @@ function consolePasteChord(event) {
 function consoleAltKey(id, event) {
   if (!event.altKey || event.ctrlKey || event.metaKey || Array.from(event.key || '').length !== 1) return false;
   if (!isMacPlatform && !event.shiftKey) return false;
+  cancelConsoleModel(consoleLayers.get(id));
   send({ command: 'consoleInput', id, data: isMacPlatform ? event.key : '' + event.key });
   return true;
 }
@@ -44171,6 +44177,7 @@ function placeConsoleLayers(state = currentState) {
     const card = id === consoleFrontId ? keyedColumn : id === besideId ? besideCard : null;
     const shown = !!card;
     const wasHidden = entry.layer.hidden;
+    if (!shown || (entry.modelPending && entry.modelPending.card !== card) || (crumbMenuOwner && entry.status?.contains(crumbMenuOwner) && entry.modelMenuCard !== card)) closeConsoleModel(entry);
     entry.layer.hidden = !shown;
     entry.layer.classList.toggle('is-right-card', shown && card === rightColumn);
     entry.layer.classList.toggle('is-split', shown && split);
@@ -44205,6 +44212,7 @@ window.leafMinimap.subscribe(() => {
 
 window.leafConsoleFront = id => {
   const changed = consoleFrontId !== id;
+  if (changed) for (const entry of consoleLayers.values()) closeConsoleModel(entry);
   consoleFrontId = id;
   document.body.classList.toggle('console-front', id !== null);
   if (changed && consoleAgentRows.length) drawConsoleAgents();
@@ -44291,6 +44299,7 @@ function writeConsoleOutput(id, entry, text) {
 window.leafConsoleReplay = (id, encoded) => {
   const bytes = consoleBytes(encoded);
   const entry = consoleLayers.get(id) || makeConsoleLayer(id);
+  closeConsoleModel(entry);
   clearTimeout(entry.quietTimer);
   entry.quietTimer = 0;
   entry.titleMark = null;
@@ -44319,6 +44328,83 @@ function consoleStatusCount(count) {
   return count >= 1000 ? `${Math.round(count / 1000)}k` : String(Math.round(count));
 }
 
+function cancelConsoleModel(entry) {
+  if (!entry?.modelPending) return;
+  clearTimeout(entry.modelPending.timer);
+  entry.modelPending = null;
+}
+
+function closeConsoleModel(entry) {
+  cancelConsoleModel(entry);
+  if (crumbMenuOwner && entry.status?.contains(crumbMenuOwner)) hideCrumbMenu();
+}
+
+function consoleModelRefusal(id, entry, record) {
+  if (!['claude', 'codex', 'antigravity'].includes(record?.agent)) return "Return to the agent's empty prompt first.";
+  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || entry.statusRecord !== record || !entry.terminal || entry.modelPending || (entry.agent && entry.agent !== record.agent)) return "Return to the agent's empty prompt first.";
+  const state = consoleAgentState({ ...entry, agent: record.agent });
+  if (state !== 'rest' && state !== 'done') return 'Wait until the agent finishes.';
+  const prompt = consoleModelPrompt(entry, record.agent);
+  return prompt.kind === 'empty' ? null : prompt.kind === 'draft' ? 'Send or clear what you are typing first.' : "Return to the agent's empty prompt first.";
+}
+
+function showConsoleModelMenu(button, items) {
+  openCrumbList(button, items);
+  if (crumbMenuOwner !== button) return;
+  const rect = button.getBoundingClientRect();
+  leafPlaceFloating(crumbMenu, rect.left, rect.top - crumbMenu.offsetHeight - CRUMB_MENU_DROP);
+}
+
+function startConsoleCommand(id, entry, button, record, command) {
+  const allowed = command === '/model' || (record?.agent === 'claude' && /^\/model (fable|opus|sonnet|haiku)$/.test(command)) || (['claude', 'antigravity'].includes(record?.agent) && command === '/effort');
+  if (!allowed) return;
+  const note = consoleModelRefusal(id, entry, record);
+  if (note) { showConsoleModelMenu(button, [{ note }]); return; }
+  consoleKeyTyped(id);
+  const wait = durationTokenMilliseconds('--lt-duration-2000');
+  const pending = { command, record, agent: record.agent, card: keyedColumn, until: Date.now() + wait, timer: 0 };
+  entry.modelPending = pending;
+  pending.timer = setTimeout(() => {
+    if (entry.modelPending !== pending) return;
+    cancelConsoleModel(entry);
+    leafToast('The command is in the console. Press Enter to finish.');
+  }, wait);
+  send({ command: 'consoleInput', id, data: command });
+  entry.terminal.focus();
+}
+
+function openConsoleModel(id, entry, button, effort = false) {
+  entry.modelMenuCard = keyedColumn;
+  const record = entry.statusRecord;
+  const refusal = consoleModelRefusal(id, entry, record);
+  const choose = command => startConsoleCommand(id, entry, button, record, command);
+  const aliases = ['Fable', 'Opus', 'Sonnet', 'Haiku'];
+  const family = /^(?:claude[- ]+)?(fable|opus|sonnet|haiku)(?:[- ]\d+(?:[-.]\d+)*)?$/i.exec(record?.model || '')?.[1].toLowerCase();
+  const items = refusal ? [{ note: refusal }] : [
+    ...(!effort && record.agent === 'claude' ? aliases.map(alias => ({ label: alias, selected: family === alias.toLowerCase(), run: () => choose(`/model ${alias.toLowerCase()}`) })) : []),
+    { label: `Choose in ${record.agent === 'claude' ? 'Claude Code' : record.agent === 'codex' ? 'Codex' : effort ? 'Google Antigravity' : 'Antigravity'}…`, run: () => choose(effort && record.agent !== 'codex' ? '/effort' : '/model') },
+  ];
+  showConsoleModelMenu(button, items);
+}
+
+function submitConsoleModel(id, entry) {
+  const pending = entry.modelPending;
+  if (Date.now() >= pending.until) { cancelConsoleModel(entry); leafToast('The command is in the console. Press Enter to finish.'); return; }
+  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || keyedColumn !== pending.card || entry.statusRecord !== pending.record || (entry.agent && entry.agent !== pending.agent)) { cancelConsoleModel(entry); return; }
+  const state = consoleAgentState({ ...entry, agent: pending.agent });
+  const prompt = consoleModelPrompt(entry, pending.agent);
+  if ((state !== 'rest' && state !== 'done') || prompt.kind === 'unknown' || (prompt.kind === 'draft' && !pending.command.startsWith(prompt.text))) { cancelConsoleModel(entry); return; }
+  if (prompt.kind !== 'draft' || prompt.text !== pending.command || !prompt.atEnd) return;
+  cancelConsoleModel(entry);
+  consoleKeyTyped(id);
+  send({ command: 'consoleInput', id, data: '\r' });
+  entry.terminal.focus();
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) for (const entry of consoleLayers.values()) closeConsoleModel(entry);
+});
+
 function consoleStatusWait(resetsAt) {
   const minutes = Math.max(0, Math.round((resetsAt * 1000 - Date.now()) / 60000));
   const days = Math.floor(minutes / 1440);
@@ -44339,6 +44425,7 @@ function consoleStatusFields(record) {
   const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', gemini: 'Gemini CLI' }[record.agent];
   if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
   if (record.model) fields.push({ field: 'model', text: record.model });
+  if (['claude', 'codex', 'antigravity'].includes(record.agent)) fields.push({ field: 'effort', text: 'Effort…' });
   const size = record.contextWindow;
   const used = record.tokens ?? (record.contextPercent != null && size ? record.contextPercent / 100 * size : null);
   if (used != null && size) fields.push({ field: 'context', text: `Context ${consoleStatusCount(used)} of ${consoleStatusCount(size)}`, meter: used / size * 100 });
@@ -44355,10 +44442,13 @@ function consoleStatusFields(record) {
 }
 
 function drawConsoleStatus(id, entry) {
+  closeConsoleModel(entry);
   const strip = entry.status;
   const fields = entry.statusRecord ? consoleStatusFields(entry.statusRecord) : [];
   strip.replaceChildren(...fields.map(field => {
-    const item = document.createElement('span');
+    const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(entry.statusRecord.agent);
+    const effort = field.field === 'effort';
+    const item = document.createElement(model || effort ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
     if (field.agent && field.agent !== 'gemini') {
@@ -44377,6 +44467,30 @@ function drawConsoleStatus(id, entry) {
       item.appendChild(meter);
     }
     item.appendChild(document.createTextNode(field.text));
+    if (model || effort) {
+      item.type = 'button';
+      item.classList.add('console-status-model');
+      if (effort) item.classList.add('console-status-effort');
+      item.setAttribute('aria-haspopup', 'menu');
+      item.setAttribute('aria-expanded', 'false');
+      item.setAttribute('aria-label', effort ? 'Change reasoning effort' : `Change model: ${field.text}`);
+      const chevron = document.createElement('span');
+      chevron.className = 'lt-icon lt-icon-chevron-down';
+      chevron.setAttribute('aria-hidden', 'true');
+      item.appendChild(chevron);
+      item.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openConsoleModel(id, entry, item, effort);
+      });
+      item.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        event.stopPropagation();
+        openConsoleModel(id, entry, item, effort);
+      });
+    }
     return item;
   }));
   const shown = fields.length > 0;
@@ -44398,7 +44512,7 @@ function fitConsoleStatus(entry) {
   const strip = entry.status;
   if (!strip || strip.hidden) return;
   for (const item of strip.children) item.hidden = false;
-  for (const field of ['folder', 'cost', 'limits']) {
+  for (const field of ['folder', 'cost', 'limits', 'effort']) {
     if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
     for (const item of strip.querySelectorAll(`[data-field="${field}"]`)) item.hidden = true;
   }
@@ -44431,6 +44545,7 @@ window.leafConsoleLines = (id, count) => {
 window.leafConsolePrune = tabs => {
   for (const [id, entry] of consoleLayers) {
     if (tabs.some(tab => tab.kind === 'console' && tab.webId === id)) continue;
+    closeConsoleModel(entry);
     if (entry.frame) cancelAnimationFrame(entry.frame);
     if (entry.scrollFrame) cancelAnimationFrame(entry.scrollFrame);
     if (entry.quietTimer) clearTimeout(entry.quietTimer);
@@ -44740,6 +44855,50 @@ function consolePromptBox(rows, cursor, ruled = false) {
     return { top, end };
   }
   return null;
+}
+
+
+function consoleModelPrompt(entry, agent) {
+  const terminal = entry.terminal;
+  const active = terminal?.buffer?.active;
+  if (!active || !['claude', 'codex', 'antigravity'].includes(agent) || terminal.cols > 4096) return { kind: 'unknown' };
+  return readConsoleScreenOnce(terminal.wasmTerm, () => {
+    const cursor = active.cursorY;
+    const base = consoleBuffer(entry).baseY;
+    const rows = new Map();
+    const read = row => {
+      if (!rows.has(row)) rows.set(row, active.getLine(base + row));
+      return rows.get(row);
+    };
+    const text = row => consoleLine(read(row))?.translateToString(true) ?? '';
+    for (let top = cursor; top >= 0 && cursor - top < 12; top -= 1) {
+      const line = text(top);
+      if (CONSOLE_PROMPT_RULE.test(line)) break;
+      const mark = /^(\s*[❯›>])(?: |$)/.exec(line);
+      if (!mark) continue;
+      const ruled = top > 0 && CONSOLE_PROMPT_RULE.test(text(top - 1));
+      if (agent === 'codex' ? mark[1].trim() !== '›' || top === 0 || text(top - 1).trim() : !ruled) break;
+      const column = mark[1].length + 1;
+      const input = [line.slice(column)];
+      let end = top + 1;
+      for (; end < terminal.rows && end - top < 12; end += 1) {
+        const next = text(end);
+        if (CONSOLE_PROMPT_RULE.test(next) || (agent === 'codex' && !next.trim())) break;
+        input.push(next);
+      }
+      if (end >= terminal.rows || end - top >= 12 || cursor >= end || (agent !== 'codex' && !CONSOLE_PROMPT_RULE.test(text(end)))) break;
+      const words = input.join('\n');
+      if (!words.trim()) return { kind: 'empty', top };
+      let faint = cursor === top && active.cursorX === column && input.length === 1;
+      for (let at = column; faint && at < line.length; at += 1) {
+        const cell = read(top)?.getCell(at);
+        if (cell?.getChars()?.trim() && !(cell.isFaint?.() || cell.isDim?.())) faint = false;
+      }
+      if (faint) return { kind: 'empty', top };
+      return { kind: 'draft', text: words, top, atEnd: input.length === 1 && cursor === top && active.cursorX === line.length };
+    }
+    return { kind: 'unknown' };
+  });
 }
 
 

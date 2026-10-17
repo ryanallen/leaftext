@@ -18,17 +18,41 @@ The years from the creation to the Flood, Abraham, Moses, David, the exile in Ba
 
 Britain is described; Brutus, of Aeneas's line, kills his father by accident, is driven from Italy and settles the island named for him; the Picts take the north, and the Irish come from Spain to Ireland and parts of Britain.
 
+<a id="leir-divides-his-kingdom"></a>
+
+### Brutus's heirs rule Britain, and Leir divides his kingdom among his daughters
+
+Brutus's sons share the island and Locrinus drives out Humber the Hun; Gwendolen drowns her husband's mistress Estrildis; Ebraucus founds York and Bladud builds Bath; Leir divides Britain between the two daughters who flatter him, is driven out, and wins back his throne with the help of Cordelia's husband; Cordelia's nephews overthrow her; and after the quarrel of Ferrex and Porrex brings civil war, Dunvallo Molmutius unites the island and gives it laws.
+
+<a id="belinus-and-brennius-march-on-rome"></a>
+
+### Belinus and Brennius march on Rome, and their heirs rule Britain down to Lud
+
+Dunvallo's sons Belinus and Brennius split Britain and go to war; their mother Conwenna makes peace between them, and together they conquer Gaul and take Rome; Belinus comes home to build roads and Caerleon, and a long line of kings follows, Gurguit giving Ireland to settlers from Spain, Marcia making her law, Morvidus swallowed by a sea monster and Elidurus crowned three times, down to Lud, who rebuilds London, and his brother Cassivellaunus.
+
 <a id="the-romans-rule-britain"></a>
 
 ### The Romans rule Britain from Julius Caesar until they leave
 
 Julius Caesar takes Britain at the third try, and emperor after emperor rules it, from Claudius and Severus to Maximus, who takes its soldiers to Brittany, until the Britons kill Rome's leaders and Rome comes only to help and to punish.
 
+<a id="constantine-is-born-in-britain"></a>
+
+### Constantine is born in Britain to a British king's daughter
+
+Coel of Colchester takes the crown and makes peace with Rome, and the senator Constantius marries his daughter Helena; their son Constantine, king of Britain after his father, drives out the tyrant Maxentius and takes Rome, and Octavius rises against the governors left behind in Britain.
+
 <a id="the-picts-and-irish-raid-britain"></a>
 
 ### The Picts and the Irish raid Britain after the Romans leave
 
 With its soldiers gone with Maximus, Britain is raided by the Irish and the Picts; the Romans come twice to help and build two walls across the north, then leave for good, and the Britons write to Agitius in vain, starve, and at last strike back from the hills.
+
+<a id="constantine-comes-from-brittany"></a>
+
+### The Britons bring Constantine from Brittany and make him king
+
+Refused by Rome, Archbishop Guithelin crosses to Brittany, and King Aldroen sends his brother Constantine with two thousand men; Constantine beats the raiders, is crowned at Silchester and fathers Constans, Aurelius Ambrosius and Uther Pendragon, and after ten years a Pict stabs him.
 
 <a id="the-cities-of-britain-are-named"></a>
 
@@ -122,6 +146,12 @@ The messengers find the boy Merlin, who knows why they've come; he sends Blaise 
 
 Merlin shames the clerks, has the water under the tower drained to show a red and a white dragon, who fight until one is killed, spares the clerks, and tells Vortigern how his reign will end.
 
+<a id="merlin-tells-vortigern-what-the-dragons-mean"></a>
+
+### Merlin weeps and tells Vortigern what the two dragons mean
+
+By the drained pool the white dragon drives the red back and the red drives it back in turn; Merlin, weeping, says the red is the Britons and the white the Saxons Vortigern invited, and foretells in riddles of beasts, kings and stars the island's future from the boar of Cornwall to the planets leaving their courses.
+
 <a id="vortimer-fights-the-saxons"></a>
 
 ### Vortimer fights the Saxons in four battles
@@ -200,6 +230,12 @@ Uther takes his brother's name, and Merlin has great stones brought from Ireland
 
 Merlin tells Uther of the table of the Last Supper and Joseph's table, makes a third, seats fifty men at it, and says the empty place will wait for one man.
 
+<a id="gorlois-advises-a-night-attack"></a>
+
+### Gorlois advises Uther to attack the Saxons by night
+
+Octa and Eosa break their treaty when Aurelius dies and lay waste the north; they drive Uther's army back to Mount Damen, where Gorlois of Cornwall advises an attack before dawn, and the Britons storm the Saxon camp and capture both leaders.
+
 <a id="uther-falls-in-love-with-igraine"></a>
 
 ### Uther falls in love with Igraine and makes war on her husband
@@ -270,6 +306,18 @@ As the Saxons grow in Britain and Hengist's son Octa settles in Kent, Arthur lea
 
 The Britons and the Saxons win by turns until the siege of Mount Badon, almost the last great slaughter of the invaders, in the year Gildas was born, after which the cities lie empty and civil wars go on.
 
+<a id="arthur-conquers-ireland-and-the-north"></a>
+
+### Arthur conquers Ireland, the northern islands, Norway and Gaul
+
+Arthur starves the Scots and Picts on the islands of Loch Lomond and spares them, gives the north back to Lot, Urien and Auguselus and marries Guinevere, takes Ireland and Iceland, makes Lot king of Norway and wins Gaul by killing the tribune Frollo in single combat at Paris.
+
+<a id="arthur-holds-court-at-caerleon"></a>
+
+### Arthur wears his crown at a Pentecost court at Caerleon
+
+Kings and lords from Britain, the islands and Gaul come to the City of the Legions, Dubricius crowns Arthur and the queen is led to her own church, the court feasts and holds games for three days, and Arthur gives out lands and offices.
+
 <a id="gildas-teaches-and-preaches"></a>
 
 ### Gildas studies, teaches and preaches, and dies a hermit at Glastonbury
@@ -288,6 +336,40 @@ Hueil, Gildas's eldest brother, raids from Scotland and obeys no king; Arthur hu
 
 The history lists Britain's and Ireland's strange sights, from Loch Lomond's sixty islands and the Severn's fighting waves to a stone at Builth printed by Arthur's dog Cavall while hunting the boar Twrch Trwyth, and the grave of Arthur's son Anir, which changes length each time it's measured.
 
+<a id="arthur-marries-guinevere"></a>
+
+### Arthur marries Guinevere and receives the Round Table
+
+Leodegrance gives Arthur his daughter and the Round Table with a hundred knights, Merlin fills the seats, Tor is knighted and found to be Pellinore's son, and Gawain is kept from killing Pellinore at the feast.
+
+Malory tells this in [Book III, chapters 1–4](malory-sources/malory-map.tsv).
+
+## The Roman war
+
+<a id="rome-demands-tribute"></a>
+
+### Rome demands tribute, and Arthur sets out to fight the emperor
+
+The emperor Lucius's envoys demand Britain's old tribute, Arthur claims Rome for himself, raises his allies, leaves the realm in Constantine's care and sails from Sandwich.
+
+Malory tells this in [Book V, chapters 1–3](malory-sources/malory-map.tsv).
+
+<a id="the-giant-of-mont-saint-michel"></a>
+
+### Arthur dreams of a dragon and kills the giant of Mont Saint-Michel
+
+Arthur dreams of a dragon fighting a boar, lands at Barfleur, and climbs Mont Saint-Michel with only Kay and Bedivere to kill the giant who carried off the Duchess of Brittany.
+
+Malory tells this in [Book V, chapters 4–5](malory-sources/malory-map.tsv).
+
+<a id="the-battle-against-lucius"></a>
+
+### Arthur's envoys defy Lucius, and the two armies meet at Soissons
+
+Gawain beheads a Roman who mocks the Britons, Lancelot and Cador break an ambush, and Arthur meets Lucius's host in the vale of Soissons and sends the dead to Rome as tribute.
+
+Malory tells this in [Book V, chapters 6–8](malory-sources/malory-map.tsv).
+
 ## Arthur's end
 
 <a id="the-knight-of-the-cart"></a>
@@ -298,6 +380,14 @@ Meliagaunce ambushes the queen a-Maying, Lancelot rides a cart to his gate, spen
 
 Malory tells this in [Book XIX, chapters 1–9](malory-sources/malory-map.tsv).
 
+<a id="mordred-takes-the-crown"></a>
+
+### Mordred takes the crown, and Gawain dies at Dover
+
+Mordred forges news of Arthur's death and is crowned, Guinevere holds the Tower of London against him, and Gawain dies of his old wound at Dover after writing to Lancelot.
+
+Malory tells this in [Book XXI, chapters 1–2](malory-sources/malory-map.tsv).
+
 <a id="the-last-battle"></a>
 
 ### Arthur fights Mordred's host and is carried to Avalon
@@ -307,6 +397,12 @@ Gawain's ghost warns Arthur in a dream, an adder at the parley starts the battle
 Malory tells this in [Book XXI, chapters 3–5](malory-sources/malory-map.tsv).
 
 ## After Camlann
+
+<a id="the-kings-after-arthur"></a>
+
+### Constantine and the kings after him rule Britain, and Gormund lays it waste
+
+Constantine puts down Mordred's sons; Aurelius Conanus, Vortiporius and Maelgwn reign after him; then Gormund's Africans burn the island for the Saxons, and the Britons fall back into Cornwall and Wales.
 
 <a id="gildas-condemns-the-kings-and-clergy"></a>
 
@@ -332,11 +428,23 @@ Aneirin and Taliesin win fame, Maelgwn rules Gwynedd, Urien besieges the English
 
 The Welsh annals keep the years after Camlann to 613 CE: a great plague takes Maelgwn of Gwynedd, the northern Britons fight at Arfderydd, Gildas, Columba and Kentigern die, Augustine and Mellitus bring the English to Christ, and armies meet at Chester.
 
+<a id="augustine-comes-to-the-english"></a>
+
+### Augustine comes to the English, and Aethelfrith marches on the monks of Bangor
+
+Pope Gregory sends Augustine to the English; the British bishops under Dinoot of Bangor refuse him, and Aethelfrith of Northumbria cuts down the monks at Chester before the Britons drive him back.
+
 <a id="the-britons-fight-the-northumbrians-and-the-mercians"></a>
 
 ### Cadwallon and Penda fight the Northumbrians, and the Britons fight the Mercians
 
 The Welsh annals keep the years from 614 to 799 CE: Cadwallon kills Edwin and falls at Heavenfield, Oswald and Penda fall, a second Badon is fought, plague comes back, and Offa of Mercia lays the Britons waste.
+
+<a id="the-britons-leave-the-island"></a>
+
+### The Britons leave the island
+
+Famine and plague empty Britain under Cadwaladr, who sails for Brittany mourning, the Saxons settle the island, an angel sends Cadwaladr to Rome to die, and the Britons left behind become the Welsh.
 
 <a id="vikings-raid-wales"></a>
 

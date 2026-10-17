@@ -10,6 +10,7 @@ Every published book on the shelf, by where it sits in the story. Each work's pa
 
 - [Merlin](robert-de-boron-merlin.md), Old French, 1200–1240 CE
 - [The History of the Britons](historia-brittonum.md), Latin, 829–830 CE
+- [The History of the Kings of Britain](geoffrey-of-monmouths-history-of-the-kings.md), Latin, 1136 CE
 
 ## Arthur's early reign
 
