@@ -11,7 +11,7 @@ dexterales	dexterales	word	southern		160	Old Welsh deheu, "right hand", is also 
 dormitatio	dormitatio	word	dies	does, where "and so does" takes a second death in one annal	154	a saint's death, told as a sleep; the English says the death, and the endnote at 544 the Latin's figure, by /translate's "A death is said as a death"	Lewis and Short; Du Cange; Merriam-Webster	
 gentiles	gentiles	word	heathens		162	the Norse raiders, as the annals' Latin calls them	Lewis and Short; Du Cange; Merriam-Webster
 gueith	gueith	word	battle	fight, where a second battle comes close after the first	154	Old Welsh for a battle, written into the Latin	Silvan Evans, A Dictionary of the Welsh Language; Merriam-Webster	160: the three battles of 722, bellum, gueith and cat, are named in one "three battles", which the Latin's bellum takes
-hibernia	hibernia	name	Ireland		154	the island, as English names it	Phillimore's notes; Merriam-Webster
+hibernia, inhibernia, adhiberniam	hibernia	name	Ireland		154	the island, as English names it	Phillimore's notes; Merriam-Webster
 iugulatur	iugulatur	word	is killed	are killed, where two are killed together	157	a killing, as the annals use the word, not only a cut throat	Lewis and Short; Du Cange; Merriam-Webster
 medraut	medraut	name	Mordred		154	the name English readers know, the title of his Wikipedia article; the Welsh form is a row of old-words.tsv	Phillimore's notes; Merriam-Webster
 mortalitas	mortalitas	word	plague	sickness, where a second plague comes close after the first	154	a great dying, as the annals use the word	Lewis and Short; Du Cange; Merriam-Webster
@@ -66,7 +66,7 @@ Conthigirni	conthigirnus	name	Kentigern		156	the saint's name, as English gives 
 dibric	dibric	name	Dubricius		156	the saint's Latin name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
 cair legion	cair legion	name	Chester		156	the Welsh name of Chester, the City of the Legions on the Dee	Phillimore's notes; Merriam-Webster
 ſelim	selim	name	Selyf		156	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
-cinan	cinan	name	Cynan		156	the Welsh name, as Selyf's Wikipedia article gives his father	Phillimore's notes; Merriam-Webster
+cinan, cinan de ea, Cinan rex	cinan	name	Cynan		156	the Welsh name, as Selyf's Wikipedia article gives his father	Phillimore's notes; Merriam-Webster
 iacob	iacob	name	Iago		156	the king's Welsh name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
 Columcillæ	columcillae	name	Columba		155	the same saint as columcille, in another of Harley MS 3859's spellings	Phillimore's notes; Merriam-Webster
 uenit, uenerunt	uenire	word	comes	come, where several come	157	the plain verb, in the present the annals are told in	Lewis and Short; Merriam-Webster	166: Anarawd's coming at 894 begins on page 166 and its English opens page 167's paragraph
@@ -93,7 +93,7 @@ cocboẏ	cocboy	name	Maserfield		158	the English name of the battle, the title o
 nordorum	nordorum	name	Northumbrians		158	the Latin's "northerners", the people of Northumbria	Lewis and Short; Merriam-Webster
 eoba	eoba	name	Eowa		158	the king's name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
 merciorum	merciorum	name	Mercians		158	the people of Mercia, as English names them	Phillimore's notes; Merriam-Webster	162: Offa's death at 796 begins on page 162 and its English opens page 163's paragraph
-demeticæ	demeticae	name	Dyfed		158	the kingdom's Welsh name	Phillimore's notes; Merriam-Webster
+demeticæ, demetorum	demeticae	name	Dyfed		158	the kingdom's Welsh name	Phillimore's notes; Merriam-Webster
 gaíí campi	gaii campi	name	Winwaed		158	the English name of the battle, the title of its Wikipedia article	Phillimore's notes; Merriam-Webster
 Pantha	pantha	name	Penda		158	the king's name, as English writing gives it	Phillimore's notes; Merriam-Webster
 Oſguid	osguid	name	Oswiu		158	the king's name, the title of his Wikipedia article	Phillimore's notes; Merriam-Webster
@@ -175,6 +175,57 @@ Himeid	himeid	name	Hyfaidd		168	the Welsh name as Wikipedia spells it, in Hyfaid
 Clitauc	clitauc	name	Clydog		168	the Welsh name as Wikipedia spells it, in Seisyll ap Clydog; by /glossary's rule on names	Wikipedia, "Seisyll ap Clydog"; Merriam-Webster
 iudriſ	iudris	name	Idris		158	the Welsh name as Wikipedia spells it; by /glossary's rule on names	Wikipedia, "Idris"; Merriam-Webster
 grip hiud	grip hiud	name	Gruffudd		163	the Welsh name as Wikipedia spells it; by /glossary's rule on names	Wikipedia, "Gruffudd"; Merriam-Webster	163: the year 814 begins on page 163 and its English opens page 164's paragraph
-ſaturbiu	saturbiu	name	Sadyrnfyw		164	the bishop's name, as his Wikipedia article, Sadyrnfyw, spells it; by /glossary's rule on names	Wikipedia, "Sadyrnfyw"; Merriam-Webster
+ſaturbiu, ſaturbiu hail	saturbiu	name	Sadyrnfyw		164	the bishop's name, as his Wikipedia article, Sadyrnfyw, spells it; by /glossary's rule on names	Wikipedia, "Sadyrnfyw"; Merriam-Webster
 iudhail, iuꝺhail	iudhail	name	Ithel		162	the Welsh name as Wikipedia spells it, in Ithel ap Morgan; by /glossary's rule on names	Wikipedia, "Ithel ap Morgan"; Merriam-Webster
 Dungarth	dungarth	name	Donyarth		166	the king's name, the title of his Wikipedia article, which gives Dungarth as another; by /glossary's rule on names	Wikipedia, "Donyarth"; Merriam-Webster
+adomnan	adomnan	name	Adomnán		160	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+alt clut	alt clut	name	Alt Clut		166	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+aſſer	aſſer	name	Asser		167	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+bannguolou	bannguolou	name	Bannguolou		166	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Beli filiuſ elfin	beli filiuſ elfin	name	Beli son of Elfin		160	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Belin	belin	name	Belin		157	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+agentilibuſ nigriſ	agentilibuſ nigriſ	name	Black heathens		165	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+bellum carno	bellum carno	name	Carno		169	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Ceretic	ceretic of elmet	name	Ceretic		157	the king as the annal names him, "Ceretic dies", his kingdom told in the endnote	Phillimore's notes; Merriam-Webster	
+cetill	cetill	name	Cetill		165	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+cinauc	cinauc	name	Cinauc		156	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Cincenn	cincenn	name	Cincenn		169	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Cinnen agentilibuſ	cinnen agentilibuſ	name	Cinnen		165	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Commene fota	commene fota	name	Cumméne Fota		158	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+filíí cinan	cynan garwyn	name	Cynan		156	Selyf "son of Cynan", as the annal of 613 names him	Phillimore's notes; Merriam-Webster	
+dinas neguid	dinas neguid	name	Dinas Neguid		168	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+dinmeir	dinmeir	name	Dinmeir		167	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+duta	duta	name	Duta		165	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+elized	elisedd	name	Elisedd		163	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	163: the annal of 814, which the Latin page 163 ends on, is told at the head of page 164's English
+eneuriſ	eneuriſ	name	Eneuris		169	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+euboniam, ineubonia	eubonia	name	Eubonia		155	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	155: the annal of 584, which the Latin page 155 ends on, is told at the head of page 156's English
+Fernmail filiuſ iudhail	fernmail filiuſ iudhail	name	Ffernfael son of Ithel		162	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+finnant	finnant	name	Finnant		165	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+gart mailauc	gart mailauc	name	Gart Mailauc		160	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Gildaſ	gildaſ	name	Gildas		155	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+glannauc	glannauc	name	Glannauc		157	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Guidgar	guidgar	name	Guidgar		157	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Guorchiguil	guorchiguil	name	Guorchiguil		167	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+guent	guent	name	Gwent		165	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+hehil	hehil	name	Hehil		160	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Higuel rex	hywel dda	name	Hywel		168	the king as the annals of 928 and 950 name him	Phillimore's notes; Merriam-Webster	
+Laudent	laudent	name	Laudent		164	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Lunberth	lunberth	name	Lunberth		168	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+mellituſ	mellituſ	name	Mellitus		156	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+iudeorum	iudeorum	name	Moni Iudeorum		156	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Morcant	morcant	name	Morcant		159	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Nobiſ epiſcopuſ	nobiſ epiſcopuſ	name	Nobis		164	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+offa	offa	name	Offa		162	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+oſuuald	oſuuald	name	Oswald		158	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Ougen	ougen	name	Ougen		161	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+pencon	pencon	name	Pencon		160	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+regin rex	regin rex	name	Regin		163	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Rotri filiuſ higuel	rhodri ap hywel	name	Rhodri		169	as the annal of 954 names him	Phillimore's notes; Merriam-Webster	
+Rotri rex brittonum	rhodri molwynog	name	Rhodri		161	as the annal of 754 names him	Phillimore's notes; Merriam-Webster	
+Rotri et filiuſ eiuſ, digal rotri	rhodri the great	name	Rhodri		166	as the annals of 877 and 880 name him	Phillimore's notes; Merriam-Webster	
+run filiuſ urbgen	rhun ap urien	name	Rhun		157	as the annal of 626 names him	Phillimore's notes; Merriam-Webster	
+rome, inroma, adromam	rome	name	Rome		153	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+ſaxoneſ, ſaxonum, ſaxonibuſ, aſaxonibuſ	saxons	name	Saxons		158	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	158: the annal of 665, which the Latin page 158 ends on, is told at the head of page 159's English
+ſtrat clut	ſtrat clut	name	Strathclyde		169	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	
+Trifun	trifun	name	Trifun		163	the name as the annal gives it	Phillimore's notes; Merriam-Webster	163: the annal of 814, which the Latin page 163 ends on, is told at the head of page 164's English
+urbgen	urbgen	name	Urien		157	the name as modern English writing gives it, by /glossary's rule on names	Phillimore's notes; Merriam-Webster	

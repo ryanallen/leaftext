@@ -1,30 +1,30 @@
 latin	normalized	kind	english	also	first_page	reason	standard	exceptions
-Ambrosius, Ambrosii, Ambrosio	ambrosius	name	Ambrosius		171	the history's own name; kept apart from Merlin's Aurelius Ambrosius	Lucas's Nomina hominum; Merriam-Webster	168: Ambrose, bishop of Milan, whom English calls Ambrose, not the boy of the dragons
-Arthur	arthur	name	Arthur		199	the form every English reader knows	Lucas's Nomina hominum; Merriam-Webster	
-Brittannia	brittannia	name	Britain		147	the island, as English names it	Lucas's Geographica; Merriam-Webster	200: in the page's last sentence, which opens page 201's paragraph, where the page turns inside it
+Ambrosius, Ambrosii, Ambrosio, Ambrosius vocor	ambrosius	name	Ambrosius		171	the history's own name; kept apart from Merlin's Aurelius Ambrosius	Lucas's Nomina hominum; Merriam-Webster	168: Ambrose, bishop of Milan, whom English calls Ambrose, not the boy of the dragons
+Arthur, Arthuri	arthur	name	Arthur		199	the form every English reader knows	Lucas's Nomina hominum; Merriam-Webster	
+Brittannia, Brittanniam, Brittanniae, Britanniae	brittannia	name	Britain		147	the island, as English names it	Lucas's Geographica; Merriam-Webster	200: in the page's last sentence, which opens page 201's paragraph, where the page turns inside it; 148: the English names Britain fewer times than the Latin, which repeats it in the island's description, and tells the repeat by "it" or "the island"; 152: "Brittanniam" stands in the sentence page 152 ends on, which the English tells at the head of page 153
 Brittones	brittones	word	the Britons		147	the people, never "the British", by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
 Cabal	cabal	name	Cavall		217	the name readers know Arthur's dog by, the title of his Wikipedia article; Cabal is an English word	Lucas's Nomina hominum; Merriam-Webster	
-Cantia, Chent, Cantorum, Cantiae	cantia	name	Kent		179	the land as English names it	Lucas's Geographica; Merriam-Webster	
+Cantia, Chent, Cantorum, Cantiae, Canturguoralen	cantia	name	Kent		179	the land as English names it	Lucas's Geographica; Merriam-Webster	180: the city of Kent's people is named once, "the city of the people of Kent", where the Latin names it and its people twice
 Catgualart	catgualart	name	Cadwaladr		208	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	
 Catguollauni, Catgublaun	catguollaunus	name	Cadwallon		204	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	207: in the page's last sentence, which opens page 208's paragraph, where the page turns inside it
 Cunedag	cunedag	name	Cunedda		205	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
 dux bellorum, dux … bellorum	dux bellorum	phrase	the leader in the battles		199	dux is a leader, never a duke, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster	
 Embreis Guletic	embreis guletic	name	Emrys Wledig		186	the Welsh name the boy gives, in its modern Welsh form	Lucas's Nomina hominum; Merriam-Webster	
 Germanus, Germani, Germano	germanus	name	Germanus		172	the bishop's Latin name, which English keeps	Lucas's Nomina hominum; Merriam-Webster	
-Guenedota, Guined	guenedota	name	Gwynedd		205	the kingdom's Welsh name	Lucas's Geographica; Merriam-Webster	181: in the page's last sentence, which opens page 182's paragraph, where the page turns inside it
+Guenedota, Guined, Guenedotae	guenedota	name	Gwynedd		205	the kingdom's Welsh name	Lucas's Geographica; Merriam-Webster	181: in the page's last sentence, which opens page 182's paragraph, where the page turns inside it; 205: "Guenedotae" stands in the sentence page 205 ends on, which the English tells at the head of page 206; 207: "Guenedotae" stands in the sentence page 207 ends on, which the English tells at the head of page 208
 Guorthemir	guorthemir	name	Vortimer		186	the form English writing uses, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
-Guorthigirnus, Guorthigirni, Guorthigirno, Guorthigirn, Guorthegirnus	guorthigirnus	name	Vortigern		171	the form every English reader knows, as Merlin's English has it	Lucas's Nomina hominum; Merriam-Webster	177: in the page's last sentence, which opens page 178's paragraph, where the page turns inside it
-Hencgistus, Hencgisti, Hengistus, Hengisti, Hengisto	hencgistus	name	Hengist		171	the form every English reader knows, as Merlin's English has it	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
-Hibernia	hibernia	name	Ireland		155	the island, as English names it	Lucas's Geographica; Merriam-Webster	194: in the page's last sentence, which opens page 195's paragraph, where the page turns inside it
+Guorthigirnus, Guorthigirni, Guorthigirno, Guorthigirn, Guorthegirnus, Guorthigirnum, Guortheneu	guorthigirnus	name	Vortigern		171	the form every English reader knows, as Merlin's English has it	Lucas's Nomina hominum; Merriam-Webster	177: in the page's last sentence, which opens page 178's paragraph, where the page turns inside it
+Hencgistus, Hencgisti, Hengistus, Hengisti, Hengisto, Hengist	hencgistus	name	Hengist		171	the form every English reader knows, as Merlin's English has it	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
+Hibernia, Hiberniam, Hiberniae	hibernia	name	Ireland		155	the island, as English names it	Lucas's Geographica; Merriam-Webster	194: in the page's last sentence, which opens page 195's paragraph, where the page turns inside it
 Hors, Horso	hors	name	Horsa		171	the form English writing uses, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	186: in the page's last sentence, which opens page 187's paragraph, where the page turns inside it
 Mailcunus	mailcunus	name	Maelgwn		205	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	205: in the page's last sentence, which opens page 206's paragraph, where the page turns inside it
 Neirin	neirin	name	Aneirin		205	the poet's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster	
 Osguid	osguid	name	Oswiu		202	the form English writing uses, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster	204: in the page's last sentence, which opens page 205's paragraph, where the page turns inside it
-Patricius	patricius	name	Patrick		194	the form every English reader knows	Lucas's Nomina hominum; Merriam-Webster	
+Patricius, Patricii, Patricio, Maun	patricius	name	Patrick		194	the form every English reader knows	Lucas's Nomina hominum; Merriam-Webster	159: the Latin counts the years to Patrick's coming and from it, naming him twice, and the English names his arrival once and reckons the second count from it
 Sabrina, Sabrinae	sabrina	name	the Severn		214	the river, as English names it	Lucas's Geographica; Merriam-Webster	
 Saxones	saxones	word	the Saxons		147	the people, kept apart from the English as the text keeps them, by /translate-latin step 2	Lewis and Short; Du Cange; Merriam-Webster	190: inside Hengist's Old English cry, kept as the history writes it, with its meaning in an endnote
 Taliessin	taliessin	name	Taliesin		205	the poet's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster	
-Tanet	tanet	name	Thanet		171	the island, as English names it	Lucas's Geographica; Merriam-Webster	171: in the page's last sentence, which opens page 172's paragraph, where the page turns inside it
+Tanet, Ruoihm	tanet	name	Thanet		171	the island, as English names it	Lucas's Geographica; Merriam-Webster	171: in the page's last sentence, which opens page 172's paragraph, where the page turns inside it
 Urbgen	urbgen	name	Urien		206	the modern Welsh form, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
 Agnominis	agnomen	name	Agnoman		154	Nemed's father as the Irish tale of the settlements names him, the form Wikipedia gives	Lucas's Nomina hominum; Merriam-Webster
 Alanus, Alaneus, Alanei	alanus	name	Alanus		159	one name for the man the history spells two ways in one account, so the reader sees one man	Lucas's Nomina hominum; Merriam-Webster	159: the sentence naming him opens page 160's paragraph, where the page turns inside it
@@ -61,7 +61,7 @@ Hereri	hereri	name	Snowdonia		182	the mountains' name, the title of the Wikipedi
 Gleguissing	gleguissing	name	Glywysing		183	the kingdom's modern Welsh name, as Wikipedia files it	Lucas's Geographica; Merriam-Webster
 Germania, Germaniam	germania	name	Germany		171	the land the Saxons came from, as English names it	Lewis and Short; Merriam-Webster	200: in the page's last sentence, which opens page 201's paragraph, where the page turns inside it
 Teibi	teibi	name	Teifi		191	the river's modern Welsh name, as English maps give it	Lucas's Geographica; Merriam-Webster
-Gloecester	gloecester	name	Gloucester		193	the city as English names it	Lucas's Geographica; Merriam-Webster
+Gloecester, Cair Glovi	gloecester	name	Gloucester	Cair Glovi	193	the city as English names it	Lucas's Geographica; Merriam-Webster
 Caelestino	caelestinus	name	Celestine		194	the pope's name as English gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
 Iserinus	iserinus	name	Iserninus		195	the bishop's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
 Amatheam, Amatheo	amatheus	name	Amatheus		195	the name as Lucas's index gives it; the history joins "king" to it, which the English keeps beside it	Lucas's Nomina hominum; Merriam-Webster
@@ -69,16 +69,16 @@ Loygare	loygare	name	Lóegaire		196	the king's name, as his Wikipedia article, L
 Conachta	conachta	name	Connacht		196	the province as English names it	Lucas's Geographica; Merriam-Webster	196: in the page's last sentence, which opens page 197's paragraph, where the page turns inside it
 Moyses	moyses	name	Moses		198	the name as English Bibles give it	Merriam-Webster
 Mariae	maria	name	Mary		200	the name as English gives it	Merriam-Webster
-Osguald	osguald	name	Oswald		202	the king's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
+Osguald, Oswaldum, Oswald Lamnguin	osguald	name	Oswald		202	the king's name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
 Alcfrid	alcfrid	name	Alhfrith		202	the name as English writing gives it, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
 Aelfguin	aelfguin	name	Aelfwine		202	the name Wikipedia files him under, Ælfwine, written with ae, since the English writes no æ	Lucas's Nomina hominum; Merriam-Webster
 Echfird, Echgfrid, Ecgfird, Ecgfrid	ecgfrid	name	Ecgfrith		202	the name Wikipedia files both kings who bear it under, the Northumbrian and the Mercian	Lucas's Nomina hominum; Merriam-Webster
 Ecgfird ipse est Ecgfrid	ecgfird ipse est ecgfrid	phrase	Ecgfrith		204	two spellings of one name, which the English says once	Lucas's Nomina hominum; Merriam-Webster
 Aedlfred Flesaur, Eadfered Flesaurs	aedlfred flesaur	name	Aethelfrith Flesaur		202	the king's name as Wikipedia files him, Æthelfrith, written with ae, with the history's byname kept	Lucas's Nomina hominum; Merriam-Webster
-Eadfred, Eadlfrid	eadfred	name	Aethelfrith		207	the king's name as Wikipedia files him, Æthelfrith, written with ae	Lucas's Nomina hominum; Merriam-Webster
+Eadfred, Eadlfrid, Aelfret	eadfred	name	Aethelfrith	Aelfret	207	the king's name as Wikipedia files him, Æthelfrith, written with ae	Lucas's Nomina hominum; Merriam-Webster
 Eadguin, Eoguin, Aedgum, Edgum, Eadgum	eadguin	name	Edwin		203	the name every English reader knows, the title of his Wikipedia article	Lucas's Nomina hominum; Merriam-Webster
 Pubba, Pybba, Pippa	pubba	name	Pybba		204	one name for the man the history spells three ways, as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
-Pantha	pantha	name	Penda		204	another spelling of Penda, so the reader sees one king	Lucas's Nomina hominum; Merriam-Webster
+Pantha, Penda, Pendae	pantha	name	Penda		204	another spelling of Penda, so the reader sees one king	Lucas's Nomina hominum; Merriam-Webster
 Eua, Eoua	eua	name	Eowa		204	the name as Wikipedia files him, so the reader sees one man for the history's two spellings	Lucas's Nomina hominum; Merriam-Webster
 Onnan	onnan	name	Anna		208	the East Anglian king's name as Wikipedia files him	Lucas's Nomina hominum; Merriam-Webster
 Eastanglorum, Easteranglorum	eastangli	word	the East Angles		203	the people, as English names them	Lucas's Geographica; Merriam-Webster
@@ -109,3 +109,216 @@ ambronum	ambrones	word	savages		203	the Latin's insult for the English, savage r
 militis	miles	word	warrior	soldier, of a fighting man of no name	155	Arthur's title here, a fighting man; "knight" would call up the romances of a later age	Lewis and Short; Du Cange; Merriam-Webster
 pedes	pes	word	feet		215	a Roman foot, about eleven and a half inches, so the spring's twenty feet are about nineteen and a half feet; the US master keeps the source's round number in feet	Lewis and Short; Merriam-Webster	217: in the page's last sentence, which opens page 218's paragraph, where the page turns inside it
 cubitorum	cubitus	word	feet		218	a cubit, about a foot and a half; four cubits, about six feet, said in the US master in feet	Lewis and Short; Merriam-Webster
+Alli	alli	name	Aella		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Aeneas, Aeneae	aeneas	name	Aeneas		149	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	149: "Aeneas" stands in the sentence page 149 ends on, which the English tells at the head of page 150
+Eadlbald	eadlbald	name	Aethelbald		204	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ealdbert	ealdbert	name	Aethelberht		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Aedlric, Aedldric	aedlric	name	Aethelric		202	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Agned	agned	name	Agned		200	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Albam, Albanorum	alba longa	name	Alba		150	the city as the English names it, "He founded Alba" and "the kings of Alba"	Lucas's Nomina hominum; Merriam-Webster	
+Albani	albani	name	Albans		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Aldul	aldul	name	Aldul		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Anchisae	anchisae	name	Anchises		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Anir	anir	name	Anir		217	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	217: the Latin names Anir twice, in the spring's name Licat Anir and as the man buried there, and the English names him once, as the man buried there
+Avvileua	avvileua	name	Aquileia		169	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Argabaste	argabaste	name	Arbogast		169	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ascanius, Ascanio, Ascanium, Ascanii	ascanius	name	Ascanius		149	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	150: the English names it fewer times than the Latin, which repeats it in the same sentence or list, and tells the repeat by the name once or by a pronoun; 149: "Ascanio" stands in the sentence page 149 ends on, which the English tells at the head of page 150
+Augusto, Octaviano	augustus	name	Augustus		164	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	164: the English names it fewer times than the Latin, which repeats it in the same sentence or list, and tells the repeat by the name once or by a pronoun
+Azariae	azariae	name	Azaria		157	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Badonis	badonis	name	Badon		200	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Dinguayrdi, Dinguoaroy, Bebbanburth	bamburgh	name	Din Guayrdi	Din Guoaroy; Bebbanburth	205	the fortress by the names the history gives it, which the English keeps, the card telling it is Bamburgh	Lucas's Nomina hominum; Merriam-Webster	
+Bassas	bassas	name	Bassas		199	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Bellinus	bellinus	name	Bellinus		162	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Benli	benli	name	Benli		173	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Bethleem	bethleem	name	Bethlehem		168	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Bluchbard	bluchbard	name	Bluchbard		205	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Birdei	birdei	name	Bridei		202	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	202: "Birdei" stands in the sentence page 202 ends on, which the English tells at the head of page 203
+Brigidae	brigidae	name	Brigid		159	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Brittonum	brittonum	name	Britons		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Builc	builc	name	Builc		156	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Burgundi	burgundi	name	Burgundians		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Brithon	brithon	name	Cair Brithon		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Caratauc	caratauc	name	Cair Caratauc		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ceint	ceint	name	Cair Ceint		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Celemion	celemion	name	Cair Celemion		212	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Colun	colun	name	Cair Colun		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Custoeint	custoeint	name	Cair Custoeint		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Daun	daun	name	Cair Daun		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Draitou	draitou	name	Cair Draitou		212	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ebrauc	ebrauc	name	Cair Ebrauc		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Grauth	grauth	name	Cair Grauth		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guinntguic	guinntguic	name	Cair Guinntguic		210	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guiragon	guiragon	name	Cair Guiragon		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guricon	guricon	name	Cair Guricon		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Legeion, Guar, Usic	cair legeion guar usic	name	Cair Legeion Guar Usic		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	211: the list's one city, Cair Legeion Guar Usic, is held by the parts the card names, each a record of one name
+Lerion	lerion	name	Cair Lerion		212	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ligualid	ligualid	name	Cair Ligualid		210	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Luit	luit	name	Cair Luit Coyt		212	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Lundem	lundem	name	Cair Lundem		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Maunguid	maunguid	name	Cair Maunguid		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Meguaid	meguaid	name	Cair Meguaid		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Mincip	mincip	name	Cair Mincip		210	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Pensa, Coyt	cair pensa	name	Cair Pensa	Coyt	212	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	212: the list names Coyt twice, in Cair Pensa vel Coyt and Cair Luit Coyt, two cities
+Peris	peris	name	Cair Peris		211	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cair Segeint	cair segeint	name	Cair Segeint		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Urnarc	urnarc	name	Cair Urnarc		212	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cant Guic	cant guic	name	Cant Guic		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	166: "Cant Guic" stands in the sentence page 166 ends on, which the English tells at the head of page 167
+Cappadoces	cappadoces	name	Cappadocians		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Categirn	categirn	name	Catigern		187	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cat Coit Celidon	celidon wood	name	Cat Coit Celidon	forest of Celidon	199	the battle's Welsh name the English keeps beside "the forest of Celidon"	Lucas's Nomina hominum; Merriam-Webster	
+Ceretic	ceretic of elmet	name	Ceretic		177	the interpreter as the history names him	Lucas's Nomina hominum; Merriam-Webster	177: "Ceretic" stands in the sentence page 177 ends on, which the English tells at the head of page 178
+voragine Cereuus	voragine cereuus	name	Cereuus		218	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	218: "voragine Cereuus" stands in the sentence page 218 ends on, which the English tells at the head of page 219
+Cian, Gueinth Guaut	cian	name	Cian		205	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	205: Cian's byname Gueinth Guaut is told on page 206's English, where the poets' list runs on
+urbe Legionis	urbe legionis	name	City of the Legion		200	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Columbae	columbae	name	Columba		159	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Constantinus, Constantini, Constantinum	constantine the great	name	Constantine		166	the name as the English gives it	Lucas's Nomina hominum; Merriam-Webster	
+Constantinopolim	constantinopolim	name	Constantinople		168	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cruachan Eile	cruachan eile	name	Cruachan Eile		197	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cruc Maur	cruc maur	name	Cruc Maur		218	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cruc Ochidient	cruc ochidient	name	Cruc Ochidient		167	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Cinlipiuc	cynllibiwg	name	Cynllibiwg		214	the region as modern English writing gives it	Lucas's Nomina hominum; Merriam-Webster	214: the wonder page 214 ends on is told at the head of page 215's English
+Damhoctor	damhoctor	name	Damhoctor		156	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Dardani	dardani	name	Dardanus		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Decium	decium	name	Decius		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Derguentid	derguentid	name	Derguentid		187	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Dolobellum	dolobellum	name	Dolobellus		162	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Dubglas	dubglas	name	Dubglas		199	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Duorig, Habren	duorig habren	name	Duorig Habren		214	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	214: the wonder's name is said once, Duorig Habren, and Habren, the Severn, is told as the Severn
+Ealdbald	ealdbald	name	Eadbald		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Eanfled	eanfled	name	Eanflaed		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ebissa	ebissa	name	Ebissa		179	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ecgberth	ecgberth	name	Ecgberht		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ecgfrid filius Osbiu	ecgfrith of northumbria	name	Ecgfrith		208	the king as the English names him	Lucas's Nomina hominum; Merriam-Webster	
+Aegyptii, Aegyptios	egyptians	name	Egyptians		156	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	157: the English names it fewer times than the Latin, which repeats it in the same sentence or list, and tells the repeat by the name once or by a pronoun
+Elleti	elleti	name	Elleti		182	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	182: "Elleti" stands in the sentence page 182 ends on, which the English tells at the head of page 183
+Elmet	elmet	name	Elmet		206	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Elric	elric	name	Elric		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Eobba	eobba	name	Eoppa		201	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ercunbert	ercunbert	name	Eorcenberht		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Eormoric	eormoric	name	Eormenric		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Episford, Rithergabail	episford	name	Episford	Rithergabail	187	the name as modern English writing gives it, by /glossary's rule on names, and the Britons' name for the ford, Rithergabail, which the English keeps beside it	Lucas's Nomina hominum; Merriam-Webster	
+Equitio	equitio	name	Equitius		172	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ercing	ercing	name	Ergyng		217	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Estsaxum	estsaxum	name	Essex		190	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Eubonia, Euboniam	eubonia	name	Eubonia		148	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Eucharisto	eucharisto	name	Eucharistus		164	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Fauni	fauni	name	Faunus		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Faustus, Fausti	faustus	name	Faustus		192	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Fernmail	fernmail	name	Ffernfael		192	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	192: "Fernmail" stands in the sentence page 192 ends on, which the English tells at the head of page 193
+Finnaun Guur Helic	finnaun guur helic	name	Finnaun Guur Helic		214	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	214: "Finnaun Guur Helic" stands in the sentence page 214 ends on, which the English tells at the head of page 215
+Frenessicum	frenessicum	name	Frenessic Sea		179	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	179: "Frenessicum" stands in the sentence page 179 ends on, which the English tells at the head of page 180
+Friodolguald	friodolguald	name	Frithuwald		206	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Gai	gai	name	Gai		208	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Gallia, Gallias, Gallos	gallia	name	Gaul		152	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Galli	galli	name	Gauls		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Gebidi	gebidi	name	Gepids		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Geta	geta	name	Geta		171	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Glein	glein	name	Glein		199	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Glovi	glovi	name	Glovi		193	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Gothi, Gothos	gothi	name	Goths		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Gratianum, Gratianus	gratianum	name	Gratian		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guaul	guaul	name	Guaul		165	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guinnion	guinnion	name	Guinnion		199	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	199: "Guinnion" stands in the sentence page 199 ends on, which the English tells at the head of page 200
+Guitolin, Guitolini	guitolin	name	Guitolin		193	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Catguoloph, Guoloppum	guoloph	name	Guoloph		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	209: the Latin's Guoloppum and Catguoloph are one battle, which the English names once as the battle of Guoloph
+Guoyrancgono	guoyrancgono	name	Guoyrancgonus		179	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guunnessi	guunnessi	name	Guunnessi		186	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Catscaul	catscaul	name	Heavenfield		208	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Huich	huich	name	Huich		213	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Umbri	umbri	name	Humber		205	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Hussa	hussa	name	Hussa		206	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Hiberei	hiberei	name	Iberians		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Ida	ida	name	Ida		201	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	206: the English names it fewer times than the Latin, which repeats it in the same sentence or list, and tells the repeat by the name once or by a pronoun
+Istoreth	istoreth	name	Istoreth		156	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Istorini	istorini	name	Istorinus		156	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Iudeu	iudeu	name	Iudeu		208	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Iuvan, Iuvani	iuvan	name	Iuvan		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Iafeth	iafeth	name	Japheth		159	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Baptistam	baptistam	name	John the Baptist		146	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Iulius	julius caesar	name	Julius	Julius Caesar	162	the name as the English gives it, "Julius took rule over the British people"	Lucas's Nomina hominum; Merriam-Webster	
+Latini, Latinos, Latinorum	latini	name	Latins		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+filiam Latini, mortem Latini	filiam latini	name	Latinus		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Laviniam	laviniam	name	Lavinia		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Lemn	lemn	name	Lemn		213	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Licat	licat	name	Licat Anir		217	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Liethan	liethan	name	Liethan		156	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Linnuis	linnuis	name	Lindsey		199	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Longobardi, Longobardos	longobardi	name	Lombards		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Luchlein	luchlein	name	Lough Leane		219	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Loyngarth	loyngarth	name	Loyngarth		215	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Luch Echach	luch echach	name	Luch Echach		219	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Lucius	lucius	name	Lucius		164	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Lumonoy	lumonoy	name	Lumonoy		213	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Lugduni	lugduni	name	Lyon		168	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Mailcun	maelgwn gwynedd	name	Maelgwn		205	the king as the English names him	Lucas's Nomina hominum; Merriam-Webster	205: "Mailcun" stands in the sentence page 205 ends on, which the English tells at the head of page 206
+Malalehel	malalehel	name	Mahalalel		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Mogantia	mogantia	name	Mainz		164	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Malvam	malvam	name	Malva		157	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Manau	manaw gododdin	name	Manaw Gododdin		148	the land as modern English writing gives it	Lucas's Nomina hominum; Merriam-Webster	148: "Manau" here is the island of Man, Eubonia, which the English names "Man"; 205: "Manau" stands in the sentence page 205 ends on, which the English tells at the head of page 206
+Cocboy	cocboy	name	Maserfield		208	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Maritaniam	maritaniam	name	Mauretania		157	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Maximianus, Maximiano	maximianus	name	Maximianus		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Maximus	maximus	name	Maximus		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Medos	medos	name	Medes		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Meicen	meicen	name	Meicen		204	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Mene	mene	name	Mene		219	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Meroblaudis	meroblaudis	name	Merobaudes		168	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Matusalae	matusalae	name	Methuselah		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Mouric	mouric	name	Meurig		216	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Milchu	milchu	name	Milchu		194	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Minmanton	minmanton	name	Minmanton		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Minocanni	minocanni	name	Minocannus		162	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Morcant, Morcanto	morcant	name	Morcant		206	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Mosoch	mosoch	name	Mosoch		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Montis Iovis	montis iovis	name	Mount Jove		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	166: "Montis Iovis" stands in the sentence page 166 ends on, which the English tells at the head of page 167
+Nabuchodonosor	nabuchodonosor	name	Nebuchadnezzar		145	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Numae, Pampilii	numa pompilius	name	Numa Pompilius		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	161: the line of Brutus is told as one sentence, Rea Silvia daughter of Numa Pompilius, where the Latin names each in two
+Octha	octha	name	Octa		179	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Offa	offa	name	Offa		202	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	203: "Offa" stands in the sentence page 203 ends on, which the English tells at the head of page 204
+Oghgul	oghgul	name	Oghgul		178	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	178: "Oghgul" stands in the sentence page 178 ends on, which the English tells at the head of page 179
+Oper Linn Liuan	oper linn liuan	name	Oper Linn Liuan		214	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Palladius, Palladii	palladius	name	Palladius		194	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Pascent	pascent	name	Pasgen		192	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Picti, Pictis, Pictos, Pictorum	picti	name	Picts		147	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	179: "Pictos" stands in the sentence page 179 ends on, which the English tells at the head of page 180; 202: "Pictorum" stands in the sentence page 202 ends on, which the English tells at the head of page 203
+Pici	pici	name	Picus		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Herculis	herculis	name	Pillars of Hercules		157	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Placidae	placidae	name	Placidia		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Postumus	postumus	name	Postumus		153	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Rea, Reae, Silvia, Silviae	rea silvia	name	Rea Silvia		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	161: the line of Brutus is told as one sentence, Rea Silvia daughter of Numa Pompilius, where the Latin names each in two
+Renis	renis	name	Renis		192	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Riemmelth	riemmelth	name	Rhiainfellt		203	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Romam, Romae	romam	name	Rome		164	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Rubelio	rubelio	name	Rubellius		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Rufum, Rufo	rufum	name	Rufus		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Rusicadam	rusicadam	name	Rusicada		157	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+sanctus Martinus, Martinus Turonensis	sanctus martinus	name	Saint Martin		166	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Satanas	satanas	name	Satan		178	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Saturni	saturni	name	Saturn		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Scythas	scythas	name	Scythians		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Segerum	segerum	name	Segerus		195	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Severus, Severi	severus	name	Severus		165	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Sem	sem	name	Shem		159	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Silvius, Silvium, Silvii	silvius	name	Silvius		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	153: the English names it fewer times than the Latin, which repeats it in the same sentence or list, and tells the repeat by the name once or by a pronoun
+Sutsaxum	sutsaxum	name	Sussex		190	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Talhaern	talhaern	name	Talhaearn		205	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Tauro	tauro	name	Taurus		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Teudubir	teudubir	name	Tewdwr		193	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Tamesis	tamesis	name	Thames		148	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Theodosio	theodosio	name	Theodosius		168	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Deodric, Deoric	deodric	name	Theodric		206	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Turingi	turingi	name	Thuringians		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Tithicam	tithicam	name	Tithic		177	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Trahannoni	trahannoni	name	Trahannon		213	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Tribruit	tribruit	name	Tribruit		200	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Trinovantum	trinovantum	name	Trinovantum		163	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Troi	troi	name	Tros		161	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Turni, Turonensis	turni	name	Turnis		152	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Turno, Turni	turno	name	Turnus		150	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Troynt	troynt	name	Twrch Trwyth		217	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Tyrreni, Tyrrenum	tyrreni	name	Tyrrhenian Sea		152	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Valentiniano, Valentinianum, Valentiano, Valentianus	valentiniano	name	Valentinian		168	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Valerianum	valerianum	name	Valerian		209	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Vith Guint	vith guint	name	Vith Guint		215	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Valagothi	valagothi	name	Walagoths		160	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Guectha	guectha	name	Wecta		171	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	
+Woden	woden	name	Woden		202	the name as modern English writing gives it, by /glossary's rule on names	Lucas's Nomina hominum; Merriam-Webster	

@@ -116,6 +116,7 @@ A book whose text is published reaches from the first episode it tells to the la
 - [The Prophecies of Merlin](story-map.md). Anonymous. Old French. Coming; not published yet. Story: The knights' adventures to The Lancelot and Tristan years, broad. Written: 1272–1279 CE. Edition not chosen yet. Length: about 283 pages, about 150,000 words of Old French.
 - [Escanor](story-map.md). Girart d'Amiens. French. Coming; not published yet. Story: The knights' adventures, broad. Written: 1280 CE. Edition not chosen yet. Length: about 25,936 lines, about 160,000 words of French.
 - [Arthur and Gorlagon](story-map.md). Anonymous. Latin. Coming; not published yet. Story: The knights' adventures, broad. Written: 1300–1399 CE. Edition not chosen yet. Length: about 10 pages, about 3,300 words of Latin.
+- [The Ívint Herintsson Ballads](story-map.md). Anonymous. Faroese. Coming; not published yet. Story: The knights' adventures, broad. Written: 1300–1700 CE. Edition not chosen yet. Length: about 1,500 lines, about 7,500 words of Faroese.
 - [Ywain and Gawain](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1325–1350 CE. Edition not chosen yet. Length: about 4,032 lines, about 27,000 words of Middle English.
 - [Libeaus Desconus](story-map.md). Thomas Chestre. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1340–1360 CE. Edition not chosen yet. Length: about 2,232 lines, about 13,000 words of Middle English.
 - [Sir Launfal](story-map.md). Thomas Chestre. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1350–1399 CE. Edition not chosen yet. Length: about 1,044 lines, about 6,900 words of Middle English.
@@ -127,6 +128,7 @@ A book whose text is published reaches from the first episode it tells to the la
 - [The Avowing of Arthur](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1400 CE. Edition not chosen yet. Length: about 1,148 lines, about 7,600 words of Middle English.
 - [The Awntyrs off Arthure](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1400–1430 CE. Edition not chosen yet. Length: about 715 lines, about 5,400 words of Middle English.
 - [The Visit of Grey Ham (Céilidh Iosgaide Léithe)](story-map.md). Anonymous. Irish. Coming; not published yet. Story: The knights' adventures, broad. Written: 1400–1599 CE. Edition not chosen yet. Length: about 20 pages, about 6,000 words of Irish.
+- [Widuwilt](story-map.md). Anonymous. Yiddish. Coming; not published yet. Story: The knights' adventures, broad. Written: 1400–1550 CE. Edition not chosen yet. Length: about 5,000 lines, about 35,000 words of Yiddish.
 - [The Jeaste of Sir Gawain](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1450–1550 CE. Edition not chosen yet. Length: about 541 lines, about 3,200 words of Middle English.
 - [The Percy Folio's Arthur](story-map.md). Anonymous. Early Modern English. Coming; not published yet. Story: The knights' adventures to Arthur's end, broad. Written: 1450–1650 CE. Edition not chosen yet. Length: about 4,700 lines, about 33,000 words of Early Modern English.
 - [The Wedding of Sir Gawain and Dame Ragnelle](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1450 CE. Edition not chosen yet. Length: about 855 lines, about 6,100 words of Middle English.
@@ -136,8 +138,6 @@ A book whose text is published reaches from the first episode it tells to the la
 - [The Tragedy of Tragedies](story-map.md). Henry Fielding. English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1730–1731 CE. Edition not chosen yet. Length: about 1,200 lines, about 9,600 words of English.
 - [The Egyptian Maid](story-map.md). William Wordsworth. English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1835 CE. Edition not chosen yet. Length: about 296 lines, about 2,100 words of English.
 - [The Story of the Champions of the Round Table](story-map.md). Howard Pyle. English. Coming; not published yet. Story: The knights' adventures, broad. Written: 1905 CE. Edition not chosen yet. Length: about 330 pages, about 89,000 words of English.
-- [The Ívint Herintsson Ballads](story-map.md). Anonymous. Faroese. Coming; not published yet. Story: The knights' adventures, broad. Date not established. Edition not chosen yet. Length: about 1,500 lines, about 7,500 words of Faroese.
-- [Widuwilt](story-map.md). Anonymous. Yiddish. Coming; not published yet. Story: The knights' adventures, broad. Date not established. Edition not chosen yet. Length: about 5,000 lines, about 35,000 words of Yiddish.
 
 ## The Roman war
 
@@ -166,6 +166,8 @@ A book whose text is published reaches from the first episode it tells to the la
 - [The Cantari: Carduino and Tristan and Lancelot at Merlin's Stone](story-map.md). Anonymous. Italian. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1350–1399 CE. Edition not chosen yet. Length: about 1,100 lines, about 7,700 words of Italian.
 - [The Saga of Tristram and Ísodd](story-map.md). Anonymous. Icelandic. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1350–1450 CE. Edition not chosen yet. Length: about 70 pages, about 21,000 words of Icelandic.
 - [Tristán de Leonís and El cuento de Tristán](story-map.md). Anonymous. Old Spanish. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1350–1501 CE. Edition not chosen yet. Length: about 450 pages, about 170,000 words of Old Spanish.
+- [Tristrams kvæði](story-map.md). Anonymous. Icelandic. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1400–1550 CE. Edition not chosen yet. Length: about 120 lines, about 600 words of Icelandic.
+- [Ystorya Trystan](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1450–1550 CE. Edition not chosen yet. Length: about 1,500 words of Middle Welsh.
 - [Lancelot of the Laik](story-map.md). Anonymous. Middle Scots. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1480–1500 CE. Edition not chosen yet. Length: about 3,486 lines, about 28,000 words of Middle Scots.
 - [Tristrant](story-map.md). Hans Sachs. German. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1553 CE. Edition not chosen yet. Length: about 1,300 lines, about 9,100 words of German.
 - [The Early Arthur Poems](story-map.md). Alfred Tennyson. English. Coming; not published yet. Story: The Lancelot and Tristan years to Arthur's end, broad. Written: 1832–1842 CE. Edition not chosen yet. Length: about 572 lines, about 4,000 words of English.
@@ -178,8 +180,6 @@ A book whose text is published reaches from the first episode it tells to the la
 - [Tristan and Iseult](story-map.md). Arthur Symons. English. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1917 CE. Edition not chosen yet. Length: about 120 pages, about 26,000 words of English.
 - [The Famous Tragedy of the Queen of Cornwall](story-map.md). Thomas Hardy. English. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1923 CE. Edition not chosen yet. Length: about 90 pages, about 11,000 words of English.
 - [Tristram](story-map.md). Edwin Arlington Robinson. English. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Written: 1927 CE. Edition not chosen yet. Length: about 4,500 lines, about 36,000 words of English.
-- [Tristrams kvæði](story-map.md). Anonymous. Icelandic. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Date not established. Edition not chosen yet. Length: about 120 lines, about 600 words of Icelandic.
-- [Ystorya Trystan](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: The Lancelot and Tristan years, broad. Date not established. Edition not chosen yet. Length: about 1,500 words of Middle Welsh.
 
 ## The Grail
 

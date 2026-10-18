@@ -636,7 +636,7 @@ Wikipedia: [Joshua](https://en.wikipedia.org/wiki/Joshua)
 
 ## Judah
 
-Also: Iuda, Iudam
+Also: Iuda
 
 The southern of the two kingdoms the Israelites split into after King Solomon died, with Jerusalem as its capital and David's family as its kings. It outlasted the northern kingdom of Israel by more than a century, until the Babylonians destroyed Jerusalem in 587 BCE; its prophets, Isaiah and Jeremiah among them, are the ones Gildas quotes most.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
