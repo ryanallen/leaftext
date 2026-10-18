@@ -42974,7 +42974,13 @@ function consoleBottomLines(entry, count) {
 function consoleAgentState(entry, screenLines) {
   const rule = consoleAgentAsks[entry.agent];
   if (!rule) return null;
-  if ((screenLines || consoleBottomLines(entry, rule.lines)).some(rule.asks)) return 'needs';
+  const lines = screenLines || consoleBottomLines(entry, rule.lines);
+  if (lines.some(rule.asks)) return 'needs';
+  if (entry.agent === 'codex' && lines.some(line => /^\s*• (?:Working|Thinking) \([^)]*esc to interrupt\)/.test(line))) return 'working';
+  if (entry.agent === 'antigravity') {
+    if (lines.some(line => /^\s*esc to cancel\b/.test(line)) && !lines.some(line => line.includes('tab Complete'))) return 'working';
+    if (entry.activity === 'working' && lines[0] && /^\s*\? for shortcuts\b/.test(lines[0])) return entry.worked ? 'done' : 'rest';
+  }
   return entry.activity === 'working' || entry.activity === 'done' ? entry.activity : 'rest';
 }
 
@@ -43148,6 +43154,8 @@ function consoleTitleSaid(id, title) {
 function consoleOutputArrived(id) {
   const entry = consoleLayers.get(id);
   if (!entry || entry.titleMark || Date.now() - entry.lastKey < 1000) return;
+  
+  if (Date.now() - entry.lastResize < 1200) return;
   setConsoleActivity(id, entry, 'working');
   clearTimeout(entry.quietTimer);
   entry.quietTimer = setTimeout(() => {
@@ -43815,7 +43823,7 @@ function makeConsoleLayer(id) {
   layer.addEventListener('pointerdown', () => {
     if (id === besideConsoleId()) pressIntoColumn(besideColumn());
   }, true);
-  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), quietTimer: 0 };
+  const entry = { layer, host, status, statusRecord: null, statusTimer: 0, terminal: null, fit: null, observer: null, map: null, mapOutputPending: false, decoder: new TextDecoder(), pending: [], pendingBytes: 0, frame: 0, scrollFrame: 0, sentSize: null, theme: null, markers: new Set(), activity: 'quiet', titleMark: null, worked: false, lastKey: Date.now(), lastResize: 0, quietTimer: 0 };
   consoleLayers.set(id, entry);
   loadConsoleRuntime().then(() => {
     if (!consoleLayers.has(id)) return;
@@ -43882,7 +43890,7 @@ function makeConsoleLayer(id) {
     };
     holdConsoleLinks(terminal);
     terminal.attachCustomWheelEventHandler(event => consoleWheel(id, entry, event));
-    terminal.onData(data => { consoleKeyTyped(id); consolePinInput(entry, data, id); send({ command: 'consoleInput', id, data }); });
+    terminal.onData(data => { if (!/^\x1b\[[IO]$/.test(data)) consoleKeyTyped(id); consolePinInput(entry, data, id); send({ command: 'consoleInput', id, data }); });
     terminal.onTitleChange(title => consoleTitleSaid(id, title));
     terminal.onScroll(() => consoleScrolled(id, entry));
     entry.terminal = terminal;
@@ -44069,6 +44077,7 @@ function sendConsoleSize(id, entry) {
   const { cols: columns, rows } = entry.terminal;
   if (entry.sentSize?.columns === columns && entry.sentSize.rows === rows) return;
   entry.sentSize = { columns, rows };
+  entry.lastResize = Date.now();
   send({ command: 'consoleResize', id, columns, rows });
 }
 
@@ -44347,7 +44356,7 @@ function showConsoleModelMenu(button, items) {
 }
 
 function startConsoleCommand(id, entry, button, record, command) {
-  const allowed = command === '/model' || (record?.agent === 'claude' && /^\/model (fable|opus|sonnet|haiku)$/.test(command)) || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command));
+  const allowed = command === '/model' || (['claude', 'antigravity'].includes(record?.agent) && ['/effort', '/compact', '/clear'].includes(command)) || (record?.agent === 'codex' && ['/compact', '/new'].includes(command));
   if (!allowed) return;
   const note = consoleModelRefusal(id, entry, record);
   if (note) { showConsoleModelMenu(button, [{ note }]); return; }
@@ -44369,13 +44378,11 @@ function openConsoleModel(id, entry, button, effort = false, context = false) {
   const record = consoleControlRecord(entry);
   const refusal = consoleModelRefusal(id, entry, record);
   const choose = command => startConsoleCommand(id, entry, button, record, command);
-  const aliases = ['Fable', 'Opus', 'Sonnet', 'Haiku'];
-  const family = /^(?:claude[- ]+)?(fable|opus|sonnet|haiku)(?:[- ]\d+(?:[-.]\d+)*)?$/i.exec(record?.model || '')?.[1].toLowerCase();
+  
   const items = refusal ? [{ note: refusal }] : context ? [
     { label: 'Compact the conversation', run: () => choose('/compact') },
     { label: 'Start a new conversation', run: () => choose(record.agent === 'codex' ? '/new' : '/clear') },
   ] : [
-    ...(!effort && record.agent === 'claude' ? aliases.map(alias => ({ label: alias, selected: family === alias.toLowerCase(), run: () => choose(`/model ${alias.toLowerCase()}`) })) : []),
     { label: `Choose in ${record.agent === 'claude' ? 'Claude Code' : record.agent === 'codex' ? 'Codex' : effort ? 'Google Antigravity' : 'Antigravity'}…`, run: () => choose(effort && record.agent !== 'codex' ? '/effort' : '/model') },
   ];
   showConsoleModelMenu(button, items);
@@ -49611,7 +49618,7 @@ window.leafDiagramSyntax = async (source) => {
 
 window.leafDiagramVerdict = async (start) => {
   const deadline = Date.now() + 4500;
-  while (readerLoading && !readerLoading.hidden && Date.now() < deadline) {
+  while (((readerLoading && !readerLoading.hidden) || readingHasHeldBlocks()) && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
   const body = app.querySelector('.document-body');
@@ -49622,7 +49629,7 @@ window.leafDiagramVerdict = async (start) => {
     && !diagram.dataset.diagramWait
     && !!diagram.querySelector('svg:not([aria-roledescription="error"])');
   if (diagram.dataset.mermaidRender !== 'failed' && !hasDrawing() && diagram.dataset.processed !== 'true') {
-    await drawMermaidDiagrams([diagram]);
+    if (Date.now() < deadline) await drawMermaidDiagrams([diagram]);
   }
   while (diagram.dataset.mermaidRender !== 'failed' && !hasDrawing() && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 20));
@@ -49817,7 +49824,7 @@ function documentCheckLinks(body) {
 
 window.leafDocumentCheck = async (budget = DOCUMENT_CHECK_BUDGET_MS) => {
   const deadline = Date.now() + budget;
-  while (readerLoading && !readerLoading.hidden && Date.now() < deadline) await documentCheckPause(20);
+  while (((readerLoading && !readerLoading.hidden) || readingHasHeldBlocks()) && Date.now() < deadline) await documentCheckPause(20);
   const body = app.querySelector('.document-body');
   if (!body) return { findings: [], links: [] };
   const findings = [
