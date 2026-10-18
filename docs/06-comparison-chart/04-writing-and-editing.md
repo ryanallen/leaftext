@@ -650,6 +650,8 @@
 | Drawings described to agents | [✅][l-agent] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents message each other | [✅][l-agent-tell] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents start agents | [✅][l-agent-start] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Helpers ask their starter | [✅][l-agent-start] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
+| Remote agents join | [✅][l-agent-tell] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Agents drive other windows | [✅][l-agent-drive] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Watchers start agents | [✅][l-agent-watch] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |
 | Ask agent about passage | [✅][l-agent-passage] | [❌][o-seen] | [❌][t-seen] | [❌][c-seen] |

@@ -42944,7 +42944,8 @@ function consoleAgentOf(title) {
 const consoleAgentAsks = {
   claude: { lines: 4, asks: line => line.includes('Esc to cancel') },
   codex: { lines: 12, asks: line => /^\W*Would you like to /.test(line) },
-  antigravity: { lines: 6, asks: (line, _, lines) => line.includes('Approve/reject') || (/esc to cancel/i.test(line) && !lines.some(row => row.includes('tab Complete'))) },
+  
+  antigravity: { lines: 6, asks: line => line.includes('Approve/reject') || (line.includes('↑/↓ Navigate') && !/tab Complete|esc Go Back/.test(line)) },
 };
 
 
@@ -42986,6 +42987,7 @@ function reportConsoleAgent(id, entry, screenLines) {
   entry.agentSaid = said;
   if (before.split(' ')[0] !== (entry.agent || '')) {
     closeConsoleModel(entry);
+    if (entry.status) drawConsoleStatus(id, entry);
     const icon = consoleIconClass(entry.agent);
     for (const tab of tabBar.querySelectorAll('.console-tab')) {
       if (tab.dataset.consoleId !== String(id)) continue;
@@ -44319,9 +44321,18 @@ function closeConsoleModel(entry) {
   if (crumbMenuOwner && entry.status?.contains(crumbMenuOwner)) hideCrumbMenu();
 }
 
+
+function consoleControlRecord(entry) {
+  const agent = entry.agent || entry.statusRecord?.agent;
+  if (entry.statusRecord?.agent === agent) return entry.statusRecord;
+  if (!['claude', 'codex', 'antigravity'].includes(agent)) return null;
+  if (entry.controlRecord?.agent !== agent) entry.controlRecord = { agent };
+  return entry.controlRecord;
+}
+
 function consoleModelRefusal(id, entry, record) {
   if (!['claude', 'codex', 'antigravity'].includes(record?.agent)) return "Return to the agent's empty prompt first.";
-  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || entry.statusRecord !== record || !entry.terminal || entry.modelPending || (entry.agent && entry.agent !== record.agent)) return "Return to the agent's empty prompt first.";
+  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || consoleControlRecord(entry) !== record || !entry.terminal || entry.modelPending || (entry.agent && entry.agent !== record.agent)) return "Return to the agent's empty prompt first.";
   const state = consoleAgentState({ ...entry, agent: record.agent });
   if (state !== 'rest' && state !== 'done') return 'Wait until the agent finishes.';
   const prompt = consoleModelPrompt(entry, record.agent);
@@ -44355,7 +44366,7 @@ function startConsoleCommand(id, entry, button, record, command) {
 
 function openConsoleModel(id, entry, button, effort = false, context = false) {
   entry.modelMenuCard = keyedColumn;
-  const record = entry.statusRecord;
+  const record = consoleControlRecord(entry);
   const refusal = consoleModelRefusal(id, entry, record);
   const choose = command => startConsoleCommand(id, entry, button, record, command);
   const aliases = ['Fable', 'Opus', 'Sonnet', 'Haiku'];
@@ -44373,10 +44384,10 @@ function openConsoleModel(id, entry, button, effort = false, context = false) {
 function submitConsoleModel(id, entry) {
   const pending = entry.modelPending;
   if (Date.now() >= pending.until) { cancelConsoleModel(entry); leafToast('The command is in the console. Press Enter to finish.'); return; }
-  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || keyedColumn !== pending.card || entry.statusRecord !== pending.record || (entry.agent && entry.agent !== pending.agent)) { cancelConsoleModel(entry); return; }
+  if (consoleLayers.get(id) !== entry || consoleFrontId !== id || entry.layer.hidden || document.hidden || keyedColumn !== pending.card || consoleControlRecord(entry) !== pending.record || (entry.agent && entry.agent !== pending.agent)) { cancelConsoleModel(entry); return; }
   const state = consoleAgentState({ ...entry, agent: pending.agent });
   const prompt = consoleModelPrompt(entry, pending.agent);
-  if ((state !== 'rest' && state !== 'done') || prompt.kind === 'unknown' || (prompt.kind === 'draft' && !pending.command.startsWith(prompt.text))) { cancelConsoleModel(entry); return; }
+  if ((state !== 'rest' && state !== 'done') || (prompt.kind === 'draft' && !pending.command.startsWith(prompt.text))) { cancelConsoleModel(entry); return; }
   if (prompt.kind !== 'draft' || prompt.text !== pending.command || !prompt.atEnd) return;
   cancelConsoleModel(entry);
   consoleKeyTyped(id);
@@ -44405,15 +44416,17 @@ function consoleStatusLimitName(minutes) {
 
 function consoleStatusFields(record) {
   const fields = [];
+  const controls = ['claude', 'codex', 'antigravity'].includes(record.agent);
   const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', gemini: 'Gemini CLI' }[record.agent];
   if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
-  if (record.model) fields.push({ field: 'model', text: record.model });
-  if (['claude', 'codex', 'antigravity'].includes(record.agent)) fields.push({ field: 'effort', text: 'Effort…' });
+  if (record.model || controls) fields.push({ field: 'model', text: record.model || 'Model…' });
+  if (controls) fields.push({ field: 'effort', text: 'Effort…' });
   const size = record.contextWindow;
   const used = record.tokens ?? (record.contextPercent != null && size ? record.contextPercent / 100 * size : null);
   if (used != null && size) fields.push({ field: 'context', text: `Context ${consoleStatusCount(used)} of ${consoleStatusCount(size)}`, meter: used / size * 100 });
   else if (record.contextPercent != null) fields.push({ field: 'context', text: `Context ${Math.round(record.contextPercent)}% used`, meter: record.contextPercent });
   else if (used != null) fields.push({ field: 'context', text: `${consoleStatusCount(used)} tokens` });
+  else if (controls) fields.push({ field: 'context', text: 'Context…' });
   for (const limit of record.limits || []) {
     if (limit.resetsAt && limit.resetsAt * 1000 <= Date.now()) continue;
     const reset = limit.resetsAt ? ` · resets in ${consoleStatusWait(limit.resetsAt)}` : '';
@@ -44427,11 +44440,12 @@ function consoleStatusFields(record) {
 function drawConsoleStatus(id, entry) {
   closeConsoleModel(entry);
   const strip = entry.status;
-  const fields = entry.statusRecord ? consoleStatusFields(entry.statusRecord) : [];
+  const record = consoleControlRecord(entry);
+  const fields = record ? consoleStatusFields(record) : [];
   strip.replaceChildren(...fields.map(field => {
-    const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(entry.statusRecord.agent);
+    const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(record.agent);
     const effort = field.field === 'effort';
-    const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(entry.statusRecord.agent);
+    const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(record.agent);
     const item = document.createElement(model || effort || context ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
