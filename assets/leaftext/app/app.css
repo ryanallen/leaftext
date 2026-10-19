@@ -15103,6 +15103,12 @@ p.shelf-line {
   font-size: var(--type-h5-size);
   line-height: var(--lt-leading-1-35);
 }
+p.shelf-credit {
+  margin: calc(-1 * var(--lt-space-16)) auto var(--lt-space-32);
+  max-width: 40ch;
+  color: var(--lt-muted-foreground);
+  font-size: var(--type-caption-size);
+}
 
 
 .shelf-sort {

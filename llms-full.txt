@@ -312,6 +312,11 @@
 - Markdown: https://leaftext.com/arthurian/historia-brittonum/uk/historia-brittonum-uk.md
 - Summary: Historia Brittonum, translated by Ryan Allen
 
+## How it was made
+- Page: https://leaftext.com/arthurian/how-it-was-made.html
+- Markdown: https://leaftext.com/arthurian/how-it-was-made.md
+- Summary: Who made the Arthurian shelf, and how each book on it was made.
+
 ## Pick a book off the shelf.
 - Page: https://leaftext.com/arthurian/
 - Markdown: https://leaftext.com/arthurian/index.md

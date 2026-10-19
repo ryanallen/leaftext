@@ -60,6 +60,7 @@ https://leaftext.com/arthurian/historia-brittonum/historia-brittonum.md
 https://leaftext.com/arthurian/historia-brittonum/made-with.md
 https://leaftext.com/arthurian/historia-brittonum/uk/GLOSSARY.md
 https://leaftext.com/arthurian/historia-brittonum/uk/historia-brittonum-uk.md
+https://leaftext.com/arthurian/how-it-was-made.md
 https://leaftext.com/arthurian/index.md
 https://leaftext.com/arthurian/merlin/GLOSSARY.md
 https://leaftext.com/arthurian/merlin/made-with.md

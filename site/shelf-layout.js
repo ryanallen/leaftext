@@ -15,6 +15,9 @@ export const SHELF_ORDERS = [
   { key: 'printed', label: 'When its edition was printed', note: 'Each book stands in the decade its edition was printed; one whose edition is not chosen stands last.', line: 'Every telling of the legend, standing in the decade its edition was printed. Pull one out to read it.' },
 ];
 
+/** The credit under the line: the list's second paragraph, drawn in the hero only when it links the shelf's how page at Ryan Allen. */
+export const SHELF_CREDIT = /<a\b[^>]*href="how-it-was-made\.md#ryan-allen"/;
+
 /** The six tones, in the key's order: the tone key a spine carries and what the key calls it. */
 export const SHELF_TONES = [
   ['latin', 'Latin'],
@@ -279,18 +282,21 @@ export function layoutShelf(html, data) {
     if (said !== words(escaped(book.title))) throw new Error(`shelf.md's line ${at + 1} names ${said} where its data has ${book.title}`);
   });
   const [line] = list.paragraphs;
+  // The credit is its own paragraph so a sort, which rewrites the line as plain text, never reaches its link.
+  const credit = SHELF_CREDIT.test(list.paragraphs[1] || '') ? list.paragraphs[1] : '';
   return [
     `<article class="document-body ${SHELF_LAYOUT_CLASS}" data-shelf-order="story">`,
     '<section class="shelf-hero">',
     '<p class="shelf-eyebrow">The Arthurian shelf</p>',
     `<h1 class="shelf-title">${list.title}</h1>`,
     line ? line.replace(/^<p\b[^>]*>/, '<p class="shelf-line">') : '',
+    credit.replace(/^<p\b[^>]*>/, '<p class="shelf-credit">'),
     '</section>',
     sortMarkup('story'),
     findMarkup(data),
     keyMarkup(),
     `<div class="shelf-case">${shelfMarkup(data)}</div>`,
-    `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(1).join('')}${list.list}</details>`,
+    `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(credit ? 2 : 1).join('')}${list.list}</details>`,
     list.pager,
     '</article>',
   ].join('\n');

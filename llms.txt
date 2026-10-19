@@ -66,6 +66,7 @@
 - [Made with](https://leaftext.com/arthurian/historia-brittonum/made-with.md)
 - [Glossary for The History of the Britons](https://leaftext.com/arthurian/historia-brittonum/uk/GLOSSARY.md)
 - [The History of the Britons](https://leaftext.com/arthurian/historia-brittonum/uk/historia-brittonum-uk.md)
+- [How it was made](https://leaftext.com/arthurian/how-it-was-made.md)
 - [Pick a book off the shelf.](https://leaftext.com/arthurian/index.md)
 - [Glossary for Merlin](https://leaftext.com/arthurian/merlin/GLOSSARY.md)
 - [Made with](https://leaftext.com/arthurian/merlin/made-with.md)
