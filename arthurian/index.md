@@ -46,7 +46,6 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Arthur's early reign
 
-- [The Saints Who Meet Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1073–1199 CE. Edition not chosen yet. Length: about 20 pages, about 6,600 words of Latin.
 - [The Life of Gildas](vita-gildae/vita-gildae.md). Caradoc of Llancarfan. Latin. On the shelf. Story: Arthur's early reign; then Arthur's end. Written: 1100–1165 CE. Edition: Theodor Mommsen, 1898. Length: 1,644 words of Latin.
 - [Les Enfances Gauvain](story-map.md). Anonymous. French. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1250 CE. Edition not chosen yet. Length: about 700 lines, about 4,400 words of French.
 - [The Rise of Gawain (De ortu Waluuanii)](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1299 CE. Edition not chosen yet. Length: about 40 pages, about 13,000 words of Latin.
@@ -64,6 +63,7 @@ A book whose text is published reaches from the first episode it tells to the la
 - [Idylls of the King](story-map.md). Alfred Tennyson. English. Coming; not published yet. Story: Arthur's early reign to Arthur's end, broad. Written: 1859–1885 CE. Edition not chosen yet. Length: about 11,300 lines, about 90,000 words of English.
 - [The Tale of Balen](story-map.md). Algernon Charles Swinburne. English. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1896 CE. Edition not chosen yet. Length: about 2,700 lines, about 19,000 words of English.
 - [The Story of King Arthur and His Knights](story-map.md). Howard Pyle. English. Coming; not published yet. Story: Arthur's early reign to The knights' adventures, broad. Written: 1903 CE. Edition not chosen yet. Length: about 320 pages, about 85,000 words of English.
+- [The Saints Who Meet Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Date not established. Edition: W. J. Rees and Arthur de La Borderie, 1853–1892. Length: 6,040 words of Latin.
 
 ## The knights' adventures
 
@@ -239,9 +239,9 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Beside the story
 
-- [The Oldest Welsh Arthur Poems](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Written: 600–1199 CE. Edition not chosen yet. Length: about 790 words of Middle Welsh.
 - [The Welsh Triads](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Written: by 1299 CE. Edition not chosen yet. Length: about 3,000 words of Middle Welsh.
 - [The Dream of Rhonabwy](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Written: by 1399 CE. Edition not chosen yet. Length: about 19 pages, about 5,000 words of Middle Welsh.
 - [The Faerie Queene](story-map.md). Edmund Spenser. English. Coming; not published yet. Story: beside the story's time. Written: 1590–1596 CE. Edition not chosen yet. Length: about 34,700 lines, about 260,000 words of English.
 - [A Connecticut Yankee in King Arthur's Court](story-map.md). Mark Twain. English. Coming; not published yet. Story: beside the story's time. Written: 1889 CE. Edition not chosen yet. Length: about 560 pages, about 120,000 words of English.
 - [Merlin the Machine](story-map.md). Ryan Allen. English. Coming; not published yet. Story: beside the story's time. Date not established. Edition not chosen yet. Length: about 28 chapters, about 140,000 words of English.
+- [The Oldest Welsh Arthur Poems](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Date not established. Edition: J. Gwenogvryn Evans and Owen Jones, Iolo Morganwg and William Owen Pughe, 1870–1910. Length: about 10,000 words of Middle Welsh.

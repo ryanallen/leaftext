@@ -48,13 +48,13 @@ Free, on macOS and Windows.
 
 ## Read the Arthurian books
 
-Three books of the Arthur legend, newly translated in Leaftext from the Latin and the Old French, each with its original and the scans of the printed page a press away.
+Six books of the Arthur legend, newly translated in Leaftext from the Latin and the Old French, each with its original and the scans of the printed page a press away.
 
-**[*Merlin*](arthurian/merlin/merlin.md) · [*The History of the Britons*](arthurian/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](arthurian/annales-cambriae/annales-cambriae.md)**
+**[*On the Ruin of Britain*](arthurian/de-excidio-britanniae/de-excidio-britanniae.md) · [*The History of the Britons*](arthurian/historia-brittonum/historia-brittonum.md) · [*The Welsh Annals*](arthurian/annales-cambriae/annales-cambriae.md) · [*The Life of Gildas*](arthurian/vita-gildae/vita-gildae.md) · [*The History of the Kings of Britain*](arthurian/geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings.md) · [*Merlin*](arthurian/merlin/merlin.md)**
 
 **[Pick a book off the shelf →](arthurian/index.md)**
 
-**[How the three tell one story →](arthurian/story-map.md)**
+**[How the books tell one story →](arthurian/story-map.md)**
 
 ## Read your files
 

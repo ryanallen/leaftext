@@ -1,36 +1,36 @@
 id	file	anchor	before	after	reason	master_sha256
-license-noun	uk/GLOSSARY.md	front	license	licence	UK spelling of the noun; outside the stamped credits this book uses license only as the noun, in the license paragraph under Credits; the verb licensed stays	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-afterward	uk/GLOSSARY.md	front	afterward	afterwards	UK usage; Oxford Learner's gives afterwards as the usual British form	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-baptize	uk/GLOSSARY.md	front	baptize	baptise	UK house choice	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-honors	uk/GLOSSARY.md	front	honors	honours	UK spelling; a whole-word row misses the inflected form	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-honors	uk/GLOSSARY.md	front	Honors	Honours	UK spelling; a whole-word row misses the inflected form	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-honored	uk/GLOSSARY.md	front	honored	honoured	UK spelling; a whole-word row misses the inflected form	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-center	uk/GLOSSARY.md	front	center	centre	UK spelling	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-honorable	uk/GLOSSARY.md	front	honorable	honourable	UK spelling; a whole-word row misses the inflected form	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-toise-tower	uk/GLOSSARY.md	front	twenty feet or so	six metres or so	Source: trois toises u quatre, Paris–Ulrich 1:38, Vortigern's tower; a toise is about 1.95 m, so three or four are 5.8 to 7.8 m; US rounds the lower reading loosely to twenty feet or so, UK to six metres or so, since ONS gives metric for a building's height; reaches page 38 and the glossary's toises	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-toise-length	uk/GLOSSARY.md	front	about six and a half feet	about two metres	Source: toise, Paris–Ulrich 1:38; about 1.95 m; US about six and a half feet, UK about two metres; reaches the glossary's toises	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-honoring	uk/GLOSSARY.md	front	honoring	honouring	UK spelling; a whole-word row misses the inflected form	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-toward	uk/GLOSSARY.md	front	Toward	Towards	UK usage; Oxford Learner's gives towards as British, toward as North American	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	uk/GLOSSARY.md	../GLOSSARY.md	reciprocal edition link	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin.md	merlin-uk.md	UK English book link	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-old-french.md	../merlin-old-french.md	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#names-not-riddles	../merlin-how-it-was-made.md#names-not-riddles	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#english-word-order	../merlin-how-it-was-made.md#english-word-order	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#contractions	../merlin-how-it-was-made.md#contractions	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#checked-against-the-scan	../merlin-how-it-was-made.md#checked-against-the-scan	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#translated-by-manifest	../merlin-how-it-was-made.md#translated-by-manifest	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#every-choice-logged	../merlin-how-it-was-made.md#every-choice-logged	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#changes-carried-everywhere	../merlin-how-it-was-made.md#changes-carried-everywhere	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#matching-outlines	../merlin-how-it-was-made.md#matching-outlines	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#pages-linked-to-scans	../merlin-how-it-was-made.md#pages-linked-to-scans	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#endnotes	../merlin-how-it-was-made.md#endnotes	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#every-allusion-told	../merlin-how-it-was-made.md#every-allusion-told	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#one-note-one-thing	../merlin-how-it-was-made.md#one-note-one-thing	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#additions-marked	../merlin-how-it-was-made.md#additions-marked	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#sourced-glossary	../merlin-how-it-was-made.md#sourced-glossary	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#cards-that-teach	../merlin-how-it-was-made.md#cards-that-teach	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#modern-names	../merlin-how-it-was-made.md#modern-names	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
-locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#places-located-from-sources	../merlin-how-it-was-made.md#places-located-from-sources	shared file one folder up	c9f4b265e96415fa326517fbbc2416b82c1481b1232bddeb54fd9183ae47c101
+license-noun	uk/GLOSSARY.md	front	license	licence	UK spelling of the noun; outside the stamped credits this book uses license only as the noun, in the license paragraph under Credits; the verb licensed stays	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+afterward	uk/GLOSSARY.md	front	afterward	afterwards	UK usage; Oxford Learner's gives afterwards as the usual British form	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+baptize	uk/GLOSSARY.md	front	baptize	baptise	UK house choice	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+honors	uk/GLOSSARY.md	front	honors	honours	UK spelling; a whole-word row misses the inflected form	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+honors	uk/GLOSSARY.md	front	Honors	Honours	UK spelling; a whole-word row misses the inflected form	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+honored	uk/GLOSSARY.md	front	honored	honoured	UK spelling; a whole-word row misses the inflected form	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+center	uk/GLOSSARY.md	front	center	centre	UK spelling	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+baptized	uk/GLOSSARY.md	front	baptized	baptised	UK house choice	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+honorable	uk/GLOSSARY.md	front	honorable	honourable	UK spelling; a whole-word row misses the inflected form	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+toise-tower	uk/GLOSSARY.md	front	twenty feet or so	six metres or so	Source: trois toises u quatre, Paris–Ulrich 1:38, Vortigern's tower; a toise is about 1.95 m, so three or four are 5.8 to 7.8 m; US rounds the lower reading loosely to twenty feet or so, UK to six metres or so, since ONS gives metric for a building's height; reaches page 38 and the glossary's toises	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+toise-length	uk/GLOSSARY.md	front	about six and a half feet	about two metres	Source: toise, Paris–Ulrich 1:38; about 1.95 m; US about six and a half feet, UK about two metres; reaches the glossary's toises	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+honoring	uk/GLOSSARY.md	front	honoring	honouring	UK spelling; a whole-word row misses the inflected form	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+toward	uk/GLOSSARY.md	front	Toward	Towards	UK usage; Oxford Learner's gives towards as British, toward as North American	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	uk/GLOSSARY.md	../GLOSSARY.md	reciprocal edition link	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin.md	merlin-uk.md	UK English book link	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-old-french.md	../merlin-old-french.md	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#names-not-riddles	../merlin-how-it-was-made.md#names-not-riddles	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#english-word-order	../merlin-how-it-was-made.md#english-word-order	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#contractions	../merlin-how-it-was-made.md#contractions	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#checked-against-the-scan	../merlin-how-it-was-made.md#checked-against-the-scan	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#translated-by-manifest	../merlin-how-it-was-made.md#translated-by-manifest	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#every-choice-logged	../merlin-how-it-was-made.md#every-choice-logged	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#changes-carried-everywhere	../merlin-how-it-was-made.md#changes-carried-everywhere	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#matching-outlines	../merlin-how-it-was-made.md#matching-outlines	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#pages-linked-to-scans	../merlin-how-it-was-made.md#pages-linked-to-scans	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#endnotes	../merlin-how-it-was-made.md#endnotes	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#every-allusion-told	../merlin-how-it-was-made.md#every-allusion-told	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#one-note-one-thing	../merlin-how-it-was-made.md#one-note-one-thing	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#additions-marked	../merlin-how-it-was-made.md#additions-marked	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#sourced-glossary	../merlin-how-it-was-made.md#sourced-glossary	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#cards-that-teach	../merlin-how-it-was-made.md#cards-that-teach	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#modern-names	../merlin-how-it-was-made.md#modern-names	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac
+locale-link	uk/GLOSSARY.md	links	merlin-how-it-was-made.md#places-located-from-sources	../merlin-how-it-was-made.md#places-located-from-sources	shared file one folder up	4e1d56ded619d60f2fbc1d24c9fa2ed441278526d2a0692ab976657d33bd0cac

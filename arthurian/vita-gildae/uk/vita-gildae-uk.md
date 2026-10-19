@@ -49,13 +49,13 @@ He crossed the sea to Gaul and stayed in its cities, studying very well, for sev
 
 ### Gildas lives as a hermit, fasting, praying and sleeping on bare rock
 
-All the Britons praised and honoured the wise teacher's devotion so much that his equal was never found, and couldn't be, for his great merits. He fasted like Anthony the hermit.[^107-5] He prayed in a hair shirt. Whatever he was given he spent on the poor at once. He kept from sweet milk and from honey. He hated meat, and liked cress from the brook better. He ate barley bread mixed with ashes and drank spring water every day. He didn't go into the baths, which his people loved most. His face looked thin, so he seemed like someone with a bad fever.
+All the Britons praised and honoured the wise teacher's devotion so much that his equal was never found, and couldn't be, for his great merits. He fasted like Anthony the hermit.[^107-5] He prayed in a hair shirt.[^107-6] Whatever he was given he spent on the poor at once. He kept from sweet milk and from honey. He hated meat, and liked cress from the brook better.[^107-7] He ate barley bread mixed with ashes and drank spring water every day.[^107-8] He didn't go into the baths, which his people loved most. His face looked thin, so he seemed like someone with a bad fever.
 
-At midnight he used to go into the river and stand there without moving until he'd said the Our Father three times. After that he went back to his chapel. There he knelt and prayed to Yahweh's majesty until full daylight. He slept little, lying on a rock in a single set of clothes. He ate without ever eating his fill, satisfied only by earning heaven's reward. That was what he longed for.
+At midnight he used to go into the river and stand there without moving until he'd said the Our Father three times.[^107-9] After that he went back to his chapel. There he knelt and prayed to Yahweh's majesty until full daylight. He slept little, lying on a rock in a single set of clothes. He ate without ever eating his fill, satisfied only by earning heaven's reward. That was what he longed for.
 
 ### Gildas preaches across Britain, and in Pebidiog his voice is held back
 
-He taught people to look down on what passes in a moment. He was a famous preacher across Britain's three kingdoms. Kings feared him, as they should, and obeyed him when they listened to his welcome preaching. Every Sunday he preached at a church by the sea, which stands in the district of Pebidiog, in the time of King Trifinus, and a countless crowd heard him.[^107-6]
+He taught people to look down on the fleeting things of this world. He was a famous preacher across Britain's three kingdoms. Kings feared him, as they should, and obeyed him when they listened to his welcome preaching. Every Sunday he preached at a church by the sea, which stands in the district of Pebidiog, in the time of King Trifinus, and a countless crowd heard him.[^107-10]
 
 Once, as he began to preach, his voice was held back in him, and the people were amazed at it. When Saint Gildas found this, he told everyone there to go out, to learn if one of them was keeping him from preaching Yahweh's word. Even after they'd left, he couldn't preach. Then he asked whether anyone, man or woman, was hiding in the church.
 
@@ -81,7 +81,7 @@ Gildas, the Britons' historian, was still in Ireland then, running a school and 
 
 Meanwhile the holy Gildas, that honoured historian, came to Britain carrying a very beautiful bell with a very sweet sound. He'd vowed to present it to the pope of the Roman church. He spent the night in the valley of Llancarfan, received with honour by Cadoc, its venerable abbot.[^108-5] Gildas showed him the fine bell. Cadoc took it and looked it over, then wanted to buy it for a great price, but its owner wouldn't sell.
 
-King Arthur and the leading men of all Britain learned that Gildas the Wise had come. Bishops and abbots met with countless clergy and people. They came to make peace between Arthur and Gildas over the killing. Gildas did as he'd done at first, when he got the news of his brother's death. He forgave his enemy, kissed the man who asked his pardon, and blessed him with all goodwill. After that, King Arthur, sorry and in tears, took a penance from the bishops there. He made amends as far as he could, to the end of his life.
+King Arthur and the leading men of all Britain learned that Gildas the Wise had come. Bishops and abbots met with countless clergy and people. They came to make peace between Arthur and Gildas over the killing. Gildas did as he'd done at first, when he got the news of his brother's death. He forgave his enemy, kissed the man who asked his pardon, and blessed him with all goodwill. After that, King Arthur, sorry and in tears, took a penance from the bishops there.[^108-6] He made amends as far as he could, to the end of his life.
 
 ### Gildas takes the bell to Rome and offers it to the pope
 
@@ -97,23 +97,23 @@ So Gildas took the blessed bell back and went home. He carried it back and gave 
 
 ### Gildas teaches a year at Cadoc's school and copies the four Gospels
 
-Cadoc, abbot of the church of Llancarfan, asked the teacher Gildas to run the school for a year.[^109-1] At his request Gildas ran it to great profit, taking no pay from the students except the prayers of the clergy and the scholars. There he wrote out the four Gospels himself. The book is still in Saint Cadoc's church, covered all over with gold and silver, in honour of Yahweh, of its holy scribe and of the Gospels. The Welsh of the country swear their oaths on that precious volume. They don't dare open it to look inside. Nor will they seal peace and friendship between enemies unless it's first laid out in front of them.
+Cadoc, abbot of the church of Llancarfan, asked the teacher Gildas to run the school for a year.[^109-1] At his request Gildas ran it to great profit, taking no pay from the students except the prayers of the clergy and the scholars. There he wrote out the four Gospels himself.[^109-2] The book is still in Saint Cadoc's church, covered all over with gold and silver, in honour of Yahweh, of its holy scribe and of the Gospels. The Welsh of the country swear their oaths on that precious volume. They don't dare open it to look inside. Nor will they seal peace and friendship between enemies unless it's first laid out in front of them.
 
 ### Gildas and Cadoc leave Llancarfan for two islands, Steep Holm and Flat Holm
 
-When the year was over and the students had left the school, the holy abbot Cadoc and Gildas, the best of teachers, agreed together to go to two islands, Steep Holm and Flat Holm. Cadoc went to the one nearer Wales, and Gildas to the one lying towards England.[^109-2] They didn't want crowds of people keeping them from the church's services. So they knew no better plan than to leave the valley of Llancarfan for a hidden life on the islands.
+When the year was over and the students had left the school, the holy abbot Cadoc and Gildas, the best of teachers, agreed together to go to two islands, Steep Holm and Flat Holm. Cadoc went to the one nearer Wales, and Gildas to the one lying towards England.[^109-3] They didn't want crowds of people keeping them from the church's services. So they knew no better plan than to leave the valley of Llancarfan for a hidden life on the islands.
 
-Gildas built a chapel in honour of the holy and undivided Trinity, and his cell beside it. But he didn't keep his bed in that room. It lay under a high cliff, where he stayed awake until midnight, praying to almighty Yahweh on the rock. Then he went to the church, frozen through, but the cold was sweet and bearable to him for Yahweh's sake. He drew little fish from his net and took eggs from birds' nests, and lived on them, which was food enough for him. The two of them visited each other. They went on that way for seven years.
+Gildas built a chapel in honour of the holy and undivided Trinity,[^109-4] and his cell beside it. But he didn't keep his bed in that room. It lay under a high cliff, where he stayed awake until midnight, praying to almighty Yahweh on the rock. Then he went to the church, frozen through, but the cold was sweet and bearable to him for Yahweh's sake. He drew little fish from his net and took eggs from birds' nests, and lived on them, which was food enough for him. The two of them visited each other. They went on that way for seven years.
 
 ## Part 4: Pirates drive Gildas to Glastonbury, where Arthur besieges Melwas for Guinevere
 
 ### Pirates from Orkney drive Gildas to Glastonbury, which Arthur besieges for Guinevere
 
-The highest Creator saw that Gildas, his beloved servant, had no lasting water except the raindrops that fell on the rocks and were caught as they dropped.[^109-3] So he made a stream run from the high cliff. It flowed, it flows, and it'll go on without ever failing. While Saint Gildas went on so, intent on fasting and prayer, pirates came from the Orkney Islands. They harassed him, taking the servants who looked after him and carrying them off into exile, with their spoils and all the goods of his house.
+The highest Creator saw that Gildas, his beloved servant, had no lasting water except the raindrops that fell on the rocks and were caught as they dropped.[^109-5] So he made a stream run from the high cliff. It flowed, it flows, and it'll go on without ever failing. While Saint Gildas went on so, intent on fasting and prayer, pirates came from the Orkney Islands. They harassed him, taking the servants who looked after him and carrying them off into exile, with their spoils and all the goods of his house.
 
-He was so badly troubled that he couldn't live there any longer. He left the island, got into a small boat and came to Glastonbury in great grief, while Melwas ruled the Summer Country. The abbot of Glastonbury welcomed him, as such a man deserved. Gildas taught the brothers and people of all kinds, sowing the seed of heaven's teaching. There he wrote his histories of Britain's kings.[^109-4]
+He was so badly troubled that he couldn't live there any longer. He left the island, got into a small boat and came to Glastonbury in great grief, while Melwas ruled the Summer Country. The abbot of Glastonbury welcomed him, as such a man deserved. Gildas taught the brothers and people of all kinds, sowing the seed of heaven's teaching. There he wrote his histories of Britain's kings.[^109-6]
 
-Glastonbury, that is, the City of Glass, which took its name from glass, was a city first named in the British tongue. Arthur the tyrant besieged it with a countless host, because of Guinevere, his wife.[^109-5] The wicked man we've spoken of had violated her and carried her off. He'd brought her there for refuge in a sanctuary no one had ever broken into, guarded by its banks of reeds, its river and its marsh. The rebel king had searched for the queen for a whole year.[^109-6] At last he heard she was there. At once he called up the armies of all Cornwall and Devon, and the enemies made ready for war.[^109-7]
+Glastonbury, that is, the City of Glass, which took its name from glass, was a city first named in the British tongue. Arthur the tyrant besieged it with a countless host, because of Guinevere, his wife.[^109-7] The wicked man we've spoken of had violated her and carried her off. He'd brought her there for refuge in a sanctuary no one had ever broken into, guarded by its banks of reeds, its river and its marsh. The rebel king had searched for the queen for a whole year.[^109-8] At last he heard she was there. At once he called up the armies of all Cornwall and Devon, and the enemies made ready for war.[^109-9]
 
 ### The abbot and Gildas go between the armies to speak to Melwas
 
@@ -176,7 +176,15 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^107-5]: Anthony the Great, the Egyptian hermit of the fourth century, the model for monks who lived alone.<sup>[\*](#new-in-this-translation)</sup>
 
-[^107-6]: Pebidiog is the district of St Davids, at the far western tip of Britain. The child of the next paragraph is Saint David, patron saint of the Welsh.<sup>[\*](#new-in-this-translation)</sup>
+[^107-6]: A hair shirt is rough clothing woven from coarse animal hair, worn next to the skin on purpose so it scratches and itches. Monks and other ascetics wore one to punish the body and keep the mind on god instead of comfort, the same impulse behind Gildas's fasting and his nights on bare rock.<sup>[\*](#new-in-this-translation)</sup>
+
+[^107-7]: Cress is watercress, a wild peppery-tasting green that grows in cold running streams. Gathering it from the brook and eating it raw, rather than meat, was part of Gildas's self-denial: the plainest wild food, taken straight from the water.<sup>[\*](#new-in-this-translation)</sup>
+
+[^107-8]: Mixing ashes into his bread was a penance, not a recipe. In the Bible ashes stand for grief and humility — people sat in ashes to mourn or repent — so eating them was a way of refusing any comfort in food. Gildas spoils his own meal on purpose, to take no pleasure in it.<sup>[\*](#new-in-this-translation)</sup>
+
+[^107-9]: Standing motionless in cold river water, often at night, was a known hardship early British and Irish monks took on to master the body and stay awake for prayer, like the hair shirt and the bare rock. The Our Father is the prayer Jesus taught his followers to say ("Our Father, who art in heaven…"); Gildas uses three slow turns through it to measure how long he stands there.<sup>[\*](#new-in-this-translation)</sup>
+
+[^107-10]: Pebidiog is the district of St Davids, at the far western tip of Britain. The child of the next paragraph is Saint David, patron saint of the Welsh.<sup>[\*](#new-in-this-translation)</sup>
 
 [^108-1]: Caradoc names no new speaker here, but the words are Gildas's, since the angel's message came to him.<sup>[\*](#new-in-this-translation)</sup>
 
@@ -188,19 +196,25 @@ Ryan Allen's translation and original notes are licensed under [CC BY 4.0](https
 
 [^108-5]: Cadoc founded the monastery of Llancarfan and was its abbot.<sup>[\*](#new-in-this-translation)</sup>
 
+[^108-6]: A penance is an act of amends the church sets for a sin — a fast, a pilgrimage, a gift, a long stretch of prayer — carried out to show the sin is truly regretted and to earn forgiveness for it. Here the bishops set Arthur a penance for killing Hueil, and he keeps making amends for it to the end of his life.<sup>[\*](#new-in-this-translation)</sup>
+
 [^109-1]: In the whole story: [Gildas studies, teaches and preaches, and dies a hermit at Glastonbury](../../story-map.md#gildas-teaches-and-preaches).<sup>[\*](#new-in-this-translation)</sup>
 
-[^109-2]: Both islands lie in the sea between Wales and England. The one nearer Wales is Flat Holm, Cadoc's, and the one towards England is Steep Holm, Gildas's.<sup>[\*](#new-in-this-translation)</sup>
+[^109-2]: The four Gospels are the opening books of the Christian New Testament — Matthew, Mark, Luke and John — each telling the life, teaching and death of Jesus. Copying all four out by hand was slow, costly work, which is why the finished book was treasured, bound in gold and silver, and later used for swearing solemn oaths.<sup>[\*](#new-in-this-translation)</sup>
 
-[^109-3]: In the whole story: [Gildas studies, teaches and preaches, and dies a hermit at Glastonbury](../../story-map.md#gildas-teaches-and-preaches).<sup>[\*](#new-in-this-translation)</sup>
+[^109-3]: Both islands lie in the sea between Wales and England. The one nearer Wales is Flat Holm, Cadoc's, and the one towards England is Steep Holm, Gildas's.<sup>[\*](#new-in-this-translation)</sup>
 
-[^109-4]: The histories are [*On the Ruin of Britain*](../../de-excidio-britanniae/de-excidio-britanniae.md), which Caradoc has Gildas write here.<sup>[\*](#new-in-this-translation)</sup>
+[^109-4]: The Trinity is the central Christian idea of one god in three persons — the Father, the Son (Jesus) and the Holy Spirit — three but not three gods; "undivided" presses that oneness. Churches and chapels were often dedicated to the Trinity, as Gildas's is here and again at the end of his life.<sup>[\*](#new-in-this-translation)</sup>
 
-[^109-5]: In the whole story: [Meliagaunce carries off the queen, and Lancelot rides in a cart to save her](../../story-map.md#the-knight-of-the-cart).<sup>[\*](#new-in-this-translation)</sup>
+[^109-5]: In the whole story: [Gildas studies, teaches and preaches, and dies a hermit at Glastonbury](../../story-map.md#gildas-teaches-and-preaches).<sup>[\*](#new-in-this-translation)</sup>
 
-[^109-6]: Caradoc calls Arthur a tyrant here, and a rebel king, as he did at the start of Part 2: the words Gildas used for the kings he condemned.<sup>[\*](#new-in-this-translation)</sup>
+[^109-6]: The histories are [*On the Ruin of Britain*](../../de-excidio-britanniae/de-excidio-britanniae.md), which Caradoc has Gildas write here.<sup>[\*](#new-in-this-translation)</sup>
 
-[^109-7]: Malory tells this in [Book XIX, chapters 1–9](../../malory-sources/malory-map.tsv). There the queen is taken by Meliagaunce, Bagdemagus's son, as she rides out on a May morning near Westminster. It's Lancelot who comes for her, riding the last of the way in a cart, and she makes peace with Meliagaunce at his gate. Here Arthur searches a year, besieges Glastonbury with the armies of Cornwall and Devon, and the abbot and Gildas make the peace. This is the oldest telling of the queen carried off, which the romances later give to Meliagaunce.<sup>[\*](#new-in-this-translation)</sup>
+[^109-7]: In the whole story: [Meliagaunce carries off the queen, and Lancelot rides in a cart to save her](../../story-map.md#the-knight-of-the-cart).<sup>[\*](#new-in-this-translation)</sup>
+
+[^109-8]: Caradoc calls Arthur a tyrant here, and a rebel king, as he did at the start of Part 2: the words Gildas used for the kings he condemned.<sup>[\*](#new-in-this-translation)</sup>
+
+[^109-9]: Malory tells this in [Book XIX, chapters 1–9](../../malory-sources/malory-map.tsv). There the queen is taken by Meliagaunce, Bagdemagus's son, as she rides out on a May morning near Westminster. It's Lancelot who comes for her, riding the last of the way in a cart, and she makes peace with Meliagaunce at his gate. Here Arthur searches a year, besieges Glastonbury with the armies of Cornwall and Devon, and the abbot and Gildas make the peace. This is the oldest telling of the queen carried off, which the romances later give to Meliagaunce.<sup>[\*](#new-in-this-translation)</sup>
 
 [^110-1]: In the whole story: [Gildas studies, teaches and preaches, and dies a hermit at Glastonbury](../../story-map.md#gildas-teaches-and-preaches).<sup>[\*](#new-in-this-translation)</sup>
 
