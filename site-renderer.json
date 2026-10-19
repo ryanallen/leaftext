@@ -1,17 +1,17 @@
 {
   "format": 1,
-  "version": "5.11.3",
-  "source": "3785e5f0453b2b83a0fe93d4298572d2d87840bd",
+  "version": "5.11.4",
+  "source": "f39b6a0c4349bc77f220b25a367c879a75a95d7f",
   "repository": "ryanallen/leaftext",
-  "tag": "v5.11.3",
-  "asset": "renderer-3785e5f0453b2b83a0fe93d4298572d2d87840bd-6d7a1d1ea1eb36c6313838e8257d625a51d7f88ae0acbe07e6621c4ff0d7f324.json.gz",
-  "length": 8043469,
-  "sha256": "6d7a1d1ea1eb36c6313838e8257d625a51d7f88ae0acbe07e6621c4ff0d7f324",
+  "tag": "v5.11.4",
+  "asset": "renderer-f39b6a0c4349bc77f220b25a367c879a75a95d7f-61d2c59bc09b06e29bb81335637b2649f6cfd10d649f5ca4f4239d4556c9089c.json.gz",
+  "length": 8043686,
+  "sha256": "61d2c59bc09b06e29bb81335637b2649f6cfd10d649f5ca4f4239d4556c9089c",
   "files": [
     {
       "path": "assets/leaftext/version.json",
       "length": 83,
-      "sha256": "ce3b10b6cc95c418f565a1e0bf1d672984b89354e86740fa02110e370e529303"
+      "sha256": "9ae27dbe890338660b56808b638dac6e1b2c8c7aa9c902d8241c4f2b829c0214"
     },
     {
       "path": "assets/leaftext/image-sizes.json",
@@ -21,22 +21,22 @@
     {
       "path": "assets/leaftext/licenses.md",
       "length": 475982,
-      "sha256": "eac8d44022bf4b5cc67742959cece186acc31091cc72b4c24289e72a5c5e146c"
+      "sha256": "5c13920df0677b517d3efb9a1ed44052dd69888072d80526274560cd24041818"
     },
     {
       "path": "assets/leaftext/app/leaftext.wasm",
       "length": 3343118,
-      "sha256": "971f48a52a91db2145e55c87e503584ee90f3155a2d31beea18a46b202dd8f59"
+      "sha256": "0d7cc2a1ffcd1d67643b133f7a5ebd8ac088bf7cd30d0a7035bcdc2febbac998"
     },
     {
       "path": "assets/leaftext/app/leaftext-colors.wasm",
       "length": 2229877,
-      "sha256": "89e34fa091782a1c6da941c81705807bb25ed11d8ad8f51e5ff6a86205d57d87"
+      "sha256": "1c6309762ccdc733c0002dd4ac9c11bb6990e38f790bef26341b8b270ebd08d4"
     },
     {
       "path": "assets/leaftext/app/leaftext-book.wasm",
       "length": 636895,
-      "sha256": "01ffd0b01def14bb558853ac0d67bbb4d2e88f7edfab88ef9a6b8a77340bfdcc"
+      "sha256": "a9abf3d86992127980d9eaa2ee826eff7108d60bec816e5ad0e4b094e44e287f"
     },
     {
       "path": "assets/leaftext/app/app.js",
