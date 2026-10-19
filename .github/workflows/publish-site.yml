@@ -119,7 +119,7 @@ jobs:
       # documents it opens: the site's lines from site-page.html in its head, the
       # README already drawn into it so a cold visitor and a crawler read the
       # words out of the first response, and documents.json beside it for the
-      # pane and the pager. It draws through the app module already committed
+      # pane and the pager. It draws through the verified app module installed
       # under assets/leaftext/app/, and refuses a module that does not render or
       # a page with nothing in it — which is what stops a hand-over that went
       # wrong reaching the deploy step below.

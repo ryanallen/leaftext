@@ -1,10 +1,10 @@
 {
   "format": 1,
   "version": "5.11.3",
-  "source": "881888a902fe84505b1bc2f8f8761b8d2edc6aee",
+  "source": "67dea64ecf040f52317e9a3173dacbcba71da223",
   "repository": "ryanallen/leaftext",
   "tag": "v5.11.3",
-  "asset": "renderer-881888a902fe84505b1bc2f8f8761b8d2edc6aee-e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4.json.gz",
+  "asset": "renderer-67dea64ecf040f52317e9a3173dacbcba71da223-e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4.json.gz",
   "length": 8041972,
   "sha256": "e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4",
   "files": [
