@@ -1,0 +1,267 @@
+{
+  "format": 1,
+  "version": "5.11.3",
+  "source": "881888a902fe84505b1bc2f8f8761b8d2edc6aee",
+  "repository": "ryanallen/leaftext",
+  "tag": "v5.11.3",
+  "asset": "renderer-881888a902fe84505b1bc2f8f8761b8d2edc6aee-e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4.json.gz",
+  "length": 8041972,
+  "sha256": "e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4",
+  "files": [
+    {
+      "path": "assets/leaftext/version.json",
+      "length": 83,
+      "sha256": "ce3b10b6cc95c418f565a1e0bf1d672984b89354e86740fa02110e370e529303"
+    },
+    {
+      "path": "assets/leaftext/image-sizes.json",
+      "length": 6817,
+      "sha256": "a10eecd4ed7dd6ab85a467ea573e581d8c2af54b6ff45c54e3319cc344564c63"
+    },
+    {
+      "path": "assets/leaftext/licenses.md",
+      "length": 475982,
+      "sha256": "eac8d44022bf4b5cc67742959cece186acc31091cc72b4c24289e72a5c5e146c"
+    },
+    {
+      "path": "assets/leaftext/app/leaftext.wasm",
+      "length": 3343118,
+      "sha256": "26b77b3acc6029489fbe2128962c8e071a04b83e947629484504fbdb1903824b"
+    },
+    {
+      "path": "assets/leaftext/app/leaftext-colors.wasm",
+      "length": 2229877,
+      "sha256": "aa6bed0eb6c6efbc924cb18342c0af1ed3ba75b6ee3efb078e4274c36a5ab5a0"
+    },
+    {
+      "path": "assets/leaftext/app/leaftext-book.wasm",
+      "length": 636895,
+      "sha256": "62eeba28fa25d633231084fc396b776c64e500a27327be8634dc9ce178489e9b"
+    },
+    {
+      "path": "assets/leaftext/app/app.js",
+      "length": 2062813,
+      "sha256": "51b2f8af92397d96797c75971d419a8b47d421bfd7ae14da428045163606d3cd"
+    },
+    {
+      "path": "assets/leaftext/app/app.css",
+      "length": 852243,
+      "sha256": "939231185a37172fdf7ec11fe5b77d5773df1e7df6fedf6420db412a9adc76fb"
+    },
+    {
+      "path": "assets/leaftext/app/host.js",
+      "length": 94813,
+      "sha256": "d824d7a4d67b1f687abb3868b3c0565386b7d76c5bbe518ccad8a2c59c1f8999"
+    },
+    {
+      "path": "assets/leaftext/app/renderer.js",
+      "length": 14853,
+      "sha256": "9654dcab3c1d6d1023ff634078d3321956958a4f0ca32c2710e5840b3f79dbbb"
+    },
+    {
+      "path": "assets/leaftext/app/boot.js",
+      "length": 7471,
+      "sha256": "954e484a06307c9a9d0c49658409446b3e17b03f6358172e2646b76b1e083803"
+    },
+    {
+      "path": "assets/leaftext/app/settings.js",
+      "length": 2974,
+      "sha256": "1f3233cc6d2e0b98c79aefce13035bff099645b1434a4129b86c02a58d384ebf"
+    },
+    {
+      "path": "assets/leaftext/app/fetches.js",
+      "length": 7689,
+      "sha256": "6965f041a1cb0c8227b237d6622972ca082ceb4b893cb0bc9fe85885ec3af855"
+    },
+    {
+      "path": "assets/leaftext/app/export-minimap.js",
+      "length": 17705,
+      "sha256": "7511727ef352254a10cc779ed7e337c52061104ef5763fe1ae029ce0a0cf963e"
+    },
+    {
+      "path": "assets/leaftext/app/front-page-layout.js",
+      "length": 13181,
+      "sha256": "606753d1df10e5a209d3ca348e5c142913467569a5a582fdf93a694b481d231d"
+    },
+    {
+      "path": "assets/leaftext/app/dotted-leaf.js",
+      "length": 12075,
+      "sha256": "31a91bc265f3d4f9bad58563b7a1da1e2a84f525939f31e96f07ce686d07c351"
+    },
+    {
+      "path": "assets/leaftext/app/compare-chart.js",
+      "length": 8044,
+      "sha256": "5f994cc223f52ae92fdc737a98944226e572565911729490cb1f183060756d9a"
+    },
+    {
+      "path": "assets/leaftext/app/front-page.js",
+      "length": 5971,
+      "sha256": "5e0c9fcf9b910d31a38168433d43403cdde219e6bea07de6c13807c670b73178"
+    },
+    {
+      "path": "assets/leaftext/app/shelf-layout.js",
+      "length": 20432,
+      "sha256": "78cb655c0954d17a0d6b0df446548cafee24ce262cb5b9d33b45d434d67b7dd6"
+    },
+    {
+      "path": "assets/leaftext/app/shelf.js",
+      "length": 20064,
+      "sha256": "971dd6a1fd043fe39207682692f5488dadf0b05e91ef53147edc6680a386f727"
+    },
+    {
+      "path": "assets/leaftext/app/leaf.svg",
+      "length": 374,
+      "sha256": "e2d9b620de5e64e7ceabc27a6a8063634b5d3c0931f6e548fdec6eef10f93336"
+    },
+    {
+      "path": "assets/leaftext/app/d3-force.min.js",
+      "length": 17427,
+      "sha256": "52dd66d3cbe27abb2168685fe4ec61376ebe4a9890d34634e1546155da6fe9e4"
+    },
+    {
+      "path": "assets/leaftext/app/ghostty-web/ghostty-web.js",
+      "length": 651797,
+      "sha256": "7b42f00d4fbcf953394392cd5294ddbad1708caf563f131f8a529c2a97ae50ac"
+    },
+    {
+      "path": "assets/leaftext/app/ghostty-web/LICENSE",
+      "length": 1062,
+      "sha256": "5eccd0eeca906db6d661b64dd05e1d4a4b2e49d37d43bbcfd2c8cce4d7832920"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_AMS-Regular.woff2",
+      "length": 28076,
+      "sha256": "0cdd387c9590a1a9f9794560022dbb59654a7d86f187aa0c81495ad42d3a7308"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Caligraphic-Bold.woff2",
+      "length": 6912,
+      "sha256": "de7701e42cf1f4cf0b766c03fb27977207eee2f4fd5d76fa82188406da43ea4c"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Caligraphic-Regular.woff2",
+      "length": 6908,
+      "sha256": "5d53e70ad607c2352162dec9e0923fb54ecdafaccbf604cd8dcf7d00facb989b"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Fraktur-Bold.woff2",
+      "length": 11348,
+      "sha256": "74444efd593c005e3f4573b44524704c0af0a937fe911cca9e94068d0d140d3f"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Fraktur-Regular.woff2",
+      "length": 11316,
+      "sha256": "51814d270d06ff0255dba0799994fa4d8c84d11f09951d47595f4abb1f3602dc"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Main-Bold.woff2",
+      "length": 25324,
+      "sha256": "0f60d1b897938ec918c8ce073092411baf9438f6739465693ff18b0f9d20b021"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Main-BoldItalic.woff2",
+      "length": 16780,
+      "sha256": "99cd42a3c072d918f2f44984a807cf7aa16e13545fd0875fc07c6c65f99e715b"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Main-Italic.woff2",
+      "length": 16988,
+      "sha256": "97479ca6cce906abc961ecac96faa5f9ca2e61b8e7670d475826bcdee9a7c267"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Main-Regular.woff2",
+      "length": 26272,
+      "sha256": "c2342cd8b869e01752a9321dc17213fc40d4d04c79688c1d43f2cf316abd7866"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Math-BoldItalic.woff2",
+      "length": 16400,
+      "sha256": "dc47344dbb6cb5b655c8460d561f4df5f501b90c804ad3c6cec65fe322351ab1"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Math-Italic.woff2",
+      "length": 16440,
+      "sha256": "7af58c5ec8f132a2ddde9027c6d7814decce4d3b822a11192a42a20e2e973264"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_SansSerif-Bold.woff2",
+      "length": 12216,
+      "sha256": "e99ae51144bf1232efcc1bfe5add36262c6866b0faab24fa75740e1b98577a62"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_SansSerif-Italic.woff2",
+      "length": 12028,
+      "sha256": "00b26ac825e2095056396e0553b8ac26d3f8ad158c3826e28b4c45b385c4714a"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_SansSerif-Regular.woff2",
+      "length": 10344,
+      "sha256": "68e8c73ef42afd3ccec58bf0fba302cce448938e7fc020a5e31f8a952eee1342"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Script-Regular.woff2",
+      "length": 9644,
+      "sha256": "036d4e95149b69ff9bcc0cd55771efeb25ffa3947293e69acd78d5ac328c684b"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Size1-Regular.woff2",
+      "length": 5468,
+      "sha256": "6b47c40166b6dbe21a5dfca7718413f2147fd2399be1ba605d8ad39cedf25dfe"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Size2-Regular.woff2",
+      "length": 5208,
+      "sha256": "d04c54219f9eaec6d4d4fd42dfb28785975a4794d6b2fc71e566b9cd6db842dd"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Size3-Regular.woff2",
+      "length": 3624,
+      "sha256": "73d591271b1604960cb10bb90fee021670af7297017e0e98480b332d11f51995"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Size4-Regular.woff2",
+      "length": 4928,
+      "sha256": "a4af7d414440a1c1790825cfb700cf9cf43b0f2c4b04f0ebc523011ad9853ec0"
+    },
+    {
+      "path": "assets/leaftext/app/katex/fonts/KaTeX_Typewriter-Regular.woff2",
+      "length": 13568,
+      "sha256": "71d517d67827787cfabdf186914cc3358eda539e37931941f2b2fd4a21f68c0b"
+    },
+    {
+      "path": "assets/leaftext/app/katex/katex.min.css",
+      "length": 23335,
+      "sha256": "717bc9ae7853b61f0f76455dddf0ecd4f527a783f42de2ac24684899c1c46258"
+    },
+    {
+      "path": "assets/leaftext/app/katex/katex.min.js",
+      "length": 275414,
+      "sha256": "e6bfe5deebd4c7ccd272055bab63bd3ab2c73b907b6e6a22d352740a81381fd4"
+    },
+    {
+      "path": "assets/leaftext/app/mermaid.min.js",
+      "length": 2748992,
+      "sha256": "07e37dfa97b337ccc85365d57eddf99b9706f09db3b59b260d0333b23b343c4b"
+    },
+    {
+      "path": "assets/leaftext/app/monaco/monaco.css",
+      "length": 217587,
+      "sha256": "f5f41279e563c9ae5a66f50d9b4a44d44eed49ca90b6d3e8d5c8040ddd57cbe8"
+    },
+    {
+      "path": "assets/leaftext/app/monaco/monaco.js",
+      "length": 2813367,
+      "sha256": "ac05891ee829ca3e91b4398796e809c1b86c2c9e76d5ea555c21c0c7ee5f5855"
+    },
+    {
+      "path": "assets/leaftext/app/pixi-unsafe-eval.min.js",
+      "length": 36026,
+      "sha256": "d2ced83f103f96d5e3bd854f6faee1d43888ee3dffdc2a9643f1d3a6f1f7984f"
+    },
+    {
+      "path": "assets/leaftext/app/pixi.min.js",
+      "length": 665775,
+      "sha256": "e5c38cccee4f99263df5f0b10dfd4d2484db5fdb730af3953cb6f1c07b3d85b2"
+    }
+  ]
+}

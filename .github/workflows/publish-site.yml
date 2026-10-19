@@ -3,7 +3,7 @@ name: Publish the site
 # leaftext.com, with the app's own renderer served beside its pages.
 #
 # This repository has no source in it, so it compiles nothing. The renderer is
-# built where the source lives and committed here by that repository's own
+# built where the source lives and pinned here by that repository's own
 # `hand-over-site` recipe, which is the one thing that crosses the seam between
 # the two. What is left here is the site's own: move the pictures, bake the front
 # page, upload, deploy.
@@ -80,6 +80,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Install the verified pinned renderer
+        run: node scripts/renderer-bundle.mjs --install
 
       # The WebP an earlier run already paid for. Full effort costs two and a
       # half minutes across the set, and the key is the contents of the masters,
