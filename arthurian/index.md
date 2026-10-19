@@ -8,6 +8,7 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Before Arthur: Britain founded and the Grail brought west
 
+- [The Whole Arthurian Story](story-map.md). Ryan Allen, from every book on the shelf. English. Coming; not published yet. Story: Before Arthur to After Camlann, broad. Written: 540–1930 CE. Edition not chosen yet. Length: about 6,100,000 words of English.
 - [On the Ruin of Britain](de-excidio-britanniae/de-excidio-britanniae.md). Gildas. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 540–547 CE. Edition: Theodor Mommsen, 1898. Length: 22,402 words of Latin.
 - [The History of the Britons](historia-brittonum/historia-brittonum.md). Attributed to Nennius. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then After Camlann. Written: 829–830 CE. Edition: Theodor Mommsen, 1898. Length: 8,880 words of Latin.
 - [The History of the Kings of Britain](geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings.md). Geoffrey of Monmouth. Latin. On the shelf. Story: Before Arthur to Arthur's early reign; then The Roman war; then Arthur's end to After Camlann. Written: 1136 CE. Edition: J. A. Giles, 1844. Length: 49,275 words of Latin.
@@ -20,7 +21,6 @@ A book whose text is published reaches from the first episode it tells to the la
 - [Andrew of Wyntoun's Original Chronicle, its Arthur](story-map.md). Andrew of Wyntoun. Middle Scots. Coming; not published yet. Story: Before Arthur to Arthur's end, broad. Written: 1408–1424 CE. Edition not chosen yet. Length: about 700 lines, about 4,600 words of Middle Scots.
 - [The History of the Holy Grail](story-map.md). Henry Lovelich. Middle English. Coming; not published yet. Story: Before Arthur, broad. Written: 1430–1450 CE. Edition not chosen yet. Length: about 24,000 lines, about 160,000 words of Middle English.
 - [The Prose Merlin](story-map.md). Anonymous. Middle English. Coming; not published yet. Story: Before Arthur to Arthur's early reign, broad. Written: 1450 CE. Edition not chosen yet. Length: about 290,000 words of Middle English.
-- [The Whole Arthurian Story](story-map.md). Ryan Allen, from every book on the shelf. English. Coming; not published yet. Story: Before Arthur to After Camlann, broad. Date not established. Edition not chosen yet. Length: about 6,100,000 words of English.
 
 ## Merlin, Uther and Arthur's birth
 
@@ -48,6 +48,7 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Arthur's early reign
 
+- [The Saints Who Meet Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1086–1199 CE. Edition: W. J. Rees and Arthur de La Borderie, 1853–1892. Length: 6,040 words of Latin.
 - [The Life of Gildas](vita-gildae/vita-gildae.md). Caradoc of Llancarfan. Latin. On the shelf. Story: Arthur's early reign; then Arthur's end. Written: 1100–1165 CE. Edition: Theodor Mommsen, 1898. Length: 1,644 words of Latin.
 - [Les Enfances Gauvain](story-map.md). Anonymous. French. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1250 CE. Edition not chosen yet. Length: about 700 lines, about 4,400 words of French.
 - [The Rise of Gawain (De ortu Waluuanii)](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1299 CE. Edition not chosen yet. Length: about 40 pages, about 13,000 words of Latin.
@@ -65,7 +66,6 @@ A book whose text is published reaches from the first episode it tells to the la
 - [Idylls of the King](story-map.md). Alfred Tennyson. English. Coming; not published yet. Story: Arthur's early reign to Arthur's end, broad. Written: 1859–1885 CE. Edition not chosen yet. Length: about 11,300 lines, about 90,000 words of English.
 - [The Tale of Balen](story-map.md). Algernon Charles Swinburne. English. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1896 CE. Edition not chosen yet. Length: about 2,700 lines, about 19,000 words of English.
 - [The Story of King Arthur and His Knights](story-map.md). Howard Pyle. English. Coming; not published yet. Story: Arthur's early reign to The knights' adventures, broad. Written: 1903 CE. Edition not chosen yet. Length: about 320 pages, about 85,000 words of English.
-- [The Saints Who Meet Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Date not established. Edition: W. J. Rees and Arthur de La Borderie, 1853–1892. Length: 6,040 words of Latin.
 
 ## The knights' adventures
 
@@ -241,9 +241,9 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Beside the story
 
+- [The Oldest Welsh Arthur Poems](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Written: 570–1599 CE. Edition: J. Gwenogvryn Evans and Owen Jones, Iolo Morganwg and William Owen Pughe, 1870–1910. Length: about 10,000 words of Middle Welsh.
 - [The Welsh Triads](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Written: by 1299 CE. Edition not chosen yet. Length: about 3,000 words of Middle Welsh.
 - [The Dream of Rhonabwy](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Written: by 1399 CE. Edition not chosen yet. Length: about 19 pages, about 5,000 words of Middle Welsh.
 - [The Faerie Queene](story-map.md). Edmund Spenser. English. Coming; not published yet. Story: beside the story's time. Written: 1590–1596 CE. Edition not chosen yet. Length: about 34,700 lines, about 260,000 words of English.
 - [A Connecticut Yankee in King Arthur's Court](story-map.md). Mark Twain. English. Coming; not published yet. Story: beside the story's time. Written: 1889 CE. Edition not chosen yet. Length: about 560 pages, about 120,000 words of English.
-- [Merlin the Machine](story-map.md). Ryan Allen. English. Coming; not published yet. Story: beside the story's time. Date not established. Edition not chosen yet. Length: about 28 chapters, about 140,000 words of English.
-- [The Oldest Welsh Arthur Poems](story-map.md). Anonymous. Middle Welsh. Coming; not published yet. Story: beside the story's time. Date not established. Edition: J. Gwenogvryn Evans and Owen Jones, Iolo Morganwg and William Owen Pughe, 1870–1910. Length: about 10,000 words of Middle Welsh.
+- [Merlin the Machine](story-map.md). Ryan Allen. English. Coming; not published yet. Story: beside the story's time. Written: 2026–9999 CE. Edition not chosen yet. Length: about 28 chapters, about 140,000 words of English.

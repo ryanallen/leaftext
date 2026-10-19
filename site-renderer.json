@@ -1,12 +1,12 @@
 {
   "format": 1,
   "version": "5.11.3",
-  "source": "67dea64ecf040f52317e9a3173dacbcba71da223",
+  "source": "3785e5f0453b2b83a0fe93d4298572d2d87840bd",
   "repository": "ryanallen/leaftext",
   "tag": "v5.11.3",
-  "asset": "renderer-67dea64ecf040f52317e9a3173dacbcba71da223-e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4.json.gz",
-  "length": 8041972,
-  "sha256": "e68ee7eea9fb78ebe3006cd163f274df18d6fcbbbdb07113b5dcfc7fa6d809d4",
+  "asset": "renderer-3785e5f0453b2b83a0fe93d4298572d2d87840bd-6d7a1d1ea1eb36c6313838e8257d625a51d7f88ae0acbe07e6621c4ff0d7f324.json.gz",
+  "length": 8043469,
+  "sha256": "6d7a1d1ea1eb36c6313838e8257d625a51d7f88ae0acbe07e6621c4ff0d7f324",
   "files": [
     {
       "path": "assets/leaftext/version.json",
@@ -26,22 +26,22 @@
     {
       "path": "assets/leaftext/app/leaftext.wasm",
       "length": 3343118,
-      "sha256": "26b77b3acc6029489fbe2128962c8e071a04b83e947629484504fbdb1903824b"
+      "sha256": "971f48a52a91db2145e55c87e503584ee90f3155a2d31beea18a46b202dd8f59"
     },
     {
       "path": "assets/leaftext/app/leaftext-colors.wasm",
       "length": 2229877,
-      "sha256": "aa6bed0eb6c6efbc924cb18342c0af1ed3ba75b6ee3efb078e4274c36a5ab5a0"
+      "sha256": "89e34fa091782a1c6da941c81705807bb25ed11d8ad8f51e5ff6a86205d57d87"
     },
     {
       "path": "assets/leaftext/app/leaftext-book.wasm",
       "length": 636895,
-      "sha256": "62eeba28fa25d633231084fc396b776c64e500a27327be8634dc9ce178489e9b"
+      "sha256": "01ffd0b01def14bb558853ac0d67bbb4d2e88f7edfab88ef9a6b8a77340bfdcc"
     },
     {
       "path": "assets/leaftext/app/app.js",
-      "length": 2062813,
-      "sha256": "51b2f8af92397d96797c75971d419a8b47d421bfd7ae14da428045163606d3cd"
+      "length": 2064743,
+      "sha256": "ee2a4051fa5e312f60e4aab728efdd78e0561886cebc1cf7bcc9c33be1e13019"
     },
     {
       "path": "assets/leaftext/app/app.css",
@@ -50,8 +50,8 @@
     },
     {
       "path": "assets/leaftext/app/host.js",
-      "length": 94813,
-      "sha256": "d824d7a4d67b1f687abb3868b3c0565386b7d76c5bbe518ccad8a2c59c1f8999"
+      "length": 96421,
+      "sha256": "078b3a9ebb237ea6dd46b95aa01268d77e9544eceb3e97183bb7bafb2e32ae0b"
     },
     {
       "path": "assets/leaftext/app/renderer.js",
