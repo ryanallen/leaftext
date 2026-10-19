@@ -8424,8 +8424,13 @@ body.library-resizing button {
 .console-status[hidden], .console-status-field[hidden] { display: none; }
 .console-status-field { display: inline-flex; align-items: center; gap: var(--lt-space-6); flex: none; }
 .console-status-agent { font-weight: var(--lt-weight-600); color: var(--lt-markdown-foreground); }
+.console-status-controls { display: inline-flex; align-items: center; gap: var(--lt-space-4); flex: none; }
+
+.console-status-model .lt-icon-chevron-down { width: 10px; height: 10px; }
 .console-status-model { appearance: none; border: none; border-radius: var(--lt-radius-sm); padding: 0 var(--lt-space-4); background: transparent; color: inherit; font: inherit; cursor: pointer; }
 @media (hover: hover) { .console-status-model:hover { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); } }
+.console-status-model:disabled { background: transparent; border: none; color: var(--lt-navigation-button-disabled-foreground); cursor: default; }
+@media (hover: hover) { .console-status-model:disabled:hover { background: transparent; color: var(--lt-navigation-button-disabled-foreground); } }
 .console-status-model[aria-expanded="true"] { background: var(--lt-wash-hover); color: var(--lt-markdown-foreground); }
 .console-status-model:focus-visible { outline: var(--lt-stroke-2) solid var(--lt-focus-ring); outline-offset: 0; }
 .console-status-meter { display: inline-block; width: var(--lt-space-48); height: var(--lt-space-4); border-radius: var(--lt-radius-full); background: var(--lt-border); overflow: hidden; }

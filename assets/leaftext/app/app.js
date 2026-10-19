@@ -33313,15 +33313,19 @@ function closeTableLensPicker() {
 
 
 function pressTableLensPicker(event) {
+  
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
   const aimed = event.target && event.target.closest ? event.target : null;
   const cell = aimed ? aimed.closest('td') : null;
   
-  if (!cell || aimed.closest('.table-lens-picker') || aimed.closest('.table-sizer')) return;
+  if (!cell || aimed.closest('.table-lens-picker') || aimed.closest('.table-sizer') || aimed.closest('a[href]')) return;
   const table = cell.closest('table[data-block-kind="table"]');
   if (!table) return;
   const at = Array.from(cell.parentElement.children).indexOf(cell);
   
-  if (!tablePickerAt(table, cell, at) || !tableTakesControls(table)) return;
+  const kind = tablePickerAt(table, cell, at);
+  
+  if (!kind || (kind === 'relation' && (cell.textContent || '').trim()) || !tableTakesControls(table)) return;
   event.preventDefault();
   event.stopPropagation();
   openTableLensPicker(table, cell, at);
@@ -42976,7 +42980,12 @@ function consoleAgentState(entry, screenLines) {
   if (!rule) return null;
   const lines = screenLines || consoleBottomLines(entry, rule.lines);
   if (lines.some(rule.asks)) return 'needs';
-  if (entry.agent === 'codex' && lines.some(line => /^\s*• (?:Working|Thinking) \([^)]*esc to interrupt\)/.test(line))) return 'working';
+  if (entry.agent === 'codex') {
+    
+    if (lines.some(line => /^\s*[•◦] [^(]+\([^)]*esc to interrupt\)/.test(line))) return 'working';
+    
+    if (entry.activity === 'working' && lines.some(line => /^\s*›(?:\s|$)/.test(line))) return entry.worked ? 'done' : 'rest';
+  }
   if (entry.agent === 'antigravity') {
     if (lines.some(line => /^\s*esc to cancel\b/.test(line)) && !lines.some(line => line.includes('tab Complete'))) return 'working';
     if (entry.activity === 'working' && lines[0] && /^\s*\? for shortcuts\b/.test(lines[0])) return entry.worked ? 'done' : 'rest';
@@ -42989,6 +42998,8 @@ function reportConsoleAgent(id, entry, screenLines) {
   const state = consoleAgentState(entry, screenLines);
   const said = `${entry.agent || ''} ${state || ''}`;
   const before = entry.agentSaid ?? ' ';
+  
+  markConsoleControls(entry, state);
   if (said === before) return;
   entry.agentSaid = said;
   if (before.split(' ')[0] !== (entry.agent || '')) {
@@ -43367,14 +43378,20 @@ function consoleWritten(id, entry) {
   }, CONSOLE_AGENT_QUIET_MS);
 }
 
+
+function consoleAntigravityMark(line) {
+  return /^\s*(?:\? for shortcuts|esc to cancel)\s{2,}\S/.test(line) || /(?:^|\s{2})[^\s·][^·]* · (?:minimal|low|medium|high|xhigh|max)\s*$/.test(line) || /^\W*Antigravity CLI \d/.test(line.trim());
+}
+
 function readConsoleAgent(id, entry) {
   const type = entry.terminal.buffer.active.type;
-  let screenLines;
+  
+  const screenLines = entry.titleAgent ? undefined : consoleBottomLines(entry, consoleAgentAsks.codex.lines);
   if (type !== 'alternate') entry.screenAgent = null;
   else if (!entry.titleAgent && !entry.screenAgent) {
-    screenLines = consoleBottomLines(entry, consoleAgentAsks.codex.lines);
     if (screenLines.slice(0, 4).some(line => /^\s*›\s+Ask Codex to do anything(?:\s|$)/.test(line))) entry.screenAgent = 'codex';
   }
+  if (screenLines && entry.screenAgent !== 'codex') entry.screenAgent = screenLines.slice(0, 8).some(consoleAntigravityMark) ? 'antigravity' : null;
   entry.agent = entry.titleAgent || entry.screenAgent || null;
   reportConsoleAgent(id, entry, screenLines);
 }
@@ -44373,17 +44390,31 @@ function startConsoleCommand(id, entry, button, record, command) {
   entry.terminal.focus();
 }
 
+
+function markConsoleControls(entry, state) {
+  const busy = state != null && state !== 'rest' && state !== 'done';
+  for (const button of entry.status?.querySelectorAll('.console-status-model') || []) {
+    if (button.disabled === busy) continue;
+    button.disabled = busy;
+    if (busy) button.title = 'Wait until the agent finishes.';
+    else button.removeAttribute('title');
+  }
+}
+
 function openConsoleModel(id, entry, button, effort = false, context = false) {
   entry.modelMenuCard = keyedColumn;
   const record = consoleControlRecord(entry);
   const refusal = consoleModelRefusal(id, entry, record);
   const choose = command => startConsoleCommand(id, entry, button, record, command);
   
-  const items = refusal ? [{ note: refusal }] : context ? [
+  if (!context) {
+    if (refusal) leafToast(refusal);
+    else choose(effort && record.agent !== 'codex' ? '/effort' : '/model');
+    return;
+  }
+  const items = refusal ? [{ note: refusal }] : [
     { label: 'Compact the conversation', run: () => choose('/compact') },
     { label: 'Start a new conversation', run: () => choose(record.agent === 'codex' ? '/new' : '/clear') },
-  ] : [
-    { label: `Choose in ${record.agent === 'claude' ? 'Claude Code' : record.agent === 'codex' ? 'Codex' : effort ? 'Google Antigravity' : 'Antigravity'}…`, run: () => choose(effort && record.agent !== 'codex' ? '/effort' : '/model') },
   ];
   showConsoleModelMenu(button, items);
 }
@@ -44426,14 +44457,14 @@ function consoleStatusFields(record) {
   const controls = ['claude', 'codex', 'antigravity'].includes(record.agent);
   const agent = { claude: 'Claude Code', codex: 'Codex', antigravity: 'Antigravity', gemini: 'Gemini CLI' }[record.agent];
   if (agent) fields.push({ field: 'agent', text: agent, agent: record.agent });
-  if (record.model || controls) fields.push({ field: 'model', text: record.model || 'Model…' });
-  if (controls) fields.push({ field: 'effort', text: 'Effort…' });
+  if (record.model || controls) fields.push({ field: 'model', text: record.model || 'Model' });
+  if (controls) fields.push({ field: 'effort', text: 'Effort' });
   const size = record.contextWindow;
   const used = record.tokens ?? (record.contextPercent != null && size ? record.contextPercent / 100 * size : null);
   if (used != null && size) fields.push({ field: 'context', text: `Context ${consoleStatusCount(used)} of ${consoleStatusCount(size)}`, meter: used / size * 100 });
   else if (record.contextPercent != null) fields.push({ field: 'context', text: `Context ${Math.round(record.contextPercent)}% used`, meter: record.contextPercent });
   else if (used != null) fields.push({ field: 'context', text: `${consoleStatusCount(used)} tokens` });
-  else if (controls) fields.push({ field: 'context', text: 'Context…' });
+  else if (controls) fields.push({ field: 'context', text: 'Context' });
   for (const limit of record.limits || []) {
     if (limit.resetsAt && limit.resetsAt * 1000 <= Date.now()) continue;
     const reset = limit.resetsAt ? ` · resets in ${consoleStatusWait(limit.resetsAt)}` : '';
@@ -44449,18 +44480,23 @@ function drawConsoleStatus(id, entry) {
   const strip = entry.status;
   const record = consoleControlRecord(entry);
   const fields = record ? consoleStatusFields(record) : [];
-  strip.replaceChildren(...fields.map(field => {
+  const items = fields.map(field => {
     const model = field.field === 'model' && ['claude', 'codex', 'antigravity'].includes(record.agent);
     const effort = field.field === 'effort';
     const context = field.field === 'context' && ['claude', 'codex', 'antigravity'].includes(record.agent);
     const item = document.createElement(model || effort || context ? 'button' : 'span');
     item.className = field.field === 'agent' ? 'console-status-field console-status-agent' : 'console-status-field';
     item.dataset.field = field.field;
-    if (field.agent && field.agent !== 'gemini') {
+    
+    const logo = field.agent && field.agent !== 'gemini';
+    if (logo) {
       const icon = document.createElement('span');
       icon.className = `lt-icon lt-icon-agent-${field.agent}`;
       icon.setAttribute('aria-hidden', 'true');
       item.appendChild(icon);
+      item.title = field.text;
+      item.setAttribute('role', 'img');
+      item.setAttribute('aria-label', field.text);
     }
     if (field.meter != null) {
       const meter = document.createElement('span');
@@ -44471,33 +44507,49 @@ function drawConsoleStatus(id, entry) {
       meter.appendChild(fill);
       item.appendChild(meter);
     }
-    item.appendChild(document.createTextNode(field.text));
+    if (!logo) item.appendChild(document.createTextNode(field.text));
     if (model || effort || context) {
       item.type = 'button';
       item.classList.add('console-status-model');
       if (effort) item.classList.add('console-status-effort');
-      item.setAttribute('aria-haspopup', 'menu');
-      item.setAttribute('aria-expanded', 'false');
       item.setAttribute('aria-label', context ? `Free up context: ${field.text}` : effort ? 'Change reasoning effort' : `Change model: ${field.text}`);
-      const chevron = document.createElement('span');
-      chevron.className = 'lt-icon lt-icon-chevron-down';
-      chevron.setAttribute('aria-hidden', 'true');
-      item.appendChild(chevron);
+      
+      if (context) {
+        item.setAttribute('aria-haspopup', 'menu');
+        item.setAttribute('aria-expanded', 'false');
+        const chevron = document.createElement('span');
+        chevron.className = 'lt-icon lt-icon-chevron-down';
+        chevron.setAttribute('aria-hidden', 'true');
+        item.appendChild(chevron);
+      }
       item.addEventListener('pointerdown', event => {
-        if (event.button !== 0) return;
+        if (event.button !== 0 || item.disabled) return;
         event.preventDefault();
         event.stopPropagation();
         openConsoleModel(id, entry, item, effort, context);
       });
       item.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
+        if ((event.key !== 'Enter' && event.key !== ' ') || item.disabled) return;
         event.preventDefault();
         event.stopPropagation();
         openConsoleModel(id, entry, item, effort, context);
       });
     }
     return item;
-  }));
+  });
+  
+  const row = [];
+  for (const item of items) {
+    if (item.tagName !== 'BUTTON' && item.getAttribute('role') !== 'img') { row.push(item); continue; }
+    let group = row[row.length - 1];
+    if (!group?.classList.contains('console-status-controls')) {
+      group = document.createElement('span');
+      group.className = 'console-status-controls';
+      row.push(group);
+    }
+    group.appendChild(item);
+  }
+  strip.replaceChildren(...row);
   const shown = fields.length > 0;
   if (strip.hidden === shown) {
     strip.hidden = !shown;
@@ -44505,6 +44557,7 @@ function drawConsoleStatus(id, entry) {
     if (entry.terminal && !entry.layer.hidden) refreshConsoleGrid(id, entry);
   }
   fitConsoleStatus(entry);
+  if (record) markConsoleControls(entry, consoleAgentState({ ...entry, agent: record.agent }));
   
   if (entry.statusTimer) clearTimeout(entry.statusTimer);
   entry.statusTimer = 0;
@@ -44516,7 +44569,7 @@ function drawConsoleStatus(id, entry) {
 function fitConsoleStatus(entry) {
   const strip = entry.status;
   if (!strip || strip.hidden) return;
-  for (const item of strip.children) item.hidden = false;
+  for (const item of strip.querySelectorAll('[data-field]')) item.hidden = false;
   for (const field of ['folder', 'cost', 'limits', 'effort']) {
     if (!(strip.clientWidth > 0) || strip.scrollWidth <= strip.clientWidth) return;
     for (const item of strip.querySelectorAll(`[data-field="${field}"]`)) item.hidden = true;

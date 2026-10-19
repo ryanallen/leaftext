@@ -50,7 +50,7 @@ Open the [reading-view padlock](07-editing.md#the-padlock) to edit. A date, a va
 
 ### Point at a row without typing its address
 
-Press an empty cell in a column that holds only relations or nothing yet. A menu opens under the cell with a search box: type part of a name, and the rows of every table in the vault — or, outside a vault, in the notes around this one — whose name holds those words are listed under the note they come from. Pick one and the cell becomes a link to that row, written relative to this note so it opens anywhere. Press Enter without picking a row to type the words into the cell instead, or Escape to leave it.
+Press an empty cell in a column that holds only relations or nothing yet. A menu opens under the cell with a search box: type part of a name, and the rows of every table in the vault — or, outside a vault, in the notes around this one — whose name holds those words are listed under the note they come from. Pick one and the cell becomes a link to that row, written relative to this note so it opens anywhere. Press Enter without picking a row to type the words into the cell instead, or Escape to leave it. A cell that already holds a relation opens that row when you press it — middle-click or Control-click (Command-click on a Mac) to open it as a page behind — and never opens the search box.
 
 To point words that are already written at a row — a cell holding plain words, or a phrase in a paragraph — select them and press the link button on the format bar. Type part of a name instead of an address and the same rows are listed under the box; pick one to link the words to it. An address typed or pasted into the box is written as it always was.
 
