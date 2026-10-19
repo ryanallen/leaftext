@@ -87,6 +87,8 @@ https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-ar
 https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-latin.md
 https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-scans.md
 https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur.md
+https://leaftext.com/arthurian/the-saints-who-meet-arthur/uk/GLOSSARY.md
+https://leaftext.com/arthurian/the-saints-who-meet-arthur/uk/the-saints-who-meet-arthur-uk.md
 https://leaftext.com/arthurian/vita-gildae/GLOSSARY.md
 https://leaftext.com/arthurian/vita-gildae/made-with.md
 https://leaftext.com/arthurian/vita-gildae/uk/GLOSSARY.md

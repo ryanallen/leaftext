@@ -4755,7 +4755,7 @@ Wikipedia: [Trahern](https://en.wikipedia.org/wiki/Trahern)
 
 Also: Trigeriæ
 
-A port town of northern Brittany, in the Côtes-d'Armour. In Geoffrey's story its earl, Kimarcocus, falls with two thousand men when the Romans surround the Britons of Brittany in the great battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
+A port town of northern Brittany, in the Côtes-d'Armor. In Geoffrey's story its earl, Kimarcocus, falls with two thousand men when the Romans surround the Britons of Brittany in the great battle.<sup>[\*](GLOSSARY.md#new-in-this-translation)</sup>
 
 Wikipedia: [Tréguier](https://en.wikipedia.org/wiki/Tr%C3%A9guier)
 

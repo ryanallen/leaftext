@@ -82,6 +82,12 @@ Old English turns give way to the ones people use now, in how people talk to and
 
 The reviewed US master uses Merriam-Webster spelling and usage, the article a US reader says, as "an herb", *The Chicago Manual of Style*, and lengths and distances in feet and miles. A later UK edition is made from that master.
 
+<a id="localized-from-us"></a>
+
+## Localized from US
+
+After the complete US book has been read and checked, regional editions are built from that text. The UK edition is first. A shared list and a book's locale record give each changed spelling, word, measure and use, so later editions can start from those choices.
+
 <a id="english-word-order"></a>
 
 ## English word order
@@ -140,7 +146,7 @@ Each whole scene was read for what each speaker wants and where it turns, and th
 
 The source text this translation was made from, established page by page against scans of the printed edition: misread letters restored, damaged words settled and the printed corrections applied, each with a note. Where the machine-read text and the page disagree, the scan wins.
 
-[Open the-saints-who-meet-arthur-latin.md](the-saints-who-meet-arthur-latin.md)
+[Open made-with.md](made-with.md)
 
 <a id="sources-named"></a>
 
@@ -208,7 +214,7 @@ Every heading says what happens in its section, in a short plain sentence, so th
 
 The source text carries the same headings as the translation, in English, at the same places, so the two outlines match one for one and a heading in either opens the same passage.
 
-[Open the-saints-who-meet-arthur-latin.md](the-saints-who-meet-arthur-latin.md)
+[Open made-with.md](made-with.md)
 
 <a id="laid-out-for-screens"></a>
 

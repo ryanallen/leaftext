@@ -420,7 +420,7 @@
 ## Glossary for The Saints Who Meet Arthur
 - Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/GLOSSARY.html
 - Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/GLOSSARY.md
-- Summary: The people, places and old words of The Saints Who Meet Arthur.
+- Summary: Read in: UK English
 
 ## Made with
 - Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/made-with.html
@@ -445,6 +445,16 @@
 ## The Saints Who Meet Arthur
 - Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur.html
 - Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur.md
+- Summary: Selected passages from six saints’ lives, translated by Ryan Allen
+
+## Glossary for The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/uk/GLOSSARY.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/uk/GLOSSARY.md
+- Summary: Read in: US English
+
+## The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/uk/the-saints-who-meet-arthur-uk.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/uk/the-saints-who-meet-arthur-uk.md
 - Summary: Selected passages from six saints’ lives, translated by Ryan Allen
 
 ## Glossary for The Life of Gildas

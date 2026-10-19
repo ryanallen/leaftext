@@ -2,7 +2,7 @@
 
 Every telling of the legend, standing where its story begins. Pull one out to read it.
 
-New translations by [Ryan Allen](how-it-was-made.md#ryan-allen) with more than 69 million tokens.
+New translations by [Ryan Allen](how-it-was-made.md#ryan-allen) with more than 70 million tokens.
 
 A book whose text is published reaches from the first episode it tells to the last; a book still to come reaches across whole parts of the legend, read from its plan, and is marked broad.
 
