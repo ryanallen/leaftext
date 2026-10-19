@@ -48,7 +48,7 @@ A book whose text is published reaches from the first episode it tells to the la
 
 ## Arthur's early reign
 
-- [The Saints Who Meet Arthur](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1086–1199 CE. Edition: W. J. Rees and Arthur de La Borderie, 1853–1892. Length: 6,040 words of Latin.
+- [The Saints Who Meet Arthur](the-saints-who-meet-arthur/the-saints-who-meet-arthur.md). Lifris, the priest William and four anonymous writers. Latin. On the shelf. Story: Arthur's early reign; then Arthur's end; then After Camlann. Written: 1086–1199 CE. Edition: W. J. Rees and Arthur de La Borderie, 1853–1892. Length: 6,040 words of Latin.
 - [The Life of Gildas](vita-gildae/vita-gildae.md). Caradoc of Llancarfan. Latin. On the shelf. Story: Arthur's early reign; then Arthur's end. Written: 1100–1165 CE. Edition: Theodor Mommsen, 1898. Length: 1,644 words of Latin.
 - [Les Enfances Gauvain](story-map.md). Anonymous. French. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1250 CE. Edition not chosen yet. Length: about 700 lines, about 4,400 words of French.
 - [The Rise of Gawain (De ortu Waluuanii)](story-map.md). Anonymous. Latin. Coming; not published yet. Story: Arthur's early reign, broad. Written: 1200–1299 CE. Edition not chosen yet. Length: about 40 pages, about 13,000 words of Latin.

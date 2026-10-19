@@ -42,6 +42,12 @@ Julius Caesar takes Britain at the third try, and emperor after emperor rules it
 
 Coel of Colchester takes the crown and makes peace with Rome, and the senator Constantius marries his daughter Helena; their son Constantine, king of Britain after his father, drives out the tyrant Maxentius and takes Rome, and Octavius rises against the governors left behind in Britain.
 
+<a id="conan-meriadoc-settles-armorica"></a>
+
+### Conan Meriadoc leads the Britons over the sea to settle Armorica
+
+When the Britons have grown too many for their island, Conan Meriadoc leads a host of them across the sea to Armorica, kills its pagan natives, keeps their women as wives with their tongues cut out, and founds Lesser Britain, which shares the island's laws.
+
 <a id="the-picts-and-irish-raid-britain"></a>
 
 ### The Picts and the Irish raid Britain after the Romans leave
@@ -330,6 +336,48 @@ Gildas, one of King Nau's twenty-four sons, studies in Gaul, teaches and preache
 
 Hueil, Gildas's eldest brother, raids from Scotland and obeys no king; Arthur hunts him down and kills him on the Isle of Man, then does penance before the bishops, and Gildas forgives him.
 
+<a id="gwynllyw-carries-off-gwladys"></a>
+
+### Gwynllyw carries off Gwladys, and Arthur turns back her father's men
+
+King Gwynllyw carries off Brychan's daughter Gwladys; Arthur, playing dice on a hill with Kay and Bedivere, wants her, is talked out of it and drives off Brychan's men.
+
+<a id="cadoc-shelters-ligessauc"></a>
+
+### Cadoc shelters a man Arthur hunts, and they argue his price at a ford
+
+Ligessauc kills three of Arthur's soldiers and hides with Cadoc for seven years; judges at the Usk set a price in cattle, the cattle turn to ferns in Kay's and Bedivere's hands, and Arthur grants Cadoc's refuge.
+
+<a id="carannog-brings-arthur-the-serpent"></a>
+
+### Carannog brings Arthur a serpent and asks him where his altar landed
+
+Carannog's floating altar comes ashore in the country of Cadwy and Arthur; Carannog leads the serpent laying Carhampton waste to Cadwy's fort, gets back his altar and is given land for two churches.
+
+<a id="arthur-demands-padarns-tunic"></a>
+
+### Arthur demands the tunic Padarn brought back from Jerusalem
+
+An angel sends David, Padarn and Teilo to Jerusalem to be ordained, and Padarn comes home with a staff and a tunic woven in one piece; Arthur demands the tunic, the earth swallows him to the chin until he begs pardon, and he takes Padarn as his patron.
+
+<a id="illtud-visits-arthur-and-serves-poulentus"></a>
+
+### Illtud visits his cousin Arthur, then serves Poulentus and turns to Cadoc
+
+Illtud, a Breton soldier, visits his cousin Arthur's court for its gifts and becomes master of King Poulentus's fighting men; the earth swallows the hunting party that demanded food from Cadoc, and Illtud takes Cadoc's advice to leave soldiering.
+
+<a id="efflamm-sails-to-brittany-and-finds-arthur-fighting-a-monster"></a>
+
+### Efflamm sails to Brittany and finds Arthur fighting a monster
+
+Efflamm, an Irish king's son married to seal a peace, leaves his bride on their wedding night and sails to Brittany, landing at the rock Hyrglas; Arthur, hunting a monster there, fights it all day, Efflamm's prayer brings water from the rock for him, and Efflamm drives the monster into the sea.
+
+<a id="efflamm-settles-in-brittany-and-enora-follows"></a>
+
+### Efflamm settles in Brittany, and Enora crosses the sea to follow him
+
+Efflamm and his companions settle near the shore at Donguel, where an angel brings food; his bride Enora crosses the sea to join him, lives apart from him and later founds a house of women in Cornwall; the pilgrim Iestyn yields him the hermitage and gives his name to Plestin, and long after Efflamm's death a hermit finds his body by the blood rising from its floor.
+
 <a id="britains-strange-sights"></a>
 
 ### Strange sights of Britain include Arthur's dog's footprint and his son's grave
@@ -403,6 +451,12 @@ Malory tells this in [Book XXI, chapters 3–5](malory-sources/malory-map.tsv).
 ### Constantine and the kings after him rule Britain, and Gormund lays it waste
 
 Constantine puts down Mordred's sons; Aurelius Conanus, Vortiporius and Maelgwn reign after him; then Gormund's Africans burn the island for the Saxons, and the Britons fall back into Cornwall and Wales.
+
+<a id="the-saints-cross-to-brittany"></a>
+
+### The Saxons return after Arthur, and saints cross to Brittany
+
+With Arthur gone, the Saxons come back to the island and persecute the Britons and their churches; some holy men give themselves up to martyrdom, and others cross to Brittany, among them Tudogilus with his children Goeznovius, Majan and Tudona, who build chapels there.
 
 <a id="gildas-condemns-the-kings-and-clergy"></a>
 

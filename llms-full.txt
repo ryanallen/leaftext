@@ -372,6 +372,11 @@
 - Markdown: https://leaftext.com/arthurian/sources/annales-cambriae.md
 - Summary: Written in Latin, 950–999 CE. Phillimore, page 144: the annals and genealogies "show marks of having been composed in the last half of the tenth century"; the years are written down to 977, though ...
 
+## The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/sources/cambro-british-saints.html
+- Markdown: https://leaftext.com/arthurian/sources/cambro-british-saints.md
+- Summary: Written in Latin, 1086–1140 CE. Four separate lives, oldest to newest: Lifris wrote Cadoc's shortly before 1086 (Wikipedia, "Cadoc"); Carannog's about 1100, Padarn's in the 1120s (Wikipedia, "List ...
+
 ## On the Ruin of Britain
 - Page: https://leaftext.com/arthurian/sources/de-excidio-britanniae.html
 - Markdown: https://leaftext.com/arthurian/sources/de-excidio-britanniae.md
@@ -392,15 +397,55 @@
 - Markdown: https://leaftext.com/arthurian/sources/robert-de-boron-merlin.md
 - Summary: Written in Old French, 1200–1240 CE. Paris and Ulrich, introduction page ix, date Robert de Boron's poems "au début du xiiie siècle"; its note 1 has Gautier de Montbéliard, the lord Robert's Joseph...
 
+## The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/sources/vita-euflami.html
+- Markdown: https://leaftext.com/arthurian/sources/vita-euflami.md
+- Summary: Written in Latin, 1100 CE. Dated about 1100 in Wikipedia's "List of Arthurian literature"; the journal edition gives no secure composition date (introduction, pp. 279–281; historical discussion, pp...
+
 ## The Life of Gildas
 - Page: https://leaftext.com/arthurian/sources/vita-gildae.html
 - Markdown: https://leaftext.com/arthurian/sources/vita-gildae.md
 - Summary: Written in Latin, 1100–1165 CE. Its closing line names its author, Caradoc of Llancarfan, as Mommsen's two manuscripts do; Mommsen, introduction pages 3–4, dates it to the twelfth century, and one ...
 
+## The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/sources/vita-goeznovii.html
+- Markdown: https://leaftext.com/arthurian/sources/vita-goeznovii.md
+- Summary: Written in Latin, 1199 CE. The preface on printed p. 91 claims 1019, but the Eudo of Léon it addresses is attested in 1179, and Guillotel read its date as MCXCIX, 1199 (Guigon, review of Bourgès, B...
+
 ## The whole story
 - Page: https://leaftext.com/arthurian/story-map.html
 - Markdown: https://leaftext.com/arthurian/story-map.md
 - Summary: Every episode of the Arthurian legend the published books tell, in the story's own order, from Britain's founding to after Camlann. A note in each book links the episode its passage belongs to, and...
+
+## Glossary for The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/GLOSSARY.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/GLOSSARY.md
+- Summary: The people, places and old words of The Saints Who Meet Arthur.
+
+## Made with
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/made-with.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/made-with.md
+- Summary: What every Arthurian book says about how it was made: the made-with line, the how line under it, and the notes they point at. These tables hold what every book on the shelf was made by, not one boo...
+
+## How it was made
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-how-it-was-made.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-how-it-was-made.md
+- Summary: Who made this book, and what each phrase of the how line in its note means: each section says what the phrase means, then opens its file where it has one.
+
+## The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-latin.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-latin.md
+- Summary: Selected Latin passages from six saints’ lives, text established by Ryan Allen
+
+## Scans
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-scans.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur-scans.md
+- Summary: Every page this book was read against, kept two ways: a link to the page where it was found online, and a copy saved beside the book, so every page can still be checked if the site that holds it go...
+
+## The Saints Who Meet Arthur
+- Page: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur.html
+- Markdown: https://leaftext.com/arthurian/the-saints-who-meet-arthur/the-saints-who-meet-arthur.md
+- Summary: Selected passages from six saints’ lives, translated by Ryan Allen
 
 ## Glossary for The Life of Gildas
 - Page: https://leaftext.com/arthurian/vita-gildae/GLOSSARY.html

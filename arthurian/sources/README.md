@@ -15,6 +15,9 @@ Every published book on the shelf, by where it sits in the story. Each work's pa
 ## Arthur's early reign
 
 - [The Life of Gildas](vita-gildae.md), Latin, 1100–1165 CE
+- [The Saints Who Meet Arthur](vita-euflami.md), Latin, 1100 CE
+- [The Saints Who Meet Arthur](cambro-british-saints.md), Latin, 1086–1140 CE
+- [The Saints Who Meet Arthur](vita-goeznovii.md), Latin, 1199 CE
 
 ## After Camlann
 

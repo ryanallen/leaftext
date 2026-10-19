@@ -17,4 +17,5 @@ Each book's own page says what every phrase of its how line means.
 - [The History of the Kings of Britain](geoffrey-of-monmouths-history-of-the-kings/geoffrey-of-monmouths-history-of-the-kings-how-it-was-made.md)
 - [Merlin](merlin/merlin-how-it-was-made.md)
 - [The Welsh Annals](annales-cambriae/annales-cambriae-how-it-was-made.md)
+- [The Saints Who Meet Arthur](the-saints-who-meet-arthur/the-saints-who-meet-arthur-how-it-was-made.md)
 - [The Life of Gildas](vita-gildae/vita-gildae-how-it-was-made.md)
