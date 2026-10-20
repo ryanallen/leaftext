@@ -1,12 +1,12 @@
 {
   "format": 1,
   "version": "5.11.5",
-  "source": "1546d5266c0b1e101bfeda331c2d918cba919ee9",
+  "source": "1c8afec5794856eaf333f3376334601f2f235839",
   "repository": "ryanallen/leaftext",
   "tag": "v5.11.5",
-  "asset": "renderer-1546d5266c0b1e101bfeda331c2d918cba919ee9-24fdaf4687b1f3ecb51f2399c13adfcf15b976bc37ae153cb34193257f1bebd2.json.gz",
-  "length": 8043874,
-  "sha256": "24fdaf4687b1f3ecb51f2399c13adfcf15b976bc37ae153cb34193257f1bebd2",
+  "asset": "renderer-1c8afec5794856eaf333f3376334601f2f235839-c1f8a1bd41abfd6104abb6f70e82f61e006658a8ec2cb6e333264b9e69f8995a.json.gz",
+  "length": 8049201,
+  "sha256": "c1f8a1bd41abfd6104abb6f70e82f61e006658a8ec2cb6e333264b9e69f8995a",
   "files": [
     {
       "path": "assets/leaftext/version.json",
@@ -25,18 +25,18 @@
     },
     {
       "path": "assets/leaftext/app/leaftext.wasm",
-      "length": 3343636,
-      "sha256": "d867f2a2736416a25909a6f05455d54b4b0d5e81c53211155c737fab8e356977"
+      "length": 3352378,
+      "sha256": "9e2a79f3cdb81c028e66cf14e8e43d03dae554dbbae9264693523f567da763d5"
     },
     {
       "path": "assets/leaftext/app/leaftext-colors.wasm",
-      "length": 2227209,
-      "sha256": "9ba6627f787da979c7b43256935981a3470c5bbb25e4cb8cbc5a9daaa0c50e8d"
+      "length": 2230321,
+      "sha256": "1828dbb95a8cd14abdc3d558e752129fa4961f21a4b956dcd0c42c1be808700c"
     },
     {
       "path": "assets/leaftext/app/leaftext-book.wasm",
-      "length": 636846,
-      "sha256": "9c275930af02b68fd559e2d26ad74ce74769a312fdbada22bf67b0a096ea1cfe"
+      "length": 635883,
+      "sha256": "8be5dfb08655335e1f59b83f3c57b283809c7e934d721e82d038e60b61e265f0"
     },
     {
       "path": "assets/leaftext/app/app.js",
