@@ -104,41 +104,31 @@ export const BUILT_BOOK_MODULE = join(root, 'web', 'dist', 'leaftext-book.wasm')
 export const FRONT_PAGE = 'index.html';
 export const LISTING = 'documents.json';
 export const FRONT_DOCUMENT = 'README.md';
-/** The documents other than the landing that the site lays out, each by the name of its layout in the loader: the Arthurian books as a bookshelf over the list they are drawn from. */
-export const SITE_LAYOUTS = { 'arthurian/index.md': 'shelf' };
+/** The documents other than the landing that the site lays out, each by the name of its layout in the loader. None today: the shelves under `arthurian/` and `buddhism/` are kept on disk and not served, and a shelf the site serves again is named here as `'arthurian/index.md': 'shelf'`. */
+export const SITE_LAYOUTS = {};
 
 /** What the site publishes as documents, and what its trail calls it. Everything else in the repository — the discovery files, the scripts, the themes — is served as it is and never offered as a page. */
 export const SITE_NAME = 'leaftext';
-export const SITE_PATHS = [FRONT_DOCUMENT, 'docs', 'arthurian'];
+export const SITE_PATHS = [FRONT_DOCUMENT, 'docs'];
 
 /**
- * Documents that moved, old address to new, so every link already shared and every search result still lands: a path ending `/` moves its whole folder. The bake leaves a forwarding page at each old page address and a forwarding line at each old Markdown address, and neither is ever committed.
- *
- * The Arthurian books moved to `arthurian/` on the owner's word of 10 October 2026, 5:34pm, so the shelf could be advertised as leaftext.com/arthurian.
+ * Documents that moved, old address to new, so every link already shared and every search result still lands: a path ending `/` moves its whole folder, as `['docs/old/', 'docs/new/']` would. The bake leaves a forwarding page at each old page address and a forwarding line at each old Markdown address, and neither is ever committed. None today: a forwarder to a page the site no longer serves would send a reader from one 404 to another.
  */
-export const MOVED = [
-  ['docs/08-examples/arthurian-shelf/shelf.md', 'arthurian/index.md'],
-  ['docs/08-examples/arthurian-shelf/story-map.md', 'arthurian/story-map.md'],
-  ['docs/08-examples/arthurian-shelf/sources/', 'arthurian/sources/'],
-  ['docs/08-examples/merlin/', 'arthurian/merlin/'],
-  ['docs/08-examples/historia-brittonum/', 'arthurian/historia-brittonum/'],
-  ['docs/08-examples/annales-cambriae/', 'arthurian/annales-cambriae/'],
-  ['docs/08-examples/malory-sources/', 'arthurian/malory-sources/'],
-];
+export const MOVED = [];
 
 /** The old address a document now at `path` was published at, or '' for one that never moved. */
-export function movedFrom(path) {
-  for (const [from, to] of MOVED) {
+export function movedFrom(path, moved = MOVED) {
+  for (const [from, to] of moved) {
     if (to.endsWith('/') ? path.startsWith(to) : path === to) return to.endsWith('/') ? from + path.slice(to.length) : from;
   }
   return '';
 }
 
 /** Every forwarder the bake writes, old address to its bytes: a page for each moved document's old page, a line for its old Markdown. */
-export function forwards(origin, from = root) {
+export function forwards(origin, from = root, moved = MOVED) {
   const found = new Map();
-  for (const path of sitePaths(from).filter((path) => hasPage(path) && movedFrom(path))) {
-    const old = movedFrom(path);
+  for (const path of sitePaths(from).filter((path) => hasPage(path) && movedFrom(path, moved))) {
+    const old = movedFrom(path, moved);
     found.set(pageOf(old), forwardingPage(origin, pageOf(path)));
     found.set(old, forwardingMarkdown(origin, path));
   }

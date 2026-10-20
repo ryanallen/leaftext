@@ -1,12 +1,12 @@
 {
   "format": 1,
   "version": "5.11.5",
-  "source": "13703a3f08abd758ebd8c840065db9a4302c214d",
+  "source": "9edc729031961b1ad93188182ba6aad554bed2b5",
   "repository": "ryanallen/leaftext",
   "tag": "v5.11.5",
-  "asset": "renderer-13703a3f08abd758ebd8c840065db9a4302c214d-4243905d9e73f4d6106c7f149810c6d1149df2dcde117a3ece8912a7bddae329.json.gz",
-  "length": 8043850,
-  "sha256": "4243905d9e73f4d6106c7f149810c6d1149df2dcde117a3ece8912a7bddae329",
+  "asset": "renderer-9edc729031961b1ad93188182ba6aad554bed2b5-3e9a32e242a135a581a993e8b2e447ffce031c7da5770ff62e897d241c4c9973.json.gz",
+  "length": 8045455,
+  "sha256": "3e9a32e242a135a581a993e8b2e447ffce031c7da5770ff62e897d241c4c9973",
   "files": [
     {
       "path": "assets/leaftext/version.json",
@@ -40,13 +40,13 @@
     },
     {
       "path": "assets/leaftext/app/app.js",
-      "length": 2066940,
-      "sha256": "254bf1d8259bc934d214a09802c7173c09be408096e88ea9e603bc3c84a87428"
+      "length": 2067379,
+      "sha256": "b127abbc5ed587c05065c519e520d1363c04ce06a5981c95bbeede5624b311c8"
     },
     {
       "path": "assets/leaftext/app/app.css",
-      "length": 852243,
-      "sha256": "939231185a37172fdf7ec11fe5b77d5773df1e7df6fedf6420db412a9adc76fb"
+      "length": 851365,
+      "sha256": "e37119b188deb9cb32f89c2fd96c9785652b232b8c2f8bdb38bb4d8454e8e5f1"
     },
     {
       "path": "assets/leaftext/app/host.js",
@@ -60,8 +60,8 @@
     },
     {
       "path": "assets/leaftext/app/boot.js",
-      "length": 7471,
-      "sha256": "954e484a06307c9a9d0c49658409446b3e17b03f6358172e2646b76b1e083803"
+      "length": 7515,
+      "sha256": "50ecb82f017c4470022cc4b356ce03ec195c51382203e973b9fe54382f8d20da"
     },
     {
       "path": "assets/leaftext/app/settings.js",
@@ -80,8 +80,8 @@
     },
     {
       "path": "assets/leaftext/app/front-page-layout.js",
-      "length": 13181,
-      "sha256": "606753d1df10e5a209d3ca348e5c142913467569a5a582fdf93a694b481d231d"
+      "length": 12974,
+      "sha256": "0e370a9086f2a0f58ef7777afc3a1a4faf94b4b6d8c800d25a80490e2ceb4b3b"
     },
     {
       "path": "assets/leaftext/app/dotted-leaf.js",
@@ -100,13 +100,13 @@
     },
     {
       "path": "assets/leaftext/app/shelf-layout.js",
-      "length": 20432,
-      "sha256": "78cb655c0954d17a0d6b0df446548cafee24ce262cb5b9d33b45d434d67b7dd6"
+      "length": 24111,
+      "sha256": "c42e3678fc6c4dd51991b581e6813b1b64b77e9ec492bf9a8a043397305f9e06"
     },
     {
       "path": "assets/leaftext/app/shelf.js",
-      "length": 20064,
-      "sha256": "971dd6a1fd043fe39207682692f5488dadf0b05e91ef53147edc6680a386f727"
+      "length": 20375,
+      "sha256": "127e3c113f609dcc1b9c89a5ea31af4ce3909735fe89e8e9fdc8b8000e9747e4"
     },
     {
       "path": "assets/leaftext/app/leaf.svg",

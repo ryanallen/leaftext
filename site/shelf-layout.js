@@ -1,14 +1,17 @@
 // shelf-layout.js
 // ---------------------------------------------------------------------------
-// The Arthurian shelf's composition. `shelf.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between the three orders, the finder, the key, the bays of spines, the open book, and the list itself kept under them.
+// A shelf's composition, the Arthurian shelf's and any other the site lays out as one. `index.md` stays the one source of words and stays a plain list everywhere else — a heading per bay, a line per book — and this lays its drawn HTML out as a bookshelf inside the reading column: the hero, the switch between its orders, the finder, the key, the bays of spines, the open book, and the list itself kept under them.
 //
-// `shelf-data.json`, written beside the shelf's `index.md` by the same tool, holds each book's reach, dates and editions in the list's own order, so every drawn line is paired with its record and a list that no longer matches its data is refused rather than drawn wrong. `web/preview/boot.js` hands this to the host, and `shelf.js` redraws the bays out of the same functions when the order or a filter changes. It works on the renderer's HTML as text, as the front page's layout does.
+// `shelf-data.json`, written beside the shelf's `index.md` by the same tool, holds each book's reach, dates and editions in the list's own order, so every drawn line is paired with its record and a list that no longer matches its data is refused rather than drawn wrong. Its `shelf` block holds the words that are a shelf's own — its name, the orders it offers with their lines and notes, its tones, its filters and the page a book still to come links — and a shelf that names none is drawn in the Arthurian shelf's. `web/preview/boot.js` hands this to the host, and `shelf.js` redraws the bays out of the same functions when the order or a filter changes. It works on the renderer's HTML as text, as the front page's layout does.
 // ---------------------------------------------------------------------------
 
 /** The class the laid-out page carries, which is how a reader tells it from the list drawn plain. */
 export const SHELF_LAYOUT_CLASS = 'shelf-layout';
 
-/** The three ways the shelf stands, each with the line said under the switch while it is chosen, and the dated two with the line said under the title — story order's is the document's own. */
+/** The Arthurian shelf's name, said over its title. */
+export const SHELF_NAME = 'The Arthurian shelf';
+
+/** The three ways the Arthurian shelf stands, each with the line said under the switch while it is chosen, and the dated two with the line said under the title — story order's is the document's own. */
 export const SHELF_ORDERS = [
   { key: 'story', label: 'Where the story happens', note: 'Story order places a book in the legend, not in history.' },
   { key: 'written', label: 'When it was written', note: 'Each book stands in the century it was written, dated as its source words it.', line: 'Every telling of the legend, standing in the century it was written. Pull one out to read it.' },
@@ -18,7 +21,7 @@ export const SHELF_ORDERS = [
 /** The credit under the line: the list's second paragraph, drawn in the hero only when it links the shelf's how page at Ryan Allen. */
 export const SHELF_CREDIT = /<a\b[^>]*href="how-it-was-made\.md#ryan-allen"/;
 
-/** The six tones, in the key's order: the tone key a spine carries and what the key calls it. */
+/** The Arthurian shelf's six tones, in the key's order: the tone key a spine carries and what the key calls it. */
 export const SHELF_TONES = [
   ['latin', 'Latin'],
   ['french', 'French'],
@@ -27,6 +30,36 @@ export const SHELF_TONES = [
   ['german', 'German'],
   ['other', 'Other languages'],
 ];
+/** What the Arthurian shelf's tones sort by, which its tone filter is named for. */
+export const SHELF_TONE_LABEL = 'Tradition';
+/** The Arthurian shelf's three filters: the part of the story a book reaches, its tradition and whether it is out yet. */
+export const SHELF_FILTERS = ['part', 'tone', 'status'];
+/** The page a book still to come links on the Arthurian shelf. */
+export const SHELF_COMING = 'story-map.md';
+
+/** The words that are a shelf's own, read from the `shelf` block of its data, each falling back to the Arthurian shelf's where a shelf names none: its name, its orders, its tones, what its tone filter is named for, which filters it offers, and the page a book still to come links. */
+export function shelfWords(data) {
+  const own = data && data.shelf && typeof data.shelf === 'object' ? data.shelf : {};
+  const orders = Array.isArray(own.orders) ? own.orders.filter((order) => order && typeof order.key === 'string' && order.key) : [];
+  const tones = Array.isArray(own.tones) ? own.tones.filter((tone) => Array.isArray(tone) && tone.length === 2).map((tone) => [String(tone[0]), String(tone[1])]) : [];
+  return {
+    name: typeof own.name === 'string' && own.name ? own.name : SHELF_NAME,
+    orders: orders.length ? orders : SHELF_ORDERS,
+    tones: tones.length ? tones : SHELF_TONES,
+    toneLabel: typeof own.toneLabel === 'string' && own.toneLabel ? own.toneLabel : SHELF_TONE_LABEL,
+    filters: Array.isArray(own.filters) ? own.filters.map(String) : SHELF_FILTERS,
+    coming: typeof own.coming === 'string' && own.coming ? own.coming : SHELF_COMING,
+  };
+}
+
+/** The order a shelf opens in and its list is written in: the first it offers. */
+export const firstOrder = (data) => shelfWords(data).orders[0].key;
+
+/** Whether a shelf stands its books where their story happens, which is what a reach, a story filter and a story's bays are about. */
+const storied = (data) => shelfWords(data).orders.some((order) => order.key === 'story');
+
+/** The paint of one tone on the element that carries it: the tone and its ink, as `shelf.js` sets them on the shelf from the theme in force, the primary standing in until it has. Written on the element rather than in the stylesheet, so a shelf's tones are whatever its data names. */
+const toneStyle = (tone) => `--spine:var(--shelf-tone-${tone}, var(--lt-primary));--spine-ink:var(--shelf-ink-${tone}, var(--lt-primary-foreground))`;
 
 const CENTURY_WORDS = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth', 'Seventh', 'Eighth', 'Ninth', 'Tenth', 'Eleventh', 'Twelfth', 'Thirteenth', 'Fourteenth', 'Fifteenth', 'Sixteenth', 'Seventeenth', 'Eighteenth', 'Nineteenth', 'Twentieth', 'Twenty-first'];
 const UNDATED = 'Many periods or date unknown';
@@ -134,7 +167,7 @@ export function spineMarkup(book, { picked = '' } = {}) {
   const classes = ['shelf-spine', book.status === 'planned' ? 'is-planned' : '', long ? 'is-long' : ''].filter(Boolean).join(' ');
   const said = `${book.title}, ${book.author}${book.status === 'planned' ? ', coming' : ''}${tag ? `, ${tag}` : ''}`;
   return [
-    `<button type="button" class="${classes}" data-book="${escaped(book.book)}" data-tone="${escaped(book.tone)}" aria-pressed="${book.book === picked ? 'true' : 'false'}" aria-label="${escaped(said)}" style="width:${width}px;height:${height}px">`,
+    `<button type="button" class="${classes}" data-book="${escaped(book.book)}" data-tone="${escaped(book.tone)}" aria-pressed="${book.book === picked ? 'true' : 'false'}" aria-label="${escaped(said)}" style="width:${width}px;height:${height}px;${toneStyle(escaped(book.tone))}">`,
     `<span class="shelf-spine-title">${escaped(book.title)}</span>`,
     tag ? `<span class="shelf-spine-tag">${escaped(tag)}</span>` : '',
     `<span class="shelf-spine-lang">${escaped(book.code)}</span>`,
@@ -147,8 +180,8 @@ export function spineCoverMarkup(book) {
   return `<span class="shelf-spine-cover" aria-hidden="true"><span class="shelf-spine-cover-title">${escaped(book.title)}</span><span class="shelf-spine-cover-by">${escaped(book.author)}</span></span>`;
 }
 
-/** The shelf's bays for one order, with the bays a picked book's story reaches laid under a ledge in its tone. */
-export function shelfMarkup(data, { order = 'story', picked = '', shown = null } = {}) {
+/** The shelf's bays for one order, the shelf's first where none is named, with the bays a picked book's story reaches laid under a ledge in its tone. */
+export function shelfMarkup(data, { order = firstOrder(data), picked = '', shown = null } = {}) {
   const book = data.books.find((one) => one.book === picked);
   const reached = book && order === 'story' ? reachedParts(book) : new Set();
   const bays = baysFor(data, order).map((bay) => {
@@ -158,7 +191,7 @@ export function shelfMarkup(data, { order = 'story', picked = '', shown = null }
     const tone = isReached ? ` data-tone="${escaped(book.tone)}"` : '';
     const inside = books.length ? `<div class="shelf-books">${books.map((one) => spineMarkup(one, { picked })).join('')}</div>` : '<span class="shelf-empty">No book yet</span>';
     // The case's spare width follows the books, so a bay of four spines takes four shares of it and a bay of one takes one.
-    return `<div class="${classes}"${tone} style="flex-grow:${Math.max(1, books.length)}"><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
+    return `<div class="${classes}"${tone} style="flex-grow:${Math.max(1, books.length)}${isReached ? `;${toneStyle(escaped(book.tone))}` : ''}"><span class="shelf-plate">${escaped(bay.plate)}</span>${inside}</div>`;
   });
   return `<div class="shelf-row">${bays.join('')}</div>`;
 }
@@ -187,31 +220,33 @@ function editionWords(book) {
   return { said, cite: base.map((edition) => edition.cite).filter((cite, at, all) => cite && all.indexOf(cite) === at).join(' ') };
 }
 
-/** How long a book is, as the shelf says it: its counted words, or about its figure in its unit and about its words. */
+/** How long a book is, as the shelf says it: its counted words, or about its figure in its unit and about its words; a book measured in something else, as a Chinese text is in characters, says so in `length.measure`. */
 function lengthWords(book) {
   if (!book.words) return 'Not measured yet';
   const count = (n) => n.toLocaleString('en-US');
-  const words = `${count(book.words)} words of ${book.language}`;
-  if (book.basis === 'counted') return words;
   const length = book.length || {};
-  return length.unit && length.unit !== 'words' ? `about ${count(length.count)} ${length.unit}, about ${words}` : `about ${words}`;
+  const measure = length.measure || 'words';
+  const words = `${count(book.words)} ${measure} of ${book.language}`;
+  if (book.basis === 'counted') return words;
+  return length.unit && length.unit !== measure ? `about ${count(length.count)} ${length.unit}, about ${words}` : `about ${words}`;
 }
 
-/** The book opened off the shelf: its title, author, premise and the way to read it on the left page, and on the right where its story falls, its language, when it was written, the edition it is read from and how long it is, each with its evidence. */
+/** The book opened off the shelf: its title, author, premise and the way to read it on the left page, and on the right where its story falls, on a shelf that stands books by their story, its language, when it was written, the edition it is read from and how long it is, each with its evidence. */
 export function bookMarkup(book, data) {
   if (!book) return '';
+  const hasStory = storied(data);
   const reached = reachedParts(book);
   const cells = data.bays.filter((bay) => !bay.beside).map((bay, at) => `<i class="${reached.has(at) ? 'is-on' : ''}" title="${escaped(bay.plate)}"></i>`).join('');
   const story = book.beside ? escaped(book.outsideReason || 'Beside the story’s time') : escaped(reachWords(book, data));
-  const storyWhy = book.segments.map((segment) => segment.evidence).filter(Boolean).join(' ');
+  const storyWhy = (book.segments || []).map((segment) => segment.evidence).filter(Boolean).join(' ');
   const written = book.written.label ? escaped(book.written.label) : 'Not established';
   const writtenWhy = book.written.label ? book.written.evidence : book.written.unknownReason;
   const edition = editionWords(book);
   const read = book.status === 'published'
     ? `<p><a class="leaf-md-button" href="${escaped(book.read)}">Read ${escaped(book.title)}</a></p>`
-    : `<p class="shelf-book-coming">Not published yet. <a href="${escaped(book.read)}">See the story it belongs to</a>.</p>`;
+    : hasStory ? `<p class="shelf-book-coming">Not published yet. <a href="${escaped(book.read)}">See the story it belongs to</a>.</p>` : '<p class="shelf-book-coming">Not published yet.</p>';
   return [
-    `<section class="shelf-book" data-tone="${escaped(book.tone)}" data-book="${escaped(book.book)}" >`,
+    `<section class="shelf-book" data-tone="${escaped(book.tone)}" data-book="${escaped(book.book)}" style="${toneStyle(escaped(book.tone))}">`,
     // Its cover, in its tone: the language it was written in, its title and who wrote it.
     '<header class="shelf-book-cover">',
     `<span class="shelf-book-code">${escaped(book.code)}</span>`,
@@ -225,7 +260,7 @@ export function bookMarkup(book, data) {
     '</div>',
     '<div class="shelf-page shelf-page-facts">',
     '<dl class="shelf-facts">',
-    `<dt>Story</dt><dd>${book.beside ? '' : `<div class="shelf-parts">${cells}</div>`}${story}${storyWhy ? `<span class="shelf-why">${escaped(storyWhy)}</span>` : ''}</dd>`,
+    hasStory ? `<dt>Story</dt><dd>${book.beside ? '' : `<div class="shelf-parts">${cells}</div>`}${story}${storyWhy ? `<span class="shelf-why">${escaped(storyWhy)}</span>` : ''}</dd>` : '',
     `<dt>Language</dt><dd>${escaped(book.language)}, ${escaped(book.tradition)}</dd>`,
     `<dt>Written</dt><dd>${written}${writtenWhy ? `<span class="shelf-why">${escaped(writtenWhy)}</span>` : ''}</dd>`,
     `<dt>Edition</dt><dd>${escaped(edition.said)}${edition.cite ? `<span class="shelf-why">${escaped(edition.cite)}</span>` : ''}</dd>`,
@@ -237,35 +272,38 @@ export function bookMarkup(book, data) {
   ].join('');
 }
 
-/** The switch between the three orders, the chosen one pressed. */
-export function sortMarkup(order) {
-  const buttons = SHELF_ORDERS.map((one) => `<button type="button" class="shelf-sort-button" data-shelf-order="${one.key}" aria-pressed="${one.key === order ? 'true' : 'false'}">${escaped(one.label)}</button>`).join('');
-  const note = (SHELF_ORDERS.find((one) => one.key === order) || SHELF_ORDERS[0]).note;
-  return `<div class="shelf-sort" role="group" aria-label="Sort the shelf">${buttons}</div><p class="shelf-sort-note">${escaped(note)}</p>`;
+/** The switch between the shelf's orders, the chosen one pressed, and the chosen order's note; a shelf of one order has only the note to say. */
+export function sortMarkup(order, data = null) {
+  const orders = shelfWords(data).orders;
+  const buttons = orders.length > 1 ? orders.map((one) => `<button type="button" class="shelf-sort-button" data-shelf-order="${one.key}" aria-pressed="${one.key === order ? 'true' : 'false'}">${escaped(one.label)}</button>`).join('') : '';
+  const note = (orders.find((one) => one.key === order) || orders[0]).note || '';
+  return `${buttons ? `<div class="shelf-sort" role="group" aria-label="Sort the shelf">${buttons}</div>` : ''}<p class="shelf-sort-note">${escaped(note)}</p>`;
 }
 
-/** Search by title and the three filters: the part a book's story touches, its tradition and whether it is out yet. */
+/** Search by title and the filters the shelf offers: the part a book's story touches, where the shelf has a story, its tone under the shelf's own name for one, and whether it is out yet. */
 function findMarkup(data) {
+  const words = shelfWords(data);
   const parts = data.bays.filter((bay) => !bay.beside).map((bay, at) => `<option value="${at}">${escaped(bay.plate)}</option>`).join('');
-  const tones = SHELF_TONES.map(([key, name]) => `<option value="${key}">${escaped(name)}</option>`).join('');
+  const tones = words.tones.map(([key, name]) => `<option value="${key}">${escaped(name)}</option>`).join('');
+  const field = (key, label, options) => `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="${key}" aria-label="${escaped(label)}">${options}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`;
   return [
     '<div class="shelf-find" role="search">',
     '<input type="search" class="shelf-search" placeholder="Find a book by its title" aria-label="Find a book by its title">',
-    `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="part" aria-label="Part of the story"><option value="">Every part of the story</option>${parts}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`,
-    `<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="tone" aria-label="Tradition"><option value="">Every tradition</option>${tones}</select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>`,
-    '<label class="leaf-select shelf-filter-field"><select class="shelf-filter" data-shelf-filter="status" aria-label="Out yet"><option value="">On the shelf and coming</option><option value="published">On the shelf</option><option value="planned">Coming</option></select><span class="lt-icon lt-icon-chevron-down" aria-hidden="true"></span></label>',
+    words.filters.includes('part') && storied(data) ? field('part', 'Part of the story', `<option value="">Every part of the story</option>${parts}`) : '',
+    words.filters.includes('tone') ? field('tone', words.toneLabel, `<option value="">Every ${escaped(words.toneLabel.toLowerCase())}</option>${tones}`) : '',
+    words.filters.includes('status') ? field('status', 'Out yet', '<option value="">On the shelf and coming</option><option value="published">On the shelf</option><option value="planned">Coming</option>') : '',
     '</div>',
   ].join('');
 }
 
-/** The key over the shelf, read before the first spine: a swatch for each tone, the outline a book still to come stands as, and what a spine's thickness says. */
-function keyMarkup() {
-  const tones = SHELF_TONES.map(([key, name]) => `<span data-tone="${key}"><i></i>${escaped(name)}</span>`).join('');
+/** The key over the shelf, read before the first spine: a swatch for each of the shelf's tones, the outline a book still to come stands as, and what a spine's thickness says. */
+function keyMarkup(data) {
+  const tones = shelfWords(data).tones.map(([key, name]) => `<span data-tone="${escaped(key)}" style="${toneStyle(escaped(key))}"><i></i>${escaped(name)}</span>`).join('');
   return `<div class="shelf-key">${tones}<span><i class="is-planned"></i>Coming</span><span>A thicker spine is a longer book.</span></div>`;
 }
 
 /**
- * `shelf.md` as the renderer drew it, laid out as the shelf in story order with no book picked.
+ * `index.md` as the renderer drew it, laid out as the shelf in its first order with no book picked.
  *
  * Refused — so the host draws the list plain — where the drawn list has no bays, has a different number of books from its data, or names a book its data holds a different title for at that place: a shelf drawn from a list it does not match would send a reader to the wrong book.
  */
@@ -284,18 +322,20 @@ export function layoutShelf(html, data) {
   const [line] = list.paragraphs;
   // The credit is its own paragraph so a sort, which rewrites the line as plain text, never reaches its link.
   const credit = SHELF_CREDIT.test(list.paragraphs[1] || '') ? list.paragraphs[1] : '';
+  const own = shelfWords(data);
+  const order = firstOrder(data);
   return [
-    `<article class="document-body ${SHELF_LAYOUT_CLASS}" data-shelf-order="story">`,
+    `<article class="document-body ${SHELF_LAYOUT_CLASS}" data-shelf-order="${escaped(order)}">`,
     '<section class="shelf-hero">',
-    '<p class="shelf-eyebrow">The Arthurian shelf</p>',
+    `<p class="shelf-eyebrow">${escaped(own.name)}</p>`,
     `<h1 class="shelf-title">${list.title}</h1>`,
     line ? line.replace(/^<p\b[^>]*>/, '<p class="shelf-line">') : '',
     credit.replace(/^<p\b[^>]*>/, '<p class="shelf-credit">'),
     '</section>',
-    sortMarkup('story'),
+    sortMarkup(order, data),
     findMarkup(data),
-    keyMarkup(),
-    `<div class="shelf-case">${shelfMarkup(data)}</div>`,
+    keyMarkup(data),
+    `<div class="shelf-case">${shelfMarkup(data, { order })}</div>`,
     `<details class="shelf-list"><summary>Every book as a list</summary>${list.paragraphs.slice(credit ? 2 : 1).join('')}${list.list}</details>`,
     list.pager,
     '</article>',

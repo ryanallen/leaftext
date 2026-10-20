@@ -19,10 +19,9 @@ export const INSTALL_ID = 'install-it';
 /** Where the recorded clips and their posters are published: `<clip>.webm` and `<clip>.jpg`, written by `scripts/record-site-demo.mjs`. */
 export const DEMO_DIR = 'imgs/demos';
 
-/** The five cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, the documentation page that tells the rest, and whether it is the featured card that spans the grid with its clip beside its words. */
+/** The four cards, in order: the README section each is read from and titled by, the clip that shows it, what that clip shows in words, the documentation page that tells the rest, and whether it is the featured card that spans the grid with its clip beside its words. */
 export const FRONT_CARDS = [
-  { section: 'read-the-arthurian-books', clip: 'arthur', featured: true, shows: 'Leaftext opening Merlin, The History of the Britons and The Welsh Annals in turn, each translated in Leaftext', more: 'arthurian/index.md' },
-  { section: 'read-your-files', clip: 'read', shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
+  { section: 'read-your-files', clip: 'read', featured: true, shows: 'Leaftext opening a Markdown page, a sitemap, a saved email, a JSON file and a TOML file, each drawn as a page to read', more: 'docs/01-features/01-rendering.md' },
   { section: 'write-where-you-read', clip: 'edit', shows: 'A sentence being typed straight into the rendered page of a note', more: 'docs/01-features/07-editing.md' },
   { section: 'keep-a-library', clip: 'library', shows: 'The documentation index opening into the graph of how its pages link', more: 'docs/01-features/03-library.md' },
   { section: 'your-thoughts-stay-yours', clip: 'own', shows: 'One page drawn in six themes in turn, the file never leaving the machine', more: 'docs/01-introduction.md' },
@@ -162,7 +161,7 @@ export function holdLaidOutIds(html, held) {
 }
 
 /**
- * The README drawn as the front page: hero and downloads, the comparison, the app, the five cards, the install line and the foot, then the Previous and Next strip so Next walks on into the documentation.
+ * The README drawn as the front page: hero and downloads, the comparison, the app, the four cards, the install line and the foot, then the Previous and Next strip so Next walks on into the documentation.
  *
  * `html` is the README as the renderer drew it with the comparison chart already under its heading. What this leaves out — the outline's headings, the Mac warning and the long account of every feature — is each on its own documentation page, which the cards and the foot link to.
  */

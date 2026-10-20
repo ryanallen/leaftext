@@ -11,8 +11,8 @@ import { sitePage } from './web-page.mjs';
 
 export const pageOf = (path) => /\.md$/i.test(path) ? path.replace(/\.md$/i, '.html') : '';
 
-/** The folders whose documents each get a page of their own: the documentation, and the Arthurian books at the short address they are advertised by. */
-export const PAGE_FOLDERS = ['docs/', 'arthurian/'];
+/** The folders whose documents each get a page of their own: the documentation. */
+export const PAGE_FOLDERS = ['docs/'];
 export const hasPage = (path) => PAGE_FOLDERS.some((folder) => path.startsWith(folder)) && Boolean(pageOf(path));
 
 /** The address a page is served and shared at: a folder's `index.html` answers at the folder itself. */

@@ -1,13 +1,14 @@
 // shelf.js
 // ---------------------------------------------------------------------------
-// What moves on the Arthurian shelf once `shelf-layout.js` has laid it out: picking a book off it by pointer or keyboard, the three orders it stands in, search and the three filters, the address that holds the order and the picked book so Back and Forward bring both back, and the six tones painted from the theme in force and painted again whenever the reader changes it.
+// What moves on a shelf once `shelf-layout.js` has laid it out: picking a book off it by pointer or keyboard, the orders it stands in, search and its filters, the address that holds the order and the picked book so Back and Forward bring both back, and its tones painted from the theme in force and painted again whenever the reader changes it. The orders and the tones are the shelf's own, read from its data by `shelfWords`.
 //
 // `web/preview/boot.js` hands `installShelf` to the host as the shelf's motion, run on whichever laid-out page is standing; the host stops the one before. Nothing animates from here: the stylesheet lifts a picked spine and turns it to its cover, and does neither under reduced motion; the shelf only waits on the turn before it opens the book, and the page's own `openSheet`, `closeSheet` and `makeSheetDraggable` move the sheet the picked book opens in.
 // ---------------------------------------------------------------------------
 
-import { baysFor, bookMarkup, SHELF_ORDERS, SHELF_TONES, shelfMarkup, sortMarkup, spineCoverMarkup, reachedParts } from './shelf-layout.js';
+import { baysFor, bookMarkup, SHELF_TONES, shelfMarkup, shelfWords, sortMarkup, spineCoverMarkup, reachedParts } from './shelf-layout.js';
 
-const ORDER_KEYS = SHELF_ORDERS.map((order) => order.key);
+/** The keys of the orders a shelf offers, its first the one it opens in. */
+const orderKeys = (data) => shelfWords(data).orders.map((order) => order.key);
 // The app's own bottom sheet, as the glossary draws it: its shadow, its grip, its close cross and a body the open book is drawn into.
 const SHEET_FRAME = [
   '<span class="sheet-shadow-face" aria-hidden="true"></span>',
@@ -22,10 +23,11 @@ const SHEET_FRAME = [
 // The shelf's part of the address: `shelf=<order>` or `shelf=<order>/<book>`, written as the anchor of the document's own entry.
 const SHELF_ADDRESS = /(?:^|#)shelf=([a-z]+)(?:\/([a-z0-9-]+))?$/;
 
-/** The order and book an address names, an order or book the shelf does not hold read as none. */
+/** The order and book an address names, an order the shelf does not offer read as its first and a book it does not hold as none. */
 export function shelfAddress(hash, data) {
   const found = SHELF_ADDRESS.exec(decodeURIComponent(String(hash || '')));
-  const order = found && ORDER_KEYS.includes(found[1]) ? found[1] : 'story';
+  const keys = orderKeys(data);
+  const order = found && keys.includes(found[1]) ? found[1] : keys[0];
   const picked = found && found[2] && data.books.some((book) => book.book === found[2]) ? found[2] : '';
   return { order, picked };
 }
@@ -55,12 +57,12 @@ export function shownBooks(data, { search = '', part = '', tone = '', status = '
     .map((book) => book.book));
 }
 
-/** The six tones of the theme in force, each with its ink, set on the shelf as the values its stylesheet paints with; on a dark theme the spines' sheen dims, because the full one under light words lifts their ground until they stop reading. */
-export function paintTones(root, scale, dark = false, sheen = '') {
+/** The shelf's tones from the theme in force, each with its ink, set on the shelf as the values its elements paint with; on a dark theme the spines' sheen dims, because the full one under light words lifts their ground until they stop reading. */
+export function paintTones(root, scale, dark = false, sheen = '', shelfTones = SHELF_TONES) {
   if (dark) root.style.setProperty('--shelf-sheen', 'var(--lt-tint-sheen-dim)');
   else root.style.removeProperty('--shelf-sheen');
-  const tones = typeof scale === 'function' ? scale(SHELF_TONES.length) : [];
-  SHELF_TONES.forEach(([key], at) => {
+  const tones = typeof scale === 'function' ? scale(shelfTones.length) : [];
+  shelfTones.forEach(([key], at) => {
     const tone = tones[at];
     if (!tone) return;
     root.style.setProperty(`--shelf-tone-${key}`, readableFill(tone.fill, tone.ink, sheen));
@@ -129,6 +131,7 @@ export function readableFill(fill, ink, sheen = '') {
  */
 export function installShelf(root, data, env = globalThis) {
   const view = env.window || env;
+  const words = shelfWords(data);
   const state = { ...shelfAddress(view.location && view.location.hash, data), search: '', part: '', tone: '', status: '' };
   const find = (selector) => root.querySelector(selector);
   const box = () => find('.shelf-case');
@@ -160,18 +163,18 @@ export function installShelf(root, data, env = globalThis) {
       if (spine && typeof spine.focus === 'function') spine.focus();
     }
   };
-  // The line under the title as the document draws it, which is story order's.
+  // The line under the title as the document draws it, which is the first order's.
   const storyLine = find('.shelf-line') ? find('.shelf-line').textContent : '';
   const drawSort = () => {
     const sort = find('.shelf-sort');
     const note = find('.shelf-sort-note');
     if (!sort) return;
     const holder = view.document.createElement('div');
-    holder.innerHTML = sortMarkup(state.order);
+    holder.innerHTML = sortMarkup(state.order, data);
     sort.innerHTML = holder.querySelector('.shelf-sort').innerHTML;
     if (note) note.textContent = holder.querySelector('.shelf-sort-note').textContent;
     const line = find('.shelf-line');
-    if (line) line.textContent = (SHELF_ORDERS.find((one) => one.key === state.order) || {}).line || storyLine;
+    if (line) line.textContent = (words.orders.find((one) => one.key === state.order) || {}).line || storyLine;
   };
   // The picked book opens in a bottom sheet where the reader is, laid on the window rather than in the page, because the rail draws a copy of the page and a fixed sheet inside it would be copied too.
   const doc = view.document;
@@ -310,7 +313,7 @@ export function installShelf(root, data, env = globalThis) {
     view.sendDocumentLink(link, typeof view.newPageModifierHeld === 'function' && view.newPageModifierHeld(event));
   });
   const sortBy = (order) => {
-    if (!ORDER_KEYS.includes(order) || order === state.order) return;
+    if (!orderKeys(data).includes(order) || order === state.order) return;
     state.order = order;
     drawAll(state.picked);
     writeAddress();
@@ -372,8 +375,8 @@ export function installShelf(root, data, env = globalThis) {
     const dark = Boolean(page && page.dataset && page.dataset.theme === 'dark');
     // The sheen the spines will wear, read off the token the stylesheet paints with rather than spelled again here.
     const sheen = page && typeof view.getComputedStyle === 'function' ? view.getComputedStyle(page).getPropertyValue(dark ? '--lt-tint-sheen-dim' : '--lt-tint-sheen') : '';
-    paintTones(root, view.leafCategoricalScale, dark, sheen);
-    paintTones(sheet, view.leafCategoricalScale, dark, sheen);
+    paintTones(root, view.leafCategoricalScale, dark, sheen, words.tones);
+    paintTones(sheet, view.leafCategoricalScale, dark, sheen, words.tones);
   };
   const unsubscribe = view.leafTheme && typeof view.leafTheme.subscribe === 'function' ? view.leafTheme.subscribe(paint) : (paint(), null);
   drawAll();
