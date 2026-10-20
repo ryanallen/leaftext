@@ -10,6 +10,7 @@
 *.icns binary
 *.zip binary
 *.epub binary
+*.pdf binary
 *.gz binary
 *.dmg binary
 *.msi binary
